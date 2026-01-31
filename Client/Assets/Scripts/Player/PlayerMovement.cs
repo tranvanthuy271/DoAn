@@ -53,7 +53,8 @@ public class PlayerMovement : MonoBehaviour
     public void HandleInput()
     {
         // Chỉ xử lý input nếu là owner hoặc không có network
-        if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && !networkObject.IsOwner)
+        // QUAN TRỌNG: Chỉ check IsOwner, không check IsClient (vì có thể gây lỗi timing)
+        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
             return; // Remote player không xử lý input
         }
@@ -99,12 +100,17 @@ public class PlayerMovement : MonoBehaviour
 
     public void HandleMovement()
     {
-        // QUAN TRỌNG: Chỉ owner mới được set velocity
-        // Non-owner để NetworkTransform tự động sync
-        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
+        // QUAN TRỌNG: Khi có network, movement được xử lý bởi ServerRpc trong NetworkPlayerController
+        // Chỉ xử lý movement local nếu không có network (standalone mode)
+        if (networkObject != null && NetworkManager.Singleton != null)
         {
-            return; // Remote player không xử lý movement
+            // Có network: 
+            // - Owner: Movement được xử lý bởi NetworkPlayerController.MoveServerRpc()
+            // - Non-owner: Để NetworkTransform tự sync
+            return;
         }
+        
+        // Nếu không có network (standalone), xử lý movement local như bình thường
 
         PlayerStats stats = controller.stats;
         if (stats == null) return;
@@ -227,9 +233,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Update animator
+        // QUAN TRỌNG: Truyền velocity.x thay vì horizontalInput để Speed parameter phản ánh tốc độ thực tế
+        // Điều này giúp transition Jump -> Run/Idle hoạt động đúng khi player chạm đất
         if (playerAnimator != null)
         {
-            playerAnimator.UpdateAnimation(horizontalInput, rb.velocity.y, isGrounded, isFlying);
+            playerAnimator.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, isFlying);
         }
     }
 

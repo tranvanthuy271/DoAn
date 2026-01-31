@@ -11,9 +11,29 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] private float attackRange = 0.5f;
     [SerializeField] private LayerMask enemyLayers;
 
+    [Header("Attack Facing / Offsets")]
+    [Tooltip("Local position của AttackPoint khi nhân vật nhìn sang PHẢI (scale.x > 0).")]
+    [SerializeField] private Vector3 attackPointLocalPosRight = new Vector3(0.5f, 0f, 0f);
+
+    [Tooltip("Local position của AttackPoint khi nhân vật nhìn sang TRÁI (scale.x < 0).")]
+    [SerializeField] private Vector3 attackPointLocalPosLeft = new Vector3(-0.5f, 0f, 0f);
+
+    [Tooltip("Nếu bạn có object Animator/VFX riêng cho đòn chém (ví dụ Slash), kéo vào đây để nó tự dịch theo hướng. Có thể để trống.")]
+    [SerializeField] private Transform attackVisual;
+
+    [Tooltip("Local position của Attack Visual khi nhìn PHẢI.")]
+    [SerializeField] private Vector3 attackVisualLocalPosRight = new Vector3(0.5f, 0f, 0f);
+
+    [Tooltip("Local position của Attack Visual khi nhìn TRÁI.")]
+    [SerializeField] private Vector3 attackVisualLocalPosLeft = new Vector3(-0.5f, 0f, 0f);
+
+    [Tooltip("Tên Trigger trong Animator để phát animation chém.")]
+    [SerializeField] private string attackTriggerName = "Attack";
+
     [Header("Attack State")]
     private float attackCooldown;
     private bool canAttack = true;
+    private bool lastFacingRight;
 
     private void Awake()
     {
@@ -28,13 +48,24 @@ public class PlayerCombat : MonoBehaviour
         {
             GameObject attackPointObj = new GameObject("AttackPoint");
             attackPointObj.transform.SetParent(transform);
-            attackPointObj.transform.localPosition = new Vector3(0.5f, 0, 0);
+            attackPointObj.transform.localPosition = attackPointLocalPosRight;
             attackPoint = attackPointObj.transform;
         }
+
+        lastFacingRight = IsFacingRight();
+        ApplyFacingOffsets(lastFacingRight);
     }
 
     private void Update()
     {
+        // Keep offsets correct when player flips (scale.x changes)
+        bool facingRight = IsFacingRight();
+        if (facingRight != lastFacingRight)
+        {
+            lastFacingRight = facingRight;
+            ApplyFacingOffsets(facingRight);
+        }
+
         // Update attack cooldown
         if (!canAttack)
         {
@@ -52,6 +83,25 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
+    private bool IsFacingRight()
+    {
+        // Theo code flip hiện tại: phải = scale.x > 0, trái = scale.x < 0
+        return transform.localScale.x >= 0f;
+    }
+
+    private void ApplyFacingOffsets(bool facingRight)
+    {
+        if (attackPoint != null)
+        {
+            attackPoint.localPosition = facingRight ? attackPointLocalPosRight : attackPointLocalPosLeft;
+        }
+
+        if (attackVisual != null)
+        {
+            attackVisual.localPosition = facingRight ? attackVisualLocalPosRight : attackVisualLocalPosLeft;
+        }
+    }
+
     private void Attack()
     {
         if (!canAttack) return;
@@ -64,7 +114,7 @@ public class PlayerCombat : MonoBehaviour
         // Play attack animation
         if (animator != null)
         {
-            animator.SetTrigger("Attack");
+            animator.SetTrigger(attackTriggerName);
         }
 
         // Detect enemies in range

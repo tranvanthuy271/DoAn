@@ -46,7 +46,8 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         // Chỉ owner mới xử lý input
-        if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && !networkObject.IsOwner)
+        // QUAN TRỌNG: Chỉ check IsOwner, không check IsClient (vì có thể gây lỗi timing)
+        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
             return; // Remote player không xử lý input
         }
@@ -72,7 +73,8 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         // Chỉ owner mới xử lý movement
-        if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && !networkObject.IsOwner)
+        // QUAN TRỌNG: Chỉ check IsOwner, không check IsClient (vì có thể gây lỗi timing)
+        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
             return; // Remote player không xử lý movement, để NetworkTransform tự sync
         }

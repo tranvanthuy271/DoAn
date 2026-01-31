@@ -10,6 +10,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
     [SerializeField] private Transform[] spawnPoints;
 
     private NetworkManager networkManager;
+    private readonly System.Collections.Generic.HashSet<ulong> spawnedClients = new System.Collections.Generic.HashSet<ulong>();
     private bool hasSubscribed = false;
 
     private void Awake()
@@ -36,14 +37,10 @@ public class NetworkPlayerSpawner : MonoBehaviour
         {
             Debug.Log("[NetworkPlayerSpawner] Server already started, subscribing to events...");
             SubscribeToEvents();
-            // Spawn player cho host (server) luôn
-            Debug.Log($"[NetworkPlayerSpawner] Spawning player for host (LocalClientId: {networkManager.LocalClientId})");
-            SpawnPlayer(networkManager.LocalClientId);
         }
         else
         {
             Debug.Log("[NetworkPlayerSpawner] Not server yet, subscribing to OnServerStarted event...");
-            // Subscribe để được notify khi server start
             networkManager.OnServerStarted += OnServerStarted;
         }
     }
@@ -60,12 +57,6 @@ public class NetworkPlayerSpawner : MonoBehaviour
         {
             Debug.Log("[NetworkPlayerSpawner] Update: Server detected, subscribing to events...");
             SubscribeToEvents();
-            // Spawn player cho host nếu chưa spawn
-            if (networkManager.LocalClientId != 0) // Host có LocalClientId = 0 khi start
-            {
-                Debug.Log($"[NetworkPlayerSpawner] Update: Spawning player for host (LocalClientId: {networkManager.LocalClientId})");
-                SpawnPlayer(networkManager.LocalClientId);
-            }
         }
     }
 
@@ -75,12 +66,6 @@ public class NetworkPlayerSpawner : MonoBehaviour
         if (!hasSubscribed)
         {
             SubscribeToEvents();
-            // Spawn player cho host
-            if (networkManager != null)
-            {
-                Debug.Log($"[NetworkPlayerSpawner] Spawning player for host (LocalClientId: {networkManager.LocalClientId})");
-                SpawnPlayer(networkManager.LocalClientId);
-            }
         }
     }
 
@@ -145,6 +130,13 @@ public class NetworkPlayerSpawner : MonoBehaviour
             return;
         }
 
+        // Tránh spawn trùng cho cùng một client
+        if (spawnedClients.Contains(clientId))
+        {
+            Debug.LogWarning($"[NetworkPlayerSpawner] Client {clientId} already has a spawned player. Skipping duplicate spawn.");
+            return;
+        }
+
         // Chọn spawn point (round-robin hoặc random)
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
@@ -172,6 +164,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         {
             Debug.Log($"[NetworkPlayerSpawner] NetworkObject found, spawning with ownership for client {clientId}");
             networkObj.SpawnWithOwnership(clientId); // Owner là client vừa connect
+            spawnedClients.Add(clientId);
             Debug.Log($"[NetworkPlayerSpawner] ✓✓✓ Successfully spawned player for client {clientId} at {spawnPos} ✓✓✓");
         }
         else
