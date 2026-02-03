@@ -22,6 +22,11 @@ GameObject:
   - component: {fileID: 897474750945331551}
   - component: {fileID: 6963245509108157772}
   - component: {fileID: 8482975257388839777}
+  - component: {fileID: 8068972132942356793}
+  - component: {fileID: 6547474427312031327}
+  - component: {fileID: 237516408525368406}
+  - component: {fileID: 5032939089275693546}
+  - component: {fileID: 587708759116233962}
   m_Layer: 8
   m_Name: NetworkPlayer
   m_TagString: Player
@@ -316,6 +321,12 @@ MonoBehaviour:
   dashSpeed: 0
   dashDuration: 0.3
   dashCooldown: 1
+  enableDashDamage: 1
+  dashDamage: 10
+  dashHitRange: 1.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
   dashTriggerName: Dash
   dashRightTriggerName: 
   dashLeftTriggerName: 
@@ -376,6 +387,121 @@ MonoBehaviour:
     canUse: 0
     isUsing: 0
   defaultSkillEffectObject: {fileID: 0}
+--- !u!114 &8068972132942356793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 274ef45c33ad4ee46820f9de4438aff0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  teleportKey: 116
+  cooldown: 0
+  teleportDistance: 5
+  teleportDuration: 0
+  checkCollision: 1
+  obstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  animationTriggerName: 
+  skillEffectObject: {fileID: 0}
+  teleportStartEffect: {fileID: 0}
+  teleportEndEffect: {fileID: 0}
+--- !u!114 &6547474427312031327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71f829fa1500cd4b8350ef02eecb9a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackPoint: {fileID: 0}
+  attackRange: 0.5
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 128
+  attackPointLocalPosRight: {x: 0.5, y: 0, z: 0}
+  attackPointLocalPosLeft: {x: -0.5, y: 0, z: 0}
+  attackVisual: {fileID: 0}
+  attackVisualLocalPosRight: {x: 0.5, y: 0, z: 0}
+  attackVisualLocalPosLeft: {x: -0.5, y: 0, z: 0}
+  attackTriggerName: Attack
+--- !u!114 &237516408525368406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 879bcc682393c3141b22a2b0c692264a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  invincibilityDuration: 1
+  respawnDelay: 3
+  spawnPoints: []
+  OnHealthChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  OnHeal:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRespawn:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &5032939089275693546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f68e854979416542ae73342db6af97d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxSlots: 20
+  OnItemAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  OnItemRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+  OnItemQuantityChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnInventoryChanged:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &587708759116233962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f99ea9c6a9fe1944b7ba147c6f6115d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &159999558818155546
 PrefabInstance:
   m_ObjectHideFlags: 0

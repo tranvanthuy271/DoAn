@@ -1,6 +1,8 @@
 using UnityEngine;
+using Unity.Netcode;
+using Unity.Netcode.Components;
 
-[RequireComponent(typeof(Rigidbody2D), typeof(Animator))]
+[RequireComponent(typeof(Rigidbody2D), typeof(Animator), typeof(NetworkAnimator))]
 public class EnemyAI : MonoBehaviour
 {
     [Header("Movement")]
@@ -9,38 +11,41 @@ public class EnemyAI : MonoBehaviour
     public Transform rightPoint;  // điểm biên phải
 
     [Header("Combat")]
-    public float detectionRange = 1f;
-    public float attackRange = 1.2f;
+    public float detectionRange = 5f;
+    public float meleeAttackRange = 1.2f;  // Khoảng cách đánh thường (gần)
     public float attackCooldown = 1.0f;
     public int damage = 2;
     public Collider2D hitbox; // isTrigger, disable mặc định
 
     private Transform player;
     private Rigidbody2D rb;
-    private Animator animator;
+    private NetworkAnimator networkAnimator; // Dùng NetworkAnimator thay vì Animator
+    private Animator animator; // Lấy từ NetworkAnimator.Animator
     private EnemyHealth health;
+    private NetworkEnemyController networkController;
 
     private bool facingRight = true;
     private float lastAttackTime;
     private bool autoPatrolPointsCreated = false;
+    private float attackStartTime;
+    private const float MAX_ATTACK_DURATION = 2f;
 
-    private enum State { Run, Attack, Dead }
+    private enum State { Run, MeleeAttack, Dead }
     private State state = State.Run;
 
     private void Awake()
     {
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        networkAnimator = GetComponent<NetworkAnimator>();
         health = GetComponent<EnemyHealth>();
+        networkController = GetComponent<NetworkEnemyController>();
 
-        // Đồng bộ hướng nhìn ban đầu với sprite
         ApplyFacing();
 
-        // Tự tạo điểm patrol nếu chưa gán trong Inspector
         if (leftPoint == null || rightPoint == null)
         {
-            CreateAutoPatrolPoints(3f); // mặc định ±3f
+            CreateAutoPatrolPoints(3f);
         }
 
         if (hitbox != null)
@@ -54,46 +59,114 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void Start()
     {
-        if (state == State.Dead) return;
-        if (player == null) return;
-
-        float dist = Vector2.Distance(transform.position, player.position);
-
-        // Đang attack thì đứng yên, chờ animation/event xử lý
-        if (state == State.Attack)
+        if (animator == null)
         {
-            rb.velocity = new Vector2(0, rb.velocity.y);
-            return;
+            animator = GetComponent<Animator>();
         }
+        
+        FindPlayerInNetwork();
+    }
 
-        // Luôn chạy (loop run). Nếu có player gần thì chạy về phía player.
-        if (dist <= detectionRange)
+    private void FindPlayerInNetwork()
+    {
+        GameObject[] playerObjects = GameObject.FindGameObjectsWithTag("Player");
+        if (playerObjects.Length > 0)
         {
-            RunTowards(player.position.x);
+            player = playerObjects[0].transform;
         }
         else
         {
-            PatrolLoop();
-        }
-
-        // Nếu đã đủ gần để đánh → chuyển Attack
-        if (dist <= attackRange && Time.time - lastAttackTime >= attackCooldown)
-        {
-            state = State.Attack;
-            lastAttackTime = Time.time;
-            if (animator != null)
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
             {
-                animator.SetBool("isAttacking", true);
+                player = playerObj.transform;
             }
-            rb.velocity = Vector2.zero;
         }
     }
 
+    private void Update()
+    {
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        if (state == State.Dead) return;
+        
+        if (rb != null)
+        {
+            if (rb.constraints.HasFlag(RigidbodyConstraints2D.FreezePositionX))
+            {
+                rb.constraints &= ~RigidbodyConstraints2D.FreezePositionX;
+            }
+        }
+        
+        if (player == null)
+        {
+            FindPlayerInNetwork();
+        }
+        
+        if (player == null)
+        {
+            PatrolLoop();
+            return;
+        }
+
+        float dist = Vector2.Distance(transform.position, player.position);
+
+        if (state == State.MeleeAttack)
+        {
+            rb.velocity = new Vector2(0, rb.velocity.y);
+            
+            if (Time.time - attackStartTime >= MAX_ATTACK_DURATION)
+            {
+                ForceResetAttackState();
+            }
+            return;
+        }
+
+        if (dist <= meleeAttackRange && Time.time - lastAttackTime >= attackCooldown)
+        {
+            StartMeleeAttack();
+            return;
+        }
+
+        PatrolLoop();
+    }
+
+    private void StartMeleeAttack()
+    {
+        state = State.MeleeAttack;
+        lastAttackTime = Time.time;
+        attackStartTime = Time.time;
+        rb.velocity = Vector2.zero;
+
+        if (networkController != null)
+        {
+            networkController.TriggerAttackServerRpc();
+        }
+        else if (animator != null)
+        {
+            animator.SetBool("isAttacking", true);
+        }
+    }
+
+
     private void PatrolLoop()
     {
-        if (leftPoint == null || rightPoint == null) return;
+        if (leftPoint == null || rightPoint == null)
+        {
+            if (!autoPatrolPointsCreated)
+            {
+                CreateAutoPatrolPoints(3f);
+            }
+            if (leftPoint == null || rightPoint == null)
+            {
+                return;
+            }
+        }
 
         float targetX = facingRight ? rightPoint.position.x : leftPoint.position.x;
         RunTowards(targetX);
@@ -107,8 +180,11 @@ public class EnemyAI : MonoBehaviour
 
     private void RunTowards(float targetX)
     {
+        if (rb == null) return;
+        
         float dir = Mathf.Sign(targetX - transform.position.x);
-        rb.velocity = new Vector2(dir * moveSpeed, rb.velocity.y);
+        Vector2 newVelocity = new Vector2(dir * moveSpeed, rb.velocity.y);
+        rb.velocity = newVelocity;
 
         if ((dir > 0 && !facingRight) || (dir < 0 && facingRight))
         {
@@ -116,47 +192,60 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    // Animation Event: gọi ở giữa animation Enemy_Attack
     public void OnAttackHit()
     {
-        // Cách 1: bật hitbox collider, để script khác xử lý OnTriggerEnter2D
         if (hitbox != null)
         {
             hitbox.enabled = true;
         }
 
-        // Cách 2 (đơn giản): check khoảng cách và damage player trực tiếp
-        if (player != null && Vector2.Distance(transform.position, player.position) <= attackRange + 0.2f)
+        if (player != null && Vector2.Distance(transform.position, player.position) <= meleeAttackRange + 0.2f)
         {
-            var playerHealth = player.GetComponent<PlayerHealth>();
-            if (playerHealth != null)
+            var networkPlayerHealth = player.GetComponent<NetworkPlayerHealth>();
+            if (networkPlayerHealth != null)
             {
-                playerHealth.TakeDamage(damage);
+                networkPlayerHealth.TakeDamage(damage);
+            }
+            else
+            {
+                var playerHealth = player.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(damage);
+                }
             }
         }
     }
 
-    // Animation Event: gọi ở cuối animation Enemy_Attack
     public void OnAttackFinished()
+    {
+        ForceResetAttackState();
+    }
+
+    private void ForceResetAttackState()
     {
         if (hitbox != null)
         {
             hitbox.enabled = false;
         }
 
-        if (animator != null)
+        state = State.Run;
+        
+        if (networkController != null)
+        {
+            networkController.ResetAttackAnimationClientRpc();
+        }
+        else if (animator != null)
         {
             animator.SetBool("isAttacking", false);
         }
-
-        state = State.Run;
     }
 
     private void OnDeath()
     {
         state = State.Dead;
         rb.velocity = Vector2.zero;
-        Destroy(gameObject); // xóa hẳn object
+        Destroy(gameObject);
     }
 
     private void Flip()
@@ -165,15 +254,9 @@ public class EnemyAI : MonoBehaviour
         ApplyFacing();
     }
 
-    /// <summary>
-    /// Áp dụng hướng nhìn ra sprite dựa vào facingRight và spriteFacesRight
-    /// </summary>
     private void ApplyFacing()
     {
         Vector3 scale = transform.localScale;
-        // Sprite gốc nhìn TRÁI (scale.x = 1).
-        // facingRight = false  -> scale.x =  1 (trái)
-        // facingRight = true   -> scale.x = -1 (phải)
         float dirSign = facingRight ? -1f : 1f;
         scale.x = Mathf.Abs(scale.x) * dirSign;
         transform.localScale = scale;

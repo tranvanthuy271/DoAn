@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class HealthBar : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Image fillImage;
-    [SerializeField] private Text healthText; // Optional
+    [SerializeField] private Text healthText; // Legacy Text (deprecated)
+    [SerializeField] private TextMeshProUGUI healthTextTMP; // TextMeshPro (recommended)
 
     [Header("Colors")]
     [SerializeField] private Color fullHealthColor = Color.green;
@@ -14,27 +16,31 @@ public class HealthBar : MonoBehaviour
     [SerializeField] private float lowHealthThreshold = 0.3f;
 
     [Header("Target")]
-    [SerializeField] private PlayerHealth playerHealth;
+    [SerializeField] private PlayerHealth playerHealth; // Local health (single-player)
+    [SerializeField] private NetworkPlayerHealth networkPlayerHealth; // Network health (multiplayer)
 
     private void Start()
     {
-        // Auto-find player health if not assigned
+        // Auto-find player health if not assigned (ưu tiên NetworkPlayerHealth)
+        if (networkPlayerHealth == null)
+        {
+            networkPlayerHealth = FindObjectOfType<NetworkPlayerHealth>();
+        }
+
         if (playerHealth == null)
         {
             playerHealth = FindObjectOfType<PlayerHealth>();
         }
 
-        if (playerHealth != null)
+        if (networkPlayerHealth != null)
         {
-            // Subscribe to health changed event
-            playerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-
-            // Initialize
-            UpdateHealthBar(playerHealth.GetCurrentHealth(), playerHealth.GetMaxHealth());
+            networkPlayerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
+            UpdateHealthBar(networkPlayerHealth.GetCurrentHealth(), networkPlayerHealth.GetMaxHealth());
         }
-        else
+        else if (playerHealth != null)
         {
-            Debug.LogWarning("PlayerHealth not found!");
+            playerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
+            UpdateHealthBar(playerHealth.GetCurrentHealth(), playerHealth.GetMaxHealth());
         }
 
         // Setup slider if exists
@@ -63,7 +69,11 @@ public class HealthBar : MonoBehaviour
         }
 
         // Update text
-        if (healthText != null)
+        if (healthTextTMP != null)
+        {
+            healthTextTMP.text = $"{currentHealth} / {maxHealth}";
+        }
+        else if (healthText != null)
         {
             healthText.text = $"{currentHealth} / {maxHealth}";
         }
@@ -71,7 +81,12 @@ public class HealthBar : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Unsubscribe from event
+        // Unsubscribe from events
+        if (networkPlayerHealth != null)
+        {
+            networkPlayerHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+        }
+
         if (playerHealth != null)
         {
             playerHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);

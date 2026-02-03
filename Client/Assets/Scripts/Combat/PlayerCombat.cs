@@ -76,8 +76,8 @@ public class PlayerCombat : MonoBehaviour
             }
         }
 
-        // Attack input - Nhấn J để tấn công
-        if (Input.GetKeyDown(KeyCode.J))
+        // Attack input - Nhấn N để tấn công
+        if (Input.GetKeyDown(KeyCode.N))
         {
             Attack();
         }
@@ -121,16 +121,28 @@ public class PlayerCombat : MonoBehaviour
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
 
         // Damage enemies
+        int damage = stats.baseDamage; // Lấy damage từ PlayerStats
         foreach (Collider2D enemy in hitEnemies)
         {
-            Debug.Log($"Hit {enemy.name}");
+            Debug.Log($"Hit {enemy.name} for {damage} damage");
             
-            // Try to damage enemy - Trừ 1 HP
-            var enemyHealth = enemy.GetComponent<EnemyHealth>();
-            if (enemyHealth != null)
+            // Try to damage enemy - Ưu tiên dùng NetworkEnemyHealth (network sync)
+            var networkEnemyHealth = enemy.GetComponent<NetworkEnemyHealth>();
+            if (networkEnemyHealth != null)
             {
-                // Trừ 1 HP mỗi lần đánh
-                enemyHealth.TakeDamage(1);
+                // Gây damage từ baseDamage trong PlayerStats (tự động gọi ServerRpc)
+                networkEnemyHealth.TakeDamage(damage);
+                Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.name} (NetworkEnemyHealth)");
+            }
+            else
+            {
+                // Fallback: Dùng EnemyHealth cũ (không network)
+                var enemyHealth = enemy.GetComponent<EnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(damage);
+                    Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.name} (EnemyHealth - fallback)");
+                }
             }
         }
 

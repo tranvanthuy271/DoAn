@@ -149,9 +149,65 @@ public class PlayerSkillManager : NetworkBehaviour
         }
         
         // Chỉ owner mới spawn projectile
+        // Spawn trên server để đồng bộ cho tất cả client
         if (IsOwner)
         {
-            UseSkillLocal(skill);
+            if (IsServer)
+            {
+                // Nếu là server và owner, spawn trực tiếp
+                UseSkillLocal(skill);
+            }
+            else
+            {
+                // Nếu là client owner, gọi server để spawn với hướng hiện tại
+                bool facingRight = transform.localScale.x >= 0f;
+                UseSkillServerRpc(skill.skillName, facingRight);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Server RPC để client owner yêu cầu server spawn projectile
+    /// </summary>
+    [ServerRpc]
+    private void UseSkillServerRpc(string skillName, bool facingRight)
+    {
+        // Tìm skill theo tên
+        SkillData skill = skills.Find(s => s != null && s.skillName == skillName);
+        if (skill != null)
+        {
+            // Lưu hướng player vào skill tạm thời để spawn đúng
+            UseSkillLocalWithDirection(skill, facingRight);
+        }
+    }
+    
+    /// <summary>
+    /// Spawn skill với hướng cụ thể (để sync đúng trên network)
+    /// </summary>
+    private void UseSkillLocalWithDirection(SkillData skill, bool facingRight)
+    {
+        skill.StartUsing();
+        
+        // Trigger animation trên player SkillEffect (nếu có)
+        if (!skill.disablePlayerSkillEffectAnimation)
+        {
+            TriggerPlayerSkillEffectAnimation(skill);
+        }
+        
+        // Spawn projectile với hướng cụ thể
+        SpawnProjectileWithDirection(skill, facingRight);
+        
+        // Reset skill state sau một khoảng thời gian ngắn
+        Invoke(nameof(ResetSkillState), 0.1f);
+        
+        // Ẩn SkillEffect sau khi animation kết thúc (nếu cần)
+        if (!string.IsNullOrEmpty(skill.animationTriggerName))
+        {
+            float animationLength = GetAnimationLength(skill.animationTriggerName, skill);
+            if (animationLength > 0)
+            {
+                Invoke(nameof(HideSkillEffect), animationLength);
+            }
         }
     }
     
@@ -238,6 +294,11 @@ public class PlayerSkillManager : NetworkBehaviour
     {
         // Xác định hướng player đang nhìn
         bool facingRight = transform.localScale.x >= 0f;
+        SpawnProjectileWithDirection(skill, facingRight);
+    }
+    
+    private void SpawnProjectileWithDirection(SkillData skill, bool facingRight)
+    {
         Vector2 direction = facingRight ? Vector2.right : Vector2.left;
         
         // Tính vị trí spawn
@@ -247,8 +308,42 @@ public class PlayerSkillManager : NetworkBehaviour
             0f
         );
         
-        // Spawn projectile
+        // Spawn projectile với NetworkObject để đồng bộ cho tất cả client
         GameObject projectile = Instantiate(skill.projectilePrefab, spawnPosition, Quaternion.identity);
+        
+        // QUAN TRỌNG: Set hướng sprite NGAY LẬP TỨC sau khi spawn, trước khi hiển thị
+        // Điều này đảm bảo sprite đúng hướng từ đầu, không bị delay
+        if (!facingRight)
+        {
+            // Flip projectile bằng cách đảo ngược scale X
+            Vector3 currentScale = projectile.transform.localScale;
+            projectile.transform.localScale = new Vector3(-Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
+        }
+        else
+        {
+            // Đảm bảo scale X dương khi quay phải
+            Vector3 currentScale = projectile.transform.localScale;
+            projectile.transform.localScale = new Vector3(Mathf.Abs(currentScale.x), currentScale.y, currentScale.z);
+        }
+        
+        // Đảm bảo projectile có NetworkObject để đồng bộ network
+        NetworkObject projectileNetworkObject = projectile.GetComponent<NetworkObject>();
+        if (projectileNetworkObject == null)
+        {
+            projectileNetworkObject = projectile.AddComponent<NetworkObject>();
+            Debug.LogWarning($"[PlayerSkillManager] Projectile '{skill.skillName}' không có NetworkObject, đã tự động thêm vào. Nên thêm NetworkObject vào Prefab!");
+        }
+        
+        // Spawn projectile trên network (chỉ server mới spawn được)
+        if (IsServer)
+        {
+            projectileNetworkObject.Spawn();
+        }
+        else
+        {
+            // Nếu không phải server, chỉ spawn local (hoặc gọi RPC để server spawn)
+            Debug.LogWarning("[PlayerSkillManager] Chỉ server mới spawn được projectile trên network!");
+        }
         
         // Setup Animator cho projectile (tắt Apply Root Motion)
         Animator projectileAnimator = projectile.GetComponent<Animator>();
@@ -342,12 +437,8 @@ public class PlayerSkillManager : NetworkBehaviour
             }
         }
         
-        // Flip sprite nếu cần
-        SpriteRenderer projectileSprite = projectile.GetComponent<SpriteRenderer>();
-        if (projectileSprite != null && !facingRight)
-        {
-            projectileSprite.flipX = true;
-        }
+        // Hướng sprite đã được set ngay sau khi Instantiate (dòng 319-326)
+        // Không cần set lại ở đây để tránh delay và đảm bảo sprite đúng hướng từ đầu
     }
     
     private IEnumerator TriggerProjectileAnimationDelayed(Animator animator, string triggerName)

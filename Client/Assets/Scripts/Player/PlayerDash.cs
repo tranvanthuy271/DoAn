@@ -23,6 +23,19 @@ public class PlayerDash : NetworkBehaviour
     [Tooltip("Cooldown giữa các lần dash (seconds)")]
     [SerializeField] private float dashCooldown = 1f;
 
+    [Header("Dash Damage Settings")]
+    [Tooltip("Có gây damage khi dash vào enemy không")]
+    [SerializeField] private bool enableDashDamage = true;
+
+    [Tooltip("Sát thương khi dash vào enemy")]
+    [SerializeField] private int dashDamage = 3;
+
+    [Tooltip("Khoảng cách phát hiện enemy khi dash (units)")]
+    [SerializeField] private float dashHitRange = 1.5f;
+
+    [Tooltip("Layer của enemy (để check collision). Mặc định = Layer 7 (Enemy)")]
+    [SerializeField] private LayerMask enemyLayer = 1 << 7;
+
     [Header("Animation")]
     [Tooltip("Tên Trigger trong Animator để phát animation Dash. Nếu để trống sẽ dùng 'Dash'")]
     [SerializeField] private string dashTriggerName = "Dash";
@@ -47,6 +60,7 @@ public class PlayerDash : NetworkBehaviour
     private float timeSinceDashEnded = 0f;
     private bool isDashRequested = false;
     private float lastScaleX = 1f;
+    private bool hasDamagedThisDash = false; // Flag để tránh damage nhiều lần trong một lần dash
 
     // Constants
     private const float SKILL_EFFECT_POSITION_OFFSET_RIGHT = 1f; // Position offset cho bên phải
@@ -82,6 +96,9 @@ public class PlayerDash : NetworkBehaviour
         if (isDashing && rb != null)
         {
             rb.velocity = dashDirection * dashSpeed;
+            
+            // Check và damage enemy khi đang dash
+            CheckDashDamage();
         }
     }
 
@@ -256,7 +273,7 @@ public class PlayerDash : NetworkBehaviour
         // scale.x = facingRight ? 1f : -1f;
         // skillEffectObject.transform.localScale = scale;
 
-        // Set position: bên phải = 2, bên trái = -2  
+        // Set position: bên phải = 2, bên trái = -2
         // Vector3 localPos = skillEffectObject.transform.localPosition;
         // localPos.x = facingRight ? SKILL_EFFECT_POSITION_OFFSET_RIGHT : SKILL_EFFECT_POSITION_OFFSET_LEFT;
         // skillEffectObject.transform.localPosition = localPos;
@@ -351,6 +368,9 @@ public class PlayerDash : NetworkBehaviour
         justStartedDash = true;
         isDashRequested = false;
         lastScaleX = transform.localScale.x;
+        
+        // Reset damage flag khi bắt đầu dash mới
+        hasDamagedThisDash = false;
 
         // Validate SkillEffect
         if (skillEffectObject == null)
@@ -481,6 +501,9 @@ public class PlayerDash : NetworkBehaviour
         isDashing = false;
         dashTimer = 0f;
         timeSinceDashEnded = 0f;
+        
+        // Reset damage flag
+        hasDamagedThisDash = false;
 
         // Reset animation
         ResetDashAnimation();
@@ -524,6 +547,57 @@ public class PlayerDash : NetworkBehaviour
                 skillEffectAnimator.ResetTrigger(dashTriggerName);
             }
             catch { }
+        }
+    }
+
+    #endregion
+
+    #region Dash Damage
+
+    /// <summary>
+    /// Kiểm tra và damage enemy khi đang dash
+    /// Gọi trong FixedUpdate khi đang dash
+    /// </summary>
+    private void CheckDashDamage()
+    {
+        if (!enableDashDamage || !isDashing || hasDamagedThisDash) return;
+
+        // Tìm tất cả enemy trong phạm vi
+        Collider2D[] enemies = Physics2D.OverlapCircleAll(
+            transform.position,
+            dashHitRange,
+            enemyLayer
+        );
+
+        foreach (Collider2D enemyCollider in enemies)
+        {
+            if (enemyCollider.CompareTag("Enemy"))
+            {
+                // Tìm component EnemyHealth hoặc NetworkEnemyHealth
+                EnemyHealth enemyHealth = enemyCollider.GetComponent<EnemyHealth>();
+                NetworkEnemyHealth networkEnemyHealth = enemyCollider.GetComponent<NetworkEnemyHealth>();
+
+                if (enemyHealth != null)
+                {
+                    // Standalone mode: dùng EnemyHealth
+                    enemyHealth.TakeDamage(dashDamage);
+                    hasDamagedThisDash = true;
+                    Debug.Log($"[PlayerDash] Dash đã damage enemy {enemyCollider.name} với {dashDamage} damage!");
+                    
+                    // Chỉ damage một enemy mỗi lần dash (tránh damage nhiều enemy cùng lúc)
+                    break;
+                }
+                else if (networkEnemyHealth != null)
+                {
+                    // Network mode: dùng NetworkEnemyHealth
+                    networkEnemyHealth.TakeDamage(dashDamage);
+                    hasDamagedThisDash = true;
+                    Debug.Log($"[PlayerDash] Dash đã damage enemy {networkEnemyHealth.name} với {dashDamage} damage! (Network)");
+                    
+                    // Chỉ damage một enemy mỗi lần dash
+                    break;
+                }
+            }
         }
     }
 
