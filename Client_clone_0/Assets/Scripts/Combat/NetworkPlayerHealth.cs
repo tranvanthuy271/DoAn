@@ -327,4 +327,72 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         HealFullServerRpc();
     }
+
+    /// <summary>
+    /// ServerRpc: Set max health (chỉ server mới có quyền)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void SetMaxHealthServerRpc(int newMaxHealth)
+    {
+        if (!IsServer) return;
+        
+        maxHealth = newMaxHealth;
+        
+        // Nếu current health > max health, giảm xuống
+        if (networkCurrentHealth.Value > maxHealth)
+        {
+            networkCurrentHealth.Value = maxHealth;
+        }
+        
+        Debug.Log($"[NetworkPlayerHealth] Max health set to {maxHealth} for player {NetworkObjectId}");
+    }
+
+    /// <summary>
+    /// ServerRpc: Set current health (chỉ server mới có quyền)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void SetHealthServerRpc(int newHealth)
+    {
+        if (!IsServer) return;
+        
+        newHealth = Mathf.Clamp(newHealth, 0, maxHealth);
+        networkCurrentHealth.Value = newHealth;
+        
+        Debug.Log($"[NetworkPlayerHealth] Health set to {newHealth}/{maxHealth} for player {NetworkObjectId}");
+    }
+
+    /// <summary>
+    /// Public method để set max health (tự động chuyển thành ServerRpc nếu cần)
+    /// </summary>
+    public void SetMaxHealth(int newMaxHealth)
+    {
+        if (IsServer)
+        {
+            maxHealth = newMaxHealth;
+            if (networkCurrentHealth.Value > maxHealth)
+            {
+                networkCurrentHealth.Value = maxHealth;
+            }
+        }
+        else
+        {
+            SetMaxHealthServerRpc(newMaxHealth);
+        }
+    }
+
+    /// <summary>
+    /// Public method để set current health (tự động chuyển thành ServerRpc nếu cần)
+    /// </summary>
+    public void SetHealth(int newHealth)
+    {
+        if (IsServer)
+        {
+            newHealth = Mathf.Clamp(newHealth, 0, maxHealth);
+            networkCurrentHealth.Value = newHealth;
+        }
+        else
+        {
+            SetHealthServerRpc(newHealth);
+        }
+    }
 }

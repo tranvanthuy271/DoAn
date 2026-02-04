@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// GameManager trung tâm: quản lý state game + giữ PlayerData (login từ API).
+/// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -10,6 +13,9 @@ public class GameManager : MonoBehaviour
 
     [Header("References")]
     public PlayerController player;
+
+    [Header("Player Data (từ Backend API)")]
+    public PlayerDataResponse currentPlayerData; // Được set sau khi login/load data
 
     private void Awake()
     {
@@ -43,6 +49,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    #region Game State
+
     public void TogglePause()
     {
         isPaused = !isPaused;
@@ -67,5 +75,30 @@ public class GameManager : MonoBehaviour
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
         );
     }
+
+    #endregion
+
+    #region Player Data (API)
+
+    /// <summary>
+    /// Được gọi sau khi login & load player data từ API.
+    /// </summary>
+    public void SetPlayerData(PlayerDataResponse data)
+    {
+        currentPlayerData = data;
+        Debug.Log($"[GameManager] Player data set: Level {data.level}, Map {data.map_id}");
+    }
+
+    public PlayerDataResponse GetPlayerData()
+    {
+        return currentPlayerData;
+    }
+
+    public bool HasPlayerData()
+    {
+        return currentPlayerData != null;
+    }
+
+    #endregion
 }
 

@@ -1,0 +1,248 @@
+using System.Text.Json;
+using GameServerApi.Data;
+using GameServerApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace GameServerApi.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class PlayerController : ControllerBase
+    {
+        private readonly GameDbContext _db;
+
+        public PlayerController(GameDbContext db)
+        {
+            _db = db;
+        }
+
+        /// <summary>
+        /// POST /api/player/create
+        /// Body: { "element_type": "Fire", "gender": "Male" }
+        /// </summary>
+        [HttpPost("create")]
+        public async Task<IActionResult> CreatePlayer([FromBody] JsonElement body)
+        {
+            if (!body.TryGetProperty("element_type", out var elementProp))
+            {
+                return BadRequest("element_type là bắt buộc.");
+            }
+
+            var elementType = elementProp.GetString() ?? "Fire";
+            
+            // Lấy gender, mặc định là "Male"
+            string gender = "Male";
+            if (body.TryGetProperty("gender", out var genderProp))
+            {
+                gender = genderProp.GetString() ?? "Male";
+            }
+            
+            // Lấy character_name
+            string characterName = "";
+            if (body.TryGetProperty("character_name", out var nameProp))
+            {
+                characterName = nameProp.GetString() ?? "";
+            }
+            
+            // Validate gender
+            if (gender != "Male" && gender != "Female")
+            {
+                return BadRequest("gender phải là 'Male' hoặc 'Female'.");
+            }
+            
+            // Validate: Earth chỉ có nam
+            if (elementType == "Earth" && gender != "Male")
+            {
+                return BadRequest("Hệ Earth chỉ có thể chọn giới tính Nam.");
+            }
+            
+            // Validate character_name
+            if (string.IsNullOrWhiteSpace(characterName))
+            {
+                return BadRequest("Tên nhân vật là bắt buộc.");
+            }
+            
+            if (characterName.Length < 3 || characterName.Length > 20)
+            {
+                return BadRequest("Tên nhân vật phải có từ 3 đến 20 ký tự.");
+            }
+
+            // Lấy user_id từ JWT
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+            if (userIdClaim == null)
+            {
+                return Unauthorized();
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            var existing = await _db.PlayerData.FindAsync(userId);
+            if (existing != null)
+            {
+                // Đã có player_data, update element_type, gender và character_name
+                existing.ElementType = elementType;
+                existing.Gender = gender;
+                existing.CharacterName = characterName;
+                await _db.SaveChangesAsync();
+                
+                // Trả về format đúng cho client
+                var response = new
+                {
+                    player_id = existing.PlayerId,
+                    level = existing.Level,
+                    experience = existing.Experience,
+                    exp_required_for_next_level = 0,
+                    gold = existing.Gold,
+                    map_id = existing.MapId,
+                    base_stats = new
+                    {
+                        hp = existing.Hp,
+                        max_hp = existing.MaxHp,
+                        mp = existing.Mp,
+                        max_mp = existing.MaxMp,
+                        attack = existing.Attack
+                    },
+                    equipment = JsonSerializer.Deserialize<object>(existing.EquipmentJson),
+                    potential_stats = JsonSerializer.Deserialize<object>(existing.PotentialStatsJson),
+                    final_stats = new
+                    {
+                        hp = existing.MaxHp,
+                        max_hp = existing.MaxHp,
+                        mp = existing.MaxMp,
+                        max_mp = existing.MaxMp,
+                        attack = existing.Attack,
+                        move_speed = 5f
+                    },
+                    inventory = JsonSerializer.Deserialize<object>(existing.InventoryJson),
+                    skills = JsonSerializer.Deserialize<object>(existing.SkillsJson),
+                    skill_points_available = 0,
+                    potential_points_available = 0,
+                    element_type = existing.ElementType,
+                    gene_tier = existing.GeneTier,
+                    is_hybrid = existing.IsHybrid,
+                    gender = existing.Gender,
+                    character_name = existing.CharacterName
+                };
+                
+                return Ok(response);
+            }
+
+            var playerData = new PlayerData
+            {
+                PlayerId = userId,
+                Level = 1,
+                Experience = 0,
+                Gold = 0,
+                MapId = 0,
+                ElementType = elementType,
+                Gender = gender,
+                CharacterName = characterName
+            };
+
+            _db.PlayerData.Add(playerData);
+            await _db.SaveChangesAsync();
+
+            // Trả về format đúng cho client
+            var createResponse = new
+            {
+                player_id = playerData.PlayerId,
+                level = playerData.Level,
+                experience = playerData.Experience,
+                exp_required_for_next_level = 0,
+                gold = playerData.Gold,
+                map_id = playerData.MapId,
+                base_stats = new
+                {
+                    hp = playerData.Hp,
+                    max_hp = playerData.MaxHp,
+                    mp = playerData.Mp,
+                    max_mp = playerData.MaxMp,
+                    attack = playerData.Attack
+                },
+                equipment = JsonSerializer.Deserialize<object>(playerData.EquipmentJson),
+                potential_stats = JsonSerializer.Deserialize<object>(playerData.PotentialStatsJson),
+                final_stats = new
+                {
+                    hp = playerData.MaxHp,
+                    max_hp = playerData.MaxHp,
+                    mp = playerData.MaxMp,
+                    max_mp = playerData.MaxMp,
+                    attack = playerData.Attack,
+                    move_speed = 5f
+                },
+                inventory = JsonSerializer.Deserialize<object>(playerData.InventoryJson),
+                skills = JsonSerializer.Deserialize<object>(playerData.SkillsJson),
+                skill_points_available = 0,
+                potential_points_available = 0,
+                element_type = playerData.ElementType,
+                gene_tier = playerData.GeneTier,
+                is_hybrid = playerData.IsHybrid,
+                gender = playerData.Gender,
+                character_name = playerData.CharacterName
+            };
+
+            return Ok(createResponse);
+        }
+
+        /// <summary>
+        /// GET /api/player/{playerId}/data
+        /// Trả về dữ liệu player theo format đã dùng trong Unity.
+        /// Bước đầu trả dữ liệu đơn giản dựa trên PlayerData.
+        /// </summary>
+        [HttpGet("{playerId}/data")]
+        [AllowAnonymous] // Có thể đổi sang [Authorize] khi client gửi JWT
+        public async Task<IActionResult> GetPlayerData(int playerId)
+        {
+            var player = await _db.PlayerData.FirstOrDefaultAsync(p => p.PlayerId == playerId);
+            if (player == null)
+            {
+                return NotFound("Player không tồn tại.");
+            }
+
+            // Tạm thời trả về dữ liệu đơn giản, có thể mở rộng dần cho khớp hoàn toàn tài liệu.
+            var response = new
+            {
+                player_id = player.PlayerId,
+                level = player.Level,
+                experience = player.Experience,
+                exp_required_for_next_level = 0,
+                gold = player.Gold,
+                map_id = player.MapId,
+                base_stats = new
+                {
+                    hp = player.Hp,
+                    max_hp = player.MaxHp,
+                    mp = player.Mp,
+                    max_mp = player.MaxMp,
+                    attack = player.Attack
+                },
+                equipment = JsonSerializer.Deserialize<object>(player.EquipmentJson),
+                potential_stats = JsonSerializer.Deserialize<object>(player.PotentialStatsJson),
+                final_stats = new
+                {
+                    hp = player.MaxHp,
+                    max_hp = player.MaxHp,
+                    mp = player.MaxMp,
+                    max_mp = player.MaxMp,
+                    attack = player.Attack,
+                    move_speed = 5f
+                },
+                inventory = JsonSerializer.Deserialize<object>(player.InventoryJson),
+                skills = JsonSerializer.Deserialize<object>(player.SkillsJson),
+                skill_points_available = 0,
+                potential_points_available = 0,
+                element_type = player.ElementType,
+                gene_tier = player.GeneTier,
+                is_hybrid = player.IsHybrid,
+                gender = player.Gender,
+                character_name = player.CharacterName
+            };
+
+            return Ok(response);
+        }
+    }
+}
+

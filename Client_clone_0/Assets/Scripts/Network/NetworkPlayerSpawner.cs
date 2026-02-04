@@ -3,8 +3,20 @@ using Unity.Netcode;
 
 public class NetworkPlayerSpawner : MonoBehaviour
 {
-    [Header("Player Prefab")]
+    [Header("Default Player Prefab (Fallback)")]
     [SerializeField] private GameObject networkPlayerPrefab;
+
+    [Header("Element Prefabs (Based on element_type + gender)")]
+    [SerializeField] private GameObject fireMalePrefab;
+    [SerializeField] private GameObject fireFemalePrefab;
+    [SerializeField] private GameObject waterMalePrefab;
+    [SerializeField] private GameObject waterFemalePrefab;
+    [SerializeField] private GameObject earthMalePrefab;
+    [SerializeField] private GameObject earthFemalePrefab; // Không có nhưng để dành
+    [SerializeField] private GameObject woodMalePrefab;
+    [SerializeField] private GameObject woodFemalePrefab;
+    [SerializeField] private GameObject metalMalePrefab;
+    [SerializeField] private GameObject metalFemalePrefab;
 
     [Header("Spawn Points")]
     [SerializeField] private Transform[] spawnPoints;
@@ -154,10 +166,18 @@ public class NetworkPlayerSpawner : MonoBehaviour
         int spawnIndex = (int)(clientId % (ulong)spawnPoints.Length);
         Vector3 spawnPos = spawnPoints[spawnIndex].position;
 
-        Debug.Log($"[NetworkPlayerSpawner] Instantiating player prefab for client {clientId} at spawn point {spawnIndex} ({spawnPos})");
+        // Chọn prefab dựa trên player data từ GameManager
+        GameObject prefabToSpawn = GetPlayerPrefabForClient(clientId);
+        if (prefabToSpawn == null)
+        {
+            Debug.LogError($"[NetworkPlayerSpawner] Could not find prefab for client {clientId}! Using default prefab.");
+            prefabToSpawn = networkPlayerPrefab;
+        }
+
+        Debug.Log($"[NetworkPlayerSpawner] Instantiating player prefab '{prefabToSpawn.name}' for client {clientId} at spawn point {spawnIndex} ({spawnPos})");
 
         // Spawn player
-        GameObject playerObj = Instantiate(networkPlayerPrefab, spawnPos, Quaternion.identity);
+        GameObject playerObj = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
         NetworkObject networkObj = playerObj.GetComponent<NetworkObject>();
         
         if (networkObj != null)
@@ -217,6 +237,83 @@ public class NetworkPlayerSpawner : MonoBehaviour
             // Unsubscribe OnServerStarted
             networkManager.OnServerStarted -= OnServerStarted;
         }
+    }
+
+    /// <summary>
+    /// Chọn prefab dựa trên element_type + gender từ GameManager
+    /// </summary>
+    private GameObject GetPlayerPrefabForClient(ulong clientId)
+    {
+        // Lấy player data từ GameManager
+        // Lưu ý: GameManager.Instance có thể chứa data của local player
+        // Nếu có nhiều players, cần map clientId với user_id
+        if (GameManager.Instance == null || !GameManager.Instance.HasPlayerData())
+        {
+            Debug.LogWarning($"[NetworkPlayerSpawner] GameManager.Instance is null or no player data for client {clientId}! Using default prefab.");
+            return networkPlayerPrefab;
+        }
+
+        PlayerDataResponse playerData = GameManager.Instance.GetPlayerData();
+        if (playerData == null)
+        {
+            Debug.LogWarning($"[NetworkPlayerSpawner] PlayerDataResponse is null for client {clientId}! Using default prefab.");
+            return networkPlayerPrefab;
+        }
+
+        string elementType = playerData.element_type ?? "Fire";
+        string gender = playerData.gender ?? "Male";
+
+        Debug.Log($"[NetworkPlayerSpawner] Client {clientId} - Element: {elementType}, Gender: {gender}");
+
+        // Chọn prefab dựa trên element_type + gender
+        GameObject selectedPrefab = null;
+        string prefabKey = $"{elementType}_{gender}";
+
+        switch (prefabKey)
+        {
+            case "Fire_Male":
+                selectedPrefab = fireMalePrefab;
+                break;
+            case "Fire_Female":
+                selectedPrefab = fireFemalePrefab;
+                break;
+            case "Water_Male":
+                selectedPrefab = waterMalePrefab;
+                break;
+            case "Water_Female":
+                selectedPrefab = waterFemalePrefab;
+                break;
+            case "Earth_Male":
+                selectedPrefab = earthMalePrefab;
+                break;
+            case "Earth_Female":
+                selectedPrefab = earthFemalePrefab;
+                break;
+            case "Wood_Male":
+                selectedPrefab = woodMalePrefab;
+                break;
+            case "Wood_Female":
+                selectedPrefab = woodFemalePrefab;
+                break;
+            case "Metal_Male":
+                selectedPrefab = metalMalePrefab;
+                break;
+            case "Metal_Female":
+                selectedPrefab = metalFemalePrefab;
+                break;
+            default:
+                Debug.LogWarning($"[NetworkPlayerSpawner] Unknown element/gender combination: {prefabKey}. Using default prefab.");
+                selectedPrefab = networkPlayerPrefab;
+                break;
+        }
+
+        if (selectedPrefab == null)
+        {
+            Debug.LogWarning($"[NetworkPlayerSpawner] Prefab for {prefabKey} is not assigned in Inspector! Using default prefab.");
+            selectedPrefab = networkPlayerPrefab;
+        }
+
+        return selectedPrefab;
     }
 }
 
