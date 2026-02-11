@@ -43,6 +43,8 @@ public class PlayerDataResponse
     public int exp_required_for_next_level;
     public int gold;
     public int map_id;
+    public float position_x; // Vị trí X cuối cùng khi out game
+    public float position_y; // Vị trí Y cuối cùng khi out game
     public BaseStats base_stats;
     public EquipmentData equipment;
     public PotentialStat[] potential_stats;
@@ -450,6 +452,85 @@ public class APIClient : MonoBehaviour
             }
             else
             {
+                onError?.Invoke(www.error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Update position của player lên server
+    /// </summary>
+    public void UpdatePlayerPosition(int playerId, int mapId, float positionX, float positionY, System.Action onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(UpdatePlayerPositionCoroutine(playerId, mapId, positionX, positionY, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator UpdatePlayerPositionCoroutine(int playerId, int mapId, float positionX, float positionY, System.Action onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/position";
+        
+        // Tạo JSON string thủ công vì JsonUtility không hỗ trợ anonymous objects
+        string jsonData = $"{{\"map_id\":{mapId},\"position_x\":{positionX},\"position_y\":{positionY}}}";
+        
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Put(url, jsonData))
+        {
+            www.SetRequestHeader("Content-Type", "application/json");
+            
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+            
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[APIClient] Position updated successfully: Map={mapId}, X={positionX}, Y={positionY}");
+                onSuccess?.Invoke();
+            }
+            else
+            {
+                Debug.LogError($"[APIClient] Failed to update position: {www.error}");
+                onError?.Invoke(www.error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Update player data (batch update) lên server
+    /// </summary>
+    public void UpdatePlayerData(int playerId, string jsonData, System.Action onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData, System.Action onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/data";
+        
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Put(url, jsonData))
+        {
+            www.SetRequestHeader("Content-Type", "application/json");
+            
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+            
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[APIClient] Player data updated successfully for player {playerId}");
+                onSuccess?.Invoke();
+            }
+            else
+            {
+                Debug.LogError($"[APIClient] Failed to update player data: {www.error}");
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    Debug.LogError($"[APIClient] Response: {www.downloadHandler.text}");
+                }
                 onError?.Invoke(www.error);
             }
         }

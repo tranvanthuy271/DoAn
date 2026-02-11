@@ -15,6 +15,10 @@ namespace GameServerApi.Models
         public int Experience { get; set; } = 0;
         public int Gold { get; set; } = 0;
         public int MapId { get; set; } = 0;
+        
+        // Vị trí cuối cùng khi out game (Game 2D chỉ cần x và y)
+        public float PositionX { get; set; } = 0f;
+        public float PositionY { get; set; } = 0f;
 
         // Base stats cơ bản
         public int Hp { get; set; } = 100;

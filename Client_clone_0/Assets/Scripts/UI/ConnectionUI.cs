@@ -77,11 +77,26 @@ public class ConnectionUI : MonoBehaviour
 
     public void StartHost()
     {
-        if (networkManager != null)
+        if (networkManager == null)
         {
-            networkManager.StartHost();
-            Debug.Log("Started as HOST");
+            Debug.LogError("[ConnectionUI] NetworkManager is null! Cannot start host.");
+            return;
         }
+
+        // Kiểm tra ConnectionApprovalCallback trước khi start host
+        if (networkManager.ConnectionApprovalCallback == null)
+        {
+            Debug.LogWarning("[ConnectionUI] ⚠️ ConnectionApprovalCallback is NULL before StartHost()!");
+            Debug.LogWarning("[ConnectionUI] Make sure ServerConnectionApproval GameObject exists in scene and is enabled.");
+            Debug.LogWarning("[ConnectionUI] Attempting to start host anyway... (may cause timeout)");
+        }
+        else
+        {
+            Debug.Log("[ConnectionUI] ✓ ConnectionApprovalCallback is registered before StartHost()");
+        }
+
+        networkManager.StartHost();
+        Debug.Log("Started as HOST");
     }
 
     public void StartClient()

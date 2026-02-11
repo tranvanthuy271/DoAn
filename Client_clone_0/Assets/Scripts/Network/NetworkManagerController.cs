@@ -30,16 +30,18 @@ public class NetworkManagerController : MonoBehaviour
         networkManager.OnClientConnectedCallback += OnClientConnected;
         networkManager.OnClientDisconnectCallback += OnClientDisconnected;
         
-        // Setup Connection Approval (quan trọng để tránh NullReferenceException)
-        // Kiểm tra xem đã có callback chưa trước khi đăng ký
-        if (networkManager.ConnectionApprovalCallback == null)
+        // DISABLED: Connection Approval được xử lý bởi ServerConnectionApproval script
+        // Không đăng ký ở đây để tránh conflict
+        Debug.Log("[NetworkManagerController] ConnectionApprovalCallback is handled by ServerConnectionApproval script, skipping registration here.");
+        
+        // Kiểm tra xem callback đã được đăng ký chưa (bởi ServerConnectionApproval)
+        if (networkManager.ConnectionApprovalCallback != null)
         {
-            networkManager.ConnectionApprovalCallback += ApprovalCheck;
-            Debug.Log("[NetworkManagerController] ConnectionApprovalCallback registered");
+            Debug.Log("[NetworkManagerController] ✓ ConnectionApprovalCallback is already registered by another script (ServerConnectionApproval)");
         }
         else
         {
-            Debug.LogWarning("[NetworkManagerController] ConnectionApprovalCallback already registered, skipping...");
+            Debug.LogWarning("[NetworkManagerController] ⚠️ ConnectionApprovalCallback is NULL! Make sure ServerConnectionApproval GameObject exists in scene!");
         }
     }
     

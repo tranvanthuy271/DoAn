@@ -330,38 +330,22 @@ public class SelectElementController : MonoBehaviour
     
     public void OnGoButtonClicked()
     {
-        // Load player data từ server trước khi vào MainMenu
-        int playerId = PlayerPrefs.GetInt("USER_ID", 0);
-        if (playerId == 0)
+        // Kiểm tra xem đã tạo nhân vật chưa (player data đã được lưu trong GameManager sau khi CreatePlayer)
+        if (GameManager.Instance == null || !GameManager.Instance.HasPlayerData())
         {
-            ShowError("Không tìm thấy User ID!");
+            ShowError("Vui lòng tạo nhân vật trước!");
             return;
         }
         
         goButton.interactable = false;
-        errorText.text = "Đang tải dữ liệu nhân vật...";
+        errorText.text = "Đang vào game...";
         
-        apiClient.LoadPlayerData(
-            playerId,
-            onSuccess: (playerData) =>
-            {
-                Debug.Log($"Player data loaded! Name: {playerData.character_name}, Level: {playerData.level}");
-                
-                // Lưu player data vào GameManager
-                GameManager.Instance.SetPlayerData(playerData);
-                
-                // Chuyển sang Main Menu
-                SceneManager.LoadScene("MainMenu");
-            },
-            onError: (error) =>
-            {
-                Debug.LogError($"Load player data failed: {error}");
-                ShowError($"Không thể tải dữ liệu: {error}");
-                goButton.interactable = true;
-            }
-        );
+        Debug.Log("[SelectElementController] Player data already created. Loading scene 'GameScene'...");
+        
+        // Chuyển sang GameScene (logic connect sẽ được xử lý trong GameScene)
+        SceneManager.LoadScene("GameScene");
     }
-    
+
     public void OnBackButtonClicked()
     {
         // Quay lại scene Login

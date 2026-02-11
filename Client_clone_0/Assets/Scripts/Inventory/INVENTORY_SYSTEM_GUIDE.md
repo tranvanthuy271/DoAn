@@ -1,424 +1,505 @@
-# Hệ Thống Túi Đồ (Inventory System) với Unity Netcode
+## Hệ Thống Túi Đồ (Inventory System) – DB + Server + Unity
 
-## Tổng Quan
+Tài liệu này mô tả cách build **hệ thống túi đồ** có:
 
-Hệ thống túi đồ này được thiết kế để hoạt động trong môi trường multiplayer với Unity Netcode for GameObjects. Tất cả dữ liệu inventory được đồng bộ hóa giữa server và clients thông qua NetworkVariable, đảm bảo tính nhất quán và chống cheat.
+- **Item definition**: lưu ở **DB** (bảng `item_template`) + **config trong Unity** (ScriptableObject / asset).
+- **Player inventory**: lưu trong **cột JSON `player_data.inventory`** (không tạo thêm bảng riêng).
+- **Server**: load inventory của player khi **login** vào RAM.
+- **Client (Unity)**: khi mở hành trang → **xin dữ liệu từ RAM server**, Unity chỉ **hiển thị** + gửi yêu cầu dùng item.
 
-## Kiến Trúc Hệ Thống
+Hệ thống vẫn **server-authoritative** (server quyết định hết), Unity/Netcode chỉ là lớp hiển thị và tương tác.
 
-### 1. **ItemData** (ScriptableObject)
-- Định nghĩa các loại item trong game
-- Chứa thông tin: tên, mô tả, icon, ID, loại item, stackable, drop prefab, etc.
-- Tạo asset trong Unity: `Right-click > Create > Item > ItemData`
+---
 
-### 2. **NetworkInventory** (NetworkBehaviour)
-- Component chính quản lý inventory của player
-- Sử dụng NetworkVariable để sync dữ liệu
-- Server-authoritative: chỉ server mới có thể thay đổi inventory
-- Clients chỉ đọc và hiển thị
+## 1. Kiến Trúc Tổng Quan
 
-### 3. **ItemPickup** (NetworkBehaviour)
-- Component gắn vào item drop trên ground
-- Xử lý việc nhặt item khi player đến gần
-- Tự động despawn sau khi được nhặt
+### 1.1. Thành phần chính
 
-### 4. **EnemyItemDrop**
-- Component gắn vào enemy
-- Drop item khi enemy chết
-- Hỗ trợ drop rate và random quantity
+- **Database (MySQL / MariaDB / v.v.)**
+  - Bảng `item_template`: định nghĩa tất cả item trong game.
+  - Bảng `player_data`: trong đó cột `inventory` (kiểu JSON/longtext) lưu **túi đồ** của từng người chơi.
 
-## Cài Đặt và Sử Dụng
+- **Game Server**
+  - Khi start: load toàn bộ `item_template` vào RAM.
+  - Khi player login: đọc `player_data.inventory` từ DB, parse JSON vào RAM.
+  - Cung cấp API / message:
+    - Gửi **snapshot inventory** cho client.
+    - Xử lý request: nhặt item, dùng item, di chuyển item, v.v.
 
-### Bước 1: Tạo ItemData Assets
+- **Unity Client**
+  - Nhận data inventory từ server.
+  - Dùng **ItemTemplate ScriptableObject** / database để hiển thị icon, tên, màu rare, tooltip.
+  - Gửi request hành động (UseItem, MoveItem, DropItem…) lên server.
 
-1. Tạo thư mục `Assets/Resources/Items/` (hoặc bất kỳ thư mục nào trong Resources)
-2. Tạo ItemData asset:
-   - `Right-click > Create > Item > ItemData`
-   - Đặt tên: `Item_Stone`, `Item_Potion`, etc.
-   - Điền thông tin:
-     - **Item Name**: Tên hiển thị
-     - **Item ID**: ID duy nhất (ví dụ: 1, 2, 3...)
-     - **Item Type**: Loại item (Weapon, Consumable, Material, etc.)
-     - **Stackable**: Có thể stack không
-     - **Max Stack**: Số lượng tối đa mỗi stack
-     - **Icon**: Sprite icon của item
-     - **Drop Prefab**: Prefab của ItemPickup (sẽ tạo ở bước sau)
+---
 
-### Bước 2: Tạo ItemPickup Prefab
+## 2. Thiết Kế Database
 
-1. Tạo GameObject mới: `ItemPickup`
-2. Thêm các components:
-   - **NetworkObject** (từ Netcode)
-   - **ItemPickup** (script)
-   - **SpriteRenderer** (để hiển thị icon)
-   - **Collider2D** (CircleCollider2D hoặc BoxCollider2D)
-     - Đặt `Is Trigger = true`
-   - **Rigidbody2D** (để vật lý khi drop)
-     - Đặt `Body Type = Kinematic` hoặc `Dynamic`
-     - Đặt `Gravity Scale = 1` nếu muốn item rơi xuống
+### 2.1. Bảng `item_template` (Item Definition)
 
-3. Cấu hình ItemPickup:
-   - **Item Data**: Để trống (sẽ set khi spawn)
-   - **Quantity**: Mặc định 1
-   - **Pickup Range**: 1.5 (khoảng cách tự động nhặt)
-   - **Auto Pickup**: true
-   - **Player Layer**: Layer của Player (mặc định Layer 6)
+Đây là bảng **master data** cho tất cả item:
 
-4. Lưu thành Prefab: `Assets/Prefabs/ItemPickup.prefab`
+```sql
+CREATE TABLE item_template (
+    id INT PRIMARY KEY AUTO_INCREMENT,
 
-### Bước 3: Gắn NetworkInventory vào Player
+    code VARCHAR(50) UNIQUE NOT NULL,         -- Ví dụ: KIM_FRAGMENT, HP_POTION_SMALL
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
 
-1. Mở Player Prefab
-2. Thêm component **NetworkInventory**
-3. Cấu hình:
-   - **Max Slots**: 20 (số lượng slot tối đa)
-   - **Events**: Có thể subscribe để update UI
+    category TINYINT NOT NULL,                -- 1=Equipment, 2=Consumable, 3=Material, 4=Gene, 5=Core
+    item_type TINYINT NOT NULL,               -- Sub-type chi tiết hơn
 
-4. Đảm bảo Player có **NetworkObject** component
+    stackable BOOLEAN DEFAULT TRUE,
+    max_stack INT DEFAULT 99,
 
-### Bước 4: Gắn EnemyItemDrop vào Enemy
+    gender_limit TINYINT DEFAULT 0,           -- 0=All, 1=Male, 2=Female
+    class_limit INT DEFAULT 0,                -- 0=All class
 
-1. Mở Enemy Prefab
-2. Thêm component **EnemyItemDrop**
-3. Cấu hình:
-   - **Item Pickup Prefab**: Kéo prefab ItemPickup vào đây
-   - **Drop Force**: 3 (lực khi drop)
-   - **Drop Spread**: 1 (độ phân tán)
+    level_required INT DEFAULT 0,
 
-4. Thêm Drop Items:
-   - Click `+` trong Drop Items list
-   - Gán **Item Data** (kéo ItemData asset vào)
-   - **Drop Rate**: 50% (tỷ lệ drop, 0-100)
-   - **Min Quantity**: 1
-   - **Max Quantity**: 3
+    rarity TINYINT DEFAULT 1,                 -- 1=Common → 5=Legend
 
-5. Đảm bảo Enemy có **NetworkEnemyHealth** hoặc **EnemyHealth** component
+    icon_path VARCHAR(255),                   -- Unity load theo string (Sprite / Addressable key)
+    prefab_path VARCHAR(255),                 -- Nếu là equipment, dùng cho model/prefab
 
-### Bước 5: Tạo ItemManager (Optional - để load ItemData)
+    base_stat_json JSON,                      -- Lưu stat linh hoạt (ATK, DEF, bonus, v.v.)
 
-Tạo script `ItemManager.cs` để quản lý ItemData:
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Lưu ý quan trọng:**
+
+- **`code`** là khoá logic, dùng chung **DB ↔ Server ↔ Unity** (vd: `SWORD_BRONZE`, `HP_POTION_SMALL`).
+- **`icon_path` / `prefab_path`** là string map sang asset trong Unity (Resources path, Addressables key, v.v.).
+- **`base_stat_json`** cho phép item linh hoạt stats mà không phải sửa schema.
+
+---
+
+### 2.2. Bảng `player_data` và cột `inventory`
+
+Trong DB hiện tại (file `gamedb (1).sql`), player được lưu trong bảng `player_data` với cột `inventory` dạng JSON/longtext:
+
+```sql
+CREATE TABLE `player_data` (
+  `player_id` int(11) NOT NULL,
+  `level` int(11) NOT NULL DEFAULT 1,
+  `experience` int(11) NOT NULL DEFAULT 0,
+  `gold` int(11) NOT NULL DEFAULT 0,
+  `map_id` int(11) NOT NULL DEFAULT 0 COMMENT '0 = Main map',
+  `position_x` float NOT NULL DEFAULT 0 COMMENT 'Vị trí X khi logout',
+  `position_y` float NOT NULL DEFAULT 0 COMMENT 'Vị trí Y khi logout',
+  `hp` int(11) NOT NULL DEFAULT 100,
+  `max_hp` int(11) NOT NULL DEFAULT 100,
+  `mp` int(11) NOT NULL DEFAULT 50,
+  `max_mp` int(11) NOT NULL DEFAULT 50,
+  `attack` int(11) NOT NULL DEFAULT 10,
+  `element_type` varchar(10) NOT NULL COMMENT 'Fire, Water, Earth, Wood, Metal',
+  `gene_tier` tinyint(4) NOT NULL DEFAULT 1,
+  `is_hybrid` tinyint(1) NOT NULL DEFAULT 0,
+  `secondary_element` varchar(10) DEFAULT NULL,
+  `gender` varchar(10) NOT NULL DEFAULT 'Male',
+  `character_name` varchar(50) NOT NULL DEFAULT '',
+  `equipment` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON: Trang bị đang mặc',
+  `skills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON: Skills đã học',
+  `inventory` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON: Túi đồ',
+  `potential_stats` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON: Chỉ số tiềm năng',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+);
+```
+
+- Trường `inventory` sẽ chứa JSON dạng danh sách slot, ví dụ gợi ý:
+  ```json
+  [
+    { "slotIndex": 0, "itemCode": "HP_POTION_SMALL", "quantity": 5, "isEquipped": false },
+    { "slotIndex": 1, "itemCode": "SWORD_BRONZE", "quantity": 1, "isEquipped": true }
+  ]
+  ```
+- Khi cần thay đổi thiết kế inventory, chỉ cần thay đổi **format JSON**, không phải sửa schema.
+
+---
+
+## 3. Luồng Xử Lý Trên Server
+
+### 3.1. Khi server khởi động
+
+1. Query tất cả `item_template`:
+   - `SELECT * FROM item_template`
+2. Map vào RAM:
+   - Ví dụ: `Dictionary<int, ItemTemplateData>` (theo `id`)  
+   - Hoặc: `Dictionary<string, ItemTemplateData>` (theo `code`)
+
+Mục tiêu:
+
+- Tra cứu nhanh theo `item_template_id` hoặc `code`.
+- Không query DB cho mỗi lần xem thông tin item.
+
+### 3.2. Khi player login
+
+1. **Xác thực tài khoản** → xác định `player_id`.
+2. **Load inventory từ DB** (đọc từ bảng `player_data`):
+   ```sql
+   SELECT inventory FROM player_data WHERE player_id = ?;
+   ```
+3. Parse JSON `inventory` thành object `PlayerInventory` trong RAM, ví dụ:
+   - `Dictionary<int, InventorySlot>` với key = `slot_index`.
+   - Mỗi `InventorySlot` chứa:
+     - `itemTemplateId` hoặc `itemCode`
+     - `quantity`
+     - `isEquipped`
+4. Gửi **snapshot inventory** cho client (gói message hoặc RPC).
+
+### 3.3. Khi player mở hành trang (Inventory UI)
+
+- **Client**:
+  - Nếu chưa có data hoặc muốn refresh → gửi request `GetInventory`.
+- **Server**:
+  - Lấy data từ `PlayerInventory` đang giữ trong RAM.
+  - Build response đơn giản:
+    - `slotIndex`
+    - `itemTemplateCode` (hoặc `itemTemplateId`)
+    - `quantity`
+    - `isEquipped`
+  - **Không cần query DB lại** (trừ trường hợp sync / reload).
+
+---
+
+## 4. Cấu Trúc Dữ Liệu Trong Unity
+
+### 4.1. ScriptableObject: `ItemTemplate`
+
+Unity dùng ScriptableObject để config hiển thị + logic client cho item.
 
 ```csharp
 using UnityEngine;
-using System.Collections.Generic;
 
-public class ItemManager : MonoBehaviour
+[CreateAssetMenu(fileName = "ItemTemplate", menuName = "Game/Item Template")]
+public class ItemTemplate : ScriptableObject
 {
-    private static ItemManager instance;
-    private Dictionary<int, ItemData> itemDatabase = new Dictionary<int, ItemData>();
+    [Header("Identity")]
+    public int id;                 // Mirror với DB (nếu cần)
+    public string code;            // Phải trùng với item_template.code
 
-    public static ItemManager Instance => instance;
+    [Header("Display")]
+    public string displayName;
+    [TextArea] public string description;
+    public Sprite icon;
 
-    private void Awake()
+    [Header("Type & Rules")]
+    public int category;           // 1=Equipment, 2=Consumable, ...
+    public int itemType;
+    public bool stackable = true;
+    public int maxStack = 99;
+
+    public int genderLimit;
+    public int classLimit;
+    public int levelRequired;
+    public int rarity;             // 1-5
+
+    [Header("Prefab / Visual")]
+    public GameObject prefab;      // Dùng khi equip / hiển thị ngoài map
+}
+```
+
+### 4.2. `ItemDatabase` trong Unity
+
+Dùng để tra cứu `ItemTemplate` theo `code`:
+
+```csharp
+using System.Collections.Generic;
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "ItemDatabase", menuName = "Game/Item Database")]
+public class ItemDatabase : ScriptableObject
+{
+    public List<ItemTemplate> items;
+
+    private Dictionary<string, ItemTemplate> _byCode;
+
+    public void Init()
     {
-        if (instance == null)
-        {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
-            LoadItemDatabase();
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
+        if (_byCode != null) return;
 
-    private void LoadItemDatabase()
-    {
-        ItemData[] items = Resources.LoadAll<ItemData>("Items");
+        _byCode = new Dictionary<string, ItemTemplate>();
         foreach (var item in items)
         {
-            itemDatabase[item.itemID] = item;
-        }
-        Debug.Log($"[ItemManager] Loaded {itemDatabase.Count} items");
-    }
-
-    public ItemData GetItemData(int itemID)
-    {
-        return itemDatabase.TryGetValue(itemID, out ItemData item) ? item : null;
-    }
-}
-```
-
-Sau đó cập nhật `NetworkInventory.cs` để dùng ItemManager:
-
-```csharp
-private ItemData GetItemDataByID(int itemID)
-{
-    if (ItemManager.Instance != null)
-    {
-        return ItemManager.Instance.GetItemData(itemID);
-    }
-    
-    // Fallback: Load từ Resources
-    ItemData[] allItems = Resources.LoadAll<ItemData>("Items");
-    foreach (var item in allItems)
-    {
-        if (item.itemID == itemID)
-            return item;
-    }
-    return null;
-}
-```
-
-## Luồng Hoạt Động
-
-### 1. Enemy Chết → Drop Item
-
-```
-Enemy Death Event
-    ↓
-EnemyItemDrop.OnEnemyDeath()
-    ↓
-DropItems() (chỉ trên Server)
-    ↓
-Spawn ItemPickup với NetworkObject.Spawn()
-    ↓
-Item xuất hiện trên ground
-```
-
-### 2. Player Nhặt Item
-
-```
-Player vào range của ItemPickup
-    ↓
-ItemPickup.CheckPlayerInRange()
-    ↓
-TryPickupItemServerRpc() (gửi lên Server)
-    ↓
-Server: NetworkInventory.AddItemServerRpc()
-    ↓
-Server: Cập nhật NetworkVariable
-    ↓
-Tất cả Clients: Nhận update qua OnInventoryDataChanged
-    ↓
-ItemPickup.DespawnItemClientRpc()
-    ↓
-Item biến mất
-```
-
-### 3. Sử Dụng Item
-
-```
-Player sử dụng item (UI hoặc input)
-    ↓
-NetworkInventory.UseItemServerRpc()
-    ↓
-Server: Validate và apply effect
-    ↓
-Server: Giảm quantity hoặc xóa item
-    ↓
-Clients: Nhận update
-```
-
-## Network Synchronization
-
-### NetworkVariable
-
-`NetworkInventory` sử dụng `NetworkVariable<NetworkInventoryData>` để sync:
-
-- **Read Permission**: Everyone (tất cả clients đều đọc được)
-- **Write Permission**: Server (chỉ server mới viết được)
-
-### ServerRpc và ClientRpc
-
-- **AddItemServerRpc**: Client yêu cầu server thêm item
-- **RemoveItemServerRpc**: Client yêu cầu server xóa item
-- **UseItemServerRpc**: Client yêu cầu server sử dụng item
-- **OnItemAddedClientRpc**: Server notify clients về item mới
-- **OnItemRemovedClientRpc**: Server notify clients về item bị xóa
-
-## API Sử Dụng
-
-### NetworkInventory
-
-```csharp
-// Thêm item
-inventory.AddItem(itemID, quantity);
-
-// Xóa item
-inventory.RemoveItem(slotIndex, quantity);
-
-// Sử dụng item
-inventory.UseItem(slotIndex);
-
-// Kiểm tra có item không
-bool hasItem = inventory.HasItem(itemID, quantity);
-
-// Lấy số lượng item
-int quantity = inventory.GetItemQuantity(itemID);
-
-// Lấy slot
-InventorySlot slot = inventory.GetSlot(slotIndex);
-```
-
-### Events
-
-```csharp
-// Subscribe events
-inventory.OnItemAdded.AddListener((slotIndex, itemData, quantity) => {
-    Debug.Log($"Added {quantity}x {itemData.itemName} to slot {slotIndex}");
-});
-
-inventory.OnItemRemoved.AddListener((slotIndex, quantity) => {
-    Debug.Log($"Removed {quantity} from slot {slotIndex}");
-});
-
-inventory.OnInventoryChanged.AddListener(() => {
-    // Update UI
-    UpdateInventoryUI();
-});
-```
-
-## Tạo UI Inventory
-
-### Ví dụ Script UI:
-
-```csharp
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-
-public class InventoryUI : MonoBehaviour
-{
-    [Header("UI References")]
-    public GameObject inventoryPanel;
-    public Transform slotContainer;
-    public GameObject slotPrefab;
-    
-    private NetworkInventory playerInventory;
-    private InventorySlotUI[] slotUIs;
-
-    private void Start()
-    {
-        // Tìm player inventory
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            playerInventory = player.GetComponent<NetworkInventory>();
-            if (playerInventory != null)
+            if (!string.IsNullOrEmpty(item.code))
             {
-                InitializeUI();
-                SubscribeToEvents();
+                _byCode[item.code] = item;
             }
         }
     }
 
-    private void InitializeUI()
+    public ItemTemplate GetByCode(string code)
     {
-        int maxSlots = playerInventory.GetMaxSlots();
-        slotUIs = new InventorySlotUI[maxSlots];
+        if (_byCode == null) Init();
+        _byCode.TryGetValue(code, out var item);
+        return item;
+    }
+}
+```
 
-        for (int i = 0; i < maxSlots; i++)
+- Tạo một asset `ItemDatabase` trong Unity, kéo tất cả `ItemTemplate` vào list `items`.
+- Ở `GameManager`/`Bootstrap` scene, gọi `itemDatabase.Init()` khi game start.
+
+---
+
+## 5. Cấu Trúc UI Inventory Trong Unity
+
+### 5.1. Bố cục UI
+
+- **InventoryPanel**: Panel tổng chứa grid các slot.
+- **SlotPrefab**:
+  - `Image` icon item.
+  - `Text` hoặc `TMP_Text` hiển thị số lượng.
+  - `Button` hoặc xử lý click/hover (dùng UnityEvent hoặc event system).
+- **TooltipPanel**:
+  - Tên item.
+  - Mô tả.
+  - Màu/viền theo `rarity`.
+  - Stats cơ bản (nếu muốn).
+
+### 5.2. Data nhận từ server
+
+Client nên có struct đơn giản tương ứng với RAM server:
+
+```csharp
+public struct InventorySlotData
+{
+    public int slotIndex;
+    public string itemCode;
+    public int quantity;
+    public bool isEquipped;
+}
+```
+
+Server gửi về `List<InventorySlotData>` hoặc mảng.
+
+### 5.3. Script quản lý UI: `InventoryUI`
+
+Ví dụ cơ bản:
+
+```csharp
+using UnityEngine;
+using TMPro;
+
+public class InventoryUI : MonoBehaviour
+{
+    [Header("References")]
+    public GameObject inventoryPanel;
+    public Transform slotContainer;
+    public GameObject slotPrefab;
+    public ItemDatabase itemDatabase;
+
+    private InventorySlotUI[] _slotUIs;
+    private int _maxSlots;
+
+    public void Init(int maxSlots)
+    {
+        _maxSlots = maxSlots;
+        _slotUIs = new InventorySlotUI[_maxSlots];
+
+        for (int i = 0; i < _maxSlots; i++)
         {
             GameObject slotObj = Instantiate(slotPrefab, slotContainer);
-            slotUIs[i] = slotObj.GetComponent<InventorySlotUI>();
-            slotUIs[i].Initialize(i, playerInventory);
+            var slotUI = slotObj.GetComponent<InventorySlotUI>();
+            slotUI.Setup(i);
+            _slotUIs[i] = slotUI;
         }
     }
 
-    private void SubscribeToEvents()
+    public void Refresh(InventorySlotData[] slots)
     {
-        playerInventory.OnItemAdded.AddListener(OnItemAdded);
-        playerInventory.OnItemRemoved.AddListener(OnItemRemoved);
-        playerInventory.OnInventoryChanged.AddListener(UpdateAllSlots);
-    }
-
-    private void OnItemAdded(int slotIndex, ItemData itemData, int quantity)
-    {
-        UpdateSlot(slotIndex);
-    }
-
-    private void OnItemRemoved(int slotIndex, int quantity)
-    {
-        UpdateSlot(slotIndex);
-    }
-
-    private void UpdateAllSlots()
-    {
-        for (int i = 0; i < slotUIs.Length; i++)
+        // Clear toàn bộ
+        for (int i = 0; i < _slotUIs.Length; i++)
         {
-            UpdateSlot(i);
+            _slotUIs[i].Clear();
+        }
+
+        // Fill theo data server
+        foreach (var slot in slots)
+        {
+            if (slot.slotIndex < 0 || slot.slotIndex >= _slotUIs.Length)
+                continue;
+
+            ItemTemplate template = itemDatabase.GetByCode(slot.itemCode);
+            _slotUIs[slot.slotIndex].SetItem(template, slot.quantity, slot.isEquipped);
         }
     }
 
-    private void UpdateSlot(int slotIndex)
-    {
-        InventorySlot slot = playerInventory.GetSlot(slotIndex);
-        slotUIs[slotIndex].UpdateSlot(slot);
-    }
-
-    public void ToggleInventory()
+    public void Toggle()
     {
         inventoryPanel.SetActive(!inventoryPanel.activeSelf);
     }
 }
 ```
 
-## Lưu Ý Quan Trọng
+`InventorySlotUI` xử lý icon, số lượng, highlight:
 
-### 1. Server Authority
-- **Luôn validate trên Server**: Tất cả thao tác với inventory phải qua ServerRpc
-- **Không trust client**: Client chỉ gửi request, server quyết định
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
-### 2. NetworkObject Spawn
-- ItemPickup phải có NetworkObject và được spawn bằng `NetworkObject.Spawn()`
-- Chỉ Server mới spawn được NetworkObject
+public class InventorySlotUI : MonoBehaviour
+{
+    public Image iconImage;
+    public TMP_Text quantityText;
+    public GameObject equippedMark;
 
-### 3. ItemID Phải Unique
-- Mỗi ItemData phải có itemID duy nhất
-- Không được trùng itemID giữa các item
+    private int _slotIndex;
+    private ItemTemplate _currentItem;
 
-### 4. Resources Folder
-- ItemData assets phải nằm trong thư mục `Resources/` để có thể load bằng `Resources.LoadAll<T>()`
-- Hoặc dùng ItemManager để quản lý tốt hơn
+    public void Setup(int slotIndex)
+    {
+        _slotIndex = slotIndex;
+        Clear();
+    }
 
-### 5. Performance
-- NetworkVariable chỉ sync khi giá trị thay đổi
-- Sử dụng local cache (`localInventory`) để truy cập nhanh
-- Tránh parse NetworkVariable mỗi frame
+    public void Clear()
+    {
+        _currentItem = null;
+        iconImage.enabled = false;
+        quantityText.text = "";
+        equippedMark.SetActive(false);
+    }
 
-## Troubleshooting
+    public void SetItem(ItemTemplate item, int quantity, bool isEquipped)
+    {
+        _currentItem = item;
 
-### Item không drop khi enemy chết
-- Kiểm tra EnemyItemDrop có được gắn vào enemy không
-- Kiểm tra EnemyHealth có gọi OnDeath event không
-- Kiểm tra NetworkManager.IsServer = true khi enemy chết
+        if (item == null)
+        {
+            Clear();
+            return;
+        }
 
-### Item không nhặt được
-- Kiểm tra ItemPickup có NetworkObject không
-- Kiểm tra Collider2D có Is Trigger = true không
-- Kiểm tra Player Layer có đúng không
-- Kiểm tra NetworkInventory có được gắn vào Player không
+        iconImage.enabled = true;
+        iconImage.sprite = item.icon;
 
-### Inventory không sync giữa clients
-- Kiểm tra NetworkInventory có NetworkObject không
-- Kiểm tra NetworkVariable có được khởi tạo đúng không
-- Kiểm tra Server có đang chạy không
+        if (item.stackable && quantity > 1)
+        {
+            quantityText.text = quantity.ToString();
+        }
+        else
+        {
+            quantityText.text = "";
+        }
 
-### Item không hiển thị trong inventory
-- Kiểm tra ItemData có được load đúng không (itemID match)
-- Kiểm tra UI có subscribe events không
-- Kiểm tra localInventory có được update không
+        equippedMark.SetActive(isEquipped);
+    }
 
-## Mở Rộng
+    // Hàm này gọi từ OnClick của Button
+    public void OnClick()
+    {
+        if (_currentItem == null) return;
 
-### Thêm Item Types
-- Mở rộng enum `ItemType` trong `ItemData.cs`
-- Thêm logic xử lý trong `ApplyItemEffectServerRpc()`
+        // TODO: Gửi request lên server: UseItem / EquipItem / MoveItem...
+        Debug.Log($"Clicked slot {_slotIndex} with item {_currentItem.code}");
+    }
+}
+```
 
-### Thêm Item Effects
-- Tạo script `ItemEffect.cs` để xử lý các effect khác nhau
-- Sử dụng Strategy Pattern để dễ mở rộng
+---
 
-### Thêm Equipment System
-- Tạo `NetworkEquipment` component tương tự NetworkInventory
-- Quản lý weapon, armor, accessory riêng
+## 6. Tích Hợp Với Netcode / Network Layer
 
-### Thêm Item Trading
-- Tạo `TradeSystem` với ServerRpc để trade giữa players
-- Validate trên server để chống cheat
+Tuỳ kiến trúc, bạn có thể:
 
-## Kết Luận
+- Dùng **Unity Netcode for GameObjects** với `ServerRpc` / `ClientRpc`.
+- Hoặc dùng custom socket (Mirror, FishNet, Photon, v.v.).
 
-Hệ thống inventory này cung cấp nền tảng vững chắc cho việc quản lý item trong multiplayer game. Tất cả logic đều được xử lý trên server để đảm bảo tính công bằng và chống cheat. Bạn có thể mở rộng hệ thống này theo nhu cầu của game.
+### 6.1. Luồng đề xuất
+
+1. **Login thành công**:
+   - Server:
+     - Load `player_data.inventory` từ DB → parse JSON → RAM.
+     - Gửi gói `InventorySnapshot` cho client.
+   - Client:
+     - Nhận gói → parse thành `InventorySlotData[]`.
+     - Gọi `InventoryUI.Refresh(...)`.
+
+2. **Player nhặt item**:
+   - Client gửi request `PickupItem(itemObjectId)` → Server.
+   - Server:
+     - Validate (khoảng cách, ownership…).
+     - Cập nhật `PlayerInventory` trong RAM.
+     - Serialize lại JSON và cập nhật cột `player_data.inventory` trong DB.
+
+3. **Player sử dụng item**:
+   - Client:
+     - Bấm UI → gửi request `UseItem(slotIndex)` lên server.
+   - Server:
+     - Validate (có đủ quantity, điều kiện level/class, cooldown…).
+     - Áp dụng hiệu ứng (heal, buff, spawn, v.v.).
+     - Giảm quantity hoặc xoá slot.
+     - Serialize lại JSON inventory và cập nhật DB (cột `player_data.inventory`).
+     - Gửi update inventory cho client.
+
+4. **Player sắp xếp / di chuyển slot**:
+   - Client gửi request `MoveItem(srcSlot, dstSlot)`.
+   - Server xử lý swap/merge → update RAM + DB → gửi kết quả về client.
+
+---
+
+## 7. Quy Ước Mapping DB ↔ Unity
+
+Để tránh lệch dữ liệu giữa DB và Unity:
+
+- **`item_template.code` trong DB** phải **trùng 100%** với `ItemTemplate.code` trong Unity.
+- `icon_path` / `prefab_path` nên có format rõ ràng:
+  - Ví dụ: `Icons/Items/sword_bronze` nếu dùng `Resources.Load<Sprite>()`.
+  - Hoặc `"sword_bronze_icon"` nếu dùng Addressables key.
+- Có thể viết **tool import/export**:
+  - Export `item_template` ra CSV/JSON.
+  - Unity Editor Script đọc CSV/JSON, tự tạo/cập nhật `ItemTemplate` ScriptableObjects.
+
+---
+
+## 8. Checklist Triển Khai
+
+- **Database**
+  - [ ] Tạo bảng `item_template`.
+  - [ ] Tạo bảng `player_inventory`.
+  - [ ] Seed một số item mẫu.
+
+- **Server**
+  - [ ] Khi start: load toàn bộ `item_template` vào RAM.
+  - [ ] Khi player login: load `player_inventory` vào RAM.
+  - [ ] Cài đặt API / RPC:
+    - [ ] `InventorySnapshot` (gửi full inventory).
+    - [ ] `GetInventory` (client xin lại khi cần).
+    - [ ] `PickupItem`, `UseItem`, `MoveItem`, `DropItem` (tuỳ game).
+  - [ ] Đồng bộ DB (insert/update) mỗi khi inventory thay đổi.
+
+- **Unity Client**
+  - [ ] Tạo `ItemTemplate` ScriptableObjects.
+  - [ ] Tạo `ItemDatabase` + init khi game start.
+  - [ ] Tạo UI: Panel inventory + slot prefab + tooltip.
+  - [ ] Implement `InventoryUI` + `InventorySlotUI`.
+  - [ ] Tích hợp network: nhận gói từ server → `Refresh`.
+  - [ ] Từ `InventorySlotUI.OnClick` gửi request thích hợp (Use/Equip/Move…).
+
+---
+
+## 9. Gợi Ý Mở Rộng
+
+- **Equipment System**:
+  - Tách thêm bảng `player_equipment` hoặc field riêng cho slot trang bị.
+  - Unity tạo UI Equipment riêng (helmet, armor, weapon…).
+
+- **Item Effect System**:
+  - Với mỗi item type (consumable, buff, scroll…), định nghĩa `effect_code`.
+  - Server có `ItemEffectHandler` map `effect_code` → logic xử lý.
+
+- **Trading / Shop**:
+  - Thêm hệ thống shop / trade, nhưng vẫn dùng chung `item_template` + `player_inventory`.
+
+- **Log / Anti-cheat**:
+  - Log mọi thay đổi item (nhặt, bán, trade, v.v.) ở server để debug và chống cheat.
+
+---
+
+Tài liệu này tập trung mô tả **luồng Inventory kiểu MMO**: item & inventory lưu **DB**, server load vào RAM, client chỉ hiển thị và gửi request. Dựa trên đây, bạn có thể nối với hệ thống Netcode hiện tại (NetworkObject, ServerRpc/ClientRpc) nhưng vẫn giữ nguyên nguyên tắc: **mọi thay đổi túi đồ đều do server quyết định, DB là nguồn dữ liệu gốc**.
+

@@ -1,33 +1,202 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+#if UNITY_UI
+using UnityEngine.UI;
+#endif
+#if TMPro
+using TMPro;
+#endif
 
 /// <summary>
-/// Script để load player data từ API khi vào GameScene và đảm bảo player data được load trước khi spawn
+/// Script chung cho GameScene: Xử lý cả Host và Client
+/// - Host: Bấm button StartHost để start host
+/// - Client: Tự động StartClient sau khi login/tạo nhân vật thành công
 /// </summary>
 public class GameSceneNetworkInitializer : MonoBehaviour
 {
-    [Header("References")]
-    private APIClient apiClient;
-    private NetworkManagerCustom networkManager;
+    [Header("Server Config")]
+    public string serverIP = "127.0.0.1";
+    public ushort serverPort = 2003;
 
+    [Header("UI Elements (Optional - cho Host)")]
+    [SerializeField] private UnityEngine.UI.Button startHostButton;
+    [SerializeField] private UnityEngine.UI.Button startClientButton;
+    [SerializeField] private TMPro.TMP_Text statusText;
+
+    [Header("Auth Sender Prefab (Optional - cho Host)")]
+    [Tooltip("Prefab cho AuthSenderNetworkObject. Nếu để trống, sẽ tự động tạo một prefab tạm.")]
+    [SerializeField] private GameObject authSenderPrefab;
+
+    [Header("References")]
+    private NetworkManagerCustom networkManager;
+    private APIClient apiClient;
     private bool playerDataLoaded = false;
     private bool isInitializing = false;
+    private bool isHostMode = false;
+    private bool isWaitingToConnect = false;
 
     private void Start()
     {
-        apiClient = APIClient.Instance;
-        networkManager = FindObjectOfType<NetworkManagerCustom>();
+        Debug.Log("[GameSceneNetworkInitializer] Initializing GameScene...");
 
-        // Kiểm tra xem đã có player data chưa
+        // QUAN TRỌNG: Đăng ký prefab TRƯỚC KHI start host/client
+        RegisterNetworkPrefabs();
+
+        // Setup UI buttons
+        SetupUI();
+
+        // Đảm bảo có NetworkManager
+        var networkManagerSingleton = NetworkManager.Singleton;
+        if (networkManagerSingleton == null)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] NetworkManager not found in GameScene! Make sure NetworkManager is in the scene.");
+            return;
+        }
+
+        // Đảm bảo có NetworkManagerCustom
+        networkManager = FindObjectOfType<NetworkManagerCustom>();
+        if (networkManager == null)
+        {
+            GameObject networkManagerObj = new GameObject("NetworkManagerCustom");
+            networkManager = networkManagerObj.AddComponent<NetworkManagerCustom>();
+        }
+
+        // Setup server IP và port
+        networkManager.serverIP = serverIP;
+        networkManager.serverPort = serverPort;
+
+        // Đảm bảo có các component cần thiết cho Host
+        SetupHostComponents();
+
+        // Đăng ký authSenderPrefab nếu có
+        if (authSenderPrefab != null)
+        {
+            RegisterAuthSenderPrefab(authSenderPrefab);
+        }
+
+        // Kiểm tra xem có cần tự động start client không
+        CheckAutoStartClient();
+    }
+
+    /// <summary>
+    /// Setup UI buttons
+    /// </summary>
+    private void SetupUI()
+    {
+        if (startHostButton != null)
+        {
+            startHostButton.onClick.AddListener(OnStartHostButtonClicked);
+        }
+
+        if (startClientButton != null)
+        {
+            startClientButton.onClick.AddListener(OnStartClientButtonClicked);
+        }
+
+        UpdateUI();
+    }
+
+    /// <summary>
+    /// Update UI state
+    /// </summary>
+    private void UpdateUI()
+    {
+        bool isConnected = NetworkManager.Singleton != null && 
+                          (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
+
+        if (startHostButton != null)
+            startHostButton.interactable = !isConnected;
+
+        if (startClientButton != null)
+            startClientButton.interactable = !isConnected;
+
+        if (statusText != null)
+        {
+            if (isConnected)
+            {
+                if (NetworkManager.Singleton.IsHost)
+                    statusText.text = "Status: HOST";
+                else if (NetworkManager.Singleton.IsClient)
+                    statusText.text = "Status: CLIENT";
+            }
+            else
+            {
+                statusText.text = "Status: Disconnected";
+            }
+        }
+    }
+
+    private void Update()
+    {
+        UpdateUI();
+    }
+
+    /// <summary>
+    /// Đăng ký tất cả NetworkPrefab trước khi start host/client
+    /// </summary>
+    private void RegisterNetworkPrefabs()
+    {
+        // Tìm NetworkPrefabRegistrar trong scene
+        NetworkPrefabRegistrar registrar = FindObjectOfType<NetworkPrefabRegistrar>();
+        if (registrar == null)
+        {
+            // Tạo NetworkPrefabRegistrar nếu chưa có
+            GameObject registrarObj = new GameObject("NetworkPrefabRegistrar");
+            registrar = registrarObj.AddComponent<NetworkPrefabRegistrar>();
+            Debug.Log("[GameSceneNetworkInitializer] Created NetworkPrefabRegistrar.");
+        }
+        
+        // Đăng ký prefab
+        registrar.ReRegisterPrefabs();
+        Debug.Log("[GameSceneNetworkInitializer] NetworkPrefabs registered.");
+    }
+
+    /// <summary>
+    /// Setup các component cần thiết cho Host
+    /// </summary>
+    private void SetupHostComponents()
+    {
+        // Đảm bảo có ServerConnectionApproval
+        ServerConnectionApproval connectionApproval = FindObjectOfType<ServerConnectionApproval>();
+        if (connectionApproval == null)
+        {
+            GameObject approvalObj = new GameObject("ServerConnectionApproval");
+            approvalObj.AddComponent<ServerConnectionApproval>();
+            Debug.Log("[GameSceneNetworkInitializer] Created ServerConnectionApproval.");
+        }
+
+        // Đảm bảo có ServerPlayerDataManager
+        if (ServerPlayerDataManager.Instance == null)
+        {
+            GameObject serverDataManagerObj = new GameObject("ServerPlayerDataManager");
+            serverDataManagerObj.AddComponent<ServerPlayerDataManager>();
+            Debug.Log("[GameSceneNetworkInitializer] Created ServerPlayerDataManager.");
+        }
+
+        // Đảm bảo có NetworkPlayerSpawner
+        NetworkPlayerSpawner spawner = FindObjectOfType<NetworkPlayerSpawner>();
+        if (spawner == null)
+        {
+            Debug.LogWarning("[GameSceneNetworkInitializer] NetworkPlayerSpawner not found in GameScene! Make sure NetworkPlayerSpawner is in the scene.");
+        }
+    }
+
+    /// <summary>
+    /// Kiểm tra và load player data (KHÔNG tự động start client)
+    /// </summary>
+    private void CheckAutoStartClient()
+    {
+        // Kiểm tra xem đã có player data chưa (từ Login hoặc SelectElement)
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
         {
             Debug.Log("[GameSceneNetworkInitializer] Player data already loaded from previous scene.");
+            Debug.Log("[GameSceneNetworkInitializer] User can now click 'Start Client' button to connect.");
             playerDataLoaded = true;
         }
         else
         {
-            // Load player data từ API
+            // Load player data từ API nếu chưa có (nhưng KHÔNG tự động start client)
             LoadPlayerDataFromAPI();
         }
     }
@@ -46,14 +215,14 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
         if (userId == 0)
         {
-            Debug.LogError("[GameSceneNetworkInitializer] USER_ID not found in PlayerPrefs! Returning to Login scene.");
-            SceneManager.LoadScene("Login");
+            Debug.LogWarning("[GameSceneNetworkInitializer] USER_ID not found in PlayerPrefs. Waiting for manual start (Host mode) or login...");
             return;
         }
 
         isInitializing = true;
         Debug.Log($"[GameSceneNetworkInitializer] Loading player data for user ID: {userId}");
 
+        apiClient = APIClient.Instance;
         if (apiClient == null)
         {
             Debug.LogError("[GameSceneNetworkInitializer] APIClient.Instance is null!");
@@ -68,15 +237,27 @@ public class GameSceneNetworkInitializer : MonoBehaviour
                 Debug.Log($"[GameSceneNetworkInitializer] Player data loaded successfully: {playerData.character_name} ({playerData.element_type} - {playerData.gender}), Level {playerData.level}");
                 
                 // Lưu vào GameManager
+                if (GameManager.Instance == null)
+                {
+                    GameObject gameManagerObj = new GameObject("GameManager");
+                    gameManagerObj.AddComponent<GameManager>();
+                }
+
                 if (GameManager.Instance != null)
                 {
                     GameManager.Instance.SetPlayerData(playerData);
                     playerDataLoaded = true;
                     Debug.Log("[GameSceneNetworkInitializer] Player data saved to GameManager.");
+                    Debug.Log("[GameSceneNetworkInitializer] User can now click 'Start Client' button to connect.");
                 }
-                else
+
+                // KHÔNG tự động start client - để user tự bấm button
+                // Nếu đang trong quá trình StartClientMode() thì tiếp tục connect
+                if (isWaitingToConnect)
                 {
-                    Debug.LogError("[GameSceneNetworkInitializer] GameManager.Instance is null! Cannot save player data.");
+                    Debug.Log("[GameSceneNetworkInitializer] Player data loaded, continuing client connection...");
+                    isWaitingToConnect = false;
+                    StartClientConnection();
                 }
 
                 isInitializing = false;
@@ -93,9 +274,9 @@ public class GameSceneNetworkInitializer : MonoBehaviour
                 }
                 else
                 {
-                    // Lỗi khác: quay về MainMenu
-                    Debug.Log("[GameSceneNetworkInitializer] Error loading player data. Returning to MainMenu.");
-                    SceneManager.LoadScene("MainMenu");
+                    // Lỗi khác: quay về Login
+                    Debug.Log("[GameSceneNetworkInitializer] Error loading player data. Returning to Login.");
+                    SceneManager.LoadScene("Login");
                 }
 
                 isInitializing = false;
@@ -104,22 +285,281 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     }
 
     /// <summary>
-    /// Kiểm tra xem player data đã được load chưa (để các script khác có thể check)
+    /// Start Client Mode: Connect đến host (sẽ tự động gửi userid sau khi connect)
     /// </summary>
-    public bool IsPlayerDataLoaded()
+    private void StartClientMode()
     {
-        return playerDataLoaded && GameManager.Instance != null && GameManager.Instance.HasPlayerData();
+        if (isHostMode)
+        {
+            Debug.LogWarning("[GameSceneNetworkInitializer] Already in Host mode, skipping client start.");
+            return;
+        }
+
+        // Kiểm tra có player data chưa
+        if (!playerDataLoaded)
+        {
+            int userId = PlayerPrefs.GetInt("USER_ID", 0);
+            if (userId == 0)
+            {
+                Debug.LogError("[GameSceneNetworkInitializer] USER_ID not found! Please login first.");
+                return;
+            }
+
+            // Thử load player data trước khi connect
+            Debug.Log("[GameSceneNetworkInitializer] Loading player data before connecting...");
+            isWaitingToConnect = true;
+            LoadPlayerDataFromAPI();
+            return; // Sẽ connect sau khi load xong
+        }
+
+        // Có player data rồi, connect ngay
+        StartClientConnection();
     }
 
     /// <summary>
-    /// Get player data (nếu đã load)
+    /// Thực hiện connect đến host (sau khi đã có player data)
     /// </summary>
-    public PlayerDataResponse GetPlayerData()
+    private void StartClientConnection()
     {
-        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        Debug.Log($"[GameSceneNetworkInitializer] Starting CLIENT mode, connecting to {serverIP}:{serverPort}...");
+        Debug.Log("[GameSceneNetworkInitializer] After connection, userid will be automatically sent to host via ClientAuthSender.");
+        Debug.Log("[GameSceneNetworkInitializer] NetworkManagerCustom.OnClientConnected will call ClientAuthSender.SendAuthAfterConnection()");
+
+        // Connect to host
+        // NetworkManagerCustom.OnClientConnected sẽ tự động gọi ClientAuthSender.SendAuthAfterConnection()
+        // để gửi userid lên host
+        networkManager.ConnectToServer();
+    }
+
+    /// <summary>
+    /// Button click: Start Host
+    /// </summary>
+    public void OnStartHostButtonClicked()
+    {
+        if (isHostMode)
         {
-            return GameManager.Instance.GetPlayerData();
+            Debug.LogWarning("[GameSceneNetworkInitializer] Already in Host mode!");
+            return;
         }
-        return null;
+
+        Debug.Log("[GameSceneNetworkInitializer] ===== STARTING HOST MODE =====");
+        isHostMode = true;
+
+        // Đảm bảo ConnectionApprovalCallback đã được register
+        StartCoroutine(StartHostAfterDelay());
+    }
+
+    /// <summary>
+    /// Button click: Start Client (manual)
+    /// Sau khi connect, sẽ tự động gửi userid lên host qua ClientAuthSender
+    /// </summary>
+    public void OnStartClientButtonClicked()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
+        {
+            Debug.LogWarning("[GameSceneNetworkInitializer] Already connected as client!");
+            return;
+        }
+
+        // Kiểm tra có USER_ID chưa
+        int userId = PlayerPrefs.GetInt("USER_ID", 0);
+        if (userId == 0)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] USER_ID not found in PlayerPrefs! Please login first.");
+            return;
+        }
+
+        Debug.Log($"[GameSceneNetworkInitializer] User clicked 'Start Client' button. UserId: {userId}");
+        Debug.Log("[GameSceneNetworkInitializer] After connection, userid will be automatically sent to host.");
+
+        StartClientMode();
+    }
+
+    /// <summary>
+    /// Đợi một frame để đảm bảo ServerConnectionApproval đã register callback trước khi start host
+    /// </summary>
+    private System.Collections.IEnumerator StartHostAfterDelay()
+    {
+        // Đợi một frame để ServerConnectionApproval có thời gian register callback
+        yield return null;
+        
+        // Verify ConnectionApprovalCallback đã được register
+        if (NetworkManager.Singleton != null)
+        {
+            if (NetworkManager.Singleton.ConnectionApprovalCallback == null)
+            {
+                Debug.LogWarning("[GameSceneNetworkInitializer] ConnectionApprovalCallback is still null! Waiting a bit more...");
+                yield return new WaitForSeconds(0.1f);
+                
+                if (NetworkManager.Singleton.ConnectionApprovalCallback == null)
+                {
+                    Debug.LogError("[GameSceneNetworkInitializer] ✗ ConnectionApprovalCallback is NULL! Connection will timeout!");
+                }
+            }
+            else
+            {
+                Debug.Log("[GameSceneNetworkInitializer] ✓ ConnectionApprovalCallback is registered.");
+            }
+        }
+        
+        // Start host
+        StartHost();
+    }
+
+    /// <summary>
+    /// Start host
+    /// </summary>
+    private void StartHost()
+    {
+        Debug.Log($"[GameSceneNetworkInitializer] Starting HOST on port {serverPort}...");
+
+        if (networkManager == null)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] NetworkManagerCustom is null! Cannot start host.");
+            return;
+        }
+
+        // Subscribe OnServerStarted trước khi start host
+        var networkManagerSingleton = NetworkManager.Singleton;
+        if (networkManagerSingleton != null)
+        {
+            networkManagerSingleton.OnServerStarted += OnServerStarted;
+        }
+
+        // Start host
+        networkManager.StartHost();
+
+        Debug.Log("[GameSceneNetworkInitializer] Host started. Waiting for clients to connect...");
+    }
+
+    /// <summary>
+    /// Callback khi server đã start - spawn NetworkObject để làm auth sender
+    /// </summary>
+    private void OnServerStarted()
+    {
+        Debug.Log("[GameSceneNetworkInitializer] Server started. Host is ready to accept clients.");
+        
+        // Spawn AuthSenderNetworkObject để client có thể gửi auth
+        SpawnAuthSenderNetworkObject();
+    }
+
+    /// <summary>
+    /// Đăng ký authSenderPrefab với NetworkManager
+    /// </summary>
+    private void RegisterAuthSenderPrefab(GameObject prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogWarning("[GameSceneNetworkInitializer] authSenderPrefab is null, skipping registration.");
+            return;
+        }
+
+        NetworkObject netObj = prefab.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] authSenderPrefab does not have NetworkObject component!");
+            return;
+        }
+
+        var networkManagerSingleton = NetworkManager.Singleton;
+        if (networkManagerSingleton == null)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] NetworkManager.Singleton is null! Cannot register authSenderPrefab.");
+            return;
+        }
+
+        // Kiểm tra xem prefab đã được đăng ký chưa
+        bool alreadyRegistered = false;
+        foreach (var registeredPrefab in networkManagerSingleton.NetworkConfig.Prefabs.Prefabs)
+        {
+            if (registeredPrefab.Prefab == prefab)
+            {
+                alreadyRegistered = true;
+                break;
+            }
+        }
+
+        if (!alreadyRegistered)
+        {
+            networkManagerSingleton.AddNetworkPrefab(prefab);
+            Debug.Log($"[GameSceneNetworkInitializer] ✓ Registered authSenderPrefab: '{prefab.name}'");
+        }
+        else
+        {
+            Debug.Log($"[GameSceneNetworkInitializer] authSenderPrefab '{prefab.name}' already registered.");
+        }
+    }
+
+    /// <summary>
+    /// Spawn AuthSenderNetworkObject khi server start
+    /// </summary>
+    private void SpawnAuthSenderNetworkObject()
+    {
+        var networkManagerSingleton = NetworkManager.Singleton;
+        if (networkManagerSingleton == null || !networkManagerSingleton.IsServer)
+        {
+            Debug.LogError("[GameSceneNetworkInitializer] NetworkManager.Singleton is null or not server! Cannot spawn AuthSenderNetworkObject.");
+            return;
+        }
+
+        if (authSenderPrefab == null)
+        {
+            // NOTE:
+            // - Với NetworkManager.NetworkConfig.ForceSamePrefabs = true (đang bật trong scene),
+            //   tất cả prefabs phải được đăng ký TRƯỚC khi StartHost/StartClient.
+            // - Vì vậy KHÔNG được tạo prefab tạm + AddNetworkPrefab ở đây (OnServerStarted).
+            Debug.LogError("[GameSceneNetworkInitializer] ✗ authSenderPrefab is NOT assigned.");
+            Debug.LogError("[GameSceneNetworkInitializer] ✗ ForceSamePrefabs is enabled, so you must create a prefab asset with NetworkObject + ClientAuthSender (NetworkBehaviour) and assign it to authSenderPrefab BEFORE starting host.");
+            Debug.LogError("[GameSceneNetworkInitializer] ✗ Host will still run, but clients may not be able to send auth until a server-spawned NetworkObject exists.");
+            return;
+        }
+
+        // Spawn từ prefab đã được assign
+        GameObject authSenderObj = Instantiate(authSenderPrefab);
+        authSenderObj.name = "AuthSenderNetworkObject";
+        NetworkObject authNetObj = authSenderObj.GetComponent<NetworkObject>();
+        var authSenderComponent = authSenderObj.GetComponent<ClientAuthSender>();
+        
+        if (authNetObj != null)
+        {
+            if (authSenderComponent == null)
+            {
+                Debug.LogError($"[GameSceneNetworkInitializer] ✗ authSenderPrefab '{authSenderPrefab.name}' is missing ClientAuthSender (NetworkBehaviour)!");
+                Debug.LogError("[GameSceneNetworkInitializer] ✗ Fix: Open prefab asset and add ClientAuthSender (NetworkBehaviour) to the same GameObject as NetworkObject.");
+                Debug.LogError("[GameSceneNetworkInitializer] ✗ Do NOT add this component at runtime; it must exist on the prefab for Netcode to synchronize behaviours.");
+            }
+
+            authNetObj.Spawn();
+            Debug.Log($"[GameSceneNetworkInitializer] ✓ Spawned AuthSenderNetworkObject from prefab: '{authSenderPrefab.name}'");
+            Debug.Log($"[GameSceneNetworkInitializer] AuthSenderNetworkObject IsSpawned={authNetObj.IsSpawned}, NetworkObjectId={authNetObj.NetworkObjectId}, HasClientAuthSender={(authSenderComponent != null)}");
+
+            // Log components for quick debugging
+            var comps = authSenderObj.GetComponents<Component>();
+            if (comps != null)
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.Append("[GameSceneNetworkInitializer] AuthSenderNetworkObject components: ");
+                for (int i = 0; i < comps.Length; i++)
+                {
+                    if (comps[i] == null) continue;
+                    sb.Append(comps[i].GetType().Name);
+                    if (i < comps.Length - 1) sb.Append(", ");
+                }
+                Debug.Log(sb.ToString());
+            }
+        }
+        else
+        {
+            Debug.LogError($"[GameSceneNetworkInitializer] ✗ authSenderPrefab '{authSenderPrefab.name}' does not have NetworkObject component!");
+            Destroy(authSenderObj);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
+        }
     }
 }

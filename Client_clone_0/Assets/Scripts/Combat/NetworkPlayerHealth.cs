@@ -78,9 +78,32 @@ public class NetworkPlayerHealth : NetworkBehaviour
         // Tìm spawn points nếu chưa được gán
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
-            // Tìm spawn points trong scene
-            GameObject[] spawnPointObjects = GameObject.FindGameObjectsWithTag("SpawnPoint");
-            if (spawnPointObjects.Length > 0)
+            // Tìm spawn points trong scene - Tìm bằng tên thay vì tag để tránh lỗi tag không tồn tại
+            GameObject[] spawnPointObjects = null;
+            
+            // Thử tìm bằng tag nếu tag tồn tại
+            try
+            {
+                spawnPointObjects = GameObject.FindGameObjectsWithTag("SpawnPoint");
+            }
+            catch (UnityException)
+            {
+                // Tag không tồn tại, tìm bằng tên thay thế
+                spawnPointObjects = GameObject.FindGameObjectsWithTag("Untagged"); // Tạm thời dùng Untagged
+                // Hoặc tìm bằng tên
+                var allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+                var spawnPointsList = new System.Collections.Generic.List<GameObject>();
+                foreach (var obj in allObjects)
+                {
+                    if (obj.name.Contains("SpawnPoint") || obj.name.Contains("Spawn"))
+                    {
+                        spawnPointsList.Add(obj);
+                    }
+                }
+                spawnPointObjects = spawnPointsList.ToArray();
+            }
+            
+            if (spawnPointObjects != null && spawnPointObjects.Length > 0)
             {
                 spawnPoints = new Vector3[spawnPointObjects.Length];
                 for (int i = 0; i < spawnPointObjects.Length; i++)
@@ -92,6 +115,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
             {
                 // Fallback: Dùng vị trí hiện tại
                 spawnPoints = new Vector3[] { transform.position };
+                Debug.LogWarning($"[NetworkPlayerHealth] No spawn points found, using current position: {transform.position}");
             }
         }
     }
