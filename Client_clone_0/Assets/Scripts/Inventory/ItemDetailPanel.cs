@@ -149,18 +149,14 @@ public class ItemDetailPanel : MonoBehaviour
         {
             if (currentTemplate != null)
             {
-                // item_type: dựa theo enum hoặc category để đổi text nút
-                // Ví dụ: item_type == 1 (Consumable) → "Sử dụng", == 0 (Weapon/Armor) → "Trang bị"
-                switch (currentTemplate.item_type)
+                // category: 1=Equipment, 2=Consumable, 3=Material
+                switch (currentTemplate.category)
                 {
-                    case 0: // Weapon
+                    case 1: // Equipment (Weapon, Armor, Helmet, Pants, Boots, Accessory)
                         useButtonText.text = "Trang bị";
                         break;
-                    case 1: // Consumable
+                    case 2: // Consumable (Potion, ...)
                         useButtonText.text = "Sử dụng";
-                        break;
-                    case 3: // Armor
-                        useButtonText.text = "Trang bị";
                         break;
                     default:
                         useButtonText.text = "Sử dụng";
@@ -175,6 +171,33 @@ public class ItemDetailPanel : MonoBehaviour
 
         // Hiện panel
         gameObject.SetActive(true);
+
+        // Đưa panel lên trước mặt (render trên cùng) để không bị các UI khác che
+        transform.SetAsLastSibling();
+
+        // === DEBUG: Kiểm tra trạng thái panel ===
+        var rt = GetComponent<RectTransform>();
+        Debug.Log($"[ItemDetailPanel] ===== DEBUG PANEL STATE =====");
+        Debug.Log($"[ItemDetailPanel] gameObject.activeSelf = {gameObject.activeSelf}");
+        Debug.Log($"[ItemDetailPanel] gameObject.activeInHierarchy = {gameObject.activeInHierarchy}");
+        Debug.Log($"[ItemDetailPanel] transform.parent = {(transform.parent != null ? transform.parent.name : "NULL")}");
+        Debug.Log($"[ItemDetailPanel] parent.gameObject.activeSelf = {(transform.parent != null ? transform.parent.gameObject.activeSelf.ToString() : "NO PARENT")}");
+        if (rt != null)
+        {
+            Debug.Log($"[ItemDetailPanel] RectTransform: sizeDelta={rt.sizeDelta}, anchoredPosition={rt.anchoredPosition}, localScale={rt.localScale}");
+            Debug.Log($"[ItemDetailPanel] RectTransform: anchorMin={rt.anchorMin}, anchorMax={rt.anchorMax}, pivot={rt.pivot}");
+        }
+        else
+        {
+            Debug.LogError($"[ItemDetailPanel] KHÔNG CÓ RectTransform!!!");
+        }
+        var canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            Debug.Log($"[ItemDetailPanel] CanvasGroup: alpha={canvasGroup.alpha}, interactable={canvasGroup.interactable}, blocksRaycasts={canvasGroup.blocksRaycasts}");
+        }
+        Debug.Log($"[ItemDetailPanel] siblingIndex = {transform.GetSiblingIndex()} / {(transform.parent != null ? transform.parent.childCount.ToString() : "NO PARENT")}");
+        Debug.Log($"[ItemDetailPanel] ===== END DEBUG =====");
 
         Debug.Log($"[ItemDetailPanel] Hiển thị chi tiết: {itemNameText?.text} (code={slotData.itemCode}, qty={slotData.quantity})");
     }
@@ -217,7 +240,7 @@ public class ItemDetailPanel : MonoBehaviour
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         if (bridge != null)
         {
-            bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode);
+            bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
         }
         else
         {

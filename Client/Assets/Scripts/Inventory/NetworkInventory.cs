@@ -488,7 +488,9 @@ public class NetworkInventory : NetworkBehaviour
     }
 
     /// <summary>
-    /// ServerRpc: Thêm item vào inventory và sync với DB (dùng cho test với phím Q)
+    /// ServerRpc: Thêm item vào inventory VÀ sync với DB (1 item riêng lẻ)
+    /// ⚠️ KHÔNG dùng khi thêm nhiều items cùng lúc → sẽ bị race condition!
+    /// Dùng AddItemWithoutDBSyncServerRpc + SyncBatchToDB thay thế.
     /// </summary>
     [ServerRpc(RequireOwnership = false)]
     public void AddItemWithDBSyncServerRpc(int itemTemplateId, string itemCode, string iconId, int quantity, ServerRpcParams rpcParams = default)
@@ -497,7 +499,34 @@ public class NetworkInventory : NetworkBehaviour
 
         Debug.Log($"[NetworkInventory] AddItemWithDBSyncServerRpc: itemCode={itemCode}, quantity={quantity}");
 
-        // 1. Thêm item vào NetworkVariable (để sync với clients)
+        AddItemToNetworkVariable(itemTemplateId, itemCode, iconId, quantity);
+
+        // ✅ Sync với DB ngay lập tức sau khi thêm item
+        Debug.Log($"[NetworkInventory] Đang sync item vào DB...");
+        SyncInventoryToDB(itemTemplateId, itemCode, iconId, quantity);
+        
+        Debug.Log($"[NetworkInventory] ✅ AddItemWithDBSyncServerRpc hoàn thành!");
+    }
+
+    /// <summary>
+    /// ServerRpc: Thêm item vào NetworkVariable KHÔNG sync DB.
+    /// Dùng khi cần thêm nhiều items rồi batch sync 1 lần sau.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void AddItemWithoutDBSyncServerRpc(int itemTemplateId, string itemCode, string iconId, int quantity, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+
+        Debug.Log($"[NetworkInventory] AddItemWithoutDBSyncServerRpc: itemCode={itemCode}, quantity={quantity}");
+        AddItemToNetworkVariable(itemTemplateId, itemCode, iconId, quantity);
+        Debug.Log($"[NetworkInventory] ✅ AddItemWithoutDBSyncServerRpc hoàn thành!");
+    }
+
+    /// <summary>
+    /// Helper: Thêm item vào NetworkVariable (không sync DB)
+    /// </summary>
+    private void AddItemToNetworkVariable(int itemTemplateId, string itemCode, string iconId, int quantity)
+    {
         var currentData = networkInventoryData.Value;
         
         // Đảm bảo slotData được khởi tạo
@@ -527,30 +556,19 @@ public class NetworkInventory : NetworkBehaviour
             return;
         }
 
-        // Tạo một itemID tạm thời dựa trên itemTemplateId (hoặc có thể map từ ItemDatabase)
-        int itemID = itemTemplateId; // Tạm thời dùng itemTemplateId làm itemID
+        int itemID = itemTemplateId;
 
-        // Thêm vào slot
         currentData.slotData[emptySlotIndex] = new InventorySlotData 
         { 
             itemID = itemID, 
             quantity = quantity 
         };
         
-        // ✅ Update NetworkVariable - Điều này sẽ trigger OnInventoryDataChanged callback
         networkInventoryData.Value = currentData;
 
         Debug.Log($"[NetworkInventory] Đã thêm {quantity}x {itemCode} vào slot {emptySlotIndex}");
-        Debug.Log($"[NetworkInventory] NetworkVariable updated - OnInventoryDataChanged sẽ được trigger tự động!");
 
-        // ✅ Sync với DB ngay lập tức sau khi thêm item
-        Debug.Log($"[NetworkInventory] Đang sync item vào DB...");
-        SyncInventoryToDB(itemTemplateId, itemCode, iconId, quantity);
-
-        // 3. Notify clients
         OnItemAddedClientRpc(itemID, quantity);
-        
-        Debug.Log($"[NetworkInventory] ✅ AddItemWithDBSyncServerRpc hoàn thành!");
     }
 
     /// <summary>

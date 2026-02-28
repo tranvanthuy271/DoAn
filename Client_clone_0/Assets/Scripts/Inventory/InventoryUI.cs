@@ -126,8 +126,9 @@ public class InventoryUI : MonoBehaviour
             var bridge = FindObjectOfType<InventoryNetworkBridge>();
             if (bridge != null)
             {
-                Debug.Log("[InventoryUI] ✓ Tìm thấy InventoryNetworkBridge, gọi RefreshInventoryFromDB()...");
+                Debug.Log("[InventoryUI] ✓ Tìm thấy InventoryNetworkBridge, gọi RefreshInventoryFromDB() + RefreshEquipmentFromDB()...");
                 bridge.RefreshInventoryFromDB();
+                bridge.RefreshEquipmentFromDB();
             }
             else
             {

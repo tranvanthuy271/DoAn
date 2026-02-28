@@ -21,10 +21,13 @@ public class InventoryTestManager : MonoBehaviour
     [Tooltip("Danh sách các item mẫu để test - cấu hình trong Inspector")]
     [SerializeField] private List<TestItemData> testItems = new List<TestItemData>
     {
-        new TestItemData { itemTemplateId = 1, itemCode = "ITEM_ICON_1", iconId = "client_icon_1", quantity = 5 },
-        new TestItemData { itemTemplateId = 2, itemCode = "ITEM_ICON_2", iconId = "client_icon_2", quantity = 3 },
-        new TestItemData { itemTemplateId = 3, itemCode = "ITEM_ICON_3", iconId = "client_icon_3", quantity = 10 },
-        new TestItemData { itemTemplateId = 4, itemCode = "ITEM_ICON_4", iconId = "client_icon_4", quantity = 1 }
+        // === Equipment Items (category=1) ===
+        new TestItemData { itemTemplateId = 1,  itemCode = "SWORD_001",      iconId = "client_icon_8",  quantity = 1 }, // Weapon - Iron Sword
+        new TestItemData { itemTemplateId = 11, itemCode = "HELMET_IRON",    iconId = "client_icon_10", quantity = 1 }, // Helmet - Iron Helmet
+        new TestItemData { itemTemplateId = 12, itemCode = "ARMOR_IRON",     iconId = "client_icon_11", quantity = 1 }, // Armor - Iron Armor
+        new TestItemData { itemTemplateId = 13, itemCode = "PANTS_IRON",     iconId = "client_icon_12", quantity = 1 }, // Pants - Iron Pants
+        new TestItemData { itemTemplateId = 14, itemCode = "BOOTS_IRON",     iconId = "client_icon_13", quantity = 1 }, // Boots - Iron Boots
+        new TestItemData { itemTemplateId = 15, itemCode = "ACCESSORY_IRON", iconId = "client_icon_14", quantity = 1 }, // Accessory - Iron Accessory
     };
 
     [Header("Settings")]
@@ -33,6 +36,20 @@ public class InventoryTestManager : MonoBehaviour
 
     [Tooltip("Có bật chế độ debug log không")]
     [SerializeField] private bool enableDebugLog = true;
+
+    private void Awake()
+    {
+        // Force gán lại test items đúng với DB (tránh Unity dùng giá trị cũ đã serialize trong Inspector)
+        testItems = new List<TestItemData>
+        {
+            new TestItemData { itemTemplateId = 1,  itemCode = "SWORD_001",      iconId = "client_icon_8",  quantity = 1 },
+            new TestItemData { itemTemplateId = 11, itemCode = "HELMET_IRON",    iconId = "client_icon_10", quantity = 1 },
+            new TestItemData { itemTemplateId = 12, itemCode = "ARMOR_IRON",     iconId = "client_icon_11", quantity = 1 },
+            new TestItemData { itemTemplateId = 13, itemCode = "PANTS_IRON",     iconId = "client_icon_12", quantity = 1 },
+            new TestItemData { itemTemplateId = 14, itemCode = "BOOTS_IRON",     iconId = "client_icon_13", quantity = 1 },
+            new TestItemData { itemTemplateId = 15, itemCode = "ACCESSORY_IRON", iconId = "client_icon_14", quantity = 1 },
+        };
+    }
 
     private void Update()
     {
@@ -94,7 +111,7 @@ public class InventoryTestManager : MonoBehaviour
             Debug.Log($"[InventoryTestManager] Đang thêm {testItems.Count} test items vào inventory...");
         }
 
-        // Gọi ServerRpc để thêm items (không sync DB từng item - tránh race condition!)
+        // ✅ Bước 1: Thêm tất cả items vào NetworkVariable (KHÔNG sync DB từng item)
         foreach (var testItem in testItems)
         {
             if (testItem == null)
@@ -102,8 +119,7 @@ public class InventoryTestManager : MonoBehaviour
                 continue;
             }
 
-            // Gọi ServerRpc để thêm item (KHÔNG sync DB ở đây!)
-            inventory.AddItemWithDBSyncServerRpc(
+            inventory.AddItemWithoutDBSyncServerRpc(
                 testItem.itemTemplateId,
                 testItem.itemCode,
                 testItem.iconId,
@@ -116,10 +132,9 @@ public class InventoryTestManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"[InventoryTestManager] ✅ Đã gửi {testItems.Count} items lên server để thêm vào inventory!");
+        Debug.Log($"[InventoryTestManager] ✅ Đã gửi {testItems.Count} items lên server!");
 
-        // ✅ SAU KHI THÊM HẾT ITEMS, SYNC TOÀN BỘ VỚI DB (1 LẦN DUY NHẤT)
-        // Delay một chút để đảm bảo tất cả items đã được add xong
+        // ✅ Bước 2: Sync TẤT CẢ items với DB trong 1 request duy nhất (tránh race condition)
         StartCoroutine(SyncInventoryToDBAfterDelay(testItems));
     }
 

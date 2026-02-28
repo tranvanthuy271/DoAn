@@ -339,6 +339,11 @@ public class InventoryNetworkBridge : MonoBehaviour
                     Debug.Log($"[InventoryNetworkBridge] → Đang subscribe to inventory events...");
                     SubscribeToInventoryEvents();
                     Debug.Log($"[InventoryNetworkBridge] ✓ Subscribe thành công!");
+                    
+                    // ✅ Tự động load equipment từ DB khi vào game
+                    Debug.Log("[InventoryNetworkBridge] 🔄 Auto-load equipment từ DB khi vào game...");
+                    RefreshEquipmentFromDB();
+                    
                     yield break;
                 }
                 
@@ -682,9 +687,9 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// <summary>
     /// Gửi request sử dụng item lên server (gọi từ ItemDetailPanel khi nhấn nút Sử dụng)
     /// </summary>
-    public void RequestUseItem(int slotIndex, string itemCode)
+    public void RequestUseItem(int slotIndex, string itemCode, int itemTemplateId = 0)
     {
-        Debug.Log($"[InventoryNetworkBridge] RequestUseItem: slotIndex={slotIndex}, itemCode={itemCode}");
+        Debug.Log($"[InventoryNetworkBridge] RequestUseItem: slotIndex={slotIndex}, itemCode={itemCode}, itemTemplateId={itemTemplateId}");
 
         int playerId = GetCurrentPlayerId();
         if (playerId == 0)
@@ -700,12 +705,46 @@ public class InventoryNetworkBridge : MonoBehaviour
         }
 
         // Kiểm tra xem item có phải equipment không (category=1)
-        var template = ItemTemplateManager.Instance?.GetItemTemplate(
-            GetItemTemplateIdFromSlot(slotIndex));
+        // FIX: Ưu tiên lookup bằng itemTemplateId (chính xác nhất),
+        // rồi fallback sang code, rồi networkInventory
+        ItemTemplateDto template = null;
+        if (ItemTemplateManager.Instance != null)
+        {
+            // 1. Ưu tiên: lookup trực tiếp bằng itemTemplateId (luôn chính xác)
+            if (itemTemplateId > 0)
+            {
+                template = ItemTemplateManager.Instance.GetItemTemplate(itemTemplateId);
+                if (template != null)
+                    Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng ID={itemTemplateId}: {template.name}");
+            }
+            
+            // 2. Fallback: thử theo itemCode
+            if (template == null && !string.IsNullOrEmpty(itemCode))
+            {
+                template = ItemTemplateManager.Instance.GetItemTemplateByCode(itemCode);
+                if (template != null)
+                    Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng code={itemCode}: {template.name}");
+            }
+            
+            // 3. Fallback cuối: thử theo networkInventory slot
+            if (template == null)
+            {
+                int templateId = GetItemTemplateIdFromSlot(slotIndex);
+                if (templateId > 0)
+                {
+                    template = ItemTemplateManager.Instance.GetItemTemplate(templateId);
+                    if (template != null)
+                        Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng networkInventory slot={slotIndex}: {template.name}");
+                }
+            }
+        }
+
+        Debug.Log($"[InventoryNetworkBridge] RequestUseItem: template={(template != null ? template.name : "NULL")}, category={(template?.category ?? -1)}");
 
         if (template != null && template.category == 1)
         {
             // Equipment item → Trang bị
+            Debug.Log($"[InventoryNetworkBridge] ⚔️ Item {itemCode} là equipment (category=1) → gọi RequestEquipItem");
             RequestEquipItem(slotIndex, itemCode);
             return;
         }
@@ -734,6 +773,8 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// <summary>
     /// Gửi request trang bị item lên server
     /// Gọi từ ItemDetailPanel khi nhấn nút "Trang bị"
+    /// Server sẽ: remove item khỏi inventory, thêm vào equipment slot,
+    /// nếu slot đã có item cũ thì swap (item cũ quay về inventory)
     /// </summary>
     public void RequestEquipItem(int inventorySlotIndex, string itemCode)
     {
@@ -752,13 +793,16 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[InventoryNetworkBridge] ⚔️ Đang gửi equip request lên server: playerId={playerId}, slot={inventorySlotIndex}, item={itemCode}");
+
         APIClient.Instance.EquipItem(
             playerId,
             inventorySlotIndex,
             (response) =>
             {
-                Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công!");
-                // Refresh cả inventory và equipment UI
+                Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công! Response: {response}");
+                // Server đã update cả inventory + equipment trong DB
+                // Refresh cả inventory và equipment UI từ DB
                 RefreshInventoryFromDB();
                 RefreshEquipmentFromDB();
             },
