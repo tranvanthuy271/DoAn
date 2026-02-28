@@ -47,7 +47,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (networkManager == null)
         {
-            Debug.LogError("NetworkManagerCustom not found!");
+            // Debug.LogError("NetworkManagerCustom not found!");
             return;
         }
 
@@ -68,33 +68,33 @@ public class MainMenuController : MonoBehaviour
         string targetSceneName = null;
         int targetSceneIndex = -1;
         
-        Debug.Log($"[MainMenuController] Checking Build Settings: {sceneCount} scenes in build");
+        // Debug.Log($"[MainMenuController] Checking Build Settings: {sceneCount} scenes in build");
         
         // Ưu tiên tìm "Main" trước, nếu không có thì tìm "GameScene"
         for (int i = 0; i < sceneCount; i++)
         {
             string scenePath = SceneUtility.GetScenePathByBuildIndex(i);
             string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
-            Debug.Log($"[MainMenuController] Build index {i}: '{sceneName}' (path: {scenePath})");
+            // Debug.Log($"[MainMenuController] Build index {i}: '{sceneName}' (path: {scenePath})");
             
             if (sceneName == "Main" || sceneName == "GameScene")
             {
                 targetSceneName = sceneName;
                 targetSceneIndex = i;
-                Debug.Log($"[MainMenuController] ✓ Scene '{targetSceneName}' found at build index {targetSceneIndex}");
+                // Debug.Log($"[MainMenuController] ✓ Scene '{targetSceneName}' found at build index {targetSceneIndex}");
                 break;
             }
         }
         
         if (targetSceneIndex >= 0)
         {
-            Debug.Log($"[MainMenuController] Loading scene '{targetSceneName}' by index {targetSceneIndex}...");
+            // Debug.Log($"[MainMenuController] Loading scene '{targetSceneName}' by index {targetSceneIndex}...");
             SceneManager.LoadScene(targetSceneIndex);
         }
         else
         {
-            Debug.LogError("[MainMenuController] ✗ Scene 'Main' or 'GameScene' not found in Build Settings!");
-            Debug.LogError("[MainMenuController] Please add scene 'Main' or 'GameScene' to Build Settings (File → Build Settings → Add Open Scenes)");
+            // Debug.LogError("[MainMenuController] ✗ Scene 'Main' or 'GameScene' not found in Build Settings!");
+            // Debug.LogError("[MainMenuController] Please add scene 'Main' or 'GameScene' to Build Settings (File → Build Settings → Add Open Scenes)");
             // Fallback: thử load bằng tên
             SceneManager.LoadScene("Main");
         }

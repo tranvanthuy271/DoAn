@@ -55,14 +55,14 @@ public class PeriodicSyncService : NetworkBehaviour
         if (isSyncing) return;
 
         isSyncing = true;
-        Debug.Log("[PeriodicSyncService] Starting periodic checkpoint...");
+        // Debug.Log("[PeriodicSyncService] Starting periodic checkpoint...");
 
         // Collect critical data từ tất cả players
         var allPlayers = FindObjectsOfType<NetworkPlayerDataSync>();
         
         if (allPlayers.Length == 0)
         {
-            Debug.LogWarning("[PeriodicSyncService] No players found for checkpoint");
+            // Debug.LogWarning("[PeriodicSyncService] No players found for checkpoint");
             isSyncing = false;
             return;
         }
@@ -85,14 +85,14 @@ public class PeriodicSyncService : NetworkBehaviour
             SavePlayerCheckpoint(playerId, mapId, position.x, position.y, hp, level, 
                 onSuccess: () => {
                     savedCount++;
-                    Debug.Log($"[PeriodicSyncService] ✓ Checkpoint saved for player {playerId}");
+                    // Debug.Log($"[PeriodicSyncService] ✓ Checkpoint saved for player {playerId}");
                 },
                 onError: (error) => {
-                    Debug.LogError($"[PeriodicSyncService] ✗ Checkpoint failed for player {playerId}: {error}");
+                    // Debug.LogError($"[PeriodicSyncService] ✗ Checkpoint failed for player {playerId}: {error}");
                 });
         }
 
-        Debug.Log($"[PeriodicSyncService] Checkpoint completed: {savedCount}/{allPlayers.Length} players saved");
+        // Debug.Log($"[PeriodicSyncService] Checkpoint completed: {savedCount}/{allPlayers.Length} players saved");
         isSyncing = false;
     }
 
@@ -178,8 +178,8 @@ public class PeriodicSyncService : NetworkBehaviour
             position.y, 
             hp, 
             level,
-            onSuccess: () => Debug.Log($"[PeriodicSyncService] Player {playerId} synced"),
-            onError: (error) => Debug.LogError($"[PeriodicSyncService] Player {playerId} sync failed: {error}")
+            onSuccess: () => { /* Debug.Log($"[PeriodicSyncService] Player {playerId} synced") */ },
+            onError: (error) => { /* Debug.LogError($"[PeriodicSyncService] Player {playerId} sync failed: {error}") */ }
         );
     }
 
@@ -192,7 +192,7 @@ public class PeriodicSyncService : NetworkBehaviour
         if (interval > 300f) interval = 300f; // Maximum 5 minutes
 
         checkpointInterval = interval;
-        Debug.Log($"[PeriodicSyncService] Checkpoint interval set to {interval} seconds");
+        // Debug.Log($"[PeriodicSyncService] Checkpoint interval set to {interval} seconds");
     }
 
     /// <summary>
@@ -201,6 +201,6 @@ public class PeriodicSyncService : NetworkBehaviour
     public void SetAutoSync(bool enabled)
     {
         autoSync = enabled;
-        Debug.Log($"[PeriodicSyncService] Auto sync {(enabled ? "enabled" : "disabled")}");
+        // Debug.Log($"[PeriodicSyncService] Auto sync {(enabled ? "enabled" : "disabled")}");
     }
 }

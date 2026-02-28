@@ -61,11 +61,11 @@ public class PlayerInfoUI : MonoBehaviour
             // Update ngay lập tức
             UpdateUI();
             
-            Debug.Log("[PlayerInfoUI] Subscribed to NetworkPlayerDataSync callbacks");
+            // Debug.Log("[PlayerInfoUI] Subscribed to NetworkPlayerDataSync callbacks");
         }
         else
         {
-            Debug.LogWarning("[PlayerInfoUI] NetworkPlayerDataSync not found! UI will not update.");
+            // Debug.LogWarning("[PlayerInfoUI] NetworkPlayerDataSync not found! UI will not update.");
         }
     }
 

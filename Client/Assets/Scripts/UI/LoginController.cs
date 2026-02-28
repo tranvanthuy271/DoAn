@@ -46,13 +46,13 @@ public class LoginController : MonoBehaviour
             password,
             onSuccess: (response) =>
             {
-                Debug.Log($"Login successful! User ID from response: {response.user_id}, Token: {response.token}");
+                // Debug.Log($"Login successful! User ID from response: {response.user_id}, Token: {response.token}");
                 
                 // Đảm bảo user_id > 0
                 int userId = response.user_id;
                 if (userId == 0)
                 {
-                    Debug.LogError("WARNING: user_id = 0 from response! This should not happen.");
+                    // Debug.LogError("WARNING: user_id = 0 from response! This should not happen.");
                     // Có thể response không parse đúng, nhưng JWT parsing đã xử lý trong APIClient
                     userId = response.user_id; // Sẽ được fix trong APIClient.ParseUserIdFromJWT
                 }
@@ -63,11 +63,11 @@ public class LoginController : MonoBehaviour
                 PlayerPrefs.Save(); // Đảm bảo lưu ngay
                 
                 int savedUserId = PlayerPrefs.GetInt("USER_ID", 0);
-                Debug.Log($"Saved USER_ID to PlayerPrefs: {savedUserId}");
+                // Debug.Log($"Saved USER_ID to PlayerPrefs: {savedUserId}");
                 
                 if (savedUserId == 0)
                 {
-                    Debug.LogError("CRITICAL: USER_ID vẫn = 0 sau khi lưu! Kiểm tra lại.");
+                    // Debug.LogError("CRITICAL: USER_ID vẫn = 0 sau khi lưu! Kiểm tra lại.");
                 }
 
                 // Load player data
@@ -75,7 +75,7 @@ public class LoginController : MonoBehaviour
             },
             onError: (error) =>
             {
-                Debug.LogError($"Login failed: {error}");
+                // Debug.LogError($"Login failed: {error}");
                 ShowError($"Đăng nhập thất bại: {error}");
                 loginButton.interactable = true;
             }
@@ -88,7 +88,7 @@ public class LoginController : MonoBehaviour
             userId,
             onSuccess: (playerData) =>
             {
-                Debug.Log($"[LoginController] Player data loaded! Level: {playerData.level}, Map: {playerData.map_id}");
+                // Debug.Log($"[LoginController] Player data loaded! Level: {playerData.level}, Map: {playerData.map_id}");
                 
                 // Đảm bảo GameManager tồn tại trước khi set data
                 if (GameManager.Instance == null)
@@ -101,34 +101,34 @@ public class LoginController : MonoBehaviour
                 if (GameManager.Instance != null)
                 {
                     GameManager.Instance.SetPlayerData(playerData);
-                    Debug.Log("[LoginController] Player data saved to GameManager.");
+                    // Debug.Log("[LoginController] Player data saved to GameManager.");
                 }
                 else
                 {
-                    Debug.LogError("[LoginController] GameManager.Instance is still null after creation!");
+                    // Debug.LogError("[LoginController] GameManager.Instance is still null after creation!");
                 }
                 
                 // Chuyển sang GameScene (đã có player data)
-                Debug.Log("[LoginController] Player data found. Loading scene 'GameScene'...");
+                // Debug.Log("[LoginController] Player data found. Loading scene 'GameScene'...");
                 SceneManager.LoadScene("GameScene");
             },
             onError: (error) =>
             {
-                Debug.LogError($"[LoginController] Load player data failed: {error}");
+                // Debug.LogError($"[LoginController] Load player data failed: {error}");
                 
                 // Nếu chưa có player_data (404), chuyển sang scene chọn hệ để tạo nhân vật
                 if (error.Contains("404") || error.Contains("Not Found") || error.Contains("not found") || error.Contains("Player không tồn tại"))
                 {
-                    Debug.Log("[LoginController] Chưa có player_data, chuyển sang scene SelectElement để tạo nhân vật");
+                    // Debug.Log("[LoginController] Chưa có player_data, chuyển sang scene SelectElement để tạo nhân vật");
                     // Đảm bảo USER_ID đã được lưu trước khi chuyển scene
                     int savedUserId = PlayerPrefs.GetInt("USER_ID", 0);
                     if (savedUserId == 0)
                     {
-                        Debug.LogWarning("[LoginController] USER_ID chưa được lưu, lưu lại từ userId parameter");
+                        // Debug.LogWarning("[LoginController] USER_ID chưa được lưu, lưu lại từ userId parameter");
                         PlayerPrefs.SetInt("USER_ID", userId);
                         PlayerPrefs.Save();
                     }
-                    Debug.Log($"[LoginController] Chuyển sang SelectElement với USER_ID: {PlayerPrefs.GetInt("USER_ID", 0)}");
+                    // Debug.Log($"[LoginController] Chuyển sang SelectElement với USER_ID: {PlayerPrefs.GetInt("USER_ID", 0)}");
                     SceneManager.LoadScene("SelectElement");
                 }
                 else

@@ -79,24 +79,24 @@ public class ConnectionUI : MonoBehaviour
     {
         if (networkManager == null)
         {
-            Debug.LogError("[ConnectionUI] NetworkManager is null! Cannot start host.");
+            // Debug.LogError("[ConnectionUI] NetworkManager is null! Cannot start host.");
             return;
         }
 
         // Kiểm tra ConnectionApprovalCallback trước khi start host
         if (networkManager.ConnectionApprovalCallback == null)
         {
-            Debug.LogWarning("[ConnectionUI] ⚠️ ConnectionApprovalCallback is NULL before StartHost()!");
-            Debug.LogWarning("[ConnectionUI] Make sure ServerConnectionApproval GameObject exists in scene and is enabled.");
-            Debug.LogWarning("[ConnectionUI] Attempting to start host anyway... (may cause timeout)");
+            // Debug.LogWarning("[ConnectionUI] ⚠️ ConnectionApprovalCallback is NULL before StartHost()!");
+            // Debug.LogWarning("[ConnectionUI] Make sure ServerConnectionApproval GameObject exists in scene and is enabled.");
+            // Debug.LogWarning("[ConnectionUI] Attempting to start host anyway... (may cause timeout)");
         }
         else
         {
-            Debug.Log("[ConnectionUI] ✓ ConnectionApprovalCallback is registered before StartHost()");
+            // Debug.Log("[ConnectionUI] ✓ ConnectionApprovalCallback is registered before StartHost()");
         }
 
         networkManager.StartHost();
-        Debug.Log("Started as HOST");
+        // Debug.Log("Started as HOST");
     }
 
     public void StartClient()
@@ -111,7 +111,7 @@ public class ConnectionUI : MonoBehaviour
             }
 
             networkManager.StartClient();
-            Debug.Log($"Started as CLIENT, connecting to {ipInputField?.text ?? "localhost"}");
+            // Debug.Log($"Started as CLIENT, connecting to {ipInputField?.text ?? "localhost"}");
         }
     }
 
@@ -120,7 +120,7 @@ public class ConnectionUI : MonoBehaviour
         if (networkManager != null)
         {
             networkManager.Shutdown();
-            Debug.Log("Disconnected");
+            // Debug.Log("Disconnected");
         }
     }
 }

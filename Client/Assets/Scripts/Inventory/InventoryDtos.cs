@@ -3,6 +3,7 @@ using System;
 /// <summary>
 /// DTO mô phỏng dữ liệu nhận từ server cho item template.
 /// Unity dùng chủ yếu để hiển thị tên/mô tả nếu cần.
+/// Lưu ý: Dùng snake_case để match với API JSON response
 /// </summary>
 [Serializable]
 public class ItemTemplateDto
@@ -12,11 +13,12 @@ public class ItemTemplateDto
     public string name;
     public string description;
     public int category;
-    public int itemType;
+    public int item_type;
     public bool stackable;
-    public int maxStack;
+    public int max_stack;
     public int rarity;
-    public string iconId;
+    public string icon_id;
+    public string base_stat_json;
 }
 
 /// <summary>

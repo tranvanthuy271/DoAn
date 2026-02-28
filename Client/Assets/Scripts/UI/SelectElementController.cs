@@ -43,7 +43,7 @@ public class SelectElementController : MonoBehaviour
 
         if (userId == 0)
         {
-            Debug.LogWarning("User ID not found in PlayerPrefs! Trying to get from JWT token...");
+            // Debug.LogWarning("User ID not found in PlayerPrefs! Trying to get from JWT token...");
             
             // Thử lấy user_id từ JWT token nếu có
             string token = PlayerPrefs.GetString("JWT_TOKEN", "");
@@ -51,14 +51,14 @@ public class SelectElementController : MonoBehaviour
             {
                 // Parse JWT để lấy user_id (tạm thời, có thể cải thiện sau)
                 // Hoặc gọi API để lấy user info
-                Debug.LogWarning("Có JWT token nhưng không có USER_ID. Quay lại Login để đăng nhập lại.");
+                // Debug.LogWarning("Có JWT token nhưng không có USER_ID. Quay lại Login để đăng nhập lại.");
             }
             
             SceneManager.LoadScene("Login");
             return;
         }
         
-        Debug.Log($"SelectElementController: User ID = {userId}");
+        // Debug.Log($"SelectElementController: User ID = {userId}");
 
         // Khởi tạo 9 character buttons
         InitializeCharacterButtons();
@@ -78,7 +78,7 @@ public class SelectElementController : MonoBehaviour
         // Đảm bảo có đủ 9 button
         if (characterButtons == null || characterButtons.Length != 9)
         {
-            Debug.LogError("SelectElementController: Cần đúng 9 character buttons!");
+            // Debug.LogError("SelectElementController: Cần đúng 9 character buttons!");
             return;
         }
         
@@ -97,7 +97,7 @@ public class SelectElementController : MonoBehaviour
     {
         if (buttonIndex < 0 || buttonIndex >= characterButtons.Length)
         {
-            Debug.LogError($"Invalid button index: {buttonIndex}");
+            // Debug.LogError($"Invalid button index: {buttonIndex}");
             return;
         }
         
@@ -146,7 +146,7 @@ public class SelectElementController : MonoBehaviour
     {
         if (previewImage == null)
         {
-            Debug.LogWarning("PreviewImage is null! Please assign an Image component in Inspector.");
+            // Debug.LogWarning("PreviewImage is null! Please assign an Image component in Inspector.");
             return;
         }
         
@@ -163,12 +163,11 @@ public class SelectElementController : MonoBehaviour
                 previewImage.color = Color.white;
                 previewImage.preserveAspect = true; // Giữ nguyên tỷ lệ
                 
-                Debug.Log($"Preview image set: {sprite.name} for {characterButtons[buttonIndex].elementType} - {characterButtons[buttonIndex].gender}");
+                // Debug.Log($"Preview image set: {sprite.name} for {characterButtons[buttonIndex].elementType} - {characterButtons[buttonIndex].gender}");
             }
             else
             {
-                Debug.LogWarning($"Preview sprite is null for button index {buttonIndex}. " +
-                               "Please assign a sprite in the Character Buttons array.");
+                // Debug.LogWarning($"Preview sprite is null for button index {buttonIndex}. Please assign a sprite in the Character Buttons array.");
                 previewImage.sprite = null;
                 previewImage.enabled = false;
             }
@@ -209,7 +208,7 @@ public class SelectElementController : MonoBehaviour
         // Kiểm tra apiClient
         if (apiClient == null)
         {
-            Debug.LogError("APIClient is null! Trying to get instance...");
+            // Debug.LogError("APIClient is null! Trying to get instance...");
             apiClient = APIClient.Instance;
             if (apiClient == null)
             {
@@ -270,7 +269,7 @@ public class SelectElementController : MonoBehaviour
             {
                 if (playerData == null)
                 {
-                    Debug.LogError("PlayerDataResponse is null!");
+                    // Debug.LogError("PlayerDataResponse is null!");
                     ShowError("Lỗi: Không nhận được dữ liệu từ server.");
                     SetCharacterButtonsInteractable(true);
                     if (confirmButton != null) confirmButton.interactable = true;
@@ -278,13 +277,12 @@ public class SelectElementController : MonoBehaviour
                     return;
                 }
                 
-                Debug.Log($"Player created! Name: '{playerData.character_name}', Level: {playerData.level}, " +
-                         $"Element: '{playerData.element_type}', Gender: '{playerData.gender}'");
+                // Debug.Log($"Player created! Name: '{playerData.character_name}', Level: {playerData.level}, Element: '{playerData.element_type}', Gender: '{playerData.gender}'");
                 
                 // Kiểm tra GameManager
                 if (GameManager.Instance == null)
                 {
-                    Debug.LogWarning("GameManager.Instance is null! Creating GameManager...");
+                    // Debug.LogWarning("GameManager.Instance is null! Creating GameManager...");
                     GameObject gameManagerObj = new GameObject("GameManager");
                     gameManagerObj.AddComponent<GameManager>();
                 }
@@ -296,18 +294,18 @@ public class SelectElementController : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError("GameManager.Instance is still null after creation!");
+                    // Debug.LogError("GameManager.Instance is still null after creation!");
                 }
                 
                 // Enable Go button để người chơi có thể vào game
                 if (goButton != null)
                 {
                     goButton.interactable = true;
-                    Debug.Log("Go button enabled!");
+                    // Debug.Log("Go button enabled!");
                 }
                 else
                 {
-                    Debug.LogError("Go button is null!");
+                    // Debug.LogError("Go button is null!");
                 }
                 
                 if (errorText != null)
@@ -318,7 +316,7 @@ public class SelectElementController : MonoBehaviour
             },
             onError: (error) =>
             {
-                Debug.LogError($"Create player failed: {error}");
+                // Debug.LogError($"Create player failed: {error}");
                 ShowError($"Tạo nhân vật thất bại: {error}");
                 SetCharacterButtonsInteractable(true);
                 if (confirmButton != null) confirmButton.interactable = true;
@@ -340,7 +338,7 @@ public class SelectElementController : MonoBehaviour
         goButton.interactable = false;
         errorText.text = "Đang vào game...";
         
-        Debug.Log("[SelectElementController] Player data already created. Loading scene 'GameScene'...");
+        // Debug.Log("[SelectElementController] Player data already created. Loading scene 'GameScene'...");
         
         // Chuyển sang GameScene (logic connect sẽ được xử lý trong GameScene)
         SceneManager.LoadScene("GameScene");

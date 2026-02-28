@@ -51,7 +51,7 @@ public class NetworkPlayerController : NetworkBehaviour
             }
             else
             {
-                Debug.LogWarning($"[NetworkPlayerController] CameraFollow not found!");
+                // Debug.LogWarning($"[NetworkPlayerController] CameraFollow not found!");
             }
         }
     }
@@ -133,12 +133,12 @@ public class NetworkPlayerController : NetworkBehaviour
         // Server xử lý movement
         if (movement == null || controller == null || rb == null)
         {
-            Debug.LogError($"[NetworkPlayerController] MoveServerRpc: Components null! movement={movement}, controller={controller}, rb={rb}");
+            // Debug.LogError($"[NetworkPlayerController] MoveServerRpc: Components null! movement={movement}, controller={controller}, rb={rb}");
             return;
         }
         if (controller.stats == null)
         {
-            Debug.LogError($"[NetworkPlayerController] MoveServerRpc: PlayerStats is null!");
+            // Debug.LogError($"[NetworkPlayerController] MoveServerRpc: PlayerStats is null!");
             return;
         }
 

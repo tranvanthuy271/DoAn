@@ -10,6 +10,11 @@ public class NetworkPrefabRegistrar : MonoBehaviour
     [Header("Auto-register from NetworkPlayerSpawner")]
     [SerializeField] private bool autoRegisterFromSpawner = true;
 
+    [Header("Auto-register Item Pickup Prefab")]
+    [SerializeField] private bool autoRegisterItemPickup = true;
+    [Tooltip("Direct reference to ItemPickup prefab (drag from Prefabs/UI folder)")]
+    [SerializeField] private GameObject itemPickupPrefab;
+
     [Header("Manual Prefab List (if not using auto-register)")]
     [SerializeField] private GameObject[] manualPrefabs;
 
@@ -28,7 +33,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[NetworkPrefabRegistrar] NetworkManager.Singleton is null in Start(). Prefabs will be registered when ReRegisterPrefabs() is called.");
+            // Debug.LogWarning("[NetworkPrefabRegistrar] NetworkManager.Singleton is null in Start(). Prefabs will be registered when ReRegisterPrefabs() is called.");
         }
     }
 
@@ -40,13 +45,13 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null)
         {
-            Debug.LogError("[NetworkPrefabRegistrar] NetworkManager.Singleton is null! Cannot register prefabs.");
+            // Debug.LogError("[NetworkPrefabRegistrar] NetworkManager.Singleton is null! Cannot register prefabs.");
             return;
         }
 
         if (networkManager.NetworkConfig == null)
         {
-            Debug.LogError("[NetworkPrefabRegistrar] NetworkManager.NetworkConfig is null! Cannot register prefabs.");
+            // Debug.LogError("[NetworkPrefabRegistrar] NetworkManager.NetworkConfig is null! Cannot register prefabs.");
             return;
         }
 
@@ -55,17 +60,19 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         // Tự động lấy prefab từ NetworkPlayerSpawner
         if (autoRegisterFromSpawner)
         {
-            NetworkPlayerSpawner spawner = FindObjectOfType<NetworkPlayerSpawner>();
+            // Tìm NetworkPlayerSpawner (bao gồm cả disabled components)
+            NetworkPlayerSpawner spawner = FindObjectOfType<NetworkPlayerSpawner>(true); // true = include inactive
             if (spawner != null)
             {
-                Debug.Log("[NetworkPrefabRegistrar] Found NetworkPlayerSpawner, registering prefabs...");
+                Debug.Log("[NetworkPrefabRegistrar] ✓ Found NetworkPlayerSpawner, registering prefabs...");
                 
-                // Lấy tất cả prefab từ spawner bằng reflection (vì các field là private)
+                // Lấy tất cả prefab từ spawner
                 RegisterPrefabFromSpawner(spawner, networkManager, ref registeredCount);
             }
             else
             {
-                Debug.LogWarning("[NetworkPrefabRegistrar] NetworkPlayerSpawner not found in scene! Using manual prefabs if available.");
+                Debug.LogError("[NetworkPrefabRegistrar] ❌ NetworkPlayerSpawner NOT FOUND in scene!");
+                Debug.LogError("[NetworkPrefabRegistrar] ❌ This will cause connection errors! Add NetworkPlayerSpawner to scene or use manual prefabs.");
             }
         }
 
@@ -79,6 +86,12 @@ public class NetworkPrefabRegistrar : MonoBehaviour
                     RegisterPrefab(prefab, networkManager, ref registeredCount);
                 }
             }
+        }
+
+        // Tự động đăng ký ItemPickup prefab nếu được bật
+        if (autoRegisterItemPickup)
+        {
+            RegisterItemPickupPrefab(networkManager, ref registeredCount);
         }
 
         Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered {registeredCount} prefab(s) to NetworkManager");
@@ -101,7 +114,15 @@ public class NetworkPrefabRegistrar : MonoBehaviour
             {
                 if (registeredPrefab != null && registeredPrefab.Prefab != null)
                 {
-                    Debug.Log($"[NetworkPrefabRegistrar]   - Prefab: '{registeredPrefab.Prefab.name}'");
+                    NetworkObject netObj = registeredPrefab.Prefab.GetComponent<NetworkObject>();
+                    if (netObj != null)
+                    {
+                        Debug.Log($"[NetworkPrefabRegistrar]   - Prefab: '{registeredPrefab.Prefab.name}' (has NetworkObject)");
+                    }
+                    else
+                    {
+                        Debug.Log($"[NetworkPrefabRegistrar]   - Prefab: '{registeredPrefab.Prefab.name}'");
+                    }
                 }
             }
             Debug.Log("[NetworkPrefabRegistrar] ===== END PREFABS LIST =====");
@@ -113,14 +134,86 @@ public class NetworkPrefabRegistrar : MonoBehaviour
     /// </summary>
     private void RegisterPrefabFromSpawner(NetworkPlayerSpawner spawner, NetworkManager networkManager, ref int registeredCount)
     {
-        // Lấy tất cả prefab từ spawner
+        // Lấy tất cả prefab từ spawner (tìm cả disabled components)
         var prefabs = spawner.GetAllPlayerPrefabs();
+        
+        if (prefabs.Count == 0)
+        {
+            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ NetworkPlayerSpawner.GetAllPlayerPrefabs() returned EMPTY list!");
+            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ Make sure player prefabs are assigned in NetworkPlayerSpawner Inspector!");
+            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ This will cause 'NetworkPrefab could not be found' errors when connecting!");
+        }
+        
         foreach (GameObject prefab in prefabs)
         {
             if (prefab != null)
             {
                 RegisterPrefab(prefab, networkManager, ref registeredCount);
             }
+        }
+    }
+
+    /// <summary>
+    /// Tự động đăng ký ItemPickup prefab
+    /// </summary>
+    private void RegisterItemPickupPrefab(NetworkManager networkManager, ref int registeredCount)
+    {
+        GameObject prefabToRegister = null;
+
+        // 1. Thử dùng direct reference nếu đã được gán
+        if (itemPickupPrefab != null)
+        {
+            prefabToRegister = itemPickupPrefab;
+            Debug.Log($"[NetworkPrefabRegistrar] Using direct reference for ItemPickup prefab: {itemPickupPrefab.name}");
+        }
+        // 2. Fallback: Tìm trong scene từ ItemSpawner hoặc EnemyItemDrop
+        else
+        {
+            // Tìm ItemSpawner trong scene
+            ItemSpawner itemSpawner = FindObjectOfType<ItemSpawner>();
+            if (itemSpawner != null)
+            {
+                // Dùng reflection để lấy itemPickupPrefab private field
+                var field = typeof(ItemSpawner).GetField("itemPickupPrefab", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    prefabToRegister = field.GetValue(itemSpawner) as GameObject;
+                    if (prefabToRegister != null)
+                    {
+                        Debug.Log($"[NetworkPrefabRegistrar] Found ItemPickup prefab from ItemSpawner: {prefabToRegister.name}");
+                    }
+                }
+            }
+
+            // Nếu không tìm thấy, thử tìm từ EnemyItemDrop
+            if (prefabToRegister == null)
+            {
+                EnemyItemDrop enemyItemDrop = FindObjectOfType<EnemyItemDrop>();
+                if (enemyItemDrop != null)
+                {
+                    var field = typeof(EnemyItemDrop).GetField("itemPickupPrefab", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        prefabToRegister = field.GetValue(enemyItemDrop) as GameObject;
+                        if (prefabToRegister != null)
+                        {
+                            Debug.Log($"[NetworkPrefabRegistrar] Found ItemPickup prefab from EnemyItemDrop: {prefabToRegister.name}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Đăng ký prefab nếu tìm thấy
+        if (prefabToRegister != null)
+        {
+            RegisterPrefab(prefabToRegister, networkManager, ref registeredCount);
+        }
+        else
+        {
+            Debug.LogWarning($"[NetworkPrefabRegistrar] ItemPickup prefab not found! Please assign it in Inspector or make sure ItemSpawner/EnemyItemDrop exists in scene.");
         }
     }
 
@@ -138,7 +231,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         NetworkObject networkObject = prefab.GetComponent<NetworkObject>();
         if (networkObject == null)
         {
-            Debug.LogWarning($"[NetworkPrefabRegistrar] Prefab '{prefab.name}' does not have NetworkObject component! Skipping...");
+            // Debug.LogWarning($"[NetworkPrefabRegistrar] Prefab '{prefab.name}' does not have NetworkObject component! Skipping...");
             return;
         }
 
@@ -153,7 +246,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
                     // So sánh GameObject reference hoặc name
                     if (registeredPrefab.Prefab == prefab || registeredPrefab.Prefab.name == prefab.name)
                     {
-                        Debug.Log($"[NetworkPrefabRegistrar] Prefab '{prefab.name}' already registered, skipping...");
+                        // Debug.Log($"[NetworkPrefabRegistrar] Prefab '{prefab.name}' already registered, skipping...");
                         return;
                     }
                 }
@@ -165,11 +258,21 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         {
             networkManager.AddNetworkPrefab(prefab);
             registeredCount++;
-            Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered prefab: '{prefab.name}'");
+            
+            // Log chi tiết để debug
+            NetworkObject netObj = prefab.GetComponent<NetworkObject>();
+            if (netObj != null)
+            {
+                Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered prefab: '{prefab.name}' (has NetworkObject)");
+            }
+            else
+            {
+                Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered prefab: '{prefab.name}' (no NetworkObject?)");
+            }
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NetworkPrefabRegistrar] Failed to register prefab '{prefab.name}': {ex.Message}");
+            Debug.LogError($"[NetworkPrefabRegistrar] ❌ Failed to register prefab '{prefab.name}': {ex.Message}");
         }
     }
 

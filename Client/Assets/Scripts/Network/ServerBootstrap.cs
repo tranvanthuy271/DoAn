@@ -25,21 +25,21 @@ public class ServerBootstrap : MonoBehaviour
         // Chỉ auto start nếu đang trong scene ServerScene
         // Nếu không phải ServerScene, không tự động start (để client chỉ connect)
         string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        UnityEngine.Debug.Log($"[ServerBootstrap] Start() called in scene: '{currentSceneName}'");
+        // UnityEngine.Debug.Log($"[ServerBootstrap] Start() called in scene: '{currentSceneName}'");
         
         if (autoStart && currentSceneName == "ServerScene")
         {
-            UnityEngine.Debug.Log("[ServerBootstrap] Scene is ServerScene, starting dedicated server...");
+            // UnityEngine.Debug.Log("[ServerBootstrap] Scene is ServerScene, starting dedicated server...");
             StartDedicatedServer();
         }
         else if (autoStart && currentSceneName != "ServerScene")
         {
-            UnityEngine.Debug.LogWarning($"[ServerBootstrap] ⚠️ Auto start is enabled but current scene is '{currentSceneName}', not 'ServerScene'. Disabling auto start to prevent client from starting server.");
-            UnityEngine.Debug.LogWarning($"[ServerBootstrap] ⚠️ ServerBootstrap should only be in ServerScene. Please remove it from scene '{currentSceneName}'.");
+            // UnityEngine.Debug.LogWarning($"[ServerBootstrap] ⚠️ Auto start is enabled but current scene is '{currentSceneName}', not 'ServerScene'. Disabling auto start to prevent client from starting server.");
+            // UnityEngine.Debug.LogWarning($"[ServerBootstrap] ⚠️ ServerBootstrap should only be in ServerScene. Please remove it from scene '{currentSceneName}'.");
         }
         else if (!autoStart)
         {
-            UnityEngine.Debug.Log($"[ServerBootstrap] Auto start is disabled. Current scene: '{currentSceneName}'");
+            // UnityEngine.Debug.Log($"[ServerBootstrap] Auto start is disabled. Current scene: '{currentSceneName}'");
         }
     }
 
@@ -51,14 +51,14 @@ public class ServerBootstrap : MonoBehaviour
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null)
         {
-            Debug.LogError("[ServerBootstrap] NetworkManager not found! Make sure NetworkManager is in the scene.");
+            // Debug.LogError("[ServerBootstrap] NetworkManager not found! Make sure NetworkManager is in the scene.");
             return;
         }
 
         // Kiểm tra nếu server/host đã chạy
         if (networkManager.IsServer || networkManager.IsHost)
         {
-            Debug.LogWarning("[ServerBootstrap] Server/Host is already running!");
+            // Debug.LogWarning("[ServerBootstrap] Server/Host is already running!");
             return;
         }
 
@@ -66,7 +66,7 @@ public class ServerBootstrap : MonoBehaviour
         UnityTransport transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[ServerBootstrap] UnityTransport not found on NetworkManager!");
+            // Debug.LogError("[ServerBootstrap] UnityTransport not found on NetworkManager!");
             return;
         }
 
@@ -74,18 +74,18 @@ public class ServerBootstrap : MonoBehaviour
         transport.ConnectionData.Address = serverIP;
         transport.ConnectionData.Port = serverPort;
 
-        Debug.Log($"[ServerBootstrap] Starting dedicated server on {serverIP}:{serverPort}...");
+        // Debug.Log($"[ServerBootstrap] Starting dedicated server on {serverIP}:{serverPort}...");
 
         // Start Host (vừa server vừa client) để có thể join vào map
         if (networkManager.StartHost())
         {
-            Debug.Log($"[ServerBootstrap] ✓✓✓ Dedicated Host started successfully on {serverIP}:{serverPort} ✓✓✓");
-            Debug.Log($"[ServerBootstrap] Host is ready. Waiting for clients to connect...");
+            // Debug.Log($"[ServerBootstrap] ✓✓✓ Dedicated Host started successfully on {serverIP}:{serverPort} ✓✓✓");
+            // Debug.Log($"[ServerBootstrap] Host is ready. Waiting for clients to connect...");
         }
         else
         {
-            Debug.LogError("[ServerBootstrap] ✗ Failed to start dedicated host!");
-            Debug.LogError("[ServerBootstrap] Check if port is already in use or NetworkManager is configured correctly.");
+            // Debug.LogError("[ServerBootstrap] ✗ Failed to start dedicated host!");
+            // Debug.LogError("[ServerBootstrap] Check if port is already in use or NetworkManager is configured correctly.");
         }
     }
 
@@ -98,7 +98,7 @@ public class ServerBootstrap : MonoBehaviour
         if (networkManager != null && (networkManager.IsServer || networkManager.IsHost))
         {
             networkManager.Shutdown();
-            Debug.Log("[ServerBootstrap] Server/Host stopped.");
+            // Debug.Log("[ServerBootstrap] Server/Host stopped.");
         }
     }
 

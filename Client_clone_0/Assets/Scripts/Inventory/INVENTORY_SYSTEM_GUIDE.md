@@ -128,11 +128,10 @@ CREATE TABLE `player_data` (
    - `SELECT * FROM item_template`
 2. Map vào RAM:
    - Ví dụ: `Dictionary<int, ItemTemplateData>` (theo `id`)  
-   - Hoặc: `Dictionary<string, ItemTemplateData>` (theo `code`)
-
+   
 Mục tiêu:
 
-- Tra cứu nhanh theo `item_template_id` hoặc `code`.
+- Tra cứu nhanh theo `item_template_id`
 - Không query DB cho mỗi lần xem thông tin item.
 
 ### 3.2. Khi player login
@@ -461,7 +460,7 @@ Tuỳ kiến trúc, bạn có thể:
 
 - **Database**
   - [ ] Tạo bảng `item_template`.
-  - [ ] Tạo bảng `player_inventory`.
+
   - [ ] Seed một số item mẫu.
 
 - **Server**

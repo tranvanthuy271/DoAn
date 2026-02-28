@@ -32,7 +32,7 @@ public class ServerConnectionChecker : MonoBehaviour
     {
         if (isChecking)
         {
-            UnityEngine.Debug.LogWarning("[ServerChecker] Đang check server...");
+            // UnityEngine.Debug.LogWarning("[ServerChecker] Đang check server...");
             return;
         }
 
@@ -62,17 +62,17 @@ public class ServerConnectionChecker : MonoBehaviour
 
         if (allReady)
         {
-            UnityEngine.Debug.Log("[ServerChecker] ✓ Cả 2 server đã sẵn sàng!");
+            // UnityEngine.Debug.Log("[ServerChecker] ✓ Cả 2 server đã sẵn sàng!");
         }
         else
         {
             if (!apiServerReady)
             {
-                UnityEngine.Debug.LogError("[ServerChecker] ✗ API Server chưa sẵn sàng!");
+                // UnityEngine.Debug.LogError("[ServerChecker] ✗ API Server chưa sẵn sàng!");
             }
             if (!netcodeServerReady)
             {
-                UnityEngine.Debug.LogError("[ServerChecker] ✗ Netcode Server chưa sẵn sàng!");
+                // UnityEngine.Debug.LogError("[ServerChecker] ✗ Netcode Server chưa sẵn sàng!");
             }
         }
 
@@ -95,12 +95,12 @@ public class ServerConnectionChecker : MonoBehaviour
                 www.responseCode == 401 || // Unauthorized (server đã chạy nhưng cần auth)
                 www.responseCode == 404)   // Not Found (server đã chạy nhưng endpoint không tồn tại)
             {
-                UnityEngine.Debug.Log("[ServerChecker] ✓ API Server đã sẵn sàng");
+                // UnityEngine.Debug.Log("[ServerChecker] ✓ API Server đã sẵn sàng");
                 onComplete?.Invoke(true);
             }
             else
             {
-                UnityEngine.Debug.LogWarning($"[ServerChecker] API Server chưa sẵn sàng: {www.error}");
+                // UnityEngine.Debug.LogWarning($"[ServerChecker] API Server chưa sẵn sàng: {www.error}");
                 onComplete?.Invoke(false);
             }
         }
@@ -125,7 +125,7 @@ public class ServerConnectionChecker : MonoBehaviour
         // Hoặc đơn giản: Bỏ qua check này, để client tự thử connect
         if (networkManager == null)
         {
-            UnityEngine.Debug.Log("[ServerChecker] NetworkManager not found. Will try to connect directly when needed.");
+            // UnityEngine.Debug.Log("[ServerChecker] NetworkManager not found. Will try to connect directly when needed.");
             // Giả sử server sẵn sàng nếu API Server đã sẵn sàng
             // Client sẽ tự thử connect và báo lỗi nếu không được
             onComplete?.Invoke(true); // Giả sử OK, để client tự thử connect
@@ -135,7 +135,7 @@ public class ServerConnectionChecker : MonoBehaviour
         // Nếu đã connect rồi thì OK
         if (networkManager.IsConnectedClient || networkManager.IsHost)
         {
-            UnityEngine.Debug.Log("[ServerChecker] ✓ Đã connect đến Netcode Server/Host");
+            // UnityEngine.Debug.Log("[ServerChecker] ✓ Đã connect đến Netcode Server/Host");
             onComplete?.Invoke(true);
             yield break;
         }
@@ -144,7 +144,7 @@ public class ServerConnectionChecker : MonoBehaviour
         var transport = networkManager.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
         if (transport == null)
         {
-            UnityEngine.Debug.LogError("[ServerChecker] UnityTransport not found!");
+            // UnityEngine.Debug.LogError("[ServerChecker] UnityTransport not found!");
             onComplete?.Invoke(false);
             yield break;
         }
@@ -173,21 +173,21 @@ public class ServerConnectionChecker : MonoBehaviour
 
             if (connected)
             {
-                UnityEngine.Debug.Log("[ServerChecker] ✓ Netcode Server đã sẵn sàng");
+                // UnityEngine.Debug.Log("[ServerChecker] ✓ Netcode Server đã sẵn sàng");
                 // Disconnect ngay để test
                 networkManager.Shutdown();
                 onComplete?.Invoke(true);
             }
             else
             {
-                UnityEngine.Debug.LogWarning("[ServerChecker] Netcode Server chưa sẵn sàng (timeout)");
+                // UnityEngine.Debug.LogWarning("[ServerChecker] Netcode Server chưa sẵn sàng (timeout)");
                 networkManager.Shutdown();
                 onComplete?.Invoke(false);
             }
         }
         else
         {
-            UnityEngine.Debug.LogError("[ServerChecker] Không thể start client để test!");
+            // UnityEngine.Debug.LogError("[ServerChecker] Không thể start client để test!");
             onComplete?.Invoke(false);
         }
 

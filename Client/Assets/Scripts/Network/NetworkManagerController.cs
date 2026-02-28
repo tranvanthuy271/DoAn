@@ -17,7 +17,7 @@ public class NetworkManagerController : MonoBehaviour
         
         if (networkManager == null)
         {
-            Debug.LogError("[NetworkManagerController] NetworkManager not found! Make sure NetworkManager GameObject exists in scene with NetworkManager component.");
+            // Debug.LogError("[NetworkManagerController] NetworkManager not found! Make sure NetworkManager GameObject exists in scene with NetworkManager component.");
             return;
         }
 
@@ -32,16 +32,16 @@ public class NetworkManagerController : MonoBehaviour
         
         // DISABLED: Connection Approval được xử lý bởi ServerConnectionApproval script
         // Không đăng ký ở đây để tránh conflict
-        Debug.Log("[NetworkManagerController] ConnectionApprovalCallback is handled by ServerConnectionApproval script, skipping registration here.");
+        // Debug.Log("[NetworkManagerController] ConnectionApprovalCallback is handled by ServerConnectionApproval script, skipping registration here.");
         
         // Kiểm tra xem callback đã được đăng ký chưa (bởi ServerConnectionApproval)
         if (networkManager.ConnectionApprovalCallback != null)
         {
-            Debug.Log("[NetworkManagerController] ✓ ConnectionApprovalCallback is already registered by another script (ServerConnectionApproval)");
+            // Debug.Log("[NetworkManagerController] ✓ ConnectionApprovalCallback is already registered by another script (ServerConnectionApproval)");
         }
         else
         {
-            Debug.LogWarning("[NetworkManagerController] ⚠️ ConnectionApprovalCallback is NULL! Make sure ServerConnectionApproval GameObject exists in scene!");
+            // Debug.LogWarning("[NetworkManagerController] ⚠️ ConnectionApprovalCallback is NULL! Make sure ServerConnectionApproval GameObject exists in scene!");
         }
     }
     
@@ -78,7 +78,7 @@ public class NetworkManagerController : MonoBehaviour
         if (networkManager != null && !networkManager.IsServer)
         {
             networkManager.StartHost();
-            Debug.Log("Started as HOST (Server + Client)");
+            // Debug.Log("Started as HOST (Server + Client)");
         }
     }
 
@@ -88,7 +88,7 @@ public class NetworkManagerController : MonoBehaviour
         if (networkManager != null && !networkManager.IsClient)
         {
             networkManager.StartClient();
-            Debug.Log("Started as CLIENT");
+            // Debug.Log("Started as CLIENT");
         }
     }
 
@@ -98,7 +98,7 @@ public class NetworkManagerController : MonoBehaviour
         if (networkManager != null && !networkManager.IsServer)
         {
             networkManager.StartServer();
-            Debug.Log("Started as SERVER");
+            // Debug.Log("Started as SERVER");
         }
     }
 
@@ -108,18 +108,18 @@ public class NetworkManagerController : MonoBehaviour
         if (networkManager != null)
         {
             networkManager.Shutdown();
-            Debug.Log("Network shutdown");
+            // Debug.Log("Network shutdown");
         }
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        Debug.Log($"Client {clientId} connected!");
+        // Debug.Log($"Client {clientId} connected!");
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
-        Debug.Log($"Client {clientId} disconnected!");
+        // Debug.Log($"Client {clientId} disconnected!");
     }
 }
 

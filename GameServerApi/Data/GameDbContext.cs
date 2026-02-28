@@ -15,6 +15,7 @@ namespace GameServerApi.Data
         public DbSet<MapConfig> MapConfigs => Set<MapConfig>();
         public DbSet<Enemy> Enemies => Set<Enemy>();
         public DbSet<EnemySpawn> EnemySpawns => Set<EnemySpawn>();
+        public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -142,6 +143,31 @@ namespace GameServerApi.Data
                     .WithMany()
                     .HasForeignKey(e => e.EnemyTypeId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ItemTemplate>(entity =>
+            {
+                entity.ToTable("item_template");
+                entity.HasKey(i => i.Id);
+
+                entity.Property(i => i.Id).HasColumnName("id");
+                entity.Property(i => i.Code).HasColumnName("code");
+                entity.Property(i => i.Name).HasColumnName("name");
+                entity.Property(i => i.Description).HasColumnName("description");
+                entity.Property(i => i.Category).HasColumnName("category");
+                entity.Property(i => i.ItemType).HasColumnName("item_type");
+                entity.Property(i => i.Stackable).HasColumnName("stackable");
+                entity.Property(i => i.MaxStack).HasColumnName("max_stack");
+                entity.Property(i => i.GenderLimit).HasColumnName("gender_limit");
+                entity.Property(i => i.ClassLimit).HasColumnName("class_limit");
+                entity.Property(i => i.LevelRequired).HasColumnName("level_required");
+                entity.Property(i => i.Rarity).HasColumnName("rarity");
+                entity.Property(i => i.IconPath).HasColumnName("icon_path");
+                entity.Property(i => i.PrefabPath).HasColumnName("prefab_path");
+                entity.Property(i => i.BaseStatJson).HasColumnName("base_stat_json");
+                entity.Property(i => i.CreatedAt).HasColumnName("created_at");
+
+                entity.HasIndex(i => i.Code).IsUnique();
             });
         }
     }

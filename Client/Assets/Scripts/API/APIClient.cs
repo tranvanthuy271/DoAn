@@ -37,6 +37,7 @@ public class RegisterResponse
 [System.Serializable]
 public class PlayerDataResponse
 {
+    public int user_id; // ID của user sở hữu player data này
     public int player_id;
     public int level;
     public int experience;
@@ -110,10 +111,17 @@ public class PotentialStat
 [System.Serializable]
 public class InventoryItem
 {
-    public int item_id;
-    public string name;
+    public int item_id;              // Old format (deprecated)
+    public string name;              // Old format (deprecated)
     public int quantity;
-    public int slot_index;
+    public int slot_index;           // Old format (deprecated)
+    
+    // New format (used by current system)
+    public int slotIndex;
+    public int itemTemplateId;
+    public string itemCode;
+    public string iconId;
+    public bool isEquipped;
 }
 
 [System.Serializable]
@@ -534,5 +542,372 @@ public class APIClient : MonoBehaviour
                 onError?.Invoke(www.error);
             }
         }
+    }
+
+    /// <summary>
+    /// Thêm items vào inventory của player
+    /// </summary>
+    [System.Serializable]
+    public class AddInventoryItemRequest
+    {
+        public int itemTemplateId;
+        public string itemCode;
+        public string iconId;
+        public int quantity;
+    }
+
+    [System.Serializable]
+    public class AddInventoryItemsRequest
+    {
+        public AddInventoryItemRequest[] items;
+    }
+
+    public void AddItemsToInventory(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(AddItemsToInventoryCoroutine(playerId, items, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator AddItemsToInventoryCoroutine(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/inventory/add";
+        
+        AddInventoryItemsRequest requestBody = new AddInventoryItemsRequest
+        {
+            items = items
+        };
+        
+        string json = JsonUtility.ToJson(requestBody);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        
+        using (UnityEngine.Networking.UnityWebRequest www = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+            
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                Debug.Log($"[APIClient] Items added to inventory successfully: {responseText}");
+                onSuccess?.Invoke(responseText);
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] Failed to add items to inventory: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Lấy tất cả item templates từ server
+    /// </summary>
+    [System.Serializable]
+    public class ItemTemplatesResponse
+    {
+        public int count;
+        public ItemTemplateDto[] item_templates;
+    }
+
+    public void GetItemTemplates(System.Action<ItemTemplateDto[]> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(GetItemTemplatesCoroutine(onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator GetItemTemplatesCoroutine(System.Action<ItemTemplateDto[]> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/item/templates";
+        Debug.Log($"[APIClient] 🌐 Sending GET request to: {url}");
+        
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            // Không cần Authorization vì endpoint là AllowAnonymous
+            
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                Debug.Log($"[APIClient] ✅ Item templates response received - Length: {responseText.Length} chars");
+                Debug.Log($"[APIClient] 📄 Response preview: {responseText.Substring(0, Mathf.Min(200, responseText.Length))}...");
+                
+                try
+                {
+                    // Parse JSON response
+                    ItemTemplatesResponse response = JsonUtility.FromJson<ItemTemplatesResponse>(responseText);
+                    
+                    if (response != null && response.item_templates != null)
+                    {
+                        Debug.Log($"[APIClient] ✅ Parsed {response.item_templates.Length} item templates successfully");
+                        onSuccess?.Invoke(response.item_templates);
+                    }
+                    else
+                    {
+                        Debug.LogError("[APIClient] ❌ Failed to parse item templates response - response or item_templates is null");
+                        onError?.Invoke("Failed to parse response");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[APIClient] ❌ Error parsing item templates: {ex.Message}");
+                    Debug.LogError($"[APIClient] Stack trace: {ex.StackTrace}");
+                    onError?.Invoke(ex.Message);
+                }
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] ❌ Failed to load item templates: {errorMessage}");
+                Debug.LogError($"[APIClient] Response code: {www.responseCode}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fetch inventory từ DB cho player (dùng để refresh UI)
+    /// </summary>
+    public void GetPlayerInventory(int playerId, System.Action<InventoryItem[]> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(GetPlayerInventoryCoroutine(playerId, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator GetPlayerInventoryCoroutine(int playerId, System.Action<InventoryItem[]> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/data";
+        Debug.Log($"[APIClient] 🔄 Fetching inventory from DB for player {playerId}...");
+        
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+            
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                
+                try
+                {
+                    PlayerDataResponse response = JsonUtility.FromJson<PlayerDataResponse>(responseText);
+                    
+                    if (response != null)
+                    {
+                        Debug.Log($"[APIClient] ✅ Inventory fetched successfully: {response.inventory?.Length ?? 0} items");
+                        onSuccess?.Invoke(response.inventory ?? new InventoryItem[0]);
+                    }
+                    else
+                    {
+                        Debug.LogError("[APIClient] ❌ Failed to parse player data");
+                        onError?.Invoke("Failed to parse response");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[APIClient] ❌ Error parsing inventory: {ex.Message}");
+                    onError?.Invoke(ex.Message);
+                }
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] ❌ Failed to fetch inventory: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    // ==================== EQUIPMENT API ====================
+
+    /// <summary>
+    /// Trang bị item từ inventory
+    /// </summary>
+    public void EquipItem(int playerId, int inventorySlotIndex, System.Action<string> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(EquipItemCoroutine(playerId, inventorySlotIndex, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator EquipItemCoroutine(int playerId, int inventorySlotIndex, System.Action<string> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/equipment/equip";
+        string json = $"{{\"inventorySlotIndex\":{inventorySlotIndex}}}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+
+        Debug.Log($"[APIClient] 🎮 Equip item: playerId={playerId}, slotIndex={inventorySlotIndex}");
+
+        using (UnityEngine.Networking.UnityWebRequest www = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                Debug.Log($"[APIClient] ✅ Equip thành công: {responseText}");
+                onSuccess?.Invoke(responseText);
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] ❌ Equip thất bại: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tháo trang bị
+    /// </summary>
+    public void UnequipItem(int playerId, string equipmentSlot, System.Action<string> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(UnequipItemCoroutine(playerId, equipmentSlot, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator UnequipItemCoroutine(int playerId, string equipmentSlot, System.Action<string> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/equipment/unequip";
+        string json = $"{{\"equipmentSlot\":\"{equipmentSlot}\"}}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+
+        Debug.Log($"[APIClient] 🔧 Unequip: playerId={playerId}, slot={equipmentSlot}");
+
+        using (UnityEngine.Networking.UnityWebRequest www = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                Debug.Log($"[APIClient] ✅ Unequip thành công: {responseText}");
+                onSuccess?.Invoke(responseText);
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] ❌ Unequip thất bại: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Lấy thông tin trang bị của player
+    /// </summary>
+    public void GetPlayerEquipment(int playerId, System.Action<PlayerEquipmentDto> onSuccess = null, System.Action<string> onError = null)
+    {
+        StartCoroutine(GetPlayerEquipmentCoroutine(playerId, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator GetPlayerEquipmentCoroutine(int playerId, System.Action<PlayerEquipmentDto> onSuccess, System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/equipment";
+        Debug.Log($"[APIClient] 🔄 Fetching equipment for player {playerId}...");
+
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            }
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string responseText = www.downloadHandler.text;
+                Debug.Log($"[APIClient] ✅ Equipment response: {responseText}");
+
+                try
+                {
+                    // Response format: { "player_id": 1, "equipment": { "weapon": {...}, ... } }
+                    // Parse equipment từ wrapper
+                    var wrapper = JsonUtility.FromJson<EquipmentResponseWrapper>(responseText);
+                    if (wrapper != null && wrapper.equipment != null)
+                    {
+                        onSuccess?.Invoke(wrapper.equipment);
+                    }
+                    else
+                    {
+                        // Try parsing trực tiếp
+                        var equipment = JsonUtility.FromJson<PlayerEquipmentDto>(responseText);
+                        onSuccess?.Invoke(equipment ?? new PlayerEquipmentDto());
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[APIClient] ❌ Error parsing equipment: {ex.Message}");
+                    // Trả về equipment trống thay vì lỗi
+                    onSuccess?.Invoke(new PlayerEquipmentDto());
+                }
+            }
+            else
+            {
+                string errorMessage = www.error;
+                if (www.downloadHandler != null && !string.IsNullOrEmpty(www.downloadHandler.text))
+                {
+                    errorMessage = www.downloadHandler.text;
+                }
+                Debug.LogError($"[APIClient] ❌ Failed to fetch equipment: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Wrapper để parse response từ GET /api/player/{id}/equipment
+    /// </summary>
+    [System.Serializable]
+    private class EquipmentResponseWrapper
+    {
+        public int player_id;
+        public PlayerEquipmentDto equipment;
     }
 }

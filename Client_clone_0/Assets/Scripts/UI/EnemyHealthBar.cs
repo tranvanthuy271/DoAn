@@ -144,7 +144,7 @@ public class EnemyHealthBar : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthBar] NetworkEnemyHealth or EnemyHealth not found on {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBar] NetworkEnemyHealth or EnemyHealth not found on {gameObject.name}!");
         }
 
         // Setup slider if exists
@@ -218,7 +218,7 @@ public class EnemyHealthBar : MonoBehaviour
         if (float.IsNaN(targetWorldPosition.x) || float.IsNaN(targetWorldPosition.y) || float.IsNaN(targetWorldPosition.z) ||
             float.IsInfinity(targetWorldPosition.x) || float.IsInfinity(targetWorldPosition.y) || float.IsInfinity(targetWorldPosition.z))
         {
-            Debug.LogWarning($"[EnemyHealthBar] Invalid target position: {targetWorldPosition}");
+            // Debug.LogWarning($"[EnemyHealthBar] Invalid target position: {targetWorldPosition}");
             return;
         }
 

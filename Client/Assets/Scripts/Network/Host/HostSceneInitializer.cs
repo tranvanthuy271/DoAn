@@ -19,7 +19,7 @@ public class HostSceneInitializer : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[HostSceneInitializer] Initializing Host Scene...");
+        // Debug.Log("[HostSceneInitializer] Initializing Host Scene...");
 
         // QUAN TRỌNG: Đăng ký prefab TRƯỚC KHI start host
         RegisterNetworkPrefabs();
@@ -28,7 +28,7 @@ public class HostSceneInitializer : MonoBehaviour
         var networkManagerSingleton = NetworkManager.Singleton;
         if (networkManagerSingleton == null)
         {
-            Debug.LogError("[HostSceneInitializer] NetworkManager not found in HostScene! Make sure NetworkManager is in the scene.");
+            // Debug.LogError("[HostSceneInitializer] NetworkManager not found in HostScene! Make sure NetworkManager is in the scene.");
             return;
         }
 
@@ -46,11 +46,11 @@ public class HostSceneInitializer : MonoBehaviour
         {
             GameObject approvalObj = new GameObject("ServerConnectionApproval");
             approvalObj.AddComponent<ServerConnectionApproval>();
-            Debug.Log("[HostSceneInitializer] Created ServerConnectionApproval.");
+            // Debug.Log("[HostSceneInitializer] Created ServerConnectionApproval.");
         }
         else
         {
-            Debug.Log("[HostSceneInitializer] ServerConnectionApproval found in scene.");
+            // Debug.Log("[HostSceneInitializer] ServerConnectionApproval found in scene.");
         }
 
         // Đảm bảo có ServerPlayerDataManager
@@ -58,14 +58,14 @@ public class HostSceneInitializer : MonoBehaviour
         {
             GameObject serverDataManagerObj = new GameObject("ServerPlayerDataManager");
             serverDataManagerObj.AddComponent<ServerPlayerDataManager>();
-            Debug.Log("[HostSceneInitializer] Created ServerPlayerDataManager.");
+            // Debug.Log("[HostSceneInitializer] Created ServerPlayerDataManager.");
         }
 
         // Đảm bảo có NetworkPlayerSpawner
         NetworkPlayerSpawner spawner = FindObjectOfType<NetworkPlayerSpawner>();
         if (spawner == null)
         {
-            Debug.LogWarning("[HostSceneInitializer] NetworkPlayerSpawner not found in HostScene! Make sure NetworkPlayerSpawner is in the scene.");
+            // Debug.LogWarning("[HostSceneInitializer] NetworkPlayerSpawner not found in HostScene! Make sure NetworkPlayerSpawner is in the scene.");
         }
 
         // Setup server port
@@ -87,7 +87,7 @@ public class HostSceneInitializer : MonoBehaviour
             // Tạo NetworkPrefabRegistrar nếu chưa có
             GameObject registrarObj = new GameObject("NetworkPrefabRegistrar");
             registrar = registrarObj.AddComponent<NetworkPrefabRegistrar>();
-            Debug.Log("[HostSceneInitializer] Created NetworkPrefabRegistrar.");
+            // Debug.Log("[HostSceneInitializer] Created NetworkPrefabRegistrar.");
         }
         
         // Đăng ký prefab
@@ -100,13 +100,13 @@ public class HostSceneInitializer : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ No authSenderPrefab assigned!");
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ AuthSenderNetworkObject will NOT be spawned.");
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ Client will need to wait for player spawn to send auth.");
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ RECOMMENDED: Create a prefab with NetworkObject component and assign it to authSenderPrefab field.");
+            // Debug.LogWarning("[HostSceneInitializer] ⚠️ No authSenderPrefab assigned!");
+            // Debug.LogWarning("[HostSceneInitializer] ⚠️ AuthSenderNetworkObject will NOT be spawned.");
+            // Debug.LogWarning("[HostSceneInitializer] ⚠️ Client will need to wait for player spawn to send auth.");
+            // Debug.LogWarning("[HostSceneInitializer] ⚠️ RECOMMENDED: Create a prefab with NetworkObject component and assign it to authSenderPrefab field.");
         }
         
-        Debug.Log("[HostSceneInitializer] NetworkPrefabs registered.");
+        // Debug.Log("[HostSceneInitializer] NetworkPrefabs registered.");
     }
 
     /// <summary>
@@ -122,14 +122,14 @@ public class HostSceneInitializer : MonoBehaviour
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null)
         {
-            Debug.LogError("[HostSceneInitializer] NetworkManager.Singleton is null! Cannot register authSenderPrefab.");
+            // Debug.LogError("[HostSceneInitializer] NetworkManager.Singleton is null! Cannot register authSenderPrefab.");
             return;
         }
 
         NetworkObject netObj = prefab.GetComponent<NetworkObject>();
         if (netObj == null)
         {
-            Debug.LogError("[HostSceneInitializer] AuthSender prefab is missing NetworkObject component!");
+            // Debug.LogError("[HostSceneInitializer] AuthSender prefab is missing NetworkObject component!");
             return;
         }
 
@@ -143,7 +143,7 @@ public class HostSceneInitializer : MonoBehaviour
                 {
                     if (registeredPrefab.Prefab == prefab || registeredPrefab.Prefab.name == prefab.name)
                     {
-                        Debug.Log($"[HostSceneInitializer] AuthSender prefab '{prefab.name}' already registered.");
+                        // Debug.Log($"[HostSceneInitializer] AuthSender prefab '{prefab.name}' already registered.");
                         return;
                     }
                 }
@@ -154,11 +154,11 @@ public class HostSceneInitializer : MonoBehaviour
         try
         {
             networkManager.AddNetworkPrefab(prefab);
-            Debug.Log($"[HostSceneInitializer] ✓ Registered AuthSender prefab: {prefab.name}");
+            // Debug.Log($"[HostSceneInitializer] ✓ Registered AuthSender prefab: {prefab.name}");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[HostSceneInitializer] Failed to register AuthSender prefab: {ex.Message}");
+            // Debug.LogError($"[HostSceneInitializer] Failed to register AuthSender prefab: {ex.Message}");
         }
     }
 
@@ -175,17 +175,17 @@ public class HostSceneInitializer : MonoBehaviour
         {
             if (NetworkManager.Singleton.ConnectionApprovalCallback == null)
             {
-                Debug.LogWarning("[HostSceneInitializer] ConnectionApprovalCallback is still null! Waiting a bit more...");
+                // Debug.LogWarning("[HostSceneInitializer] ConnectionApprovalCallback is still null! Waiting a bit more...");
                 yield return new WaitForSeconds(0.1f);
                 
                 if (NetworkManager.Singleton.ConnectionApprovalCallback == null)
                 {
-                    Debug.LogError("[HostSceneInitializer] ✗ ConnectionApprovalCallback is NULL! Connection will timeout!");
+                    // Debug.LogError("[HostSceneInitializer] ✗ ConnectionApprovalCallback is NULL! Connection will timeout!");
                 }
             }
             else
             {
-                Debug.Log("[HostSceneInitializer] ✓ ConnectionApprovalCallback is registered.");
+                // Debug.Log("[HostSceneInitializer] ✓ ConnectionApprovalCallback is registered.");
             }
         }
         
@@ -198,11 +198,11 @@ public class HostSceneInitializer : MonoBehaviour
     /// </summary>
     private void StartHost()
     {
-        Debug.Log($"[HostSceneInitializer] Starting host on port {serverPort}...");
+        // Debug.Log($"[HostSceneInitializer] Starting host on port {serverPort}...");
 
         if (networkManager == null)
         {
-            Debug.LogError("[HostSceneInitializer] NetworkManagerCustom is null! Cannot start host.");
+            // Debug.LogError("[HostSceneInitializer] NetworkManagerCustom is null! Cannot start host.");
             return;
         }
 
@@ -216,7 +216,7 @@ public class HostSceneInitializer : MonoBehaviour
         // Start host
         networkManager.StartHost();
 
-        Debug.Log("[HostSceneInitializer] Host started. Waiting for clients to connect...");
+        // Debug.Log("[HostSceneInitializer] Host started. Waiting for clients to connect...");
     }
 
     /// <summary>
@@ -224,47 +224,14 @@ public class HostSceneInitializer : MonoBehaviour
     /// </summary>
     private void OnServerStarted()
     {
-        Debug.Log("[HostSceneInitializer] Server started. Creating auth sender NetworkObject...");
+        Debug.Log("[HostSceneInitializer] Server started. Registering auth Named Message handler...");
         
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        // Đăng ký Named Message handler để nhận auth từ client
+        if (networkManager != null)
         {
-            Debug.LogError("[HostSceneInitializer] ✗ Cannot spawn auth sender - NetworkManager is not server!");
-            return;
+            networkManager.RegisterAuthMessageHandler();
         }
-
-        // Chỉ spawn nếu có prefab được assign
-        if (authSenderPrefab == null)
-        {
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ No authSenderPrefab assigned. Skipping AuthSenderNetworkObject spawn.");
-            Debug.LogWarning("[HostSceneInitializer] ⚠️ Client will need to wait for player spawn to send auth via player NetworkObject.");
-            return;
-        }
-
-        // Spawn từ prefab
-        GameObject authSenderObj = Instantiate(authSenderPrefab);
-        NetworkObject netObj = authSenderObj.GetComponent<NetworkObject>();
-        
-        if (netObj == null)
-        {
-            Debug.LogError("[HostSceneInitializer] ✗ AuthSender prefab is missing NetworkObject component!");
-            Destroy(authSenderObj);
-            return;
-        }
-
-        // Spawn NetworkObject này để client có thể gửi ServerRpc
-        try
-        {
-            netObj.Spawn();
-            Debug.Log("[HostSceneInitializer] ✓ Auth sender NetworkObject spawned successfully from prefab.");
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[HostSceneInitializer] ✗ Failed to spawn auth sender: {ex.Message}");
-            if (authSenderObj != null)
-            {
-                Destroy(authSenderObj);
-            }
-        }
+        // NOTE: AuthSenderNetworkObject không còn cần thiết vì auth giờ dùng Named Messages
     }
 
     private void OnDestroy()
@@ -273,6 +240,6 @@ public class HostSceneInitializer : MonoBehaviour
         {
             NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
         }
-        Debug.Log("[HostSceneInitializer] Host Scene destroyed.");
+        // Debug.Log("[HostSceneInitializer] Host Scene destroyed.");
     }
 }

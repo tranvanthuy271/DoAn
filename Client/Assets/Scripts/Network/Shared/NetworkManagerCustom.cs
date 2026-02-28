@@ -1,11 +1,13 @@
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Netcode.Transports.UTP;
+using Unity.Collections;
 
 /// <summary>
 /// Shared NetworkManager wrapper: Tách logic Host và Client
 /// StartHost() chỉ dùng trong HostScene
 /// ConnectToServer() chỉ dùng trong GameScene (Client)
+/// Auth flow: Client gửi auth ngay khi connect qua CustomMessagingManager (Named Messages)
 /// </summary>
 public class NetworkManagerCustom : MonoBehaviour
 {
@@ -13,26 +15,27 @@ public class NetworkManagerCustom : MonoBehaviour
     public string serverIP = "127.0.0.1"; // localhost (cho client)
     public ushort serverPort = 2003;
 
+    private const string AUTH_MESSAGE_NAME = "ClientAuth";
     private NetworkManager networkManager;
     private bool callbacksSubscribed = false;
+    private bool authMessageHandlerRegistered = false;
 
     void Start()
     {
         networkManager = NetworkManager.Singleton;
-        
+
         // Chỉ setup callbacks nếu NetworkManager tồn tại và chưa subscribe
         if (networkManager != null && !callbacksSubscribed)
         {
             // Unsubscribe trước để tránh duplicate subscription
             networkManager.OnClientConnectedCallback -= OnClientConnected;
             networkManager.OnClientDisconnectCallback -= OnClientDisconnected;
-            
+
             // Setup callbacks
             networkManager.OnClientConnectedCallback += OnClientConnected;
             networkManager.OnClientDisconnectCallback += OnClientDisconnected;
             callbacksSubscribed = true;
-            Debug.Log("[NetworkManagerCustom] ✓ Callbacks subscribed");
-            
+
             // Subscribe to scene management events để debug
             if (networkManager.SceneManager != null)
             {
@@ -42,24 +45,16 @@ public class NetworkManagerCustom : MonoBehaviour
                 networkManager.SceneManager.OnLoadComplete += OnSceneLoadComplete;
             }
         }
-        else if (networkManager == null)
-        {
-            Debug.LogWarning("[NetworkManagerCustom] NetworkManager.Singleton is null! NetworkManager may not be in the scene.");
-        }
-        else if (callbacksSubscribed)
-        {
-            Debug.Log("[NetworkManagerCustom] Callbacks already subscribed, skipping...");
-        }
     }
 
     private void OnSceneLoadCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, System.Collections.Generic.List<ulong> clientsCompleted, System.Collections.Generic.List<ulong> clientsTimedOut)
     {
-        Debug.Log($"[NetworkManagerCustom] Scene load completed: {sceneName}, Clients completed: {clientsCompleted.Count}, Timed out: {clientsTimedOut.Count}");
+        // Debug.Log($"[NetworkManagerCustom] Scene load completed: {sceneName}, Clients completed: {clientsCompleted.Count}, Timed out: {clientsTimedOut.Count}");
     }
 
     private void OnSceneLoadComplete(ulong clientId, string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode)
     {
-        Debug.Log($"[NetworkManagerCustom] Scene load complete for client {clientId}: {sceneName}");
+        // Debug.Log($"[NetworkManagerCustom] Scene load complete for client {clientId}: {sceneName}");
     }
 
     /// <summary>
@@ -72,34 +67,34 @@ public class NetworkManagerCustom : MonoBehaviour
 
         if (networkManager == null)
         {
-            Debug.LogError("[NetworkManagerCustom] NetworkManager.Singleton is null! Cannot connect.");
+            // Debug.LogError("[NetworkManagerCustom] NetworkManager.Singleton is null! Cannot connect.");
             return;
         }
 
         // Kiểm tra NetworkConfig
         if (networkManager.NetworkConfig == null)
         {
-            Debug.LogWarning("[NetworkManagerCustom] NetworkManager.NetworkConfig is null! Có thể gây lỗi khi connect.");
-            Debug.LogWarning("[NetworkManagerCustom] Vui lòng đảm bảo NetworkManager được config đúng trong Inspector.");
+            // Debug.LogWarning("[NetworkManagerCustom] NetworkManager.NetworkConfig is null! Có thể gây lỗi khi connect.");
+            // Debug.LogWarning("[NetworkManagerCustom] Vui lòng đảm bảo NetworkManager được config đúng trong Inspector.");
         }
 
         // Log scene info trước khi connect
         string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        Debug.Log($"[NetworkManagerCustom] Current scene before connect: '{currentScene}'");
+        // Debug.Log($"[NetworkManagerCustom] Current scene before connect: '{currentScene}'");
 
         // Lấy user_id từ PlayerPrefs (sẽ gửi lên host sau khi connect qua ServerRpc)
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
         if (userId == 0)
         {
-            Debug.LogError("[NetworkManagerCustom] USER_ID not found in PlayerPrefs! Cannot connect. Please login first.");
+            // Debug.LogError("[NetworkManagerCustom] USER_ID not found in PlayerPrefs! Cannot connect. Please login first.");
             return;
         }
-        Debug.Log($"[NetworkManagerCustom] User ID {userId} will be sent to host after connection via ServerRpc");
+        // Debug.Log($"[NetworkManagerCustom] User ID {userId} will be sent to host after connection via ServerRpc");
 
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
+            // Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
             return;
         }
 
@@ -110,18 +105,18 @@ public class NetworkManagerCustom : MonoBehaviour
         {
             if (networkManager.StartClient())
             {
-                Debug.Log($"[NetworkManagerCustom] ✓ StartClient() called successfully. Connecting to {serverIP}:{serverPort} with userId: {userId}");
-                Debug.Log($"[NetworkManagerCustom] IsClient: {networkManager.IsClient}, IsServer: {networkManager.IsServer}, IsHost: {networkManager.IsHost}");
+                // Debug.Log($"[NetworkManagerCustom] ✓ StartClient() called successfully. Connecting to {serverIP}:{serverPort} with userId: {userId}");
+                // Debug.Log($"[NetworkManagerCustom] IsClient: {networkManager.IsClient}, IsServer: {networkManager.IsServer}, IsHost: {networkManager.IsHost}");
             }
             else
             {
-                Debug.LogError("[NetworkManagerCustom] Failed to start client! Check NetworkManager configuration.");
+                // Debug.LogError("[NetworkManagerCustom] Failed to start client! Check NetworkManager configuration.");
             }
         }
-        catch (System.Exception ex)
+        catch (System.Exception)
         {
-            Debug.LogError($"[NetworkManagerCustom] Exception when starting client: {ex.Message}");
-            Debug.LogError($"[NetworkManagerCustom] Stack trace: {ex.StackTrace}");
+            // Debug.LogError($"[NetworkManagerCustom] Exception when starting client: {ex.Message}");
+            // Debug.LogError($"[NetworkManagerCustom] Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -136,7 +131,7 @@ public class NetworkManagerCustom : MonoBehaviour
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
+            // Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
             return;
         }
 
@@ -145,11 +140,11 @@ public class NetworkManagerCustom : MonoBehaviour
         
         if (networkManager.StartHost())
         {
-            Debug.Log($"[NetworkManagerCustom] Host started on port {serverPort}");
+            // Debug.Log($"[NetworkManagerCustom] Host started on port {serverPort}");
         }
         else
         {
-            Debug.LogError("[NetworkManagerCustom] Failed to start host!");
+            // Debug.LogError("[NetworkManagerCustom] Failed to start host!");
         }
     }
 
@@ -164,7 +159,7 @@ public class NetworkManagerCustom : MonoBehaviour
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
+            // Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
             return;
         }
 
@@ -173,11 +168,11 @@ public class NetworkManagerCustom : MonoBehaviour
         
         if (networkManager.StartServer())
         {
-            Debug.Log($"[NetworkManagerCustom] Server started on port {serverPort}");
+            // Debug.Log($"[NetworkManagerCustom] Server started on port {serverPort}");
         }
         else
         {
-            Debug.LogError("[NetworkManagerCustom] Failed to start server!");
+            // Debug.LogError("[NetworkManagerCustom] Failed to start server!");
         }
     }
 
@@ -186,65 +181,159 @@ public class NetworkManagerCustom : MonoBehaviour
         if (networkManager != null && networkManager.IsClient)
         {
             networkManager.Shutdown();
-            Debug.Log("[NetworkManagerCustom] Disconnected from server");
+            // Debug.Log("[NetworkManagerCustom] Disconnected from server");
         }
+    }
+
+    /// <summary>
+    /// Đăng ký Named Message handler trên server để nhận auth từ client.
+    /// Gọi SAU KHI StartHost() hoặc StartServer() thành công.
+    /// </summary>
+    public void RegisterAuthMessageHandler()
+    {
+        if (networkManager == null) networkManager = NetworkManager.Singleton;
+        
+        if (networkManager == null)
+        {
+            Debug.LogError("[NetworkManagerCustom] RegisterAuthMessageHandler: NetworkManager is NULL!");
+            return;
+        }
+        
+        if (!networkManager.IsServer)
+        {
+            Debug.LogWarning($"[NetworkManagerCustom] RegisterAuthMessageHandler: Not server (IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient})");
+            return;
+        }
+        
+        if (authMessageHandlerRegistered)
+        {
+            Debug.Log("[NetworkManagerCustom] Auth handler already registered, skipping...");
+            return;
+        }
+
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(AUTH_MESSAGE_NAME, OnAuthMessageReceived);
+        authMessageHandlerRegistered = true;
+        Debug.Log("[NetworkManagerCustom] ✓ Registered Named Message handler for ClientAuth");
+    }
+
+    /// <summary>
+    /// Server nhận auth message từ client qua CustomMessagingManager
+    /// </summary>
+    private void OnAuthMessageReceived(ulong senderClientId, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out int userId);
+        reader.ReadValueSafe(out ForceNetworkSerializeByMemcpy<FixedString512Bytes> tokenWrapper);
+        string token = tokenWrapper.Value.ToString();
+
+        Debug.Log($"[NetworkManagerCustom] ===== AUTH MESSAGE RECEIVED =====");
+        Debug.Log($"[NetworkManagerCustom] SenderClientId: {senderClientId}");
+        Debug.Log($"[NetworkManagerCustom] UserId: {userId}");
+        Debug.Log($"[NetworkManagerCustom] Token length: {token?.Length ?? 0}");
+
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
+                senderClientId,
+                userId,
+                onSuccess: (playerData) =>
+                {
+                    Debug.Log($"[NetworkManagerCustom] ✓ Player data loaded for client {senderClientId}: {playerData.character_name}");
+                },
+                onError: (error) =>
+                {
+                    Debug.LogError($"[NetworkManagerCustom] ✗ Failed to load player data for client {senderClientId}: {error}");
+                }
+            );
+        }
+        else
+        {
+            Debug.LogError($"[NetworkManagerCustom] ✗ ServerPlayerDataManager.Instance is null! Cannot load data for client {senderClientId}");
+        }
+    }
+
+    /// <summary>
+    /// Client gửi auth message lên server qua CustomMessagingManager.
+    /// Không cần NetworkObject - hoạt động ngay khi client connected.
+    /// </summary>
+    private void SendAuthToServer()
+    {
+        int userId = PlayerPrefs.GetInt("USER_ID", 0);
+        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+
+        if (userId == 0 || string.IsNullOrEmpty(token))
+        {
+            Debug.LogError($"[NetworkManagerCustom] ✗ Cannot send auth: userId={userId}, token empty={string.IsNullOrEmpty(token)}");
+            return;
+        }
+
+        Debug.Log($"[NetworkManagerCustom] ===== SENDING AUTH VIA NAMED MESSAGE =====");
+        Debug.Log($"[NetworkManagerCustom] UserId: {userId}, Token length: {token.Length}");
+
+        // Serialize userId + token vào FastBufferWriter
+        var tokenFixed = new FixedString512Bytes(token);
+        int size = FastBufferWriter.GetWriteSize(userId) + FastBufferWriter.GetWriteSize(new ForceNetworkSerializeByMemcpy<FixedString512Bytes>(tokenFixed));
+        
+        using (var writer = new FastBufferWriter(size, Allocator.Temp))
+        {
+            writer.WriteValueSafe(userId);
+            writer.WriteValueSafe(new ForceNetworkSerializeByMemcpy<FixedString512Bytes>(tokenFixed));
+            networkManager.CustomMessagingManager.SendNamedMessage(AUTH_MESSAGE_NAME, NetworkManager.ServerClientId, writer);
+        }
+
+        Debug.Log($"[NetworkManagerCustom] ✓ Auth message sent to server");
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        Debug.Log($"[NetworkManagerCustom] ✓✓✓ OnClientConnectedCallback: Client {clientId} connected ✓✓✓");
-        Debug.Log($"[NetworkManagerCustom] Current scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}");
-        Debug.Log($"[NetworkManagerCustom] IsClient: {networkManager.IsClient}, IsServer: {networkManager.IsServer}, IsHost: {networkManager.IsHost}");
-        
-        // QUAN TRỌNG: Gửi auth ngay sau khi client connect (client-side)
-        // Điều này đảm bảo player data được load TRƯỚC KHI NetworkPlayerSpawner spawn player
-        if (networkManager != null && networkManager.IsClient && !networkManager.IsServer)
+        if (networkManager != null && networkManager.IsHost && clientId == networkManager.LocalClientId)
         {
-            // Chỉ client (không phải host) mới cần gửi auth ở đây
-            Debug.Log($"[NetworkManagerCustom] Client-side: Sending auth immediately after connection...");
-            ClientAuthSender.SendAuthAfterConnection(clientId);
-        }
-        else if (networkManager != null && networkManager.IsHost && clientId == networkManager.LocalClientId)
-        {
-            // Host: Gửi auth cho local client (client 0) ngay sau khi connect
-            Debug.Log($"[NetworkManagerCustom] Host-side: Sending auth for local client {clientId} immediately after connection...");
-            ClientAuthSender.SendAuthAfterConnection(clientId);
-        }
-        
-        // Log connected clients - CHỈ trên Server/Host
-        bool isServerOrHost = networkManager != null && (networkManager.IsServer || networkManager.IsHost);
-        
-        if (isServerOrHost)
-        {
-            try
+            // Host: Load player data trực tiếp
+            Debug.Log($"[NetworkManagerCustom] Host-side: Loading player data directly for local client {clientId}...");
+            
+            int userId = PlayerPrefs.GetInt("USER_ID", 0);
+            string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+            
+            if (userId == 0 || string.IsNullOrEmpty(token))
             {
-                if (networkManager.IsServer || networkManager.IsHost)
-                {
-                    var connectedClients = networkManager.ConnectedClients;
-                    if (connectedClients != null)
+                Debug.LogError($"[NetworkManagerCustom] Host authentication failed: userId={userId}, token empty={string.IsNullOrEmpty(token)}");
+                return;
+            }
+            
+            if (ServerPlayerDataManager.Instance != null)
+            {
+                ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
+                    clientId,
+                    userId,
+                    onSuccess: (playerData) =>
                     {
-                        Debug.Log($"[NetworkManagerCustom] Total connected clients: {connectedClients.Count}");
-                        foreach (var client in connectedClients)
-                        {
-                            Debug.Log($"[NetworkManagerCustom]   - ClientId: {client.Key}, IsLocalClient: {client.Value.PlayerObject != null}");
-                        }
+                        Debug.Log($"[NetworkManagerCustom] ✓ Host player data loaded: {playerData.character_name}");
+                    },
+                    onError: (error) =>
+                    {
+                        Debug.LogError($"[NetworkManagerCustom] ✗ Failed to load host player data: {error}");
                     }
-                }
+                );
             }
-            catch (System.Exception ex)
+            else
             {
-                Debug.LogWarning($"[NetworkManagerCustom] Cannot access ConnectedClients (this is normal on client): {ex.Message}");
+                Debug.LogError("[NetworkManagerCustom] ServerPlayerDataManager.Instance is null!");
             }
         }
-        else
+        else if (networkManager != null && networkManager.IsClient && !networkManager.IsServer)
         {
-            Debug.Log($"[NetworkManagerCustom] Client connected (not server/host, skipping ConnectedClients access)");
+            // Client: Gửi auth NGAY LẬP TỨC qua Named Message (không cần đợi player spawn)
+            Debug.Log($"[NetworkManagerCustom] Client-side: Sending auth immediately via Named Message for clientId {clientId}...");
+            SendAuthToServer();
+        }
+        else if (networkManager != null && networkManager.IsServer && clientId != networkManager.LocalClientId)
+        {
+            // Server-side: Remote client connected, auth sẽ đến qua Named Message
+            Debug.Log($"[NetworkManagerCustom] Server-side: Remote client {clientId} connected, waiting for auth via Named Message...");
         }
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
-        Debug.Log($"[NetworkManagerCustom] Client {clientId} disconnected from server");
     }
 
     void OnDestroy()
@@ -259,6 +348,12 @@ public class NetworkManagerCustom : MonoBehaviour
             {
                 networkManager.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
                 networkManager.SceneManager.OnLoadComplete -= OnSceneLoadComplete;
+            }
+
+            if (authMessageHandlerRegistered && networkManager.CustomMessagingManager != null)
+            {
+                networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(AUTH_MESSAGE_NAME);
+                authMessageHandlerRegistered = false;
             }
         }
     }

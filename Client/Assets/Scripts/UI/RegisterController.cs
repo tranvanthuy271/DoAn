@@ -74,7 +74,7 @@ public class RegisterController : MonoBehaviour
             password,
             onSuccess: (response) =>
             {
-                Debug.Log($"Register successful! User ID: {response.user_id}");
+                // Debug.Log($"Register successful! User ID: {response.user_id}");
                 ShowSuccess("Đăng ký thành công! Đang chuyển đến trang đăng nhập...");
                 
                 // Chờ 2 giây rồi chuyển về Login
@@ -82,7 +82,7 @@ public class RegisterController : MonoBehaviour
             },
             onError: (error) =>
             {
-                Debug.LogError($"Register failed: {error}");
+                // Debug.LogError($"Register failed: {error}");
                 ShowError($"Đăng ký thất bại: {error}");
                 registerButton.interactable = true;
             }

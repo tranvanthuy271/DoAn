@@ -30,7 +30,7 @@ public class GameSceneClientInitializer : MonoBehaviour
         // Kiểm tra xem đã có player data chưa
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
         {
-            Debug.Log("[GameSceneClientInitializer] Player data already loaded from previous scene.");
+            // Debug.Log("[GameSceneClientInitializer] Player data already loaded from previous scene.");
             playerDataLoaded = true;
             
             // Connect đến host
@@ -55,12 +55,12 @@ public class GameSceneClientInitializer : MonoBehaviour
             // Tạo NetworkPrefabRegistrar nếu chưa có
             GameObject registrarObj = new GameObject("NetworkPrefabRegistrar");
             registrar = registrarObj.AddComponent<NetworkPrefabRegistrar>();
-            Debug.Log("[GameSceneClientInitializer] Created NetworkPrefabRegistrar.");
+            // Debug.Log("[GameSceneClientInitializer] Created NetworkPrefabRegistrar.");
         }
         
         // Đăng ký prefab
         registrar.ReRegisterPrefabs();
-        Debug.Log("[GameSceneClientInitializer] NetworkPrefabs registered.");
+        // Debug.Log("[GameSceneClientInitializer] NetworkPrefabs registered.");
     }
 
     /// <summary>
@@ -70,24 +70,24 @@ public class GameSceneClientInitializer : MonoBehaviour
     {
         if (isInitializing)
         {
-            Debug.LogWarning("[GameSceneClientInitializer] Already loading player data...");
+            // Debug.LogWarning("[GameSceneClientInitializer] Already loading player data...");
             return;
         }
 
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
         if (userId == 0)
         {
-            Debug.LogError("[GameSceneClientInitializer] USER_ID not found in PlayerPrefs! Returning to Login scene.");
+            // Debug.LogError("[GameSceneClientInitializer] USER_ID not found in PlayerPrefs! Returning to Login scene.");
             SceneManager.LoadScene("Login");
             return;
         }
 
         isInitializing = true;
-        Debug.Log($"[GameSceneClientInitializer] Loading player data for user ID: {userId}");
+        // Debug.Log($"[GameSceneClientInitializer] Loading player data for user ID: {userId}");
 
         if (apiClient == null)
         {
-            Debug.LogError("[GameSceneClientInitializer] APIClient.Instance is null!");
+            // Debug.LogError("[GameSceneClientInitializer] APIClient.Instance is null!");
             isInitializing = false;
             return;
         }
@@ -96,7 +96,7 @@ public class GameSceneClientInitializer : MonoBehaviour
             userId,
             onSuccess: (playerData) =>
             {
-                Debug.Log($"[GameSceneClientInitializer] Player data loaded successfully: {playerData.character_name} ({playerData.element_type} - {playerData.gender}), Level {playerData.level}");
+                // Debug.Log($"[GameSceneClientInitializer] Player data loaded successfully: {playerData.character_name} ({playerData.element_type} - {playerData.gender}), Level {playerData.level}");
                 
                 // Lưu vào GameManager
                 if (GameManager.Instance == null)
@@ -109,11 +109,11 @@ public class GameSceneClientInitializer : MonoBehaviour
                 {
                     GameManager.Instance.SetPlayerData(playerData);
                     playerDataLoaded = true;
-                    Debug.Log("[GameSceneClientInitializer] Player data saved to GameManager.");
+                    // Debug.Log("[GameSceneClientInitializer] Player data saved to GameManager.");
                 }
                 else
                 {
-                    Debug.LogError("[GameSceneClientInitializer] GameManager.Instance is null! Cannot save player data.");
+                    // Debug.LogError("[GameSceneClientInitializer] GameManager.Instance is null! Cannot save player data.");
                 }
 
                 // Connect đến host sau khi load player data
@@ -123,18 +123,18 @@ public class GameSceneClientInitializer : MonoBehaviour
             },
             onError: (error) =>
             {
-                Debug.LogError($"[GameSceneClientInitializer] Failed to load player data: {error}");
+                // Debug.LogError($"[GameSceneClientInitializer] Failed to load player data: {error}");
                 
                 // Nếu lỗi 404 (chưa có player), chuyển về SelectElement
                 if (error.Contains("404") || error.Contains("not found") || error.Contains("Player không tồn tại"))
                 {
-                    Debug.Log("[GameSceneClientInitializer] Player data not found. Returning to SelectElement scene.");
+                    // Debug.Log("[GameSceneClientInitializer] Player data not found. Returning to SelectElement scene.");
                     SceneManager.LoadScene("SelectElement");
                 }
                 else
                 {
                     // Lỗi khác: quay về Login
-                    Debug.Log("[GameSceneClientInitializer] Error loading player data. Returning to Login.");
+                    // Debug.Log("[GameSceneClientInitializer] Error loading player data. Returning to Login.");
                     SceneManager.LoadScene("Login");
                 }
 
@@ -148,13 +148,13 @@ public class GameSceneClientInitializer : MonoBehaviour
     /// </summary>
     private void ConnectToHost()
     {
-        Debug.Log($"[GameSceneClientInitializer] Connecting to host at {serverIP}:{serverPort}...");
+        // Debug.Log($"[GameSceneClientInitializer] Connecting to host at {serverIP}:{serverPort}...");
 
         // Đảm bảo có NetworkManager
         var networkManagerSingleton = NetworkManager.Singleton;
         if (networkManagerSingleton == null)
         {
-            Debug.LogError("[GameSceneClientInitializer] NetworkManager not found in GameScene! Make sure NetworkManager is in the scene.");
+            // Debug.LogError("[GameSceneClientInitializer] NetworkManager not found in GameScene! Make sure NetworkManager is in the scene.");
             return;
         }
 

@@ -28,9 +28,11 @@ public class InventoryDebugger : MonoBehaviour
             for (int i = 0; i < maxSlots; i++)
             {
                 InventorySlot slot = inventory.GetSlot(i);
-                if (slot != null && slot.itemData != null && slot.quantity > 0)
+                if (slot != null && slot.itemID > 0 && slot.quantity > 0)
                 {
-                    Debug.Log($"Slot {i}: {slot.itemData.itemName} x{slot.quantity}");
+                    var template = ItemTemplateManager.Instance?.GetItemTemplate(slot.itemID);
+                    string itemName = template?.name ?? $"Item {slot.itemID}";
+                    Debug.Log($"Slot {i}: {itemName} x{slot.quantity}");
                 }
             }
         }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
 /// <summary>
 /// InventorySlotUI - Hiển thị 1 ô item trong UI túi đồ (client-side)
@@ -16,6 +17,11 @@ public class InventorySlotUI : MonoBehaviour
 
     private int slotIndex;
     private InventorySlotDto currentData;
+
+    /// <summary>
+    /// Event khi người chơi click vào slot có item
+    /// </summary>
+    public event Action<InventorySlotDto> OnSlotClicked;
 
     /// <summary>
     /// Khởi tạo ô với index. Gọi 1 lần khi tạo grid.
@@ -118,8 +124,16 @@ public class InventorySlotUI : MonoBehaviour
     }
 
     /// <summary>
+    /// Lấy dữ liệu slot hiện tại
+    /// </summary>
+    public InventorySlotDto GetCurrentData()
+    {
+        return currentData;
+    }
+
+    /// <summary>
     /// Gọi từ Button OnClick trên prefab Slot.
-    /// Ở đây tạm thời chỉ log; phần gửi request UseItem/EquipItem sẽ do lớp network đảm nhiệm.
+    /// Hiển thị panel chi tiết item khi nhấn vào.
     /// </summary>
     public void OnClick()
     {
@@ -127,8 +141,9 @@ public class InventorySlotUI : MonoBehaviour
             return;
 
         Debug.Log($"[InventorySlotUI] Clicked slot {slotIndex} - itemCode={currentData.itemCode}, qty={currentData.quantity}");
-        // TODO: Gọi hàm UseItem/EquipItem client → server tại đây, ví dụ:
-        // InventoryNetworkClient.Instance.RequestUseItem(currentData.slotIndex);
+
+        // Fire event để InventoryUI mở panel chi tiết
+        OnSlotClicked?.Invoke(currentData);
     }
 }
 

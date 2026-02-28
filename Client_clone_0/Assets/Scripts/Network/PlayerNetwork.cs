@@ -107,7 +107,7 @@ public class PlayerNetwork : NetworkBehaviour
         float maxSpeed = moveSpeed * 1.5f; // Cho phép 50% tolerance
         if (speed > maxSpeed)
         {
-            Debug.LogWarning($"Player {OwnerClientId} moving too fast! Speed: {speed}");
+            // Debug.LogWarning($"Player {OwnerClientId} moving too fast! Speed: {speed}");
             return;
         }
 

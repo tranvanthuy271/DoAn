@@ -52,7 +52,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         if (change == null) return;
 
         saveQueue.Enqueue(change);
-        Debug.Log($"[PlayerDataSaveService] Queued save: {change.FieldName} = {change.Value} (Type: {change.Type})");
+        // Debug.Log($"[PlayerDataSaveService] Queued save: {change.FieldName} = {change.Value} (Type: {change.Type})");
     }
 
     /// <summary>
@@ -97,13 +97,13 @@ public class PlayerDataSaveService : NetworkBehaviour
             }
         }
 
-        Debug.Log($"[PlayerDataSaveService] Batch saving {changeCount} changes...");
+        // Debug.Log($"[PlayerDataSaveService] Batch saving {changeCount} changes...");
 
         // Lấy playerId từ GameManager hoặc ServerPlayerDataManager
         int playerId = GetPlayerId();
         if (playerId == 0)
         {
-            Debug.LogWarning("[PlayerDataSaveService] Cannot save: PlayerId is 0");
+            // Debug.LogWarning("[PlayerDataSaveService] Cannot save: PlayerId is 0");
             isSaving = false;
             return;
         }
@@ -119,7 +119,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
         else
         {
-            Debug.LogError("[PlayerDataSaveService] APIClient.Instance is null! Cannot save.");
+            // Debug.LogError("[PlayerDataSaveService] APIClient.Instance is null! Cannot save.");
             isSaving = false;
         }
     }
@@ -219,11 +219,11 @@ public class PlayerDataSaveService : NetworkBehaviour
 
             if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
-                Debug.Log($"[PlayerDataSaveService] ✓ Batch save successful for player {playerId}");
+                // Debug.Log($"[PlayerDataSaveService] ✓ Batch save successful for player {playerId}");
             }
             else
             {
-                Debug.LogError($"[PlayerDataSaveService] ✗ Batch save failed: {www.error}");
+                // Debug.LogError($"[PlayerDataSaveService] ✗ Batch save failed: {www.error}");
                 // Có thể implement retry logic ở đây
             }
         }
@@ -248,7 +248,7 @@ public class PlayerDataSaveService : NetworkBehaviour
     public void ClearQueue()
     {
         saveQueue.Clear();
-        Debug.Log("[PlayerDataSaveService] Save queue cleared");
+        // Debug.Log("[PlayerDataSaveService] Save queue cleared");
     }
 
     /// <summary>

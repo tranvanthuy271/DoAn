@@ -103,7 +103,7 @@ public class GameUI : MonoBehaviour
 
     public void OnQuitButton()
     {
-        Debug.Log("Quit game");
+        // Debug.Log("Quit game");
         Application.Quit();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;

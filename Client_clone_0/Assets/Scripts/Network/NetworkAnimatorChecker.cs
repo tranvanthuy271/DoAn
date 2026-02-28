@@ -24,17 +24,15 @@ public class NetworkAnimatorChecker : MonoBehaviour
             // Có NetworkAnimator component
             if (animator == null)
             {
-                Debug.LogError($"[NetworkAnimatorChecker] {gameObject.name}: Có NetworkAnimator nhưng KHÔNG CÓ Animator component! " +
-                    "Hãy thêm Animator component hoặc xóa NetworkAnimator.", this);
+                // Debug.LogError($"[NetworkAnimatorChecker] {gameObject.name}: Có NetworkAnimator nhưng KHÔNG CÓ Animator component! Hãy thêm Animator component hoặc xóa NetworkAnimator.", this);
             }
             else if (networkAnimator.Animator == null)
             {
-                Debug.LogError($"[NetworkAnimatorChecker] {gameObject.name}: NetworkAnimator.Animator chưa được gán! " +
-                    "Hãy gán Animator component vào NetworkAnimator → Animator field trong Inspector.", this);
+                // Debug.LogError($"[NetworkAnimatorChecker] {gameObject.name}: NetworkAnimator.Animator chưa được gán! Hãy gán Animator component vào NetworkAnimator → Animator field trong Inspector.", this);
             }
             else
             {
-                Debug.Log($"[NetworkAnimatorChecker] {gameObject.name}: NetworkAnimator setup đúng ✓", this);
+                // Debug.Log($"[NetworkAnimatorChecker] {gameObject.name}: NetworkAnimator setup đúng ✓", this);
             }
         }
         else
@@ -42,8 +40,7 @@ public class NetworkAnimatorChecker : MonoBehaviour
             // Không có NetworkAnimator - OK nếu không dùng animation sync
             if (animator != null)
             {
-                Debug.Log($"[NetworkAnimatorChecker] {gameObject.name}: Có Animator nhưng không có NetworkAnimator. " +
-                    "Animation sẽ chỉ chạy local (không sync network). Nếu muốn sync animation, thêm NetworkAnimator component.", this);
+                // Debug.Log($"[NetworkAnimatorChecker] {gameObject.name}: Có Animator nhưng không có NetworkAnimator. Animation sẽ chỉ chạy local (không sync network). Nếu muốn sync animation, thêm NetworkAnimator component.", this);
             }
         }
     }

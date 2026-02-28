@@ -22,7 +22,7 @@ public class DedicatedServerStarter : MonoBehaviour
         #if UNITY_SERVER
         // Tự động set isDedicatedServer = true khi build server
         isDedicatedServer = true;
-        Debug.Log("[DedicatedServerStarter] UNITY_SERVER define detected. Running as dedicated server.");
+        // Debug.Log("[DedicatedServerStarter] UNITY_SERVER define detected. Running as dedicated server.");
         #endif
 
         if (autoStartOnAwake && isDedicatedServer)
@@ -38,14 +38,14 @@ public class DedicatedServerStarter : MonoBehaviour
     {
         if (networkManager == null)
         {
-            Debug.LogError("[DedicatedServerStarter] NetworkManager not found!");
+            // Debug.LogError("[DedicatedServerStarter] NetworkManager not found!");
             return;
         }
 
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[DedicatedServerStarter] UnityTransport not found!");
+            // Debug.LogError("[DedicatedServerStarter] UnityTransport not found!");
             return;
         }
 
@@ -56,12 +56,12 @@ public class DedicatedServerStarter : MonoBehaviour
         // Start server
         if (networkManager.StartServer())
         {
-            Debug.Log($"[DedicatedServerStarter] ✓ Dedicated Server started on port {serverPort}");
-            Debug.Log($"[DedicatedServerStarter] Server is ready to accept connections!");
+            // Debug.Log($"[DedicatedServerStarter] ✓ Dedicated Server started on port {serverPort}");
+            // Debug.Log($"[DedicatedServerStarter] Server is ready to accept connections!");
         }
         else
         {
-            Debug.LogError("[DedicatedServerStarter] ✗ Failed to start dedicated server!");
+            // Debug.LogError("[DedicatedServerStarter] ✗ Failed to start dedicated server!");
         }
     }
 
@@ -73,7 +73,7 @@ public class DedicatedServerStarter : MonoBehaviour
         if (networkManager != null && networkManager.IsServer)
         {
             networkManager.Shutdown();
-            Debug.Log("[DedicatedServerStarter] Server stopped.");
+            // Debug.Log("[DedicatedServerStarter] Server stopped.");
         }
     }
 
@@ -83,7 +83,7 @@ public class DedicatedServerStarter : MonoBehaviour
     public void SetServerPort(ushort port)
     {
         serverPort = port;
-        Debug.Log($"[DedicatedServerStarter] Server port set to {serverPort}");
+        // Debug.Log($"[DedicatedServerStarter] Server port set to {serverPort}");
     }
 
     private void OnApplicationQuit()

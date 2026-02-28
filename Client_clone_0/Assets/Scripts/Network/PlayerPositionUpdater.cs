@@ -16,6 +16,8 @@ public class PlayerPositionUpdater : NetworkBehaviour
         apiClient = APIClient.Instance;
     }
 
+    // DISABLED: Update position tự động đã bị tắt 
+    /*
     private void Update()
     {
         // Chỉ update nếu là owner của object này
@@ -28,22 +30,23 @@ public class PlayerPositionUpdater : NetworkBehaviour
             lastUpdateTime = Time.time;
         }
     }
+    */
 
     /// <summary>
     /// Update position lên server
     /// </summary>
-    private void UpdatePositionToServer()
+    private void UpdatePositionToServer(bool useCoroutine = true)
     {
         if (apiClient == null)
         {
-            Debug.LogWarning("[PlayerPositionUpdater] APIClient is null!");
+            // Debug.LogWarning("[PlayerPositionUpdater] APIClient is null!");
             return;
         }
 
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
         if (userId == 0)
         {
-            Debug.LogWarning("[PlayerPositionUpdater] USER_ID not found!");
+            // Debug.LogWarning("[PlayerPositionUpdater] USER_ID not found!");
             return;
         }
 
@@ -59,8 +62,38 @@ public class PlayerPositionUpdater : NetworkBehaviour
         float positionX = currentPos.x;
         float positionY = currentPos.y;
 
-        // Gọi API để update position
-        StartCoroutine(UpdatePositionCoroutine(userId, mapId, positionX, positionY));
+        // Kiểm tra nếu GameObject còn active và có thể start coroutine
+        if (useCoroutine && gameObject.activeInHierarchy)
+        {
+            // Gọi API qua coroutine (bình thường)
+            StartCoroutine(UpdatePositionCoroutine(userId, mapId, positionX, positionY));
+        }
+        else
+        {
+            // Gọi API trực tiếp (khi OnDestroy hoặc GameObject inactive)
+            UpdatePositionDirect(userId, mapId, positionX, positionY);
+        }
+    }
+
+    /// <summary>
+    /// Update position trực tiếp không dùng coroutine (cho OnDestroy)
+    /// </summary>
+    private void UpdatePositionDirect(int userId, int mapId, float positionX, float positionY)
+    {
+        apiClient.UpdatePlayerPosition(
+            userId,
+            mapId,
+            positionX,
+            positionY,
+            onSuccess: () =>
+            {
+                // Debug.Log($"[PlayerPositionUpdater] Position updated on disconnect: Map={mapId}, X={positionX}, Y={positionY}");
+            },
+            onError: (error) =>
+            {
+                // Debug.LogError($"[PlayerPositionUpdater] Failed to update position on disconnect: {error}");
+            }
+        );
     }
 
     /// <summary>
@@ -83,7 +116,7 @@ public class PlayerPositionUpdater : NetworkBehaviour
             },
             onError: (error) =>
             {
-                Debug.LogError($"[PlayerPositionUpdater] Failed to update position: {error}");
+                // Debug.LogError($"[PlayerPositionUpdater] Failed to update position: {error}");
                 completed = true;
             }
         );
@@ -96,7 +129,7 @@ public class PlayerPositionUpdater : NetworkBehaviour
         
         if (success)
         {
-            Debug.Log($"[PlayerPositionUpdater] Position updated successfully: Map={mapId}, X={positionX}, Y={positionY}");
+            // Debug.Log($"[PlayerPositionUpdater] Position updated successfully: Map={mapId}, X={positionX}, Y={positionY}");
         }
     }
 
@@ -105,12 +138,13 @@ public class PlayerPositionUpdater : NetworkBehaviour
     /// </summary>
     public void UpdatePositionOnDisconnect()
     {
-        UpdatePositionToServer();
+        UpdatePositionToServer(useCoroutine: false); // Không dùng coroutine khi disconnect
     }
 
     private void OnDestroy()
     {
         // Update position khi object bị destroy (disconnect)
+        // QUAN TRỌNG: Không dùng coroutine vì GameObject đang bị destroy
         if (IsOwner)
         {
             UpdatePositionOnDisconnect();

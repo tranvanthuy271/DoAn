@@ -19,6 +19,10 @@ public class InventoryUI : MonoBehaviour
     [Tooltip("Prefab của 1 ô slot (có InventorySlotUI)")]
     [SerializeField] private InventorySlotUI slotPrefab;
 
+    [Header("Item Detail")]
+    [Tooltip("Panel hiển thị chi tiết item khi nhấn vào slot")]
+    [SerializeField] private ItemDetailPanel itemDetailPanel;
+
     [Header("Settings")]
     [Tooltip("Số slot tối đa trong UI (nên >= số slot server gửi về)")]
     [SerializeField] private int maxSlotCount = 20;
@@ -59,11 +63,11 @@ public class InventoryUI : MonoBehaviour
 
         Debug.Log($"[InventoryUI] InitSlots: Bắt đầu khởi tạo slots... (maxSlotCount = {maxSlotCount})");
 
-        // Xoá con cũ (nếu có)
+        // Xoá con cũ (nếu có) - dùng DestroyImmediate để xóa ngay lập tức
         int oldChildCount = slotContainer.childCount;
         for (int i = slotContainer.childCount - 1; i >= 0; i--)
         {
-            Destroy(slotContainer.GetChild(i).gameObject);
+            DestroyImmediate(slotContainer.GetChild(i).gameObject);
         }
         if (oldChildCount > 0)
         {
@@ -83,6 +87,9 @@ public class InventoryUI : MonoBehaviour
             InventorySlotUI slot = Instantiate(slotPrefab, slotContainer);
             slot.Init(i);
             slotUIs[i] = slot;
+
+            // Subscribe sự kiện click slot để hiển thị panel chi tiết
+            slot.OnSlotClicked += OnSlotItemClicked;
         }
 
         Debug.Log($"[InventoryUI] InitSlots: Đã tạo thành công {maxSlotCount} slots!");
@@ -106,8 +113,34 @@ public class InventoryUI : MonoBehaviour
 
         if (isActive)
         {
+            // Đảm bảo slots đã được khởi tạo
+            if (slotUIs == null || slotUIs.Length == 0)
+            {
+                Debug.LogWarning("[InventoryUI] ToggleInventory: slotUIs chưa init, gọi InitSlots() ngay bây giờ...");
+                InitSlots();
+            }
+            
             Debug.Log($"[InventoryUI] ToggleInventory: Đang refresh {slotUIs?.Length ?? 0} slots...");
+            
+            // ✅ REFRESH INVENTORY FROM DB KHI MỞ UI
+            var bridge = FindObjectOfType<InventoryNetworkBridge>();
+            if (bridge != null)
+            {
+                Debug.Log("[InventoryUI] ✓ Tìm thấy InventoryNetworkBridge, gọi RefreshInventoryFromDB()...");
+                bridge.RefreshInventoryFromDB();
+            }
+            else
+            {
+                Debug.LogWarning("[InventoryUI] ⚠️ KHÔNG tìm thấy InventoryNetworkBridge trong scene!");
+            }
+            
+            // Vẫn gọi RefreshAllSlots để update UI ngay lập tức với data hiện tại
             RefreshAllSlots();
+        }
+        else
+        {
+            // Ẩn panel chi tiết item khi đóng inventory
+            HideItemDetail();
         }
     }
 
@@ -181,6 +214,47 @@ public class InventoryUI : MonoBehaviour
         }
 
         Debug.Log($"[InventoryUI] RefreshAllSlots: Hoàn thành! Có {slotsWithItems} slots có item được hiển thị.");
+    }
+
+    /// <summary>
+    /// Callback khi người chơi nhấn vào 1 slot có item
+    /// </summary>
+    private void OnSlotItemClicked(InventorySlotDto slotData)
+    {
+        if (itemDetailPanel != null)
+        {
+            itemDetailPanel.ShowItem(slotData);
+        }
+        else
+        {
+            Debug.LogWarning("[InventoryUI] itemDetailPanel chưa được gán trong Inspector!");
+        }
+    }
+
+    /// <summary>
+    /// Ẩn panel chi tiết item (gọi khi đóng inventory hoặc click vùng trống)
+    /// </summary>
+    public void HideItemDetail()
+    {
+        if (itemDetailPanel != null)
+        {
+            itemDetailPanel.Hide();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe events
+        if (slotUIs != null)
+        {
+            foreach (var slot in slotUIs)
+            {
+                if (slot != null)
+                {
+                    slot.OnSlotClicked -= OnSlotItemClicked;
+                }
+            }
+        }
     }
 }
 

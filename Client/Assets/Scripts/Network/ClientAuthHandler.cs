@@ -28,7 +28,7 @@ public class ClientAuthHandler : NetworkBehaviour
     {
         if (instance != null && instance.hasSentAuth)
         {
-            Debug.Log("[ClientAuthHandler] Auth already sent, skipping...");
+            // Debug.Log("[ClientAuthHandler] Auth already sent, skipping...");
             return;
         }
 
@@ -37,11 +37,11 @@ public class ClientAuthHandler : NetworkBehaviour
 
         if (string.IsNullOrEmpty(token) || userId == 0)
         {
-            Debug.LogError("[ClientAuthHandler] JWT_TOKEN or USER_ID not found in PlayerPrefs! Cannot authenticate.");
+            // Debug.LogError("[ClientAuthHandler] JWT_TOKEN or USER_ID not found in PlayerPrefs! Cannot authenticate.");
             return;
         }
 
-        Debug.Log($"[ClientAuthHandler] Sending auth to server via static method: userId={userId}, token length={token.Length}");
+        // Debug.Log($"[ClientAuthHandler] Sending auth to server via static method: userId={userId}, token length={token.Length}");
 
         // Tạo temporary NetworkObject để gửi ServerRpc
         GameObject tempObj = new GameObject("TempAuthHandler");
@@ -70,11 +70,11 @@ public class ClientAuthHandler : NetworkBehaviour
 
         if (string.IsNullOrEmpty(token) || userId == 0)
         {
-            Debug.LogError("[ClientAuthHandler] JWT_TOKEN or USER_ID not found in PlayerPrefs! Cannot authenticate.");
+            // Debug.LogError("[ClientAuthHandler] JWT_TOKEN or USER_ID not found in PlayerPrefs! Cannot authenticate.");
             return;
         }
 
-        Debug.Log($"[ClientAuthHandler] Sending auth to server: userId={userId}, token length={token.Length}");
+        // Debug.Log($"[ClientAuthHandler] Sending auth to server: userId={userId}, token length={token.Length}");
         SendAuthServerRpc(token, userId);
         hasSentAuth = true;
     }
@@ -85,7 +85,7 @@ public class ClientAuthHandler : NetworkBehaviour
     [ServerRpc(RequireOwnership = true)]
     private void SendAuthServerRpc(string token, int userId)
     {
-        Debug.Log($"[ClientAuthHandler] Server received auth from client {OwnerClientId}: userId={userId}");
+        // Debug.Log($"[ClientAuthHandler] Server received auth from client {OwnerClientId}: userId={userId}");
 
         // Verify token và load player data
         if (ServerPlayerDataManager.Instance != null)
@@ -95,17 +95,17 @@ public class ClientAuthHandler : NetworkBehaviour
                 userId,
                 onSuccess: (playerData) =>
                 {
-                    Debug.Log($"[ClientAuthHandler] ✓ Player data loaded for client {OwnerClientId}: {playerData.character_name}");
+                    // Debug.Log($"[ClientAuthHandler] ✓ Player data loaded for client {OwnerClientId}: {playerData.character_name}");
                 },
                 onError: (error) =>
                 {
-                    Debug.LogError($"[ClientAuthHandler] ✗ Failed to load player data for client {OwnerClientId}: {error}");
+                    // Debug.LogError($"[ClientAuthHandler] ✗ Failed to load player data for client {OwnerClientId}: {error}");
                 }
             );
         }
         else
         {
-            Debug.LogError("[ClientAuthHandler] ServerPlayerDataManager.Instance is null!");
+            // Debug.LogError("[ClientAuthHandler] ServerPlayerDataManager.Instance is null!");
         }
     }
 }

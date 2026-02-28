@@ -29,7 +29,7 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         // Tránh spawn nhiều lần
         if (hasSpawned)
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar already spawned for {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar already spawned for {gameObject.name}!");
             return;
         }
         
@@ -40,7 +40,7 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         
         if (enemyHealth == null)
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth not found on {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth not found on {gameObject.name}!");
             return;
         }
 
@@ -70,19 +70,19 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         // Kiểm tra đã spawn chưa
         if (healthBarInstance != null)
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar already exists for {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar already exists for {gameObject.name}!");
             return;
         }
 
         if (healthBarPrefab == null)
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar prefab not assigned on {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar prefab not assigned on {gameObject.name}!");
             return;
         }
 
         if (enemyHealth == null)
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth is null on {gameObject.name}!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth is null on {gameObject.name}!");
             return;
         }
 
@@ -109,7 +109,7 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
             if (rect != null && prefabSize != Vector2.zero)
             {
                 rect.sizeDelta = prefabSize;
-                Debug.Log($"[EnemyHealthBarSpawner] Preserved size: {prefabSize} for {gameObject.name}");
+                // Debug.Log($"[EnemyHealthBarSpawner] Preserved size: {prefabSize} for {gameObject.name}");
             }
         }
 
@@ -118,11 +118,11 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         if (healthBarComponent != null)
         {
             healthBarComponent.Setup(enemyHealth, transform);
-            Debug.Log($"[EnemyHealthBarSpawner] Health bar spawned for {gameObject.name}");
+            // Debug.Log($"[EnemyHealthBarSpawner] Health bar spawned for {gameObject.name}");
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthBarSpawner] EnemyHealthBar component not found on health bar prefab!");
+            // Debug.LogWarning($"[EnemyHealthBarSpawner] EnemyHealthBar component not found on health bar prefab!");
         }
     }
 

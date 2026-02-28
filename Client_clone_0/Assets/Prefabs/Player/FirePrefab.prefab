@@ -25,8 +25,9 @@ GameObject:
   - component: {fileID: 8068972132942356793}
   - component: {fileID: 6547474427312031327}
   - component: {fileID: 237516408525368406}
-  - component: {fileID: -8001074494834950140}
   - component: {fileID: 8725281113756158778}
+  - component: {fileID: 8067414867898343384}
+  - component: {fileID: -5607561159379195000}
   m_Layer: 8
   m_Name: FirePrefab
   m_TagString: Player
@@ -251,7 +252,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2802850464
+  GlobalObjectIdHash: 3625501348
   InScenePlacedSourceGlobalObjectIdHash: 3884442742
   AlwaysReplicateAsRoot: 1
   SynchronizeTransform: 1
@@ -465,18 +466,6 @@ MonoBehaviour:
   OnRespawn:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &-8001074494834950140
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1081786710585418008}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f9f5a6625a4b594da770f726e13be60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &8725281113756158778
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,6 +478,198 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c6493aa4cfa39545853e7970f64f564, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8067414867898343384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f68e854979416542ae73342db6af97d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxSlots: 20
+  OnItemAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  OnItemRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+  OnItemQuantityChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnInventoryChanged:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-5607561159379195000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081786710585418008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 150b2bfd85773494e93e2c2baac022f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  networkPlayerId:
+    m_InternalValue: 0
+  networkElementType:
+    m_InternalValue:
+      utf8LengthInBytes: 4
+      bytes:
+        offset0000:
+          byte0000: 70
+          byte0001: 105
+          byte0002: 114
+          byte0003: 101
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0016: 0
+        byte0017: 0
+        byte0018: 0
+        byte0019: 0
+        byte0020: 0
+        byte0021: 0
+        byte0022: 0
+        byte0023: 0
+        byte0024: 0
+        byte0025: 0
+        byte0026: 0
+        byte0027: 0
+        byte0028: 0
+        byte0029: 0
+  networkGender:
+    m_InternalValue:
+      utf8LengthInBytes: 4
+      bytes:
+        offset0000:
+          byte0000: 77
+          byte0001: 97
+          byte0002: 108
+          byte0003: 101
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0016: 0
+        byte0017: 0
+        byte0018: 0
+        byte0019: 0
+        byte0020: 0
+        byte0021: 0
+        byte0022: 0
+        byte0023: 0
+        byte0024: 0
+        byte0025: 0
+        byte0026: 0
+        byte0027: 0
+        byte0028: 0
+        byte0029: 0
+  networkCharacterName:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+  networkLevel:
+    m_InternalValue: 1
+  networkHp:
+    m_InternalValue: 100
+  networkMaxHp:
+    m_InternalValue: 100
+  networkMp:
+    m_InternalValue: 50
+  networkMaxMp:
+    m_InternalValue: 50
+  networkAttack:
+    m_InternalValue: 10
+  networkMoveSpeed:
+    m_InternalValue: 5
 --- !u!1001 &159999558818155546
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -497,6 +678,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2254267643925802465}
     m_Modifications:
+    - target: {fileID: -421377969630738664, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 347577082
+      objectReference: {fileID: 0}
     - target: {fileID: 7010366893584065638, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
       propertyPath: m_Name
       value: SkillEffect
