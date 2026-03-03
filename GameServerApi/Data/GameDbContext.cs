@@ -16,6 +16,7 @@ namespace GameServerApi.Data
         public DbSet<Enemy> Enemies => Set<Enemy>();
         public DbSet<EnemySpawn> EnemySpawns => Set<EnemySpawn>();
         public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
+        public DbSet<SkillTemplate> SkillTemplates => Set<SkillTemplate>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,32 +44,16 @@ namespace GameServerApi.Data
                 entity.ToTable("player_data");
                 entity.HasKey(p => p.PlayerId);
 
-                // Map sang snake_case cho MySQL
                 entity.Property(p => p.PlayerId).HasColumnName("player_id");
-                entity.Property(p => p.Level).HasColumnName("level");
-                entity.Property(p => p.Experience).HasColumnName("experience");
-                entity.Property(p => p.Gold).HasColumnName("gold");
-                entity.Property(p => p.MapId).HasColumnName("map_id");
-                
-                entity.Property(p => p.PositionX).HasColumnName("position_x");
-                entity.Property(p => p.PositionY).HasColumnName("position_y");
-
-                entity.Property(p => p.Hp).HasColumnName("hp");
-                entity.Property(p => p.MaxHp).HasColumnName("max_hp");
-                entity.Property(p => p.Mp).HasColumnName("mp");
-                entity.Property(p => p.MaxMp).HasColumnName("max_mp");
-                entity.Property(p => p.Attack).HasColumnName("attack");
-
-                entity.Property(p => p.ElementType).HasColumnName("element_type");
-                entity.Property(p => p.GeneTier).HasColumnName("gene_tier");
-                entity.Property(p => p.IsHybrid).HasColumnName("is_hybrid");
-                entity.Property(p => p.SecondaryElement).HasColumnName("secondary_element");
-                entity.Property(p => p.Gender).HasColumnName("gender");
                 entity.Property(p => p.CharacterName).HasColumnName("character_name");
+                entity.Property(p => p.Gender).HasColumnName("gender");
+
+                // Single JSON column for all character stats
+                entity.Property(p => p.InfoCharJson).HasColumnName("info_char");
 
                 entity.Property(p => p.EquipmentJson).HasColumnName("equipment");
-                entity.Property(p => p.SkillsJson).HasColumnName("skills");
                 entity.Property(p => p.InventoryJson).HasColumnName("inventory");
+                entity.Property(p => p.SkillsJson).HasColumnName("skills");
                 entity.Property(p => p.PotentialStatsJson).HasColumnName("potential_stats");
 
                 entity.Property(p => p.UpdatedAt).HasColumnName("updated_at");
@@ -82,8 +67,8 @@ namespace GameServerApi.Data
                 entity.Property(e => e.Level).HasColumnName("level");
                 entity.Property(e => e.ExpRequired).HasColumnName("exp_required");
                 entity.Property(e => e.BaseStatIncreaseJson).HasColumnName("base_stat_increase");
-                entity.Property(e => e.SkillPoints).HasColumnName("skill_points");
-                entity.Property(e => e.PotentialPoints).HasColumnName("potential_points");
+                entity.Property(e => e.SkillPoints).HasColumnName("skill_points_reward");
+                entity.Property(e => e.PotentialPoints).HasColumnName("potential_points_reward");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             });
 
@@ -162,12 +147,30 @@ namespace GameServerApi.Data
                 entity.Property(i => i.ClassLimit).HasColumnName("class_limit");
                 entity.Property(i => i.LevelRequired).HasColumnName("level_required");
                 entity.Property(i => i.Rarity).HasColumnName("rarity");
-                entity.Property(i => i.IconPath).HasColumnName("icon_path");
-                entity.Property(i => i.PrefabPath).HasColumnName("prefab_path");
+                entity.Property(i => i.IconId).HasColumnName("icon_id");
                 entity.Property(i => i.BaseStatJson).HasColumnName("base_stat_json");
                 entity.Property(i => i.CreatedAt).HasColumnName("created_at");
 
                 entity.HasIndex(i => i.Code).IsUnique();
+            });
+
+            modelBuilder.Entity<SkillTemplate>(entity =>
+            {
+                entity.ToTable("skill_template");
+                entity.HasKey(s => s.SkillId);
+
+                entity.Property(s => s.SkillId).HasColumnName("skill_id");
+                entity.Property(s => s.SkillCode).HasColumnName("skill_code");
+                entity.Property(s => s.SkillName).HasColumnName("skill_name");
+                entity.Property(s => s.Description).HasColumnName("description");
+                entity.Property(s => s.ElementType).HasColumnName("element_type");
+                entity.Property(s => s.MaxLevel).HasColumnName("max_level");
+                entity.Property(s => s.LevelToUnlock).HasColumnName("level_to_unlock");
+                entity.Property(s => s.LevelsJson).HasColumnName("levels_json");
+                entity.Property(s => s.IconId).HasColumnName("icon_id");
+                entity.Property(s => s.CreatedAt).HasColumnName("created_at");
+
+                entity.HasIndex(s => s.SkillCode).IsUnique();
             });
         }
     }

@@ -54,15 +54,12 @@ namespace GameServerApi.Controllers
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            // Khởi tạo PlayerData tối thiểu cho user này
+            // Khởi tạo PlayerData với InfoChar mặc định
             var playerData = new PlayerData
             {
-                PlayerId = user.UserId,
-                Level = 1,
-                Experience = 0,
-                Gold = 0,
-                MapId = 0
+                PlayerId = user.UserId
             };
+            playerData.SetInfoChar(PlayerData.DefaultInfoChar("Fire"));
 
             _db.PlayerData.Add(playerData);
             await _db.SaveChangesAsync();

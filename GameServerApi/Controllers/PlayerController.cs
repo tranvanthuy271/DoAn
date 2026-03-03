@@ -91,49 +91,54 @@ namespace GameServerApi.Controllers
                 var existingTracked = await _db.PlayerData.FindAsync(userId);
                 if (existingTracked != null)
                 {
-                    existingTracked.ElementType = elementType;
+                    var existingInfo = existingTracked.GetInfoChar();
+                    existingInfo.ElementType = elementType;
+                    existingTracked.SetInfoChar(existingInfo);
                     existingTracked.Gender = gender;
                     existingTracked.CharacterName = characterName;
                     existingTracked.UpdatedAt = DateTime.UtcNow;
                     await _db.SaveChangesAsync();
                     
                     // Trả về format đúng cho client
+                    var updInfo = existingTracked.GetInfoChar();
                     var response = new
                     {
                         player_id = existingTracked.PlayerId,
-                        level = existingTracked.Level,
-                        experience = existingTracked.Experience,
+                        level = updInfo.Level,
+                        experience = updInfo.Experience,
                         exp_required_for_next_level = 0,
-                        gold = existingTracked.Gold,
-                        map_id = existingTracked.MapId,
-                        position_x = existingTracked.PositionX,
-                        position_y = existingTracked.PositionY,
+                        gold = updInfo.Gold,
+                        map_id = updInfo.MapId,
+                        position_x = updInfo.PositionX,
+                        position_y = updInfo.PositionY,
                         base_stats = new
                         {
-                            hp = existingTracked.Hp,
-                            max_hp = existingTracked.MaxHp,
-                            mp = existingTracked.Mp,
-                            max_mp = existingTracked.MaxMp,
-                            attack = existingTracked.Attack
+                            hp = updInfo.Hp,
+                            max_hp = updInfo.MaxHp,
+                            mp = updInfo.Mp,
+                            max_mp = updInfo.MaxMp,
+                            attack = updInfo.Attack,
+                            defense = updInfo.Defense
                         },
                         equipment = JsonSerializer.Deserialize<object>(existingTracked.EquipmentJson),
                         potential_stats = JsonSerializer.Deserialize<object>(existingTracked.PotentialStatsJson),
                         final_stats = new
                         {
-                            hp = existingTracked.MaxHp,
-                            max_hp = existingTracked.MaxHp,
-                            mp = existingTracked.MaxMp,
-                            max_mp = existingTracked.MaxMp,
-                            attack = existingTracked.Attack,
+                            hp = updInfo.MaxHp,
+                            max_hp = updInfo.MaxHp,
+                            mp = updInfo.MaxMp,
+                            max_mp = updInfo.MaxMp,
+                            attack = updInfo.Attack,
+                            defense = updInfo.Defense,
                             move_speed = 5f
                         },
                         inventory = JsonSerializer.Deserialize<object>(existingTracked.InventoryJson),
                         skills = JsonSerializer.Deserialize<object>(existingTracked.SkillsJson),
-                        skill_points_available = 0,
-                        potential_points_available = 0,
-                        element_type = existingTracked.ElementType,
-                        gene_tier = existingTracked.GeneTier,
-                        is_hybrid = existingTracked.IsHybrid,
+                        skill_points_available = updInfo.SkillPoints,
+                        potential_points_available = updInfo.PotentialPoints,
+                        element_type = updInfo.ElementType,
+                        gene_tier = updInfo.GeneTier,
+                        is_hybrid = updInfo.IsHybrid,
                         gender = existingTracked.Gender,
                         character_name = existingTracked.CharacterName
                     };
@@ -146,15 +151,11 @@ namespace GameServerApi.Controllers
             var playerData = new PlayerData
             {
                 PlayerId = userId,
-                Level = 1,
-                Experience = 0,
-                Gold = 0,
-                MapId = 0,
-                ElementType = elementType,
                 Gender = gender,
                 CharacterName = characterName,
                 UpdatedAt = DateTime.UtcNow
             };
+            playerData.SetInfoChar(PlayerData.DefaultInfoChar(elementType));
 
             try
             {
@@ -170,7 +171,9 @@ namespace GameServerApi.Controllers
                 var existingPlayer = await _db.PlayerData.FindAsync(userId);
                 if (existingPlayer != null)
                 {
-                    existingPlayer.ElementType = elementType;
+                    var existingPlayerInfo = existingPlayer.GetInfoChar();
+                    existingPlayerInfo.ElementType = elementType;
+                    existingPlayer.SetInfoChar(existingPlayerInfo);
                     existingPlayer.Gender = gender;
                     existingPlayer.CharacterName = characterName;
                     existingPlayer.UpdatedAt = DateTime.UtcNow;
@@ -184,42 +187,45 @@ namespace GameServerApi.Controllers
             }
 
             // Trả về format đúng cho client
+            var createInfo = playerData.GetInfoChar();
             var createResponse = new
             {
                 player_id = playerData.PlayerId,
-                level = playerData.Level,
-                experience = playerData.Experience,
+                level = createInfo.Level,
+                experience = createInfo.Experience,
                 exp_required_for_next_level = 0,
-                gold = playerData.Gold,
-                map_id = playerData.MapId,
-                position_x = playerData.PositionX,
-                position_y = playerData.PositionY,
+                gold = createInfo.Gold,
+                map_id = createInfo.MapId,
+                position_x = createInfo.PositionX,
+                position_y = createInfo.PositionY,
                 base_stats = new
                 {
-                    hp = playerData.Hp,
-                    max_hp = playerData.MaxHp,
-                    mp = playerData.Mp,
-                    max_mp = playerData.MaxMp,
-                    attack = playerData.Attack
+                    hp = createInfo.Hp,
+                    max_hp = createInfo.MaxHp,
+                    mp = createInfo.Mp,
+                    max_mp = createInfo.MaxMp,
+                    attack = createInfo.Attack,
+                    defense = createInfo.Defense
                 },
                 equipment = JsonSerializer.Deserialize<object>(playerData.EquipmentJson),
                 potential_stats = JsonSerializer.Deserialize<object>(playerData.PotentialStatsJson),
                 final_stats = new
                 {
-                    hp = playerData.MaxHp,
-                    max_hp = playerData.MaxHp,
-                    mp = playerData.MaxMp,
-                    max_mp = playerData.MaxMp,
-                    attack = playerData.Attack,
+                    hp = createInfo.MaxHp,
+                    max_hp = createInfo.MaxHp,
+                    mp = createInfo.MaxMp,
+                    max_mp = createInfo.MaxMp,
+                    attack = createInfo.Attack,
+                    defense = createInfo.Defense,
                     move_speed = 5f
                 },
                 inventory = JsonSerializer.Deserialize<object>(playerData.InventoryJson),
                 skills = JsonSerializer.Deserialize<object>(playerData.SkillsJson),
-                skill_points_available = 0,
-                potential_points_available = 0,
-                element_type = playerData.ElementType,
-                gene_tier = playerData.GeneTier,
-                is_hybrid = playerData.IsHybrid,
+                skill_points_available = createInfo.SkillPoints,
+                potential_points_available = createInfo.PotentialPoints,
+                element_type = createInfo.ElementType,
+                gene_tier = createInfo.GeneTier,
+                is_hybrid = createInfo.IsHybrid,
                 gender = playerData.Gender,
                 character_name = playerData.CharacterName
             };
@@ -243,42 +249,45 @@ namespace GameServerApi.Controllers
             }
 
             // Tạm thời trả về dữ liệu đơn giản, có thể mở rộng dần cho khớp hoàn toàn tài liệu.
+            var info = player.GetInfoChar();
             var response = new
             {
                 player_id = player.PlayerId,
-                level = player.Level,
-                experience = player.Experience,
+                level = info.Level,
+                experience = info.Experience,
                 exp_required_for_next_level = 0,
-                gold = player.Gold,
-                map_id = player.MapId,
-                position_x = player.PositionX,
-                position_y = player.PositionY,
+                gold = info.Gold,
+                map_id = info.MapId,
+                position_x = info.PositionX,
+                position_y = info.PositionY,
                 base_stats = new
                 {
-                    hp = player.Hp,
-                    max_hp = player.MaxHp,
-                    mp = player.Mp,
-                    max_mp = player.MaxMp,
-                    attack = player.Attack
+                    hp = info.Hp,
+                    max_hp = info.MaxHp,
+                    mp = info.Mp,
+                    max_mp = info.MaxMp,
+                    attack = info.Attack,
+                    defense = info.Defense
                 },
                 equipment = JsonSerializer.Deserialize<object>(player.EquipmentJson),
                 potential_stats = JsonSerializer.Deserialize<object>(player.PotentialStatsJson),
                 final_stats = new
                 {
-                    hp = player.MaxHp,
-                    max_hp = player.MaxHp,
-                    mp = player.MaxMp,
-                    max_mp = player.MaxMp,
-                    attack = player.Attack,
+                    hp = info.MaxHp,
+                    max_hp = info.MaxHp,
+                    mp = info.MaxMp,
+                    max_mp = info.MaxMp,
+                    attack = info.Attack,
+                    defense = info.Defense,
                     move_speed = 5f
                 },
                 inventory = JsonSerializer.Deserialize<object>(player.InventoryJson),
                 skills = JsonSerializer.Deserialize<object>(player.SkillsJson),
-                skill_points_available = 0,
-                potential_points_available = 0,
-                element_type = player.ElementType,
-                gene_tier = player.GeneTier,
-                is_hybrid = player.IsHybrid,
+                skill_points_available = info.SkillPoints,
+                potential_points_available = info.PotentialPoints,
+                element_type = info.ElementType,
+                gene_tier = info.GeneTier,
+                is_hybrid = info.IsHybrid,
                 gender = player.Gender,
                 character_name = player.CharacterName
             };
@@ -306,10 +315,11 @@ namespace GameServerApi.Controllers
                     return NotFound("Player không tồn tại.");
                 }
 
-                // Update position
-                player.MapId = mapId;
-                player.PositionX = positionX;
-                player.PositionY = positionY;
+                var posInfo = player.GetInfoChar();
+                posInfo.MapId = mapId;
+                posInfo.PositionX = positionX;
+                posInfo.PositionY = positionY;
+                player.SetInfoChar(posInfo);
                 player.UpdatedAt = DateTime.UtcNow;
 
                 await _db.SaveChangesAsync();
@@ -317,9 +327,9 @@ namespace GameServerApi.Controllers
                 return Ok(new
                 {
                     message = "Position updated successfully",
-                    map_id = player.MapId,
-                    position_x = player.PositionX,
-                    position_y = player.PositionY
+                    map_id = posInfo.MapId,
+                    position_x = posInfo.PositionX,
+                    position_y = posInfo.PositionY
                 });
             }
             catch (Exception ex)
@@ -345,60 +355,60 @@ namespace GameServerApi.Controllers
                 }
 
                 // Update các field từ body (chỉ update field có trong request)
+                var batchInfo = player.GetInfoChar();
+
                 if (body.TryGetProperty("level", out var levelProp))
-                {
-                    player.Level = levelProp.GetInt32();
-                }
+                    batchInfo.Level = levelProp.GetInt32();
 
                 if (body.TryGetProperty("experience", out var expProp))
-                {
-                    player.Experience = expProp.GetInt32();
-                }
+                    batchInfo.Experience = expProp.GetInt32();
 
                 if (body.TryGetProperty("gold", out var goldProp))
-                {
-                    player.Gold = goldProp.GetInt32();
-                }
+                    batchInfo.Gold = goldProp.GetInt32();
+
+                if (body.TryGetProperty("skill_points", out var spProp))
+                    batchInfo.SkillPoints = spProp.GetInt32();
+
+                if (body.TryGetProperty("potential_points", out var ppProp))
+                    batchInfo.PotentialPoints = ppProp.GetInt32();
 
                 if (body.TryGetProperty("hp", out var hpProp))
-                {
-                    player.Hp = hpProp.GetInt32();
-                }
+                    batchInfo.Hp = hpProp.GetInt32();
 
                 if (body.TryGetProperty("max_hp", out var maxHpProp))
-                {
-                    player.MaxHp = maxHpProp.GetInt32();
-                }
+                    batchInfo.MaxHp = maxHpProp.GetInt32();
 
                 if (body.TryGetProperty("mp", out var mpProp))
-                {
-                    player.Mp = mpProp.GetInt32();
-                }
+                    batchInfo.Mp = mpProp.GetInt32();
 
                 if (body.TryGetProperty("max_mp", out var maxMpProp))
-                {
-                    player.MaxMp = maxMpProp.GetInt32();
-                }
+                    batchInfo.MaxMp = maxMpProp.GetInt32();
 
                 if (body.TryGetProperty("attack", out var attackProp))
-                {
-                    player.Attack = attackProp.GetInt32();
-                }
+                    batchInfo.Attack = attackProp.GetInt32();
+
+                if (body.TryGetProperty("defense", out var defenseProp))
+                    batchInfo.Defense = defenseProp.GetInt32();
+
+                if (body.TryGetProperty("gene_tier", out var gtProp))
+                    batchInfo.GeneTier = gtProp.GetInt32();
+
+                if (body.TryGetProperty("gene_exp", out var geProp))
+                    batchInfo.GeneExp = geProp.GetInt32();
+
+                if (body.TryGetProperty("element_type", out var etProp))
+                    batchInfo.ElementType = etProp.GetString() ?? batchInfo.ElementType;
 
                 if (body.TryGetProperty("map_id", out var mapIdProp))
-                {
-                    player.MapId = mapIdProp.GetInt32();
-                }
+                    batchInfo.MapId = mapIdProp.GetInt32();
 
                 if (body.TryGetProperty("position_x", out var posXProp))
-                {
-                    player.PositionX = (float)posXProp.GetDouble();
-                }
+                    batchInfo.PositionX = (float)posXProp.GetDouble();
 
                 if (body.TryGetProperty("position_y", out var posYProp))
-                {
-                    player.PositionY = (float)posYProp.GetDouble();
-                }
+                    batchInfo.PositionY = (float)posYProp.GetDouble();
+
+                player.SetInfoChar(batchInfo);
 
                 // Update JSON fields nếu có
                 if (body.TryGetProperty("equipment", out var equipmentProp))
@@ -987,6 +997,341 @@ namespace GameServerApi.Controllers
                 player_id = playerId,
                 equipment = equipment
             });
+        }
+
+        // ================================================================
+        //  SKILL ENDPOINTS
+        // ================================================================
+
+        /// <summary>
+        /// GET /api/player/{playerId}/skills
+        /// Trả về tất cả skills từ skill_template kèm level hiện tại của player.
+        /// </summary>
+        [HttpGet("{playerId}/skills")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPlayerSkills(int playerId)
+        {
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+
+            // Parse player skills JSON → Dictionary<skill_id, current_level>
+            var playerSkillLevels = new Dictionary<int, int>();
+            if (!string.IsNullOrEmpty(player.SkillsJson) && player.SkillsJson != "[]")
+            {
+                try
+                {
+                    var arr = JsonSerializer.Deserialize<List<JsonElement>>(player.SkillsJson);
+                    if (arr != null)
+                        foreach (var elem in arr)
+                            if (elem.TryGetProperty("skill_id", out var idP) &&
+                                elem.TryGetProperty("current_level", out var lvP))
+                                playerSkillLevels[idP.GetInt32()] = lvP.GetInt32();
+                }
+                catch { /* ignore parse errors */ }
+            }
+
+            var templates = await _db.SkillTemplates
+                .OrderBy(s => s.ElementType).ThenBy(s => s.SkillId)
+                .ToListAsync();
+
+            var skillList = templates.Select(t =>
+            {
+                int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl) ? lvl : 0;
+                int nextLevelPlayerReq = 0;
+                int nextSpCost = 1;
+                float nextEffectValue = 0;
+                string nextDesc = "";
+                bool canUpgrade = false;
+
+                if (curLevel < t.MaxLevel && !string.IsNullOrEmpty(t.LevelsJson))
+                {
+                    try
+                    {
+                        var levels = JsonSerializer.Deserialize<List<JsonElement>>(t.LevelsJson);
+                        if (levels != null && curLevel < levels.Count)
+                        {
+                            var nextData = levels[curLevel];
+                            if (nextData.TryGetProperty("level_req",    out var lr)) nextLevelPlayerReq = lr.GetInt32();
+                            if (nextData.TryGetProperty("sp_cost",      out var sc)) nextSpCost         = sc.GetInt32();
+                            if (nextData.TryGetProperty("effect_value", out var ev)) nextEffectValue    = (float)ev.GetDouble();
+                            if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
+                            canUpgrade = info.Level >= nextLevelPlayerReq && info.SkillPoints >= nextSpCost;
+                        }
+                    }
+                    catch { }
+                }
+
+                return new
+                {
+                    skill_id              = t.SkillId,
+                    skill_code            = t.SkillCode,
+                    skill_name            = t.SkillName,
+                    description           = t.Description,
+                    element_type          = t.ElementType,
+                    max_level             = t.MaxLevel,
+                    level_to_unlock       = t.LevelToUnlock,
+                    current_level         = curLevel,
+                    can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
+                    next_level_player_req = nextLevelPlayerReq,
+                    next_level_sp_cost    = nextSpCost,
+                    next_level_desc       = nextDesc,
+                    icon_id               = t.IconId
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                skill_points_available = info.SkillPoints,
+                player_level           = info.Level,
+                skills                 = skillList
+            });
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/skills/upgrade
+        /// Body: { "skill_id": 1 }
+        /// Nâng cấp skill lên 1 level (trừ skill_points).
+        /// </summary>
+        [HttpPost("{playerId}/skills/upgrade")]
+        [AllowAnonymous]
+        public async Task<IActionResult> UpgradeSkill(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("skill_id", out var skillIdProp))
+                    return BadRequest("Thiếu field 'skill_id'.");
+
+                int skillId = skillIdProp.GetInt32();
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var template = await _db.SkillTemplates.FindAsync(skillId);
+                if (template == null) return BadRequest($"Skill ID {skillId} không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                // Parse player's skills list
+                var playerSkills = new List<Dictionary<string, object>>();
+                if (!string.IsNullOrEmpty(player.SkillsJson) && player.SkillsJson != "[]")
+                {
+                    try
+                    {
+                        var rawArr = JsonSerializer.Deserialize<List<JsonElement>>(player.SkillsJson);
+                        if (rawArr != null)
+                            foreach (var elem in rawArr)
+                            {
+                                var d = new Dictionary<string, object>();
+                                foreach (var prop in elem.EnumerateObject())
+                                    d[prop.Name] = prop.Value.ValueKind switch
+                                    {
+                                        JsonValueKind.Number => prop.Value.TryGetInt32(out var iv) ? iv : (object)prop.Value.GetDouble(),
+                                        JsonValueKind.String => prop.Value.GetString()!,
+                                        JsonValueKind.True   => true,
+                                        JsonValueKind.False  => false,
+                                        _ => prop.Value.ToString()
+                                    };
+                                playerSkills.Add(d);
+                            }
+                    }
+                    catch { }
+                }
+
+                // Find current level of this skill
+                var existing = playerSkills.FirstOrDefault(s =>
+                    s.ContainsKey("skill_id") && Convert.ToInt32(s["skill_id"]) == skillId);
+                int curLevel = existing != null ? Convert.ToInt32(existing["current_level"]) : 0;
+
+                if (curLevel >= template.MaxLevel)
+                    return BadRequest($"{template.SkillName} đã đạt level tối đa ({template.MaxLevel}).");
+
+                // Parse upgrade requirements for next level
+                int nextLevelPlayerReq = 0;
+                int spCost = 1;
+                if (!string.IsNullOrEmpty(template.LevelsJson))
+                {
+                    try
+                    {
+                        var levels = JsonSerializer.Deserialize<List<JsonElement>>(template.LevelsJson);
+                        if (levels != null && curLevel < levels.Count)
+                        {
+                            if (levels[curLevel].TryGetProperty("level_req", out var lr)) nextLevelPlayerReq = lr.GetInt32();
+                            if (levels[curLevel].TryGetProperty("sp_cost",   out var sc)) spCost             = sc.GetInt32();
+                        }
+                    }
+                    catch { }
+                }
+
+                if (info.Level < nextLevelPlayerReq)
+                    return BadRequest($"Cần level nhân vật {nextLevelPlayerReq} để nâng {template.SkillName}. Hiện tại: {info.Level}.");
+
+                if (info.SkillPoints < spCost)
+                    return BadRequest($"Không đủ skill points. Cần {spCost}, có {info.SkillPoints}.");
+
+                // Apply upgrade
+                int newLevel = curLevel + 1;
+                if (existing != null)
+                    existing["current_level"] = newLevel;
+                else
+                    playerSkills.Add(new Dictionary<string, object> { ["skill_id"] = skillId, ["current_level"] = newLevel });
+
+                info.SkillPoints -= spCost;
+                player.SetInfoChar(info);
+                player.SkillsJson = JsonSerializer.Serialize(playerSkills);
+                player.UpdatedAt  = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message                = $"Đã nâng {template.SkillName} lên Lv.{newLevel}",
+                    skill_id               = skillId,
+                    skill_name             = template.SkillName,
+                    new_level              = newLevel,
+                    max_level              = template.MaxLevel,
+                    skill_points_remaining = info.SkillPoints
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi nâng cấp skill: {ex.Message}");
+            }
+        }
+
+        // ================================================================
+        //  POTENTIAL ENDPOINTS
+        // ================================================================
+
+        // Giá trị mỗi điểm tiềm năng (hardcoded vì potential_stats_config đã archived)
+        private static readonly Dictionary<string, (string DisplayName, float ValuePerPoint)> PotentialStatConfig = new()
+        {
+            ["attack"]  = ("Tấn Công",   5f),
+            ["hp"]      = ("Máu (HP)",  50f),
+            ["mp"]      = ("Mana (MP)", 30f),
+            ["defense"] = ("Phòng Thủ",  3f),
+            ["gene"]    = ("Gene",        1f)
+        };
+
+        /// <summary>
+        /// GET /api/player/{playerId}/potential
+        /// Trả về toàn bộ chỉ số tiềm năng và điểm tiềm năng còn lại.
+        /// </summary>
+        [HttpGet("{playerId}/potential")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPlayerPotential(int playerId)
+        {
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+
+            // Parse potential_stats JSON
+            var potentialPoints = new Dictionary<string, int>
+                { ["attack"] = 0, ["hp"] = 0, ["mp"] = 0, ["defense"] = 0, ["gene"] = 0 };
+
+            if (!string.IsNullOrEmpty(player.PotentialStatsJson) && player.PotentialStatsJson != "{}")
+            {
+                try
+                {
+                    var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(player.PotentialStatsJson);
+                    if (raw != null)
+                        foreach (var kvp in raw)
+                            if (potentialPoints.ContainsKey(kvp.Key))
+                                potentialPoints[kvp.Key] = kvp.Value.TryGetInt32(out var v) ? v : 0;
+                }
+                catch { }
+            }
+
+            var stats = PotentialStatConfig.Select(cfg => new
+            {
+                stat_name       = cfg.Key,
+                display_name    = cfg.Value.DisplayName,
+                current_points  = potentialPoints.TryGetValue(cfg.Key, out var pts) ? pts : 0,
+                value_per_point = cfg.Value.ValuePerPoint,
+                total_value     = (potentialPoints.TryGetValue(cfg.Key, out var pts2) ? pts2 : 0) * cfg.Value.ValuePerPoint
+            }).ToList();
+
+            return Ok(new
+            {
+                potential_points_available = info.PotentialPoints,
+                player_level               = info.Level,
+                stats
+            });
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/potential/upgrade
+        /// Body: { "stat_name": "attack" }
+        /// Đầu tư 1 điểm tiềm năng vào chỉ số được chọn.
+        /// </summary>
+        [HttpPost("{playerId}/potential/upgrade")]
+        [AllowAnonymous]
+        public async Task<IActionResult> UpgradePotential(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("stat_name", out var statProp))
+                    return BadRequest("Thiếu field 'stat_name'.");
+
+                string statName = statProp.GetString() ?? "";
+                if (!PotentialStatConfig.ContainsKey(statName))
+                    return BadRequest($"Chỉ số '{statName}' không hợp lệ. Hợp lệ: {string.Join(", ", PotentialStatConfig.Keys)}");
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                if (info.PotentialPoints <= 0)
+                    return BadRequest("Không còn điểm tiềm năng để phân bổ.");
+
+                // Parse potential_stats
+                var potentialPoints = new Dictionary<string, int>
+                    { ["attack"] = 0, ["hp"] = 0, ["mp"] = 0, ["defense"] = 0, ["gene"] = 0 };
+
+                if (!string.IsNullOrEmpty(player.PotentialStatsJson) && player.PotentialStatsJson != "{}")
+                {
+                    try
+                    {
+                        var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(player.PotentialStatsJson);
+                        if (raw != null)
+                            foreach (var kvp in raw)
+                                if (potentialPoints.ContainsKey(kvp.Key))
+                                    potentialPoints[kvp.Key] = kvp.Value.TryGetInt32(out var v) ? v : 0;
+                    }
+                    catch { }
+                }
+
+                // Add 1 point to chosen stat
+                potentialPoints[statName] = (potentialPoints.TryGetValue(statName, out var cur) ? cur : 0) + 1;
+                info.PotentialPoints--;
+
+                player.SetInfoChar(info);
+                player.PotentialStatsJson = JsonSerializer.Serialize(potentialPoints);
+                player.UpdatedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                var cfg = PotentialStatConfig[statName];
+                int newPoints = potentialPoints[statName];
+
+                return Ok(new
+                {
+                    message                    = $"Đã tăng {cfg.DisplayName} lên {newPoints} điểm (+{cfg.ValuePerPoint * newPoints} tổng)",
+                    stat_name                  = statName,
+                    display_name               = cfg.DisplayName,
+                    new_points                 = newPoints,
+                    value_per_point            = cfg.ValuePerPoint,
+                    total_value                = newPoints * cfg.ValuePerPoint,
+                    potential_points_remaining = info.PotentialPoints
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi nâng chỉ số tiềm năng: {ex.Message}");
+            }
         }
     }
 }

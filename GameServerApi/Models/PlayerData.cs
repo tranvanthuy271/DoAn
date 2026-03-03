@@ -1,51 +1,98 @@
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace GameServerApi.Models
 {
-    /// <summary>
-    /// Bảng player_data - lưu toàn bộ thông tin nhân vật (theo mô tả trong luuthongtin.md, rút gọn cho bước đầu).
-    /// Nhiều field có thể bổ sung dần, tạm thời tập trung vào những gì client đang dùng.
-    /// </summary>
+    // ----------------------------------------------------------------
+    // InfoChar : tất cả chỉ số & trạng thái nhân vật được pack vào 1 cột JSON.
+    // Mapping với cột  player_data.info_char  (LONGTEXT).
+    // ----------------------------------------------------------------
+    public class InfoChar
+    {
+        // ---- Progression ----
+        [JsonPropertyName("level")]            public int    Level            { get; set; } = 1;
+        [JsonPropertyName("experience")]       public int    Experience       { get; set; } = 0;
+        [JsonPropertyName("gold")]             public int    Gold             { get; set; } = 0;
+        [JsonPropertyName("skill_points")]     public int    SkillPoints      { get; set; } = 0;
+        [JsonPropertyName("potential_points")] public int    PotentialPoints  { get; set; } = 0;
+
+        // ---- Element / Gene ----
+        [JsonPropertyName("element_type")]        public string  ElementType       { get; set; } = "Fire";
+        [JsonPropertyName("gene_tier")]           public int     GeneTier          { get; set; } = 1;
+        [JsonPropertyName("gene_exp")]            public int     GeneExp           { get; set; } = 0;
+        [JsonPropertyName("is_hybrid")]           public bool    IsHybrid          { get; set; } = false;
+        [JsonPropertyName("secondary_element")]   public string? SecondaryElement   { get; set; } = null;
+        [JsonPropertyName("secondary_gene_tier")] public int?    SecondaryGeneTier  { get; set; } = null;
+        [JsonPropertyName("secondary_gene_exp")]  public int?    SecondaryGeneExp   { get; set; } = null;
+
+        // ---- HP / MP / Combat ----
+        [JsonPropertyName("hp")]      public int Hp      { get; set; } = 100;
+        [JsonPropertyName("max_hp")]  public int MaxHp   { get; set; } = 100;
+        [JsonPropertyName("mp")]      public int Mp      { get; set; } = 50;
+        [JsonPropertyName("max_mp")]  public int MaxMp   { get; set; } = 50;
+        [JsonPropertyName("attack")]  public int Attack  { get; set; } = 10;
+        [JsonPropertyName("defense")] public int Defense { get; set; } = 0;
+
+        // ---- Position ----
+        [JsonPropertyName("map_id")]     public int   MapId     { get; set; } = 0;
+        [JsonPropertyName("position_x")] public float PositionX { get; set; } = 0f;
+        [JsonPropertyName("position_y")] public float PositionY { get; set; } = 0f;
+    }
+
+    // ----------------------------------------------------------------
+    // PlayerData : ORM model cho bảng player_data.
+    // Các chỉ số nhân vật có thể thay đổi được lưu trong InfoCharJson.
+    // ----------------------------------------------------------------
     public class PlayerData
     {
-        public int PlayerId { get; set; } // PK, FK -> users.user_id
-
-        // Thông tin cơ bản
-        public int Level { get; set; } = 1;
-        public int Experience { get; set; } = 0;
-        public int Gold { get; set; } = 0;
-        public int MapId { get; set; } = 0;
-        
-        // Vị trí cuối cùng khi out game (Game 2D chỉ cần x và y)
-        public float PositionX { get; set; } = 0f;
-        public float PositionY { get; set; } = 0f;
-
-        // Base stats cơ bản
-        public int Hp { get; set; } = 100;
-        public int MaxHp { get; set; } = 100;
-        public int Mp { get; set; } = 50;
-        public int MaxMp { get; set; } = 50;
-        public int Attack { get; set; } = 10;
-
-        // Hệ / Gene
-        public string ElementType { get; set; } = "Fire";
-        public int GeneTier { get; set; } = 1;
-        public bool IsHybrid { get; set; } = false;
-        public string? SecondaryElement { get; set; }
-        
-        // Giới tính: "Male" hoặc "Female"
-        public string Gender { get; set; } = "Male";
-        
-        // Tên nhân vật
+        public int    PlayerId      { get; set; }   // PK, FK -> users.user_id
         public string CharacterName { get; set; } = "";
+        public string Gender        { get; set; } = "Male";
 
-        // JSON columns
-        public string EquipmentJson { get; set; } = "{}";
-        public string SkillsJson { get; set; } = "[]";
-        public string InventoryJson { get; set; } = "[]";
-        public string PotentialStatsJson { get; set; } = "[]";
+        // ---- JSON columns ----
+        /// <summary>Serialised InfoChar object (cot info_char).</summary>
+        public string InfoCharJson      { get; set; } = "{}";
+        public string EquipmentJson     { get; set; } = "{}";
+        public string InventoryJson     { get; set; } = "[]";
+        public string SkillsJson        { get; set; } = "[]";
+        public string PotentialStatsJson{ get; set; } = "{}";
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // ---- Helpers ----
+        private static readonly JsonSerializerOptions _opts = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        /// <summary>Deserialise info_char column → InfoChar object.</summary>
+        public InfoChar GetInfoChar()
+        {
+            if (string.IsNullOrWhiteSpace(InfoCharJson) || InfoCharJson == "{}")
+                return new InfoChar();
+            try   { return JsonSerializer.Deserialize<InfoChar>(InfoCharJson, _opts) ?? new InfoChar(); }
+            catch { return new InfoChar(); }
+        }
+
+        /// <summary>Serialise InfoChar object → info_char column.</summary>
+        public void SetInfoChar(InfoChar ic)
+        {
+            InfoCharJson = JsonSerializer.Serialize(ic);
+        }
+
+        /// <summary>Build a default InfoChar for a brand-new player.</summary>
+        public static InfoChar DefaultInfoChar(string elementType) => new InfoChar
+        {
+            Level = 1, Experience = 0, Gold = 0,
+            SkillPoints = 0, PotentialPoints = 5,
+            ElementType = elementType,
+            GeneTier = 1, GeneExp = 0,
+            IsHybrid = false,
+            Hp = 100, MaxHp = 100,
+            Mp = 50,  MaxMp = 50,
+            Attack = 10, Defense = 0,
+            MapId = 0, PositionX = 0f, PositionY = 0f
+        };
     }
 }
-

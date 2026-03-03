@@ -133,6 +133,52 @@ public class ApiSkillData
     public bool unlocked;
 }
 
+// ── Skill tab DTOs ────────────────────────────────────────
+[System.Serializable]
+public class PlayerSkillInfo
+{
+    public int    skill_id;
+    public string skill_code;
+    public string skill_name;
+    public string description;
+    public string element_type;       // null = universal
+    public int    max_level;
+    public int    level_to_unlock;
+    public int    current_level;
+    public bool   can_upgrade;
+    public int    next_level_player_req;
+    public int    next_level_sp_cost;
+    public string next_level_desc;
+    public string icon_id;
+}
+
+[System.Serializable]
+public class PlayerSkillsResponse
+{
+    public int              skill_points_available;
+    public int              player_level;
+    public PlayerSkillInfo[] skills;
+}
+
+// ── Potential tab DTOs ────────────────────────────────────
+[System.Serializable]
+public class PotentialStatInfo
+{
+    public string stat_name;
+    public string display_name;
+    public int    current_points;
+    public float  value_per_point;
+    public float  total_value;
+}
+
+[System.Serializable]
+public class PlayerPotentialResponse
+{
+    public int                potential_points_available;
+    public int                player_level;
+    public PotentialStatInfo[] stats;
+}
+
 public class APIClient : MonoBehaviour
 {
     public static APIClient Instance { get; private set; }
@@ -909,5 +955,195 @@ public class APIClient : MonoBehaviour
     {
         public int player_id;
         public PlayerEquipmentDto equipment;
+    }
+
+    // =====================================================================
+    // SKILL API
+    // =====================================================================
+
+    /// <summary>
+    /// Lấy toàn bộ skill templates kèm level hiện tại của player.
+    /// GET /api/player/{id}/skills
+    /// </summary>
+    public void GetPlayerSkills(int playerId,
+        System.Action<PlayerSkillsResponse> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(GetPlayerSkillsCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator GetPlayerSkillsCoroutine(int playerId,
+        System.Action<PlayerSkillsResponse> onSuccess,
+        System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/skills";
+        using (var www = UnityWebRequest.Get(url))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                string text = www.downloadHandler.text;
+                Debug.Log($"[APIClient] Skills response: {text.Substring(0, Mathf.Min(200, text.Length))}");
+                try
+                {
+                    var response = JsonUtility.FromJson<PlayerSkillsResponse>(text);
+                    onSuccess?.Invoke(response);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[APIClient] Parse skills error: {ex.Message}");
+                    onError?.Invoke(ex.Message);
+                }
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] GetPlayerSkills failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Nâng cấp 1 skill lên level kế tiếp.
+    /// POST /api/player/{id}/skills/upgrade
+    /// Body: { "skill_id": 1 }
+    /// </summary>
+    public void UpgradeSkill(int playerId, int skillId,
+        System.Action<string> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(UpgradeSkillCoroutine(playerId, skillId, onSuccess, onError));
+    }
+
+    private IEnumerator UpgradeSkillCoroutine(int playerId, int skillId,
+        System.Action<string> onSuccess,
+        System.Action<string> onError)
+    {
+        string url  = $"{baseURL}/player/{playerId}/skills/upgrade";
+        string json = $"{{\"skill_id\":{skillId}}}";
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
+
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[APIClient] UpgradeSkill OK: {www.downloadHandler.text}");
+                onSuccess?.Invoke(www.downloadHandler.text);
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] UpgradeSkill failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+
+    // =====================================================================
+    // POTENTIAL API
+    // =====================================================================
+
+    /// <summary>
+    /// Lấy thông tin tiềm năng của player.
+    /// GET /api/player/{id}/potential
+    /// </summary>
+    public void GetPlayerPotential(int playerId,
+        System.Action<PlayerPotentialResponse> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(GetPlayerPotentialCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator GetPlayerPotentialCoroutine(int playerId,
+        System.Action<PlayerPotentialResponse> onSuccess,
+        System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/potential";
+        using (var www = UnityWebRequest.Get(url))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                string text = www.downloadHandler.text;
+                Debug.Log($"[APIClient] Potential response: {text}");
+                try
+                {
+                    var response = JsonUtility.FromJson<PlayerPotentialResponse>(text);
+                    onSuccess?.Invoke(response);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[APIClient] Parse potential error: {ex.Message}");
+                    onError?.Invoke(ex.Message);
+                }
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] GetPlayerPotential failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Đầu tư 1 điểm tiềm năng vào chỉ số được chọn.
+    /// POST /api/player/{id}/potential/upgrade
+    /// Body: { "stat_name": "attack" }
+    /// </summary>
+    public void UpgradePotentialStat(int playerId, string statName,
+        System.Action<string> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(UpgradePotentialStatCoroutine(playerId, statName, onSuccess, onError));
+    }
+
+    private IEnumerator UpgradePotentialStatCoroutine(int playerId, string statName,
+        System.Action<string> onSuccess,
+        System.Action<string> onError)
+    {
+        string url  = $"{baseURL}/player/{playerId}/potential/upgrade";
+        string json = $"{{\"stat_name\":\"{statName}\"}}";
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
+
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[APIClient] UpgradePotential OK: {www.downloadHandler.text}");
+                onSuccess?.Invoke(www.downloadHandler.text);
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] UpgradePotential failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
     }
 }

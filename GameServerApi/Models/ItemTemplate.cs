@@ -70,23 +70,18 @@ namespace GameServerApi.Models
         public int Rarity { get; set; } = 1;
 
         /// <summary>
-        /// Path to icon in Unity Resources (legacy)
-        /// </summary>
-        [Column("icon_path")]
-        public string? IconPath { get; set; }
-
-        /// <summary>
-        /// Path to prefab in Unity Resources
-        /// </summary>
-        [Column("prefab_path")]
-        public string? PrefabPath { get; set; }
-
-        /// <summary>
         /// Icon ID để Unity load sprite từ Resources/ItemIcons
-        /// Tính toán từ icon_path hoặc sử dụng code
         /// </summary>
-        [NotMapped] // Không map vào DB, tính toán runtime
-        public string IconId => IconPath ?? Code ?? "default_icon";
+        [Column("icon_id")]
+        public string? IconId { get; set; }
+
+        /// <summary>Legacy compat shim (chưa dung trong DB v2)</summary>
+        [NotMapped]
+        public string? IconPath => IconId;
+
+        /// <summary>Prefab path (không có trong DB v2, được tính runtime)</summary>
+        [NotMapped]
+        public string? PrefabPath { get; set; }
 
         /// <summary>
         /// JSON chứa base stats (attack, defense, heal_amount, etc.)

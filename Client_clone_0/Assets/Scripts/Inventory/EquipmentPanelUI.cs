@@ -97,11 +97,9 @@ public class EquipmentPanelUI : MonoBehaviour
     private void Start()
     {
         InitSlots();
-        // Mặc định ẩn panel
-        if (panelRoot != null)
-        {
-            panelRoot.SetActive(false);
-        }
+        // Không tự ẩn panelRoot ở đây – việc hiển thị/ẩn do CharacterPanelController quản lý
+        // thông qua contentEquipment.SetActive(). Nếu tự SetActive(false) thì dù parent
+        // được bật lại, child này vẫn giữ activeSelf=false và không hiện lên.
     }
 
     /// <summary>
