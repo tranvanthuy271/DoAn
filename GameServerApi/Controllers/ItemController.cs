@@ -35,20 +35,19 @@ namespace GameServerApi.Controllers
 
                 Console.WriteLine($"[ItemController] 📊 Found {itemTemplates.Count} item templates in database");
 
-                // Convert sang format phù hợp cho Unity
+                // Convert sang format phù hợp cho Unity (DB v3.0 – LangLa schema)
                 var response = itemTemplates.Select(item => new
                 {
-                    id = item.Id,
-                    code = item.Code,
-                    name = item.Name,
-                    description = item.Description,
-                    category = item.Category,
-                    item_type = item.ItemType,
-                    stackable = item.Stackable,
-                    max_stack = item.MaxStack,
-                    rarity = item.Rarity,
-                    icon_id = item.IconId,
-                    base_stat_json = item.BaseStatJson
+                    id          = item.Id,
+                    name        = item.Name,
+                    detail      = item.Detail,
+                    isXepChong  = item.IsXepChong == "True",
+                    gioiTinh    = item.GioiTinh,
+                    type        = item.Type,
+                    idClass     = item.IdClass,
+                    idIcon      = item.IdIcon,
+                    levelNeed   = item.LevelNeed,
+                    taiPhuNeed  = item.TaiPhuNeed
                 }).ToList();
 
                 Console.WriteLine($"[ItemController] ✅ Returning {response.Count} item templates");
@@ -59,7 +58,7 @@ namespace GameServerApi.Controllers
                 for (int i = 0; i < logCount; i++)
                 {
                     var item = response[i];
-                    Console.WriteLine($"  [{i+1}] ID={item.id}, Name='{item.name}', Code='{item.code}', IconId='{item.icon_id}'");
+                    Console.WriteLine($"  [{i+1}] ID={item.id}, Name='{item.name}', type={item.type}, idIcon={item.idIcon}");
                 }
 
                 return Ok(new
@@ -103,64 +102,16 @@ namespace GameServerApi.Controllers
 
                 return Ok(new
                 {
-                    id = item.Id,
-                    code = item.Code,
-                    name = item.Name,
-                    description = item.Description,
-                    category = item.Category,
-                    item_type = item.ItemType,
-                    stackable = item.Stackable,
-                    max_stack = item.MaxStack,
-                    rarity = item.Rarity,
-                    icon_id = item.IconId,
-                    base_stat_json = item.BaseStatJson
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    error = "Lỗi khi lấy item template",
-                    message = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
-        /// GET /api/item/templates/code/{code}
-        /// Lấy thông tin item template theo code
-        /// </summary>
-        [HttpGet("templates/code/{code}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetItemTemplateByCode(string code)
-        {
-            try
-            {
-                var item = await _db.ItemTemplates
-                    .FirstOrDefaultAsync(i => i.Code == code);
-                
-                if (item == null)
-                {
-                    return NotFound(new
-                    {
-                        error = "Item template không tồn tại",
-                        code = code
-                    });
-                }
-
-                return Ok(new
-                {
-                    id = item.Id,
-                    code = item.Code,
-                    name = item.Name,
-                    description = item.Description,
-                    category = item.Category,
-                    item_type = item.ItemType,
-                    stackable = item.Stackable,
-                    max_stack = item.MaxStack,
-                    rarity = item.Rarity,
-                    icon_id = item.IconId,
-                    base_stat_json = item.BaseStatJson
+                    id         = item.Id,
+                    name       = item.Name,
+                    detail     = item.Detail,
+                    isXepChong = item.IsXepChong == "True",
+                    gioiTinh   = item.GioiTinh,
+                    type       = item.Type,
+                    idClass    = item.IdClass,
+                    idIcon     = item.IdIcon,
+                    levelNeed  = item.LevelNeed,
+                    taiPhuNeed = item.TaiPhuNeed
                 });
             }
             catch (Exception ex)

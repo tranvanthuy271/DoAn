@@ -17,6 +17,8 @@ namespace GameServerApi.Data
         public DbSet<EnemySpawn> EnemySpawns => Set<EnemySpawn>();
         public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
         public DbSet<SkillTemplate> SkillTemplates => Set<SkillTemplate>();
+        public DbSet<EquipmentUpgradeConfig> EquipmentUpgradeConfigs => Set<EquipmentUpgradeConfig>();
+        public DbSet<GeneUpgradeConfig>       GeneUpgradeConfigs      => Set<GeneUpgradeConfig>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -136,22 +138,17 @@ namespace GameServerApi.Data
                 entity.HasKey(i => i.Id);
 
                 entity.Property(i => i.Id).HasColumnName("id");
-                entity.Property(i => i.Code).HasColumnName("code");
                 entity.Property(i => i.Name).HasColumnName("name");
-                entity.Property(i => i.Description).HasColumnName("description");
-                entity.Property(i => i.Category).HasColumnName("category");
-                entity.Property(i => i.ItemType).HasColumnName("item_type");
-                entity.Property(i => i.Stackable).HasColumnName("stackable");
-                entity.Property(i => i.MaxStack).HasColumnName("max_stack");
-                entity.Property(i => i.GenderLimit).HasColumnName("gender_limit");
-                entity.Property(i => i.ClassLimit).HasColumnName("class_limit");
-                entity.Property(i => i.LevelRequired).HasColumnName("level_required");
-                entity.Property(i => i.Rarity).HasColumnName("rarity");
-                entity.Property(i => i.IconId).HasColumnName("icon_id");
-                entity.Property(i => i.BaseStatJson).HasColumnName("base_stat_json");
-                entity.Property(i => i.CreatedAt).HasColumnName("created_at");
-
-                entity.HasIndex(i => i.Code).IsUnique();
+                entity.Property(i => i.Detail).HasColumnName("detail");
+                entity.Property(i => i.IsXepChong).HasColumnName("isXepChong");
+                entity.Property(i => i.GioiTinh).HasColumnName("gioiTinh");
+                entity.Property(i => i.Type).HasColumnName("type");
+                entity.Property(i => i.IdClass).HasColumnName("idClass");
+                entity.Property(i => i.IdIcon).HasColumnName("idIcon");
+                entity.Property(i => i.LevelNeed).HasColumnName("levelNeed");
+                entity.Property(i => i.TaiPhuNeed).HasColumnName("taiPhuNeed");
+                entity.Property(i => i.IdMob).HasColumnName("idMob");
+                entity.Property(i => i.IdChar).HasColumnName("idChar");
             });
 
             modelBuilder.Entity<SkillTemplate>(entity =>
@@ -166,11 +163,27 @@ namespace GameServerApi.Data
                 entity.Property(s => s.ElementType).HasColumnName("element_type");
                 entity.Property(s => s.MaxLevel).HasColumnName("max_level");
                 entity.Property(s => s.LevelToUnlock).HasColumnName("level_to_unlock");
+                entity.Property(s => s.GeneTierRequired).HasColumnName("gene_tier_required");
                 entity.Property(s => s.LevelsJson).HasColumnName("levels_json");
                 entity.Property(s => s.IconId).HasColumnName("icon_id");
                 entity.Property(s => s.CreatedAt).HasColumnName("created_at");
 
                 entity.HasIndex(s => s.SkillCode).IsUnique();
+            });
+
+            modelBuilder.Entity<GeneUpgradeConfig>(entity =>
+            {
+                entity.ToTable("gene_upgrade_config");
+                entity.HasKey(e => new { e.TierFrom, e.ElementType });
+
+                entity.Property(e => e.TierFrom).HasColumnName("tier_from");
+                entity.Property(e => e.ElementType).HasColumnName("element_type");
+                entity.Property(e => e.GeneExpRequired).HasColumnName("gene_exp_required");
+                entity.Property(e => e.GoldCost).HasColumnName("silver_cost");
+                entity.Property(e => e.ItemId).HasColumnName("stone_id");
+                entity.Property(e => e.ItemsNeeded).HasColumnName("stone_needed");
+                entity.Property(e => e.ItemsMin).HasColumnName("stone_min");
+                entity.Property(e => e.BaseSuccessRate).HasColumnName("base_success_rate");
             });
         }
     }

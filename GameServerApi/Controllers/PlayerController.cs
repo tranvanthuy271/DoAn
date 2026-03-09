@@ -138,6 +138,7 @@ namespace GameServerApi.Controllers
                         potential_points_available = updInfo.PotentialPoints,
                         element_type = updInfo.ElementType,
                         gene_tier = updInfo.GeneTier,
+                        gene_exp = updInfo.GeneExp,
                         is_hybrid = updInfo.IsHybrid,
                         gender = existingTracked.Gender,
                         character_name = existingTracked.CharacterName
@@ -225,6 +226,7 @@ namespace GameServerApi.Controllers
                 potential_points_available = createInfo.PotentialPoints,
                 element_type = createInfo.ElementType,
                 gene_tier = createInfo.GeneTier,
+                gene_exp = createInfo.GeneExp,
                 is_hybrid = createInfo.IsHybrid,
                 gender = playerData.Gender,
                 character_name = playerData.CharacterName
@@ -257,6 +259,7 @@ namespace GameServerApi.Controllers
                 experience = info.Experience,
                 exp_required_for_next_level = 0,
                 gold = info.Gold,
+                silver = info.Silver,
                 map_id = info.MapId,
                 position_x = info.PositionX,
                 position_y = info.PositionY,
@@ -287,6 +290,7 @@ namespace GameServerApi.Controllers
                 potential_points_available = info.PotentialPoints,
                 element_type = info.ElementType,
                 gene_tier = info.GeneTier,
+                gene_exp = info.GeneExp,
                 is_hybrid = info.IsHybrid,
                 gender = player.Gender,
                 character_name = player.CharacterName
@@ -555,15 +559,28 @@ namespace GameServerApi.Controllers
                         continue;
                     }
 
+                    // Đọc upgradeLevel và strOptions (tuỳ chọn)
+                    int addUpgradeLevel = 0;
+                    if (itemToAdd.TryGetValue("upgradeLevel", out var lvlElem))
+                        addUpgradeLevel = lvlElem.TryGetInt32(out var lv) ? lv : 0;
+
+                    string addStrOptions = "";
+                    if (itemToAdd.TryGetValue("strOptions", out var strOptElem))
+                        addStrOptions = strOptElem.GetString() ?? "";
+                    if (string.IsNullOrEmpty(addStrOptions))
+                        addStrOptions = GetDefaultStrOptions(itemTemplateId);
+
                     // Thêm item vào slot trống
                     var newSlot = new Dictionary<string, object>
                     {
-                        ["slotIndex"] = emptySlotIndex,
+                        ["slotIndex"]      = emptySlotIndex,
                         ["itemTemplateId"] = itemTemplateId,
-                        ["itemCode"] = itemCode,
-                        ["iconId"] = iconId,
-                        ["quantity"] = quantity,
-                        ["isEquipped"] = false
+                        ["itemCode"]       = itemCode,
+                        ["iconId"]         = iconId,
+                        ["quantity"]       = quantity,
+                        ["isEquipped"]     = false,
+                        ["upgradeLevel"]   = addUpgradeLevel,
+                        ["strOptions"]     = addStrOptions
                     };
 
                     // Xóa slot cũ nếu có
@@ -589,6 +606,33 @@ namespace GameServerApi.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi khi thêm items vào inventory: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/inventory/clear
+        /// Xóa toàn bộ inventory và equipment của player (dùng cho debug/reset)
+        /// </summary>
+        [HttpPost("{playerId}/inventory/clear")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ClearInventory(int playerId)
+        {
+            try
+            {
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null)
+                    return NotFound($"Player với ID {playerId} không tồn tại.");
+
+                player.InventoryJson = "[]";
+                player.EquipmentJson = "{}";
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new { message = "Đã xóa toàn bộ inventory và equipment.", player_id = playerId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi clear inventory: {ex.Message}");
             }
         }
 
@@ -655,6 +699,10 @@ namespace GameServerApi.Controllers
                 int itemTemplateId = targetItem.ContainsKey("itemTemplateId") ? Convert.ToInt32(targetItem["itemTemplateId"]) : 0;
                 string itemCode = targetItem.ContainsKey("itemCode") ? targetItem["itemCode"]?.ToString() ?? "" : "";
                 string iconId = targetItem.ContainsKey("iconId") ? targetItem["iconId"]?.ToString() ?? "" : "";
+                int itemUpgradeLevel = targetItem.ContainsKey("upgradeLevel") ? Convert.ToInt32(targetItem["upgradeLevel"]) : 0;
+                string itemStrOptions = targetItem.ContainsKey("strOptions") ? targetItem["strOptions"]?.ToString() ?? "" : "";
+                if (string.IsNullOrEmpty(itemStrOptions))
+                    itemStrOptions = GetDefaultStrOptions(itemTemplateId);
 
                 // Lấy item template để xác định loại slot
                 var itemTemplate = await _db.Set<ItemTemplate>().FirstOrDefaultAsync(t => t.Id == itemTemplateId);
@@ -663,28 +711,27 @@ namespace GameServerApi.Controllers
                     return BadRequest($"Item template ID {itemTemplateId} không tồn tại.");
                 }
 
-                // Chỉ equipment (category=1) mới trang bị được
-                if (itemTemplate.Category != 1)
+                // Chỉ equipment (type 0-5) mới trang bị được
+                if (itemTemplate.Type < 0 || itemTemplate.Type > 5)
                 {
-                    return BadRequest("Item này không phải trang bị (category != 1).");
+                    return BadRequest($"Item này không phải trang bị (type={itemTemplate.Type}).");
                 }
 
-                // Xác định equipment slot dựa trên item_type
-                string equipSlotName = itemTemplate.ItemType switch
+                // Xác định equipment slot dựa trên type (DB v3.0)
+                string equipSlotName = itemTemplate.Type switch
                 {
-                    1 => "weapon",      // Sword / Melee
-                    2 => "weapon",      // Bow / Ranged
-                    3 => "armor",       // Armor
-                    4 => "helmet",      // Helmet
-                    5 => "pants",       // Pants
-                    6 => "boots",       // Boots
-                    7 => "accessory",   // Ring/Necklace
+                    0 => "helmet",
+                    1 => "weapon",
+                    2 => "armor",
+                    3 => "pants",
+                    4 => "boots",
+                    5 => "accessory",
                     _ => null
                 };
 
                 if (equipSlotName == null)
                 {
-                    return BadRequest($"Không xác định được slot trang bị cho item_type={itemTemplate.ItemType}.");
+                    return BadRequest($"Không xác định được slot trang bị cho type={itemTemplate.Type}.");
                 }
 
                 // Parse equipment JSON hiện tại
@@ -747,12 +794,14 @@ namespace GameServerApi.Controllers
                         // Đưa item cũ vào inventory
                         var returnedItem = new Dictionary<string, object>
                         {
-                            ["slotIndex"] = emptySlot,
+                            ["slotIndex"]      = emptySlot,
                             ["itemTemplateId"] = oldEquipItem.ContainsKey("itemTemplateId") ? oldEquipItem["itemTemplateId"] : 0,
-                            ["itemCode"] = oldEquipItem.ContainsKey("itemCode") ? oldEquipItem["itemCode"] : "",
-                            ["iconId"] = oldEquipItem.ContainsKey("iconId") ? oldEquipItem["iconId"] : "",
-                            ["quantity"] = 1,
-                            ["isEquipped"] = false
+                            ["itemCode"]       = oldEquipItem.ContainsKey("itemCode")       ? oldEquipItem["itemCode"]       : "",
+                            ["iconId"]         = oldEquipItem.ContainsKey("iconId")         ? oldEquipItem["iconId"]         : "",
+                            ["quantity"]       = 1,
+                            ["isEquipped"]     = false,
+                            ["upgradeLevel"]   = oldEquipItem.ContainsKey("upgradeLevel")   ? oldEquipItem["upgradeLevel"]   : 0,
+                            ["strOptions"]     = oldEquipItem.ContainsKey("strOptions")     ? oldEquipItem["strOptions"] ?? "" : ""
                         };
                         inventory.RemoveAll(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == emptySlot);
                         inventory.Add(returnedItem);
@@ -766,11 +815,12 @@ namespace GameServerApi.Controllers
                 var equipItemData = new Dictionary<string, object>
                 {
                     ["itemTemplateId"] = itemTemplateId,
-                    ["itemCode"] = itemCode,
-                    ["iconId"] = iconId,
-                    ["itemName"] = itemTemplate.Name,
-                    ["itemType"] = itemTemplate.ItemType,
-                    ["baseStatJson"] = itemTemplate.BaseStatJson ?? "{}"
+                    ["itemCode"]       = itemCode,
+                    ["iconId"]         = itemTemplate.IdIcon.ToString(),
+                    ["itemName"]       = itemTemplate.Name,
+                    ["itemType"]       = itemTemplate.Type,
+                    ["upgradeLevel"]   = itemUpgradeLevel,
+                    ["strOptions"]     = itemStrOptions
                 };
 
                 // Gán vào equipment slot
@@ -930,12 +980,14 @@ namespace GameServerApi.Controllers
                 // Đưa item vào inventory
                 var returnedItem = new Dictionary<string, object>
                 {
-                    ["slotIndex"] = emptySlot,
+                    ["slotIndex"]      = emptySlot,
                     ["itemTemplateId"] = equipItem.ContainsKey("itemTemplateId") ? equipItem["itemTemplateId"] : 0,
-                    ["itemCode"] = equipItem.ContainsKey("itemCode") ? equipItem["itemCode"] : "",
-                    ["iconId"] = equipItem.ContainsKey("iconId") ? equipItem["iconId"] : "",
-                    ["quantity"] = 1,
-                    ["isEquipped"] = false
+                    ["itemCode"]       = equipItem.ContainsKey("itemCode")       ? equipItem["itemCode"]       : "",
+                    ["iconId"]         = equipItem.ContainsKey("iconId")         ? equipItem["iconId"]         : "",
+                    ["quantity"]       = 1,
+                    ["isEquipped"]     = false,
+                    ["upgradeLevel"]   = equipItem.ContainsKey("upgradeLevel")   ? equipItem["upgradeLevel"]   : 0,
+                    ["strOptions"]     = equipItem.ContainsKey("strOptions")     ? equipItem["strOptions"] ?? "" : ""
                 };
                 inventory.RemoveAll(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == emptySlot);
                 inventory.Add(returnedItem);
@@ -999,6 +1051,17 @@ namespace GameServerApi.Controllers
             });
         }
 
+        // ──────────────────────────────────────────────────────────────
+        //  HELPERS
+        // ──────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// strOptions mặc định ở bậc +0 cho item template.
+        /// Format: "optId,value;..." (value = strOption[0] của option template)
+        /// </summary>
+        private static string GetDefaultStrOptions(int itemTemplateId) =>
+            UpgradeController.DefaultStrOptions.TryGetValue(itemTemplateId, out var val) ? val : "";
+
         // ================================================================
         //  SKILL ENDPOINTS
         // ================================================================
@@ -1032,7 +1095,9 @@ namespace GameServerApi.Controllers
                 catch { /* ignore parse errors */ }
             }
 
+            // Chỉ lấy skill của đúng hệ player hoặc universal (element_type IS NULL)
             var templates = await _db.SkillTemplates
+                .Where(s => s.ElementType == null || s.ElementType == info.ElementType)
                 .OrderBy(s => s.ElementType).ThenBy(s => s.SkillId)
                 .ToListAsync();
 
@@ -1057,7 +1122,10 @@ namespace GameServerApi.Controllers
                             if (nextData.TryGetProperty("sp_cost",      out var sc)) nextSpCost         = sc.GetInt32();
                             if (nextData.TryGetProperty("effect_value", out var ev)) nextEffectValue    = (float)ev.GetDouble();
                             if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
-                            canUpgrade = info.Level >= nextLevelPlayerReq && info.SkillPoints >= nextSpCost;
+                            // canUpgrade: đủ player level + đủ SP + đủ gene_tier
+                            canUpgrade = info.Level >= nextLevelPlayerReq
+                                      && info.SkillPoints >= nextSpCost
+                                      && info.GeneTier >= t.GeneTierRequired;
                         }
                     }
                     catch { }
@@ -1072,6 +1140,7 @@ namespace GameServerApi.Controllers
                     element_type          = t.ElementType,
                     max_level             = t.MaxLevel,
                     level_to_unlock       = t.LevelToUnlock,
+                    gene_tier_required    = t.GeneTierRequired,
                     current_level         = curLevel,
                     can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
                     next_level_player_req = nextLevelPlayerReq,
