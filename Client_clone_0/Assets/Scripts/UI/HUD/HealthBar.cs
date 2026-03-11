@@ -2,95 +2,107 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Thanh HP dùng Slider — đọc từ NetworkPlayerDataSync (giống tab thông tin PlayerInfoUI).
+/// Script tự động tìm NetworkPlayerDataSync trong scene, không cần gán thủ công.
+/// </summary>
 public class HealthBar : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Image fillImage;
-    [SerializeField] private Text healthText; // Legacy Text (deprecated)
-    [SerializeField] private TextMeshProUGUI healthTextTMP; // TextMeshPro (recommended)
+    [SerializeField] private TextMeshProUGUI healthTextTMP;
 
     [Header("Colors")]
     [SerializeField] private Color fullHealthColor = Color.green;
     [SerializeField] private Color lowHealthColor = Color.red;
     [SerializeField] private float lowHealthThreshold = 0.3f;
 
-    [Header("Target")]
-    [SerializeField] private PlayerHealth playerHealth; // Local health (single-player)
-    [SerializeField] private NetworkPlayerHealth networkPlayerHealth; // Network health (multiplayer)
+    private NetworkPlayerDataSync dataSync;
+    private float retryTimer = 0f;
+    private const float RetryInterval = 0.3f;
 
     private void Start()
     {
-        // Auto-find player health if not assigned (ưu tiên NetworkPlayerHealth)
-        if (networkPlayerHealth == null)
-        {
-            networkPlayerHealth = FindObjectOfType<NetworkPlayerHealth>();
-        }
+        // Kiểm tra UI references
+        if (healthSlider == null)
+            Debug.LogError("[HealthBar] THIẾU: 'Health Slider' chưa được gán trong Inspector!", this);
+        if (fillImage == null)
+            Debug.LogWarning("[HealthBar] THIẾU: 'Fill Image' chưa được gán — slider sẽ không đổi màu.", this);
 
-        if (playerHealth == null)
-        {
-            playerHealth = FindObjectOfType<PlayerHealth>();
-        }
-
-        if (networkPlayerHealth != null)
-        {
-            networkPlayerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            UpdateHealthBar(networkPlayerHealth.GetCurrentHealth(), networkPlayerHealth.GetMaxHealth());
-        }
-        else if (playerHealth != null)
-        {
-            playerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            UpdateHealthBar(playerHealth.GetCurrentHealth(), playerHealth.GetMaxHealth());
-        }
-
-        // Setup slider if exists
         if (healthSlider != null)
         {
-            healthSlider.minValue = 0;
-            healthSlider.maxValue = 1;
+            healthSlider.minValue = 0f;
+            healthSlider.maxValue = 1f;
+            healthSlider.interactable = false;
         }
+
+        TryBind();
     }
 
-    private void UpdateHealthBar(int currentHealth, int maxHealth)
+    private void Update()
     {
-        float healthPercent = (float)currentHealth / maxHealth;
+        if (dataSync != null) return; // đã bind thành công
 
-        // Update slider
-        if (healthSlider != null)
-        {
-            healthSlider.value = healthPercent;
-        }
+        retryTimer -= Time.deltaTime;
+        if (retryTimer > 0f) return;
+        retryTimer = RetryInterval;
 
-        // Update color
-        if (fillImage != null)
-        {
-            fillImage.color = Color.Lerp(lowHealthColor, fullHealthColor, 
-                (healthPercent - 0) / (1 - lowHealthThreshold));
-        }
+        TryBind();
+    }
 
-        // Update text
-        if (healthTextTMP != null)
-        {
-            healthTextTMP.text = $"{currentHealth} / {maxHealth}";
-        }
-        else if (healthText != null)
-        {
-            healthText.text = $"{currentHealth} / {maxHealth}";
-        }
+    private void TryBind()
+    {
+        dataSync = FindObjectOfType<NetworkPlayerDataSync>();
+        if (dataSync == null) return;
+
+        Debug.Log($"[HealthBar] Tìm thấy NetworkPlayerDataSync trên '{dataSync.gameObject.name}' — HP: {dataSync.networkHp.Value}/{dataSync.networkMaxHp.Value}");
+        dataSync.networkHp.OnValueChanged    += OnHpChanged;
+        dataSync.networkMaxHp.OnValueChanged += OnMaxHpChanged;
+        UpdateBar(dataSync.networkHp.Value, dataSync.networkMaxHp.Value);
     }
 
     private void OnDestroy()
     {
-        // Unsubscribe from events
-        if (networkPlayerHealth != null)
+        if (dataSync != null)
         {
-            networkPlayerHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+            dataSync.networkHp.OnValueChanged    -= OnHpChanged;
+            dataSync.networkMaxHp.OnValueChanged -= OnMaxHpChanged;
+        }
+    }
+
+    private void OnHpChanged(int prev, int current)
+    {
+        int max = dataSync != null ? dataSync.networkMaxHp.Value : current;
+        UpdateBar(current, max);
+    }
+
+    private void OnMaxHpChanged(int prev, int current)
+    {
+        int hp = dataSync != null ? dataSync.networkHp.Value : 0;
+        UpdateBar(hp, current);
+    }
+
+    private void UpdateBar(int current, int max)
+    {
+        if (max <= 0)
+        {
+            Debug.LogWarning($"[HealthBar] networkMaxHp = {max} — chưa có data từ server, bỏ qua update.");
+            return;
         }
 
-        if (playerHealth != null)
-        {
-            playerHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
-        }
+        float pct = (float)current / max;
+        Debug.Log($"[HealthBar] Cập nhật: {current}/{max} ({pct * 100:F0}%)");
+
+        if (healthSlider != null)
+            healthSlider.value = pct;
+
+        if (fillImage != null)
+            fillImage.color = Color.Lerp(lowHealthColor, fullHealthColor,
+                Mathf.Clamp01((pct - lowHealthThreshold) / (1f - lowHealthThreshold)));
+
+        if (healthTextTMP != null)
+            healthTextTMP.text = $"{current} / {max}";
     }
 }
 

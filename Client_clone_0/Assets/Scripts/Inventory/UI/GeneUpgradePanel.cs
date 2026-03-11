@@ -418,13 +418,37 @@ public class GeneUpgradePanel : MonoBehaviour
         _playerData.gene_tier          = response.newGeneTier;
         _playerData.gene_exp           = response.newGeneExp;
 
-        if (response.success && response.newStats != null)
+        // Áp dụng final_stats từ server (base + equipment + potential) vào GameManager
+        if (response.final_stats != null)
+            _playerData.final_stats = response.final_stats;
+        else if (response.success && response.newStats != null)
         {
             _playerData.base_stats.max_hp  = response.newStats.maxHp;
             _playerData.base_stats.max_mp  = response.newStats.maxMp;
             _playerData.base_stats.attack  = response.newStats.attack;
         }
         GameManager.Instance.SetPlayerData(_playerData);
+
+        // Đồng bộ stats lên host qua Network → tự động broadcast tới tất cả client
+        var fs = _playerData.final_stats;
+        if (fs != null)
+        {
+            var sync = FindLocalDataSync();
+            if (sync != null)
+                sync.UpdatePlayerDataServerRpc(
+                    _playerData.player_id,
+                    _playerData.element_type  ?? "Fire",
+                    _playerData.gender        ?? "Male",
+                    _playerData.character_name ?? "",
+                    _playerData.level,
+                    fs.hp, fs.max_hp, fs.mp, fs.max_mp,
+                    fs.attack, fs.defense, fs.move_speed,
+                    _playerData.gene_tier
+                );
+        }
+
+        // Cập nhật StatsTabUI nếu đang mở
+        FindObjectOfType<StatsTabUI>()?.Load();
 
         if (response.success)
         {
@@ -462,6 +486,14 @@ public class GeneUpgradePanel : MonoBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>Tìm NetworkPlayerDataSync của local player (IsOwner=true)</summary>
+    private static NetworkPlayerDataSync FindLocalDataSync()
+    {
+        foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
+            if (s.IsOwner) return s;
+        return null;
+    }
 
     private void SetStatus(string msg, Color color)
     {

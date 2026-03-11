@@ -17,8 +17,11 @@ namespace GameServerApi.Data
         public DbSet<EnemySpawn> EnemySpawns => Set<EnemySpawn>();
         public DbSet<ItemTemplate> ItemTemplates => Set<ItemTemplate>();
         public DbSet<SkillTemplate> SkillTemplates => Set<SkillTemplate>();
-        public DbSet<EquipmentUpgradeConfig> EquipmentUpgradeConfigs => Set<EquipmentUpgradeConfig>();
-        public DbSet<GeneUpgradeConfig>       GeneUpgradeConfigs      => Set<GeneUpgradeConfig>();
+        public DbSet<EquipmentUpgradeConfig> EquipmentUpgradeConfigs  => Set<EquipmentUpgradeConfig>();
+        public DbSet<GeneUpgradeConfig>       GeneUpgradeConfigs       => Set<GeneUpgradeConfig>();
+        public DbSet<GeneTierStatConfig>      GeneTierStatConfigs      => Set<GeneTierStatConfig>();
+        public DbSet<DungeonConfig>           DungeonConfigs           => Set<DungeonConfig>();
+        public DbSet<DungeonSession>          DungeonSessions          => Set<DungeonSession>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -184,6 +187,72 @@ namespace GameServerApi.Data
                 entity.Property(e => e.ItemsNeeded).HasColumnName("stone_needed");
                 entity.Property(e => e.ItemsMin).HasColumnName("stone_min");
                 entity.Property(e => e.BaseSuccessRate).HasColumnName("base_success_rate");
+            });
+
+            modelBuilder.Entity<GeneTierStatConfig>(entity =>
+            {
+                entity.ToTable("gene_tier_stat_config");
+                entity.HasKey(e => new { e.ElementType, e.TierTo });
+
+                entity.Property(e => e.ElementType).HasColumnName("element_type").HasMaxLength(10);
+                entity.Property(e => e.TierTo).HasColumnName("tier_to");
+                entity.Property(e => e.HpBonus).HasColumnName("hp_bonus");
+                entity.Property(e => e.MpBonus).HasColumnName("mp_bonus");
+                entity.Property(e => e.AttackBonus).HasColumnName("attack_bonus");
+                entity.Property(e => e.DefenseBonus).HasColumnName("defense_bonus");
+            });
+
+            modelBuilder.Entity<DungeonConfig>(entity =>
+            {
+                entity.ToTable("dungeon_config");
+                entity.HasKey(d => d.DungeonId);
+
+                entity.Property(d => d.DungeonId).HasColumnName("dungeon_id");
+                entity.Property(d => d.DungeonName).HasColumnName("dungeon_name").HasMaxLength(100);
+                entity.Property(d => d.DungeonType).HasColumnName("dungeon_type").HasMaxLength(10);
+                entity.Property(d => d.MapId).HasColumnName("map_id");
+                entity.Property(d => d.SceneName).HasColumnName("scene_name").HasMaxLength(100);
+                entity.Property(d => d.MaxPlayers).HasColumnName("max_players");
+                entity.Property(d => d.MinLevelRequired).HasColumnName("min_level_required");
+                entity.Property(d => d.TimeLimitSeconds).HasColumnName("time_limit_seconds");
+                entity.Property(d => d.Description).HasColumnName("description");
+                entity.Property(d => d.BossEnemyId).HasColumnName("boss_enemy_id");
+                entity.Property(d => d.RewardJson).HasColumnName("reward_json");
+                entity.Property(d => d.ThumbnailIconId).HasColumnName("thumbnail_icon_id").HasMaxLength(50);
+                entity.Property(d => d.IsActive).HasColumnName("is_active");
+                entity.Property(d => d.CreatedAt).HasColumnName("created_at");
+                entity.Property(d => d.UpdatedAt).HasColumnName("updated_at");
+
+                entity.HasOne(d => d.Map)
+                    .WithMany()
+                    .HasForeignKey(d => d.MapId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.BossEnemy)
+                    .WithMany()
+                    .HasForeignKey(d => d.BossEnemyId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<DungeonSession>(entity =>
+            {
+                entity.ToTable("dungeon_session");
+                entity.HasKey(s => s.SessionId);
+
+                entity.Property(s => s.SessionId).HasColumnName("session_id");
+                entity.Property(s => s.DungeonConfigId).HasColumnName("dungeon_config_id");
+                entity.Property(s => s.HostIp).HasColumnName("host_ip").HasMaxLength(45);
+                entity.Property(s => s.HostPort).HasColumnName("host_port");
+                entity.Property(s => s.CurrentPlayers).HasColumnName("current_players");
+                entity.Property(s => s.MaxPlayers).HasColumnName("max_players");
+                entity.Property(s => s.Status).HasColumnName("status").HasMaxLength(10);
+                entity.Property(s => s.CreatedAt).HasColumnName("created_at");
+                entity.Property(s => s.UpdatedAt).HasColumnName("updated_at");
+
+                entity.HasOne(s => s.DungeonConfig)
+                    .WithMany()
+                    .HasForeignKey(s => s.DungeonConfigId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

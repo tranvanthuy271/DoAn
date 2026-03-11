@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using GameServerApi.Data;
+using GameServerApi.Models.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -236,6 +237,9 @@ namespace GameServerApi.Controllers
                 player.UpdatedAt     = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
+                // Tính final_stats sau khi trang bị thay đổi — client dùng để update UI
+                var upgFs = StatCalculator.Compute(player.GetInfoChar(), player.EquipmentJson, player.PotentialStatsJson);
+
                 string msg = success
                     ? $"✨ Thành công! Đạt +{newLevel}"
                     : downgraded
@@ -261,6 +265,16 @@ namespace GameServerApi.Controllers
                     updatedStrOptions = newStrOptions,
                     silver            = info.Silver,
                     message           = msg,
+                    final_stats = new
+                    {
+                        hp         = upgFs.Hp,
+                        max_hp     = upgFs.MaxHp,
+                        mp         = upgFs.Mp,
+                        max_mp     = upgFs.MaxMp,
+                        attack     = upgFs.Attack,
+                        defense    = upgFs.Defense,
+                        move_speed = upgFs.MoveSpeed,
+                    },
                     updatedInventory  = updatedInv
                 });
             }

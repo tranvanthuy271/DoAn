@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using GameServerApi.Data;
 using GameServerApi.Models;
+using GameServerApi.Models.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -87,65 +88,7 @@ namespace GameServerApi.Controllers
             
             if (existing != null)
             {
-                // Đã có player_data, cần attach và update
-                var existingTracked = await _db.PlayerData.FindAsync(userId);
-                if (existingTracked != null)
-                {
-                    var existingInfo = existingTracked.GetInfoChar();
-                    existingInfo.ElementType = elementType;
-                    existingTracked.SetInfoChar(existingInfo);
-                    existingTracked.Gender = gender;
-                    existingTracked.CharacterName = characterName;
-                    existingTracked.UpdatedAt = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
-                    
-                    // Trả về format đúng cho client
-                    var updInfo = existingTracked.GetInfoChar();
-                    var response = new
-                    {
-                        player_id = existingTracked.PlayerId,
-                        level = updInfo.Level,
-                        experience = updInfo.Experience,
-                        exp_required_for_next_level = 0,
-                        gold = updInfo.Gold,
-                        map_id = updInfo.MapId,
-                        position_x = updInfo.PositionX,
-                        position_y = updInfo.PositionY,
-                        base_stats = new
-                        {
-                            hp = updInfo.Hp,
-                            max_hp = updInfo.MaxHp,
-                            mp = updInfo.Mp,
-                            max_mp = updInfo.MaxMp,
-                            attack = updInfo.Attack,
-                            defense = updInfo.Defense
-                        },
-                        equipment = JsonSerializer.Deserialize<object>(existingTracked.EquipmentJson),
-                        potential_stats = JsonSerializer.Deserialize<object>(existingTracked.PotentialStatsJson),
-                        final_stats = new
-                        {
-                            hp = updInfo.MaxHp,
-                            max_hp = updInfo.MaxHp,
-                            mp = updInfo.MaxMp,
-                            max_mp = updInfo.MaxMp,
-                            attack = updInfo.Attack,
-                            defense = updInfo.Defense,
-                            move_speed = 5f
-                        },
-                        inventory = JsonSerializer.Deserialize<object>(existingTracked.InventoryJson),
-                        skills = JsonSerializer.Deserialize<object>(existingTracked.SkillsJson),
-                        skill_points_available = updInfo.SkillPoints,
-                        potential_points_available = updInfo.PotentialPoints,
-                        element_type = updInfo.ElementType,
-                        gene_tier = updInfo.GeneTier,
-                        gene_exp = updInfo.GeneExp,
-                        is_hybrid = updInfo.IsHybrid,
-                        gender = existingTracked.Gender,
-                        character_name = existingTracked.CharacterName
-                    };
-                    
-                    return Ok(response);
-                }
+                return Conflict("Nhân vật đã được tạo cho tài khoản này.");
             }
 
             // Tạo player mới với try-catch để xử lý race condition
@@ -189,6 +132,7 @@ namespace GameServerApi.Controllers
 
             // Trả về format đúng cho client
             var createInfo = playerData.GetInfoChar();
+            var createFs = StatCalculator.Compute(createInfo, playerData.EquipmentJson, playerData.PotentialStatsJson);
             var createResponse = new
             {
                 player_id = playerData.PlayerId,
@@ -212,13 +156,13 @@ namespace GameServerApi.Controllers
                 potential_stats = JsonSerializer.Deserialize<object>(playerData.PotentialStatsJson),
                 final_stats = new
                 {
-                    hp = createInfo.MaxHp,
-                    max_hp = createInfo.MaxHp,
-                    mp = createInfo.MaxMp,
-                    max_mp = createInfo.MaxMp,
-                    attack = createInfo.Attack,
-                    defense = createInfo.Defense,
-                    move_speed = 5f
+                    hp         = createFs.Hp,
+                    max_hp     = createFs.MaxHp,
+                    mp         = createFs.Mp,
+                    max_mp     = createFs.MaxMp,
+                    attack     = createFs.Attack,
+                    defense    = createFs.Defense,
+                    move_speed = createFs.MoveSpeed,
                 },
                 inventory = JsonSerializer.Deserialize<object>(playerData.InventoryJson),
                 skills = JsonSerializer.Deserialize<object>(playerData.SkillsJson),
@@ -250,14 +194,32 @@ namespace GameServerApi.Controllers
                 return NotFound("Player không tồn tại.");
             }
 
-            // Tạm thời trả về dữ liệu đơn giản, có thể mở rộng dần cho khớp hoàn toàn tài liệu.
+            // Compute final_stats = base (gene baked-in) + equipment bonus + potential bonus
             var info = player.GetInfoChar();
+
+            // Xử lý level-up nếu có đủ EXP
+            var (leveledUp, expAtCurrentLevel, expForNextLevel) = await ProcessLevelUpAsync(info);
+            if (leveledUp)
+            {
+                player.SetInfoChar(info);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            var finalStats = StatCalculator.Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+
+            // ─── DEBUG LOG ────────────────────────────────────────────────────
+            Console.WriteLine($"[PlayerCtrl] GetPlayerData playerId={playerId} level={info.Level} exp={info.Experience} expNextLv={expForNextLevel}");
+            Console.WriteLine($"  InfoChar  → attack={info.Attack} maxHp={info.MaxHp} maxMp={info.MaxMp} defense={info.Defense}");
+            // ──────────────────────────────────────────────────────────────────────────
+
             var response = new
             {
                 player_id = player.PlayerId,
                 level = info.Level,
                 experience = info.Experience,
-                exp_required_for_next_level = 0,
+                exp_required_for_next_level = expForNextLevel,
+                exp_at_current_level = expAtCurrentLevel,
                 gold = info.Gold,
                 silver = info.Silver,
                 map_id = info.MapId,
@@ -276,13 +238,13 @@ namespace GameServerApi.Controllers
                 potential_stats = JsonSerializer.Deserialize<object>(player.PotentialStatsJson),
                 final_stats = new
                 {
-                    hp = info.MaxHp,
-                    max_hp = info.MaxHp,
-                    mp = info.MaxMp,
-                    max_mp = info.MaxMp,
-                    attack = info.Attack,
-                    defense = info.Defense,
-                    move_speed = 5f
+                    hp         = finalStats.Hp,
+                    max_hp     = finalStats.MaxHp,
+                    mp         = finalStats.Mp,
+                    max_mp     = finalStats.MaxMp,
+                    attack     = finalStats.Attack,
+                    defense    = finalStats.Defense,
+                    move_speed = finalStats.MoveSpeed,
                 },
                 inventory = JsonSerializer.Deserialize<object>(player.InventoryJson),
                 skills = JsonSerializer.Deserialize<object>(player.SkillsJson),
@@ -411,6 +373,9 @@ namespace GameServerApi.Controllers
 
                 if (body.TryGetProperty("position_y", out var posYProp))
                     batchInfo.PositionY = (float)posYProp.GetDouble();
+
+                // Xử lý level-up server-side (safety net nếu client chưa xử lý)
+                await ProcessLevelUpAsync(batchInfo);
 
                 player.SetInfoChar(batchInfo);
 
@@ -1056,6 +1021,58 @@ namespace GameServerApi.Controllers
         // ──────────────────────────────────────────────────────────────
 
         /// <summary>
+        /// <summary>
+        /// Xử lý level-up: tự động tăng level khi exp đủ mốc, cộng base stats + thưởng điểm.
+        /// </summary>
+        /// <returns>(changed, expAtCurrentLevel, expForNextLevel) — 
+        ///   expAtCurrentLevel: cumulative EXP ngưỡng của level hiện tại;
+        ///   expForNextLevel:   cumulative EXP ngưỡng của level tiếp theo (0 nếu đã max).</returns>
+        private async Task<(bool changed, int expAtCurrentLevel, int expForNextLevel)> ProcessLevelUpAsync(InfoChar info)
+        {
+            bool changed = false;
+
+            var configs = await _db.ExpRequirements
+                .Where(e => e.Level >= info.Level)
+                .OrderBy(e => e.Level)
+                .ToListAsync();
+
+            if (configs.Count == 0) return (false, 0, 0);
+
+            int expAtCurrentLevel = configs.FirstOrDefault(c => c.Level == info.Level)?.ExpRequired ?? 0;
+            var higherConfigs = configs.Where(c => c.Level > info.Level).ToList();
+
+            while (higherConfigs.Count > 0 && info.Experience >= higherConfigs[0].ExpRequired)
+            {
+                var cfg = higherConfigs[0];
+                higherConfigs.RemoveAt(0);
+
+                info.Level           = cfg.Level;
+                info.SkillPoints    += cfg.SkillPoints;
+                info.PotentialPoints += cfg.PotentialPoints;
+                expAtCurrentLevel    = cfg.ExpRequired;
+
+                if (!string.IsNullOrWhiteSpace(cfg.BaseStatIncreaseJson) && cfg.BaseStatIncreaseJson != "{}")
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(cfg.BaseStatIncreaseJson);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("hp",      out var v1)) { info.MaxHp   += v1.GetInt32(); info.Hp = Math.Min(info.Hp + v1.GetInt32(), info.MaxHp); }
+                        if (root.TryGetProperty("mp",      out var v2)) { info.MaxMp   += v2.GetInt32(); info.Mp = Math.Min(info.Mp + v2.GetInt32(), info.MaxMp); }
+                        if (root.TryGetProperty("attack",  out var v3))   info.Attack  += v3.GetInt32();
+                        if (root.TryGetProperty("defense", out var v4))   info.Defense += v4.GetInt32();
+                    }
+                    catch { }
+                }
+
+                Console.WriteLine($"[LevelUp] Player leveled up to {info.Level}! SkillPts={info.SkillPoints} PotPts={info.PotentialPoints}");
+                changed = true;
+            }
+
+            int expForNextLevel = higherConfigs.Count > 0 ? higherConfigs[0].ExpRequired : 0;
+            return (changed, expAtCurrentLevel, expForNextLevel);
+        }
+
         /// strOptions mặc định ở bậc +0 cho item template.
         /// Format: "optId,value;..." (value = strOption[0] của option template)
         /// </summary>

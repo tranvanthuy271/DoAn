@@ -45,6 +45,7 @@ public class UpgradeResponseDto
     public string updatedStrOptions;   // strOptions mới sau nâng cấp
     public int    silver;              // số bạc còn lại sau khi nâng cấp
     public string message;             // thông báo từ server
+    public FinalStats final_stats;      // base + equipment + potential — dùng update UI
 
     /// <summary>Inventory đã cập nhật sau khi trừ đá</summary>
     public InventorySlotDto[] updatedInventory;

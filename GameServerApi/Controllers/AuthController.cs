@@ -54,16 +54,6 @@ namespace GameServerApi.Controllers
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            // Khởi tạo PlayerData với InfoChar mặc định
-            var playerData = new PlayerData
-            {
-                PlayerId = user.UserId
-            };
-            playerData.SetInfoChar(PlayerData.DefaultInfoChar("Fire"));
-
-            _db.PlayerData.Add(playerData);
-            await _db.SaveChangesAsync();
-
             var token = GenerateJwtToken(user);
 
             var response = new

@@ -115,7 +115,16 @@ public class PotentialStatRowUI : MonoBehaviour, IPointerClickHandler
             onSuccess: _ =>
             {
                 Debug.Log($"[PotentialStatRowUI] Đã tăng {_info.display_name}");
-                _onUpgraded?.Invoke();
+                // Refresh GameManager.PlayerData để final_stats (Stats tab) cũng cập nhật ngay
+                APIClient.Instance.LoadPlayerData(
+                    _playerId,
+                    onSuccess: data =>
+                    {
+                        if (data != null) GameManager.Instance?.SetPlayerData(data);
+                        _onUpgraded?.Invoke();  // reload potential tab
+                    },
+                    onError: _ => _onUpgraded?.Invoke()  // fallback: vẫn reload potential tab
+                );
             },
             onError: err =>
             {

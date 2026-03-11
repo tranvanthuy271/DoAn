@@ -19,7 +19,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     public NetworkVariable<int> networkMp = new NetworkVariable<int>(50);
     public NetworkVariable<int> networkMaxMp = new NetworkVariable<int>(50);
     public NetworkVariable<int> networkAttack = new NetworkVariable<int>(10);
+    public NetworkVariable<int> networkDefense = new NetworkVariable<int>(0);
     public NetworkVariable<float> networkMoveSpeed = new NetworkVariable<float>(5f);
+    public NetworkVariable<int> networkGeneTier = new NetworkVariable<int>(1);
 
     [Header("References")]
     private PlayerController playerController;
@@ -45,7 +47,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         networkHp.OnValueChanged += OnHpChanged;
         networkMaxHp.OnValueChanged += OnMaxHpChanged;
         networkAttack.OnValueChanged += OnAttackChanged;
+        networkDefense.OnValueChanged += OnDefenseChanged;
         networkMoveSpeed.OnValueChanged += OnMoveSpeedChanged;
+        networkGeneTier.OnValueChanged += OnGeneTierChanged;
 
         // Apply data ngay lập tức
         ApplyPlayerData();
@@ -148,22 +152,24 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         // Stats từ final_stats hoặc base_stats
         if (playerData.final_stats != null)
         {
-            networkHp.Value = playerData.final_stats.hp;
-            networkMaxHp.Value = playerData.final_stats.max_hp;
-            networkMp.Value = playerData.final_stats.mp;
-            networkMaxMp.Value = playerData.final_stats.max_mp;
-            networkAttack.Value = playerData.final_stats.attack;
+            networkHp.Value        = playerData.final_stats.hp;
+            networkMaxHp.Value     = playerData.final_stats.max_hp;
+            networkMp.Value        = playerData.final_stats.mp;
+            networkMaxMp.Value     = playerData.final_stats.max_mp;
+            networkAttack.Value    = playerData.final_stats.attack;
+            networkDefense.Value   = playerData.final_stats.defense;
             networkMoveSpeed.Value = playerData.final_stats.move_speed;
         }
         else if (playerData.base_stats != null)
         {
-            networkHp.Value = playerData.base_stats.hp;
-            networkMaxHp.Value = playerData.base_stats.max_hp;
-            networkMp.Value = playerData.base_stats.mp;
-            networkMaxMp.Value = playerData.base_stats.max_mp;
-            networkAttack.Value = playerData.base_stats.attack;
-            networkMoveSpeed.Value = 5f; // Default move speed
+            networkHp.Value        = playerData.base_stats.hp;
+            networkMaxHp.Value     = playerData.base_stats.max_hp;
+            networkMp.Value        = playerData.base_stats.mp;
+            networkMaxMp.Value     = playerData.base_stats.max_mp;
+            networkAttack.Value    = playerData.base_stats.attack;
+            networkMoveSpeed.Value = 5f;
         }
+        networkGeneTier.Value = playerData.gene_tier;
 
         Debug.Log($"[NetworkPlayerDataSync] ✓ NetworkVariables updated for player: {networkCharacterName.Value}");
     }
@@ -178,7 +184,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         networkHp.OnValueChanged -= OnHpChanged;
         networkMaxHp.OnValueChanged -= OnMaxHpChanged;
         networkAttack.OnValueChanged -= OnAttackChanged;
+        networkDefense.OnValueChanged -= OnDefenseChanged;
         networkMoveSpeed.OnValueChanged -= OnMoveSpeedChanged;
+        networkGeneTier.OnValueChanged -= OnGeneTierChanged;
 
         base.OnNetworkDespawn();
     }
@@ -220,22 +228,24 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         // Stats từ final_stats hoặc base_stats
         if (playerData.final_stats != null)
         {
-            networkHp.Value = playerData.final_stats.hp;
-            networkMaxHp.Value = playerData.final_stats.max_hp;
-            networkMp.Value = playerData.final_stats.mp;
-            networkMaxMp.Value = playerData.final_stats.max_mp;
-            networkAttack.Value = playerData.final_stats.attack;
+            networkHp.Value        = playerData.final_stats.hp;
+            networkMaxHp.Value     = playerData.final_stats.max_hp;
+            networkMp.Value        = playerData.final_stats.mp;
+            networkMaxMp.Value     = playerData.final_stats.max_mp;
+            networkAttack.Value    = playerData.final_stats.attack;
+            networkDefense.Value   = playerData.final_stats.defense;
             networkMoveSpeed.Value = playerData.final_stats.move_speed;
         }
         else if (playerData.base_stats != null)
         {
-            networkHp.Value = playerData.base_stats.hp;
-            networkMaxHp.Value = playerData.base_stats.max_hp;
-            networkMp.Value = playerData.base_stats.mp;
-            networkMaxMp.Value = playerData.base_stats.max_mp;
-            networkAttack.Value = playerData.base_stats.attack;
-            networkMoveSpeed.Value = 5f; // Default move speed
+            networkHp.Value        = playerData.base_stats.hp;
+            networkMaxHp.Value     = playerData.base_stats.max_hp;
+            networkMp.Value        = playerData.base_stats.mp;
+            networkMaxMp.Value     = playerData.base_stats.max_mp;
+            networkAttack.Value    = playerData.base_stats.attack;
+            networkMoveSpeed.Value = 5f;
         }
+        networkGeneTier.Value = playerData.gene_tier;
 
         // Debug.Log($"[NetworkPlayerDataSync] Server loaded player data: {networkCharacterName.Value} ({networkElementType.Value} - {networkGender.Value}), Level {networkLevel.Value}");
     }
@@ -330,17 +340,56 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     private void OnAttackChanged(int oldValue, int newValue)
     {
         if (playerController != null && playerController.stats != null)
-        {
             playerController.stats.baseDamage = newValue;
-        }
+        if (IsOwner) SyncStatToGameManagerAndUI();
+    }
+
+    private void OnDefenseChanged(int oldValue, int newValue)
+    {
+        // No PlayerStats field for defense currently — only update UI
+        if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
     private void OnMoveSpeedChanged(float oldValue, float newValue)
     {
         if (playerController != null && playerController.stats != null)
-        {
             playerController.stats.moveSpeed = newValue;
+        if (IsOwner) SyncStatToGameManagerAndUI();
+    }
+
+    private void OnGeneTierChanged(int oldValue, int newValue)
+    {
+        // Gene tier change: update GameManager so StatsTabUI shows correct tier
+        if (IsOwner)
+        {
+            var pd = GameManager.Instance?.currentPlayerData;
+            if (pd != null) pd.gene_tier = newValue;
+            SyncStatToGameManagerAndUI();
         }
+    }
+
+    /// <summary>
+    /// Owner-only: đồng bộ NetworkVariable hiện tại vào GameManager.currentPlayerData rồi refresh StatsTabUI.
+    /// Được gọi khi bất kỳ stat NetworkVariable nào thay đổi.
+    /// </summary>
+    private void SyncStatToGameManagerAndUI()
+    {
+        var pd = GameManager.Instance?.currentPlayerData;
+        if (pd == null) return;
+
+        // Đảm bảo final_stats object tồn tại
+        if (pd.final_stats == null) pd.final_stats = new FinalStats();
+
+        pd.final_stats.hp         = networkHp.Value;
+        pd.final_stats.max_hp     = networkMaxHp.Value;
+        pd.final_stats.mp         = networkMp.Value;
+        pd.final_stats.max_mp     = networkMaxMp.Value;
+        pd.final_stats.attack     = networkAttack.Value;
+        pd.final_stats.defense    = networkDefense.Value;
+        pd.final_stats.move_speed = networkMoveSpeed.Value;
+
+        // Refresh StatsTabUI nếu đang mở
+        FindObjectOfType<StatsTabUI>()?.Load();
     }
 
     #endregion
@@ -348,21 +397,28 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     /// <summary>
     /// ServerRpc để client request update player data (khi level up, stats change, etc.)
     /// </summary>
+    /// <summary>
+    /// Client gọi RPC này sau khi upgrade gene/trang bị thành công.
+    /// Host nhận được, ghi vào NetworkVariable → tự động sync sang tất cả client.
+    /// </summary>
     [ServerRpc(RequireOwnership = true)]
-    public void UpdatePlayerDataServerRpc(int playerId, string elementType, string gender, string characterName, 
-        int level, int hp, int maxHp, int mp, int maxMp, int attack, float moveSpeed)
+    public void UpdatePlayerDataServerRpc(int playerId, string elementType, string gender, string characterName,
+        int level, int hp, int maxHp, int mp, int maxMp, int attack, int defense, float moveSpeed, int geneTier)
     {
-        networkPlayerId.Value = playerId;
-        networkElementType.Value = (FixedString32Bytes)elementType;
-        networkGender.Value = (FixedString32Bytes)gender;
+        networkPlayerId.Value      = playerId;
+        networkElementType.Value   = (FixedString32Bytes)elementType;
+        networkGender.Value        = (FixedString32Bytes)gender;
         networkCharacterName.Value = (FixedString64Bytes)characterName;
-        networkLevel.Value = level;
-        networkHp.Value = hp;
-        networkMaxHp.Value = maxHp;
-        networkMp.Value = mp;
-        networkMaxMp.Value = maxMp;
-        networkAttack.Value = attack;
-        networkMoveSpeed.Value = moveSpeed;
+        networkLevel.Value         = level;
+        networkHp.Value            = hp;
+        networkMaxHp.Value         = maxHp;
+        networkMp.Value            = mp;
+        networkMaxMp.Value         = maxMp;
+        networkAttack.Value        = attack;
+        networkDefense.Value       = defense;
+        networkMoveSpeed.Value     = moveSpeed;
+        networkGeneTier.Value      = geneTier;
+        Debug.Log($"[NetworkPlayerDataSync] ServerRpc: stats updated → atk={attack} def={defense} maxHp={maxHp} spd={moveSpeed} tier={geneTier}");
     }
 
     /// <summary>

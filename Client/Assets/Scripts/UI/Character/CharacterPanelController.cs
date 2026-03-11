@@ -3,22 +3,24 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// CharacterPanelController – Panel nhân vật 3 tab.
+/// CharacterPanelController – Panel nhân vật 4 tab.
 ///
 /// Cấu trúc GameObject khuyến nghị:
 /// ┌─ CharacterPanel (Canvas/Panel root)
 /// │   ├─ TabBar
-/// │   │   ├─ BtnEquipment  [Button] "Trang Bị"
-/// │   │   ├─ BtnSkill      [Button] "Kỹ Năng"
-/// │   │   └─ BtnPotential  [Button] "Tiềm Năng"
+/// │   │   ├─ BtnStats      [Button] "Thông Số"   ← tab 0
+/// │   │   ├─ BtnEquipment  [Button] "Trang Bị"  ← tab 1
+/// │   │   ├─ BtnSkill      [Button] "Kỹ Năng"   ← tab 2
+/// │   │   └─ BtnPotential  [Button] "Tiềm Năng" ← tab 3
+/// │   ├─ ContentStats      ── chứa StatsTabUI
 /// │   ├─ ContentEquipment  ── chứa EquipmentPanelUI (đã có)
 /// │   ├─ ContentSkill      ── chứa SkillTabUI (mới)
 /// │   └─ ContentPotential  ── chứa PotentialTabUI (mới)
 ///
 /// Setup:
 /// 1. Tạo Panel root (CharacterPanel) trong Canvas.
-/// 2. Thêm 3 Button tab vào TabBar, kéo vào các slot btnEquipment/btnSkill/btnPotential.
-/// 3. Kéo EquipmentPanelUI, SkillTabUI, PotentialTabUI vào các slot tương ứng.
+/// 2. Thêm 4 Button tab vào TabBar, kéo vào các slot btnStats/btnEquipment/btnSkill/btnPotential.
+/// 3. Kéo StatsTabUI, EquipmentPanelUI, SkillTabUI, PotentialTabUI vào các slot tương ứng.
 /// 4. Gắn script này lên CharacterPanel.
 /// 5. Đặt playerId = user_id sau khi login (gọi SetPlayerId(id) từ LoginController).
 ///
@@ -31,12 +33,14 @@ public class CharacterPanelController : MonoBehaviour
     [SerializeField] private GameObject panelRoot;
 
     [Header("Tab Buttons")]
+    [SerializeField] private Button btnStats;
     [SerializeField] private Button btnEquipment;
     [SerializeField] private Button btnSkill;
     [SerializeField] private Button btnPotential;
 
     [Header("Tab Content Panels")]
-    [SerializeField] private GameObject contentEquipment;
+    [SerializeField] private StatsTabUI     contentStats;
+    [SerializeField] private GameObject     contentEquipment;
     [SerializeField] private SkillTabUI     contentSkill;
     [SerializeField] private PotentialTabUI contentPotential;
 
@@ -48,7 +52,7 @@ public class CharacterPanelController : MonoBehaviour
 
     // --------------- Runtime ---------------
     private int    playerId = -1;
-    private int    activeTab = 0; // 0=Equipment, 1=Skill, 2=Potential
+    private int    activeTab = 0; // 0=Stats, 1=Equipment, 2=Skill, 3=Potential
 
     // ───────────────────────────────────────────────
     #region Unity lifecycle
@@ -57,9 +61,10 @@ public class CharacterPanelController : MonoBehaviour
     {
         if (panelRoot == null) panelRoot = gameObject;
 
-        btnEquipment?.onClick.AddListener(() => SwitchTab(0));
-        btnSkill    ?.onClick.AddListener(() => SwitchTab(1));
-        btnPotential?.onClick.AddListener(() => SwitchTab(2));
+        btnStats    ?.onClick.AddListener(() => SwitchTab(0));
+        btnEquipment?.onClick.AddListener(() => SwitchTab(1));
+        btnSkill    ?.onClick.AddListener(() => SwitchTab(2));
+        btnPotential?.onClick.AddListener(() => SwitchTab(3));
     }
 
     private void Start()
@@ -84,6 +89,7 @@ public class CharacterPanelController : MonoBehaviour
 
     private void OnDestroy()
     {
+        btnStats    ?.onClick.RemoveAllListeners();
         btnEquipment?.onClick.RemoveAllListeners();
         btnSkill    ?.onClick.RemoveAllListeners();
         btnPotential?.onClick.RemoveAllListeners();
@@ -135,22 +141,26 @@ public class CharacterPanelController : MonoBehaviour
     {
         activeTab = tabIndex;
 
-        bool eq = tabIndex == 0;
-        bool sk = tabIndex == 1;
-        bool pt = tabIndex == 2;
+        bool st = tabIndex == 0;
+        bool eq = tabIndex == 1;
+        bool sk = tabIndex == 2;
+        bool pt = tabIndex == 3;
 
         // Show / hide content panels
+        if (contentStats     != null) ((MonoBehaviour)contentStats).gameObject.SetActive(st);
         if (contentEquipment != null) contentEquipment.SetActive(eq);
         if (contentSkill     != null) ((MonoBehaviour)contentSkill).gameObject.SetActive(sk);
         if (contentPotential != null) ((MonoBehaviour)contentPotential).gameObject.SetActive(pt);
 
         // Highlight active tab button
+        SetTabColor(btnStats,     st);
         SetTabColor(btnEquipment, eq);
         SetTabColor(btnSkill,     sk);
         SetTabColor(btnPotential, pt);
 
         // Refresh tab data when switched to it
-        if (sk  && playerId > 0) contentSkill    ?.Load();
+        if (st)                       contentStats    ?.Load();
+        if (sk  && playerId > 0)      contentSkill    ?.Load();
         if (pt)
         {
             Debug.Log($"[CharacterPanel] Tab Tiềm Năng được chọn – playerId={playerId}, contentPotential={(contentPotential == null ? "NULL" : "OK")}");

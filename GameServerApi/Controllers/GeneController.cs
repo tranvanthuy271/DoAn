@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using GameServerApi.Data;
 using GameServerApi.Models;
+using GameServerApi.Models.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,18 +24,8 @@ namespace GameServerApi.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        //  Stat boost per tier (cộng vào max_hp, max_mp, attack, defense)
-        //  Gene tier X → X+1  ⟶  stat bonus phía dưới
-        //  Chỉnh trong file này để thay đổi hằng số.
-        // ──────────────────────────────────────────────────────────────
-        private static readonly Dictionary<int, (int Hp, int Mp, int Atk, int Def)> TierStatBoost = new()
-        {
-            [2] = (200,  50,  20,  10),
-            [3] = (400, 100,  40,  20),
-            [4] = (800, 200,  80,  40),
-            [5] = (1500, 400, 150,  80),
-        };
-
+        //  Stat boost per tier đọc từ bảng gene_tier_stat_config (DB)
+        //  Không còn hardcode — config qua DB/SQL migration.
         // ──────────────────────────────────────────────────────────────
         //  GET /api/gene/config?elementType=Fire&tier=1
         //  Trả về config nâng cấp gene cho (tier, elementType) hiện tại
@@ -60,9 +51,10 @@ namespace GameServerApi.Controllers
             string itemName = item?.Name     ?? $"Item #{cfg.ItemId}";
             int    itemIcon = item?.IdIcon   ?? 0;
 
-            // Stat bonus sẽ được thêm vào khi lên tier tiếp theo
+            // Stat bonus sẽ được thêm vào khi lên tier tiếp theo (đọc từ DB)
             int nextTier = tier + 1;
-            TierStatBoost.TryGetValue(nextTier, out var bonus);
+            var tierStat = await _db.GeneTierStatConfigs
+                .FirstOrDefaultAsync(g => g.ElementType == elementType && g.TierTo == nextTier);
 
             // Skills sẽ được mở khoá ở tier mới
             var unlockSkills = await _db.SkillTemplates
@@ -84,13 +76,13 @@ namespace GameServerApi.Controllers
                 itemsMin         = cfg.ItemsMin,
                 itemsNeeded      = cfg.ItemsNeeded,
                 baseSuccessRate  = cfg.BaseSuccessRate,
-                statBonus        = new
+                statBonus = tierStat != null ? new
                 {
-                    hp      = bonus.Hp,
-                    mp      = bonus.Mp,
-                    attack  = bonus.Atk,
-                    defense = bonus.Def,
-                },
+                    hp      = tierStat.HpBonus,
+                    mp      = tierStat.MpBonus,
+                    attack  = tierStat.AttackBonus,
+                    defense = tierStat.DefenseBonus,
+                } : new { hp = 0, mp = 0, attack = 0, defense = 0 },
                 skillsToUnlock = unlockSkills,
             });
         }
@@ -191,15 +183,18 @@ namespace GameServerApi.Controllers
                     int newTier = currentTier + 1;
                     info.GeneTier = newTier;
 
-                    // Tăng chỉ số nhân vật
-                    if (TierStatBoost.TryGetValue(newTier, out var bonus))
+                    // Đọc stat bonus từ DB (gene_tier_stat_config)
+                    var tierStat = await _db.GeneTierStatConfigs
+                        .FirstOrDefaultAsync(g => g.ElementType == elementType && g.TierTo == newTier);
+
+                    if (tierStat != null)
                     {
-                        info.MaxHp   += bonus.Hp;
+                        info.MaxHp   += tierStat.HpBonus;
                         info.Hp       = info.MaxHp;   // hồi máu đầy khi lên tier
-                        info.MaxMp   += bonus.Mp;
+                        info.MaxMp   += tierStat.MpBonus;
                         info.Mp       = info.MaxMp;
-                        info.Attack  += bonus.Atk;
-                        info.Defense += bonus.Def;
+                        info.Attack  += tierStat.AttackBonus;
+                        info.Defense += tierStat.DefenseBonus;
                     }
 
                     // Mở khoá skills theo gene tier mới
@@ -232,6 +227,15 @@ namespace GameServerApi.Controllers
                 player.UpdatedAt     = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
+                // Tính final_stats sau khi đã lưu (bao gồm cả equipment + potential)
+                var finalStats = StatCalculator.Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+
+                // Lấy tierStat vừa được áp dụng (nếu success) để trả về cho client
+                GeneTierStatConfig? appliedTierStat = null;
+                if (success)
+                    appliedTierStat = await _db.GeneTierStatConfigs
+                        .FirstOrDefaultAsync(g => g.ElementType == elementType && g.TierTo == info.GeneTier);
+
                 string message = success
                     ? $"✨ Gene {elementType} đã lên Tier {info.GeneTier}!"
                     : $"😞 Thất bại! Đã trừ {cfg.GeneExpRequired} gene exp.";
@@ -243,15 +247,24 @@ namespace GameServerApi.Controllers
                     newGeneExp       = info.GeneExp,
                     gold             = newGoldAmount,
                     message,
-                    statBonus        = success && TierStatBoost.TryGetValue(info.GeneTier, out var b)
-                        ? new { b.Hp, b.Mp, b.Atk, b.Def } : null,
-                    newStats         = success ? new
+                    statBonus = appliedTierStat != null ? new
                     {
-                        maxHp    = info.MaxHp,
-                        maxMp    = info.MaxMp,
-                        attack   = info.Attack,
-                        defense  = info.Defense,
-                    } : null,
+                        hp      = appliedTierStat.HpBonus,
+                        mp      = appliedTierStat.MpBonus,
+                        attack  = appliedTierStat.AttackBonus,
+                        defense = appliedTierStat.DefenseBonus,
+                    } : (object?)null,
+                    // final_stats bao gồm base + equipment + potential — client dùng để update UI
+                    final_stats = new
+                    {
+                        hp         = finalStats.Hp,
+                        max_hp     = finalStats.MaxHp,
+                        mp         = finalStats.Mp,
+                        max_mp     = finalStats.MaxMp,
+                        attack     = finalStats.Attack,
+                        defense    = finalStats.Defense,
+                        move_speed = finalStats.MoveSpeed,
+                    },
                     newlyUnlockedSkills,
                     updatedInventory = inventory.Select(s => new
                     {

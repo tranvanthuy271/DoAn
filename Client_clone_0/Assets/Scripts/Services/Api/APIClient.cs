@@ -3,6 +3,59 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
+// ── Dungeon System DTOs ─────────────────────────────────────────────────────
+[System.Serializable]
+public class DungeonConfigData
+{
+    public int    dungeon_id;
+    public string dungeon_name;
+    public string dungeon_type;       // "solo" | "multi"
+    public int    map_id;
+    public string map_name;
+    public string scene_name;         // Tên scene Unity cần LoadScene()
+    public int    max_players;
+    public int    min_level_required;
+    public int    time_limit_seconds; // 0 = không giới hạn
+    public string description;
+    public string thumbnail_icon_id;
+    public int    boss_enemy_id;
+    public string reward_json;
+}
+
+[System.Serializable]
+public class DungeonListResponse
+{
+    public DungeonConfigData[] dungeons;
+}
+
+[System.Serializable]
+public class DungeonSessionData
+{
+    public int    session_id;
+    public int    dungeon_config_id;
+    public string host_ip;
+    public int    host_port;
+    public int    current_players;
+    public int    max_players;
+    public string status; // "waiting" | "active" | "ended"
+}
+
+[System.Serializable]
+public class DungeonSessionResponse
+{
+    public bool              has_session;
+    public DungeonSessionData session;
+}
+
+[System.Serializable]
+public class CreateDungeonSessionRequest
+{
+    public int    dungeon_config_id;
+    public string host_ip;
+    public int    host_port;
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 [System.Serializable]
 public class LoginRequest
 {
@@ -42,6 +95,7 @@ public class PlayerDataResponse
     public int level;
     public int experience;
     public int exp_required_for_next_level;
+    public int exp_at_current_level;
     public int gold;
     public int silver;
     public int map_id;
@@ -81,6 +135,7 @@ public class FinalStats
     public int mp;
     public int max_mp;
     public int attack;
+    public int defense;
     public float move_speed;
 }
 
@@ -1413,6 +1468,154 @@ public class APIClient : MonoBehaviour
                 string err = www.downloadHandler?.text ?? www.error;
                 Debug.LogError($"[APIClient] UpgradeGene failed: {err}");
                 onError?.Invoke(err);
+            }
+        }
+    }
+
+    // ── DUNGEON API ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// GET /api/dungeon/list — Lấy danh sách phó bản từ DB.
+    /// </summary>
+    public void GetDungeonList(Action<DungeonConfigData[]> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(GetDungeonListCoroutine(onSuccess, onError));
+    }
+
+    private IEnumerator GetDungeonListCoroutine(Action<DungeonConfigData[]> onSuccess, Action<string> onError)
+    {
+        using (var www = UnityWebRequest.Get($"{baseURL}/dungeon/list"))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                var resp = JsonUtility.FromJson<DungeonListResponse>(www.downloadHandler.text);
+                onSuccess?.Invoke(resp?.dungeons ?? new DungeonConfigData[0]);
+            }
+            else
+            {
+                Debug.LogError($"[APIClient] GetDungeonList failed: {www.error}");
+                onError?.Invoke(www.error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// GET /api/dungeon/session/active/{dungeonConfigId} — Lấy session multi đang chờ.
+    /// Callback nhận null nếu chưa có session.
+    /// </summary>
+    public void GetDungeonSession(int dungeonConfigId, Action<DungeonSessionData> onResult, Action<string> onError = null)
+    {
+        StartCoroutine(GetDungeonSessionCoroutine(dungeonConfigId, onResult, onError));
+    }
+
+    private IEnumerator GetDungeonSessionCoroutine(int dungeonConfigId, Action<DungeonSessionData> onResult, Action<string> onError)
+    {
+        using (var www = UnityWebRequest.Get($"{baseURL}/dungeon/session/active/{dungeonConfigId}"))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                var resp = JsonUtility.FromJson<DungeonSessionResponse>(www.downloadHandler.text);
+                onResult?.Invoke(resp.has_session ? resp.session : null);
+            }
+            else
+            {
+                Debug.LogError($"[APIClient] GetDungeonSession failed: {www.error}");
+                onError?.Invoke(www.error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// POST /api/dungeon/session/create — Host đăng ký session mới sau khi StartHost().
+    /// </summary>
+    public void CreateDungeonSession(int dungeonConfigId, string hostIp, int hostPort,
+                                     Action<DungeonSessionData> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(CreateDungeonSessionCoroutine(dungeonConfigId, hostIp, hostPort, onSuccess, onError));
+    }
+
+    private IEnumerator CreateDungeonSessionCoroutine(int dungeonConfigId, string hostIp, int hostPort,
+                                                      Action<DungeonSessionData> onSuccess, Action<string> onError)
+    {
+        string json = $"{{\"dungeon_config_id\":{dungeonConfigId},\"host_ip\":\"{hostIp}\",\"host_port\":{hostPort}}}";
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
+
+        using (var www = new UnityWebRequest($"{baseURL}/dungeon/session/create", "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                var s = JsonUtility.FromJson<DungeonSessionData>(www.downloadHandler.text);
+                onSuccess?.Invoke(s);
+            }
+            else
+            {
+                Debug.LogError($"[APIClient] CreateDungeonSession failed: {www.downloadHandler?.text ?? www.error}");
+                onError?.Invoke(www.downloadHandler?.text ?? www.error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// POST /api/dungeon/session/{sessionId}/join — Client thông báo tham gia session.
+    /// </summary>
+    public void JoinDungeonSession(int sessionId, Action<bool> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(PostSimple($"{baseURL}/dungeon/session/{sessionId}/join", onSuccess, onError));
+    }
+
+    /// <summary>
+    /// POST /api/dungeon/session/{sessionId}/leave — Client thông báo rời session.
+    /// </summary>
+    public void LeaveDungeonSession(int sessionId, Action<bool> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(PostSimple($"{baseURL}/dungeon/session/{sessionId}/leave", onSuccess, onError));
+    }
+
+    /// <summary>
+    /// POST /api/dungeon/session/{sessionId}/end — Host thông báo kết thúc session.
+    /// </summary>
+    public void EndDungeonSession(int sessionId, Action<bool> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(PostSimple($"{baseURL}/dungeon/session/{sessionId}/end", onSuccess, onError));
+    }
+
+    private IEnumerator PostSimple(string url, Action<bool> onSuccess, Action<string> onError)
+    {
+        byte[] empty = System.Text.Encoding.UTF8.GetBytes("{}");
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(empty);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+                onSuccess?.Invoke(true);
+            else
+            {
+                Debug.LogError($"[APIClient] POST {url} failed: {www.error}");
+                onError?.Invoke(www.error);
             }
         }
     }

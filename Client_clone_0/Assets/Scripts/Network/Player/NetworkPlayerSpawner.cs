@@ -115,6 +115,9 @@ public class NetworkPlayerSpawner : MonoBehaviour
 
     private void OnServerStarted()
     {
+        // Guard: instance đã bị destroy nhưng vẫn còn subscribe (do scene transition)
+        if (this == null) return;
+
         // Debug.Log("[NetworkPlayerSpawner] ✓✓✓ OnServerStarted called! Subscribing to events...");
         
         // Re-enable script nếu đã bị disable
@@ -403,15 +406,17 @@ public class NetworkPlayerSpawner : MonoBehaviour
             _instance = null;
         }
         
-        if (networkManager != null)
+        // Dùng Singleton làm fallback phòng trường hợp networkManager field bị null
+        var nm = networkManager ?? NetworkManager.Singleton;
+        if (nm != null)
         {
+            nm.OnServerStarted -= OnServerStarted;
             if (hasSubscribed)
             {
-                networkManager.OnClientConnectedCallback -= SpawnPlayer;
-                networkManager.OnClientDisconnectCallback -= DespawnPlayer;
+                nm.OnClientConnectedCallback -= SpawnPlayer;
+                nm.OnClientDisconnectCallback -= DespawnPlayer;
                 hasSubscribed = false;
             }
-            networkManager.OnServerStarted -= OnServerStarted;
         }
     }
 

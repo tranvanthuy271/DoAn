@@ -62,6 +62,11 @@ public class SkillData
     /// Lấy phần trăm cooldown (0 = đang cooldown, 1 = sẵn sàng)
     /// </summary>
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - (cooldownTimer / cooldown));
+
+    /// <summary>
+    /// Lấy thời gian cooldown còn lại (giây). Trả về 0 nếu skill sẵn sàng.
+    /// </summary>
+    public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
     
     /// <summary>
     /// Update cooldown timer

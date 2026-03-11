@@ -485,11 +485,35 @@ public class UpgradePanel : MonoBehaviour
         // Cập nhật túi đồ (đá đã trừ)
         if (resp.updatedInventory != null)
             inventoryCache = resp.updatedInventory;
-        // Cập nhật silver trong GameManager
-        if (resp.silver > 0 || resp.message != null)
+        // Cập nhật silver + final_stats trong GameManager
         {
             var pd = GameManager.Instance?.currentPlayerData;
-            if (pd != null) pd.silver = resp.silver;
+            if (pd != null)
+            {
+                pd.silver = resp.silver;
+                // final_stats chứa base + equipment bonus + potential — cập nhật để StatsTabUI hiển thị đúng
+                if (resp.final_stats != null)
+                {
+                    pd.final_stats = resp.final_stats;
+
+                    // Đồng bộ stats lên host qua Network → tự động broadcast tới tất cả client
+                    var fs = resp.final_stats;
+                    var sync = FindLocalDataSync();
+                    if (sync != null)
+                        sync.UpdatePlayerDataServerRpc(
+                            pd.player_id,
+                            pd.element_type  ?? "Fire",
+                            pd.gender        ?? "Male",
+                            pd.character_name ?? "",
+                            pd.level,
+                            fs.hp, fs.max_hp, fs.mp, fs.max_mp,
+                            fs.attack, fs.defense, fs.move_speed,
+                            pd.gene_tier
+                        );
+
+                    FindObjectOfType<StatsTabUI>()?.Load();
+                }
+            }
         }
         // Reload panel với dữ liệu mới
         StartCoroutine(ReloadAfterDelay(1.2f));
@@ -528,6 +552,14 @@ public class UpgradePanel : MonoBehaviour
         if (statusText == null) return;
         statusText.text  = msg;
         statusText.color = color;
+    }
+
+    /// <summary>Tìm NetworkPlayerDataSync của local player (IsOwner=true)</summary>
+    private static NetworkPlayerDataSync FindLocalDataSync()
+    {
+        foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
+            if (s.IsOwner) return s;
+        return null;
     }
 }
 

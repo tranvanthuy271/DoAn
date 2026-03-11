@@ -808,6 +808,10 @@ public class InventoryNetworkBridge : MonoBehaviour
                 // Refresh cả inventory và equipment UI từ DB
                 RefreshInventoryFromDB();
                 RefreshEquipmentFromDB();
+                // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng
+                APIClient.Instance.LoadPlayerData(playerId,
+                    data => GameManager.Instance?.SetPlayerData(data),
+                    _ => { });
             },
             (error) =>
             {
@@ -856,6 +860,10 @@ public class InventoryNetworkBridge : MonoBehaviour
                 Debug.Log($"[InventoryNetworkBridge] ✅ Unequip thành công!");
                 RefreshInventoryFromDB();
                 RefreshEquipmentFromDB();
+                // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng
+                APIClient.Instance.LoadPlayerData(playerId,
+                    data => GameManager.Instance?.SetPlayerData(data),
+                    _ => { });
             },
             (error) =>
             {

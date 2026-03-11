@@ -538,4 +538,33 @@ public class PlayerSkillManager : NetworkBehaviour
         }
         return 0f;
     }
+
+    /// <summary>
+    /// Lấy SkillData theo index (dùng cho SkillHotbarUI binding)
+    /// </summary>
+    public SkillData GetSkill(int index)
+    {
+        if (index < 0 || index >= skills.Count) return null;
+        return skills[index];
+    }
+
+    /// <summary>
+    /// Lấy tổng số skill hiện tại
+    /// </summary>
+    public int GetSkillCount() => skills.Count;
+
+    /// <summary>
+    /// Kích hoạt skill theo index — dùng khi nhấn nút UI hotbar thay thế phím tắt
+    /// </summary>
+    public void TryUseSkillByIndex(int index)
+    {
+        if (!IsOwner) return;
+        if (index < 0 || index >= skills.Count) return;
+
+        SkillData skill = skills[index];
+        if (skill != null && skill.CanUse() && !skill.IsUsing())
+        {
+            UseSkill(skill);
+        }
+    }
 }

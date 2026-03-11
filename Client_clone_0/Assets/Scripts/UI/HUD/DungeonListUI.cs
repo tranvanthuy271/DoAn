@@ -1,0 +1,241 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// DungeonListUI — Panel hiển thị danh sách phó bản để người chơi tham gia.
+///
+/// SETUP TRONG SCENE:
+///   1. Tạo Canvas > Panel gọi là "DungeonPanel", gắn DungeonListUI.
+///   2. Trong Panel:
+///      ├─ ScrollView > Content  ← dùng làm dungeonListContent
+///      ├─ StatusText (Text)     ← thông báo trạng thái
+///      ├─ CloseButton (Button)
+///      └─ DungeonEntryButton (Button) — nút mở panel (đặt ở HUD chính)
+///   3. Tạo Prefab "DungeonButtonItemPrefab" (có DungeonButtonItem component)
+///      và assign vào dungeonItemPrefab.
+/// </summary>
+public class DungeonListUI : MonoBehaviour
+{
+    public static DungeonListUI Instance { get; private set; }
+
+    [Header("Panel")]
+    [SerializeField] private GameObject  dungeonPanel;       // Panel cha chứa toàn bộ UI
+    [SerializeField] private Transform   dungeonListContent; // ScrollView Content
+    [SerializeField] private GameObject  dungeonItemPrefab;  // Prefab DungeonButtonItem
+
+    [Header("Buttons")]
+    [SerializeField] private Button      openDungeonBtn;     // Nút mở panel (trên HUD)
+    [SerializeField] private Button      closeBtn;           // Nút đóng panel
+
+    [Header("Status")]
+    [SerializeField] private Text        statusText;         // Thông báo trạng thái (loading, error...)
+    [SerializeField] private GameObject  loadingIndicator;   // Spinner hoặc "Loading..." object
+
+    [Header("Confirm Dialog (tuỳ chọn)")]
+    [SerializeField] private GameObject  confirmDialog;
+    [SerializeField] private Text        confirmDungeonName;
+    [SerializeField] private Text        confirmDesc;
+    [SerializeField] private Button      confirmYesBtn;
+    [SerializeField] private Button      confirmNoBtn;
+
+    private DungeonConfigData[]              _cachedDungeons;
+    private Dictionary<int, DungeonSessionData> _sessionCache = new();
+    private DungeonConfigData                _selectedDungeon;
+
+    private int _playerLevel = 1; // Lấy từ PlayerDataManager nếu có
+
+    // ──────────────────────────────────────────────────────────
+    //  UNITY LIFECYCLE
+    // ──────────────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+    }
+
+    private void Start()
+    {
+        // Đóng panel ban đầu
+        if (dungeonPanel)  dungeonPanel.SetActive(false);
+        if (confirmDialog) confirmDialog.SetActive(false);
+        if (loadingIndicator) loadingIndicator.SetActive(false);
+
+        // Nút mở/đóng
+        openDungeonBtn?.onClick.AddListener(OpenPanel);
+        closeBtn?.onClick.AddListener(ClosePanel);
+
+        // Confirm dialog
+        confirmYesBtn?.onClick.AddListener(ConfirmEnter);
+        confirmNoBtn?.onClick.AddListener(() => confirmDialog?.SetActive(false));
+
+        // Lắng nghe trạng thái từ DungeonManager
+        if (DungeonManager.Instance != null)
+        {
+            DungeonManager.Instance.OnDungeonStatusMessage += ShowStatus;
+            DungeonManager.Instance.OnDungeonEntered        += ClosePanel;
+        }
+
+        // Cập nhật level của player nếu có PlayerDataManager
+        TryGetPlayerLevel();
+    }
+
+    private void OnDestroy()
+    {
+        if (DungeonManager.Instance != null)
+        {
+            DungeonManager.Instance.OnDungeonStatusMessage -= ShowStatus;
+            DungeonManager.Instance.OnDungeonEntered        -= ClosePanel;
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  OPEN / CLOSE
+    // ──────────────────────────────────────────────────────────
+
+    public void OpenPanel()
+    {
+        if (dungeonPanel == null) return;
+        dungeonPanel.SetActive(true);
+        TryGetPlayerLevel();
+        StartCoroutine(LoadAndRenderDungeons());
+    }
+
+    public void ClosePanel()
+    {
+        dungeonPanel?.SetActive(false);
+        confirmDialog?.SetActive(false);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  LOAD & RENDER DUNGEON LIST
+    // ──────────────────────────────────────────────────────────
+
+    private IEnumerator LoadAndRenderDungeons()
+    {
+        SetLoading(true);
+        ClearList();
+
+        bool done       = false;
+        DungeonConfigData[] dungeons = null;
+
+        APIClient.Instance.GetDungeonList(
+            list => { dungeons = list; done = true; },
+            err  => { ShowStatus($"Lỗi tải danh sách: {err}"); done = true; });
+
+        yield return new WaitUntil(() => done);
+        SetLoading(false);
+
+        if (dungeons == null || dungeons.Length == 0)
+        {
+            ShowStatus("Chưa có phó bản nào.");
+            yield break;
+        }
+
+        _cachedDungeons = dungeons;
+        ShowStatus("");
+
+        // Tải session đang active của các phó bản multi (parallel)
+        yield return StartCoroutine(LoadMultiSessions(dungeons));
+
+        // Render
+        foreach (var config in dungeons)
+        {
+            var go   = Instantiate(dungeonItemPrefab, dungeonListContent);
+            var item = go.GetComponent<DungeonButtonItem>();
+            _sessionCache.TryGetValue(config.dungeon_id, out var session);
+            item?.Setup(config, _playerLevel, session);
+        }
+    }
+
+    private IEnumerator LoadMultiSessions(DungeonConfigData[] dungeons)
+    {
+        _sessionCache.Clear();
+        int pending = 0;
+
+        foreach (var d in dungeons)
+        {
+            if (d.dungeon_type != "multi") continue;
+            int id = d.dungeon_id;
+            pending++;
+            APIClient.Instance.GetDungeonSession(id,
+                s =>
+                {
+                    if (s != null) _sessionCache[id] = s;
+                    pending--;
+                },
+                _ => pending--);
+        }
+
+        // Đợi tất cả request song song hoàn tất
+        yield return new WaitUntil(() => pending <= 0);
+    }
+
+    private void ClearList()
+    {
+        foreach (Transform child in dungeonListContent)
+            Destroy(child.gameObject);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  SELECTION & CONFIRM
+    // ──────────────────────────────────────────────────────────
+
+    /// <summary>Gọi bởi DungeonButtonItem khi người chơi click.</summary>
+    public void OnDungeonSelected(DungeonConfigData config)
+    {
+        _selectedDungeon = config;
+
+        if (confirmDialog != null)
+        {
+            // Hiện hộp thoại xác nhận
+            if (confirmDungeonName) confirmDungeonName.text = config.dungeon_name;
+            if (confirmDesc)
+            {
+                bool isSolo = config.dungeon_type == "solo";
+                string typeLabel = isSolo ? "Thử thách 1 mình" : $"Nhiều người ({config.max_players})";
+                string timeLabel = config.time_limit_seconds > 0
+                    ? $"⏱ {config.time_limit_seconds / 60} phút"
+                    : "Không giới hạn thời gian";
+                confirmDesc.text = $"{config.description}\n\n{typeLabel}  |  {timeLabel}";
+            }
+            confirmDialog.SetActive(true);
+        }
+        else
+        {
+            // Không có confirm → vào thẳng
+            ConfirmEnter();
+        }
+    }
+
+    private void ConfirmEnter()
+    {
+        confirmDialog?.SetActive(false);
+        if (_selectedDungeon == null) return;
+        DungeonManager.Instance?.EnterDungeon(_selectedDungeon);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  HELPERS
+    // ──────────────────────────────────────────────────────────
+
+    private void ShowStatus(string msg)
+    {
+        if (statusText) statusText.text = msg;
+    }
+
+    private void SetLoading(bool loading)
+    {
+        if (loadingIndicator) loadingIndicator.SetActive(loading);
+        if (statusText && loading) statusText.text = "Đang tải danh sách phó bản...";
+    }
+
+    private void TryGetPlayerLevel()
+    {
+        // Lấy level từ PlayerPrefs (được lưu khi load PlayerData)
+        // Thay bằng PlayerDataManager.Instance nếu project có
+        _playerLevel = PlayerPrefs.GetInt("PlayerLevel", 1);
+    }
+}

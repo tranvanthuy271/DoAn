@@ -67,7 +67,9 @@ public class GeneUpgradeResponse
     public int    newGeneExp;
     public int    gold;               // vàng còn lại sau khi trừ
     public string message;
-    public GeneNewStats newStats;     // chỉ số mới (null nếu thất bại)
+    public GeneStatBonus statBonus;   // bonus stat của tier vừa đạt
+    public FinalStats final_stats;    // base + equipment + potential — dùng update UI
+    public GeneNewStats newStats;     // (legacy) chỉ số mới
     public GeneSkillUnlock[] newlyUnlockedSkills;
 }
 
