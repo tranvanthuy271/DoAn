@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode.Components;
 
 public class PlayerAnimator : MonoBehaviour
 {
@@ -7,10 +8,13 @@ public class PlayerAnimator : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     [Header("Animation Parameters")]
-    private static readonly int Speed = Animator.StringToHash("Speed");
+    private static readonly int Speed      = Animator.StringToHash("Speed");
     private static readonly int IsGrounded = Animator.StringToHash("IsGrounded");
-    private static readonly int VelocityY = Animator.StringToHash("VelocityY");
-    private static readonly int IsFlying = Animator.StringToHash("IsFlying");
+    private static readonly int VelocityY  = Animator.StringToHash("VelocityY");
+    private static readonly int IsFlying   = Animator.StringToHash("IsFlying");
+    private static readonly int IsDead     = Animator.StringToHash("IsDead");
+    private static readonly int Attack     = Animator.StringToHash("Attack");
+    private static readonly int AttackLower = Animator.StringToHash("attack");
 
     private void Awake()
     {
@@ -27,6 +31,13 @@ public class PlayerAnimator : MonoBehaviour
         if (spriteRenderer == null)
         {
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        // Nếu NetworkAnimator có mặt nhưng chưa được gán Animator → auto-assign
+        var networkAnimator = GetComponent<NetworkAnimator>();
+        if (networkAnimator != null && networkAnimator.Animator == null)
+        {
+            networkAnimator.Animator = animator;
         }
     }
 
@@ -52,6 +63,9 @@ public class PlayerAnimator : MonoBehaviour
         animator.SetBool(IsGrounded, isGrounded);
         animator.SetFloat(VelocityY, finalVelocityY);
         animator.SetBool(IsFlying, isFlying);
+
+        // Fallback: nếu animator bị kẹt cuối attack clip, cưỡng bức quay lại state di chuyển.
+        RecoverFromStuckAttack(finalSpeed, isGrounded);
         
         // Debug log đã tắt
         // Nếu cần debug, uncomment dòng dưới:
@@ -60,12 +74,45 @@ public class PlayerAnimator : MonoBehaviour
         //     Debug.LogWarning($"[PlayerAnimator] ĐANG Ở JUMP STATE KHI ĐỨNG YÊN! Speed: {finalSpeed:F3}, VelocityY: {finalVelocityY:F3}, IsGrounded: {isGrounded}, IsFlying: {isFlying}");
         // }
     }
+
+    private void RecoverFromStuckAttack(float finalSpeed, bool isGrounded)
+    {
+        if (animator == null) return;
+
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+        bool inAttackState = state.shortNameHash == Attack || state.shortNameHash == AttackLower || state.IsName("attack") || state.IsName("Attack");
+
+        if (!inAttackState || animator.IsInTransition(0))
+            return;
+
+        if (state.normalizedTime < 0.98f)
+            return;
+
+        if (!isGrounded)
+            animator.CrossFade("jump", 0.05f);
+        else if (finalSpeed > 0.1f)
+            animator.CrossFade("run", 0.05f);
+        else
+            animator.CrossFade("idle", 0.05f);
+    }
     
     private string GetCurrentStateName()
     {
         if (animator == null) return "No Animator";
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
         return stateInfo.IsName("Jump") ? "Jump" : (stateInfo.IsName("Run") ? "Run" : (stateInfo.IsName("Idle") ? "Idle" : "Unknown"));
+    }
+
+    public void SetDead(bool dead)
+    {
+        if (animator != null)
+            animator.SetBool(IsDead, dead);
+    }
+
+    public void TriggerAttack()
+    {
+        if (animator != null)
+            animator.SetTrigger(Attack);
     }
 
     public void PlayAnimation(string animationName)

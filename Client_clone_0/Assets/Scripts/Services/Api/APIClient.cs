@@ -208,6 +208,10 @@ public class PlayerSkillInfo
     public string next_level_desc;
     public string icon_id;
     public int    gene_tier_required;
+    // ── Runtime stats — client dùng để apply vào SkillData khi load ─────────
+    public float  current_cooldown_sec;   // cooldown (giây) tại level hiện tại
+    public float  current_effect_value;   // sát thương / heal / khoảng cách
+    public int    current_mp_cost;        // MP tiêu khi dùng skill
 }
 
 [System.Serializable]
@@ -543,9 +547,9 @@ public class APIClient : MonoBehaviour
 
     private IEnumerator CreatePlayerCoroutine(string elementType, string gender, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
     {
-        // Escape JSON string ─æß╗â tr├ính lß╗ùi vß╗¢i k├╜ tß╗▒ ─æß║╖c biß╗çt
+        // gender được server tự suy ra từ elementType, nhưng vẫn gửi để tương thích ngược
         string escapedName = characterName.Replace("\"", "\\\"").Replace("\\", "\\\\");
-        string json = $"{{\"element_type\":\"{elementType}\",\"gender\":\"{gender}\",\"character_name\":\"{escapedName}\"}}";
+        string json = $"{{\"element_type\":\"{elementType}\",\"character_name\":\"{escapedName}\"}}";
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
 
         using (UnityWebRequest www = new UnityWebRequest($"{baseURL}/player/create", "POST"))
@@ -1484,7 +1488,9 @@ public class APIClient : MonoBehaviour
 
     private IEnumerator GetDungeonListCoroutine(Action<DungeonConfigData[]> onSuccess, Action<string> onError)
     {
-        using (var www = UnityWebRequest.Get($"{baseURL}/dungeon/list"))
+        string url = $"{baseURL}/dungeon/list";
+        Debug.Log($"[APIClient] GetDungeonList → GET {url}");
+        using (var www = UnityWebRequest.Get(url))
         {
             if (!string.IsNullOrEmpty(jwtToken))
                 www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
@@ -1493,12 +1499,15 @@ public class APIClient : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
+                Debug.Log($"[APIClient] GetDungeonList ← 200 OK | raw: {www.downloadHandler.text}");
                 var resp = JsonUtility.FromJson<DungeonListResponse>(www.downloadHandler.text);
+                int count = resp?.dungeons?.Length ?? 0;
+                Debug.Log($"[APIClient] GetDungeonList ← parse được {count} phó bản");
                 onSuccess?.Invoke(resp?.dungeons ?? new DungeonConfigData[0]);
             }
             else
             {
-                Debug.LogError($"[APIClient] GetDungeonList failed: {www.error}");
+                Debug.LogError($"[APIClient] GetDungeonList failed: HTTP {www.responseCode} | {www.error} | {www.downloadHandler?.text}");
                 onError?.Invoke(www.error);
             }
         }

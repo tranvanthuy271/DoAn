@@ -11,13 +11,11 @@ public class NetworkPlayerController : NetworkBehaviour
     private Animator animator;
 
     [Header("Network Movement")]
-    private Vector2 lastInput = Vector2.zero;
-    private float lastHorizontalInput = 0f;
-    private bool lastUpInput = false;
-    private bool lastDownInput = false;
+    // Dùng để detect GetKeyDown trong Update rồi consume trong FixedUpdate
+    private bool pendingJump = false;
 
     [Header("Network Sync")]
-    // NetworkVariable để sync flip direction (localScale.x)
+    // NetworkVariable để sync flip direction (localScale.x) cho non-owner clients
     private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private void Awake()
@@ -34,6 +32,9 @@ public class NetworkPlayerController : NetworkBehaviour
 
         // Subscribe to networkScaleX changes để sync flip direction
         networkScaleX.OnValueChanged += OnScaleXChanged;
+
+        // Khởi tạo scale theo giá trị hiện tại của NetworkVariable
+        transform.localScale = new Vector3(networkScaleX.Value, 1, 1);
 
         // Đảm bảo controller được enable (PlayerController đã có check IsOwner)
         if (controller != null && !controller.enabled)
@@ -64,53 +65,95 @@ public class NetworkPlayerController : NetworkBehaviour
 
     private void OnScaleXChanged(float oldValue, float newValue)
     {
-        // Sync flip direction khi networkScaleX thay đổi
-        Vector3 scale = transform.localScale;
-        scale.x = newValue;
-        transform.localScale = scale;
+        // Chỉ non-owner mới cập nhật từ NetworkVariable.
+        // Owner tự điều khiển flip qua client-side prediction trong FixedUpdate
+        // để tránh stale server update ghi đè lên local prediction.
+        if (!IsOwner)
+            transform.localScale = new Vector3(newValue, transform.localScale.y, transform.localScale.z);
     }
 
     private void Update()
     {
         // Chỉ owner mới xử lý input
-        if (!IsOwner)
-        {
-            return;
-        }
+        if (!IsOwner) return;
 
-        // Đọc input và gửi lên server qua ServerRpc
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        bool up = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
-        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
-
-        // Chỉ gửi khi input thay đổi để tiết kiệm bandwidth
-        if (Mathf.Abs(horizontalInput - lastHorizontalInput) > 0.01f || 
-            up != lastUpInput || 
-            down != lastDownInput)
-        {
-            MoveServerRpc(horizontalInput, up, down);
-            lastHorizontalInput = horizontalInput;
-            lastUpInput = up;
-            lastDownInput = down;
-        }
+        // Detect GetKeyDown trong Update để không bị miss giữa 2 FixedUpdate
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+            pendingJump = true;
     }
 
     private void FixedUpdate()
     {
-        // Chỉ owner mới cần gửi data
+        // Owner gửi input lên server MỖI FixedUpdate để velocity luôn được apply liên tục
         if (!IsOwner) return;
 
-        // Movement được xử lý bởi ServerRpc
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+        bool jump = pendingJump;
+        pendingJump = false; // consume flag
+        // === CLIENT-SIDE PREDICTION ===
+        // Apply movement cục bộ ngay lập tức để owner thấy di chuyển không có độ trễ
+        // Server sẽ xác nhận và NetworkTransform sẽ correct nếu có sai lệch
+        if (controller?.stats != null && movement != null && rb != null)
+        {
+            movement.RefreshGroundCheck();
+            bool isGrounded = movement.IsGrounded();
+            PlayerStats stats = controller.stats;
+
+            // Horizontal
+            rb.velocity = new Vector2(horizontalInput * stats.moveSpeed, rb.velocity.y);
+
+            // Instant flip cục bộ (không chờ server roundtrip)
+            if (horizontalInput > 0.01f)
+                transform.localScale = new Vector3(1f, 1f, 1f);
+            else if (horizontalInput < -0.01f)
+                transform.localScale = new Vector3(-1f, 1f, 1f);
+
+            // Vertical
+            if (controller.godMode)
+            {
+                if (jump)
+                    rb.velocity = new Vector2(rb.velocity.x, stats.flySpeed);
+                else if (down)
+                    rb.velocity = new Vector2(rb.velocity.x, -stats.flySpeed);
+                else
+                    rb.velocity = new Vector2(rb.velocity.x, 0);
+                rb.gravityScale = 0;
+            }
+            else
+            {
+                if (jump && isGrounded && rb.velocity.y < 1f)
+                    rb.AddForce(Vector2.up * stats.jumpForce, ForceMode2D.Impulse);
+                rb.gravityScale = stats.gravity;
+            }
+
+            // Update animation cục bộ ngay (không chờ UpdateAnimationClientRpc)
+            var playerAnimator = movement.GetComponent<PlayerAnimator>();
+            playerAnimator?.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, controller.godMode ? false : false);
+        }
+        MoveServerRpc(horizontalInput, jump, down);
     }
 
     private void LateUpdate()
     {
+        // Non-owner: đảm bảo scale luôn đúng mỗi frame (poll thay vì chỉ dùng event)
+        // Giúp loại bỏ triệt để hiệu ứng bìa giấy kể cả khi có ngoại lực khác ghi đè scale giữa các frame.
+        if (!IsOwner)
+        {
+            float targetX = networkScaleX.Value;
+            if (!Mathf.Approximately(transform.localScale.x, targetX))
+                transform.localScale = new Vector3(targetX, transform.localScale.y, transform.localScale.z);
+        }
+
         // Update animation trên TẤT CẢ clients (bao gồm remote clients)
         // Dựa trên velocity từ NetworkTransform để update animation
         if (rb != null && movement != null && movement.GetComponent<PlayerAnimator>() != null)
         {
             PlayerAnimator playerAnimator = movement.GetComponent<PlayerAnimator>();
-            
+
+            // Refresh ground check trước khi lấy giá trị – đảm bảo chính xác trên mọi client/server
+            movement.RefreshGroundCheck();
+
             // Tính toán animation parameters dựa trên velocity và state hiện tại
             // QUAN TRỌNG: Truyền velocity.x thay vì input để Speed parameter phản ánh tốc độ thực tế
             float horizontalVelocity = rb.velocity.x;
@@ -144,19 +187,10 @@ public class NetworkPlayerController : NetworkBehaviour
 
         PlayerStats stats = controller.stats;
 
-        // Check ground (server cần tự check)
-        bool isGrounded = false;
-        if (movement != null)
-        {
-            // Sử dụng method từ PlayerMovement nếu có
-            isGrounded = movement.IsGrounded();
-        }
-        else
-        {
-            // Fallback: Check ground trực tiếp
-            Collider2D groundCheck = Physics2D.OverlapCircle(transform.position + Vector3.down * 0.5f, 0.2f);
-            isGrounded = groundCheck != null;
-        }
+        // CRITICAL: Refresh ground check trên server mỗi frame trước khi dùng
+        // (HandleInput() không chạy trên server vì server không phải IsOwner)
+        movement.RefreshGroundCheck();
+        bool isGrounded = movement.IsGrounded();
 
         // 1. Horizontal movement
         float targetVelocityX = horizontalInput * stats.moveSpeed;
@@ -167,21 +201,13 @@ public class NetworkPlayerController : NetworkBehaviour
         // QUAN TRỌNG: Chỉ flip khi có input, giữ nguyên khi input = 0
         if (horizontalInput > 0.01f)
         {
-            // Di chuyển sang phải → scale.x = 1
             if (Mathf.Abs(networkScaleX.Value - 1f) > 0.01f)
-            {
                 networkScaleX.Value = 1f;
-                transform.localScale = new Vector3(1f, 1, 1);
-            }
         }
         else if (horizontalInput < -0.01f)
         {
-            // Di chuyển sang trái → scale.x = -1
             if (Mathf.Abs(networkScaleX.Value - (-1f)) > 0.01f)
-            {
                 networkScaleX.Value = -1f;
-                transform.localScale = new Vector3(-1f, 1, 1);
-            }
         }
         // Nếu horizontalInput = 0 → Giữ nguyên scale hiện tại (không flip)
 
@@ -204,40 +230,15 @@ public class NetworkPlayerController : NetworkBehaviour
         }
         else
         {
-            // Normal mode - xử lý flight logic
-            // Lưu ý: Flight time và cooldown được quản lý bởi PlayerMovement trên client
-            // Server chỉ xử lý movement dựa trên input
-            bool hasAnyInput = Mathf.Abs(horizontalInput) > 0.1f || up || down;
-
-            if (up)
+            // Normal mode: jump impulse từ mặt đất, trọng lực luôn tác động khi trên không
+            if (up && isGrounded && rb.velocity.y < 1f)
             {
-                // Bay lên (server không check canFly, để client quản lý)
-                rb.velocity = new Vector2(rb.velocity.x, stats.flySpeed);
-            }
-            else if (down)
-            {
-                // Bay xuống
-                rb.velocity = new Vector2(rb.velocity.x, -stats.flySpeed);
-            }
-            else if (Mathf.Abs(horizontalInput) > 0.1f && !isGrounded)
-            {
-                // Treo trên không khi có horizontal input
-                if (rb.velocity.y <= 0)
-                {
-                    rb.velocity = new Vector2(rb.velocity.x, 0);
-                }
+                // Áp dụng lực nhảy 1 lần duy nhất khi đang đứng đất và nhấn W
+                rb.AddForce(Vector2.up * stats.jumpForce, ForceMode2D.Impulse);
             }
 
-            // Gravity
-            if (isGrounded)
-            {
-                rb.gravityScale = stats.gravity;
-            }
-            else
-            {
-                // Có input → gravity = 0, không có input → gravity = stats.gravity
-                rb.gravityScale = hasAnyInput ? 0 : stats.gravity;
-            }
+            // Trọng lực luôn bật – không treo lơ lửng khi nhấn A/D trên không
+            rb.gravityScale = stats.gravity;
         }
 
         // Update animation trên server (sẽ được sync qua NetworkAnimator)

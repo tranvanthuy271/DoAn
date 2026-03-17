@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// DungeonListUI — Panel hiển thị danh sách phó bản để người chơi tham gia.
@@ -30,13 +31,13 @@ public class DungeonListUI : MonoBehaviour
     [SerializeField] private Button      closeBtn;           // Nút đóng panel
 
     [Header("Status")]
-    [SerializeField] private Text        statusText;         // Thông báo trạng thái (loading, error...)
+    [SerializeField] private TextMeshProUGUI statusText;         // Thông báo trạng thái (loading, error...)
     [SerializeField] private GameObject  loadingIndicator;   // Spinner hoặc "Loading..." object
 
     [Header("Confirm Dialog (tuỳ chọn)")]
     [SerializeField] private GameObject  confirmDialog;
-    [SerializeField] private Text        confirmDungeonName;
-    [SerializeField] private Text        confirmDesc;
+    [SerializeField] private TextMeshProUGUI confirmDungeonName;
+    [SerializeField] private TextMeshProUGUI confirmDesc;
     [SerializeField] private Button      confirmYesBtn;
     [SerializeField] private Button      confirmNoBtn;
 
@@ -117,6 +118,7 @@ public class DungeonListUI : MonoBehaviour
     {
         SetLoading(true);
         ClearList();
+        Debug.Log("[DungeonListUI] Bắt đầu tải danh sách phó bản...");
 
         bool done       = false;
         DungeonConfigData[] dungeons = null;
@@ -130,9 +132,14 @@ public class DungeonListUI : MonoBehaviour
 
         if (dungeons == null || dungeons.Length == 0)
         {
+            Debug.LogWarning("[DungeonListUI] API trả về 0 phó bản hoặc null.");
             ShowStatus("Chưa có phó bản nào.");
             yield break;
         }
+
+        Debug.Log($"[DungeonListUI] Nhận được {dungeons.Length} phó bản:");
+        foreach (var d in dungeons)
+            Debug.Log($"  #{d.dungeon_id} '{d.dungeon_name}' type={d.dungeon_type} map_id={d.map_id} scene={d.scene_name} minLv={d.min_level_required} maxP={d.max_players}");
 
         _cachedDungeons = dungeons;
         ShowStatus("");
@@ -146,6 +153,7 @@ public class DungeonListUI : MonoBehaviour
             var go   = Instantiate(dungeonItemPrefab, dungeonListContent);
             var item = go.GetComponent<DungeonButtonItem>();
             _sessionCache.TryGetValue(config.dungeon_id, out var session);
+            Debug.Log($"[DungeonListUI] Render item #{config.dungeon_id} '{config.dungeon_name}' prefab={go != null} item={item != null} session={session != null}");
             item?.Setup(config, _playerLevel, session);
         }
     }

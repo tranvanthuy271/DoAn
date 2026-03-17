@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 /// <summary>
 /// Script điều khiển di chuyển của projectile cho Skill2
@@ -26,6 +27,7 @@ public class ProjectileMovement : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 startPosition;
     private bool isInitialized = false;
+    private bool isClientReplica = false;
 
     private void Awake()
     {
@@ -41,6 +43,18 @@ public class ProjectileMovement : MonoBehaviour
     private void Initialize()
     {
         if (isInitialized) return;
+
+        // Nếu đây là client replica của NetworkObject (server spawn), để NetworkTransform
+        // đồng bộ vị trí. Client không cần set velocity — tránh xung đột với NetworkTransform.
+        NetworkObject networkObj = GetComponent<NetworkObject>();
+        if (networkObj != null && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+        {
+            isInitialized = true;
+            isClientReplica = true;
+            if (lifetime > 0f)
+                Destroy(gameObject, lifetime);
+            return;
+        }
 
         // Nếu có Rigidbody2D và autoSetupFromRigidbody = true
         if (rb != null && autoSetupFromRigidbody)
@@ -77,6 +91,9 @@ public class ProjectileMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // Nếu là client replica, để NetworkTransform xử lý vị trí — không set velocity
+        if (isClientReplica) return;
+
         // Đảm bảo velocity luôn đúng (tránh bị override bởi script khác hoặc animation)
         if (rb != null && moveSpeed > 0f)
         {

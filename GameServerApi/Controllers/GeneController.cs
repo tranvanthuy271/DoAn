@@ -282,9 +282,503 @@ namespace GameServerApi.Controllers
             }
         }
 
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/gene/list
+        //  Trả về tất cả gene của player: primary, secondary, hybrid status
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("list")]
+        public async System.Threading.Tasks.Task<IActionResult> GetGeneList([FromQuery] int playerId)
+        {
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+
+            return Ok(new
+            {
+                primaryElement   = info.ElementType,
+                primaryTier      = info.GeneTier,
+                primaryExp       = info.GeneExp,
+                secondaryElement = info.SecondaryElement,
+                secondaryTier    = info.SecondaryGeneTier,
+                secondaryExp     = info.SecondaryGeneExp,
+                isHybrid         = info.IsHybrid,
+                hybridName       = info.IsHybrid
+                    ? GetHybridName(info.HybridElementA!, info.HybridElementB!, _db)
+                    : null,
+                hybridBonusTargets   = info.HybridBonusTargets,
+                hybridImmuneElements = info.HybridImmuneElements,
+                hybridAtkBonusPct    = info.HybridAtkBonusPct,
+                canFuse = !info.IsHybrid
+                    && info.GeneTier >= 5
+                    && info.SecondaryElement != null
+                    && info.SecondaryGeneTier >= 5,
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/gene/secondary/select
+        //  Body: { "playerId": 1, "secondaryElement": "Water" }
+        //  Chọn hệ gene thứ 2 lần đầu (chỉ được chọn 1 lần)
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("secondary/select")]
+        public async System.Threading.Tasks.Task<IActionResult> SelectSecondaryGene([FromBody] System.Text.Json.JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("playerId", out var pidProp))
+                    return BadRequest("Thiếu playerId.");
+                if (!body.TryGetProperty("secondaryElement", out var elProp))
+                    return BadRequest("Thiếu secondaryElement.");
+
+                int    playerId  = pidProp.GetInt32();
+                string secondary = elProp.GetString() ?? "";
+
+                var validElements = new[] { "Fire", "Water", "Earth", "Metal", "Wood" };
+                if (!validElements.Contains(secondary))
+                    return BadRequest($"secondaryElement không hợp lệ: {secondary}");
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                if (info.SecondaryElement != null)
+                    return BadRequest($"Đã chọn hệ phụ: {info.SecondaryElement}. Không thể thay đổi.");
+
+                if (info.ElementType.Equals(secondary, StringComparison.OrdinalIgnoreCase))
+                    return BadRequest("Hệ phụ không được trùng với hệ chính.");
+
+                info.SecondaryElement    = secondary;
+                info.SecondaryGeneTier   = 1;
+                info.SecondaryGeneExp    = 0;
+
+                player.SetInfoChar(info);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success          = true,
+                    primaryElement   = info.ElementType,
+                    secondaryElement = info.SecondaryElement,
+                    secondaryTier    = info.SecondaryGeneTier,
+                    message          = $"🌟 Đã chọn hệ phụ: {secondary}! Bắt đầu nâng cấp hệ phụ.",
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi chọn hệ phụ: {ex.Message}");
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/gene/multi/config
+        //  Lấy config nâng cấp hệ phụ
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("multi/config")]
+        public async System.Threading.Tasks.Task<IActionResult> GetMultiConfig(
+            [FromQuery] string elementType,
+            [FromQuery] int    tier)
+        {
+            if (string.IsNullOrWhiteSpace(elementType))
+                return BadRequest("Thiếu elementType.");
+            if (tier < 1 || tier > 4)
+                return BadRequest("tier phải từ 1 đến 4.");
+
+            var cfg = await _db.GeneMultiConfigs
+                .FirstOrDefaultAsync(c => c.TierFrom == tier && c.ElementType == elementType);
+
+            if (cfg == null)
+                return NotFound($"Không có config nâng cấp hệ phụ {elementType} tier {tier}.");
+
+            var item = await _db.ItemTemplates.FindAsync(cfg.ItemId);
+
+            int nextTier = tier + 1;
+            var tierStat = await _db.GeneTierStatConfigs
+                .FirstOrDefaultAsync(g => g.ElementType == elementType && g.TierTo == nextTier);
+
+            return Ok(new
+            {
+                tierFrom        = tier,
+                tierTo          = nextTier,
+                elementType,
+                geneExpRequired = cfg.GeneExpRequired,
+                goldCost        = cfg.GoldCost,
+                itemId          = cfg.ItemId,
+                itemName        = item?.Name ?? $"Item #{cfg.ItemId}",
+                itemIcon        = item?.IdIcon ?? 0,
+                itemsMin        = cfg.ItemsMin,
+                itemsNeeded     = cfg.ItemsNeeded,
+                baseSuccessRate = cfg.BaseSuccessRate,
+                note            = "Chi phí hệ phụ cao hơn hệ chính khoảng 20%",
+                statBonus = tierStat != null ? new
+                {
+                    hp      = tierStat.HpBonus,
+                    mp      = tierStat.MpBonus,
+                    attack  = tierStat.AttackBonus,
+                    defense = tierStat.DefenseBonus,
+                } : new { hp = 0, mp = 0, attack = 0, defense = 0 },
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/gene/secondary/upgrade
+        //  Body: { "playerId": 1, "itemCount": 3 }
+        //  Nâng cấp hệ gene thứ 2 (secondary)
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("secondary/upgrade")]
+        public async System.Threading.Tasks.Task<IActionResult> UpgradeSecondaryGene([FromBody] System.Text.Json.JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("playerId", out var pidProp))
+                    return BadRequest("Thiếu playerId.");
+
+                int playerId  = pidProp.GetInt32();
+                int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 1;
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                if (info.SecondaryElement == null)
+                    return BadRequest("Chưa chọn hệ phụ. Gọi POST /api/gene/secondary/select trước.");
+
+                string secondary    = info.SecondaryElement;
+                int    currentTier  = info.SecondaryGeneTier ?? 1;
+                int    currentExp   = info.SecondaryGeneExp  ?? 0;
+
+                if (currentTier >= 5)
+                    return BadRequest($"Hệ phụ {secondary} đã đạt Tier 5 tối đa.");
+
+                var cfg = await _db.GeneMultiConfigs
+                    .FirstOrDefaultAsync(c => c.TierFrom == currentTier && c.ElementType == secondary);
+
+                if (cfg == null)
+                    return BadRequest($"Không có config nâng cấp cho {secondary} tier {currentTier}.");
+
+                if (currentExp < cfg.GeneExpRequired)
+                    return BadRequest($"Cần {cfg.GeneExpRequired} gene exp hệ phụ. Hiện có: {currentExp}.");
+
+                if (info.Gold < cfg.GoldCost)
+                    return BadRequest($"Không đủ vàng. Cần {cfg.GoldCost:N0}, hiện có {info.Gold:N0}.");
+
+                itemCount = Math.Clamp(itemCount, cfg.ItemsMin, cfg.ItemsNeeded);
+
+                var inventory = ParseJsonList(player.InventoryJson);
+                int available = inventory
+                    .Where(s => s.ContainsKey("itemTemplateId") &&
+                                Convert.ToInt32(s["itemTemplateId"]) == cfg.ItemId)
+                    .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
+
+                if (available < cfg.ItemsMin)
+                    return BadRequest($"Không đủ item (id={cfg.ItemId}). Cần {cfg.ItemsMin}, có {available}.");
+
+                itemCount = Math.Min(itemCount, available);
+
+                float successRate = cfg.BaseSuccessRate * Math.Min((float)itemCount / cfg.ItemsNeeded, 1f);
+                successRate = Math.Clamp(successRate, 0f, 1f);
+                bool  success = new Random().NextDouble() < successRate;
+
+                info.Gold         -= cfg.GoldCost;
+                info.SecondaryGeneExp = Math.Max(0, currentExp - cfg.GeneExpRequired);
+
+                // Trừ item
+                int toConsume = itemCount;
+                foreach (var s in inventory)
+                {
+                    if (toConsume <= 0) break;
+                    if (!s.ContainsKey("itemTemplateId")) continue;
+                    if (Convert.ToInt32(s["itemTemplateId"]) != cfg.ItemId) continue;
+                    int amt = s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0;
+                    int use = Math.Min(amt, toConsume);
+                    s["quantity"] = amt - use;
+                    toConsume    -= use;
+                }
+                inventory.RemoveAll(s =>
+                    s.ContainsKey("quantity") &&
+                    Convert.ToInt32(s["quantity"]) <= 0 &&
+                    (!s.ContainsKey("isEquipped") || s["isEquipped"] is bool eq && !eq));
+
+                if (success)
+                {
+                    int newTier = currentTier + 1;
+                    info.SecondaryGeneTier = newTier;
+
+                    // stat bonus từ hệ phụ — nhỏ hơn hệ chính (50%)
+                    var tierStat = await _db.GeneTierStatConfigs
+                        .FirstOrDefaultAsync(g => g.ElementType == secondary && g.TierTo == newTier);
+
+                    if (tierStat != null)
+                    {
+                        info.MaxHp   += tierStat.HpBonus     / 2;
+                        info.Hp       = info.MaxHp;
+                        info.MaxMp   += tierStat.MpBonus     / 2;
+                        info.Mp       = info.MaxMp;
+                        info.Attack  += tierStat.AttackBonus / 2;
+                        info.Defense += tierStat.DefenseBonus/ 2;
+                    }
+                }
+
+                player.SetInfoChar(info);
+                player.InventoryJson = System.Text.Json.JsonSerializer.Serialize(inventory);
+                player.UpdatedAt     = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                var finalStats = GameServerApi.Models.Services.StatCalculator
+                    .Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+
+                bool canFuse = !info.IsHybrid
+                    && info.GeneTier >= 5
+                    && info.SecondaryGeneTier >= 5;
+
+                string msg = success
+                    ? $"✨ Hệ phụ {secondary} đã lên Tier {info.SecondaryGeneTier}!"
+                      + (canFuse ? " 🔥 Đủ điều kiện Hybrid Fusion!" : "")
+                    : $"😞 Thất bại! Gene exp hệ phụ reset về 0.";
+
+                return Ok(new
+                {
+                    success,
+                    secondaryElement = secondary,
+                    newSecondaryTier = info.SecondaryGeneTier,
+                    newSecondaryExp  = info.SecondaryGeneExp,
+                    gold             = info.Gold,
+                    message          = msg,
+                    canFuse,
+                    final_stats = new
+                    {
+                        hp      = finalStats.Hp,      max_hp  = finalStats.MaxHp,
+                        mp      = finalStats.Mp,      max_mp  = finalStats.MaxMp,
+                        attack  = finalStats.Attack,  defense = finalStats.Defense,
+                    },
+                    updatedInventory = inventory.Select(s => new
+                    {
+                        slotIndex      = s.ContainsKey("slotIndex")      ? Convert.ToInt32(s["slotIndex"])      : 0,
+                        itemTemplateId = s.ContainsKey("itemTemplateId") ? Convert.ToInt32(s["itemTemplateId"]) : 0,
+                        quantity       = s.ContainsKey("quantity")       ? Convert.ToInt32(s["quantity"])       : 0,
+                    }).ToList(),
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi nâng cấp hệ phụ: {ex.Message}");
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/gene/hybrid/config?playerId=1
+        //  Lấy config hybrid + kiểm tra điều kiện fusion
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("hybrid/config")]
+        public async System.Threading.Tasks.Task<IActionResult> GetHybridConfig([FromQuery] int playerId)
+        {
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+
+            if (info.IsHybrid)
+                return BadRequest("Player đã là Hybrid Gene rồi.");
+
+            if (info.SecondaryElement == null)
+                return BadRequest("Chưa chọn hệ phụ.");
+
+            if (info.GeneTier < 5)
+                return BadRequest($"Hệ chính {info.ElementType} cần đạt Tier 5. Hiện tại: Tier {info.GeneTier}.");
+
+            if ((info.SecondaryGeneTier ?? 0) < 5)
+                return BadRequest($"Hệ phụ {info.SecondaryElement} cần đạt Tier 5. Hiện tại: Tier {info.SecondaryGeneTier}.");
+
+            var (a, b) = GeneHybridConfig.NormalizeKey(info.ElementType, info.SecondaryElement);
+            var cfg = await _db.GeneHybridConfigs
+                .FirstOrDefaultAsync(h => h.ElementA == a && h.ElementB == b);
+
+            if (cfg == null)
+                return NotFound($"Không tìm thấy config hybrid cho {info.ElementType} + {info.SecondaryElement}.");
+
+            var item = await _db.ItemTemplates.FindAsync(cfg.FusionItemId);
+            var inventory = ParseJsonList(player.InventoryJson);
+            int available = inventory
+                .Where(s => s.ContainsKey("itemTemplateId") &&
+                            Convert.ToInt32(s["itemTemplateId"]) == cfg.FusionItemId)
+                .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
+
+            return Ok(new
+            {
+                hybridName        = cfg.HybridName,
+                hybridDescription = cfg.HybridDescription,
+                elementA          = info.ElementType,
+                elementB          = info.SecondaryElement,
+                bonusTargets      = cfg.GetBonusTargets(),
+                immuneElements    = cfg.GetImmuneElements(),
+                atkBonusPercent   = cfg.AtkBonusPercent,
+                fusionGoldCost    = cfg.FusionGoldCost,
+                fusionItemId      = cfg.FusionItemId,
+                fusionItemName    = item?.Name ?? $"Item #{cfg.FusionItemId}",
+                fusionItemCount   = cfg.FusionItemCount,
+                availableItems    = available,
+                canFuse           = available >= cfg.FusionItemCount && info.Gold >= cfg.FusionGoldCost,
+                statBonus = new
+                {
+                    hp      = cfg.StatBonusHp,
+                    mp      = cfg.StatBonusMp,
+                    attack  = cfg.StatBonusAtk,
+                    defense = cfg.StatBonusDef,
+                },
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/gene/hybrid/fuse
+        //  Body: { "playerId": 1, "itemCount": 5 }
+        //  Fusion 2 hệ gene Tier 5 thành Hybrid Gene
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("hybrid/fuse")]
+        public async System.Threading.Tasks.Task<IActionResult> FuseHybridGene([FromBody] System.Text.Json.JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("playerId", out var pidProp))
+                    return BadRequest("Thiếu playerId.");
+
+                int playerId  = pidProp.GetInt32();
+                int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 0;
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                if (info.IsHybrid)
+                    return BadRequest("Player đã là Hybrid Gene rồi.");
+
+                if (info.SecondaryElement == null)
+                    return BadRequest("Chưa chọn hệ phụ.");
+
+                if (info.GeneTier < 5)
+                    return BadRequest($"Hệ chính {info.ElementType} cần Tier 5. Hiện: Tier {info.GeneTier}.");
+
+                if ((info.SecondaryGeneTier ?? 0) < 5)
+                    return BadRequest($"Hệ phụ {info.SecondaryElement} cần Tier 5. Hiện: Tier {info.SecondaryGeneTier}.");
+
+                var (a, b) = GeneHybridConfig.NormalizeKey(info.ElementType, info.SecondaryElement);
+                var cfg = await _db.GeneHybridConfigs
+                    .FirstOrDefaultAsync(h => h.ElementA == a && h.ElementB == b);
+
+                if (cfg == null)
+                    return NotFound($"Không tìm thấy config hybrid cho {info.ElementType} + {info.SecondaryElement}.");
+
+                // Kiểm tra vàng
+                if (info.Gold < cfg.FusionGoldCost)
+                    return BadRequest($"Không đủ vàng. Cần {cfg.FusionGoldCost:N0}, có {info.Gold:N0}.");
+
+                // Kiểm tra item
+                var inventory = ParseJsonList(player.InventoryJson);
+                int available = inventory
+                    .Where(s => s.ContainsKey("itemTemplateId") &&
+                                Convert.ToInt32(s["itemTemplateId"]) == cfg.FusionItemId)
+                    .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
+
+                if (available < cfg.FusionItemCount)
+                    return BadRequest($"Cần {cfg.FusionItemCount}x Lõi Đột Biến, có {available}.");
+
+                // Trừ vàng
+                info.Gold -= cfg.FusionGoldCost;
+
+                // Trừ item
+                int toConsume = cfg.FusionItemCount;
+                foreach (var s in inventory)
+                {
+                    if (toConsume <= 0) break;
+                    if (!s.ContainsKey("itemTemplateId")) continue;
+                    if (Convert.ToInt32(s["itemTemplateId"]) != cfg.FusionItemId) continue;
+                    int amt = s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0;
+                    int use = Math.Min(amt, toConsume);
+                    s["quantity"] = amt - use;
+                    toConsume    -= use;
+                }
+                inventory.RemoveAll(s =>
+                    s.ContainsKey("quantity") &&
+                    Convert.ToInt32(s["quantity"]) <= 0 &&
+                    (!s.ContainsKey("isEquipped") || s["isEquipped"] is bool eq && !eq));
+
+                // Áp dụng Hybrid
+                info.IsHybrid            = true;
+                info.HybridElementA      = info.ElementType;
+                info.HybridElementB      = info.SecondaryElement;
+                info.HybridBonusTargets  = cfg.BonusTargetElements;  // CSV string
+                info.HybridImmuneElements= cfg.ImmuneElements;       // CSV string
+                info.HybridAtkBonusPct   = cfg.AtkBonusPercent;
+
+                // Stat bonus fusion
+                info.MaxHp   += cfg.StatBonusHp;
+                info.Hp       = info.MaxHp;
+                info.MaxMp   += cfg.StatBonusMp;
+                info.Mp       = info.MaxMp;
+                info.Attack  += cfg.StatBonusAtk;
+                info.Defense += cfg.StatBonusDef;
+
+                player.SetInfoChar(info);
+                player.InventoryJson = System.Text.Json.JsonSerializer.Serialize(inventory);
+                player.UpdatedAt     = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                var finalStats = GameServerApi.Models.Services.StatCalculator
+                    .Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+
+                return Ok(new
+                {
+                    success           = true,
+                    hybridName        = cfg.HybridName,
+                    hybridDescription = cfg.HybridDescription,
+                    hybridElementA    = info.HybridElementA,
+                    hybridElementB    = info.HybridElementB,
+                    bonusTargets      = cfg.GetBonusTargets(),
+                    immuneElements    = cfg.GetImmuneElements(),
+                    atkBonusPercent   = cfg.AtkBonusPercent,
+                    statBonus = new
+                    {
+                        hp      = cfg.StatBonusHp,
+                        mp      = cfg.StatBonusMp,
+                        attack  = cfg.StatBonusAtk,
+                        defense = cfg.StatBonusDef,
+                    },
+                    gold      = info.Gold,
+                    message   = $"🌟🔥 HYBRID FUSION THÀNH CÔNG! {cfg.HybridName} đã thức tỉnh!",
+                    final_stats = new
+                    {
+                        hp      = finalStats.Hp,      max_hp  = finalStats.MaxHp,
+                        mp      = finalStats.Mp,      max_mp  = finalStats.MaxMp,
+                        attack  = finalStats.Attack,  defense = finalStats.Defense,
+                    },
+                    updatedInventory = inventory.Select(s => new
+                    {
+                        slotIndex      = s.ContainsKey("slotIndex")      ? Convert.ToInt32(s["slotIndex"])      : 0,
+                        itemTemplateId = s.ContainsKey("itemTemplateId") ? Convert.ToInt32(s["itemTemplateId"]) : 0,
+                        quantity       = s.ContainsKey("quantity")       ? Convert.ToInt32(s["quantity"])       : 0,
+                    }).ToList(),
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi Hybrid Fusion: {ex.Message}");
+            }
+        }
+
         // ──────────────────────────────────────────────────────────────
         //  HELPERS
         // ──────────────────────────────────────────────────────────────
+
+        /// <summary>Tra tên hybrid từ DB (nếu có), hoặc ghép tên tạm.</summary>
+        private static string GetHybridName(string elemA, string elemB, GameServerApi.Data.GameDbContext db)
+        {
+            var (a, b) = GeneHybridConfig.NormalizeKey(elemA, elemB);
+            var cfg = db.GeneHybridConfigs.FirstOrDefault(h => h.ElementA == a && h.ElementB == b);
+            return cfg?.HybridName ?? $"{elemA}+{elemB} Hybrid";
+        }
 
         private static List<Dictionary<string, object>> ParseJsonList(string json)
         {

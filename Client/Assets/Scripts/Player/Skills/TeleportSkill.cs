@@ -18,7 +18,10 @@ public class TeleportSkill : NetworkBehaviour
     [SerializeField] private KeyCode teleportKey = KeyCode.T;
     
     [Tooltip("Cooldown giữa các lần sử dụng teleport (seconds)")]
-    [SerializeField] private float cooldown = 3f;
+    [SerializeField] public float cooldown = 3f;
+
+    /// <summary>Trạng thái sẵn sàng — dùng bởi PlayerSkillManager để check trước khi gọi UseTeleport()</summary>
+    public bool CanUseNow => canUseTeleport;
     
     [Tooltip("Khoảng cách dịch chuyển (units)")]
     [SerializeField] private float teleportDistance = 5f;
@@ -121,13 +124,11 @@ public class TeleportSkill : NetworkBehaviour
 
     private void HandleTeleportInput()
     {
-        if (Input.GetKeyDown(teleportKey) && canUseTeleport && !isTeleporting)
-        {
-            UseTeleport();
-        }
+        // Phím T đã được dùng cho SkillHotbar toggle — skill này chỉ kích hoạt qua hotbar UI
     }
 
-    private void UseTeleport()
+    /// <summary>Kích hoạt teleport từ bên ngoài (ví dụ: PlayerSkillManager, hotbar UI).</summary>
+    public void UseTeleport()
     {
         if (isTeleporting) return;
 

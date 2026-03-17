@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc2d8e7d9d3795b4da9475489805ba13, type: 3}
   m_Name: PlayerStats
   m_EditorClassIdentifier: 
-  moveSpeed: 4
-  jumpForce: 3
-  jumpTime: 0.35
+  moveSpeed: 5
+  jumpForce: 7
+  jumpTime: 0.3
   flySpeed: 5
   maxFlightTime: 3
   flightCooldown: 0
-  gravity: 3
+  gravity: 1
   maxHealth: 100
   baseDamage: 10
   attackSpeed: 1

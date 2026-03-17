@@ -22,10 +22,18 @@ namespace GameServerApi.Models
         [JsonPropertyName("element_type")]        public string  ElementType       { get; set; } = "Fire";
         [JsonPropertyName("gene_tier")]           public int     GeneTier          { get; set; } = 1;
         [JsonPropertyName("gene_exp")]            public int     GeneExp           { get; set; } = 0;
-        [JsonPropertyName("is_hybrid")]           public bool    IsHybrid          { get; set; } = false;
-        [JsonPropertyName("secondary_element")]   public string? SecondaryElement   { get; set; } = null;
-        [JsonPropertyName("secondary_gene_tier")] public int?    SecondaryGeneTier  { get; set; } = null;
-        [JsonPropertyName("secondary_gene_exp")]  public int?    SecondaryGeneExp   { get; set; } = null;
+        [JsonPropertyName("is_hybrid")]              public bool          IsHybrid             { get; set; } = false;
+        [JsonPropertyName("secondary_element")]      public string?       SecondaryElement      { get; set; } = null;
+        [JsonPropertyName("secondary_gene_tier")]    public int?          SecondaryGeneTier     { get; set; } = null;
+        [JsonPropertyName("secondary_gene_exp")]     public int?          SecondaryGeneExp      { get; set; } = null;
+        // ---- Hybrid Gene Fusion ----
+        [JsonPropertyName("hybrid_element_a")]       public string?       HybridElementA        { get; set; } = null;
+        [JsonPropertyName("hybrid_element_b")]       public string?       HybridElementB        { get; set; } = null;
+        // CSV hệ bị sát thương tăng 50%, e.g. "Earth,Fire"
+        [JsonPropertyName("hybrid_bonus_targets")]   public string?       HybridBonusTargets    { get; set; } = null;
+        // CSV hệ không còn khắc được player, e.g. "Water,Metal"
+        [JsonPropertyName("hybrid_immune_elements")] public string?       HybridImmuneElements  { get; set; } = null;
+        [JsonPropertyName("hybrid_atk_bonus_pct")]   public float         HybridAtkBonusPct     { get; set; } = 0f;
 
         // ---- HP / MP / Combat ----
         [JsonPropertyName("hp")]      public int Hp      { get; set; } = 100;
@@ -90,6 +98,9 @@ namespace GameServerApi.Models
             ElementType = elementType,
             GeneTier = 1, GeneExp = 0,
             IsHybrid = false,
+            SecondaryElement = null, SecondaryGeneTier = null, SecondaryGeneExp = null,
+            HybridElementA = null, HybridElementB = null,
+            HybridBonusTargets = null, HybridImmuneElements = null, HybridAtkBonusPct = 0f,
             Hp = 100, MaxHp = 100,
             Mp = 50,  MaxMp = 50,
             Attack = 10, Defense = 0,

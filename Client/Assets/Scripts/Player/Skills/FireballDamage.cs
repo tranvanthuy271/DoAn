@@ -1,60 +1,65 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// Script xử lý damage enemy khi fireball va chạm
-/// Tự động damage enemy và xóa fireball khi chạm
+/// Script xá»­ lÃ½ damage enemy khi fireball va cháº¡m
+/// Tá»± Ä‘á»™ng damage enemy vÃ  xÃ³a fireball khi cháº¡m
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public class FireballDamage : MonoBehaviour
 {
     [Header("Damage Settings")]
-    [Tooltip("Sát thương của fireball")]
+    [Tooltip("SÃ¡t thÆ°Æ¡ng cá»§a fireball")]
     [SerializeField] private int damage = 5;
 
+    // Attack bonus tá»« owner (EarthAura buff)
+    private int attackBonusPercent = 0;
+
     [Header("Collision Settings")]
-    [Tooltip("Có tự hủy sau khi va chạm với enemy không")]
+    [Tooltip("CÃ³ tá»± há»§y sau khi va cháº¡m vá»›i enemy khÃ´ng")]
     [SerializeField] private bool destroyOnHit = true;
 
-    [Tooltip("Có tự hủy khi va chạm với ground/wall không")]
+    [Tooltip("CÃ³ tá»± há»§y khi va cháº¡m vá»›i ground/wall khÃ´ng")]
     [SerializeField] private bool destroyOnGround = true;
 
     private bool hasHit = false;
 
     private void Start()
     {
-        // Đảm bảo collider là trigger
+        // Äáº£m báº£o collider lÃ  trigger
         Collider2D col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
         {
             col.isTrigger = true;
-            Debug.LogWarning("[FireballDamage] Collider đã được tự động set thành trigger!");
+            Debug.LogWarning("[FireballDamage] Collider Ä‘Ã£ Ä‘Æ°á»£c tá»± Ä‘á»™ng set thÃ nh trigger!");
         }
 
-        // Kiểm tra nếu không có Collider2D
+        // Kiá»ƒm tra náº¿u khÃ´ng cÃ³ Collider2D
         if (col == null)
         {
-            Debug.LogError("[FireballDamage] Fireball không có Collider2D! Vui lòng thêm Collider2D vào Prefab.");
+            Debug.LogError("[FireballDamage] Fireball khÃ´ng cÃ³ Collider2D! Vui lÃ²ng thÃªm Collider2D vÃ o Prefab.");
         }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // Chỉ xử lý một lần (tránh damage nhiều lần)
+        // Chá»‰ xá»­ lÃ½ má»™t láº§n (trÃ¡nh damage nhiá»u láº§n)
         if (hasHit) return;
 
-        // Check nếu va chạm với enemy
+        int finalDamage = damage + damage * attackBonusPercent / 100;
+
+        // Check náº¿u va cháº¡m vá»›i enemy
         if (collision.CompareTag("Enemy"))
         {
-            // Tìm component EnemyHealth hoặc NetworkEnemyHealth
+            // TÃ¬m component EnemyHealth hoáº·c NetworkEnemyHealth
             EnemyHealth enemyHealth = collision.GetComponent<EnemyHealth>();
             NetworkEnemyHealth networkEnemyHealth = collision.GetComponent<NetworkEnemyHealth>();
 
             if (enemyHealth != null)
             {
-                // Standalone mode: dùng EnemyHealth
-                enemyHealth.TakeDamage(damage);
+                // Standalone mode: dÃ¹ng EnemyHealth
+                enemyHealth.TakeDamage(finalDamage);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Fireball đã damage enemy {collision.name} với {damage} damage!");
+                Debug.Log($"[FireballDamage] Fireball Ä‘Ã£ damage enemy {collision.name} vá»›i {damage} damage!");
 
                 if (destroyOnHit)
                 {
@@ -63,10 +68,10 @@ public class FireballDamage : MonoBehaviour
             }
             else if (networkEnemyHealth != null)
             {
-                // Network mode: dùng NetworkEnemyHealth
-                networkEnemyHealth.TakeDamage(damage);
+                // Network mode: dÃ¹ng NetworkEnemyHealth
+                networkEnemyHealth.TakeDamage(finalDamage);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Fireball đã damage enemy {collision.name} với {damage} damage! (Network)");
+                Debug.Log($"[FireballDamage] Fireball Ä‘Ã£ damage enemy {collision.name} vá»›i {damage} damage! (Network)");
 
                 if (destroyOnHit)
                 {
@@ -75,27 +80,30 @@ public class FireballDamage : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[FireballDamage] Enemy {collision.name} không có EnemyHealth hoặc NetworkEnemyHealth component!");
+                Debug.LogWarning($"[FireballDamage] Enemy {collision.name} khÃ´ng cÃ³ EnemyHealth hoáº·c NetworkEnemyHealth component!");
             }
         }
-        // Nếu va chạm với ground/wall, hủy fireball
+        // Náº¿u va cháº¡m vá»›i ground/wall, há»§y fireball
         else if (destroyOnGround && (collision.CompareTag("Ground") || collision.CompareTag("Wall")))
         {
-            Debug.Log("[FireballDamage] Fireball đã chạm ground/wall, tự hủy.");
+            Debug.Log("[FireballDamage] Fireball Ä‘Ã£ cháº¡m ground/wall, tá»± há»§y.");
             Destroy(gameObject);
         }
     }
 
     /// <summary>
-    /// Set sát thương của fireball (có thể gọi từ script khác)
+    /// Set sÃ¡t thÆ°Æ¡ng cá»§a fireball (cÃ³ thá»ƒ gá»i tá»« script khÃ¡c)
     /// </summary>
+    /// <summary>Set attack bonus % from owner's EarthAura buff.</summary>
+    public void SetAttackBonus(int bonusPercent) => attackBonusPercent = bonusPercent;
+
     public void SetDamage(int newDamage)
     {
         damage = newDamage;
     }
 
     /// <summary>
-    /// Get sát thương hiện tại
+    /// Get sÃ¡t thÆ°Æ¡ng hiá»‡n táº¡i
     /// </summary>
     public int GetDamage() => damage;
 }

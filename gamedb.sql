@@ -673,7 +673,53 @@ INSERT INTO `skill_template` VALUES
  'icon_skill_7',NOW()),
 (8,'WOOD_VINE','Dây Leo Cây','Triệu hồi dây leo trói chặt kẻ địch','Wood',5,1,
  '[{"level_req":1,"sp_cost":1,"effect_value":1,"mp_cost":14,"desc":"Trói 1s"},{"level_req":3,"sp_cost":1,"effect_value":2,"mp_cost":18,"desc":"Trói 2s"},{"level_req":5,"sp_cost":2,"effect_value":3,"mp_cost":22,"desc":"Trói 3s"},{"level_req":8,"sp_cost":2,"effect_value":4,"mp_cost":26,"desc":"Trói 4s"},{"level_req":12,"sp_cost":3,"effect_value":5,"mp_cost":30,"desc":"Trói 5s"}]',
- 'icon_skill_8',NOW());
+ 'icon_skill_8',NOW()),
+(9,'METAL_STRIKE','Kim Phong','Đòn chém gần bằng lưỡi kim loại sắc bén (Skill 1 hệ Kim)','Metal',5,1,
+ '[{"level_req":1,"sp_cost":1,"effect_value":20,"mp_cost":8,"cooldown_sec":3,"desc":"Gây 20 ST cận chiến"},{"level_req":3,"sp_cost":1,"effect_value":38,"mp_cost":12,"cooldown_sec":3,"desc":"Gây 38 ST"},{"level_req":5,"sp_cost":2,"effect_value":60,"mp_cost":16,"cooldown_sec":2.5,"desc":"Gây 60 ST"},{"level_req":8,"sp_cost":2,"effect_value":88,"mp_cost":20,"cooldown_sec":2.5,"desc":"Gây 88 ST"},{"level_req":12,"sp_cost":3,"effect_value":120,"mp_cost":24,"cooldown_sec":2,"desc":"Gây 120 ST"}]',
+ 'icon_metal_strike',NOW()),
+(10,'METAL_BLADE','Kim Nhẫn','Tung lưỡi hình tròn quét vùng rộng (Skill 2 hệ Kim)','Metal',5,3,
+ '[{"level_req":3,"sp_cost":1,"effect_value":30,"mp_cost":14,"cooldown_sec":4,"desc":"Gây 30 ST diện rộng"},{"level_req":5,"sp_cost":1,"effect_value":55,"mp_cost":18,"cooldown_sec":4,"desc":"Gây 55 ST"},{"level_req":8,"sp_cost":2,"effect_value":85,"mp_cost":22,"cooldown_sec":3.5,"desc":"Gây 85 ST"},{"level_req":12,"sp_cost":2,"effect_value":120,"mp_cost":26,"cooldown_sec":3.5,"desc":"Gây 120 ST"},{"level_req":18,"sp_cost":3,"effect_value":165,"mp_cost":30,"cooldown_sec":3,"desc":"Gây 165 ST"}]',
+ 'icon_metal_blade',NOW()),
+(11,'METAL_SHIELD','Kim Cương Khiên','Tạo khiên kim cương bất tử, miễn nhiễm mọi sát thương, phá hủy đòn tấn công chạm vào (Skill 3 hệ Kim)','Metal',5,5,
+ '[{"level_req":5,"sp_cost":1,"effect_value":3,"mp_cost":20,"cooldown_sec":12,"desc":"Bất tử 3 giây"},{"level_req":8,"sp_cost":1,"effect_value":4,"mp_cost":25,"cooldown_sec":11,"desc":"Bất tử 4 giây"},{"level_req":11,"sp_cost":2,"effect_value":5,"mp_cost":28,"cooldown_sec":10,"desc":"Bất tử 5 giây"},{"level_req":15,"sp_cost":2,"effect_value":6,"mp_cost":30,"cooldown_sec":9,"desc":"Bất tử 6 giây"},{"level_req":20,"sp_cost":3,"effect_value":8,"mp_cost":35,"cooldown_sec":8,"desc":"Bất tử 8 giây"}]',
+ 'icon_metal_shield',NOW()),
+(12,'WATER_BOLT','Thủy Đạn','Phóng viên đạn nước di chuyển ngang, gây sát thương khi trúng địch (Skill 1 hệ Thủy)','Water',5,1,
+ '[{"level_req":1,"sp_cost":1,"effect_value":18,"mp_cost":8,"cooldown_sec":3,"desc":"Gây 18 ST"},{"level_req":3,"sp_cost":1,"effect_value":32,"mp_cost":12,"cooldown_sec":3,"desc":"Gây 32 ST"},{"level_req":6,"sp_cost":1,"effect_value":52,"mp_cost":16,"cooldown_sec":2.5,"desc":"Gây 52 ST"},{"level_req":10,"sp_cost":2,"effect_value":78,"mp_cost":20,"cooldown_sec":2.5,"desc":"Gây 78 ST"},{"level_req":16,"sp_cost":2,"effect_value":110,"mp_cost":24,"cooldown_sec":2,"desc":"Gây 110 ST"}]',
+ 'icon_water_bolt',NOW()),
+(13,'WATER_PILLAR','Thánh Mộc Hạ','Triệu hồi cây thánh từ trên trời rơi xuống, gây sát thương diện rộng khu vực đáp (Skill 2 hệ Thủy)','Water',5,3,
+ '[{"level_req":3,"sp_cost":1,"effect_value":40,"mp_cost":16,"cooldown_sec":6,"desc":"Gây 40 ST"},{"level_req":5,"sp_cost":1,"effect_value":70,"mp_cost":20,"cooldown_sec":6,"desc":"Gây 70 ST"},{"level_req":8,"sp_cost":2,"effect_value":105,"mp_cost":24,"cooldown_sec":5.5,"desc":"Gây 105 ST"},{"level_req":12,"sp_cost":2,"effect_value":150,"mp_cost":28,"cooldown_sec":5,"desc":"Gây 150 ST"},{"level_req":18,"sp_cost":3,"effect_value":200,"mp_cost":32,"cooldown_sec":4.5,"desc":"Gây 200 ST"}]',
+ 'icon_water_pillar',NOW()),
+(14,'WATER_ARMOR','Thủy Giáp Hộ Thể','Bao phủ bản thân và đồng đội xung quanh lớp giáp nước, hấp thụ sát thương trong thời gian ngắn (Skill 3 hệ Thủy)','Water',5,5,
+ '[{"level_req":5,"sp_cost":1,"effect_value":15,"mp_cost":20,"cooldown_sec":12,"desc":"Buff 15 giáp 5 giây"},{"level_req":8,"sp_cost":1,"effect_value":20,"mp_cost":25,"cooldown_sec":11,"desc":"Buff 20 giáp 5 giây"},{"level_req":11,"sp_cost":2,"effect_value":28,"mp_cost":28,"cooldown_sec":10,"desc":"Buff 28 giáp 6 giây"},{"level_req":15,"sp_cost":2,"effect_value":38,"mp_cost":30,"cooldown_sec":9,"desc":"Buff 38 giáp 6 giây"},{"level_req":20,"sp_cost":3,"effect_value":50,"mp_cost":35,"cooldown_sec":8,"desc":"Buff 50 giáp 7 giây"}]',
+ 'icon_water_armor',NOW());
+
+-- ============================================================
+-- Skills 15-17: Hệ Hỏa (Fire)
+-- ============================================================
+INSERT INTO `skill_template` (skill_id, skill_code, skill_name, description, element_type, max_level, level_to_unlock, levels_json, icon_id, created_at) VALUES
+(15,'FIRE_BOLT','Hỏa Đạn','Bắn một viên đạn lửa theo hướng player, gây sát thương khi chạm enemy (Skill 1 hệ Hỏa)','Fire',5,1,
+ '[{"level_req":1,"sp_cost":1,"effect_value":20,"mp_cost":10,"cooldown_sec":3,"desc":"Gây 20 ST"},{"level_req":3,"sp_cost":1,"effect_value":35,"mp_cost":13,"cooldown_sec":3,"desc":"Gây 35 ST"},{"level_req":6,"sp_cost":1,"effect_value":55,"mp_cost":16,"cooldown_sec":2.5,"desc":"Gây 55 ST"},{"level_req":9,"sp_cost":2,"effect_value":80,"mp_cost":20,"cooldown_sec":2,"desc":"Gây 80 ST"},{"level_req":14,"sp_cost":2,"effect_value":110,"mp_cost":24,"cooldown_sec":2,"desc":"Gây 110 ST"}]',
+ 'icon_fire_bolt',NOW()),
+(16,'FIRE_BURST','Hỏa Cầu','Bắn một cầu lửa lớn chậm hơn nhưng gây sát thương cao hơn (Skill 2 hệ Hỏa)','Fire',5,2,
+ '[{"level_req":2,"sp_cost":1,"effect_value":35,"mp_cost":15,"cooldown_sec":5,"desc":"Gây 35 ST"},{"level_req":4,"sp_cost":1,"effect_value":60,"mp_cost":18,"cooldown_sec":5,"desc":"Gây 60 ST"},{"level_req":7,"sp_cost":2,"effect_value":90,"mp_cost":22,"cooldown_sec":4.5,"desc":"Gây 90 ST"},{"level_req":11,"sp_cost":2,"effect_value":130,"mp_cost":26,"cooldown_sec":4,"desc":"Gây 130 ST"},{"level_req":16,"sp_cost":3,"effect_value":180,"mp_cost":30,"cooldown_sec":4,"desc":"Gây 180 ST"}]',
+ 'icon_fire_burst',NOW()),
+(17,'FIRE_RAIN','Thiên Hỏa','Triệu hồi mưa lửa từ trên trời rơi xuống vùng trước mặt, gây sát thương diện rộng (Skill 3 hệ Hỏa)','Fire',5,4,
+ '[{"level_req":4,"sp_cost":1,"effect_value":25,"mp_cost":20,"cooldown_sec":8,"desc":"5 cầu lửa 25 ST mỗi cầu"},{"level_req":6,"sp_cost":1,"effect_value":40,"mp_cost":24,"cooldown_sec":8,"desc":"5 cầu 40 ST"},{"level_req":9,"sp_cost":2,"effect_value":60,"mp_cost":28,"cooldown_sec":7,"desc":"6 cầu 60 ST"},{"level_req":13,"sp_cost":2,"effect_value":85,"mp_cost":32,"cooldown_sec":6.5,"desc":"7 cầu 85 ST"},{"level_req":18,"sp_cost":3,"effect_value":115,"mp_cost":36,"cooldown_sec":6,"desc":"8 cầu 115 ST"}]',
+ 'icon_fire_rain',NOW());
+
+-- ============================================================
+-- Skills 18-20: Hệ Thổ (Earth)
+-- ============================================================
+INSERT INTO `skill_template` (skill_id, skill_code, skill_name, description, element_type, max_level, level_to_unlock, levels_json, icon_id, created_at) VALUES
+(18,'EARTH_AURA','Địa Uy Khí','Phát hào quang đất, tăng sát thương tấn công cho bản thân và đồng đội trong bán kính (Skill 1 hệ Thổ)','Earth',5,1,
+ '[{"level_req":1,"sp_cost":1,"effect_value":15,"mp_cost":15,"cooldown_sec":10,"desc":"Buff +15% tấn công 6 giây"},{"level_req":3,"sp_cost":1,"effect_value":20,"mp_cost":18,"cooldown_sec":10,"desc":"Buff +20% tấn công 7 giây"},{"level_req":7,"sp_cost":2,"effect_value":28,"mp_cost":22,"cooldown_sec":9,"desc":"Buff +28% tấn công 8 giây"},{"level_req":12,"sp_cost":2,"effect_value":38,"mp_cost":26,"cooldown_sec":8,"desc":"Buff +38% tấn công 9 giây"},{"level_req":17,"sp_cost":3,"effect_value":50,"mp_cost":30,"cooldown_sec":7,"desc":"Buff +50% tấn công 10 giây"}]',
+ 'icon_earth_aura',NOW()),
+(19,'EARTH_BOOMERANG','Địa Phong Đao','Phóng dao đất theo hướng trước, sau khi bay xong tự quay về tay player (Skill 2 hệ Thổ)','Earth',5,2,
+ '[{"level_req":2,"sp_cost":1,"effect_value":30,"mp_cost":12,"cooldown_sec":5,"desc":"Gây 30 ST đi về"},{"level_req":4,"sp_cost":1,"effect_value":50,"mp_cost":16,"cooldown_sec":5,"desc":"Gây 50 ST đi về"},{"level_req":8,"sp_cost":2,"effect_value":75,"mp_cost":20,"cooldown_sec":4.5,"desc":"Gây 75 ST đi về"},{"level_req":12,"sp_cost":2,"effect_value":105,"mp_cost":24,"cooldown_sec":4,"desc":"Gây 105 ST đi về"},{"level_req":17,"sp_cost":3,"effect_value":140,"mp_cost":28,"cooldown_sec":4,"desc":"Gây 140 ST đi về"}]',
+ 'icon_earth_boomerang',NOW()),
+(20,'EARTH_BLINK','Địa Độn Thuật','Dịch chuyển ngắn về phía trước rồi bắn ra đạn DoT, gây sát thương liên tục khi chạm (Skill 3 hệ Thổ)','Earth',5,4,
+ '[{"level_req":4,"sp_cost":1,"effect_value":5,"mp_cost":20,"cooldown_sec":7,"desc":"DoT 5 ST/tick × 5 tick"},{"level_req":6,"sp_cost":1,"effect_value":8,"mp_cost":24,"cooldown_sec":7,"desc":"DoT 8 ST/tick × 5 tick"},{"level_req":10,"sp_cost":2,"effect_value":12,"mp_cost":28,"cooldown_sec":6,"desc":"DoT 12 ST/tick × 6 tick"},{"level_req":14,"sp_cost":2,"effect_value":17,"mp_cost":32,"cooldown_sec":6,"desc":"DoT 17 ST/tick × 6 tick"},{"level_req":19,"sp_cost":3,"effect_value":24,"mp_cost":36,"cooldown_sec":5,"desc":"DoT 24 ST/tick × 7 tick"}]',
+ 'icon_earth_blink',NOW());
 
 -- ============================================================
 -- TABLE: map_config

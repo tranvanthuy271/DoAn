@@ -14,17 +14,13 @@ public class NetworkPlayerSpawner : MonoBehaviour
     [Header("Default Player Prefab (Fallback)")]
     [SerializeField] private GameObject networkPlayerPrefab;
 
-    [Header("Element Prefabs (Based on element_type + gender)")]
-    [SerializeField] private GameObject fireMalePrefab;
-    [SerializeField] private GameObject fireFemalePrefab;
-    [SerializeField] private GameObject waterMalePrefab;
-    [SerializeField] private GameObject waterFemalePrefab;
-    [SerializeField] private GameObject earthMalePrefab;
-    [SerializeField] private GameObject earthFemalePrefab;
-    [SerializeField] private GameObject woodMalePrefab;
-    [SerializeField] private GameObject woodFemalePrefab;
-    [SerializeField] private GameObject metalMalePrefab;
-    [SerializeField] private GameObject metalFemalePrefab;
+    [Header("Element Prefabs (index theo hệ: 0=Kim, 1=Mộc, 2=Thủy, 3=Hỏa, 4=Thổ, 5=Phong)")]
+    [SerializeField] private GameObject metalPrefab;   // 0 Kim
+    [SerializeField] private GameObject woodPrefab;    // 1 Mộc
+    [SerializeField] private GameObject waterPrefab;   // 2 Thủy
+    [SerializeField] private GameObject firePrefab;    // 3 Hỏa
+    [SerializeField] private GameObject earthPrefab;   // 4 Thổ
+    [SerializeField] private GameObject windPrefab;    // 5 Phong
 
     [Header("Spawn Points")]
     [SerializeField] private Transform[] spawnPoints;
@@ -467,73 +463,23 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
 
         string elementType = playerData.element_type ?? "Fire";
-        string gender = playerData.gender ?? "Male";
 
-        // Debug.Log($"[NetworkPlayerSpawner] Client {clientId} - Element: {elementType}, Gender: {gender}, Character: {playerData.character_name ?? "Unknown"}");
-
-        // Chọn prefab dựa trên element_type + gender
-        GameObject selectedPrefab = null;
-        string prefabKey = $"{elementType}_{gender}";
-        
-        // Debug.Log($"[NetworkPlayerSpawner] Looking for prefab with key: '{prefabKey}'");
-
-        switch (prefabKey)
+        // Chọn prefab theo element_type (giới tính đã gắn liền với hệ)
+        GameObject selectedPrefab = elementType switch
         {
-            case "Fire_Male":
-                selectedPrefab = fireMalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Fire_Male prefab: {(fireMalePrefab != null ? fireMalePrefab.name : "NULL")}");
-                break;
-            case "Fire_Female":
-                selectedPrefab = fireFemalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Fire_Female prefab: {(fireFemalePrefab != null ? fireFemalePrefab.name : "NULL")}");
-                break;
-            case "Water_Male":
-                selectedPrefab = waterMalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Water_Male prefab: {(waterMalePrefab != null ? waterMalePrefab.name : "NULL")}");
-                break;
-            case "Water_Female":
-                selectedPrefab = waterFemalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Water_Female prefab: {(waterFemalePrefab != null ? waterFemalePrefab.name : "NULL")}");
-                break;
-            case "Earth_Male":
-                selectedPrefab = earthMalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Earth_Male prefab: {(earthMalePrefab != null ? earthMalePrefab.name : "NULL")}");
-                break;
-            case "Earth_Female":
-                selectedPrefab = earthFemalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Earth_Female prefab: {(earthFemalePrefab != null ? earthFemalePrefab.name : "NULL")}");
-                break;
-            case "Wood_Male":
-                selectedPrefab = woodMalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Wood_Male prefab: {(woodMalePrefab != null ? woodMalePrefab.name : "NULL")}");
-                break;
-            case "Wood_Female":
-                selectedPrefab = woodFemalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Wood_Female prefab: {(woodFemalePrefab != null ? woodFemalePrefab.name : "NULL")}");
-                break;
-            case "Metal_Male":
-                selectedPrefab = metalMalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Metal_Male prefab: {(metalMalePrefab != null ? metalMalePrefab.name : "NULL")}");
-                break;
-            case "Metal_Female":
-                selectedPrefab = metalFemalePrefab;
-                // Debug.Log($"[NetworkPlayerSpawner] Selected Metal_Female prefab: {(metalFemalePrefab != null ? metalFemalePrefab.name : "NULL")}");
-                break;
-            default:
-                // Debug.LogWarning($"[NetworkPlayerSpawner] ⚠️ Unknown element/gender combination: '{prefabKey}'. Using default prefab.");
-                selectedPrefab = networkPlayerPrefab;
-                break;
-        }
+            "Metal" => metalPrefab,
+            "Wood"  => woodPrefab,
+            "Water" => waterPrefab,
+            "Fire"  => firePrefab,
+            "Earth" => earthPrefab,
+            "Wind"  => windPrefab,
+            _       => networkPlayerPrefab
+        };
 
         if (selectedPrefab == null)
         {
-            // Debug.LogError($"[NetworkPlayerSpawner] ❌ Prefab for '{prefabKey}' is NULL in Inspector! Using default prefab '{networkPlayerPrefab?.name ?? "NULL"}'.");
-            // Debug.LogError($"[NetworkPlayerSpawner] ❌ Please check NetworkPlayerSpawner in Inspector and assign the '{prefabKey}' prefab!");
+            // Debug.LogError($"[NetworkPlayerSpawner] Prefab hệ '{elementType}' chưa được gán trong Inspector! Dùng default prefab.");
             selectedPrefab = networkPlayerPrefab;
-        }
-        else
-        {
-            // Debug.Log($"[NetworkPlayerSpawner] ✓ Successfully selected prefab: '{selectedPrefab.name}' for key '{prefabKey}'");
         }
 
         return selectedPrefab;
@@ -545,30 +491,15 @@ public class NetworkPlayerSpawner : MonoBehaviour
     public System.Collections.Generic.List<GameObject> GetAllPlayerPrefabs()
     {
         var prefabs = new System.Collections.Generic.List<GameObject>();
-        
-        if (networkPlayerPrefab != null)
-            prefabs.Add(networkPlayerPrefab);
-        if (fireMalePrefab != null)
-            prefabs.Add(fireMalePrefab);
-        if (fireFemalePrefab != null)
-            prefabs.Add(fireFemalePrefab);
-        if (waterMalePrefab != null)
-            prefabs.Add(waterMalePrefab);
-        if (waterFemalePrefab != null)
-            prefabs.Add(waterFemalePrefab);
-        if (earthMalePrefab != null)
-            prefabs.Add(earthMalePrefab);
-        if (earthFemalePrefab != null)
-            prefabs.Add(earthFemalePrefab);
-        if (woodMalePrefab != null)
-            prefabs.Add(woodMalePrefab);
-        if (woodFemalePrefab != null)
-            prefabs.Add(woodFemalePrefab);
-        if (metalMalePrefab != null)
-            prefabs.Add(metalMalePrefab);
-        if (metalFemalePrefab != null)
-            prefabs.Add(metalFemalePrefab);
-        
+
+        if (networkPlayerPrefab != null) prefabs.Add(networkPlayerPrefab);
+        if (metalPrefab  != null) prefabs.Add(metalPrefab);
+        if (woodPrefab   != null) prefabs.Add(woodPrefab);
+        if (waterPrefab  != null) prefabs.Add(waterPrefab);
+        if (firePrefab   != null) prefabs.Add(firePrefab);
+        if (earthPrefab  != null) prefabs.Add(earthPrefab);
+        if (windPrefab   != null) prefabs.Add(windPrefab);
+
         return prefabs;
     }
 }

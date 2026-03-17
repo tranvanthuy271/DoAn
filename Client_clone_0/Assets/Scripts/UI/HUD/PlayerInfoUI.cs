@@ -156,7 +156,8 @@ public class PlayerInfoUI : MonoBehaviour
     {
         if (elementText != null)
         {
-            elementText.text = newValue.ToString();
+            // Tự động convert English key (từ server) → Tên Tiếng Việt
+            elementText.text = ElementHelper.ToVietnamese(newValue.ToString());
         }
     }
 

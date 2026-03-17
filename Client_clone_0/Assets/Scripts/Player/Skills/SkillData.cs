@@ -1,5 +1,21 @@
 using UnityEngine;
 
+/// <summary>Loại skill — dùng để phân biệt cách kích hoạt trong PlayerSkillManager.</summary>
+public enum SkillType
+{
+    Projectile,    // Bắn đạn theo hướng player
+    Teleport,      // Dịch chuyển tức thời (delegate sang TeleportSkill)
+    Melee,         // Cận chiến: chỉ trigger animation tại vị trí player, không spawn projectile
+    WindStep,      // Ẩn thân + animation + dash (delegate sang WindStepSkill)
+    MetalShield,   // Khiên bất tử: miễn nhiễm mọi sát thương + xóa projectile chạm vào (delegate sang MetalShieldSkill)
+    WaterPillar,   // Cây thánh từ trên rơi xuống: spawn projectile rơi từ trên không (delegate sang WaterPillarSkill)
+    WaterArmorBuff, // Buff giáp thủy: tăng giáp tạm thời cho bản thân và đồng đội xung quanh (delegate sang WaterArmorBuffSkill)
+    FireRain,       // Thiên Hỏa: mưa lửa từ trên trời rơi xuống (delegate sang FireRainSkill)
+    EarthAura,      // Địa Uy Khí: buff tấn công cho bản thân và đồng đội xung quanh (delegate sang EarthAttackBuffSkill)
+    EarthBoomerang, // Địa Phong Đao: bắn đạn boomerang quay về (delegate sang EarthBoomerangSkill)
+    EarthBlinkStrike // Địa Độn Thuật: dịch chuyển + DoT projectile (delegate sang EarthBlinkStrikeSkill)
+}
+
 /// <summary>
 /// Class chứa thông tin của một skill projectile
 /// Mỗi skill có thể có projectile prefab, key, cooldown, animation riêng
@@ -10,11 +26,17 @@ public class SkillData
     [Header("Skill Info")]
     [Tooltip("Tên skill (để dễ quản lý)")]
     public string skillName = "New Skill";
+
+    [Tooltip("Mã skill khớp với skill_code trong DB (VD: WIND_STRIKE). Dùng để load thống kê từ server.")]
+    public string skillCode = "";
+
+    [Tooltip("Loại skill: Projectile (bắn đạn) hay Teleport (dịch chuyển)")]
+    public SkillType skillType = SkillType.Projectile;
     
     [Tooltip("Phím để kích hoạt skill")]
     public KeyCode activationKey = KeyCode.K;
     
-    [Tooltip("Cooldown giữa các lần sử dụng skill (seconds)")]
+    [Tooltip("Cooldown giữa các lần sử dụng skill (seconds) — sẽ bị ghi đè bởi DB khi StartHost")]
     public float cooldown = 2f;
     
     [Header("Projectile Settings")]
@@ -39,9 +61,19 @@ public class SkillData
     
     [Tooltip("Prefab SkillEffect để gắn vào projectile (nếu muốn animation di chuyển theo projectile). Để trống nếu không cần")]
     public GameObject projectileSkillEffectPrefab;
+
+    [Tooltip("Bật nếu sprite gốc của projectile đang quay sang trái. Hệ thống sẽ flip lại theo hướng player khi bắn.")]
+    public bool projectileSpriteFacesLeft = false;
     
     [Tooltip("Nếu true, sẽ không trigger animation trên SkillEffect của player")]
     public bool disablePlayerSkillEffectAnimation = false;
+
+    [Header("Runtime Stats (load từ DB — không chỉnh tay)")]
+    [Tooltip("Sát thương / hiệu ứng tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]
+    public float currentEffectValue = 0f;
+
+    [Tooltip("MP tiêu tốn khi dùng skill tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]
+    public int currentMpCost = 0;
     
     [Header("Internal State (Không chỉnh sửa)")]
     [SerializeField] private float cooldownTimer = 0f;

@@ -25,8 +25,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     private bool isGrounded;
 
-    [Header("Flight System")]
-    private bool isFlying;
+    [Header("Jump State")]
+    private bool isFlying;       // chỉ true trong god mode
+    private bool shouldJump;    // được set ở Update, consume ở FixedUpdate
+
+    [Header("Flight System (God Mode only)")]
     private float flightTime;
     private bool canFly = true;
     private float flightCooldown = 0f;
@@ -48,18 +51,43 @@ public class PlayerMovement : MonoBehaviour
             groundCheckObj.transform.localPosition = new Vector3(0, -0.5f, 0);
             groundCheck = groundCheckObj.transform;
         }
+
+        // Nếu groundLayer chưa được gán trong Inspector (= 0 / Nothing),
+        // tự động gán vào layer "Ground" nếu tồn tại
+        if (groundLayer.value == 0)
+        {
+            int layerId = LayerMask.NameToLayer("Ground");
+            if (layerId >= 0)
+            {
+                groundLayer = LayerMask.GetMask("Ground");
+                Debug.Log("[PlayerMovement] groundLayer tự động gán vào layer 'Ground'");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerMovement] groundLayer chưa được gán và không tìm thấy layer 'Ground'. " +
+                    "Hãy tạo layer 'Ground', gán cho Tilemap/Ground objects, " +
+                    "rồi chọn nó trong PlayerMovement → Ground Layer.");
+            }
+        }
+    }
+
+    /// <summary>Thực hiện ground check và trả về kết quả.</summary>
+    private bool DoGroundCheck()
+    {
+        if (groundCheck == null) return false;
+        return Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
     public void HandleInput()
     {
+        // Ground check chạy cho TẤT CẢ players (cần thiết cho animation remote client)
+        isGrounded = DoGroundCheck();
+
         // Chỉ xử lý input nếu là owner hoặc không có network
-        // QUAN TRỌNG: Chỉ check IsOwner, không check IsClient (vì có thể gây lỗi timing)
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
             return; // Remote player không xử lý input
         }
-
-        // ===== ĐỌC INPUT (CHỈ ĐỌC, KHÔNG QUYẾT ĐỊNH LOGIC) =====
         horizontalInput = Input.GetAxisRaw("Horizontal");
         hasHorizontalInput = Mathf.Abs(horizontalInput) > 0.1f;
 
@@ -71,14 +99,19 @@ public class PlayerMovement : MonoBehaviour
         // Any movement input
         hasAnyInput = hasHorizontalInput || hasVerticalInput;
 
-        // Jump/Fly input (cho jump từ mặt đất)
+        // Jump input (chỉ ghi nhận KeyDown, không phải hold)
         jumpPressed = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W);
         jumpHeld = up;
 
-        // Check if grounded
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        // isGrounded đã được update ở đầu HandleInput() rồi, không cần check lại
 
-        // Reset flight when grounded
+        // Cho phép nhảy nếu đang ở dưới đất và nhLetấn jump
+        if (jumpPressed && isGrounded)
+        {
+            shouldJump = true;
+        }
+
+        // God mode: reset flight khi chạm đất
         if (isGrounded)
         {
             isFlying = false;
@@ -87,14 +120,11 @@ public class PlayerMovement : MonoBehaviour
             flightCooldown = 0f;
         }
 
-        // Update flight cooldown
+        // Cập nhật flight cooldown (god mode)
         if (!canFly && !controller.unlimitedFlight)
         {
             flightCooldown -= Time.deltaTime;
-            if (flightCooldown <= 0f)
-            {
-                canFly = true;
-            }
+            if (flightCooldown <= 0f) canFly = true;
         }
     }
 
@@ -110,35 +140,25 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
         
-        // Nếu không có network (standalone), xử lý movement local như bình thường
+        // Nếu không có network (standalone), xử lý movement local
 
         PlayerStats stats = controller.stats;
         if (stats == null) return;
 
-        // ===== THỨ TỰ XỬ LÝ (QUAN TRỌNG) =====
-        // 1. Horizontal movement (A/D) - Chỉ owner mới set velocity
+        // 1. Horizontal movement (A/D) – luôn hoạt động kể cả khi trên không
         float targetVelocityX = horizontalInput * stats.moveSpeed;
         rb.velocity = new Vector2(targetVelocityX, rb.velocity.y);
 
-        // Flip sprite based on direction
-        if (horizontalInput > 0)
-        {
-            transform.localScale = new Vector3(1, 1, 1);
-        }
-        else if (horizontalInput < 0)
-        {
-            transform.localScale = new Vector3(-1, 1, 1);
-        }
+        if (horizontalInput > 0)       transform.localScale = new Vector3(1, 1, 1);
+        else if (horizontalInput < 0)  transform.localScale = new Vector3(-1, 1, 1);
 
-        // 2. Vertical movement (W/S) - Xử lý bay lên/xuống
-        // Dùng biến đã đọc từ HandleInput() thay vì đọc Input trực tiếp
-        bool up = jumpHeld; // jumpHeld đã được set trong HandleInput()
-        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow); // Vẫn cần đọc vì không có biến lưu
-        
+        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+
+        // 2. Vertical / jump
         if (controller.godMode)
         {
-            // God mode - full control
-            if (up)
+            // God mode: bay tự do với W/S
+            if (jumpHeld)
             {
                 rb.velocity = new Vector2(rb.velocity.x, stats.flySpeed);
                 isFlying = true;
@@ -153,83 +173,19 @@ public class PlayerMovement : MonoBehaviour
                 rb.velocity = new Vector2(rb.velocity.x, 0);
                 isFlying = false;
             }
-        }
-        else
-        {
-            // Normal mode
-            if (up && (canFly || controller.unlimitedFlight))
-            {
-                // Nhấn W → Bay lên ngay (ở mặt đất hoặc trên không đều được)
-                rb.velocity = new Vector2(rb.velocity.x, stats.flySpeed);
-                isFlying = true;
-
-                // Update flight time
-                if (!controller.unlimitedFlight)
-                {
-                    flightTime += Time.deltaTime;
-                    if (flightTime >= stats.maxFlightTime)
-                    {
-                        canFly = false;
-                        flightCooldown = stats.flightCooldown;
-                        isFlying = false;
-                    }
-                }
-            }
-            else if (down)
-            {
-                // Nhấn S → Bay xuống
-                rb.velocity = new Vector2(rb.velocity.x, -stats.flySpeed);
-                isFlying = false;
-            }
-            else if (hasHorizontalInput && !isGrounded)
-            {
-                // Nhấn A/D trên không (không nhấn W/S) → Treo trên không
-                // QUAN TRỌNG: Nếu đang bay lên (velocity.y > 0), GIỮ NGUYÊN để tiếp tục bay
-                // Nếu đang rơi (velocity.y < 0), set về 0 để treo
-                if (rb.velocity.y > 0)
-                {
-                    // Đang bay lên → Giữ nguyên velocity.y để tiếp tục bay
-                    // KHÔNG set về 0
-                }
-                else
-                {
-                    // Đang rơi hoặc đứng yên → Set về 0 để treo trên không
-                    rb.velocity = new Vector2(rb.velocity.x, 0);
-                }
-                isFlying = false;
-            }
-            // Nếu không nhấn gì → Để gravity tự xử lý (sẽ set ở bước 4)
-        }
-
-        // 4. GRAVITY DECISION (QUYẾT ĐỊNH DUY NHẤT - Ở CUỐI CÙNG)
-        // Gravity phụ thuộc DUY NHẤT vào INPUT, không phụ thuộc velocity hay state
-        if (controller.godMode)
-        {
             rb.gravityScale = 0;
         }
         else
         {
-            if (isGrounded)
+            // Normal mode: nhảy impulse, trọng lực luôn tác động khi trên không
+            if (shouldJump)
             {
-                // Ở mặt đất → Bình thường
-                rb.gravityScale = stats.gravity;
+                rb.AddForce(Vector2.up * stats.jumpForce, ForceMode2D.Impulse);
+                shouldJump = false;
             }
-            else
-            {
-                // Ở trên không
-                // NGUYÊN TẮC: Có bất kỳ input nào (A/D/W/S) → gravity = 0
-                //              Không có input → gravity = stats.gravity
-                if (hasAnyInput)
-                {
-                    // Có input → Treo trên không (không rơi)
-                    rb.gravityScale = 0;
-                }
-                else
-                {
-                    // Không có input → Rơi xuống
-                    rb.gravityScale = stats.gravity;
-                }
-            }
+            isFlying = false;
+            // Trọng lực luôn bật – không treo lơ lừng khi nhấn A/D trên không
+            rb.gravityScale = stats.gravity;
         }
 
         // Update animator
@@ -239,6 +195,14 @@ public class PlayerMovement : MonoBehaviour
         {
             playerAnimator.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, isFlying);
         }
+    }
+
+    /// <summary>
+    /// Refresh ground check ngay lập tức (dùng cho server-side check trong NetworkPlayerController)
+    /// </summary>
+    public void RefreshGroundCheck()
+    {
+        isGrounded = DoGroundCheck();
     }
 
     public bool IsGrounded() => isGrounded;

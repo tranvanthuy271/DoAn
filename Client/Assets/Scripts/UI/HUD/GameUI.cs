@@ -8,6 +8,10 @@ public class GameUI : MonoBehaviour
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private GameObject hudPanel;
 
+    [Header("Skill Hotbar")]
+    [Tooltip("Panel chứa SkillHotbarUI — nhấn T để hiện/ẩn")]
+    [SerializeField] private GameObject skillHotbarPanel;
+
     [Header("HUD Elements")]
     [SerializeField] private Text debugText;
     [SerializeField] private Text modStatusText;
@@ -32,6 +36,16 @@ public class GameUI : MonoBehaviour
         UpdateDebugInfo();
         UpdateModStatus();
         UpdatePanels();
+        HandleHotbarToggle();
+    }
+
+    private void HandleHotbarToggle()
+    {
+        if (skillHotbarPanel == null) return;
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            skillHotbarPanel.SetActive(!skillHotbarPanel.activeSelf);
+        }
     }
 
     private void UpdateDebugInfo()

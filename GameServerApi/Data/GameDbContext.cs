@@ -22,6 +22,8 @@ namespace GameServerApi.Data
         public DbSet<GeneTierStatConfig>      GeneTierStatConfigs      => Set<GeneTierStatConfig>();
         public DbSet<DungeonConfig>           DungeonConfigs           => Set<DungeonConfig>();
         public DbSet<DungeonSession>          DungeonSessions          => Set<DungeonSession>();
+        public DbSet<GeneMultiConfig>         GeneMultiConfigs         => Set<GeneMultiConfig>();
+        public DbSet<GeneHybridConfig>        GeneHybridConfigs        => Set<GeneHybridConfig>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -253,6 +255,45 @@ namespace GameServerApi.Data
                     .WithMany()
                     .HasForeignKey(s => s.DungeonConfigId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<GeneMultiConfig>(entity =>
+            {
+                entity.ToTable("gene_multi_config");
+                entity.HasKey(e => new { e.TierFrom, e.ElementType });
+
+                entity.Property(e => e.TierFrom).HasColumnName("tier_from");
+                entity.Property(e => e.ElementType).HasColumnName("element_type").HasMaxLength(10);
+                entity.Property(e => e.GeneExpRequired).HasColumnName("gene_exp_required");
+                entity.Property(e => e.GoldCost).HasColumnName("silver_cost");
+                entity.Property(e => e.ItemId).HasColumnName("stone_id");
+                entity.Property(e => e.ItemsNeeded).HasColumnName("stone_needed");
+                entity.Property(e => e.ItemsMin).HasColumnName("stone_min");
+                entity.Property(e => e.BaseSuccessRate).HasColumnName("base_success_rate");
+            });
+
+            modelBuilder.Entity<GeneHybridConfig>(entity =>
+            {
+                entity.ToTable("gene_hybrid_config");
+                entity.HasKey(e => e.HybridId);
+
+                entity.Property(e => e.HybridId).HasColumnName("hybrid_id").ValueGeneratedOnAdd();
+                entity.Property(e => e.ElementA).HasColumnName("element_a").HasMaxLength(10);
+                entity.Property(e => e.ElementB).HasColumnName("element_b").HasMaxLength(10);
+                entity.Property(e => e.HybridName).HasColumnName("hybrid_name").HasMaxLength(100);
+                entity.Property(e => e.HybridDescription).HasColumnName("hybrid_description").HasMaxLength(500);
+                entity.Property(e => e.BonusTargetElements).HasColumnName("bonus_target_elements").HasMaxLength(100);
+                entity.Property(e => e.ImmuneElements).HasColumnName("immune_elements").HasMaxLength(100);
+                entity.Property(e => e.FusionGoldCost).HasColumnName("fusion_silver_cost");
+                entity.Property(e => e.FusionItemId).HasColumnName("fusion_item_id");
+                entity.Property(e => e.FusionItemCount).HasColumnName("fusion_item_count");
+                entity.Property(e => e.AtkBonusPercent).HasColumnName("atk_bonus_percent");
+                entity.Property(e => e.StatBonusHp).HasColumnName("stat_bonus_hp");
+                entity.Property(e => e.StatBonusMp).HasColumnName("stat_bonus_mp");
+                entity.Property(e => e.StatBonusAtk).HasColumnName("stat_bonus_atk");
+                entity.Property(e => e.StatBonusDef).HasColumnName("stat_bonus_def");
+
+                entity.HasIndex(e => new { e.ElementA, e.ElementB }).IsUnique();
             });
         }
     }

@@ -23,7 +23,8 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// POST /api/player/create
-        /// Body: { "element_type": "Fire", "gender": "Male" }
+        /// Body: { "element_type": "Fire", "character_name": "TenNhanVat" }
+        /// Gender được tự động suy ra từ element_type.
         /// </summary>
         [HttpPost("create")]
         public async Task<IActionResult> CreatePlayer([FromBody] JsonElement body)
@@ -34,31 +35,31 @@ namespace GameServerApi.Controllers
             }
 
             var elementType = elementProp.GetString() ?? "Fire";
-            
-            // Lấy gender, mặc định là "Male"
-            string gender = "Male";
-            if (body.TryGetProperty("gender", out var genderProp))
+
+            // Validate element_type hợp lệ
+            var validElements = new[] { "Metal", "Wood", "Water", "Fire", "Earth", "Wind" };
+            if (!System.Array.Exists(validElements, e => e == elementType))
             {
-                gender = genderProp.GetString() ?? "Male";
+                return BadRequest($"element_type không hợp lệ. Giá trị hợp lệ: {string.Join(", ", validElements)}");
             }
-            
+
+            // Tự động suy ra gender từ element_type (không cần client gửi lên)
+            string gender = elementType switch
+            {
+                "Metal" => "Male",
+                "Wood"  => "Female",
+                "Water" => "Female",
+                "Fire"  => "Male",
+                "Earth" => "Male",
+                "Wind"  => "Female",
+                _       => "Male"
+            };
+
             // Lấy character_name
             string characterName = "";
             if (body.TryGetProperty("character_name", out var nameProp))
             {
                 characterName = nameProp.GetString() ?? "";
-            }
-            
-            // Validate gender
-            if (gender != "Male" && gender != "Female")
-            {
-                return BadRequest("gender phải là 'Male' hoặc 'Female'.");
-            }
-            
-            // Validate: Earth chỉ có nam
-            if (elementType == "Earth" && gender != "Male")
-            {
-                return BadRequest("Hệ Earth chỉ có thể chọn giới tính Nam.");
             }
             
             // Validate character_name
@@ -1127,22 +1128,40 @@ namespace GameServerApi.Controllers
                 string nextDesc = "";
                 bool canUpgrade = false;
 
-                if (curLevel < t.MaxLevel && !string.IsNullOrEmpty(t.LevelsJson))
+                // Current-level runtime stats (cooldown, damage, mp) — client dùng để apply vào SkillData
+                float currentCooldownSec = 3f;
+                float currentEffectValue = 0f;
+                int   currentMpCost      = 0;
+
+                if (!string.IsNullOrEmpty(t.LevelsJson))
                 {
                     try
                     {
                         var levels = JsonSerializer.Deserialize<List<JsonElement>>(t.LevelsJson);
-                        if (levels != null && curLevel < levels.Count)
+                        if (levels != null)
                         {
-                            var nextData = levels[curLevel];
-                            if (nextData.TryGetProperty("level_req",    out var lr)) nextLevelPlayerReq = lr.GetInt32();
-                            if (nextData.TryGetProperty("sp_cost",      out var sc)) nextSpCost         = sc.GetInt32();
-                            if (nextData.TryGetProperty("effect_value", out var ev)) nextEffectValue    = (float)ev.GetDouble();
-                            if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
-                            // canUpgrade: đủ player level + đủ SP + đủ gene_tier
-                            canUpgrade = info.Level >= nextLevelPlayerReq
-                                      && info.SkillPoints >= nextSpCost
-                                      && info.GeneTier >= t.GeneTierRequired;
+                            // Lấy stats của level hiện tại (index = curLevel-1, min index 0)
+                            int curIdx = curLevel > 0 ? curLevel - 1 : 0;
+                            if (curIdx < levels.Count)
+                            {
+                                var cur = levels[curIdx];
+                                if (cur.TryGetProperty("cooldown_sec",  out var cs)) currentCooldownSec = (float)cs.GetDouble();
+                                if (cur.TryGetProperty("effect_value",  out var cv)) currentEffectValue = (float)cv.GetDouble();
+                                if (cur.TryGetProperty("mp_cost",       out var cm)) currentMpCost      = cm.GetInt32();
+                            }
+
+                            // Lấy stats của level tiếp theo (để nâng cấp)
+                            if (curLevel < t.MaxLevel && curLevel < levels.Count)
+                            {
+                                var nextData = levels[curLevel];
+                                if (nextData.TryGetProperty("level_req",    out var lr)) nextLevelPlayerReq = lr.GetInt32();
+                                if (nextData.TryGetProperty("sp_cost",      out var sc)) nextSpCost         = sc.GetInt32();
+                                if (nextData.TryGetProperty("effect_value", out var ev)) nextEffectValue    = (float)ev.GetDouble();
+                                if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
+                                canUpgrade = info.Level >= nextLevelPlayerReq
+                                          && info.SkillPoints >= nextSpCost
+                                          && info.GeneTier >= t.GeneTierRequired;
+                            }
                         }
                     }
                     catch { }
@@ -1159,6 +1178,10 @@ namespace GameServerApi.Controllers
                     level_to_unlock       = t.LevelToUnlock,
                     gene_tier_required    = t.GeneTierRequired,
                     current_level         = curLevel,
+                    // Runtime stats cho client apply vào SkillData
+                    current_cooldown_sec  = currentCooldownSec,
+                    current_effect_value  = currentEffectValue,
+                    current_mp_cost       = currentMpCost,
                     can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
                     next_level_player_req = nextLevelPlayerReq,
                     next_level_sp_cost    = nextSpCost,

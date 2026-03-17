@@ -45,11 +45,16 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        // Chỉ owner mới xử lý input
-        // QUAN TRỌNG: Chỉ check IsOwner, không check IsClient (vì có thể gây lỗi timing)
+        // HandleInput chạy cho TẤT CẢ players (ground check cần thiết cho animation)
+        if (movement != null)
+        {
+            movement.HandleInput();
+        }
+
+        // Chỉ owner mới xử lý input / toggle
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
-            return; // Remote player không xử lý input
+            return;
         }
 
         // Toggle God Mode with G key
@@ -62,11 +67,6 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F))
         {
             ToggleUnlimitedFlight();
-        }
-
-        if (movement != null)
-        {
-            movement.HandleInput();
         }
     }
 

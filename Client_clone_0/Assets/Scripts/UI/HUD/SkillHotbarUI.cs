@@ -24,6 +24,7 @@ public class SkillHotbarUI : MonoBehaviour
     [Header("Slots")]
     [Tooltip("Danh sách SkillSlotUI — phải đúng thứ tự với skills trong PlayerSkillManager")]
     public List<SkillSlotUI> slots = new List<SkillSlotUI>();
+    
 
     [Header("Icons (Tuỳ chọn)")]
     [Tooltip("Sprite icon cho từng skill (cùng thứ tự với danh sách). Để null nếu không có icon.")]
@@ -76,11 +77,12 @@ public class SkillHotbarUI : MonoBehaviour
 
     private void TryFindAndBind()
     {
-        // Tìm tất cả PlayerSkillManager trong scene, lấy cái là owner (IsOwner)
         PlayerSkillManager[] all = FindObjectsByType<PlayerSkillManager>(FindObjectsSortMode.None);
+        Debug.Log($"[SkillHotbarUI] TryFindAndBind — tìm thấy {all.Length} PlayerSkillManager trong scene.");
+
         foreach (var mgr in all)
         {
-            // Kiểm tra ownership cho Netcode for GameObjects
+            Debug.Log($"[SkillHotbarUI]   • '{mgr.name}' IsSpawned={mgr.IsSpawned} IsOwner={mgr.IsOwner} skillCount={mgr.GetSkillCount()}");
             if (mgr.IsOwner)
             {
                 BindToManager(mgr);
@@ -91,7 +93,16 @@ public class SkillHotbarUI : MonoBehaviour
         // Fallback: nếu chỉ có 1 instance (single-player / host)
         if (all.Length == 1)
         {
+            Debug.Log($"[SkillHotbarUI] Fallback bind vào instance duy nhất '{all[0].name}'.");
             BindToManager(all[0]);
+        }
+        else if (all.Length == 0)
+        {
+            Debug.LogWarning("[SkillHotbarUI] Chưa tìm thấy PlayerSkillManager nào — sẽ thử lại.");
+        }
+        else
+        {
+            Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng không cái nào IsOwner — sẽ thử lại.");
         }
     }
 
@@ -101,25 +112,39 @@ public class SkillHotbarUI : MonoBehaviour
         isBound = true;
 
         int skillCount = manager.GetSkillCount();
+        Debug.Log($"[SkillHotbarUI] BindToManager '{manager.name}' — skillCount={skillCount}, slots={slots.Count}, gameObject.activeSelf={gameObject.activeSelf}");
 
         for (int i = 0; i < slots.Count; i++)
         {
             SkillSlotUI slot = slots[i];
-            if (slot == null) continue;
+            if (slot == null)
+            {
+                Debug.LogWarning($"[SkillHotbarUI]   Slot[{i}] bị NULL trong danh sách!");
+                continue;
+            }
 
             if (i < skillCount)
             {
                 SkillData skillData = manager.GetSkill(i);
                 Sprite icon = (i < skillIcons.Count) ? skillIcons[i] : null;
-                slot.Bind(skillData, manager, i, icon);
+                // Dùng == null để tránh UnassignedReferenceException với Unity Object
+                string iconName = (icon != null && icon) ? icon.name : "null";
+                Debug.Log($"[SkillHotbarUI]   Slot[{i}] ← skill '{skillData?.skillName}' key={skillData?.activationKey} icon={iconName}");
+                slot.Bind(skillData, manager, i, icon != null && icon ? icon : null);
             }
             else
             {
-                // Skill chưa có → làm trống slot
+                Debug.Log($"[SkillHotbarUI]   Slot[{i}] không có skill tương ứng → Unbind.");
                 slot.Unbind();
             }
         }
 
-        Debug.Log($"[SkillHotbarUI] Đã bind {Mathf.Min(skillCount, slots.Count)} slot(s) vào '{manager.name}'.");
+        Debug.Log($"[SkillHotbarUI] Hoàn tất bind {Mathf.Min(skillCount, slots.Count)} slot(s). GameObject active={gameObject.activeSelf}");
+
+        // Nếu panel đang ẩn, log cảnh báo rõ ràng
+        if (!gameObject.activeSelf)
+        {
+            Debug.LogWarning("[SkillHotbarUI] CẢNH BÁO: SkillHotbar đang bị SetActive(false) sau khi bind xong! Nhấn T để hiện.");
+        }
     }
 }

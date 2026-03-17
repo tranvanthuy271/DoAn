@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// DungeonButtonItem — Component gắn lên mỗi nút phó bản trong DungeonListUI.
@@ -17,11 +18,11 @@ public class DungeonButtonItem : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Button      button;
-    [SerializeField] private Text        nameText;
-    [SerializeField] private Text        typeBadgeText;
-    [SerializeField] private Text        levelText;
-    [SerializeField] private Text        descText;
-    [SerializeField] private Text        slotText;
+    [SerializeField] private TMPro.TextMeshProUGUI        nameText;
+    [SerializeField] private TMPro.TextMeshProUGUI        typeBadgeText;
+    [SerializeField] private TMPro.TextMeshProUGUI        levelText;
+    [SerializeField] private TMPro.TextMeshProUGUI        descText;
+    [SerializeField] private TMPro.TextMeshProUGUI        slotText;
     [SerializeField] private GameObject  lockOverlay;   // Hiện khi bị khoá (chưa đủ level)
     [SerializeField] private Image       typeBadgeBg;   // Background badge để tô màu
 

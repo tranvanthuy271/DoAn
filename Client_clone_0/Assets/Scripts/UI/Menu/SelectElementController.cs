@@ -7,17 +7,16 @@ using TMPro;
 public class CharacterButtonData
 {
     public Button button;
-    public string elementType;
-    public string gender;
-    public Sprite previewSprite; // Sprite để hiển thị preview (thay vì prefab)
+    /// <summary>0=Kim, 1=Mộc, 2=Thủy, 3=Hỏa, 4=Thổ, 5=Phong — giới tính tự động lấy từ ElementHelper</summary>
+    public int elementId;
+    public Sprite previewSprite;
 }
 
 public class SelectElementController : MonoBehaviour
 {
-    [Header("Character Buttons (9 buttons)")]
-    public CharacterButtonData[] characterButtons = new CharacterButtonData[9];
-    // Thứ tự: [0]Metal-Male, [1]Metal-Female, [2]Wood-Male, [3]Wood-Female, 
-    //          [4]Water-Male, [5]Water-Female, [6]Fire-Male, [7]Fire-Female, [8]Earth-Male
+    [Header("Character Buttons (6 hệ, mỗi hệ 1 button – gender config riêng)")]
+    public CharacterButtonData[] characterButtons = new CharacterButtonData[6];
+    // Thứ tự: [0]Kim, [1]Mộc, [2]Thủy, [3]Hỏa, [4]Thổ, [5]Phong
     
     [Header("UI References")]
     public TMP_InputField characterNameInput;
@@ -32,8 +31,7 @@ public class SelectElementController : MonoBehaviour
     
     private APIClient apiClient;
     private int userId;
-    private string selectedElement = "";
-    private string selectedGender = "Male";
+    private int selectedElementId = -1;  // -1 = chưa chọn
     private int selectedButtonIndex = -1;
 
     void Start()
@@ -60,32 +58,29 @@ public class SelectElementController : MonoBehaviour
         
         // Debug.Log($"SelectElementController: User ID = {userId}");
 
-        // Khởi tạo 9 character buttons
+        // Khởi tạo character buttons
         InitializeCharacterButtons();
         
         // Navigation buttons
-        backButton.onClick.AddListener(OnBackButtonClicked);
-        goButton.onClick.AddListener(OnGoButtonClicked);
-        confirmButton.onClick.AddListener(OnConfirmButtonClicked);
+        if (backButton != null) backButton.onClick.AddListener(OnBackButtonClicked);
+        if (goButton != null) goButton.gameObject.SetActive(false); // Ẩn nút GO
+        if (confirmButton != null) confirmButton.onClick.AddListener(OnConfirmButtonClicked);
         
-        // Ban đầu disable go button
-        goButton.interactable = false;
+        UpdateGoButtonState();
         UpdateInstructionText();
     }
     
     private void InitializeCharacterButtons()
     {
-        // Đảm bảo có đủ 9 button
-        if (characterButtons == null || characterButtons.Length != 9)
+        if (characterButtons == null || characterButtons.Length == 0)
         {
-            // Debug.LogError("SelectElementController: Cần đúng 9 character buttons!");
+            Debug.LogError("SelectElementController: Character Buttons array trống!");
             return;
         }
-        
-        // Gán sự kiện cho từng button
+
         for (int i = 0; i < characterButtons.Length; i++)
         {
-            int index = i; // Capture index để dùng trong lambda
+            int index = i;
             if (characterButtons[i].button != null)
             {
                 characterButtons[i].button.onClick.AddListener(() => OnCharacterButtonClicked(index));
@@ -103,8 +98,7 @@ public class SelectElementController : MonoBehaviour
         
         // Cập nhật lựa chọn
         selectedButtonIndex = buttonIndex;
-        selectedElement = characterButtons[buttonIndex].elementType;
-        selectedGender = characterButtons[buttonIndex].gender;
+        selectedElementId = characterButtons[buttonIndex].elementId;
         
         // Highlight button được chọn
         UpdateButtonVisuals();
@@ -176,24 +170,33 @@ public class SelectElementController : MonoBehaviour
     
     private void UpdateGoButtonState()
     {
-        // Enable Go button khi đã có đủ: nhân vật được chọn và tên nhân vật
-        bool canGo = selectedButtonIndex >= 0 && 
-                     !string.IsNullOrEmpty(selectedElement) && 
-                     !string.IsNullOrWhiteSpace(characterNameInput.text) &&
-                     characterNameInput.text.Length >= 3;
-        goButton.interactable = canGo;
+        bool canConfirm = selectedButtonIndex >= 0 && ElementHelper.IsValid(selectedElementId);
+
+        if (characterNameInput != null && characterNameInput.gameObject.activeInHierarchy)
+        {
+            canConfirm &= (!string.IsNullOrWhiteSpace(characterNameInput.text) && characterNameInput.text.Length >= 3);
+        }
+
+        if (confirmButton != null)
+        {
+            confirmButton.interactable = canConfirm;
+        }
     }
 
     private void UpdateInstructionText()
     {
-        if (selectedButtonIndex < 0 || string.IsNullOrEmpty(selectedElement))
+        if (instructionText == null) return;
+
+        if (selectedButtonIndex < 0 || !ElementHelper.IsValid(selectedElementId))
         {
             instructionText.text = "Chọn nhân vật của bạn";
         }
         else
         {
-            string genderText = selectedGender == "Male" ? "Nam" : "Nữ";
-            instructionText.text = $"Đã chọn: {selectedElement} - {genderText}";
+            string elementVN     = ElementHelper.ToVietnamese(selectedElementId);
+            string gender        = ElementHelper.GetGender(selectedElementId);
+            string genderDisplay = gender == "Male" ? "Nam" : "Nữ";
+            instructionText.text = $"Hệ: {elementVN} | Giới tính: {genderDisplay}";
         }
     }
     
@@ -218,35 +221,21 @@ public class SelectElementController : MonoBehaviour
         }
         
         // Validate input
-        if (selectedButtonIndex < 0 || string.IsNullOrEmpty(selectedElement))
+        if (selectedButtonIndex < 0 || !ElementHelper.IsValid(selectedElementId))
         {
-            ShowError("Vui lòng chọn nhân vật trước!");
+            ShowError("Vui lòng chọn hệ trước!");
             return;
         }
         
-        if (string.IsNullOrEmpty(selectedGender))
+        string characterName = PlayerPrefs.GetString("USERNAME", "Player" + UnityEngine.Random.Range(1000, 9999));
+        if (characterNameInput != null && characterNameInput.gameObject.activeInHierarchy)
         {
-            ShowError("Lỗi: Giới tính chưa được chọn!");
-            return;
-        }
-        
-        if (characterNameInput == null)
-        {
-            ShowError("Lỗi: Input field tên nhân vật không tồn tại!");
-            return;
-        }
-        
-        string characterName = characterNameInput.text.Trim();
-        if (string.IsNullOrWhiteSpace(characterName))
-        {
-            ShowError("Vui lòng nhập tên nhân vật!");
-            return;
-        }
-        
-        if (characterName.Length < 3 || characterName.Length > 20)
-        {
-            ShowError("Tên nhân vật phải có từ 3 đến 20 ký tự!");
-            return;
+            characterName = characterNameInput.text.Trim();
+            if (string.IsNullOrWhiteSpace(characterName) || characterName.Length < 3 || characterName.Length > 20)
+            {
+                ShowError("Tên nhân vật phải có từ 3 đến 20 ký tự!");
+                return;
+            }
         }
 
         // Disable all buttons
@@ -255,15 +244,18 @@ public class SelectElementController : MonoBehaviour
         if (goButton != null) goButton.interactable = false;
         if (characterNameInput != null) characterNameInput.interactable = false;
         
-        string genderText = selectedGender == "Male" ? "Nam" : "Nữ";
+        string elementKey = ElementHelper.ToEnglishKey(selectedElementId);
+        string elementVN  = ElementHelper.ToVietnamese(selectedElementId);
+        string gender     = ElementHelper.GetGender(selectedElementId);
+
         if (errorText != null)
         {
-            errorText.text = $"Đang tạo nhân vật {characterName} - {selectedElement} - {genderText}...";
+            errorText.text = $"Đang tạo nhân vật hệ {elementVN}...";
         }
 
         apiClient.CreatePlayer(
-            selectedElement,
-            selectedGender,
+            elementKey,
+            gender,
             characterName,
             onSuccess: (playerData) =>
             {
@@ -297,22 +289,14 @@ public class SelectElementController : MonoBehaviour
                     // Debug.LogError("GameManager.Instance is still null after creation!");
                 }
                 
-                // Enable Go button để người chơi có thể vào game
-                if (goButton != null)
-                {
-                    goButton.interactable = true;
-                    // Debug.Log("Go button enabled!");
-                }
-                else
-                {
-                    // Debug.LogError("Go button is null!");
-                }
-                
                 if (errorText != null)
                 {
-                    errorText.text = $"Tạo nhân vật thành công! Nhấn 'Go' để vào game.";
+                    errorText.text = $"Tạo nhân vật thành công! Đang vào game...";
                     errorText.color = Color.green;
                 }
+
+                // Chuyển sang GameScene
+                SceneManager.LoadScene("GameScene");
             },
             onError: (error) =>
             {
