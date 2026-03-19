@@ -13,7 +13,10 @@ public enum SkillType
     FireRain,       // Thiên Hỏa: mưa lửa từ trên trời rơi xuống (delegate sang FireRainSkill)
     EarthAura,      // Địa Uy Khí: buff tấn công cho bản thân và đồng đội xung quanh (delegate sang EarthAttackBuffSkill)
     EarthBoomerang, // Địa Phong Đao: bắn đạn boomerang quay về (delegate sang EarthBoomerangSkill)
-    EarthBlinkStrike // Địa Độn Thuật: dịch chuyển + DoT projectile (delegate sang EarthBlinkStrikeSkill)
+    EarthBlinkStrike, // Địa Độn Thuật: dịch chuyển + DoT projectile (delegate sang EarthBlinkStrikeSkill)
+    HybridBarrage,   // Kim Phong Liên Tiễn: bắn 5 đạn nhỏ theo ngang (delegate sang HybridMetalWindBarrageSkill)
+    HybridLavaAura,  // Hỏa Thổ Dung Nham: dung nham bao quanh player, DoT + chặn hồi HP (delegate sang HybridFireEarthLavaAuraSkill)
+    HybridVenom      // Băng Độc Vĩnh Cửu (Water + Wood): hồ nước độc, Slow + DoT + giảm ATK (delegate sang HybridWaterWoodVenomSkill)
 }
 
 /// <summary>

@@ -97,4 +97,61 @@ public static class ElementHelper
 
     /// <summary>Id có hợp lệ không (0–5)?</summary>
     public static bool IsValid(int elementId) => elementId >= 0 && elementId < Count;
+
+    // ─── Counter / Immunity ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Trả về true nếu player Hybrid miễn nhiễm với element tấn công.
+    /// Gọi trong DamageCalculator TRƯỚC khi áp -25% ATK penalty counter.
+    ///
+    /// Sử dụng:
+    ///   if (ElementHelper.IsImmuneToCounter(attackerElement, targetPlayer)) skip penalty;
+    /// </summary>
+    /// <param name="attackerElement">English key của hệ người tấn công (ví dụ: "Water").</param>
+    /// <param name="target">PlayerDataResponse của người bị tấn công.</param>
+    public static bool IsImmuneToCounter(string attackerElement, PlayerDataResponse target)
+    {
+        if (target == null || !target.is_hybrid) return false;
+        if (string.IsNullOrEmpty(target.hybrid_immune_elements)) return false;
+
+        var immuneList = target.hybrid_immune_elements
+            .Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var immune in immuneList)
+            if (string.Equals(immune.Trim(), attackerElement, System.StringComparison.OrdinalIgnoreCase))
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Trả về hệ sẽ bị hệ này khắc (theo Ngũ Hành Tương Khắc).
+    /// English key → English key bị khắc.
+    /// Wind không tham gia vòng khắc chuẩn (trả về null).
+    /// </summary>
+    public static string? GetCounteredElement(string englishKey) => englishKey switch
+    {
+        "Metal" => "Wood",
+        "Wood"  => "Water",
+        "Water" => "Fire",
+        "Fire"  => "Earth",
+        "Earth" => "Metal",
+        _       => null
+    };
+
+    /// <summary>
+    /// Trả về hệ phụ CỐ ĐỊNH theo cặp hybrid của game:
+    ///   Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
+    /// Trả về null nếu englishKey không hợp lệ.
+    /// </summary>
+    public static string? GetFixedSecondary(string englishKey) => englishKey switch
+    {
+        "Fire"  => "Earth",
+        "Earth" => "Fire",
+        "Water" => "Wood",
+        "Wood"  => "Water",
+        "Metal" => "Wind",
+        "Wind"  => "Metal",
+        _       => null
+    };
 }

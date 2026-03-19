@@ -9,7 +9,10 @@ namespace GameServerApi.Models
     {
         public int MapId { get; set; }
         public string MapName { get; set; } = "";
+        public string SceneName { get; set; } = "";
         public string SpawnPointsJson { get; set; } = "[]";
+        public int MinLevel { get; set; } = 1;
+        public int MaxLevel { get; set; } = 999;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

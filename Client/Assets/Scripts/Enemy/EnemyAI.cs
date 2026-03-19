@@ -1,12 +1,15 @@
 using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Components;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(Animator), typeof(NetworkAnimator))]
 public class EnemyAI : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 2f;
+    private float _originalMoveSpeed;
+    private Coroutine _slowCoroutine;
     public Transform leftPoint;   // điểm biên trái
     public Transform rightPoint;  // điểm biên phải
 
@@ -40,6 +43,7 @@ public class EnemyAI : MonoBehaviour
         networkAnimator = GetComponent<NetworkAnimator>();
         health = GetComponent<EnemyHealth>();
         networkController = GetComponent<NetworkEnemyController>();
+        _originalMoveSpeed = moveSpeed;
 
         ApplyFacing();
 
@@ -276,6 +280,24 @@ public class EnemyAI : MonoBehaviour
         right.transform.position = transform.position + Vector3.right * offset;
         right.transform.SetParent(transform.parent);
         rightPoint = right.transform;
+    }
+
+    /// <summary>
+    /// Giảm tốc độ di chuyển trong khoảng thời gian nhất định (50% speed).
+    /// </summary>
+    public void ApplySlow(float duration)
+    {
+        if (_slowCoroutine != null)
+            StopCoroutine(_slowCoroutine);
+        _slowCoroutine = StartCoroutine(SlowCoroutine(duration));
+    }
+
+    private IEnumerator SlowCoroutine(float duration)
+    {
+        moveSpeed = _originalMoveSpeed * 0.5f;
+        yield return new WaitForSeconds(duration);
+        moveSpeed = _originalMoveSpeed;
+        _slowCoroutine = null;
     }
 }
 

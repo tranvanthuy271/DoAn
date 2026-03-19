@@ -1,0 +1,288 @@
+using GameServerApi.Data;
+using GameServerApi.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace GameServerApi.Controllers
+{
+    [ApiController]
+    [Route("api/npc")]
+    public class NpcController : ControllerBase
+    {
+        private readonly GameDbContext _db;
+
+        public NpcController(GameDbContext db) => _db = db;
+
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/npc/list?mapId=0
+        //  Lấy danh sách NPC active trên một map
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("list")]
+        public async Task<IActionResult> GetNpcList([FromQuery] int mapId = 0)
+        {
+            var npcs = await _db.NpcConfigs
+                .Where(n => n.MapId == mapId && n.IsActive)
+                .Select(n => new
+                {
+                    n.NpcId,
+                    n.NpcName,
+                    n.NpcType,
+                    n.PosX,
+                    n.PosY,
+                    n.IconId,
+                    n.DialogueKey,
+                })
+                .ToListAsync();
+
+            return Ok(npcs);
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/npc/interact
+        //  Body: { "playerId": 1, "npcId": 1 }
+        //  Trả về dialogue node đầu tiên và action của NPC
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("interact")]
+        public async Task<IActionResult> Interact([FromBody] System.Text.Json.JsonElement body)
+        {
+            if (!body.TryGetProperty("playerId", out var pidProp) ||
+                !body.TryGetProperty("npcId",    out var nidProp))
+                return BadRequest("Thiếu playerId hoặc npcId.");
+
+            int playerId = pidProp.GetInt32();
+            int npcId    = nidProp.GetInt32();
+
+            var npc = await _db.NpcConfigs.FindAsync(npcId);
+            if (npc == null || !npc.IsActive)
+                return NotFound("NPC không tồn tại hoặc đã bị vô hiệu hóa.");
+
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null)
+                return NotFound("Player không tồn tại.");
+
+            // Lấy dialogue node khởi đầu
+            NpcDialogue? dialogue = null;
+            if (!string.IsNullOrEmpty(npc.DialogueKey))
+            {
+                dialogue = await _db.NpcDialogues
+                    .FirstOrDefaultAsync(d => d.NpcId == npcId && d.DialogueKey == npc.DialogueKey);
+            }
+
+            return Ok(new
+            {
+                npcId    = npc.NpcId,
+                npcName  = npc.NpcName,
+                npcType  = npc.NpcType,
+                dialogue = dialogue == null ? null : new
+                {
+                    key        = dialogue.DialogueKey,
+                    text       = dialogue.TextVi,
+                    nextKey    = dialogue.NextKey,
+                    actionType = dialogue.ActionType,
+                },
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/npc/dialogue/next
+        //  Body: { "npcId": 1, "dialogueKey": "quest_intro" }
+        //  Lấy node kế tiếp trong cây hội thoại
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("dialogue/next")]
+        public async Task<IActionResult> NextDialogue([FromBody] System.Text.Json.JsonElement body)
+        {
+            if (!body.TryGetProperty("npcId",        out var nidProp) ||
+                !body.TryGetProperty("dialogueKey",  out var dkProp))
+                return BadRequest("Thiếu npcId hoặc dialogueKey.");
+
+            int    npcId       = nidProp.GetInt32();
+            string dialogueKey = dkProp.GetString() ?? "";
+
+            var node = await _db.NpcDialogues
+                .FirstOrDefaultAsync(d => d.NpcId == npcId && d.DialogueKey == dialogueKey);
+
+            if (node == null)
+                return NotFound("Không tìm thấy dialogue node.");
+
+            return Ok(new
+            {
+                key        = node.DialogueKey,
+                text       = node.TextVi,
+                nextKey    = node.NextKey,
+                actionType = node.ActionType,
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/npc/shop?npcId=1&playerId=1
+        //  Lấy danh sách item của shop NPC, kèm giá và level yêu cầu
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("shop")]
+        public async Task<IActionResult> GetShop([FromQuery] int npcId, [FromQuery] int playerId)
+        {
+            var npc = await _db.NpcConfigs.FindAsync(npcId);
+            if (npc == null || !npc.IsActive)
+                return NotFound("NPC không tồn tại.");
+            if (npc.NpcType != "shop" && npc.NpcType != "blacksmith")
+                return BadRequest("NPC này không phải cửa hàng.");
+
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null)
+                return NotFound("Player không tồn tại.");
+
+            var info        = player.GetInfoChar();
+            int playerLevel = info.Level;
+
+            var items = await _db.NpcShopItems
+                .Where(s => s.NpcId == npcId)
+                .Join(_db.ItemTemplates,
+                      s => s.ItemTemplateId,
+                      t => t.Id,
+                      (s, t) => new
+                      {
+                          s.Id,
+                          s.ItemTemplateId,
+                          itemName      = t.Name,
+                          itemType      = t.Type,
+                          iconId        = t.IdIcon,
+                          s.PriceSilver,
+                          s.PriceGold,
+                          s.Stock,
+                          s.RequiredLevel,
+                          canBuy        = playerLevel >= s.RequiredLevel,
+                      })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                npcId      = npc.NpcId,
+                npcName    = npc.NpcName,
+                playerGold = info.Gold,
+                playerSilver = info.Silver,
+                items,
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  POST /api/npc/shop/buy
+        //  Body: { "playerId": 1, "npcId": 1, "shopItemId": 1, "quantity": 1 }
+        //  Mua item từ shop NPC — server-authoritative
+        // ══════════════════════════════════════════════════════════════
+        [HttpPost("shop/buy")]
+        public async Task<IActionResult> BuyItem([FromBody] System.Text.Json.JsonElement body)
+        {
+            if (!body.TryGetProperty("playerId",   out var pidProp)  ||
+                !body.TryGetProperty("npcId",      out var nidProp)  ||
+                !body.TryGetProperty("shopItemId", out var siProp))
+                return BadRequest("Thiếu playerId, npcId hoặc shopItemId.");
+
+            int playerId   = pidProp.GetInt32();
+            int npcId      = nidProp.GetInt32();
+            int shopItemId = siProp.GetInt32();
+            int quantity   = body.TryGetProperty("quantity", out var qProp) ? qProp.GetInt32() : 1;
+            if (quantity <= 0) quantity = 1;
+
+            var npc = await _db.NpcConfigs.FindAsync(npcId);
+            if (npc == null || !npc.IsActive)
+                return NotFound("NPC không tồn tại.");
+
+            var shopItem = await _db.NpcShopItems
+                .Include(s => s.ItemTemplate)
+                .FirstOrDefaultAsync(s => s.Id == shopItemId && s.NpcId == npcId);
+            if (shopItem == null)
+                return NotFound("Item không tồn tại trong shop.");
+
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null)
+                return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+
+            // Kiểm tra level
+            if (info.Level < shopItem.RequiredLevel)
+                return BadRequest($"Yêu cầu level {shopItem.RequiredLevel}.");
+
+            // Kiểm tra tồn kho
+            if (shopItem.Stock != -1 && shopItem.Stock < quantity)
+                return BadRequest($"Chỉ còn {shopItem.Stock} trong kho.");
+
+            int totalSilver = shopItem.PriceSilver * quantity;
+            int totalGold   = shopItem.PriceGold   * quantity;
+
+            // Kiểm tra tiền
+            if (totalGold > 0 && info.Gold < totalGold)
+                return BadRequest($"Không đủ vàng. Cần {totalGold:N0}, có {info.Gold:N0}.");
+            if (totalSilver > 0 && totalGold == 0 && info.Silver < totalSilver)
+                return BadRequest($"Không đủ bạc. Cần {totalSilver:N0}, có {info.Silver:N0}.");
+
+            // Trừ tiền
+            if (totalGold > 0)
+                info.Gold -= totalGold;
+            else
+                info.Silver -= totalSilver;
+
+            // Trừ tồn kho
+            if (shopItem.Stock != -1)
+                shopItem.Stock -= quantity;
+
+            // Thêm item vào inventory
+            var inventory = ParseJsonList(player.InventoryJson);
+            var existing = inventory.FirstOrDefault(s =>
+                s.ContainsKey("itemTemplateId") &&
+                Convert.ToInt32(s["itemTemplateId"]) == shopItem.ItemTemplateId);
+
+            if (existing != null)
+            {
+                int cur = existing.ContainsKey("quantity") ? Convert.ToInt32(existing["quantity"]) : 1;
+                existing["quantity"] = cur + quantity;
+            }
+            else
+            {
+                inventory.Add(new Dictionary<string, object>
+                {
+                    ["itemTemplateId"] = shopItem.ItemTemplateId,
+                    ["itemCode"]       = shopItem.ItemTemplate?.Name ?? "",
+                    ["quantity"]       = quantity,
+                    ["isEquipped"]     = false,
+                    ["upgradeLevel"]   = 0,
+                });
+            }
+
+            player.SetInfoChar(info);
+            player.InventoryJson = System.Text.Json.JsonSerializer.Serialize(inventory);
+            player.UpdatedAt     = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success      = true,
+                playerGold   = info.Gold,
+                playerSilver = info.Silver,
+                message      = $"Mua thành công {quantity}x {shopItem.ItemTemplate?.Name}.",
+            });
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────
+        private static List<Dictionary<string, object>> ParseJsonList(string? json)
+        {
+            if (string.IsNullOrEmpty(json) || json == "[]" || json == "{}")
+                return new();
+            try
+            {
+                var arr = System.Text.Json.JsonSerializer.Deserialize<
+                    List<Dictionary<string, System.Text.Json.JsonElement>>>(json);
+                if (arr == null) return new();
+                return arr
+                    .Select(d => d.ToDictionary(
+                        kv => kv.Key,
+                        kv => (object)(kv.Value.ValueKind == System.Text.Json.JsonValueKind.Number
+                            ? (object)kv.Value.GetDecimal()
+                            : kv.Value.ValueKind == System.Text.Json.JsonValueKind.True  ? true
+                            : kv.Value.ValueKind == System.Text.Json.JsonValueKind.False ? false
+                            : (object?)kv.Value.GetString() ?? "")))
+                    .ToList();
+            }
+            catch { return new(); }
+        }
+    }
+}

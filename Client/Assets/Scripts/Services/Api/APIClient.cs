@@ -115,6 +115,17 @@ public class PlayerDataResponse
     public bool is_hybrid;
     public string gender;
     public string character_name;
+    // ── Hybrid Gene fields ──────────────────────────────────────────
+    public string secondary_element;
+    public int secondary_gene_tier;
+    public int secondary_gene_exp;
+    public int hybrid_id;
+    public string hybrid_element_a;
+    public string hybrid_element_b;
+    public string hybrid_bonus_targets;    // CSV "Earth,Fire"
+    public string hybrid_immune_elements;  // CSV "Water,Metal"
+    public float hybrid_atk_bonus_pct;
+    public string hybrid_prefab_path;      // Resources path cho CharacterLoader
 }
 
 [System.Serializable]
@@ -190,7 +201,7 @@ public class ApiSkillData
     public bool unlocked;
 }
 
-// ΓöÇΓöÇ Skill tab DTOs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Skill tab DTOs ────────────────────────────────────────────────
 [System.Serializable]
 public class PlayerSkillInfo
 {
@@ -222,7 +233,6 @@ public class PlayerSkillsResponse
     public PlayerSkillInfo[] skills;
 }
 
-// ΓöÇΓöÇ Potential tab DTOs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 [System.Serializable]
 public class PotentialStatInfo
 {
@@ -246,7 +256,19 @@ public class APIClient : MonoBehaviour
     public static APIClient Instance { get; private set; }
 
     [Header("API Config")]
-    public string baseURL = "http://localhost:5000/api"; // Thay ─æß╗òi theo server cß╗ºa bß║ín
+    public string baseURL = "http://localhost:5000/api"; //
+
+    /// <summary>Server root without the /api path segment (used by panels that construct /api/... URLs themselves).</summary>
+    public static string BASE_URL
+    {
+        get
+        {
+            if (Instance == null) return "http://localhost:5000";
+            var url = Instance.baseURL.TrimEnd('/');
+            if (url.EndsWith("/api")) url = url.Substring(0, url.Length - 4);
+            return url;
+        }
+    }
 
     private string jwtToken = "";
 

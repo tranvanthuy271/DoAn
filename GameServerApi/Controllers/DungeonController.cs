@@ -1,6 +1,7 @@
 using GameServerApi.Data;
 using GameServerApi.Models;
 using GameServerApi.Models.DTOs;
+using GameServerApi.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -297,6 +298,89 @@ namespace GameServerApi.Controllers
                     gold_reward     = e.Enemy?.GoldReward ?? 0,
                     element_type    = e.Enemy?.ElementType ?? "",
                     enemy_type      = e.Enemy?.EnemyType ?? ""
+                })
+            });
+        }
+
+        /// <summary>
+        /// GET /api/dungeon/boss/{bossId}/config
+        /// Lấy cấu hình đầy đủ của boss (chỉ số, kỹ năng, giai đoạn, spawn config)
+        /// BossAI.cs trong Unity gọi sau khi spawn boss để load config.
+        /// </summary>
+        [HttpGet("boss/{bossId:int}/config")]
+        public async Task<IActionResult> GetBossConfig(int bossId)
+        {
+            var enemy = await _db.Enemies.FindAsync(bossId);
+            if (enemy == null || enemy.EnemyType != "Boss")
+                return NotFound(new { message = $"Boss #{bossId} không tồn tại." });
+
+            var bossConfig = await _db.BossConfigs.FindAsync(bossId);
+
+            return Ok(new
+            {
+                boss_id           = enemy.EnemyId,
+                boss_name         = enemy.EnemyName,
+                level             = enemy.Level,
+                base_hp           = enemy.BaseHp,
+                base_mp           = enemy.BaseMp,
+                base_damage       = enemy.BaseDamage,
+                base_defense      = enemy.BaseDefense,
+                move_speed        = enemy.MoveSpeed,
+                attack_speed      = enemy.AttackSpeed,
+                element_type      = enemy.ElementType,
+                exp_reward        = enemy.ExpReward,
+                gold_reward       = enemy.GoldReward,
+                silver_reward     = enemy.SilverReward,
+                // Kháng nguyên tố
+                khang_hoa         = enemy.KhangHoa,
+                khang_thuy        = enemy.KhangThuy,
+                khang_tho         = enemy.KhangTho,
+                khang_moc         = enemy.KhangMoc,
+                khang_kim         = enemy.KhangKim,
+                khang_phong       = enemy.KhangPhong,
+                // Kỹ năng & giai đoạn (raw JSON — BossAI deserialize phía client)
+                skills_json       = enemy.SkillsJson,
+                phases_json       = enemy.PhasesJson,
+                drop_items_json   = enemy.DropItemsJson,
+                // Spawn config
+                spawn_config = bossConfig == null ? null : new
+                {
+                    map_id           = bossConfig.MapId,
+                    spawn_x          = bossConfig.SpawnX,
+                    spawn_y          = bossConfig.SpawnY,
+                    min_spawn_hour   = bossConfig.MinSpawnHour,
+                    max_spawn_hour   = bossConfig.MaxSpawnHour,
+                    respawn_minutes  = bossConfig.RespawnMinutes
+                }
+            });
+        }
+
+        /// <summary>
+        /// GET /api/dungeon/map/{mapId}/drops?enemyId={enemyId}
+        /// Lấy bảng drop rate riêng của enemy trong map này (map_enemy_drop).
+        /// EnemyItemDrop.cs gọi sau khi enemy chết để xác định drop.
+        /// </summary>
+        [HttpGet("map/{mapId:int}/drops")]
+        public async Task<IActionResult> GetMapDrops(int mapId, [FromQuery] int? enemyId)
+        {
+            var query = _db.MapEnemyDrops
+                .Where(d => d.MapId == mapId && d.IsActive);
+
+            if (enemyId.HasValue)
+                query = query.Where(d => d.EnemyId == enemyId.Value);
+
+            var drops = await query.ToListAsync();
+
+            return Ok(new
+            {
+                map_id = mapId,
+                drops  = drops.Select(d => new
+                {
+                    enemy_id    = d.EnemyId,
+                    item_id     = d.ItemId,
+                    drop_chance = d.DropChance,
+                    qty_min     = d.QtyMin,
+                    qty_max     = d.QtyMax
                 })
             });
         }

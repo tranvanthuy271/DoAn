@@ -25,6 +25,10 @@ public class NetworkEnemyHealth : NetworkBehaviour
     public UnityEvent OnTakeDamage;
 
     private bool isDead = false; // Flag để tránh xử lý death nhiều lần
+    private bool _healBlocked = false;
+
+    /// <summary>Trả về true nếu enemy đang bị chặn hồi HP.</summary>
+    public bool IsHealBlocked => _healBlocked;
 
     public override void OnNetworkSpawn()
     {
@@ -159,5 +163,20 @@ public class NetworkEnemyHealth : NetworkBehaviour
     public void TakeDamage(int damage)
     {
         TakeDamageServerRpc(damage);
+    }
+
+    /// <summary>
+    /// Chặn hồi HP trong khoảng thời gian nhất định.
+    /// </summary>
+    public void BlockHeal(float duration)
+    {
+        StartCoroutine(BlockHealCoroutine(duration));
+    }
+
+    private System.Collections.IEnumerator BlockHealCoroutine(float duration)
+    {
+        _healBlocked = true;
+        yield return new WaitForSeconds(duration);
+        _healBlocked = false;
     }
 }

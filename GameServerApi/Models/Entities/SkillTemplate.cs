@@ -22,6 +22,12 @@ namespace GameServerApi.Models
         public int    LevelToUnlock { get; set; } = 1;
         /// <summary>Gene tier required to unlock this skill (0 = no gene requirement)</summary>
         public int    GeneTierRequired { get; set; } = 0;
+        /// <summary>
+        /// FK → gene_hybrid_config.hybrid_id.
+        /// NULL = không phải hybrid skill.
+        /// NOT NULL = chỉ hiển thị khi player là hybrid với hybrid_id khớp.
+        /// </summary>
+        public int?   HybridId      { get; set; }
         /// <summary>JSON array [{level_req, sp_cost, effect_value, mp_cost, desc}]</summary>
         public string? LevelsJson   { get; set; }
         public string? IconId       { get; set; }

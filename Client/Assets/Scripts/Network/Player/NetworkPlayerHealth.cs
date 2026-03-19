@@ -27,6 +27,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
     private float invincibilityTimer;
     private bool isInvincible;
 
+    // ── Heal Block (Lava Aura) ────────────────────────────────────────────────
+    private bool isHealBlocked = false;
+    private float healBlockTimer = 0f;
+
     [Header("Respawn")]
     [SerializeField] private float respawnDelay = 3f;
     [SerializeField] private Vector3[] spawnPoints; // Spawn points khi respawn
@@ -134,6 +138,17 @@ public class NetworkPlayerHealth : NetworkBehaviour
                 isInvincible = false;
             }
         }
+
+        // Update heal block timer (server-side)
+        if (IsServer && healBlockTimer > 0f)
+        {
+            healBlockTimer -= Time.deltaTime;
+            if (healBlockTimer <= 0f)
+            {
+                isHealBlocked = false;
+                healBlockTimer = 0f;
+            }
+        }
     }
 
     /// <summary>
@@ -214,10 +229,26 @@ public class NetworkPlayerHealth : NetworkBehaviour
     /// <summary>
     /// ServerRpc: Client yêu cầu server heal
     /// </summary>
+    /// <summary>
+    /// ServerRpc: Chặn hồi máu trong thời gian nhất định (dùng bởi Lava Aura)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void BlockHealServerRpc(float duration)
+    {
+        isHealBlocked = true;
+        healBlockTimer = Mathf.Max(healBlockTimer, duration);
+        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} heal blocked for {duration}s");
+    }
+
     [ServerRpc(RequireOwnership = false)]
     public void HealServerRpc(int amount, ServerRpcParams rpcParams = default)
     {
         if (isDead) return;
+        if (isHealBlocked)
+        {
+            Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} - Heal bị chặn bởi Lava Aura!");
+            return;
+        }
 
         int newHealth = networkCurrentHealth.Value + amount;
         newHealth = Mathf.Min(newHealth, maxHealth);

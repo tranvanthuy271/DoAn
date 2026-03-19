@@ -28,26 +28,60 @@ namespace GameServerApi.Controllers
         // Option templates: id, name, type, level, strOption (20 values sep by ';')
         // level = item.upgradeLevel tối thiểu để activate
         // strOption[N] = stat value khi item ở bậc +N
+        // strOption có 24 giá trị: index 0 = bậc +0, index 23 = bậc +23 (tối đa)
+        // Từ +21→+24: mở rộng theo LangLa 5x-6x, yêu cầu đá cấp 8-9 (item 42-43)
         public static readonly List<Dictionary<string, object>> OptionTemplates = new()
         {
-            new() { ["id"]=1, ["name"]="Tấn công: +#",  ["type"]=0, ["level"]=0, ["strOption"]="10;12;14;16;18;20;23;26;29;32;36;40;44;48;52;56;60;65;70;75" },
-            new() { ["id"]=2, ["name"]="Phòng thủ: +#", ["type"]=2, ["level"]=0, ["strOption"]="8;9;10;11;12;13;14;15;16;17;18;19;20;22;24;26;28;30;32;35" },
-            new() { ["id"]=3, ["name"]="HP tối đa: +#",  ["type"]=2, ["level"]=0, ["strOption"]="30;33;36;39;42;45;48;51;54;57;60;63;66;69;72;75;78;81;84;90" },
-            new() { ["id"]=4, ["name"]="Tốc độ: +#",    ["type"]=2, ["level"]=0, ["strOption"]="5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;25" },
-            new() { ["id"]=5, ["name"]="Tấn công: +#",  ["type"]=3, ["level"]=4, ["strOption"]="0;0;0;0;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20" },
-            new() { ["id"]=6, ["name"]="Phòng thủ: +#", ["type"]=4, ["level"]=8, ["strOption"]="0;0;0;0;0;0;0;0;5;6;7;8;9;10;11;12;13;14;15;16" },
+            new() { ["id"]=1, ["name"]="Tấn công: +#",  ["type"]=0, ["level"]=0, ["strOption"]="10;12;14;16;18;20;23;26;29;32;36;40;44;48;52;56;60;65;70;75;81;87;93;100" },
+            new() { ["id"]=2, ["name"]="Phòng thủ: +#", ["type"]=2, ["level"]=0, ["strOption"]="8;9;10;11;12;13;14;15;16;17;18;19;20;22;24;26;28;30;32;35;38;41;44;48" },
+            new() { ["id"]=3, ["name"]="HP tối đa: +#",  ["type"]=2, ["level"]=0, ["strOption"]="30;33;36;39;42;45;48;51;54;57;60;63;66;69;72;75;78;81;84;90;97;104;112;120" },
+            new() { ["id"]=4, ["name"]="Tốc độ: +#",    ["type"]=2, ["level"]=0, ["strOption"]="5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;25;27;29;31;33" },
+            new() { ["id"]=5, ["name"]="Tấn công: +#",  ["type"]=3, ["level"]=4, ["strOption"]="0;0;0;0;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;22;24;26;28" },
+            new() { ["id"]=6, ["name"]="Phòng thủ: +#", ["type"]=4, ["level"]=8, ["strOption"]="0;0;0;0;0;0;0;0;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20" },
         };
 
         // strOptions mặc định ở bậc +0 cho từng item template
         // format: "optId,value;optId,value;..."
+        // Giá trị khớp với OptionTemplates[id-1].strOption[0]
         public static readonly Dictionary<int, string> DefaultStrOptions = new()
         {
-            [100] = "3,30",       // Mũ Da Nam:      HP+30
-            [200] = "1,10",       // Kiếm Hỏa Sơ:   ATK+10
-            [110] = "2,8;3,30",   // Áo Da Nam:      DEF+8, HP+30
-            [130] = "2,8",        // Quần Da Nam:    DEF+8
-            [150] = "4,5",        // Giày Da Nam:    SPD+5
-            [140] = "3,30",       // Nhẫn Đá:        HP+30
+            // ── Trang bị cơ bản lv1 ──
+            [100] = "3,30",       // Mũ Da Nam:          HP+30
+            [105] = "3,30",       // Mũ Lụa Nữ:          HP+30
+            [110] = "2,8;3,30",   // Áo Da Nam:          DEF+8, HP+30
+            [115] = "2,8;3,30",   // Áo Lụa Nữ:          DEF+8, HP+30
+            [130] = "2,8",        // Quần Da Nam:        DEF+8
+            [135] = "2,8",        // Quần Lụa Nữ:        DEF+8
+            [140] = "3,30",       // Nhẫn Đá:            HP+30
+            [150] = "4,5",        // Giày Da Nam:        SPD+5
+            [155] = "4,5",        // Giày Lụa Nữ:        SPD+5
+            // ── Vũ khí lv1 (tất cả hệ) ──
+            [200] = "1,10",       // Kiếm Hỏa Sơ Cấp:   ATK+10
+            [205] = "1,10",       // Cung Thủy Sơ Cấp:   ATK+10
+            [210] = "1,10",       // Chùy Thổ Sơ Cấp:   ATK+10
+            [215] = "1,10",       // Đao Kim Sơ Cấp:     ATK+10
+            [220] = "1,10",       // Gậy Mộc Sơ Cấp:     ATK+10
+            [225] = "1,10",       // Thương Phong Sơ Cấp: ATK+10
+            // ── Trang bị 3x (lv30 — Tier Ngân Tinh) ──
+            [300] = "3,30",       // Mũ Ngân Tinh Nam:   HP+30
+            [301] = "3,30",       // Mũ Ngân Tinh Nữ:    HP+30
+            [302] = "2,8;3,30",   // Áo Ngân Tinh Nam:   DEF+8, HP+30
+            [303] = "2,8;3,30",   // Áo Ngân Tinh Nữ:    DEF+8, HP+30
+            [304] = "2,8",        // Quần Ngân Tinh Nam: DEF+8
+            [305] = "2,8",        // Quần Ngân Tinh Nữ:  DEF+8
+            [306] = "3,30",       // Nhẫn Bạch Kim:      HP+30
+            [307] = "4,5",        // Giày Ngân Tinh Nam: SPD+5
+            [308] = "4,5",        // Giày Ngân Tinh Nữ:  SPD+5
+            // ── Trang bị 4x (lv40 — Tier Thiên Mệnh) ──
+            [400] = "3,30",       // Mũ Thiên Mệnh Nam:  HP+30
+            [401] = "3,30",       // Mũ Thiên Mệnh Nữ:   HP+30
+            [402] = "2,8;3,30",   // Áo Thiên Mệnh Nam:  DEF+8, HP+30
+            [403] = "2,8;3,30",   // Áo Thiên Mệnh Nữ:   DEF+8, HP+30
+            [404] = "2,8",        // Quần Thiên Mệnh Nam: DEF+8
+            [405] = "2,8",        // Quần Thiên Mệnh Nữ:  DEF+8
+            [406] = "3,30",       // Nhẫn Huyết Long:    HP+30
+            [407] = "4,5",        // Giày Thiên Mệnh Nam: SPD+5
+            [408] = "4,5",        // Giày Thiên Mệnh Nữ:  SPD+5
         };
 
         // ──────────────────────────────────────────────────────────────
@@ -67,8 +101,8 @@ namespace GameServerApi.Controllers
         [HttpGet("config")]
         public async System.Threading.Tasks.Task<IActionResult> GetConfig([FromQuery] int itemId, [FromQuery] int targetLevel)
         {
-            if (targetLevel < 1 || targetLevel > 20)
-                return BadRequest("targetLevel phải từ 1 đến 20.");
+            if (targetLevel < 1 || targetLevel > 24)
+                return BadRequest("targetLevel phải từ 1 đến 24.");
 
             var cfg = await _db.EquipmentUpgradeConfigs.FindAsync(targetLevel);
             if (cfg == null)
@@ -139,8 +173,8 @@ namespace GameServerApi.Controllers
                 int targetLevel     = currentLevel + 1;
                 int itemTemplateId  = itemDict.ContainsKey("itemTemplateId") ? Convert.ToInt32(itemDict["itemTemplateId"]) : 0;
 
-                if (targetLevel > 20)
-                    return BadRequest("Trang bị đã đạt bậc tối đa (+20).");
+                if (targetLevel > 24)
+                    return BadRequest("Trang bị đã đạt bậc tối đa (+24).");
 
                 // Lấy config từ DB
                 var cfg = await _db.EquipmentUpgradeConfigs.FindAsync(targetLevel);

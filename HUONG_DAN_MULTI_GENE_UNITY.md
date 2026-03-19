@@ -71,20 +71,36 @@ public float hybridAtkBonusPct;
 ```
 Canvas
 └── SecondaryGeneSelectPanel
-    ├── TitleText              [TMP — "Chọn Hệ Phụ"]
-    ├── PrimaryGeneInfo        [TMP — "Hệ chính: Fire Tier 3"]
-    ├── WarningText            [TMP — "⚠ Chỉ được chọn 1 lần!"]
-    ├── ElementGrid            [GridLayoutGroup — 5 cột]
-    │   ├── BtnFire            [Button + Image icon lửa]
-    │   ├── BtnWater           [Button + Image icon nước]
-    │   ├── BtnEarth           [Button + Image icon đất]
-    │   ├── BtnMetal           [Button + Image icon kim]
-    │   └── BtnWood            [Button + Image icon mộc]
-    ├── SelectedPreview        [TMP — "Đã chọn: Water"]
-    ├── CounterInfo            [TMP — "Hỏa khắc Thổ / Thủy khắc Hỏa"]
+    ├── TitleText              [TMP — "Hệ Phụ Cố Định"]
+    ├── WarningText            [TMP — "⚠ Hệ phụ theo cặp đối lập. Xác nhận KHÔNG THỂ hoàn tác!"]
+    ├── PairDisplay            [HorizontalLayoutGroup]
+    │   ├── PrimarySection     [VerticalLayoutGroup]
+    │   │   ├── PrimaryIcon       [Image — icon hệ chính, tự động gán]
+    │   │   └── PrimaryNameText   [TMP — "Hệ chính\nPhong Tier 5"]
+    │   ├── PlusSymbol         [TMP — "+"]
+    │   └── SecondarySection   [VerticalLayoutGroup]
+    │       ├── SecondaryIcon     [Image — icon hệ phụ cố định, tự động gán]
+    │       └── SecondaryNameText [TMP — "Hệ phụ\nKim"]
+    ├── PreviewPanel           [GameObject — ẩn đến khi load xong]
+    │   ├── HybridNameText     [TMP — "Phong Kim Song Hổ"]
+    │   ├── StatBonusText      [TMP — "+HP +MP +ATK +DEF"]
+    │   ├── BonusTargetsText   [TMP — "Sát thương +50% lên: Mộc, Thổ"]
+    │   └── ImmuneText         [TMP — "Miễn nhiễm: Hỏa, Thủy"]
+    ├── StatusText             [TMP — thông báo lỗi / thành công]
+    ├── LoadingOverlay         [GameObject — spinner]
     ├── ConfirmButton          [Button — "Xác Nhận"]
     └── CloseButton            [Button]
 ```
+
+> **Cặp hệ cố định:**
+> | Hệ chính | Hệ phụ |
+> |---|---|
+> | Hỏa (Fire) | Thủy (Water) |
+> | Thủy (Water) | Hỏa (Fire) |
+> | Thổ (Earth) | Mộc (Wood) |
+> | Mộc (Wood) | Thổ (Earth) |
+> | Kim (Metal) | Phong (Wind) |
+> | Phong (Wind) | Kim (Metal) |
 
 ### 3.2 Script: SecondaryGeneSelectPanel.cs
 

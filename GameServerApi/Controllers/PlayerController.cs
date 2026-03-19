@@ -256,7 +256,18 @@ namespace GameServerApi.Controllers
                 gene_exp = info.GeneExp,
                 is_hybrid = info.IsHybrid,
                 gender = player.Gender,
-                character_name = player.CharacterName
+                character_name = player.CharacterName,
+                // ── Hybrid Gene fields ──────────────────────────────
+                secondary_element      = info.SecondaryElement,
+                secondary_gene_tier    = info.SecondaryGeneTier,
+                secondary_gene_exp     = info.SecondaryGeneExp,
+                hybrid_id              = info.HybridId ?? 0,
+                hybrid_element_a       = info.HybridElementA,
+                hybrid_element_b       = info.HybridElementB,
+                hybrid_bonus_targets   = info.HybridBonusTargets,
+                hybrid_immune_elements = info.HybridImmuneElements,
+                hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
+                hybrid_prefab_path     = info.HybridPrefabPath
             };
 
             return Ok(response);
@@ -1113,9 +1124,14 @@ namespace GameServerApi.Controllers
                 catch { /* ignore parse errors */ }
             }
 
-            // Chỉ lấy skill của đúng hệ player hoặc universal (element_type IS NULL)
+            // Lọc skills:
+            // 1. hybrid_id IS NOT NULL → chỉ hiện với player is_hybrid=true có hybrid_id khớp
+            // 2. hybrid_id IS NULL && element_type IS NULL → universal (hiện cho tất cả, ví dụ DASH)
+            // 3. element_type IS NOT NULL → chỉ hiện với hệ tương ứng
             var templates = await _db.SkillTemplates
-                .Where(s => s.ElementType == null || s.ElementType == info.ElementType)
+                .Where(s =>
+                    (s.HybridId == null && (s.ElementType == null || s.ElementType == info.ElementType)) ||
+                    (s.HybridId != null && info.IsHybrid && s.HybridId == info.HybridId))
                 .OrderBy(s => s.ElementType).ThenBy(s => s.SkillId)
                 .ToListAsync();
 

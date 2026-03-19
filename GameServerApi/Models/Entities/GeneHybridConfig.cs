@@ -76,6 +76,18 @@ namespace GameServerApi.Models
         [Column("stat_bonus_def")]
         public int StatBonusDef { get; set; } = 200;
 
+        /// <summary>
+        /// Path dùng với Resources.Load để spawn đúng prefab hybrid.
+        /// Ví dụ: "Prefabs/Player/Hybrid/Hybrid_Metal_Wood"
+        /// </summary>
+        [Column("prefab_path")]
+        [MaxLength(200)]
+        public string PrefabPath { get; set; } = "";
+
+        /// <summary>Số skill slot từ hệ chính được giữ lại sau fusion (mặc định 3).</summary>
+        [Column("primary_skill_keep_count")]
+        public int PrimarySkillKeepCount { get; set; } = 3;
+
         // ── Helpers ──────────────────────────────────────────────────────
         /// <summary>Parse BonusTargetElements CSV thành List.</summary>
         public List<string> GetBonusTargets() =>

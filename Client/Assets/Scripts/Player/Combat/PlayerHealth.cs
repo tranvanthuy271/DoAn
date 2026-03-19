@@ -24,6 +24,10 @@ public class PlayerHealth : MonoBehaviour
     private int attackBonusPercent = 0;
     private float attackBuffTimer = 0f;
 
+    // Hỏa Thổ Lava Aura Debuff: chặn hồi HP
+    private bool isHealBlocked = false;
+    private float healBlockTimer = 0f;
+
     [Header("Events")]
     public UnityEvent<int, int> OnHealthChanged; // current, max
     public UnityEvent OnDeath;
@@ -74,6 +78,16 @@ public class PlayerHealth : MonoBehaviour
             if (attackBuffTimer <= 0f)
             {
                 attackBonusPercent = 0;
+            }
+        }
+
+        // Update heal block timer (Lava Aura debuff)
+        if (healBlockTimer > 0f)
+        {
+            healBlockTimer -= Time.deltaTime;
+            if (healBlockTimer <= 0f)
+            {
+                isHealBlocked = false;
             }
         }
     }
@@ -131,6 +145,12 @@ public class PlayerHealth : MonoBehaviour
 
     public void Heal(int amount)
     {
+        if (isHealBlocked)
+        {
+            Debug.Log("[PlayerHealth] Heal bị chặn bởi Lava Aura!");
+            return;
+        }
+
         if (currentHealth >= maxHealth)
         {
             return;
@@ -193,6 +213,16 @@ public class PlayerHealth : MonoBehaviour
 
     /// <summary>Lấy giáp buff hiện tại (để hiển thị UI nếu cần).</summary>
     public int GetTemporaryArmor() => temporaryArmor;
+
+    /// <summary>Áp dụng debuff chặn hồi HP (Hỏa Thổ Dung Nham skill). Server gọi trực tiếp.</summary>
+    public void BlockHeal(float duration)
+    {
+        isHealBlocked = true;
+        healBlockTimer = Mathf.Max(healBlockTimer, duration);
+    }
+
+    /// <summary>Debuff chặn heal đang active không?</summary>
+    public bool IsHealBlocked() => isHealBlocked;
 
     /// <summary>Áp dụng buff tấn công tạm thời (Thổ skill 1). Server gọi trực tiếp.</summary>
     public void ApplyAttackBuff(int bonusPercent, float duration)

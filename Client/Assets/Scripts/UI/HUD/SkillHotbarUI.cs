@@ -112,6 +112,20 @@ public class SkillHotbarUI : MonoBehaviour
         isBound = true;
 
         int skillCount = manager.GetSkillCount();
+
+        // Auto-discover: nếu số skill > số slot đã gán trong Inspector,
+        // tìm thêm SkillSlotUI từ các GameObject con chưa có trong danh sách.
+        if (skillCount > slots.Count)
+        {
+            foreach (Transform child in transform)
+            {
+                var slot = child.GetComponent<SkillSlotUI>();
+                if (slot != null && !slots.Contains(slot))
+                    slots.Add(slot);
+                if (slots.Count >= skillCount) break;
+            }
+        }
+
         Debug.Log($"[SkillHotbarUI] BindToManager '{manager.name}' — skillCount={skillCount}, slots={slots.Count}, gameObject.activeSelf={gameObject.activeSelf}");
 
         for (int i = 0; i < slots.Count; i++)

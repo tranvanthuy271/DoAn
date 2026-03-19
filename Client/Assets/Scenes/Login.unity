@@ -1878,7 +1878,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a7405f8c7461f24281d9f43bac45d8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseURL: http://localhost:5000/api
 --- !u!4 &1828447088
 Transform:
   m_ObjectHideFlags: 0

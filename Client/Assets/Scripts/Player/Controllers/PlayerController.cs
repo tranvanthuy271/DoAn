@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -15,6 +16,9 @@ public class PlayerController : MonoBehaviour
     [Header("Mod Mode")]
     public bool godMode = false;
     public bool unlimitedFlight = false;
+
+    // Gene item debug state
+    private bool _geneItemsBusy;
 
     private void Awake()
     {
@@ -68,6 +72,13 @@ public class PlayerController : MonoBehaviour
         {
             ToggleUnlimitedFlight();
         }
+
+        // Thêm x10 item đột biến mỗi hệ với phím M
+        if (Input.GetKeyDown(KeyCode.M) && !_geneItemsBusy)
+        {
+            Debug.Log("[PlayerController] Phím M được nhấn — bắt đầu thêm item đột biến...");
+            StartCoroutine(AddGeneItemsCoroutine());
+        }
     }
 
     private void FixedUpdate()
@@ -100,5 +111,42 @@ public class PlayerController : MonoBehaviour
     public PlayerMovement GetMovement() => movement;
     public PlayerAnimator GetPlayerAnimator() => playerAnimator;
     public Rigidbody2D GetRigidbody() => rb;
+
+    // ── Debug: Thêm x10 Lõi Đột Biến (fusion cores) mỗi hệ ──────────────
+    private IEnumerator AddGeneItemsCoroutine()
+    {
+        _geneItemsBusy = true;
+        Debug.Log("[PlayerController] === Đang thêm x10 Lõi Đột Biến vào túi... ===");
+
+        int playerId = 0;
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+            playerId = GameManager.Instance.GetPlayerData().player_id;
+        if (playerId == 0)
+            playerId = PlayerPrefs.GetInt("USER_ID", 0);
+
+        if (playerId <= 0)
+        {
+            Debug.LogWarning("[PlayerController] playerId = 0, chưa đăng nhập!");
+            _geneItemsBusy = false;
+            yield break;
+        }
+
+        string url = $"{APIClient.BASE_URL}/api/item/debug/add-fusion-cores?playerId={playerId}";
+        Debug.Log($"[PlayerController] POST {url}");
+
+        using var req = UnityEngine.Networking.UnityWebRequest.PostWwwForm(url, "");
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            Debug.Log($"[PlayerController] ✅ +10 Lõi Đột Biến đã thêm vào túi! Server: {req.downloadHandler.text}");
+        }
+        else
+        {
+            Debug.LogError($"[PlayerController] ❌ Thêm Lõi Đột Biến thất bại: {req.downloadHandler?.text ?? req.error}");
+        }
+
+        _geneItemsBusy = false;
+    }
 }
 

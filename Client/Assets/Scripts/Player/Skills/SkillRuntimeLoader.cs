@@ -147,7 +147,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
             SkillData sd = skillManager.GetSkill(i);
             if (sd == null || string.IsNullOrEmpty(sd.skillCode)) continue;
 
-            if (!lookup.TryGetValue(sd.skillCode, out PlayerSkillInfo info)) continue;
+            if (!TryGetPlayerSkillInfo(lookup, sd.skillCode, out PlayerSkillInfo info)) continue;
 
             // Chỉ apply nếu player đã unlock skill đó (current_level >= 1)
             if (info.current_level <= 0) continue;
@@ -174,6 +174,31 @@ public class SkillRuntimeLoader : NetworkBehaviour
 
         loaded = true;
         Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill đã apply từ DB.");
+    }
+
+    private bool TryGetPlayerSkillInfo(Dictionary<string, PlayerSkillInfo> lookup, string skillCode, out PlayerSkillInfo info)
+    {
+        if (lookup.TryGetValue(skillCode, out info))
+            return true;
+
+        // Fire+Earth hybrid đang có dữ liệu cũ ở DB với mã ERUPTION.
+        // Cho phép client map song song để prefab/code mới vẫn load đúng runtime stats.
+        if (string.Equals(skillCode, "HYBRID_FIRE_EARTH_LAVA_AURA", System.StringComparison.OrdinalIgnoreCase)
+            && lookup.TryGetValue("HYBRID_EARTH_FIRE_ERUPTION", out info))
+        {
+            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_FIRE_EARTH_LAVA_AURA -> HYBRID_EARTH_FIRE_ERUPTION");
+            return true;
+        }
+
+        if (string.Equals(skillCode, "HYBRID_EARTH_FIRE_ERUPTION", System.StringComparison.OrdinalIgnoreCase)
+            && lookup.TryGetValue("HYBRID_FIRE_EARTH_LAVA_AURA", out info))
+        {
+            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_EARTH_FIRE_ERUPTION -> HYBRID_FIRE_EARTH_LAVA_AURA");
+            return true;
+        }
+
+        info = null;
+        return false;
     }
 
     // ════════════════════════════════════════════════════════════════════════

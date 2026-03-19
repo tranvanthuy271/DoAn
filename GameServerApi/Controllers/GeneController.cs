@@ -334,10 +334,6 @@ namespace GameServerApi.Controllers
                 int    playerId  = pidProp.GetInt32();
                 string secondary = elProp.GetString() ?? "";
 
-                var validElements = new[] { "Fire", "Water", "Earth", "Metal", "Wood" };
-                if (!validElements.Contains(secondary))
-                    return BadRequest($"secondaryElement không hợp lệ: {secondary}");
-
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null) return NotFound("Player không tồn tại.");
 
@@ -346,8 +342,12 @@ namespace GameServerApi.Controllers
                 if (info.SecondaryElement != null)
                     return BadRequest($"Đã chọn hệ phụ: {info.SecondaryElement}. Không thể thay đổi.");
 
-                if (info.ElementType.Equals(secondary, StringComparison.OrdinalIgnoreCase))
-                    return BadRequest("Hệ phụ không được trùng với hệ chính.");
+                // Kiểm tra hệ phụ phải đúng đối tác cố định (Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong)
+                if (!PartnerMap.TryGetValue(info.ElementType, out var expectedPartner))
+                    return BadRequest($"Hệ chính {info.ElementType} không hỗ trợ Hybrid.");
+
+                if (!secondary.Equals(expectedPartner, StringComparison.OrdinalIgnoreCase))
+                    return BadRequest($"Hệ {info.ElementType} chỉ có thể kết hợp với hệ {expectedPartner}. Không thể chọn {secondary}.");
 
                 info.SecondaryElement    = secondary;
                 info.SecondaryGeneTier   = 1;
@@ -586,6 +586,10 @@ namespace GameServerApi.Controllers
             if (info.SecondaryElement == null)
                 return BadRequest("Chưa chọn hệ phụ.");
 
+            // Validate cặp kết hợp hợp lệ (chỉ 3 cặp: Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong)
+            if (!IsValidPair(info.ElementType, info.SecondaryElement))
+                return BadRequest($"Cặp {info.ElementType} + {info.SecondaryElement} không phải cặp Hybrid hợp lệ. Chỉ cho phép: Hỏa↔Thổ, Thủy↔Mộc, Kim↔Phong.");
+
             if (info.GeneTier < 5)
                 return BadRequest($"Hệ chính {info.ElementType} cần đạt Tier 5. Hiện tại: Tier {info.GeneTier}.");
 
@@ -601,9 +605,12 @@ namespace GameServerApi.Controllers
 
             var item = await _db.ItemTemplates.FindAsync(cfg.FusionItemId);
             var inventory = ParseJsonList(player.InventoryJson);
+            // Dùng lõi đột biến theo hệ PHỤ (secondary element)
+            int fusionItemId = GetFusionItemId(info.SecondaryElement!);
+            var fusionItem   = await _db.ItemTemplates.FindAsync(fusionItemId);
             int available = inventory
                 .Where(s => s.ContainsKey("itemTemplateId") &&
-                            Convert.ToInt32(s["itemTemplateId"]) == cfg.FusionItemId)
+                            Convert.ToInt32(s["itemTemplateId"]) == fusionItemId)
                 .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
 
             return Ok(new
@@ -616,10 +623,13 @@ namespace GameServerApi.Controllers
                 immuneElements    = cfg.GetImmuneElements(),
                 atkBonusPercent   = cfg.AtkBonusPercent,
                 fusionGoldCost    = cfg.FusionGoldCost,
-                fusionItemId      = cfg.FusionItemId,
-                fusionItemName    = item?.Name ?? $"Item #{cfg.FusionItemId}",
+                fusionItemId,
+                fusionItemName    = fusionItem?.Name ?? $"Lõi Đột Biến ({info.SecondaryElement})",
                 fusionItemCount   = cfg.FusionItemCount,
                 availableItems    = available,
+                itemSufficient    = available >= cfg.FusionItemCount,
+                goldSufficient    = info.Gold >= cfg.FusionGoldCost,
+                playerGold        = info.Gold,
                 canFuse           = available >= cfg.FusionItemCount && info.Gold >= cfg.FusionGoldCost,
                 statBonus = new
                 {
@@ -658,6 +668,10 @@ namespace GameServerApi.Controllers
                 if (info.SecondaryElement == null)
                     return BadRequest("Chưa chọn hệ phụ.");
 
+                // Validate cặp kết hợp hợp lệ (chỉ 3 cặp: Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong)
+                if (!IsValidPair(info.ElementType, info.SecondaryElement))
+                    return BadRequest($"Cặp {info.ElementType} + {info.SecondaryElement} không phải cặp Hybrid hợp lệ. Chỉ cho phép: Hỏa↔Thổ, Thủy↔Mộc, Kim↔Phong.");
+
                 if (info.GeneTier < 5)
                     return BadRequest($"Hệ chính {info.ElementType} cần Tier 5. Hiện: Tier {info.GeneTier}.");
 
@@ -675,26 +689,27 @@ namespace GameServerApi.Controllers
                 if (info.Gold < cfg.FusionGoldCost)
                     return BadRequest($"Không đủ vàng. Cần {cfg.FusionGoldCost:N0}, có {info.Gold:N0}.");
 
-                // Kiểm tra item
+                // Kiểm tra item — lõi đột biến theo hệ PHỤ
                 var inventory = ParseJsonList(player.InventoryJson);
+                int fusionItemId = GetFusionItemId(info.SecondaryElement!);
                 int available = inventory
                     .Where(s => s.ContainsKey("itemTemplateId") &&
-                                Convert.ToInt32(s["itemTemplateId"]) == cfg.FusionItemId)
+                                Convert.ToInt32(s["itemTemplateId"]) == fusionItemId)
                     .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
 
                 if (available < cfg.FusionItemCount)
-                    return BadRequest($"Cần {cfg.FusionItemCount}x Lõi Đột Biến, có {available}.");
+                    return BadRequest($"Cần {cfg.FusionItemCount}x lõi đột biến hệ {info.SecondaryElement} (id={fusionItemId}), có {available}.");
 
                 // Trừ vàng
                 info.Gold -= cfg.FusionGoldCost;
 
-                // Trừ item
+                // Trừ item — dùng đúng id lõi theo hệ phụ
                 int toConsume = cfg.FusionItemCount;
                 foreach (var s in inventory)
                 {
                     if (toConsume <= 0) break;
                     if (!s.ContainsKey("itemTemplateId")) continue;
-                    if (Convert.ToInt32(s["itemTemplateId"]) != cfg.FusionItemId) continue;
+                    if (Convert.ToInt32(s["itemTemplateId"]) != fusionItemId) continue;
                     int amt = s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0;
                     int use = Math.Min(amt, toConsume);
                     s["quantity"] = amt - use;
@@ -712,6 +727,8 @@ namespace GameServerApi.Controllers
                 info.HybridBonusTargets  = cfg.BonusTargetElements;  // CSV string
                 info.HybridImmuneElements= cfg.ImmuneElements;       // CSV string
                 info.HybridAtkBonusPct   = cfg.AtkBonusPercent;
+                info.HybridId            = cfg.HybridId;
+                info.HybridPrefabPath    = cfg.PrefabPath;
 
                 // Stat bonus fusion
                 info.MaxHp   += cfg.StatBonusHp;
@@ -721,6 +738,37 @@ namespace GameServerApi.Controllers
                 info.Attack  += cfg.StatBonusAtk;
                 info.Defense += cfg.StatBonusDef;
 
+                // Cập nhật skills: giữ tối đa cfg.PrimarySkillKeepCount skill của hệ chính + thêm combo skill
+                var hybridSkillRow = await _db.GeneHybridSkills
+                    .FirstOrDefaultAsync(hs => hs.HybridId == cfg.HybridId);
+
+                if (hybridSkillRow != null)
+                {
+                    // Lấy tất cả skill_id thuộc hệ chính từ skill_template
+                    var primaryElementSkillIds = await _db.SkillTemplates
+                        .Where(st => st.ElementType == info.ElementType)
+                        .Select(st => st.SkillId)
+                        .ToListAsync();
+
+                    // Parse skills hiện tại của player (dict: skill_id → level)
+                    var playerSkills = ParsePlayerSkills(player.SkillsJson);
+
+                    // Lọc chỉ giữ skill thuộc hệ chính, tối đa PrimarySkillKeepCount (=3)
+                    var keptPrimarySkills = playerSkills
+                        .Where(kv => primaryElementSkillIds.Contains(kv.Key))
+                        .OrderBy(kv => kv.Key)
+                        .Take(cfg.PrimarySkillKeepCount)
+                        .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+                    // Tìm skill_id của hybrid skill trong skill_template
+                    var hybridTemplate = await _db.SkillTemplates
+                        .FirstOrDefaultAsync(st => st.SkillCode == hybridSkillRow.SkillCode);
+                    if (hybridTemplate != null)
+                        keptPrimarySkills[hybridTemplate.SkillId] = 1;
+
+                    player.SkillsJson = SerializeSkills(keptPrimarySkills);
+                }
+
                 player.SetInfoChar(info);
                 player.InventoryJson = System.Text.Json.JsonSerializer.Serialize(inventory);
                 player.UpdatedAt     = DateTime.UtcNow;
@@ -729,13 +777,18 @@ namespace GameServerApi.Controllers
                 var finalStats = GameServerApi.Models.Services.StatCalculator
                     .Compute(info, player.EquipmentJson, player.PotentialStatsJson);
 
+                string comboSkillCode = hybridSkillRow?.SkillCode ?? "";
+
                 return Ok(new
                 {
                     success           = true,
                     hybridName        = cfg.HybridName,
                     hybridDescription = cfg.HybridDescription,
+                    hybridId          = cfg.HybridId,
                     hybridElementA    = info.HybridElementA,
                     hybridElementB    = info.HybridElementB,
+                    prefabPath        = cfg.PrefabPath,
+                    comboSkillCode,
                     bonusTargets      = cfg.GetBonusTargets(),
                     immuneElements    = cfg.GetImmuneElements(),
                     atkBonusPercent   = cfg.AtkBonusPercent,
@@ -772,7 +825,42 @@ namespace GameServerApi.Controllers
         //  HELPERS
         // ──────────────────────────────────────────────────────────────
 
-        /// <summary>Tra tên hybrid từ DB (nếu có), hoặc ghép tên tạm.</summary>
+        /// <summary>
+        /// Bảng cặp kết hợp hợp lệ (bidirectional): chỉ 3 cặp được phép Hybrid Fusion.
+        /// Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong
+        /// </summary>
+        private static readonly Dictionary<string, string> PartnerMap
+            = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Fire"]  = "Earth", ["Earth"] = "Fire",
+            ["Water"] = "Wood",  ["Wood"]  = "Water",
+            ["Metal"] = "Wind",  ["Wind"]  = "Metal",
+        };
+
+        /// <summary>Kiểm tra cặp (primary, secondary) có hợp lệ không.</summary>
+        private static bool IsValidPair(string primary, string secondary)
+            => PartnerMap.TryGetValue(primary, out var expected)
+               && expected.Equals(secondary, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Map: tên hệ (secondary element) → item_id lõi đột biến tương ứng.
+        /// Item 31 (generic) chỉ là fallback kế thừa cũ.
+        /// </summary>
+        private static readonly Dictionary<string, int> ElementFusionItemMap
+            = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Fire"]  = 47,
+            ["Water"] = 48,
+            ["Earth"] = 49,
+            ["Metal"] = 50,
+            ["Wood"]  = 51,
+            ["Wind"]  = 52,
+        };
+
+        /// <summary>Trả về item_id lõi đột biến của hệ secondaryElement.</summary>
+        private static int GetFusionItemId(string secondaryElement)
+            => ElementFusionItemMap.TryGetValue(secondaryElement, out var id) ? id : 31;
+
         private static string GetHybridName(string elemA, string elemB, GameServerApi.Data.GameDbContext db)
         {
             var (a, b) = GeneHybridConfig.NormalizeKey(elemA, elemB);
@@ -817,13 +905,24 @@ namespace GameServerApi.Controllers
                 var arr = JsonSerializer.Deserialize<List<JsonElement>>(json);
                 if (arr == null) return result;
                 foreach (var elem in arr)
-                    if (elem.TryGetProperty("skill_id",      out var idP) &&
-                        elem.TryGetProperty("current_level", out var lvP))
-                        result[idP.GetInt32()] = lvP.GetInt32();
+                {
+                    if (!elem.TryGetProperty("skill_id", out var idP)) continue;
+                    int skillId = idP.GetInt32();
+                    int level = 0;
+                    if (elem.TryGetProperty("current_level", out var lvP))
+                        level = lvP.GetInt32();
+                    else if (elem.TryGetProperty("lv", out var lvP2))
+                        level = lvP2.GetInt32();
+                    result[skillId] = level;
+                }
             }
             catch { }
             return result;
         }
+
+        /// <summary>Parse skills_json (list of {skillCode, currentLevel, isEquipped, slotIndex}) gốc.</summary>
+        private static List<Dictionary<string, object>> ParseSkillsJsonRaw(string json)
+            => ParseJsonList(json);
 
         private static string SerializeSkills(Dictionary<int, int> skills)
         {

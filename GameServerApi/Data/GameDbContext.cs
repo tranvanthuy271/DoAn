@@ -1,4 +1,5 @@
 using GameServerApi.Models;
+using GameServerApi.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Data
@@ -24,6 +25,13 @@ namespace GameServerApi.Data
         public DbSet<DungeonSession>          DungeonSessions          => Set<DungeonSession>();
         public DbSet<GeneMultiConfig>         GeneMultiConfigs         => Set<GeneMultiConfig>();
         public DbSet<GeneHybridConfig>        GeneHybridConfigs        => Set<GeneHybridConfig>();
+        public DbSet<GeneHybridSkill>         GeneHybridSkills         => Set<GeneHybridSkill>();
+        public DbSet<NpcConfig>                NpcConfigs               => Set<NpcConfig>();
+        public DbSet<NpcShopItem>              NpcShopItems             => Set<NpcShopItem>();
+        public DbSet<NpcDialogue>              NpcDialogues             => Set<NpcDialogue>();
+        public DbSet<MapPortal>                MapPortals               => Set<MapPortal>();
+        public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
+        public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,7 +94,10 @@ namespace GameServerApi.Data
 
                 entity.Property(m => m.MapId).HasColumnName("map_id");
                 entity.Property(m => m.MapName).HasColumnName("map_name");
+                entity.Property(m => m.SceneName).HasColumnName("scene_name").HasMaxLength(100);
                 entity.Property(m => m.SpawnPointsJson).HasColumnName("spawn_points_json");
+                entity.Property(m => m.MinLevel).HasColumnName("min_level");
+                entity.Property(m => m.MaxLevel).HasColumnName("max_level");
                 entity.Property(m => m.CreatedAt).HasColumnName("created_at");
                 entity.Property(m => m.UpdatedAt).HasColumnName("updated_at");
             });
@@ -108,9 +119,27 @@ namespace GameServerApi.Data
                 entity.Property(e => e.AttackSpeed).HasColumnName("attack_speed");
                 entity.Property(e => e.ExpReward).HasColumnName("exp_reward");
                 entity.Property(e => e.GoldReward).HasColumnName("gold_reward");
+                entity.Property(e => e.SilverReward).HasColumnName("silver_reward");
                 entity.Property(e => e.DropItemsJson).HasColumnName("drop_items_json");
                 entity.Property(e => e.ElementType).HasColumnName("element_type");
                 entity.Property(e => e.EnemyType).HasColumnName("enemy_type");
+                entity.Property(e => e.KhangHoa).HasColumnName("khang_hoa");
+                entity.Property(e => e.KhangThuy).HasColumnName("khang_thuy");
+                entity.Property(e => e.KhangTho).HasColumnName("khang_tho");
+                entity.Property(e => e.KhangMoc).HasColumnName("khang_moc");
+                entity.Property(e => e.KhangKim).HasColumnName("khang_kim");
+                entity.Property(e => e.KhangPhong).HasColumnName("khang_phong");
+                entity.Property(e => e.TangDameHoa).HasColumnName("tang_dame_hoa");
+                entity.Property(e => e.TangDameThuy).HasColumnName("tang_dame_thuy");
+                entity.Property(e => e.TangDameTho).HasColumnName("tang_dame_tho");
+                entity.Property(e => e.TangDameMoc).HasColumnName("tang_dame_moc");
+                entity.Property(e => e.TangDameKim).HasColumnName("tang_dame_kim");
+                entity.Property(e => e.TangDamePhong).HasColumnName("tang_dame_phong");
+                entity.Property(e => e.HpRegenPerSec).HasColumnName("hp_regen_per_sec");
+                entity.Property(e => e.EvasionRate).HasColumnName("evasion_rate");
+                entity.Property(e => e.CounterRate).HasColumnName("counter_rate");
+                entity.Property(e => e.SkillsJson).HasColumnName("skills_json");
+                entity.Property(e => e.PhasesJson).HasColumnName("phases_json");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             });
@@ -169,6 +198,7 @@ namespace GameServerApi.Data
                 entity.Property(s => s.MaxLevel).HasColumnName("max_level");
                 entity.Property(s => s.LevelToUnlock).HasColumnName("level_to_unlock");
                 entity.Property(s => s.GeneTierRequired).HasColumnName("gene_tier_required");
+                entity.Property(s => s.HybridId).HasColumnName("hybrid_id");
                 entity.Property(s => s.LevelsJson).HasColumnName("levels_json");
                 entity.Property(s => s.IconId).HasColumnName("icon_id");
                 entity.Property(s => s.CreatedAt).HasColumnName("created_at");
@@ -294,6 +324,96 @@ namespace GameServerApi.Data
                 entity.Property(e => e.StatBonusDef).HasColumnName("stat_bonus_def");
 
                 entity.HasIndex(e => new { e.ElementA, e.ElementB }).IsUnique();
+            });
+
+            modelBuilder.Entity<NpcConfig>(entity =>
+            {
+                entity.ToTable("npc_config");
+                entity.HasKey(n => n.NpcId);
+                entity.Property(n => n.NpcId).HasColumnName("npc_id");
+                entity.Property(n => n.NpcName).HasColumnName("npc_name").HasMaxLength(100);
+                entity.Property(n => n.NpcType).HasColumnName("npc_type").HasMaxLength(20);
+                entity.Property(n => n.MapId).HasColumnName("map_id");
+                entity.Property(n => n.PosX).HasColumnName("pos_x");
+                entity.Property(n => n.PosY).HasColumnName("pos_y");
+                entity.Property(n => n.DialogueKey).HasColumnName("dialogue_key").HasMaxLength(50);
+                entity.Property(n => n.IconId).HasColumnName("icon_id").HasMaxLength(50);
+                entity.Property(n => n.IsActive).HasColumnName("is_active");
+            });
+
+            modelBuilder.Entity<NpcShopItem>(entity =>
+            {
+                entity.ToTable("npc_shop_item");
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.Id).HasColumnName("id");
+                entity.Property(n => n.NpcId).HasColumnName("npc_id");
+                entity.Property(n => n.ItemTemplateId).HasColumnName("item_template_id");
+                entity.Property(n => n.PriceSilver).HasColumnName("price_silver");
+                entity.Property(n => n.PriceGold).HasColumnName("price_gold");
+                entity.Property(n => n.Stock).HasColumnName("stock");
+                entity.Property(n => n.RequiredLevel).HasColumnName("required_level");
+            });
+
+            modelBuilder.Entity<NpcDialogue>(entity =>
+            {
+                entity.ToTable("npc_dialogue");
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.Id).HasColumnName("id");
+                entity.Property(n => n.NpcId).HasColumnName("npc_id");
+                entity.Property(n => n.DialogueKey).HasColumnName("dialogue_key").HasMaxLength(50);
+                entity.Property(n => n.TextVi).HasColumnName("text_vi").HasMaxLength(1000);
+                entity.Property(n => n.NextKey).HasColumnName("next_key").HasMaxLength(50);
+                entity.Property(n => n.ActionType).HasColumnName("action_type").HasMaxLength(20);
+                entity.HasIndex(n => new { n.NpcId, n.DialogueKey }).IsUnique();
+            });
+
+            modelBuilder.Entity<MapPortal>(entity =>
+            {
+                entity.ToTable("map_portal");
+                entity.HasKey(p => p.PortalId);
+                entity.Property(p => p.PortalId).HasColumnName("portal_id").ValueGeneratedOnAdd();
+                entity.Property(p => p.PortalName).HasColumnName("portal_name").HasMaxLength(100);
+                entity.Property(p => p.SourceMapId).HasColumnName("source_map_id");
+                entity.Property(p => p.SrcX).HasColumnName("src_x");
+                entity.Property(p => p.SrcY).HasColumnName("src_y");
+                entity.Property(p => p.SrcRadius).HasColumnName("src_radius");
+                entity.Property(p => p.DestMapId).HasColumnName("dest_map_id");
+                entity.Property(p => p.DestSceneName).HasColumnName("dest_scene_name").HasMaxLength(100);
+                entity.Property(p => p.DestX).HasColumnName("dest_x");
+                entity.Property(p => p.DestY).HasColumnName("dest_y");
+                entity.Property(p => p.PortalType).HasColumnName("portal_type").HasMaxLength(30);
+                entity.Property(p => p.RequiredItemId).HasColumnName("required_item_id");
+                entity.Property(p => p.DungeonId).HasColumnName("dungeon_id");
+                entity.Property(p => p.IsActive).HasColumnName("is_active");
+            });
+
+            modelBuilder.Entity<BossConfig>(entity =>
+            {
+                entity.ToTable("boss_config");
+                entity.HasKey(b => b.BossId);
+                entity.Property(b => b.BossId).HasColumnName("boss_id");
+                entity.Property(b => b.MapId).HasColumnName("map_id");
+                entity.Property(b => b.SpawnX).HasColumnName("spawn_x");
+                entity.Property(b => b.SpawnY).HasColumnName("spawn_y");
+                entity.Property(b => b.MinSpawnHour).HasColumnName("min_spawn_hour");
+                entity.Property(b => b.MaxSpawnHour).HasColumnName("max_spawn_hour");
+                entity.Property(b => b.RespawnMinutes).HasColumnName("respawn_minutes");
+                entity.Property(b => b.IsActive).HasColumnName("is_active");
+            });
+
+            modelBuilder.Entity<MapEnemyDrop>(entity =>
+            {
+                entity.ToTable("map_enemy_drop");
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(d => d.MapId).HasColumnName("map_id");
+                entity.Property(d => d.EnemyId).HasColumnName("enemy_id");
+                entity.Property(d => d.ItemId).HasColumnName("item_id");
+                entity.Property(d => d.DropChance).HasColumnName("drop_chance");
+                entity.Property(d => d.QtyMin).HasColumnName("qty_min");
+                entity.Property(d => d.QtyMax).HasColumnName("qty_max");
+                entity.Property(d => d.IsActive).HasColumnName("is_active");
+                entity.HasIndex(d => new { d.MapId, d.EnemyId, d.ItemId }).IsUnique();
             });
         }
     }

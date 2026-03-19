@@ -34,6 +34,8 @@ namespace GameServerApi.Models
         // CSV hệ không còn khắc được player, e.g. "Water,Metal"
         [JsonPropertyName("hybrid_immune_elements")] public string?       HybridImmuneElements  { get; set; } = null;
         [JsonPropertyName("hybrid_atk_bonus_pct")]   public float         HybridAtkBonusPct     { get; set; } = 0f;
+        [JsonPropertyName("hybrid_id")]              public int?          HybridId              { get; set; } = null;
+        [JsonPropertyName("hybrid_prefab_path")]     public string?       HybridPrefabPath      { get; set; } = null;
 
         // ---- HP / MP / Combat ----
         [JsonPropertyName("hp")]      public int Hp      { get; set; } = 100;

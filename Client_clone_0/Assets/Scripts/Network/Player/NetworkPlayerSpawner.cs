@@ -22,6 +22,18 @@ public class NetworkPlayerSpawner : MonoBehaviour
     [SerializeField] private GameObject earthPrefab;   // 4 Thổ
     [SerializeField] private GameObject windPrefab;    // 5 Phong
 
+    [Header("Hybrid Prefabs — Hỏa+Thổ (hybrid_id=1)")]
+    [SerializeField] private GameObject hybridEarthFirePrefab_FirePrimary;   // Hệ chính = Hỏa (Fire)
+    [SerializeField] private GameObject hybridEarthFirePrefab_EarthPrimary;  // Hệ chính = Thổ (Earth)
+
+    [Header("Hybrid Prefabs — Thủy+Mộc (hybrid_id=10)")]
+    [SerializeField] private GameObject hybridWaterWoodPrefab_WaterPrimary;  // Hệ chính = Thủy (Water)
+    [SerializeField] private GameObject hybridWaterWoodPrefab_WoodPrimary;   // Hệ chính = Mộc (Wood)
+
+    [Header("Hybrid Prefabs — Kim+Phong (hybrid_id=13)")]
+    [SerializeField] private GameObject hybridMetalWindPrefab_MetalPrimary;  // Hệ chính = Kim (Metal)
+    [SerializeField] private GameObject hybridMetalWindPrefab_WindPrimary;   // Hệ chính = Phong (Wind)
+
     [Header("Spawn Points")]
     [SerializeField] private Transform[] spawnPoints;
 
@@ -462,6 +474,31 @@ public class NetworkPlayerSpawner : MonoBehaviour
             return networkPlayerPrefab;
         }
 
+        // Kiểm tra hybrid trước — nếu đã fusion thì dùng hybrid prefab theo chiều (hệ chính)
+        if (playerData.is_hybrid && playerData.hybrid_id > 0)
+        {
+            string primary = playerData.element_type ?? "";
+
+            GameObject hybridPrefab = playerData.hybrid_id switch
+            {
+                // Hỏa+Thổ: element_type lưu hệ chính khi fusion
+                1  => primary == "Fire"  ? hybridEarthFirePrefab_FirePrimary  : hybridEarthFirePrefab_EarthPrimary,
+                // Thủy+Mộc
+                10 => primary == "Water" ? hybridWaterWoodPrefab_WaterPrimary : hybridWaterWoodPrefab_WoodPrimary,
+                // Kim+Phong
+                13 => primary == "Metal" ? hybridMetalWindPrefab_MetalPrimary : hybridMetalWindPrefab_WindPrimary,
+                _  => null
+            };
+
+            if (hybridPrefab != null)
+            {
+                Debug.Log($"[NetworkPlayerSpawner] ✓ Hybrid player: hybrid_id={playerData.hybrid_id}, primary={primary} → prefab '{hybridPrefab.name}'");
+                return hybridPrefab;
+            }
+
+            Debug.LogWarning($"[NetworkPlayerSpawner] ⚠️ hybrid_id={playerData.hybrid_id} primary={primary} chưa có prefab được gán. Fallback sang prefab hệ đơn.");
+        }
+
         string elementType = playerData.element_type ?? "Fire";
 
         // Chọn prefab theo element_type (giới tính đã gắn liền với hệ)
@@ -492,13 +529,19 @@ public class NetworkPlayerSpawner : MonoBehaviour
     {
         var prefabs = new System.Collections.Generic.List<GameObject>();
 
-        if (networkPlayerPrefab != null) prefabs.Add(networkPlayerPrefab);
-        if (metalPrefab  != null) prefabs.Add(metalPrefab);
-        if (woodPrefab   != null) prefabs.Add(woodPrefab);
-        if (waterPrefab  != null) prefabs.Add(waterPrefab);
-        if (firePrefab   != null) prefabs.Add(firePrefab);
-        if (earthPrefab  != null) prefabs.Add(earthPrefab);
-        if (windPrefab   != null) prefabs.Add(windPrefab);
+        if (networkPlayerPrefab                  != null) prefabs.Add(networkPlayerPrefab);
+        if (metalPrefab                          != null) prefabs.Add(metalPrefab);
+        if (woodPrefab                           != null) prefabs.Add(woodPrefab);
+        if (waterPrefab                          != null) prefabs.Add(waterPrefab);
+        if (firePrefab                           != null) prefabs.Add(firePrefab);
+        if (earthPrefab                          != null) prefabs.Add(earthPrefab);
+        if (windPrefab                           != null) prefabs.Add(windPrefab);
+        if (hybridEarthFirePrefab_FirePrimary    != null) prefabs.Add(hybridEarthFirePrefab_FirePrimary);
+        if (hybridEarthFirePrefab_EarthPrimary   != null) prefabs.Add(hybridEarthFirePrefab_EarthPrimary);
+        if (hybridWaterWoodPrefab_WaterPrimary   != null) prefabs.Add(hybridWaterWoodPrefab_WaterPrimary);
+        if (hybridWaterWoodPrefab_WoodPrimary    != null) prefabs.Add(hybridWaterWoodPrefab_WoodPrimary);
+        if (hybridMetalWindPrefab_MetalPrimary   != null) prefabs.Add(hybridMetalWindPrefab_MetalPrimary);
+        if (hybridMetalWindPrefab_WindPrimary    != null) prefabs.Add(hybridMetalWindPrefab_WindPrimary);
 
         return prefabs;
     }
