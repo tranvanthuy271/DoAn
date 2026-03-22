@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 /// <summary>
 /// Component gắn vào DoT projectile prefab (dùng cho EarthBlinkStrikeSkill).
@@ -7,9 +8,12 @@ using UnityEngine;
 ///   - Mỗi tickInterval giây gây dotDamagePerTick sát thương.
 ///   - Tổng cộng dotTicks lần.
 ///   - Sau đó tự hủy projectile.
+///
+/// Là NetworkBehaviour để đồng bộ hit animation (ProjectileAnimController) sang client.
+/// Yêu cầu: NetworkObject trên cùng GameObject.
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
-public class DotDamage : MonoBehaviour
+public class DotDamage : NetworkBehaviour
 {
     [Header("DoT Settings")]
     [Tooltip("Sát thương mỗi tick")]
@@ -26,10 +30,36 @@ public class DotDamage : MonoBehaviour
 
     private bool hasHit = false;
     private ProjectileAnimController animCtrl;
+    private ulong ownerNetworkObjectId = 0;
+
+    /// <summary>Set owner để tránh tự gây damage cho chính mình.</summary>
+    public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
 
     private void Awake()
     {
         animCtrl = GetComponent<ProjectileAnimController>();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        // Force-start animation on ALL instances (host + client)
+        // so the fly-loop sprite is visible immediately after spawn.
+        var animator = GetComponent<Animator>();
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+        }
+
+        // On non-server clients, make Rigidbody2D kinematic so local physics
+        // does not fight with NetworkTransform position sync.
+        if (!IsServer)
+        {
+            var rb = GetComponent<Rigidbody2D>();
+            if (rb != null) rb.bodyType = RigidbodyType2D.Kinematic;
+        }
     }
 
     private void Start()
@@ -40,6 +70,9 @@ public class DotDamage : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        // Chỉ server xử lý damage để tránh gọi RPC nhiều lần từ mỗi client
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer) return;
+
         if (hasHit) return;
 
         if (collision.CompareTag("Enemy"))
@@ -50,24 +83,59 @@ public class DotDamage : MonoBehaviour
             if (eh != null || neh != null)
             {
                 hasHit = true;
-                animCtrl?.MarkHit();
+                // Đồng bộ hit animation sang tất cả client
+                MarkHitClientRpc();
                 StartCoroutine(ApplyDotEnemy(eh, neh));
                 if (destroyOnHit)
-                    Destroy(gameObject, dotTicks * tickInterval + 0.2f);
+                    StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
             }
         }
         else if (collision.CompareTag("Player"))
         {
+            // Bỏ qua nếu là chính người dùng skill
+            NetworkObject targetNetObj = collision.GetComponent<NetworkObject>();
+            if (targetNetObj != null && ownerNetworkObjectId != 0 && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
+                return;
+
+            NetworkPlayerHealth nph = collision.GetComponent<NetworkPlayerHealth>();
             PlayerHealth ph = collision.GetComponent<PlayerHealth>();
-            if (ph != null)
+
+            if (nph != null || ph != null)
             {
                 hasHit = true;
-                animCtrl?.MarkHit();
-                StartCoroutine(ApplyDotPlayer(ph));
+                // Đồng bộ hit animation sang tất cả client — kích hoạt animation event trên client
+                MarkHitClientRpc();
+                StartCoroutine(ApplyDotPlayer(nph, ph));
                 if (destroyOnHit)
-                    Destroy(gameObject, dotTicks * tickInterval + 0.2f);
+                    StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
             }
         }
+    }
+
+    /// <summary>
+    /// Đồng bộ trạng thái "đã trúng" sang tất cả client để ProjectileAnimController
+    /// chuyển từ fly-loop sang explosion animation đúng lúc.
+    /// </summary>
+    [ClientRpc]
+    private void MarkHitClientRpc()
+    {
+        hasHit = true;
+        animCtrl?.MarkHit();
+    }
+
+    private System.Collections.IEnumerator DespawnAfterDelay(float delay)
+    {
+        yield return new UnityEngine.WaitForSeconds(delay);
+        DespawnOrDestroy();
+    }
+
+    private void DespawnOrDestroy()
+    {
+        var netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
+            netObj.Despawn(true);
+        else
+            Destroy(gameObject);
     }
 
     private System.Collections.IEnumerator ApplyDotEnemy(EnemyHealth eh, NetworkEnemyHealth neh)
@@ -80,11 +148,12 @@ public class DotDamage : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator ApplyDotPlayer(PlayerHealth ph)
+    private System.Collections.IEnumerator ApplyDotPlayer(NetworkPlayerHealth nph, PlayerHealth ph)
     {
         for (int i = 0; i < dotTicks; i++)
         {
-            if (ph != null) ph.TakeDamage(dotDamagePerTick);
+            if (nph != null) nph.TakeDamage(dotDamagePerTick);
+            else if (ph != null) ph.TakeDamage(dotDamagePerTick);
             yield return new WaitForSeconds(tickInterval);
         }
     }

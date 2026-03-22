@@ -488,7 +488,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 0.9245283, g: 0.9245283, b: 0.9245283, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2596,27 +2596,21 @@ MonoBehaviour:
   characterButtons:
   - button: {fileID: 1781989426}
     elementId: 0
-    gender: Male
     previewSprite: {fileID: 21300000, guid: 01477eea60c87c742af3d388ce490e53, type: 3}
   - button: {fileID: 818936188}
     elementId: 1
-    gender: Male
     previewSprite: {fileID: 21300000, guid: 74872a276dae45149a49d03a4d421198, type: 3}
   - button: {fileID: 1148688036}
     elementId: 4
-    gender: Female
     previewSprite: {fileID: 21300000, guid: c720f35ccd96c3042a2f35f700b5ccc3, type: 3}
   - button: {fileID: 1871224058}
     elementId: 3
-    gender: Female
     previewSprite: {fileID: 21300000, guid: d3640baab28fd9749a45f006833e7476, type: 3}
   - button: {fileID: 2102452736}
     elementId: 5
-    gender: Female
     previewSprite: {fileID: 21300000, guid: 4884103597385564395275794ece293b, type: 3}
   - button: {fileID: 1693169402}
     elementId: 0
-    gender: Female
     previewSprite: {fileID: 21300000, guid: 5f3278068f66a01458ffba18dbc2c59b, type: 3}
   characterNameInput: {fileID: 535260736}
   errorText: {fileID: 745947045}

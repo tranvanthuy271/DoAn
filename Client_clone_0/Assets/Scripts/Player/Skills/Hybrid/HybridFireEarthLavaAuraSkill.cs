@@ -134,36 +134,83 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
     //  ClientRpc: bật / tắt hiệu ứng aura (visual)
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Bật / tắt hiệu ứng aura dung nham (VFX hoặc particle) trên tất cả clients.
-    /// Cần thêm AudioSource / ParticleSystem trong Inspector để tăng hiệu ứng.
-    /// </summary>
     [ClientRpc]
     private void ShowAuraClientRpc(bool show)
     {
-        // TODO: Thay bằng particle / VFX lava aura khi có asset
-        // Ví dụ: lavaAuraVFX.SetActive(show);
-        Debug.Log($"[HybridFireEarthLavaAuraSkill] Lava Aura {(show ? "BẬT" : "TẮT")}");
+        Debug.Log($"[HybridFireEarthLavaAuraSkill] Lava Aura {(show ? "BẬT" : "TẮT")} — transform={name}, root={transform.root.name}");
 
-        // Khi tắt aura → reset animator SkillEffect về trạng thái mặc định
-        if (!show)
+        var skillEffectTransform = FindSkillEffectInHierarchy();
+        if (skillEffectTransform == null)
         {
-            var skillEffect = transform.Find("SkillEffect")
-                           ?? transform.parent?.Find("SkillEffect");
-            if (skillEffect != null)
-            {
-                var animator = skillEffect.GetComponent<Animator>();
-                if (animator != null)
-                {
-                    animator.ResetTrigger("Skill4");
-                    animator.ResetTrigger("HybridSkill");
-                    animator.Play("New State", 0, 0f);
-                }
+            Debug.LogWarning("[HybridFireEarthLavaAuraSkill] Không tìm thấy SkillEffect trong hierarchy!");
+            return;
+        }
 
-                var sr = skillEffect.GetComponent<SpriteRenderer>();
-                if (sr != null) sr.sprite = null;
+        var animator = skillEffectTransform.GetComponent<Animator>();
+
+        if (show)
+        {
+            if (!skillEffectTransform.gameObject.activeSelf)
+                skillEffectTransform.gameObject.SetActive(true);
+
+            if (animator != null && animator.runtimeAnimatorController != null)
+            {
+                animator.ResetTrigger("Skill4");
+                animator.SetTrigger("Skill4");
+                Debug.Log($"[HybridFireEarthLavaAuraSkill] SetTrigger Skill4 trên SkillEffect={skillEffectTransform.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"[HybridFireEarthLavaAuraSkill] SkillEffect '{skillEffectTransform.name}' không có Animator hoặc runtimeAnimatorController là null!");
             }
         }
+        else
+        {
+            if (animator != null)
+            {
+                animator.ResetTrigger("Skill4");
+                animator.Play("New State", 0, 0f);
+            }
+            var sr = skillEffectTransform.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.sprite = null;
+            skillEffectTransform.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// Tìm SkillEffect trong toàn bộ cây con của root — hỗ trợ nhiều kiểu hierarchy.
+    /// </summary>
+    private Transform FindSkillEffectInHierarchy()
+    {
+        // 1. Direct child của component này
+        var se = transform.Find("SkillEffect");
+        if (se != null) return se;
+
+        // 2. Direct child của root (phổ biến nhất)
+        se = transform.root.Find("SkillEffect");
+        if (se != null) return se;
+
+        // 3. Sibling (component trên child object, SkillEffect ở root/sibling)
+        if (transform.parent != null)
+        {
+            se = transform.parent.Find("SkillEffect");
+            if (se != null) return se;
+        }
+
+        // 4. Recursive search từ root — bắt mọi cấu trúc hierarchy
+        return FindDescendantByName(transform.root, "SkillEffect");
+    }
+
+    private static Transform FindDescendantByName(Transform parent, string name)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var child = parent.GetChild(i);
+            if (child.name == name) return child;
+            var found = FindDescendantByName(child, name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -50,6 +50,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         networkDefense.OnValueChanged += OnDefenseChanged;
         networkMoveSpeed.OnValueChanged += OnMoveSpeedChanged;
         networkGeneTier.OnValueChanged += OnGeneTierChanged;
+        networkMp.OnValueChanged += OnMpChanged;
+        networkMaxMp.OnValueChanged += OnMaxMpChanged;
 
         // Apply data ngay lập tức
         ApplyPlayerData();
@@ -154,7 +156,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.final_stats.hp;
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.mp;
+            networkMp.Value        = playerData.final_stats.max_mp; // Initialize full MP on spawn
             networkMaxMp.Value     = playerData.final_stats.max_mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
@@ -164,14 +166,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.mp;
+            networkMp.Value        = playerData.base_stats.max_mp; // Initialize full MP on spawn
             networkMaxMp.Value     = playerData.base_stats.max_mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
         }
         networkGeneTier.Value = playerData.gene_tier;
 
-        Debug.Log($"[NetworkPlayerDataSync] ✓ NetworkVariables updated for player: {networkCharacterName.Value}");
+        Debug.Log($"[NetworkPlayerDataSync] ✓ Loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
     }
 
     public override void OnNetworkDespawn()
@@ -187,6 +189,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         networkDefense.OnValueChanged -= OnDefenseChanged;
         networkMoveSpeed.OnValueChanged -= OnMoveSpeedChanged;
         networkGeneTier.OnValueChanged -= OnGeneTierChanged;
+        networkMp.OnValueChanged -= OnMpChanged;
+        networkMaxMp.OnValueChanged -= OnMaxMpChanged;
 
         base.OnNetworkDespawn();
     }
@@ -230,7 +234,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.final_stats.hp;
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.mp;
+            networkMp.Value        = playerData.final_stats.max_mp; // Initialize full MP on spawn
             networkMaxMp.Value     = playerData.final_stats.max_mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
@@ -240,14 +244,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.mp;
+            networkMp.Value        = playerData.base_stats.max_mp; // Initialize full MP on spawn
             networkMaxMp.Value     = playerData.base_stats.max_mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
         }
         networkGeneTier.Value = playerData.gene_tier;
 
-        // Debug.Log($"[NetworkPlayerDataSync] Server loaded player data: {networkCharacterName.Value} ({networkElementType.Value} - {networkGender.Value}), Level {networkLevel.Value}");
+        Debug.Log($"[NetworkPlayerDataSync] Server loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
     }
 
     /// <summary>
@@ -319,10 +323,21 @@ public class NetworkPlayerDataSync : NetworkBehaviour
 
     private void OnHpChanged(int oldValue, int newValue)
     {
+        Debug.Log($"[NetworkPlayerDataSync] HP: {oldValue} → {newValue}/{networkMaxHp.Value}");
         if (playerHealth != null)
         {
             playerHealth.SetHealth(newValue);
         }
+    }
+
+    private void OnMpChanged(int oldValue, int newValue)
+    {
+        Debug.Log($"[NetworkPlayerDataSync] MP: {oldValue} → {newValue}/{networkMaxMp.Value}");
+    }
+
+    private void OnMaxMpChanged(int oldValue, int newValue)
+    {
+        // Max MP changed (e.g. after equipment update)
     }
 
     private void OnMaxHpChanged(int oldValue, int newValue)
@@ -428,4 +443,32 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     public string GetElementType() => networkElementType.Value.ToString();
     public string GetGender() => networkGender.Value.ToString();
     public int GetLevel() => networkLevel.Value;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  MP / HP Consume & Restore (dùng bởi PlayerSkillManager & PotionUsage)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>Trừ MP khi dùng skill. Chỉ owner gọi.</summary>
+    [ServerRpc(RequireOwnership = true)]
+    public void ConsumeMpServerRpc(int amount)
+    {
+        networkMp.Value = Mathf.Max(0, networkMp.Value - amount);
+        Debug.Log($"[NetworkPlayerDataSync] ConsumeMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
+    }
+
+    /// <summary>Hồi MP (bình mana). Chỉ owner gọi.</summary>
+    [ServerRpc(RequireOwnership = true)]
+    public void RestoreMpServerRpc(int amount)
+    {
+        networkMp.Value = Mathf.Min(networkMaxMp.Value, networkMp.Value + amount);
+        Debug.Log($"[NetworkPlayerDataSync] RestoreMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
+    }
+
+    /// <summary>Hồi HP (bình máu). Chỉ owner gọi.</summary>
+    [ServerRpc(RequireOwnership = true)]
+    public void RestoreHpServerRpc(int amount)
+    {
+        networkHp.Value = Mathf.Min(networkMaxHp.Value, networkHp.Value + amount);
+        Debug.Log($"[NetworkPlayerDataSync] RestoreHp {amount} → HP={networkHp.Value}/{networkMaxHp.Value}");
+    }
 }

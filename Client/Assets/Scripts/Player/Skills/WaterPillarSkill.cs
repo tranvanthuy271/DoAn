@@ -190,26 +190,63 @@ public class WaterPillarSkill : NetworkBehaviour
     }
 
     /// <summary>
-    /// Trigger animation trên chính pillar projectile đã được spawn — gọi sau khi Spawn() hoàn tất.
+    /// Đồng bộ velocity của pillar sang tất cả client.
+    /// Server đã set velocity trực tiếp — ClientRpc chỉ chạy trên các client còn lại.
+    /// </summary>
+    [ClientRpc]
+    private void SetPillarVelocityClientRpc(ulong pillarNetId, Vector2 velocity)
+    {
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer) return;
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(pillarNetId, out var netObj)) return;
+        var rb = netObj.GetComponent<Rigidbody2D>();
+        if (rb != null) rb.velocity = velocity;
+    }
+
+    /// <summary>
+    /// Trigger animation trên pillar projectile đã spawn — dùng coroutine để chờ SpawnedObjects
+    /// đăng ký đủ trước khi truy cập (tránh race condition giữa spawn-message và RPC).
     /// </summary>
     [ClientRpc]
     private void TriggerPillarProjectileAnimationClientRpc(ulong pillarNetworkObjectId)
     {
-        if (NetworkManager.Singleton == null) return;
-        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(pillarNetworkObjectId, out var netObj))
-            return;
+        if (IsServer) return; // server đã xử lý trực tiếp
+        StartCoroutine(WaitAndApplyPillarAnimation(pillarNetworkObjectId));
+    }
 
-        Animator anim = netObj.GetComponent<Animator>();
-        if (anim == null || anim.runtimeAnimatorController == null || string.IsNullOrEmpty(animTriggerName)) return;
-
-        foreach (var p in anim.parameters)
+    private System.Collections.IEnumerator WaitAndApplyPillarAnimation(ulong pillarNetId)
+    {
+        float elapsed = 0f;
+        const float timeout = 2f;
+        while (elapsed < timeout)
         {
-            if (p.name == animTriggerName && p.type == AnimatorControllerParameterType.Trigger)
+            if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                    .TryGetValue(pillarNetId, out var netObj) == true)
             {
-                anim.SetTrigger(animTriggerName);
-                return;
+                Animator anim = netObj.GetComponent<Animator>();
+                if (anim != null && anim.runtimeAnimatorController != null)
+                {
+                    // Rebind restores default state; Update(0f) forces first evaluation
+                    anim.Rebind();
+                    anim.Update(0f);
+                    if (!string.IsNullOrEmpty(animTriggerName))
+                    {
+                        foreach (var p in anim.parameters)
+                        {
+                            if (p.name == animTriggerName &&
+                                p.type == AnimatorControllerParameterType.Trigger)
+                            {
+                                anim.SetTrigger(animTriggerName);
+                                break;
+                            }
+                        }
+                    }
+                }
+                yield break;
             }
+            elapsed += Time.deltaTime;
+            yield return null;
         }
+        Debug.LogWarning($"[WaterPillarSkill] Timeout chờ pillar {pillarNetId} trong SpawnedObjects.");
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -246,12 +283,19 @@ public class WaterPillarSkill : NetworkBehaviour
             if (netObj == null) netObj = pillar.AddComponent<NetworkObject>();
             netObj.Spawn();
 
-            // Chờ 1 frame để client nhận spawn message trước khi nhận RPC animation
+            // Chờ 1 frame để client nhận spawn message, rồi gửi velocity + animation RPC
             yield return null;
+            Vector2 fallVelocity = new Vector2(0f, -pillarFallSpeed);
+            SetPillarVelocityClientRpc(netObj.NetworkObjectId, fallVelocity);
             TriggerPillarProjectileAnimationClientRpc(netObj.NetworkObjectId);
 
+            // Đợi hết lifetime rồi Despawn đúng cách (không dùng Destroy trên NetworkObject)
             if (pillarLifetime > 0f)
-                Destroy(pillar, pillarLifetime);
+            {
+                yield return new WaitForSeconds(pillarLifetime);
+                if (netObj != null && netObj.IsSpawned)
+                    netObj.Despawn(true);
+            }
         }
         else
         {

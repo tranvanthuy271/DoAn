@@ -31,7 +31,7 @@ public abstract class HybridSkillBase : NetworkBehaviour
     [SerializeField] public int mpCost = 55;
 
     [Tooltip("Giá trị sát thương / hiệu ứng cơ bản")]
-    [SerializeField] protected float effectValue = 300f;
+    [SerializeField] public float effectValue = 300f;
 
     // ── Runtime state ─────────────────────────────────────────────
     private float _cooldownTimer;

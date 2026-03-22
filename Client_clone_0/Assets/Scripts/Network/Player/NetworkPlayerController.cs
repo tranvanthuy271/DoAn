@@ -18,6 +18,9 @@ public class NetworkPlayerController : NetworkBehaviour
     // NetworkVariable để sync flip direction (localScale.x) cho non-owner clients
     private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // NetworkVariable để sync position khi không có NetworkTransform component
+    private NetworkVariable<Vector3> syncPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
@@ -42,6 +45,13 @@ public class NetworkPlayerController : NetworkBehaviour
             controller.enabled = true;
         }
 
+        // Non-owner: tắt physics cục bộ, để server-position drive transform
+        if (!IsOwner && rb != null)
+        {
+            rb.gravityScale = 0f;
+            rb.velocity = Vector2.zero;
+        }
+
         // Chỉ owner mới điều khiển input
         if (IsOwner)
         {
@@ -49,10 +59,11 @@ public class NetworkPlayerController : NetworkBehaviour
             if (cameraFollow != null)
             {
                 cameraFollow.SetTarget(transform);
+                Debug.Log($"[NetworkPlayerController] Camera target set to {gameObject.name}");
             }
             else
             {
-                // Debug.LogWarning($"[NetworkPlayerController] CameraFollow not found!");
+                Debug.LogWarning("[NetworkPlayerController] CameraFollow not found! Client player will not be followed by camera.");
             }
         }
     }
@@ -82,15 +93,36 @@ public class NetworkPlayerController : NetworkBehaviour
             pendingJump = true;
     }
 
+    private bool _moveDiagLogged = false;
+
     private void FixedUpdate()
     {
+        // Non-owner: chỉ client thuần (không phải server) mới cần interpolate về server position.
+        // Server KHÔNG chạy MovePosition cho player của client — physics đã được drive bởi MoveServerRpc.
+        if (!IsOwner)
+        {
+            if (!IsServer && rb != null && syncPosition.Value != Vector3.zero)
+            {
+                Vector2 target = new Vector2(syncPosition.Value.x, syncPosition.Value.y);
+                rb.MovePosition(Vector2.Lerp(rb.position, target, Time.fixedDeltaTime * 20f));
+            }
+            return;
+        }
+
         // Owner gửi input lên server MỖI FixedUpdate để velocity luôn được apply liên tục
-        if (!IsOwner) return;
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
         bool jump = pendingJump;
         pendingJump = false; // consume flag
+
+        // === MOVEMENT DIAGNOSTICS (only log once) ===
+        if (!_moveDiagLogged)
+        {
+            _moveDiagLogged = true;
+            Debug.Log($"[NetworkPlayerController] DIAG | controller={controller != null} | controller.stats={controller?.stats != null} | movement={movement != null} | rb={rb != null} | IsOwner={IsOwner} | IsServer={IsServer}");
+        }
+
         // === CLIENT-SIDE PREDICTION ===
         // Apply movement cục bộ ngay lập tức để owner thấy di chuyển không có độ trễ
         // Server sẽ xác nhận và NetworkTransform sẽ correct nếu có sai lệch
@@ -129,13 +161,19 @@ public class NetworkPlayerController : NetworkBehaviour
 
             // Update animation cục bộ ngay (không chờ UpdateAnimationClientRpc)
             var playerAnimator = movement.GetComponent<PlayerAnimator>();
-            playerAnimator?.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, controller.godMode ? false : false);
+            playerAnimator?.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, movement.IsFlying());
         }
         MoveServerRpc(horizontalInput, jump, down);
     }
 
     private void LateUpdate()
     {
+        // Server: sync position để tất cả clients có thể theo dõi vị trí player
+        if (IsServer && rb != null)
+        {
+            syncPosition.Value = new Vector3(rb.position.x, rb.position.y, transform.position.z);
+        }
+
         // Non-owner: đảm bảo scale luôn đúng mỗi frame (poll thay vì chỉ dùng event)
         // Giúp loại bỏ triệt để hiệu ứng bìa giấy kể cả khi có ngoại lực khác ghi đè scale giữa các frame.
         if (!IsOwner)
@@ -145,9 +183,8 @@ public class NetworkPlayerController : NetworkBehaviour
                 transform.localScale = new Vector3(targetX, transform.localScale.y, transform.localScale.z);
         }
 
-        // Update animation trên TẤT CẢ clients (bao gồm remote clients)
-        // Dựa trên velocity từ NetworkTransform để update animation
-        if (rb != null && movement != null && movement.GetComponent<PlayerAnimator>() != null)
+        // Update animation trên owner và server (non-owner client dùng UpdateAnimationClientRpc)
+        if ((IsOwner || IsServer) && rb != null && movement != null && movement.GetComponent<PlayerAnimator>() != null)
         {
             PlayerAnimator playerAnimator = movement.GetComponent<PlayerAnimator>();
 
@@ -176,12 +213,12 @@ public class NetworkPlayerController : NetworkBehaviour
         // Server xử lý movement
         if (movement == null || controller == null || rb == null)
         {
-            // Debug.LogError($"[NetworkPlayerController] MoveServerRpc: Components null! movement={movement}, controller={controller}, rb={rb}");
+            Debug.LogError($"[NetworkPlayerController] MoveServerRpc: Components null! movement={movement != null}, controller={controller != null}, rb={rb != null}");
             return;
         }
         if (controller.stats == null)
         {
-            // Debug.LogError($"[NetworkPlayerController] MoveServerRpc: PlayerStats is null!");
+            Debug.LogError("[NetworkPlayerController] MoveServerRpc: PlayerStats is null!");
             return;
         }
 
@@ -241,22 +278,23 @@ public class NetworkPlayerController : NetworkBehaviour
             rb.gravityScale = stats.gravity;
         }
 
-        // Update animation trên server (sẽ được sync qua NetworkAnimator)
-        UpdateAnimationClientRpc(horizontalInput, rb.velocity.y, isGrounded, up || down);
+        // Update animation trên server — truyền velocity thực tế để ClientRpc dùng đúng Speed
+        UpdateAnimationClientRpc(rb.velocity.x, rb.velocity.y, isGrounded, movement.IsFlying());
     }
 
     /// <summary>
     /// ClientRpc để sync animation parameters cho tất cả clients
     /// </summary>
     [ClientRpc]
-    private void UpdateAnimationClientRpc(float horizontalInput, float velocityY, bool isGrounded, bool isFlying)
+    private void UpdateAnimationClientRpc(float velocityX, float velocityY, bool isGrounded, bool isFlying)
     {
-        // Update animation trên TẤT CẢ clients (không chỉ owner)
-        // QUAN TRỌNG: Dùng velocity.x thay vì horizontalInput để Speed parameter phản ánh tốc độ thực tế
-        if (movement != null && movement.GetComponent<PlayerAnimator>() != null && rb != null)
+        // Owner tự update animation trong FixedUpdate/LateUpdate — không cần ClientRpc
+        if (IsOwner) return;
+        // Non-owner client: dùng velocityX do server truyền xuống (rb.velocity.x cục bộ luôn = 0 với non-owner)
+        if (movement != null && movement.GetComponent<PlayerAnimator>() != null)
         {
             PlayerAnimator playerAnimator = movement.GetComponent<PlayerAnimator>();
-            playerAnimator.UpdateAnimation(rb.velocity.x, velocityY, isGrounded, isFlying);
+            playerAnimator.UpdateAnimation(velocityX, velocityY, isGrounded, isFlying);
         }
     }
 }

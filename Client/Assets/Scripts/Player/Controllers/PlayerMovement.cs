@@ -29,6 +29,10 @@ public class PlayerMovement : MonoBehaviour
     private bool isFlying;       // chỉ true trong god mode
     private bool shouldJump;    // được set ở Update, consume ở FixedUpdate
 
+    [Header("Stun (bất động khi trúng skill)")]
+    private bool isStunned;
+    private float stunTimer;
+
     [Header("Flight System (God Mode only)")]
     private float flightTime;
     private bool canFly = true;
@@ -87,6 +91,19 @@ public class PlayerMovement : MonoBehaviour
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
             return; // Remote player không xử lý input
+        }
+        // Stun: không nhận input khi bị bất động
+        if (isStunned)
+        {
+            stunTimer -= Time.deltaTime;
+            if (stunTimer <= 0f) isStunned = false;
+            horizontalInput = 0f;
+            hasHorizontalInput = false;
+            hasVerticalInput = false;
+            hasAnyInput = false;
+            jumpPressed = false;
+            jumpHeld = false;
+            return;
         }
         horizontalInput = Input.GetAxisRaw("Horizontal");
         hasHorizontalInput = Mathf.Abs(horizontalInput) > 0.1f;
@@ -222,4 +239,14 @@ public class PlayerMovement : MonoBehaviour
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
     }
+
+    /// <summary>Áp dụng bất động cho player (chặn input) trong thời gian duration giây.</summary>
+    public void SetStunned(float duration)
+    {
+        isStunned = true;
+        stunTimer = Mathf.Max(stunTimer, duration);
+    }
+
+    /// <summary>Kiểm tra player có đang bị stun không.</summary>
+    public bool IsStunned => isStunned;
 }

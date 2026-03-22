@@ -25,6 +25,18 @@ public class ProjectileAnimController : MonoBehaviour
         animator = GetComponent<Animator>();
     }
 
+    private void Start()
+    {
+        // Force-start animation on ALL instances (server, host, and client).
+        // Ensures the fly-loop plays even if Animator "Play On Awake" is disabled
+        // or the default state needs an explicit evaluation to begin.
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+        }
+    }
+
     /// <summary>
     /// Gọi từ script damage khi projectile trúng mục tiêu.
     /// </summary>

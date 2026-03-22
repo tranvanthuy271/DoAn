@@ -195,13 +195,18 @@ public class NetworkPlayerHealth : NetworkBehaviour
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;
 
+        // Sync HP về NetworkPlayerDataSync để HealthBar cập nhật
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync != null)
+            dataSync.networkHp.Value = newHealth;
+
         // Start invincibility frames
         if (newHealth > 0)
         {
             StartInvincibilityServerRpc();
         }
 
-        // Notify clients về damage (để play sound/effect)
+        // Notify clients về damage (để play sound/effect + stun + gray overlay)
         OnTakeDamageClientRpc(damage);
 
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");

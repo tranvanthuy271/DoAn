@@ -71,17 +71,18 @@ public class HybridWaterWoodVenomSkill : HybridSkillBase
 
         GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.identity);
 
+        // Flip sprite TRƯỚC KHI Spawn() để client nhận đúng rotation ngay từ spawn packet
+        bullet.transform.rotation = Quaternion.Euler(0f, dirX < 0f ? 180f : 0f, 0f);
+
         var netObj = bullet.GetComponent<NetworkObject>();
         if (netObj != null)
             netObj.Spawn();
 
-        // Gán vận tốc
+        // Gán vận tốc trên server (physics server-side)
         var rb = bullet.GetComponent<Rigidbody2D>();
+        Vector2 bulletVelocity = new Vector2(dirX, 0f) * bulletSpeed;
         if (rb != null)
-            rb.velocity = new Vector2(dirX, 0f) * bulletSpeed;
-
-        // Flip sprite theo hướng bay
-        bullet.transform.rotation = Quaternion.Euler(0f, dirX < 0f ? 180f : 0f, 0f);
+            rb.velocity = bulletVelocity;
 
         // Gán thông số cho damage component
         var dmg = bullet.GetComponent<VenomBulletDamage>();
@@ -91,6 +92,9 @@ public class HybridWaterWoodVenomSkill : HybridSkillBase
             dmg.lifetime = bulletLifetime;
             dmg.slowDuration = slowDuration;
             dmg.healBlockDuration = healBlockDuration;
+            dmg.ownerNetworkObjectId = NetworkObjectId;
+            // Đồng bộ velocity sang tất cả client (server physics không tự sync nếu không có NetworkTransform)
+            dmg.SetVelocityClientRpc(bulletVelocity);
         }
         else
         {

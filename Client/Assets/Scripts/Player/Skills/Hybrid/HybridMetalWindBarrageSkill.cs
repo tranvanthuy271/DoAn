@@ -91,26 +91,30 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
             // Spawn đạn và đăng ký vào network
             GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.identity);
 
+            // Xoay sprite theo hướng bay TRƯỚC KHI Spawn() để client nhận đúng rotation
+            //   dirX > 0 → xoay 0°  (sprite mặc định nhìn sang phải)
+            //   dirX < 0 → xoay 180° theo trục Y để lật ngang
+            bullet.transform.rotation = Quaternion.Euler(0f, dirX < 0f ? 180f : 0f, 0f);
+
             var netObj = bullet.GetComponent<NetworkObject>();
             if (netObj != null)
                 netObj.Spawn();
 
-            // Gán vận tốc — đạn bay ngang hoàn toàn, không có thành phần Y
+            // Gán vận tốc trên server (physics chạy server-side)
             var rb = bullet.GetComponent<Rigidbody2D>();
+            Vector2 bulletVelocity = new Vector2(dirX, 0f) * bulletSpeed;
             if (rb != null)
-                rb.velocity = new Vector2(dirX, 0f) * bulletSpeed;
-
-            // Xoay sprite theo hướng bay
-            //   dirX > 0 → xoay 0°  (sprite mặc định nhìn sang phải)
-            //   dirX < 0 → xoay 180° theo trục Y để lật ngang
-            bullet.transform.rotation = Quaternion.Euler(0f, dirX < 0f ? 180f : 0f, 0f);
+                rb.velocity = bulletVelocity;
 
             // Gán thông số damage
             var dmg = bullet.GetComponent<BarrageBulletDamage>();
             if (dmg != null)
             {
-                dmg.damage   = (int)effectValue;
-                dmg.lifetime = bulletLifetime;
+                dmg.damage                = (int)effectValue;
+                dmg.lifetime              = bulletLifetime;
+                dmg.ownerNetworkObjectId  = NetworkObjectId;
+                // Đồng bộ velocity sang tất cả client (server physics không tự sync nếu không có NetworkTransform)
+                dmg.SetVelocityClientRpc(bulletVelocity);
             }
             else
             {

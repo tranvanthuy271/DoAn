@@ -134,14 +134,27 @@ public class EarthBlinkStrikeSkill : NetworkBehaviour
             Rigidbody2D rb = proj.GetComponent<Rigidbody2D>();
             if (rb == null) rb = proj.AddComponent<Rigidbody2D>();
             rb.gravityScale = 0f;
-            rb.velocity = new Vector2(dir * projectileSpeed, 0f);
+            Vector2 dotVelocity = new Vector2(dir * projectileSpeed, 0f);
+            rb.velocity = dotVelocity;
+
+            // Set owner để DotDamage không tự gây damage cho caster
+            var dotDmg = proj.GetComponent<DotDamage>();
+            if (dotDmg != null) dotDmg.SetOwner(NetworkObjectId);
 
             NetworkObject netObj = proj.GetComponent<NetworkObject>();
             if (netObj == null) netObj = proj.AddComponent<NetworkObject>();
             netObj.Spawn();
 
+            // NetworkTransform đồng bộ vị trí sang client,
+            // Rigidbody2D kinematic trên client (DotDamage.OnNetworkSpawn).
+
+            // Đợi hết lifetime rồi Despawn đúng cách
             if (projectileLifetime > 0f)
-                Destroy(proj, projectileLifetime);
+            {
+                yield return new WaitForSeconds(projectileLifetime);
+                if (netObj != null && netObj.IsSpawned)
+                    netObj.Despawn(true);
+            }
         }
         else
         {

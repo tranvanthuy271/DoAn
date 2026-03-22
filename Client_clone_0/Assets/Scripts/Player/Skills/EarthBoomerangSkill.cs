@@ -53,7 +53,7 @@ public class EarthBoomerangSkill : NetworkBehaviour
         }
     }
 
-    public void UseEarthBoomerang()
+    public void UseEarthBoomerang(float effectValue = 0f)
     {
         if (!CanUseNow) return;
         canUse = false;
@@ -63,13 +63,13 @@ public class EarthBoomerangSkill : NetworkBehaviour
         bool facingRight = transform.localScale.x >= 0f;
 
         if (IsServer)
-            StartCoroutine(BoomerangSequence(facingRight));
+            StartCoroutine(BoomerangSequence(facingRight, effectValue));
         else
-            StartBoomerangServerRpc(facingRight);
+            StartBoomerangServerRpc(facingRight, effectValue);
     }
 
     [ServerRpc]
-    private void StartBoomerangServerRpc(bool facingRight) => StartCoroutine(BoomerangSequence(facingRight));
+    private void StartBoomerangServerRpc(bool facingRight, float effectValue) => StartCoroutine(BoomerangSequence(facingRight, effectValue));
 
     [ClientRpc]
     private void TriggerBoomerangAnimationClientRpc()
@@ -102,7 +102,7 @@ public class EarthBoomerangSkill : NetworkBehaviour
     [ClientRpc]
     private void ResetIsUsingClientRpc() => isUsing = false;
 
-    private IEnumerator BoomerangSequence(bool facingRight)
+    private IEnumerator BoomerangSequence(bool facingRight, float effectValue)
     {
         TriggerBoomerangAnimationClientRpc();
 
@@ -114,12 +114,32 @@ public class EarthBoomerangSkill : NetworkBehaviour
 
             GameObject boomerang = Instantiate(boomerangPrefab, spawnPos, Quaternion.identity);
 
+            // Flip sprite TRƯỚC khi Spawn() — NetworkTransform (SyncScaleX) sử đồng bộ sang client
+            Vector3 bScale = boomerang.transform.localScale;
+            boomerang.transform.localScale = new Vector3(
+                facingRight ? Mathf.Abs(bScale.x) : -Mathf.Abs(bScale.x),
+                bScale.y, bScale.z);
+
+            // Server-side init TRƯỚC khi Spawn() để server physics bắt đầu đúng
             EarthBoomerangProjectile proj = boomerang.GetComponent<EarthBoomerangProjectile>();
-            if (proj != null) proj.Initialize(transform, velocity);
+            if (proj != null)
+            {
+                proj.InitializeOnServer(transform, velocity);
+                proj.ownerNetworkObjectId = NetworkObjectId;
+                if (effectValue > 0f) proj.damage = (int)effectValue;
+            }
+            else
+            {
+                Rigidbody2D rb = boomerang.GetComponent<Rigidbody2D>();
+                if (rb != null) { rb.gravityScale = 0f; rb.velocity = velocity; }
+            }
 
             NetworkObject netObj = boomerang.GetComponent<NetworkObject>();
             if (netObj == null) netObj = boomerang.AddComponent<NetworkObject>();
             netObj.Spawn();
+
+            // NetworkTransform đồng bộ vị trí sang client,
+            // Rigidbody2D kinematic trên client (EarthBoomerangProjectile.OnNetworkSpawn).
         }
         else
         {

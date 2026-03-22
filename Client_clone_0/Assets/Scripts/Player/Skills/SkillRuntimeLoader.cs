@@ -43,12 +43,14 @@ public class SkillRuntimeLoader : NetworkBehaviour
         base.OnNetworkSpawn();
 
         // Chỉ owner mới load — server (host) và client owner đều chạy riêng
+        Debug.Log($"[SkillRuntimeLoader] OnNetworkSpawn | IsOwner={IsOwner} | IsServer={IsServer} | go={gameObject.name}");
         if (!IsOwner) return;
 
         skillManager  = GetComponent<PlayerSkillManager>();
         windStepSkill = GetComponent<WindStepSkill>() ?? GetComponentInParent<WindStepSkill>();
         teleportSkill = GetComponent<TeleportSkill>() ?? GetComponentInParent<TeleportSkill>();
 
+        Debug.Log($"[SkillRuntimeLoader] skillManager={skillManager != null} | IsOwner={IsOwner}");
         StartCoroutine(WaitAndLoad());
     }
 
@@ -72,10 +74,23 @@ public class SkillRuntimeLoader : NetworkBehaviour
             yield break;
         }
 
+        // Đợi player data load xong từ API/GameManager (race condition khi client mới spawn)
+        // Timeout 10 giây để tránh chờ mãi nếu data không bao giờ có
+        waited = 0f;
+        while (GetPlayerId() <= 0 && waited < 10f)
+        {
+            yield return new WaitForSeconds(0.5f);
+            waited += 0.5f;
+        }
+
         int playerId = GetPlayerId();
+        string gmData = GameManager.Instance?.currentPlayerData != null
+            ? GameManager.Instance.currentPlayerData.player_id.ToString() : "null";
+        int ppId = PlayerPrefs.GetInt("PLAYER_ID", 0);
+        Debug.Log($"[SkillRuntimeLoader] WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | APIClient={APIClient.Instance != null}");
         if (playerId <= 0)
         {
-            Debug.LogWarning("[SkillRuntimeLoader] playerId không hợp lệ. Skill stats sẽ dùng giá trị Inspector.");
+            Debug.LogWarning($"[SkillRuntimeLoader] playerId={playerId} <= 0! Skill stats sẽ KHÔNG load từ DB. Kiểm tra: login trước khi spawn, GameManager.currentPlayerData, PlayerPrefs[PLAYER_ID].");
             yield break;
         }
 
@@ -149,8 +164,8 @@ public class SkillRuntimeLoader : NetworkBehaviour
 
             if (!TryGetPlayerSkillInfo(lookup, sd.skillCode, out PlayerSkillInfo info)) continue;
 
-            // Chỉ apply nếu player đã unlock skill đó (current_level >= 1)
-            if (info.current_level <= 0) continue;
+            // Apply stats từ DB — kể cả khi current_level=0 (dùng stats level 1 làm base)
+            // Giúp skill luôn hiển thị đúng MP cost / cooldown ngay cả khi chưa nâng cấp
 
             // Ghi đè stats
             sd.cooldown           = info.current_cooldown_sec > 0 ? info.current_cooldown_sec : sd.cooldown;
@@ -166,6 +181,21 @@ public class SkillRuntimeLoader : NetworkBehaviour
             else if (sd.skillType == SkillType.Teleport && teleportSkill != null)
             {
                 teleportSkill.cooldown = sd.cooldown;
+            }
+
+            // Đồng bộ effectValue sang HybridSkillBase component nếu là hybrid skill
+            if (info.current_effect_value > 0f)
+            {
+                foreach (var hc in GetComponents<HybridSkillBase>())
+                {
+                    if (string.Equals(hc.skillCode, sd.skillCode, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        hc.effectValue = info.current_effect_value;
+                        hc.cooldown    = sd.cooldown;
+                        hc.mpCost      = info.current_mp_cost;
+                        break;
+                    }
+                }
             }
 
             matched++;
@@ -194,6 +224,21 @@ public class SkillRuntimeLoader : NetworkBehaviour
             && lookup.TryGetValue("HYBRID_FIRE_EARTH_LAVA_AURA", out info))
         {
             Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_EARTH_FIRE_ERUPTION -> HYBRID_FIRE_EARTH_LAVA_AURA");
+            return true;
+        }
+
+        // Kim Phong: prefab dùng HYBRID_METAL_WIND_BARRAGE, DB có thể lưu dưới HYBRID_METAL_WIND_GALE
+        if (string.Equals(skillCode, "HYBRID_METAL_WIND_BARRAGE", System.StringComparison.OrdinalIgnoreCase)
+            && lookup.TryGetValue("HYBRID_METAL_WIND_GALE", out info))
+        {
+            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_METAL_WIND_BARRAGE -> HYBRID_METAL_WIND_GALE");
+            return true;
+        }
+
+        if (string.Equals(skillCode, "HYBRID_METAL_WIND_GALE", System.StringComparison.OrdinalIgnoreCase)
+            && lookup.TryGetValue("HYBRID_METAL_WIND_BARRAGE", out info))
+        {
+            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_METAL_WIND_GALE -> HYBRID_METAL_WIND_BARRAGE");
             return true;
         }
 

@@ -115,12 +115,6 @@ public class PlayerAnimator : MonoBehaviour
             animator.SetTrigger(Attack);
     }
 
-    public void TriggerHybridSkill()
-    {
-        if (animator != null)
-            animator.SetTrigger("HybridSkill");
-    }
-
     public void PlayAnimation(string animationName)
     {
         if (animator != null)

@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &580626100454965037
 GameObject:
@@ -30,6 +30,7 @@ GameObject:
   - component: {fileID: 3466425412121715438}
   - component: {fileID: 457124673496505863}
   - component: {fileID: 7777777777777777777}
+  - component: {fileID: 1000000000000000003}
   m_Layer: 8
   m_Name: F_Moc
   m_TagString: Player
@@ -46,11 +47,12 @@ Transform:
   m_GameObject: {fileID: 580626100454965037}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3.7, y: 1.73, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 929810971150192347}
+  - {fileID: 7520029752700998583}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &1105823959437341337
@@ -182,7 +184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 297867527
+  GlobalObjectIdHash: 2081500041
   InScenePlacedSourceGlobalObjectIdHash: 3434770090
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -323,28 +325,6 @@ MonoBehaviour:
     canUse: 0
     isUsing: 0
   defaultSkillEffectObject: {fileID: 0}
---- !u!114 &7777777777777777777
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 580626100454965037}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87c0b0bb35e70fc49965579ae0370671, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skillCode: HYBRID_WATER_WOOD_VENOM
-  cooldown: 16
-  mpCost: 50
-  effectValue: 250
-  bulletPrefab: {fileID: 4064064601472395576, guid: 99b1f95b4b98e36479e30bdc0c9a421b, type: 3}
-  bulletSpeed: 12
-  bulletLifetime: 3
-  spawnOffsetX: 0.6
-  slowDuration: 3
-  healBlockDuration: 3
 --- !u!114 &7904559682773284899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -703,6 +683,28 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1.2, y: 2}
   m_EdgeRadius: 0
+--- !u!114 &7777777777777777777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580626100454965037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87c0b0bb35e70fc49965579ae0370671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillCode: HYBRID_WATER_WOOD_VENOM
+  cooldown: 16
+  mpCost: 50
+  effectValue: 250
+  bulletPrefab: {fileID: 4064064601472395576, guid: 99b1f95b4b98e36479e30bdc0c9a421b, type: 3}
+  bulletSpeed: 12
+  bulletLifetime: 3
+  spawnOffsetX: 0.6
+  slowDuration: 3
+  healBlockDuration: 3
 --- !u!1 &2025925324465436838
 GameObject:
   m_ObjectHideFlags: 0
@@ -734,3 +736,123 @@ Transform:
   m_Children: []
   m_Father: {fileID: 650564255913534289}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &6836079839589217461
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 650564255913534289}
+    m_Modifications:
+    - target: {fileID: 2869422107028266994, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 1.015
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7746692814893501984, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+      propertyPath: m_Name
+      value: PlayerHpBarCanvas
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+--- !u!224 &7520029752700998583 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
+  m_PrefabInstance: {fileID: 6836079839589217461}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1000000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580626100454965037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  retryDelay: 3
+  maxRetries: 3
