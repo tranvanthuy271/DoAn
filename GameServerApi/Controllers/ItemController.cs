@@ -51,7 +51,9 @@ namespace GameServerApi.Controllers
                     idClass     = item.IdClass,
                     idIcon      = item.IdIcon,
                     levelNeed   = item.LevelNeed,
-                    taiPhuNeed  = item.TaiPhuNeed
+                    taiPhuNeed  = item.TaiPhuNeed,
+                    isLock      = item.IsLock,
+                    sellPrice   = item.SellPrice
                 }).ToList();
 
                 Console.WriteLine($"[ItemController] ✅ Returning {response.Count} item templates");
@@ -115,7 +117,9 @@ namespace GameServerApi.Controllers
                     idClass    = item.IdClass,
                     idIcon     = item.IdIcon,
                     levelNeed  = item.LevelNeed,
-                    taiPhuNeed = item.TaiPhuNeed
+                    taiPhuNeed = item.TaiPhuNeed,
+                    isLock     = item.IsLock,
+                    sellPrice  = item.SellPrice
                 });
             }
             catch (Exception ex)

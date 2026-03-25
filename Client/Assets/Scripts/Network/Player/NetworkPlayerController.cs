@@ -88,8 +88,9 @@ public class NetworkPlayerController : NetworkBehaviour
         // Chỉ owner mới xử lý input
         if (!IsOwner) return;
 
-        // Detect GetKeyDown trong Update để không bị miss giữa 2 FixedUpdate
-        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+        // Detect jump trong Update để không bị miss giữa 2 FixedUpdate
+        var im = InputManager.Instance;
+        if (im != null ? im.GetJumpPressed() : (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)))
             pendingJump = true;
     }
 
@@ -111,8 +112,10 @@ public class NetworkPlayerController : NetworkBehaviour
 
         // Owner gửi input lên server MỖI FixedUpdate để velocity luôn được apply liên tục
 
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+        var im = InputManager.Instance;
+        float horizontalInput = im != null ? im.GetHorizontalInput() : Input.GetAxisRaw("Horizontal");
+        float verticalAxis = im != null ? im.GetVerticalInput() : Input.GetAxisRaw("Vertical");
+        bool down = verticalAxis < -0.1f || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
         bool jump = pendingJump;
         pendingJump = false; // consume flag
 

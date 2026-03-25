@@ -257,6 +257,7 @@ namespace GameServerApi.Controllers
                 is_hybrid = info.IsHybrid,
                 gender = player.Gender,
                 character_name = player.CharacterName,
+                bag_slots = info.BagSlots,
                 // ── Hybrid Gene fields ──────────────────────────────
                 secondary_element      = info.SecondaryElement,
                 secondary_gene_tier    = info.SecondaryGeneTier,
@@ -610,6 +611,178 @@ namespace GameServerApi.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi khi clear inventory: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/inventory/sort
+        /// Sắp xếp lại inventory: gom các item về phía trước, loại bỏ ô trống giữa.
+        /// </summary>
+        [HttpPost("{playerId}/inventory/sort")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SortInventory(int playerId)
+        {
+            try
+            {
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null)
+                    return NotFound($"Player với ID {playerId} không tồn tại.");
+
+                if (string.IsNullOrEmpty(player.InventoryJson) || player.InventoryJson == "[]")
+                    return Ok(new { message = "Inventory đã rỗng.", player_id = playerId, inventory = Array.Empty<object>() });
+
+                var rawItems = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(player.InventoryJson)
+                               ?? new List<Dictionary<string, JsonElement>>();
+
+                // Lọc slot có item (quantity > 0), re-index từ 0
+                int newIndex = 0;
+                var sortedInventory = new List<Dictionary<string, object>>();
+                foreach (var item in rawItems)
+                {
+                    if (!item.TryGetValue("quantity", out var qtyEl) ||
+                        !qtyEl.TryGetInt32(out int qty) || qty <= 0)
+                        continue;
+
+                    var slot = new Dictionary<string, object>();
+                    foreach (var kvp in item)
+                        slot[kvp.Key] = kvp.Value.ValueKind switch
+                        {
+                            JsonValueKind.Number => kvp.Value.TryGetInt32(out var iv) ? iv : kvp.Value.GetDouble(),
+                            JsonValueKind.String => (object)(kvp.Value.GetString() ?? ""),
+                            JsonValueKind.True   => true,
+                            JsonValueKind.False  => false,
+                            _                    => kvp.Value.ToString()
+                        };
+                    slot["slotIndex"] = newIndex++;
+                    sortedInventory.Add(slot);
+                }
+
+                player.InventoryJson = JsonSerializer.Serialize(sortedInventory);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = $"Đã sắp xếp inventory. {sortedInventory.Count} item(s).",
+                    player_id = playerId,
+                    inventory = sortedInventory,
+                    updated_at = player.UpdatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi sắp xếp inventory: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/inventory/use-item
+        /// Body: { "slotIndex": 0 }
+        /// Sử dụng item trong túi đồ:
+        ///   - type 30 (túi đồ mở rộng): tăng bag_slots thêm 5, xóa 1 item.
+        ///   - type 21-29 (tiêu thụ): giảm số lượng (effects xử lý client-side hoặc extend sau).
+        /// </summary>
+        [HttpPost("{playerId}/inventory/use-item")]
+        [AllowAnonymous]
+        public async Task<IActionResult> UseInventoryItem(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("slotIndex", out var slotProp))
+                    return BadRequest("Thiếu field 'slotIndex'.");
+
+                int slotIndex = slotProp.GetInt32();
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null)
+                    return NotFound($"Player với ID {playerId} không tồn tại.");
+
+                var rawItems = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(
+                    string.IsNullOrEmpty(player.InventoryJson) ? "[]" : player.InventoryJson)
+                    ?? new List<Dictionary<string, JsonElement>>();
+
+                // Tìm item ở slot
+                var targetRaw = rawItems.FirstOrDefault(item =>
+                    item.TryGetValue("slotIndex", out var si) && si.TryGetInt32(out int idx) && idx == slotIndex);
+
+                if (targetRaw == null)
+                    return BadRequest($"Không tìm thấy item ở slot {slotIndex}.");
+
+                int qty = targetRaw.TryGetValue("quantity", out var qEl) && qEl.TryGetInt32(out int q) ? q : 0;
+                if (qty <= 0)
+                    return BadRequest($"Slot {slotIndex} không có item.");
+
+                int itemTemplateId = targetRaw.TryGetValue("itemTemplateId", out var tplEl) && tplEl.TryGetInt32(out int tplId) ? tplId : 0;
+                var itemTemplate   = itemTemplateId > 0 ? await _db.ItemTemplates.FindAsync(itemTemplateId) : null;
+                int itemType       = itemTemplate?.Type ?? -1;
+                string itemName    = itemTemplate?.Name ?? $"Item {itemTemplateId}";
+
+                const int BagItemType    = 30;
+                const int BagExpandBy    = 5;
+
+                var info = player.GetInfoChar();
+                string effectMsg;
+
+                if (itemType == BagItemType)
+                {
+                    info.BagSlots += BagExpandBy;
+                    effectMsg = $"Mở rộng túi đồ thành công! Số ô túi: {info.BagSlots}";
+                }
+                else if (itemType >= 21 && itemType <= 29)
+                {
+                    effectMsg = $"Đã sử dụng {itemName}.";
+                    // TODO: parse option_template để áp dụng buff HP/MP/v.v.
+                }
+                else
+                {
+                    return BadRequest($"Item này không thể sử dụng theo cách này (type={itemType}).");
+                }
+
+                // Chuyển sang mutable, giảm số lượng
+                var inventory = rawItems.Select(item =>
+                {
+                    var d = new Dictionary<string, object>();
+                    foreach (var kvp in item)
+                        d[kvp.Key] = kvp.Value.ValueKind switch
+                        {
+                            JsonValueKind.Number => kvp.Value.TryGetInt32(out var iv) ? iv : kvp.Value.GetDouble(),
+                            JsonValueKind.String => (object)(kvp.Value.GetString() ?? ""),
+                            JsonValueKind.True   => true,
+                            JsonValueKind.False  => false,
+                            _                    => kvp.Value.ToString()
+                        };
+                    return d;
+                }).ToList();
+
+                var mutableTarget = inventory.FirstOrDefault(d =>
+                    d.TryGetValue("slotIndex", out var si) && Convert.ToInt32(si) == slotIndex);
+
+                if (mutableTarget != null)
+                {
+                    int newQty = qty - 1;
+                    if (newQty <= 0)
+                        inventory.RemoveAll(d => d.TryGetValue("slotIndex", out var si) && Convert.ToInt32(si) == slotIndex);
+                    else
+                        mutableTarget["quantity"] = newQty;
+                }
+
+                player.SetInfoChar(info);
+                player.InventoryJson = JsonSerializer.Serialize(inventory);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message    = effectMsg,
+                    player_id  = playerId,
+                    bag_slots  = info.BagSlots,
+                    inventory,
+                    updated_at = player.UpdatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi sử dụng item: {ex.Message}");
             }
         }
 
@@ -1456,6 +1629,103 @@ namespace GameServerApi.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi khi nâng chỉ số tiềm năng: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/potential/allocate
+        /// Body: { "allocations": [ {"stat_name":"attack","points":3}, {"stat_name":"hp","points":2} ] }
+        /// Phân bổ nhiều điểm tiềm năng cùng lúc. Server validate đủ điểm trước khi ghi DB.
+        /// </summary>
+        [HttpPost("{playerId}/potential/allocate")]
+        [AllowAnonymous]
+        public async Task<IActionResult> AllocatePotential(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("allocations", out var allocProp) ||
+                    allocProp.ValueKind != JsonValueKind.Array)
+                    return BadRequest("Thiếu mảng 'allocations'.");
+
+                // Parse input allocations
+                var requested = new Dictionary<string, int>();
+                foreach (var item in allocProp.EnumerateArray())
+                {
+                    if (!item.TryGetProperty("stat_name", out var sn) ||
+                        !item.TryGetProperty("points",    out var pts))
+                        return BadRequest("Mỗi phần tử cần có 'stat_name' và 'points'.");
+
+                    string stat = sn.GetString() ?? "";
+                    int    pts2 = pts.TryGetInt32(out var v) ? v : 0;
+
+                    if (!PotentialStatConfig.ContainsKey(stat))
+                        return BadRequest($"Chỉ số '{stat}' không hợp lệ.");
+                    if (pts2 <= 0) continue;  // bỏ qua 0 hoặc âm
+
+                    requested[stat] = requested.TryGetValue(stat, out var cur) ? cur + pts2 : pts2;
+                }
+
+                if (requested.Count == 0)
+                    return BadRequest("Không có điểm nào để phân bổ.");
+
+                int totalNeeded = requested.Values.Sum();
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null) return NotFound("Player không tồn tại.");
+
+                var info = player.GetInfoChar();
+
+                if (info.PotentialPoints < totalNeeded)
+                    return BadRequest(
+                        $"Không đủ điểm tiềm năng. Cần {totalNeeded}, còn {info.PotentialPoints}.");
+
+                // Parse existing potential_stats
+                var potentialPoints = new Dictionary<string, int>
+                    { ["attack"] = 0, ["hp"] = 0, ["mp"] = 0, ["defense"] = 0, ["gene"] = 0 };
+
+                if (!string.IsNullOrEmpty(player.PotentialStatsJson) && player.PotentialStatsJson != "{}")
+                {
+                    try
+                    {
+                        var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(player.PotentialStatsJson);
+                        if (raw != null)
+                            foreach (var kvp in raw)
+                                if (potentialPoints.ContainsKey(kvp.Key))
+                                    potentialPoints[kvp.Key] = kvp.Value.TryGetInt32(out var vv) ? vv : 0;
+                    }
+                    catch { }
+                }
+
+                // Apply all allocations
+                foreach (var (stat, pts2) in requested)
+                    potentialPoints[stat] += pts2;
+
+                info.PotentialPoints -= totalNeeded;
+                player.SetInfoChar(info);
+                player.PotentialStatsJson = JsonSerializer.Serialize(potentialPoints);
+                player.UpdatedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                var updatedStats = PotentialStatConfig.Select(cfg => new
+                {
+                    stat_name       = cfg.Key,
+                    display_name    = cfg.Value.DisplayName,
+                    new_points      = potentialPoints[cfg.Key],
+                    value_per_point = cfg.Value.ValuePerPoint,
+                    total_value     = potentialPoints[cfg.Key] * cfg.Value.ValuePerPoint
+                }).ToList();
+
+                return Ok(new
+                {
+                    message                    = $"Đã phân bổ {totalNeeded} điểm tiềm năng thành công.",
+                    potential_points_remaining = info.PotentialPoints,
+                    updated_stats              = updatedStats
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi phân bổ tiềm năng: {ex.Message}");
             }
         }
     }

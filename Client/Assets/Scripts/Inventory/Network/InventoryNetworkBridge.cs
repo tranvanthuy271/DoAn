@@ -181,6 +181,19 @@ public class InventoryNetworkBridge : MonoBehaviour
         Debug.Log($"[InventoryNetworkBridge] Đang gửi {slotDtos.Count} slots cho InventoryUI...");
         inventoryUI.SetInventoryData(slotDtos.ToArray());
         Debug.Log($"[InventoryNetworkBridge] ✅ UI đã được update từ DB data!");
+
+        // Thông báo cho ItemUseHandler để cập nhật stat bar, quick-slots túi, v.v.
+        int bagSlots = 20;
+        int gold     = 0;
+        int silver   = 0;
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            var pd = GameManager.Instance.GetPlayerData();
+            bagSlots = pd.bag_slots > 0 ? pd.bag_slots : 20;
+            gold     = pd.gold;
+            silver   = pd.silver;
+        }
+        ItemUseHandler.Instance?.OnInventoryRefreshed(slotDtos.ToArray(), bagSlots, gold, silver);
     }
 
     /// <summary>
@@ -688,73 +701,48 @@ public class InventoryNetworkBridge : MonoBehaviour
     }
 
     /// <summary>
-    /// Gửi request sử dụng item lên server (gọi từ ItemDetailPanel khi nhấn nút Sử dụng)
+    /// Gửi request sử dụng item lên server (gọi từ ItemDetailPanel khi nhấn nút Sử dụng).
+    /// Ưu tiên dùng ItemUseHandler; phương thức này giữ lại như fallback.
     /// </summary>
     public void RequestUseItem(int slotIndex, string itemCode, int itemTemplateId = 0)
     {
-        Debug.Log($"[InventoryNetworkBridge] RequestUseItem: slotIndex={slotIndex}, itemCode={itemCode}, itemTemplateId={itemTemplateId}");
+        Debug.Log($"[InventoryNetworkBridge] RequestUseItem (fallback): slotIndex={slotIndex}, itemCode={itemCode}");
 
+        // Nếu ItemUseHandler tồn tại, để nó xử lý
+        if (ItemUseHandler.Instance != null)
+        {
+            // Tạo DTO từ dữ liệu có sẵn
+            var slot = new InventorySlotDto
+            {
+                slotIndex      = slotIndex,
+                itemCode       = itemCode,
+                itemTemplateId = itemTemplateId,
+                quantity       = 1
+            };
+            ItemUseHandler.Instance.RequestUseItem(slot);
+            return;
+        }
+
+        // Legacy fallback: kiểm tra nếu là equipment thì equip, còn lại refresh
         int playerId = GetCurrentPlayerId();
-        if (playerId == 0)
-        {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestUseItem: playerId = 0, không thể gửi request!");
-            return;
-        }
+        if (playerId == 0) return;
 
-        if (APIClient.Instance == null)
-        {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestUseItem: APIClient.Instance is null!");
-            return;
-        }
-
-        // Kiểm tra xem item có phải equipment không (category=1)
-        // FIX: Ưu tiên lookup bằng itemTemplateId (chính xác nhất),
-        // rồi fallback sang code, rồi networkInventory
         ItemTemplateDto template = null;
         if (ItemTemplateManager.Instance != null)
         {
-            // 1. Ưu tiên: lookup trực tiếp bằng itemTemplateId (luôn chính xác)
             if (itemTemplateId > 0)
-            {
                 template = ItemTemplateManager.Instance.GetItemTemplate(itemTemplateId);
-                if (template != null)
-                    Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng ID={itemTemplateId}: {template.name}");
-            }
-            
-            // 2. Fallback: thử theo itemCode
             if (template == null && !string.IsNullOrEmpty(itemCode))
-            {
                 template = ItemTemplateManager.Instance.GetItemTemplateByCode(itemCode);
-                if (template != null)
-                    Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng code={itemCode}: {template.name}");
-            }
-            
-            // 3. Fallback cuối: thử theo networkInventory slot
-            if (template == null)
-            {
-                int templateId = GetItemTemplateIdFromSlot(slotIndex);
-                if (templateId > 0)
-                {
-                    template = ItemTemplateManager.Instance.GetItemTemplate(templateId);
-                    if (template != null)
-                        Debug.Log($"[InventoryNetworkBridge] ✅ Tìm template bằng networkInventory slot={slotIndex}: {template.name}");
-                }
-            }
         }
-
-        Debug.Log($"[InventoryNetworkBridge] RequestUseItem: template={(template != null ? template.name : "NULL")}, category={(template?.category ?? -1)}");
 
         if (template != null && template.category == 1)
         {
-            // Equipment item → Trang bị
-            Debug.Log($"[InventoryNetworkBridge] ⚔️ Item {itemCode} là equipment (category=1) → gọi RequestEquipItem");
             RequestEquipItem(slotIndex, itemCode);
             return;
         }
 
-        // TODO: Thêm APIClient.UseItem() cho consumable khi server API sẵn sàng
-        Debug.Log($"[InventoryNetworkBridge] 🎮 Sử dụng item: playerId={playerId}, slotIndex={slotIndex}, itemCode={itemCode}");
-        Debug.Log("[InventoryNetworkBridge] ⚠️ API UseItem chưa implement trên server. Refresh inventory...");
+        Debug.Log("[InventoryNetworkBridge] Fallback: refresh inventory (ItemUseHandler không tìm thấy).");
         RefreshInventoryFromDB();
     }
 

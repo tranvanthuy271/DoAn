@@ -18,7 +18,6 @@ GameObject:
   - component: {fileID: 3358689502750260663}
   - component: {fileID: -1885648827862004985}
   - component: {fileID: -2635542585072446929}
-  - component: {fileID: -2127818294930663900}
   - component: {fileID: 6191139223226291517}
   - component: {fileID: 7918946937839729891}
   - component: {fileID: 4538524978485919339}
@@ -33,6 +32,7 @@ GameObject:
   - component: {fileID: 3333333333333333333}
   - component: {fileID: 4444444444444444444}
   - component: {fileID: 1000000000000000009}
+  - component: {fileID: -6403926954102229704}
   m_Layer: 8
   m_Name: Tho
   m_TagString: Player
@@ -187,7 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3607730836
+  GlobalObjectIdHash: 1859853142
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -255,32 +255,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b4041a49962b2b4985ecec35a1db14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-2127818294930663900
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2438885394459664199}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dashKey: 304
-  dashSpeed: 15
-  dashDuration: 0.3
-  dashCooldown: 1
-  enableDashDamage: 1
-  dashDamage: 3
-  dashHitRange: 1.5
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  dashTriggerName: Dash
-  dashRightTriggerName: 
-  dashLeftTriggerName: 
-  skillEffectObject: {fileID: 7010366893584065638, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
 --- !u!114 &6191139223226291517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308,6 +282,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skills:
+  - skillName: "L\u01B0\u1EDBt Nhanh"
+    skillCode: DASH
+    skillType: 14
+    activationKey: 0
+    cooldown: 1
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0
+    projectileLifetime: 0
+    animationTriggerName: 
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 1
+    iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
   - skillName: Dia Uy Khi
     skillCode: EARTH_AURA
     skillType: 8
@@ -322,6 +316,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_earth_aura
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -341,6 +336,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_earth_boomerang
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -360,6 +356,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_earth_blink
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -789,6 +786,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   retryDelay: 3
   maxRetries: 3
+--- !u!114 &-6403926954102229704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2438885394459664199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashKey: 304
+  dashSpeed: 15
+  dashDuration: 0.3
+  dashCooldown: 1
+  enableDashDamage: 1
+  dashDamage: 3
+  dashHitRange: 1.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  dashTriggerName: Dash
+  dashRightTriggerName: 
+  dashLeftTriggerName: 
+  skillEffectObject: {fileID: 0}
 --- !u!1 &4433877637323659120
 GameObject:
   m_ObjectHideFlags: 0

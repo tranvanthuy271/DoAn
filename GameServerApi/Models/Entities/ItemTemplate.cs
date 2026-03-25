@@ -56,5 +56,13 @@ namespace GameServerApi.Models
 
         [Column("idChar")]
         public int IdChar { get; set; } = 0;
+
+        /// <summary>Item bị khóa (không bán/bỏ được) — đây là thuộc tính của loại item, không phải instance. VD: 'bạc khóa'</summary>
+        [Column("isLock")]
+        public bool IsLock { get; set; } = false;
+
+        /// <summary>Giá bán lại cho NPC (đơn vị bạc)</summary>
+        [Column("sellPrice")]
+        public int SellPrice { get; set; } = 0;
     }
 }

@@ -20,8 +20,14 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private InventorySlotUI slotPrefab;
 
     [Header("Item Detail")]
-    [Tooltip("Panel hiển thị chi tiết item khi nhấn vào slot")]
-    [SerializeField] private ItemDetailPanel itemDetailPanel;
+    [Tooltip("Prefab của ItemDetailPanel (sẽ được định vƱ dưới parent khi cần)")]
+    [SerializeField] private ItemDetailPanel itemDetailPanelPrefab;
+
+    [Tooltip("Parent để instantiate ItemDetailPanel vào (nên là root Canvas). Để trống sẽ dùng transform.root.")]
+    [SerializeField] private Transform itemDetailPanelParent;
+
+    // instance được tạo runtime, tái sử dụng sau đó
+    private ItemDetailPanel _itemDetailPanelInstance;
 
     [Header("Settings")]
     [Tooltip("Số slot tối đa trong UI (nên >= số slot server gửi về)")]
@@ -96,6 +102,31 @@ public class InventoryUI : MonoBehaviour
         }
 
         Debug.Log($"[InventoryUI] InitSlots: Đã tạo thành công {maxSlotCount} slots!");
+    }
+
+    /// <summary>Mở inventory và refresh data từ server.</summary>
+    public void ShowInventory()
+    {
+        if (inventoryRoot == null) return;
+        inventoryRoot.SetActive(true);
+
+        if (slotUIs == null || slotUIs.Length == 0) InitSlots();
+
+        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        if (bridge != null)
+        {
+            bridge.RefreshInventoryFromDB();
+            bridge.RefreshEquipmentFromDB();
+        }
+        RefreshAllSlots();
+    }
+
+    /// <summary>Đóng inventory và ẩn panel chi tiết.</summary>
+    public void HideInventory()
+    {
+        if (inventoryRoot == null) return;
+        inventoryRoot.SetActive(false);
+        HideItemDetail();
     }
 
     /// <summary>
@@ -221,18 +252,50 @@ public class InventoryUI : MonoBehaviour
     }
 
     /// <summary>
+    /// Lấy instance hiện tại hoặc instantiate mới từ prefab.
+    /// </summary>
+    private ItemDetailPanel GetOrCreateDetailPanel()
+    {
+        if (_itemDetailPanelInstance != null) return _itemDetailPanelInstance;
+
+        if (itemDetailPanelPrefab == null)
+        {
+            Debug.LogError("[InventoryUI] itemDetailPanelPrefab chưa được gán trong Inspector!");
+            return null;
+        }
+
+        // Ưu tiên parent được chỉ định; nếu không, tìm root Canvas có sorting order cao nhất
+        Transform parent = itemDetailPanelParent;
+        if (parent == null)
+        {
+            Canvas best = null;
+            int bestOrder = int.MinValue;
+            foreach (var c in FindObjectsOfType<Canvas>())
+            {
+                if (c.isRootCanvas && c.sortingOrder >= bestOrder)
+                {
+                    bestOrder = c.sortingOrder;
+                    best = c;
+                }
+            }
+            parent = best != null ? best.transform : transform.root;
+        }
+
+        _itemDetailPanelInstance = Instantiate(itemDetailPanelPrefab, parent);
+        Debug.Log($"[InventoryUI] Đã instantiate ItemDetailPanel prefab dưới '{parent.name}'");
+        return _itemDetailPanelInstance;
+    }
+
+    /// <summary>
     /// Callback khi người chơi nhấn vào 1 slot có item
     /// </summary>
     private void OnSlotItemClicked(InventorySlotDto slotData)
     {
-        if (itemDetailPanel != null)
-        {
-            itemDetailPanel.ShowItem(slotData);
-        }
+        var panel = GetOrCreateDetailPanel();
+        if (panel != null)
+            panel.ShowItem(slotData);
         else
-        {
             Debug.LogWarning("[InventoryUI] itemDetailPanel chưa được gán trong Inspector!");
-        }
     }
 
     /// <summary>
@@ -240,10 +303,7 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     public void HideItemDetail()
     {
-        if (itemDetailPanel != null)
-        {
-            itemDetailPanel.Hide();
-        }
+        _itemDetailPanelInstance?.Hide();
     }
 
     private void OnDestroy()
@@ -254,11 +314,13 @@ public class InventoryUI : MonoBehaviour
             foreach (var slot in slotUIs)
             {
                 if (slot != null)
-                {
                     slot.OnSlotClicked -= OnSlotItemClicked;
-                }
             }
         }
+
+        // Destroy panel instance nếu có
+        if (_itemDetailPanelInstance != null)
+            Destroy(_itemDetailPanelInstance.gameObject);
     }
 }
 

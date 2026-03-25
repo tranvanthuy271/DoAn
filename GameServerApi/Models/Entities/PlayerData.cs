@@ -45,6 +45,9 @@ namespace GameServerApi.Models
         [JsonPropertyName("attack")]  public int Attack  { get; set; } = 10;
         [JsonPropertyName("defense")] public int Defense { get; set; } = 0;
 
+        // ---- Bag ----
+        [JsonPropertyName("bag_slots")] public int BagSlots { get; set; } = 20;
+
         // ---- Position ----
         [JsonPropertyName("map_id")]     public int   MapId     { get; set; } = 0;
         [JsonPropertyName("position_x")] public float PositionX { get; set; } = 0f;
@@ -103,6 +106,7 @@ namespace GameServerApi.Models
             SecondaryElement = null, SecondaryGeneTier = null, SecondaryGeneExp = null,
             HybridElementA = null, HybridElementB = null,
             HybridBonusTargets = null, HybridImmuneElements = null, HybridAtkBonusPct = 0f,
+            BagSlots = 20,
             Hp = 100, MaxHp = 100,
             Mp = 50,  MaxMp = 50,
             Attack = 10, Defense = 0,

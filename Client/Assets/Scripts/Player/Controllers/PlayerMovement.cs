@@ -105,20 +105,24 @@ public class PlayerMovement : MonoBehaviour
             jumpHeld = false;
             return;
         }
-        horizontalInput = Input.GetAxisRaw("Horizontal");
+        var im = InputManager.Instance;
+        horizontalInput = im != null ? im.GetHorizontalInput() : Input.GetAxisRaw("Horizontal");
         hasHorizontalInput = Mathf.Abs(horizontalInput) > 0.1f;
 
-        // Vertical input (W/S)
-        bool up = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
-        bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+        // Vertical input (W/S or mobile joystick)
+        float verticalAxis = im != null ? im.GetVerticalInput() : Input.GetAxisRaw("Vertical");
+        bool up   = verticalAxis > 0.1f  || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+        bool down = verticalAxis < -0.1f || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
         hasVerticalInput = up || down;
 
         // Any movement input
         hasAnyInput = hasHorizontalInput || hasVerticalInput;
 
-        // Jump input (chỉ ghi nhận KeyDown, không phải hold)
-        jumpPressed = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W);
-        jumpHeld = up;
+        // Jump input
+        jumpPressed = im != null ? im.GetJumpPressed()
+                                 : (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W));
+        jumpHeld    = im != null ? im.GetJumpHeld()
+                                 : (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W));
 
         // isGrounded đã được update ở đầu HandleInput() rồi, không cần check lại
 

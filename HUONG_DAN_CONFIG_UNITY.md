@@ -337,3 +337,70 @@ Mở scene `MainScene`, nhấn Play (với server đang chạy):
 | Không kết nối được server | Sai IP/Port | Kiểm tra `GameSceneNetworkInitializer` Inspector |
 | Script bị mất link trong Prefab | Do di chuyển file | Mở Prefab → kéo lại script bị missing |
 | Lỗi `CS0246: type not found` sau refactor | Unity chưa re-import | Nhấn `Assets > Refresh` hoặc `Ctrl+R` |
+
+---
+
+## 11. MOBILE CONTROLS (Android / iOS)
+
+### 11.1 Tổng Quan Luồng
+
+```
+MobileLeftButton  ──SetMobileAxis(-1,0)──▶ InputManager
+MobileRightButton ──SetMobileAxis( 1,0)──▶ InputManager ──▶ PlayerMovement
+MobileJumpButton  ──SetMobileJump()─────▶ InputManager
+```
+
+3 nút đơn giản: **←** Trái, **→** Phải, **↑** Nhảy. Keyboard PC vẫn hoạt động bình thường.
+
+### 11.2 Cấu Trúc Hierarchy
+
+```
+Canvas
+└── MobileControls          ← GameObject; script tự ẩn/hiện theo platform
+    ├── BtnLeft             ← nút ◀, góc dưới trái
+    │   └── (script) MobileLeftButton
+    ├── BtnRight            ← nút ▶, kế bên BtnLeft
+    │   └── (script) MobileRightButton
+    └── BtnJump             ← nút ▲, góc dưới phải
+        └── (script) MobileJumpButton
+```
+
+### 11.3 Tạo Từng Button
+
+1. **Create > UI > Button** cho mỗi nút, đặt tên `BtnLeft`, `BtnRight`, `BtnJump`.
+2. Set Sprite tùy ý (mũi tên trái / phải / lên).
+3. **Xóa** event `OnClick()` mặc định — script dùng `IPointerDownHandler`.
+4. Thêm script tương ứng:
+   - `BtnLeft` → **`MobileLeftButton`** (file `MobileJoystick.cs`)
+   - `BtnRight` → **`MobileRightButton`** (file `MobileAttackButton.cs`)
+   - `BtnJump` → **`MobileJumpButton`** (file `MobileJumpButton.cs`)
+
+> Lưu ý: Class `MobileLeftButton` nằm trong file `MobileJoystick.cs` và `MobileRightButton` nằm trong `MobileAttackButton.cs` (do Unity không cho xóa file cũ). Unity vẫn nhận đúng class khi kéo vào Inspector.
+
+### 11.4 Anchoring Gợi Ý
+
+| Nút | Anchor | Position |
+|-----|--------|----------|
+| BtnLeft | bottom-left | X=80, Y=80 |
+| BtnRight | bottom-left | X=200, Y=80 |
+| BtnJump | bottom-right | X=-80, Y=80 |
+
+Kích thước gợi ý: **120×120 px** mỗi nút. Điều chỉnh theo thiết kế.
+
+### 11.5 Đảm Bảo EventSystem Hoạt Động
+
+Canvas cần có **`GraphicRaycaster`** và scene cần có **`EventSystem`** (Unity tự tạo khi thêm Canvas lần đầu).
+
+### 11.6 Ẩn Trên PC (tuỳ chọn)
+
+Các script tự gọi `gameObject.SetActive(false)` khi không phải mobile **và** không phải Editor.  
+Nếu muốn ẩn hoàn toàn trong Editor: tắt thủ công `MobileControls` GameObject.
+
+### 11.7 Troubleshoot Mobile
+
+| Triệu chứng | Nguyên nhân | Cách sửa |
+|---|---|---|
+| Nhân vật không di chuyển khi bấm | `InputManager` null / chưa có trong scene | Thêm GameObject "InputManager" + script |
+| Nút không phản hồi touch | Thiếu `GraphicRaycaster` trên Canvas | Thêm component |
+| Nhân vật giữ nguyên hướng khi thả tay | Quên `OnPointerUp` trong script | Kiểm tra class đúng (Left/Right/Jump) |
+| Nút hiện trên PC không mong muốn | `Application.isEditor = true` trong Editor | Tắt thủ công trong Inspector khi cần |

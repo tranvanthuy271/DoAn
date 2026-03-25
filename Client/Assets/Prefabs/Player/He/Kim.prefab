@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &401232297520529962
 GameObject:
@@ -48,7 +48,6 @@ GameObject:
   - component: {fileID: -1468697402061385847}
   - component: {fileID: 3226233992749386144}
   - component: {fileID: 5061282325259405091}
-  - component: {fileID: -5594044968103084434}
   - component: {fileID: -678496537016264731}
   - component: {fileID: 3609729905628275357}
   - component: {fileID: -4009988433998750886}
@@ -60,6 +59,7 @@ GameObject:
   - component: {fileID: -5800895522135341273}
   - component: {fileID: -8613463630927572149}
   - component: {fileID: 1000000000000000007}
+  - component: {fileID: 1546188620056719567}
   m_Layer: 8
   m_Name: Kim
   m_TagString: Player
@@ -298,32 +298,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b4041a49962b2b4985ecec35a1db14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-5594044968103084434
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2093030462349691606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dashKey: 304
-  dashSpeed: 15
-  dashDuration: 0.3
-  dashCooldown: 1
-  enableDashDamage: 1
-  dashDamage: 3
-  dashHitRange: 1.5
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  dashTriggerName: Dash
-  dashRightTriggerName: 
-  dashLeftTriggerName: 
-  skillEffectObject: {fileID: 7010366893584065638, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
 --- !u!114 &-678496537016264731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -649,6 +623,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skills:
+  - skillName: "L\u01B0\u1EDBt Nhanh"
+    skillCode: DASH
+    skillType: 14
+    activationKey: 0
+    cooldown: 1
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0
+    projectileLifetime: 0
+    animationTriggerName: 
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 1
+    iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
   - skillName: Kim Phong
     skillCode: METAL_STRIKE
     skillType: 2
@@ -663,6 +657,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_metal_strike
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -682,6 +677,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_metal_blade
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -701,6 +697,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_metal_shield
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -728,6 +725,46 @@ MonoBehaviour:
   shieldVisualObject: {fileID: 8775879617636896122}
   shieldTriggerName: Skill3
   shieldCollider: {fileID: 5757196934379655122}
+--- !u!114 &1000000000000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093030462349691606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  retryDelay: 3
+  maxRetries: 3
+--- !u!114 &1546188620056719567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093030462349691606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashKey: 304
+  dashSpeed: 15
+  dashDuration: 0.3
+  dashCooldown: 1
+  enableDashDamage: 1
+  dashDamage: 3
+  dashHitRange: 1.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  dashTriggerName: Dash
+  dashRightTriggerName: 
+  dashLeftTriggerName: 
+  skillEffectObject: {fileID: 0}
 --- !u!1 &8234735932101947168
 GameObject:
   m_ObjectHideFlags: 0
@@ -1074,17 +1111,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
   m_PrefabInstance: {fileID: 4089189603413404250}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1000000000000000007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2093030462349691606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  retryDelay: 3
-  maxRetries: 3

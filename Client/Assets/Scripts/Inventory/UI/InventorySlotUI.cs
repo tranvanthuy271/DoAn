@@ -14,6 +14,8 @@ public class InventorySlotUI : MonoBehaviour
     [SerializeField] private Image iconImage;
     [SerializeField] private TMP_Text quantityText;
     [SerializeField] private GameObject equippedMark;
+    [Tooltip("Image/GameObject hiển thị khi item bị khóa (isLocked = true)")]
+    [SerializeField] private GameObject lockMark;
 
     private int slotIndex;
     private InventorySlotDto currentData;
@@ -53,6 +55,11 @@ public class InventorySlotUI : MonoBehaviour
         if (equippedMark != null)
         {
             equippedMark.SetActive(false);
+        }
+
+        if (lockMark != null)
+        {
+            lockMark.SetActive(false);
         }
     }
 
@@ -120,6 +127,11 @@ public class InventorySlotUI : MonoBehaviour
         if (equippedMark != null)
         {
             equippedMark.SetActive(slot.isEquipped);
+        }
+
+        if (lockMark != null)
+        {
+            lockMark.SetActive(slot.isLocked);
         }
     }
 

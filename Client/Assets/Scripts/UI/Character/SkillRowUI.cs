@@ -137,6 +137,19 @@ public class SkillRowUI : MonoBehaviour
         // Nút "+" chỉ active khi có thể nâng
         if (btnUpgrade != null)
             btnUpgrade.interactable = _info.can_upgrade && !maxed;
+
+        // Icon skill (ưu tiên icon_id từ server, fallback sang skill_code)
+        if (iconImage != null)
+        {
+            string iconKey = !string.IsNullOrEmpty(_info.icon_id)
+                ? _info.icon_id
+                : _info.skill_code;
+            Sprite icon = SkillIconDatabase.Instance != null
+                ? SkillIconDatabase.Instance.GetIcon(iconKey)
+                : null;
+            iconImage.sprite  = icon;
+            iconImage.enabled = icon != null;
+        }
     }
 
     private void OnClickUpgrade()

@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &7529880857526133997
 GameObject:
@@ -49,7 +49,6 @@ GameObject:
   - component: {fileID: -4650635667455340752}
   - component: {fileID: 5114931177508110205}
   - component: {fileID: 194248441345384412}
-  - component: {fileID: -1916504402268556371}
   - component: {fileID: 66221410939849055}
   - component: {fileID: -5321075614533191251}
   - component: {fileID: 230659174526585868}
@@ -61,6 +60,7 @@ GameObject:
   - component: {fileID: -7083803633414510537}
   - component: {fileID: 1111111111111111111}
   - component: {fileID: 1000000000000000006}
+  - component: {fileID: 787984753589245996}
   m_Layer: 8
   m_Name: Hoa
   m_TagString: Player
@@ -215,7 +215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 460163057
+  GlobalObjectIdHash: 3881043348
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -283,32 +283,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b4041a49962b2b4985ecec35a1db14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-1916504402268556371
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8479569071951265586}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dashKey: 304
-  dashSpeed: 15
-  dashDuration: 0.3
-  dashCooldown: 1
-  enableDashDamage: 1
-  dashDamage: 3
-  dashHitRange: 1.5
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  dashTriggerName: Dash
-  dashRightTriggerName: 
-  dashLeftTriggerName: 
-  skillEffectObject: {fileID: 7010366893584065638, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
 --- !u!114 &66221410939849055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -322,6 +296,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skills:
+  - skillName: "L\u01B0\u1EDBt Nhanh"
+    skillCode: DASH
+    skillType: 14
+    activationKey: 0
+    cooldown: 1
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0
+    projectileLifetime: 0
+    animationTriggerName: 
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 1
+    iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
   - skillName: Hoa Dan
     skillCode: FIRE_BOLT
     skillType: 0
@@ -336,6 +330,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_fire_bolt
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -355,6 +350,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_fire_burst
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -374,6 +370,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_fire_rain
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -759,6 +756,46 @@ MonoBehaviour:
   spawnInterval: 0.12
   firePrefab: {fileID: 6890435278248122421, guid: 0e41661da39808840b956a8f8be91e37, type: 3}
   animTriggerName: Skill3
+--- !u!114 &1000000000000000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8479569071951265586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  retryDelay: 3
+  maxRetries: 3
+--- !u!114 &787984753589245996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8479569071951265586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashKey: 304
+  dashSpeed: 15
+  dashDuration: 0.3
+  dashCooldown: 1
+  enableDashDamage: 1
+  dashDamage: 3
+  dashHitRange: 1.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  dashTriggerName: Dash
+  dashRightTriggerName: 
+  dashLeftTriggerName: 
+  skillEffectObject: {fileID: 0}
 --- !u!1 &8908357230803505039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1015,17 +1052,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
   m_PrefabInstance: {fileID: 5787263412864443863}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1000000000000000006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8479569071951265586}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  retryDelay: 3
-  maxRetries: 3

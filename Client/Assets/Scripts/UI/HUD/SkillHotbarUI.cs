@@ -140,11 +140,21 @@ public class SkillHotbarUI : MonoBehaviour
             if (i < skillCount)
             {
                 SkillData skillData = manager.GetSkill(i);
-                Sprite icon = (i < skillIcons.Count) ? skillIcons[i] : null;
-                // Dùng == null để tránh UnassignedReferenceException với Unity Object
-                string iconName = (icon != null && icon) ? icon.name : "null";
+
+                // Ưu tiên: 1) icon manual trong Inspector, 2) iconId từ DB, 3) skillCode fallback
+                Sprite icon = (i < skillIcons.Count && skillIcons[i] != null) ? skillIcons[i] : null;
+                if (icon == null && skillData != null && SkillIconDatabase.Instance != null)
+                {
+                    // Thử iconId (khớp với icon_id trong DB) trước, rồi fallback sang skillCode
+                    if (!string.IsNullOrEmpty(skillData.iconId))
+                        icon = SkillIconDatabase.Instance.GetIcon(skillData.iconId);
+                    if (icon == null && !string.IsNullOrEmpty(skillData.skillCode))
+                        icon = SkillIconDatabase.Instance.GetIcon(skillData.skillCode);
+                }
+
+                string iconName = icon != null ? icon.name : "null";
                 Debug.Log($"[SkillHotbarUI]   Slot[{i}] ← skill '{skillData?.skillName}' key={skillData?.activationKey} icon={iconName}");
-                slot.Bind(skillData, manager, i, icon != null && icon ? icon : null);
+                slot.Bind(skillData, manager, i, icon);
             }
             else
             {

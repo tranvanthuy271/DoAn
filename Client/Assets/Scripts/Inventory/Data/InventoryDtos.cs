@@ -18,6 +18,8 @@ public class ItemTemplateDto
     public int    idIcon;      // ID icon trong Unity Resources/ItemIcons/{idIcon}
     public int    levelNeed;
     public int    taiPhuNeed;
+    public bool   isLock;      // loại item này bị khóa (VD: bạc khóa)
+    public int    sellPrice;   // giá bán lại (đơn vị bạc)
 
     // ---- Backward-compat aliases (v2 → v3) ----
     // Các property này chỉ dùng cho code cũ; không ảnh hưởng JSON deserialization.
@@ -52,6 +54,7 @@ public class InventorySlotDto
     public int    id;           // item_template.id
     public int    amount;
     public bool   isEquipped;
+    public bool   isLocked;     // item instance bị khóa (không thể drop/bán)
     public int    upgradeLevel; // bậc nâng cấp (+0~+20); 0 nếu không phải trang bị
     public string strOptions;   // "optId,value;..." ; "" nếu không phải trang bị
 

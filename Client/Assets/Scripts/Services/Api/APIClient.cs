@@ -126,6 +126,7 @@ public class PlayerDataResponse
     public string hybrid_immune_elements;  // CSV "Water,Metal"
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
+    public int bag_slots;                  // Số ô túi đồ hiện tại (mặc định 20)
 }
 
 [System.Serializable]
@@ -190,6 +191,9 @@ public class InventoryItem
     public string itemCode;
     public string iconId;
     public bool isEquipped;
+    public bool isLocked;      // item instance bị khóa
+    public int upgradeLevel;   // bậc nâng cấp
+    public string strOptions;  // stat options
 }
 
 [System.Serializable]
@@ -249,6 +253,19 @@ public class PlayerPotentialResponse
     public int                potential_points_available;
     public int                player_level;
     public PotentialStatInfo[] stats;
+}
+
+[System.Serializable]
+public class PotentialAllocationEntry
+{
+    public string stat_name;
+    public int    points;
+}
+
+[System.Serializable]
+public class PotentialAllocationRequest
+{
+    public PotentialAllocationEntry[] allocations;
 }
 
 public class APIClient : MonoBehaviour
@@ -1270,6 +1287,59 @@ public class APIClient : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Phân bổ nhiều chỉ số tiềm năng cùng lúc (stage-and-commit).
+    /// POST /api/player/{id}/potential/allocate
+    /// Body: { "allocations": [ {"stat_name":"attack","points":3}, … ] }
+    /// Server validate tổng điểm, cập nhật DB, trả về kết quả.
+    /// </summary>
+    public void AllocatePotentialStats(int playerId,
+        System.Collections.Generic.List<PotentialAllocationEntry> allocations,
+        System.Action<string> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(AllocatePotentialStatsCoroutine(playerId, allocations, onSuccess, onError));
+    }
+
+    private System.Collections.IEnumerator AllocatePotentialStatsCoroutine(int playerId,
+        System.Collections.Generic.List<PotentialAllocationEntry> allocations,
+        System.Action<string> onSuccess,
+        System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/potential/allocate";
+
+        var req = new PotentialAllocationRequest { allocations = allocations.ToArray() };
+        string json = JsonUtility.ToJson(req);
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
+
+        Debug.Log($"[APIClient] AllocatePotential → POST {url}  body={json}");
+
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+
+            yield return www.SendWebRequest();
+
+            string responseText = www.downloadHandler?.text ?? "";
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[APIClient] AllocatePotential OK: {responseText}");
+                onSuccess?.Invoke(responseText);
+            }
+            else
+            {
+                string err = !string.IsNullOrEmpty(responseText) ? responseText : www.error;
+                Debug.LogError($"[APIClient] AllocatePotential failed | HTTP {www.responseCode} | url={url} | err={err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+
     // =====================================================================
     // EQUIPMENT UPGRADE
     // =====================================================================
@@ -1650,4 +1720,92 @@ public class APIClient : MonoBehaviour
             }
         }
     }
+
+    // ── INVENTORY EXTENDED ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// POST /api/player/{playerId}/inventory/use-item
+    /// Body: { "slotIndex": N }
+    /// </summary>
+    public void UseInventoryItem(int playerId, int slotIndex,
+                                 System.Action<UseItemResponse> onSuccess,
+                                 System.Action<string> onError = null)
+    {
+        StartCoroutine(UseInventoryItemCoroutine(playerId, slotIndex, onSuccess, onError));
+    }
+
+    private IEnumerator UseInventoryItemCoroutine(int playerId, int slotIndex,
+                                                  System.Action<UseItemResponse> onSuccess,
+                                                  System.Action<string> onError)
+    {
+        string url  = $"{baseURL}/player/{playerId}/inventory/use-item";
+        byte[] body = System.Text.Encoding.UTF8.GetBytes($"{{\"slotIndex\":{slotIndex}}}");
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                try { onSuccess?.Invoke(JsonUtility.FromJson<UseItemResponse>(www.downloadHandler.text)); }
+                catch (System.Exception ex) { onError?.Invoke(ex.Message); }
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] UseInventoryItem failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+
+    /// <summary>
+    /// POST /api/player/{playerId}/inventory/sort
+    /// Gom các item về phía trước, loại bỏ ô trống.
+    /// </summary>
+    public void SortInventory(int playerId,
+                              System.Action<string> onSuccess,
+                              System.Action<string> onError = null)
+    {
+        StartCoroutine(SortInventoryCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator SortInventoryCoroutine(int playerId,
+                                               System.Action<string> onSuccess,
+                                               System.Action<string> onError)
+    {
+        string url  = $"{baseURL}/player/{playerId}/inventory/sort";
+        byte[] body = System.Text.Encoding.UTF8.GetBytes("{}");
+        using (var www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(body);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("[APIClient] SortInventory success");
+                onSuccess?.Invoke(www.downloadHandler.text);
+            }
+            else
+            {
+                string err = www.downloadHandler?.text ?? www.error;
+                Debug.LogError($"[APIClient] SortInventory failed: {err}");
+                onError?.Invoke(err);
+            }
+        }
+    }
+}
+
+[System.Serializable]
+public class UseItemResponse
+{
+    public string message;
+    public int    player_id;
+    public int    bag_slots;
 }

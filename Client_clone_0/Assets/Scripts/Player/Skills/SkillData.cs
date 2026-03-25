@@ -16,7 +16,8 @@ public enum SkillType
     EarthBlinkStrike, // Địa Độn Thuật: dịch chuyển + DoT projectile (delegate sang EarthBlinkStrikeSkill)
     HybridBarrage,   // Kim Phong Liên Tiễn: bắn 5 đạn nhỏ theo ngang (delegate sang HybridMetalWindBarrageSkill)
     HybridLavaAura,  // Hỏa Thổ Dung Nham: dung nham bao quanh player, DoT + chặn hồi HP (delegate sang HybridFireEarthLavaAuraSkill)
-    HybridVenom      // Băng Độc Vĩnh Cửu (Water + Wood): hồ nước độc, Slow + DoT + giảm ATK (delegate sang HybridWaterWoodVenomSkill)
+    HybridVenom,     // Băng Độc Vĩnh Cửu (Water + Wood): hồ nước độc, Slow + DoT + giảm ATK (delegate sang HybridWaterWoodVenomSkill)
+    Dash             // Lướt nhanh: delegate sang PlayerDash component
 }
 
 /// <summary>
@@ -70,6 +71,11 @@ public class SkillData
     
     [Tooltip("Nếu true, sẽ không trigger animation trên SkillEffect của player")]
     public bool disablePlayerSkillEffectAnimation = false;
+
+    [Header("Icon")]
+    [Tooltip("icon_id trong DB (VD: 'icon_wind_1'). Phải khớp tên file PNG trong Resources/SkillIcons/. " +
+             "Nếu để trống, SkillHotbarUI sẽ fallback sang skillCode.")]
+    public string iconId = "";
 
     [Header("Runtime Stats (load từ DB — không chỉnh tay)")]
     [Tooltip("Sát thương / hiệu ứng tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]

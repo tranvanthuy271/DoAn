@@ -5,34 +5,21 @@ using TMPro;
 /// <summary>
 /// CharacterPanelController – Panel nhân vật 4 tab.
 ///
-/// Cấu trúc GameObject khuyến nghị:
-/// ┌─ CharacterPanel (Canvas/Panel root)
-/// │   ├─ TabBar
-/// │   │   ├─ BtnStats      [Button] "Thông Số"   ← tab 0
-/// │   │   ├─ BtnEquipment  [Button] "Trang Bị"  ← tab 1
-/// │   │   ├─ BtnSkill      [Button] "Kỹ Năng"   ← tab 2
-/// │   │   └─ BtnPotential  [Button] "Tiềm Năng" ← tab 3
-/// │   ├─ ContentStats      ── chứa StatsTabUI
-/// │   ├─ ContentEquipment  ── chứa EquipmentPanelUI (đã có)
-/// │   ├─ ContentSkill      ── chứa SkillTabUI (mới)
-/// │   └─ ContentPotential  ── chứa PotentialTabUI (mới)
-///
-/// Setup:
-/// 1. Tạo Panel root (CharacterPanel) trong Canvas.
-/// 2. Thêm 4 Button tab vào TabBar, kéo vào các slot btnStats/btnEquipment/btnSkill/btnPotential.
-/// 3. Kéo StatsTabUI, EquipmentPanelUI, SkillTabUI, PotentialTabUI vào các slot tương ứng.
-/// 4. Gắn script này lên CharacterPanel.
-/// 5. Đặt playerId = user_id sau khi login (gọi SetPlayerId(id) từ LoginController).
-///
-/// Với nút mở panel: tạo Button ngoài và gọi characterPanelController.Toggle().
+/// Thứ tự tab (trái → phải):
+///   0 = Thông Số   (StatsTabUI)
+///   1 = Trang Bị   (contentEquipment – EquipmentTabUI)
+///   2 = Kỹ Năng    (SkillTabUI)
+///   3 = Tiềm Năng  (PotentialTabUI)
 /// </summary>
 public class CharacterPanelController : MonoBehaviour
 {
     [Header("Panel Root")]
-    [Tooltip("Root GameObject của toàn bộ panel nhân vật (thường chính là gameObject này)")]
     [SerializeField] private GameObject panelRoot;
 
-    [Header("Tab Buttons")]
+    [Tooltip("Child chứa nội dung (Window). Nếu gán, chỉ ẩn/hiện phần này khi dùng InformationPanelController.")]
+    [SerializeField] private GameObject contentRoot;
+
+    [Header("Tab Buttons  (Thông Số | Trang Bị | Kỹ Năng | Tiềm Năng)")]
     [SerializeField] private Button btnStats;
     [SerializeField] private Button btnEquipment;
     [SerializeField] private Button btnSkill;
@@ -44,15 +31,12 @@ public class CharacterPanelController : MonoBehaviour
     [SerializeField] private SkillTabUI     contentSkill;
     [SerializeField] private PotentialTabUI contentPotential;
 
-    [Header("Optional – Highlight active tab")]
-    [Tooltip("Màu nút tab đang chọn")]
+    [Header("Tab Colors")]
     [SerializeField] private Color colorActiveTab   = new Color(0.2f, 0.7f, 1f, 1f);
-    [Tooltip("Màu nút tab không active")]
     [SerializeField] private Color colorInactiveTab = new Color(0.8f, 0.8f, 0.8f, 1f);
 
-    // --------------- Runtime ---------------
-    private int    playerId = -1;
-    private int    activeTab = 0; // 0=Stats, 1=Equipment, 2=Skill, 3=Potential
+    private int playerId  = -1;
+    private int activeTab = 0; // 0=Stats, 1=Equipment, 2=Skill, 3=Potential
 
     // ───────────────────────────────────────────────
     #region Unity lifecycle
@@ -60,39 +44,33 @@ public class CharacterPanelController : MonoBehaviour
     private void Awake()
     {
         if (panelRoot == null) panelRoot = gameObject;
+        if (contentRoot == null) contentRoot = panelRoot; // fallback nếu chưa gán
 
-        btnStats    ?.onClick.AddListener(() => SwitchTab(0));
-        btnEquipment?.onClick.AddListener(() => SwitchTab(1));
-        btnSkill    ?.onClick.AddListener(() => SwitchTab(2));
-        btnPotential?.onClick.AddListener(() => SwitchTab(3));
+        btnStats     ?.onClick.AddListener(() => SwitchTab(0));
+        btnEquipment ?.onClick.AddListener(() => SwitchTab(1));
+        btnSkill     ?.onClick.AddListener(() => SwitchTab(2));
+        btnPotential ?.onClick.AddListener(() => SwitchTab(3));
     }
 
     private void Start()
     {
         panelRoot.SetActive(false);
+        // Đảm bảo contentRoot ận khi start
+        if (contentRoot != panelRoot) contentRoot.SetActive(false);
 
-        // Tự động đọc playerId từ PlayerPrefs nếu chưa được set qua SetPlayerId()
         if (playerId <= 0)
         {
             int savedId = PlayerPrefs.GetInt("USER_ID", 0);
-            if (savedId > 0)
-            {
-                Debug.Log($"[CharacterPanel] Auto-set playerId={savedId} từ PlayerPrefs.");
-                SetPlayerId(savedId);
-            }
-            else
-            {
-                Debug.LogWarning("[CharacterPanel] Không tìm thấy USER_ID trong PlayerPrefs!");
-            }
+            if (savedId > 0) SetPlayerId(savedId);
         }
     }
 
     private void OnDestroy()
     {
-        btnStats    ?.onClick.RemoveAllListeners();
-        btnEquipment?.onClick.RemoveAllListeners();
-        btnSkill    ?.onClick.RemoveAllListeners();
-        btnPotential?.onClick.RemoveAllListeners();
+        btnStats     ?.onClick.RemoveAllListeners();
+        btnEquipment ?.onClick.RemoveAllListeners();
+        btnSkill     ?.onClick.RemoveAllListeners();
+        btnPotential ?.onClick.RemoveAllListeners();
     }
 
     #endregion
@@ -100,35 +78,47 @@ public class CharacterPanelController : MonoBehaviour
     // ───────────────────────────────────────────────
     #region Public API
 
-    /// <summary>
-    /// Đặt player ID (gọi sau khi login thành công).
-    /// </summary>
     public void SetPlayerId(int id)
     {
         playerId = id;
+        contentStats    ?.SetPlayerId(id);
         contentSkill    ?.SetPlayerId(id);
         contentPotential?.SetPlayerId(id);
     }
 
-    /// <summary>Mở / đóng panel (dùng cho toggle button bên ngoài).</summary>
     public void Toggle()
     {
-        if (panelRoot.activeSelf)
-            Hide();
-        else
-            Show();
+        if (panelRoot.activeSelf) Hide();
+        else Show();
     }
 
+    /// <summary>Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
     public void Show()
     {
         panelRoot.SetActive(true);
-        SwitchTab(activeTab); // refresh tab hiện tại
+        contentRoot.SetActive(true);  // đảm bảo Window cũng hiện
+        SwitchTab(activeTab);
     }
 
-    public void Hide()
+    /// <summary>Tắt toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
+    public void Hide() => panelRoot.SetActive(false);
+
+    /// <summary>
+    /// Chỉ hiện phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
+    /// Dùng bởi InformationPanelController khi bấm BtnThongTin.
+    /// </summary>
+    public void ShowContent()
     {
-        panelRoot.SetActive(false);
+        if (!panelRoot.activeSelf) panelRoot.SetActive(true);
+        contentRoot.SetActive(true);
+        SwitchTab(activeTab);
     }
+
+    /// <summary>
+    /// Chỉ ẩn phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
+    /// Dùng bởi InformationPanelController khi bấm BtnTuiDo.
+    /// </summary>
+    public void HideContent() => contentRoot.SetActive(false);
 
     public bool IsVisible() => panelRoot != null && panelRoot.activeSelf;
 
@@ -146,27 +136,20 @@ public class CharacterPanelController : MonoBehaviour
         bool sk = tabIndex == 2;
         bool pt = tabIndex == 3;
 
-        // Show / hide content panels
-        if (contentStats     != null) ((MonoBehaviour)contentStats).gameObject.SetActive(st);
+        if (contentStats     != null) contentStats.gameObject.SetActive(st);
         if (contentEquipment != null) contentEquipment.SetActive(eq);
-        if (contentSkill     != null) ((MonoBehaviour)contentSkill).gameObject.SetActive(sk);
-        if (contentPotential != null) ((MonoBehaviour)contentPotential).gameObject.SetActive(pt);
+        if (contentSkill     != null) contentSkill.gameObject.SetActive(sk);
+        if (contentPotential != null) contentPotential.gameObject.SetActive(pt);
 
-        // Highlight active tab button
         SetTabColor(btnStats,     st);
         SetTabColor(btnEquipment, eq);
         SetTabColor(btnSkill,     sk);
         SetTabColor(btnPotential, pt);
 
-        // Refresh tab data when switched to it
-        if (st)                       contentStats    ?.Load();
-        if (sk  && playerId > 0)      contentSkill    ?.Load();
-        if (pt)
-        {
-            Debug.Log($"[CharacterPanel] Tab Tiềm Năng được chọn – playerId={playerId}, contentPotential={(contentPotential == null ? "NULL" : "OK")}");
-            if (playerId > 0) contentPotential?.Load();
-            else Debug.LogWarning("[CharacterPanel] playerId chưa được set, không gọi Load().");
-        }
+        if (st)                  contentStats?.Load();
+        if (eq)                  contentEquipment?.GetComponent<EquipmentPanelUI>()?.RefreshFromBridge();
+        if (sk && playerId > 0)  contentSkill?.Load();
+        if (pt && playerId > 0)  contentPotential?.Load();
     }
 
     private void SetTabColor(Button btn, bool active)

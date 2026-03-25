@@ -1,154 +1,131 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
-/// PotentialStatRowUI – Một dòng hiển thị thông tin 1 chỉ số tiềm năng.
+/// PotentialStatRowUI – Một dòng hiển thị 1 chỉ số tiềm năng.
 ///
-/// Cấu trúc GameObject gợi ý:
-/// ┌─ PotentialStatRow
-/// │   ├─ TxtStatName    [TMP_Text] – "Tấn Công"
-/// │   ├─ TxtPoints      [TMP_Text] – "3 điểm"
-/// │   ├─ TxtValue       [TMP_Text] – "Tổng: +15"
-/// │   └─ BtnUpgrade     [Button]  – nút "+"
+/// Cấu trúc GameObject (HorizontalLayoutGroup trên root):
+/// ┌─ PotentialStatRow   [Image bg + HLG]
+/// │   ├─ TxtStatName    [TMP_Text] – "Tấn Công:"
+/// │   ├─ TxtPoints      [TMP_Text] – "10"  (hiển thị giá trị pending)
+/// │   ├─ BtnMinus       [Button]   – "-"
+/// │   ├─ BtnPlus        [Button]   – "+"
+/// │   └─ BtnMax         [Button]   – "▲"  (tăng max bằng điểm còn lại)
 ///
-/// Lưu ý: Prefab này được PotentialTabUI instantiate tự động.
+/// Không gọi API trực tiếp – mọi thay đổi là pending cho đến khi
+/// PotentialTabUI gửi lên server qua nút "Cộng".
 /// </summary>
-public class PotentialStatRowUI : MonoBehaviour, IPointerClickHandler
+public class PotentialStatRowUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private TMP_Text txtStatName;
     [SerializeField] private TMP_Text txtPoints;
-    [SerializeField] private TMP_Text txtValue;
-    [SerializeField] private Button   btnUpgrade;
+    [SerializeField] private Button   btnMinus;
+    [SerializeField] private Button   btnPlus;
+    [SerializeField] private Button   btnMax;
 
     // ── Internal state ─────────────────────────────────────
     private PotentialStatInfo _info;
-    private int               _playerId;
-    private Action            _onUpgraded;       // callback để reload tab
-    // ───────────────────────────────────────
-    private void Awake()
+    private int               _pendingDelta;          // điểm đã cộng/trừ (chưa gửi server)
+    private Func<int>         _getAvailablePoints;    // hỏi parent số điểm còn
+    private Action<int>       _onPointsChanged;       // báo parent: âm = dùng, dương = trả
+
+    // ── Public API ─────────────────────────────────────────
+    public string StatName    => _info?.stat_name;
+    public int    PendingDelta => _pendingDelta;
+
+    /// <summary>Khởi tạo dữ liệu dòng. Không gọi API; thay đổi chỉ là pending.</summary>
+    public void SetData(PotentialStatInfo info,
+                        Func<int>   getAvailablePoints,
+                        Action<int> onPointsChanged)
     {
-        // Tắt raycastTarget trên Image và TMP_Text không phải Button graphic
-        // – tránh bị chặn click xuống BtnUpgrade
-        foreach (var img in GetComponentsInChildren<Image>(includeInactive: true))
-        {
-            bool isButtonTarget = img.GetComponent<Button>() != null
-                               || (img.transform.parent != null &&
-                                   img.transform.parent.GetComponent<Button>() != null &&
-                                   img.transform.parent.GetComponent<Button>().targetGraphic == img);
-            if (!isButtonTarget)
-                img.raycastTarget = false;
-        }
-        foreach (var tmp in GetComponentsInChildren<TMP_Text>(includeInactive: true))
-            tmp.raycastTarget = false;
+        _info               = info;
+        _getAvailablePoints = getAvailablePoints;
+        _onPointsChanged    = onPointsChanged;
+        _pendingDelta       = 0;
+
+        RefreshUI();
+
+        btnMinus?.onClick.RemoveAllListeners();
+        btnPlus?.onClick.RemoveAllListeners();
+        btnMax?.onClick.RemoveAllListeners();
+
+        btnMinus?.onClick.AddListener(OnClickMinus);
+        btnPlus?.onClick.AddListener(OnClickPlus);
+        btnMax?.onClick.AddListener(OnClickMax);
     }
 
-    // IPointerClickHandler: debug – xác nhận click có tới row không
-    public void OnPointerClick(PointerEventData eventData)
+    /// <summary>Hủy mọi thay đổi pending về 0, cập nhật UI.</summary>
+    public void ResetPending()
     {
-        Debug.Log($"[PotentialStatRowUI][PointerClick] Click tới row '{_info?.stat_name}'");
-    }
-    // ───────────────────────────────────────────────────────
-    #region Public API
-
-    /// <summary>
-    /// Khởi tạo dòng chỉ số tiềm năng.
-    /// </summary>
-    public void SetData(PotentialStatInfo info, int playerId, int availablePoints, Action onUpgraded)
-    {
-        _info       = info;
-        _playerId   = playerId;
-        _onUpgraded = onUpgraded;
-
-        RefreshUI(availablePoints);
-
-        btnUpgrade?.onClick.RemoveAllListeners();
-        btnUpgrade?.onClick.AddListener(OnClickUpgrade);
+        _pendingDelta = 0;
+        RefreshUI();
     }
 
-    /// <summary>Cập nhật lại UI khi số điểm tiềm năng thay đổi (không reload từ API).</summary>
-    public void UpdateAvailablePoints(int availablePoints)
-    {
-        if (btnUpgrade != null)
-            btnUpgrade.interactable = availablePoints > 0;
-    }
+    /// <summary>Gọi khi parent thay đổi điểm còn để cập nhật trạng thái nút.</summary>
+    public void RefreshButtonStates() => UpdateButtonStates();
 
-    #endregion
+    // ── Private helpers ────────────────────────────────────
 
-    // ───────────────────────────────────────────────────────
-    #region Private helpers
-
-    private void RefreshUI(int availablePoints)
+    private void RefreshUI()
     {
         if (_info == null) return;
 
         if (txtStatName != null)
-            txtStatName.text = _info.display_name;
+            txtStatName.text = CleanDisplayName(_info.display_name);
 
         if (txtPoints != null)
-            txtPoints.text = $"{_info.current_points} điểm";
+            txtPoints.text = (_info.current_points + _pendingDelta).ToString();
 
-        if (txtValue != null)
-        {
-            string unit  = GetUnit(_info.stat_name);
-            string total = FormatValue(_info.stat_name, _info.total_value);
-            string perPt = FormatValue(_info.stat_name, _info.value_per_point);
-            txtValue.text = $"Tổng: <b>+{total}{unit}</b>  (+{perPt}{unit}/điểm)";
-        }
-
-        if (btnUpgrade != null)
-            btnUpgrade.interactable = availablePoints > 0;
+        UpdateButtonStates();
     }
 
-    private void OnClickUpgrade()
+    private void UpdateButtonStates()
     {
-        if (_info == null || APIClient.Instance == null) return;
+        int available = _getAvailablePoints?.Invoke() ?? 0;
 
-        if (btnUpgrade != null) btnUpgrade.interactable = false;
-
-        APIClient.Instance.UpgradePotentialStat(
-            _playerId,
-            _info.stat_name,
-            onSuccess: _ =>
-            {
-                Debug.Log($"[PotentialStatRowUI] Đã tăng {_info.display_name}");
-                // Refresh GameManager.PlayerData để final_stats (Stats tab) cũng cập nhật ngay
-                APIClient.Instance.LoadPlayerData(
-                    _playerId,
-                    onSuccess: data =>
-                    {
-                        if (data != null) GameManager.Instance?.SetPlayerData(data);
-                        _onUpgraded?.Invoke();  // reload potential tab
-                    },
-                    onError: _ => _onUpgraded?.Invoke()  // fallback: vẫn reload potential tab
-                );
-            },
-            onError: err =>
-            {
-                Debug.LogError($"[PotentialStatRowUI] Lỗi tăng tiềm năng: {err}");
-                if (btnUpgrade != null) btnUpgrade.interactable = true;
-            }
-        );
+        if (btnPlus  != null) btnPlus.interactable  = available > 0;
+        if (btnMax   != null) btnMax.interactable   = available > 0;
+        // Chỉ cho giảm những điểm đã cộng trong phiên này
+        if (btnMinus != null) btnMinus.interactable = _pendingDelta > 0;
     }
 
-    /// <summary>Đơn vị hiển thị theo loại stat.</summary>
-    private static string GetUnit(string statName) => statName switch
+    private void OnClickPlus()
     {
-        "attack"  => "",
-        "defense" => "",
-        "hp"      => " HP",
-        "mp"      => " MP",
-        "gene"    => "",
-        _         => ""
-    };
+        if ((_getAvailablePoints?.Invoke() ?? 0) <= 0) return;
+        _pendingDelta++;
+        _onPointsChanged?.Invoke(-1);   // dùng 1 điểm
+        RefreshUI();
+    }
 
-    private static string FormatValue(string statName, float val) =>
-        (statName == "hp" || statName == "mp")
-            ? val.ToString("F0")
-            : val.ToString("F0");
+    private void OnClickMinus()
+    {
+        if (_pendingDelta <= 0) return;
+        _pendingDelta--;
+        _onPointsChanged?.Invoke(+1);   // trả lại 1 điểm
+        RefreshUI();
+    }
 
-    #endregion
+    private void OnClickMax()
+    {
+        int available = _getAvailablePoints?.Invoke() ?? 0;
+        if (available <= 0) return;
+        _pendingDelta += available;
+        _onPointsChanged?.Invoke(-available);   // dùng hết điểm còn
+        RefreshUI();
+    }
+
+    /// <summary>
+    /// Bỏ phần trong ngoặc đơn khỏi tên hiển thị và thêm ":".
+    /// Ví dụ: "Máu (HP)" → "Máu:", "Tấn Công" → "Tấn Công:"
+    /// </summary>
+    private static string CleanDisplayName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return ":";
+        int paren = name.IndexOf('(');
+        string clean = paren >= 0 ? name.Substring(0, paren).TrimEnd() : name.TrimEnd();
+        return clean + ":";
+    }
 }

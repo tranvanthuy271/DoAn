@@ -2,16 +2,20 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// CharacterPanelToggleButton – Nút mở/đóng CharacterPanel (3 tab).
+/// CharacterPanelToggleButton – Nút mở/đóng toàn bộ panel nhân vật + túi.
 ///
 /// Setup:
 /// 1. Gắn script này lên Button trong UI (ví dụ: nút hình nhân vật/kiếm).
-/// 2. Kéo CharacterPanelController vào slot characterPanel.
+/// 2. Kéo InformationPanelController vào slot informationPanel (ưu tiên).
+///    Nếu không dùng InformationPanelController, kéo CharacterPanelController vào slot characterPanel.
 /// </summary>
 [RequireComponent(typeof(Button))]
 public class CharacterPanelToggleButton : MonoBehaviour
 {
-    [Tooltip("Tham chiếu tới CharacterPanelController trong scene")]
+    [Tooltip("Tham chiếu tới InformationPanelController (quản lý cả ThongTin + TuiDo)")]
+    [SerializeField] private InformationPanelController informationPanel;
+
+    [Tooltip("Fallback: dùng khi không có InformationPanelController")]
     [SerializeField] private CharacterPanelController characterPanel;
 
     private Button _button;
@@ -31,11 +35,25 @@ public class CharacterPanelToggleButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
-        if (characterPanel == null)
+        // Ưu tiên dùng InformationPanelController để đồng bộ state cả 2 tab
+        if (informationPanel != null)
         {
-            Debug.LogWarning("[CharacterPanelToggleButton] Chưa gán CharacterPanelController vào Inspector.");
+            if (informationPanel.IsAnyPanelVisible)
+                informationPanel.HideAll();
+            else
+                informationPanel.ShowPanel();
             return;
         }
-        characterPanel.Toggle();
+
+        // Fallback khi chưa gán InformationPanelController
+        if (characterPanel != null)
+        {
+            characterPanel.Toggle();
+        }
+        else
+        {
+            Debug.LogWarning("[CharacterPanelToggleButton] Chưa gán InformationPanelController hoặc CharacterPanelController.");
+        }
     }
 }
+

@@ -62,6 +62,9 @@ public class PlayerDash : NetworkBehaviour
     private float lastScaleX = 1f;
     private bool hasDamagedThisDash = false; // Flag để tránh damage nhiều lần trong một lần dash
 
+    /// <summary>Kiểm tra dash có thể sử dụng không (chưa cooldown, chưa đang dash)</summary>
+    public bool CanUseNow => canDash && !isDashing;
+
     // Constants
     private const float SKILL_EFFECT_POSITION_OFFSET_RIGHT = 1f; // Position offset cho bên phải
     private const float SKILL_EFFECT_POSITION_OFFSET_LEFT = -1f; // Position offset cho bên trái
@@ -321,7 +324,10 @@ public class PlayerDash : NetworkBehaviour
 
     #region Dash Logic
 
-    private void Dash()
+    /// <summary>
+    /// Kích hoạt dash. Gọi từ PlayerSkillManager khi nhấn nút hotbar.
+    /// </summary>
+    public void Dash()
     {
         if (!canDash || isDashing) return;
 

@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &2011304401802566691
 GameObject:
@@ -123,7 +123,6 @@ GameObject:
   - component: {fileID: 6350637723495186527}
   - component: {fileID: 7560052214754720382}
   - component: {fileID: 6940320557828566571}
-  - component: {fileID: 1835991015197181570}
   - component: {fileID: 2941485491335378303}
   - component: {fileID: 8122172169774391052}
   - component: {fileID: 2131331872504411275}
@@ -138,6 +137,7 @@ GameObject:
   - component: {fileID: 1576497397520285984}
   - component: {fileID: 6666666666666666666}
   - component: {fileID: 1000000000000000005}
+  - component: {fileID: -1182729091205979115}
   m_Layer: 8
   m_Name: F_Thuy
   m_TagString: Player
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1385370177
+  GlobalObjectIdHash: 2189917817
   InScenePlacedSourceGlobalObjectIdHash: 3042921563
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -346,32 +346,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b4041a49962b2b4985ecec35a1db14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1835991015197181570
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5586504133544203253}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dashKey: 304
-  dashSpeed: 15
-  dashDuration: 0.3
-  dashCooldown: 1
-  enableDashDamage: 1
-  dashDamage: 3
-  dashHitRange: 1.5
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  dashTriggerName: Dash
-  dashRightTriggerName: 
-  dashLeftTriggerName: 
-  skillEffectObject: {fileID: 7010366893584065638, guid: 4c0bfb54e0a90d44f800886363dfb7b6, type: 3}
 --- !u!114 &2941485491335378303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -793,6 +767,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skills:
+  - skillName: "L\u01B0\u1EDBt Nhanh"
+    skillCode: DASH
+    skillType: 14
+    activationKey: 0
+    cooldown: 1
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0
+    projectileLifetime: 0
+    animationTriggerName: 
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 1
+    iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
   - skillName: "Th\u1EE7y \u0110\u1EA1n"
     skillCode: WATER_BOLT
     skillType: 0
@@ -807,6 +801,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_water_bolt
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -826,6 +821,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 1
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_water_pillar
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -845,6 +841,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_water_armor
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -864,6 +861,7 @@ MonoBehaviour:
     projectileSkillEffectPrefab: {fileID: 0}
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
+    iconId: icon_hybrid_110
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -892,6 +890,46 @@ MonoBehaviour:
   spawnOffsetX: 0.6
   slowDuration: 3
   healBlockDuration: 3
+--- !u!114 &1000000000000000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5586504133544203253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  retryDelay: 3
+  maxRetries: 3
+--- !u!114 &-1182729091205979115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5586504133544203253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad29efb2c616ba478220b3bd5fb3732, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dashKey: 304
+  dashSpeed: 15
+  dashDuration: 0.3
+  dashCooldown: 1
+  enableDashDamage: 1
+  dashDamage: 3
+  dashHitRange: 1.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  dashTriggerName: Dash
+  dashRightTriggerName: 
+  dashLeftTriggerName: 
+  skillEffectObject: {fileID: 0}
 --- !u!1 &5846775189783343228
 GameObject:
   m_ObjectHideFlags: 0
@@ -1029,17 +1067,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3927738463254750978, guid: 1bf5975918cac384bb40c90b94918bd7, type: 3}
   m_PrefabInstance: {fileID: 2156930397087092719}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1000000000000000005
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5586504133544203253}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40034d4d3475c2b45853a877f447d355, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  retryDelay: 3
-  maxRetries: 3

@@ -6,12 +6,15 @@ using System;
 /// <summary>
 /// ItemDetailPanel - Hiển thị chi tiết item khi nhấn vào slot trong inventory
 /// Bao gồm: hình ảnh, tên, mô tả, nút sử dụng
-/// 
-/// Setup trong Unity:
-/// 1. Tạo Panel con bên trong Inventory Panel (đặt tên "ItemDetailPanel")
+///
+/// Setup Prefab trong Unity:
+/// 1. Tạo Panel trong Canvas (đặt tên "ItemDetailPanel")
 /// 2. Thêm các UI con: Image (icon), TMP_Text (tên), TMP_Text (mô tả), Button (sử dụng)
 /// 3. Gắn script này lên Panel và kéo các reference vào Inspector
-/// 4. Panel mặc định ẩn, sẽ hiện khi click vào item
+/// 4. Kéo thả Panel này vào thư mục Assets/Prefabs để tạo Prefab
+/// 5. Xóa Panel gốc ra khỏi scene (chỉ giữ Prefab)
+/// 6. Trong InventoryUI → gán Prefab vào slot "Item Detail Panel Prefab"
+/// 7. (Tùy chọn) Gán Canvas gốc vào "Item Detail Panel Parent" để panel render đúng layer
 /// </summary>
 public class ItemDetailPanel : MonoBehaviour
 {
@@ -31,6 +34,9 @@ public class ItemDetailPanel : MonoBehaviour
     [Tooltip("Text trên nút sử dụng (tuỳ chọn)")]
     [SerializeField] private TMP_Text useButtonText;
 
+    [Tooltip("Nút đóng panel")]
+    [SerializeField] private Button btnClose;
+
     [Header("Settings")]
     [Tooltip("Ẩn panel khi Start")]
     [SerializeField] private bool hideOnStart = true;
@@ -45,9 +51,19 @@ public class ItemDetailPanel : MonoBehaviour
     private void Awake()
     {
         if (useButton != null)
-        {
             useButton.onClick.AddListener(OnUseButtonPressed);
-        }
+
+        if (btnClose != null)
+            btnClose.onClick.AddListener(Hide);
+
+        // Đảm bảo panel render đè lên toàn bộ UI khác
+        var canvas = GetComponent<Canvas>();
+        if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = 200;
+
+        if (GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
+            gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
     }
 
     private void Start()
@@ -58,15 +74,10 @@ public class ItemDetailPanel : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Hiển thị chi tiết item từ InventorySlotDto
-    /// Tự động tra cứu ItemTemplateManager để lấy tên + mô tả
-    /// </summary>
     public void ShowItem(InventorySlotDto slotData)
     {
         if (slotData == null || slotData.quantity <= 0)
         {
-            Debug.LogWarning("[ItemDetailPanel] ShowItem: slotData is null hoặc quantity <= 0");
             Hide();
             return;
         }
@@ -74,132 +85,77 @@ public class ItemDetailPanel : MonoBehaviour
         currentSlotData = slotData;
         currentTemplate = null;
 
-        // Lấy thông tin item template từ ItemTemplateManager
         if (ItemTemplateManager.Instance != null)
         {
-            // Thử tìm theo itemTemplateId trước
             if (slotData.itemTemplateId > 0)
-            {
                 currentTemplate = ItemTemplateManager.Instance.GetItemTemplate(slotData.itemTemplateId);
-            }
-
-            // Nếu không tìm được, thử theo itemCode
             if (currentTemplate == null && !string.IsNullOrEmpty(slotData.itemCode))
-            {
                 currentTemplate = ItemTemplateManager.Instance.GetItemTemplateByCode(slotData.itemCode);
-            }
         }
-        else
-        {
-            Debug.LogWarning("[ItemDetailPanel] ItemTemplateManager.Instance is null! Không thể lấy tên/mô tả item.");
-        }
-
-        // --- Cập nhật UI ---
 
         // 1. Icon
         if (itemIcon != null)
         {
             Sprite icon = null;
             if (IconDatabase.Instance != null && !string.IsNullOrEmpty(slotData.iconId))
-            {
                 icon = IconDatabase.Instance.GetIcon(slotData.iconId);
-            }
-
-            if (icon != null)
-            {
-                itemIcon.sprite = icon;
-                itemIcon.enabled = true;
-            }
-            else
-            {
-                itemIcon.enabled = false;
-                Debug.LogWarning($"[ItemDetailPanel] Không tìm thấy icon: {slotData.iconId}");
-            }
+            itemIcon.sprite  = icon;
+            itemIcon.enabled = icon != null;
         }
 
-        // 2. Tên item
+        // 2. Tên item (bold, góc trên-trái)
         if (itemNameText != null)
         {
-            if (currentTemplate != null && !string.IsNullOrEmpty(currentTemplate.name))
-            {
-                itemNameText.text = currentTemplate.name;
-            }
-            else
-            {
-                // Fallback: dùng itemCode nếu không có template
-                itemNameText.text = !string.IsNullOrEmpty(slotData.itemCode) ? slotData.itemCode : "Unknown Item";
-            }
+            string rawName = (currentTemplate != null && !string.IsNullOrEmpty(currentTemplate.name))
+                ? currentTemplate.name
+                : (!string.IsNullOrEmpty(slotData.itemCode) ? slotData.itemCode : "Unknown Item");
+            itemNameText.text = rawName;
         }
 
-        // 3. Mô tả item
+        // 3. Phần thân: cấp yêu cầu • khóa • xếp chồng • giá bán • mô tả
         if (itemDescriptionText != null)
         {
-            if (currentTemplate != null && !string.IsNullOrEmpty(currentTemplate.description))
-            {
-                itemDescriptionText.text = currentTemplate.description;
-            }
-            else
-            {
-                itemDescriptionText.text = "Không có mô tả.";
-            }
-        }
+            var sb = new System.Text.StringBuilder();
 
-        // 4. Nút sử dụng - cập nhật text tuỳ loại item
-        if (useButtonText != null)
-        {
             if (currentTemplate != null)
             {
-                // category: 1=Equipment, 2=Consumable, 3=Material
-                switch (currentTemplate.category)
+                // Cấp yêu cầu
+                if (currentTemplate.levelNeed > 0)
+                    sb.AppendLine($"Yêu cầu cấp: {currentTemplate.levelNeed}");
+
+                // Trạng thái khóa (từ template)
+                sb.AppendLine(currentTemplate.isLock ? "Đã khóa" : "Không khóa");
+
+                // Xếp chồng
+                sb.AppendLine(currentTemplate.isXepChong ? "Có thể xếp chồng" : "Không thể xếp chồng");
+
+                // Giá bán (từ template)
+                string priceUnit = currentTemplate.isLock ? "bạc khóa" : "bạc";
+                sb.AppendLine($"Giá bán: {currentTemplate.sellPrice} {priceUnit}");
+
+                // Mô tả
+                if (!string.IsNullOrWhiteSpace(currentTemplate.detail))
                 {
-                    case 1: // Equipment (Weapon, Armor, Helmet, Pants, Boots, Accessory)
-                        useButtonText.text = "Trang bị";
-                        break;
-                    case 2: // Consumable (Potion, ...)
-                        useButtonText.text = "Sử dụng";
-                        break;
-                    default:
-                        useButtonText.text = "Sử dụng";
-                        break;
+                    sb.AppendLine();
+                    sb.Append(currentTemplate.detail);
                 }
             }
             else
             {
-                useButtonText.text = "Sử dụng";
+                sb.Append("Không có thông tin.");
             }
+
+            itemDescriptionText.text = sb.ToString().TrimEnd();
         }
 
-        // Hiện panel
+        // 4. Text nút sử dụng
+        if (useButtonText != null && currentTemplate != null)
+        {
+            useButtonText.text = currentTemplate.category == 1 ? "Trang bị" : "Sử dụng";
+        }
+
         gameObject.SetActive(true);
-
-        // Đưa panel lên trước mặt (render trên cùng) để không bị các UI khác che
         transform.SetAsLastSibling();
-
-        // === DEBUG: Kiểm tra trạng thái panel ===
-        var rt = GetComponent<RectTransform>();
-        Debug.Log($"[ItemDetailPanel] ===== DEBUG PANEL STATE =====");
-        Debug.Log($"[ItemDetailPanel] gameObject.activeSelf = {gameObject.activeSelf}");
-        Debug.Log($"[ItemDetailPanel] gameObject.activeInHierarchy = {gameObject.activeInHierarchy}");
-        Debug.Log($"[ItemDetailPanel] transform.parent = {(transform.parent != null ? transform.parent.name : "NULL")}");
-        Debug.Log($"[ItemDetailPanel] parent.gameObject.activeSelf = {(transform.parent != null ? transform.parent.gameObject.activeSelf.ToString() : "NO PARENT")}");
-        if (rt != null)
-        {
-            Debug.Log($"[ItemDetailPanel] RectTransform: sizeDelta={rt.sizeDelta}, anchoredPosition={rt.anchoredPosition}, localScale={rt.localScale}");
-            Debug.Log($"[ItemDetailPanel] RectTransform: anchorMin={rt.anchorMin}, anchorMax={rt.anchorMax}, pivot={rt.pivot}");
-        }
-        else
-        {
-            Debug.LogError($"[ItemDetailPanel] KHÔNG CÓ RectTransform!!!");
-        }
-        var canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup != null)
-        {
-            Debug.Log($"[ItemDetailPanel] CanvasGroup: alpha={canvasGroup.alpha}, interactable={canvasGroup.interactable}, blocksRaycasts={canvasGroup.blocksRaycasts}");
-        }
-        Debug.Log($"[ItemDetailPanel] siblingIndex = {transform.GetSiblingIndex()} / {(transform.parent != null ? transform.parent.childCount.ToString() : "NO PARENT")}");
-        Debug.Log($"[ItemDetailPanel] ===== END DEBUG =====");
-
-        Debug.Log($"[ItemDetailPanel] Hiển thị chi tiết: {itemNameText?.text} (code={slotData.itemCode}, qty={slotData.quantity})");
     }
 
     /// <summary>
@@ -233,26 +189,30 @@ public class ItemDetailPanel : MonoBehaviour
 
         Debug.Log($"[ItemDetailPanel] Nhấn sử dụng item: code={currentSlotData.itemCode}, slot={currentSlotData.slotIndex}");
 
-        // Fire event để các script khác xử lý (InventoryNetworkBridge, v.v.)
+        // Fire event (các listener khác có thể xử lý thêm)
         OnUseItemClicked?.Invoke(currentSlotData);
 
-        // Gọi trực tiếp InventoryNetworkBridge nếu có
-        var bridge = FindObjectOfType<InventoryNetworkBridge>();
-        if (bridge != null)
+        // Ưu tiên dùng ItemUseHandler (singleton)
+        if (ItemUseHandler.Instance != null)
         {
-            bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
+            ItemUseHandler.Instance.RequestUseItem(currentSlotData);
         }
         else
         {
-            Debug.LogWarning("[ItemDetailPanel] Không tìm thấy InventoryNetworkBridge để gửi request sử dụng item!");
+            // Fallback: gọi trực tiếp bridge
+            var bridge = FindObjectOfType<InventoryNetworkBridge>();
+            if (bridge != null)
+                bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
+            else
+                Debug.LogWarning("[ItemDetailPanel] Không tìm thấy ItemUseHandler và InventoryNetworkBridge!");
         }
     }
 
     private void OnDestroy()
     {
         if (useButton != null)
-        {
             useButton.onClick.RemoveListener(OnUseButtonPressed);
-        }
+        if (btnClose != null)
+            btnClose.onClick.RemoveListener(Hide);
     }
 }

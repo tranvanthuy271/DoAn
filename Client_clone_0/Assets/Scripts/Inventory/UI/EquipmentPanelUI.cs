@@ -221,7 +221,7 @@ public class EquipmentPanelUI : MonoBehaviour
     /// <summary>
     /// Refresh UI từ InventoryNetworkBridge
     /// </summary>
-    private void RefreshFromBridge()
+    public void RefreshFromBridge()
     {
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         if (bridge != null)
