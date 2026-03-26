@@ -35,6 +35,11 @@ public class PlayerController : MonoBehaviour
             Debug.LogError("PlayerStats is not assigned!");
         }
 
+        // Ngăn player và player va chạm vật lý với nhau (damage được xử lý bằng code, không qua physics contact)
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer >= 0)
+            Physics2D.IgnoreLayerCollision(playerLayer, playerLayer, true);
+
         // Setup Rigidbody2D cho non-owner (để NetworkTransform hoạt động tốt)
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {
@@ -43,6 +48,27 @@ public class PlayerController : MonoBehaviour
             {
                 rb.interpolation = RigidbodyInterpolation2D.Interpolate; // Mượt hơn khi sync
                 rb.simulated = true; // Vẫn cần physics cho collision
+            }
+        }
+
+        // Nếu KHÔNG có NetworkPlayerController (ví dụ Fusion prefab F_Phong, F_Kim...)
+        // thì tự đăng ký camera ở đây (tránh trùng với NetworkPlayerController.OnNetworkSpawn)
+        bool hasNetworkController = GetComponent<NetworkPlayerController>() != null;
+        if (!hasNetworkController)
+        {
+            // Chỉ gán nếu là owner hoặc không có network (standalone / single player)
+            bool isLocalPlayer = (networkObject == null)
+                || (NetworkManager.Singleton == null)
+                || networkObject.IsOwner;
+
+            if (isLocalPlayer)
+            {
+                CameraFollow cam = FindObjectOfType<CameraFollow>();
+                if (cam != null)
+                {
+                    cam.SetTarget(transform);
+                    Debug.Log($"[PlayerController] Camera gán target: {gameObject.name}");
+                }
             }
         }
     }

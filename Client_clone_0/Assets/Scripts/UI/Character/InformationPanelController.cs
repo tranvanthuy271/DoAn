@@ -73,8 +73,19 @@ public class InformationPanelController : MonoBehaviour
     /// </summary>
     public void ShowPanel()
     {
+        Debug.Log("[InformationPanelController] ShowPanel() được gọi");
+        
         // Đảm bảo CharacterPanel luôn hiện trước (để BtnThongTin/BtnTuiDo hiện ra)
-        characterPanel?.Show();
+        if (characterPanel != null)
+        {
+            Debug.Log("[InformationPanelController] Gọi characterPanel.Show()...");
+            characterPanel.Show();
+        }
+        else
+        {
+            Debug.LogError("[InformationPanelController] characterPanel là NULL! Kiểm tra Inspector.");
+        }
+        
         SwitchTo(TopTab.ThongTin);
     }
 

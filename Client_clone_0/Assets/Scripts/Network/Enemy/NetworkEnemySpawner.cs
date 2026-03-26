@@ -120,7 +120,16 @@ public class NetworkEnemySpawner : NetworkBehaviour
             if (networkObj != null)
             {
                 networkObj.Spawn();
-                Debug.Log($"[NetworkEnemySpawner] Spawned enemy {spawnData.enemy?.enemy_name ?? "Unknown"} at ({spawnData.spawn_x}, {spawnData.spawn_y})");
+
+                // Áp dụng HP từ DB — ghi đè giá trị mặc định (maxHealth=10)
+                if (spawnData.enemy != null && spawnData.enemy.base_hp > 0)
+                {
+                    var health = enemyObj.GetComponent<NetworkEnemyHealth>();
+                    if (health != null)
+                        health.InitHealth(spawnData.enemy.base_hp);
+                }
+
+                Debug.Log($"[NetworkEnemySpawner] Spawned enemy {spawnData.enemy?.enemy_name ?? "Unknown"} (HP={spawnData.enemy?.base_hp ?? 0}) at ({spawnData.spawn_x}, {spawnData.spawn_y})");
             }
             else
             {

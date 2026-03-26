@@ -43,7 +43,16 @@ public class CharacterPanelController : MonoBehaviour
 
     private void Awake()
     {
-        if (panelRoot == null) panelRoot = gameObject;
+        // QUAN TRỌNG: Nếu panelRoot không được gán trong Inspector, tự động lấy parent hoặc gameObject
+        if (panelRoot == null)
+        {
+            // Tìm parent GameObject của script này (thường là CharacterPanel root)
+            panelRoot = transform.parent != null && transform.parent.gameObject.name.Contains("CharacterPanel") 
+                ? transform.parent.gameObject 
+                : gameObject;
+            Debug.LogWarning($"[CharacterPanelController] panelRoot chưa được gán, tự động lấy: {panelRoot.name}");
+        }
+        
         if (contentRoot == null) contentRoot = panelRoot; // fallback nếu chưa gán
 
         btnStats     ?.onClick.AddListener(() => SwitchTab(0));
@@ -54,9 +63,16 @@ public class CharacterPanelController : MonoBehaviour
 
     private void Start()
     {
-        panelRoot.SetActive(false);
-        // Đảm bảo contentRoot ận khi start
-        if (contentRoot != panelRoot) contentRoot.SetActive(false);
+        // Ẩn panel khi start (chỉ khi không phải null)
+        if (panelRoot != null)
+        {
+            panelRoot.SetActive(false);
+            Debug.Log($"[CharacterPanelController] Start: Ẩn panelRoot ({panelRoot.name})");
+        }
+        
+        // Đảm bảo contentRoot ẩn khi start
+        if (contentRoot != null && contentRoot != panelRoot) 
+            contentRoot.SetActive(false);
 
         if (playerId <= 0)
         {
@@ -95,8 +111,21 @@ public class CharacterPanelController : MonoBehaviour
     /// <summary>Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
     public void Show()
     {
+        if (panelRoot == null)
+        {
+            Debug.LogError("[CharacterPanelController] Show() bị gọi nhưng panelRoot là NULL! Kiểm tra Inspector.");
+            return;
+        }
+        
+        Debug.Log($"[CharacterPanelController] Show() - Active panelRoot: {panelRoot.name}");
         panelRoot.SetActive(true);
-        contentRoot.SetActive(true);  // đảm bảo Window cũng hiện
+        
+        if (contentRoot != null)
+        {
+            contentRoot.SetActive(true);  // đảm bảo Window cũng hiện
+            Debug.Log($"[CharacterPanelController] Show() - Active contentRoot: {contentRoot.name}");
+        }
+        
         SwitchTab(activeTab);
     }
 

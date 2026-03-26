@@ -725,6 +725,26 @@ MonoBehaviour:
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
+  - skillName: "\u0110\u00e1nh Th\u01b0\u1eddng"
+    skillCode: NORMAL_ATTACK
+    skillType: 15
+    activationKey: 122
+    cooldown: 0.8
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0.8
+    projectileLifetime: 0
+    animationTriggerName: NormalAttack
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 0
+    iconId: icon_normal_attack
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
   - skillName: "Ch\u01B0\u1EDFng Phong"
     skillCode: WIND_STRIKE
     skillType: 2

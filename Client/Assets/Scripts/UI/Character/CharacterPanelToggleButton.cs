@@ -27,6 +27,27 @@ public class CharacterPanelToggleButton : MonoBehaviour
             _button.onClick.AddListener(OnButtonClicked);
     }
 
+    private void Start()
+    {
+        // Tự động tìm trong scene nếu chưa được gán trong Inspector
+        if (informationPanel == null)
+        {
+            informationPanel = FindObjectOfType<InformationPanelController>();
+            if (informationPanel != null)
+                Debug.Log($"[CharacterPanelToggleButton] Auto-found InformationPanelController: {informationPanel.gameObject.name}");
+        }
+
+        if (informationPanel == null && characterPanel == null)
+        {
+            characterPanel = FindObjectOfType<CharacterPanelController>();
+            if (characterPanel != null)
+                Debug.Log($"[CharacterPanelToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
+        }
+
+        if (informationPanel == null && characterPanel == null)
+            Debug.LogError("[CharacterPanelToggleButton] Không tìm thấy InformationPanelController hay CharacterPanelController trong scene! Hãy gán thủ công trong Inspector.");
+    }
+
     private void OnDestroy()
     {
         if (_button != null)
@@ -35,24 +56,37 @@ public class CharacterPanelToggleButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
+        Debug.Log("[CharacterPanelToggleButton] Button clicked!");
+        
         // Ưu tiên dùng InformationPanelController để đồng bộ state cả 2 tab
         if (informationPanel != null)
         {
+            Debug.Log("[CharacterPanelToggleButton] Sử dụng InformationPanelController");
+            
             if (informationPanel.IsAnyPanelVisible)
+            {
+                Debug.Log("[CharacterPanelToggleButton] Panel đang hiện → đóng");
                 informationPanel.HideAll();
+            }
             else
+            {
+                Debug.Log("[CharacterPanelToggleButton] Panel đang ẩn → mở");
                 informationPanel.ShowPanel();
+            }
             return;
         }
 
         // Fallback khi chưa gán InformationPanelController
+        Debug.LogWarning("[CharacterPanelToggleButton] Không tìm thấy InformationPanelController, dùng fallback");
+        
         if (characterPanel != null)
         {
+            Debug.Log("[CharacterPanelToggleButton] Toggle CharacterPanel trực tiếp");
             characterPanel.Toggle();
         }
         else
         {
-            Debug.LogWarning("[CharacterPanelToggleButton] Chưa gán InformationPanelController hoặc CharacterPanelController.");
+            Debug.LogError("[CharacterPanelToggleButton] Chưa gán InformationPanelController hoặc CharacterPanelController.");
         }
     }
 }

@@ -25,6 +25,13 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     private bool isGrounded;
 
+    [Header("Step Climb (leo bậc thang nhỏ)")]
+    [Tooltip("Chiều cao bậc tối đa mà player có thể leo qua khi đi ngang (tính bằng unit)")]
+    [SerializeField] private float stepHeight = 0.3f;
+    [Tooltip("Khoảng cách probe ngang để phát hiện bậc")]
+    [SerializeField] private float stepProbeDistance = 0.1f;
+    // Dùng lại groundLayer để phát hiện bậc
+
     [Header("Jump State")]
     private bool isFlying;       // chỉ true trong god mode
     private bool shouldJump;    // được set ở Update, consume ở FixedUpdate
@@ -72,6 +79,16 @@ public class PlayerMovement : MonoBehaviour
                     "Hãy tạo layer 'Ground', gán cho Tilemap/Ground objects, " +
                     "rồi chọn nó trong PlayerMovement → Ground Layer.");
             }
+        }
+
+        // Gán PhysicsMaterial2D ma sát = 0 để player không bị "dính" vào cạnh của tiles/collider khi di chuyển ngang
+        if (rb != null && rb.sharedMaterial == null)
+        {
+            PhysicsMaterial2D zeroFriction = new PhysicsMaterial2D("PlayerZeroFriction");
+            zeroFriction.friction = 0f;
+            zeroFriction.bounciness = 0f;
+            rb.sharedMaterial = zeroFriction;
+            Debug.Log("[PlayerMovement] Đã gán PhysicsMaterial2D friction=0 cho Rigidbody2D.");
         }
     }
 
@@ -166,6 +183,9 @@ public class PlayerMovement : MonoBehaviour
         PlayerStats stats = controller.stats;
         if (stats == null) return;
 
+        // Step climb: leo bậc thang nhỏ trước khi set velocity ngang
+        HandleStepClimb(horizontalInput);
+
         // 1. Horizontal movement (A/D) – luôn hoạt động kể cả khi trên không
         float targetVelocityX = horizontalInput * stats.moveSpeed;
         rb.velocity = new Vector2(targetVelocityX, rb.velocity.y);
@@ -234,6 +254,47 @@ public class PlayerMovement : MonoBehaviour
     public float GetFlightPercent() => controller?.stats != null ? 1f - (flightTime / controller.stats.maxFlightTime) : 1f;
     public bool CanFly() => canFly;
     public float GetFlightCooldown() => flightCooldown;
+
+    /// <summary>
+    /// Leo qua bậc thang nhỏ (step climb): khi player đang ở mặt đất và đi ngang mà gặp 
+    /// một collider thấp hơn stepHeight, tự động đẩy player lên trên để di chuyển qua được.
+    /// Gọi method này từ FixedUpdate TRƯỚC khi gán rb.velocity ngang.
+    /// </summary>
+    public void HandleStepClimb(float horizInput)
+    {
+        if (!isGrounded) return;
+        if (Mathf.Abs(horizInput) < 0.1f) return;
+        if (rb == null) return;
+
+        float dir = Mathf.Sign(horizInput);
+        Collider2D col = GetComponent<Collider2D>();
+        float halfW = col != null ? col.bounds.extents.x + stepProbeDistance : 0.3f + stepProbeDistance;
+        float botY  = col != null ? col.bounds.min.y + 0.05f : transform.position.y - 0.45f;
+
+        // Ray ngang ở gần sát đáy collider – phát hiện bậc thang
+        var lowHit = Physics2D.Raycast(
+            new Vector2(transform.position.x, botY),
+            new Vector2(dir, 0f),
+            halfW,
+            groundLayer);
+
+        if (lowHit.collider == null) return; // Không có chướng ngại vật → không cần leo
+
+        // Nếu collider vừa hit có PlatformEffector2D (one-way platform) → bỏ qua, không step-climb
+        if (lowHit.collider.GetComponent<PlatformEffector2D>() != null) return;
+
+        // Ray ngang ở độ cao bậc thang – nếu trống thì có thể leo qua
+        var highHit = Physics2D.Raycast(
+            new Vector2(transform.position.x, botY + stepHeight),
+            new Vector2(dir, 0f),
+            halfW,
+            groundLayer);
+
+        if (highHit.collider != null) return; // Bức tường cao hơn stepHeight → không leo được (bị chặn bởi wall)
+
+        // Đẩy player lên trên để vượt qua bậc, giữ nguyên velocity ngang
+        rb.position = new Vector2(rb.position.x, rb.position.y + stepHeight + 0.02f);
+    }
 
     private void OnDrawGizmosSelected()
     {

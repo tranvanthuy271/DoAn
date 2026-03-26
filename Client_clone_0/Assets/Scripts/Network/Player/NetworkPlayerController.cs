@@ -135,6 +135,9 @@ public class NetworkPlayerController : NetworkBehaviour
             bool isGrounded = movement.IsGrounded();
             PlayerStats stats = controller.stats;
 
+            // Step climb: leo bậc thang nhỏ trước khi set velocity ngang
+            movement.HandleStepClimb(horizontalInput);
+
             // Horizontal
             rb.velocity = new Vector2(horizontalInput * stats.moveSpeed, rb.velocity.y);
 
@@ -231,6 +234,9 @@ public class NetworkPlayerController : NetworkBehaviour
         // (HandleInput() không chạy trên server vì server không phải IsOwner)
         movement.RefreshGroundCheck();
         bool isGrounded = movement.IsGrounded();
+
+        // Step climb: leo bậc thang nhỏ trước khi set velocity ngang (server-side)
+        movement.HandleStepClimb(horizontalInput);
 
         // 1. Horizontal movement
         float targetVelocityX = horizontalInput * stats.moveSpeed;

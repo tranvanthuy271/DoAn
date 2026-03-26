@@ -17,7 +17,8 @@ public enum SkillType
     HybridBarrage,   // Kim Phong Liên Tiễn: bắn 5 đạn nhỏ theo ngang (delegate sang HybridMetalWindBarrageSkill)
     HybridLavaAura,  // Hỏa Thổ Dung Nham: dung nham bao quanh player, DoT + chặn hồi HP (delegate sang HybridFireEarthLavaAuraSkill)
     HybridVenom,     // Băng Độc Vĩnh Cửu (Water + Wood): hồ nước độc, Slow + DoT + giảm ATK (delegate sang HybridWaterWoodVenomSkill)
-    Dash             // Lướt nhanh: delegate sang PlayerDash component
+    Dash,            // Lướt nhanh: delegate sang PlayerDash component
+    NormalAttack     // Đánh thường: delegate sang PlayerCombat, kích hoạt bằng Z / LMB
 }
 
 /// <summary>

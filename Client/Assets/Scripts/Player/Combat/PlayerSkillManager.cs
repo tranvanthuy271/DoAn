@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
@@ -66,6 +67,9 @@ public class PlayerSkillManager : NetworkBehaviour
     // ── Dash skill (auto-detected) ──────────────────────────────────────────
     private PlayerDash playerDashComponent;
     private SkillData dashSkillData;
+    // ── Normal Attack skill (auto-detected via PlayerCombat) ─────────────────
+    private PlayerCombat playerCombatComponent;
+    private SkillData normalAttackSkillData;
     // ── Player animator (main character sprite) ──────────────────────────────
     private PlayerAnimator playerAnimator;
 
@@ -114,23 +118,12 @@ public class PlayerSkillManager : NetworkBehaviour
             if (sr != null) sr.sprite = null;
         }
 
-        // Auto-detect TeleportSkillvà thêm vào đầu danh sách nếu chưa có
+        // Auto-detect TeleportSkill — chỉ dùng skillData đã có trong prefab, KHÔNG tự tạo thêm
         teleportSkillComponent = GetComponent<TeleportSkill>() ?? GetComponentInParent<TeleportSkill>();
         if (teleportSkillComponent != null)
         {
             teleportSkillData = skills.Find(s => s != null && s.skillType == SkillType.Teleport);
-            if (teleportSkillData == null)
-            {
-                teleportSkillData = new SkillData
-                {
-                    skillName = "Lướt Nhanh",
-                    skillType = SkillType.Teleport,
-                    cooldown = teleportSkillComponent.cooldown,
-                    activationKey = KeyCode.T
-                };
-                skills.Insert(0, teleportSkillData);
-                Debug.Log("[PlayerSkillManager] Đã tự động thêm skill 'Lướt Nhanh' (Teleport) vào index 0.");
-            }
+            Debug.Log("[PlayerSkillManager] Detected TeleportSkill component.");
         }
 
         // Auto-detect WindStepSkill và đồng bộ cooldown vào SkillData có type WindStep
@@ -258,6 +251,14 @@ public class PlayerSkillManager : NetworkBehaviour
             Debug.Log("[PlayerSkillManager] Detected PlayerDash component.");
         }
 
+        // Auto-detect PlayerCombat (đánh thường)
+        playerCombatComponent = GetComponent<PlayerCombat>() ?? GetComponentInParent<PlayerCombat>();
+        if (playerCombatComponent != null)
+        {
+            normalAttackSkillData = skills.Find(s => s != null && s.skillType == SkillType.NormalAttack);
+            Debug.Log("[PlayerSkillManager] Detected PlayerCombat component (NormalAttack).");
+        }
+
         // Initialize skill dictionary
         skillByKey.Clear();
         foreach (var skill in skills)
@@ -339,15 +340,30 @@ public class PlayerSkillManager : NetworkBehaviour
     
     private void HandleSkillInput()
     {
+        bool mainSkillUsed = false;
         foreach (var kvp in skillByKey)
         {
             KeyCode key = kvp.Key;
             SkillData skill = kvp.Value;
-            
+
             if (Input.GetKeyDown(key) && skill.CanUse() && !skill.IsUsing())
             {
                 UseSkill(skill);
+                mainSkillUsed = true;
             }
+        }
+
+        // Xử lý NormalAttack bằng chuột trái hoặc phím Z
+        // Bỏ qua nếu: skill khác vừa được dùng cùng frame | chuột đang trên UI | đang dùng
+        if (!mainSkillUsed
+            && normalAttackSkillData != null
+            && normalAttackSkillData.CanUse() && !normalAttackSkillData.IsUsing())
+        {
+            bool lmbPressed = Input.GetMouseButtonDown(0)
+                              && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject());
+            bool zPressed = Input.GetKeyDown(KeyCode.Z);
+            if (lmbPressed || zPressed)
+                UseSkill(normalAttackSkillData);
         }
     }
     
@@ -379,6 +395,28 @@ public class PlayerSkillManager : NetworkBehaviour
                 playerDashComponent.Dash();
                 skill.StartUsing();
                 skill.StopUsing();
+            }
+            return;
+        }
+
+        // Xử lý NormalAttack (đánh thường — delegate sang PlayerCombat + đồng bộ animation)
+        if (skill.skillType == SkillType.NormalAttack)
+        {
+            if (playerCombatComponent == null || !playerCombatComponent.CanAttackNow)
+                return;
+
+            if (IsServer)
+            {
+                UseNormalAttackLocal(skill);
+            }
+            else if (IsOwner)
+            {
+                // Pre-trigger locally để tránh delay round-trip ServerRpc
+                if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
+                    playerAnimator?.TriggerAttack();
+                skill.StartUsing();
+                skill.StopUsing();
+                UseNormalAttackServerRpc(skill.skillName, transform.localScale.x >= 0f, skill.currentEffectValue);
             }
             return;
         }
@@ -593,6 +631,44 @@ public class PlayerSkillManager : NetworkBehaviour
     }
 
     /// <summary>
+    /// Server RPC để client owner yêu cầu server kích hoạt NormalAttack (hitbox + animation sync)
+    /// </summary>
+    [ServerRpc]
+    private void UseNormalAttackServerRpc(string skillName, bool facingRight, float effectValue = 0f)
+    {
+        SkillData skill = skills.Find(s => s != null && s.skillName == skillName);
+        if (skill != null)
+        {
+            if (effectValue > 0f) skill.currentEffectValue = effectValue;
+            UseNormalAttackLocal(skill);
+        }
+    }
+
+    /// <summary>
+    /// Kích hoạt NormalAttack trên server: hitbox qua PlayerCombat + animation sync tới tất cả client
+    /// </summary>
+    private void UseNormalAttackLocal(SkillData skill)
+    {
+        skill.StartUsing();
+
+        // Trigger hitbox thông qua PlayerCombat
+        int dmg = skill.currentEffectValue > 0f ? (int)skill.currentEffectValue : -1;
+        playerCombatComponent?.TriggerAttack(dmg);
+
+        if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
+        {
+            TriggerPlayerAttackClientRpc();
+            // NormalAttack sprite nhìn PHẢI → spriteFacesLeft=false
+            TriggerSkillEffectAnimationClientRpc(skill.animationTriggerName, spriteFacesLeft: false);
+            float animLen = GetAnimationLength(skill.animationTriggerName, skill);
+            pendingClearDelay = animLen > 0 ? animLen : 0.5f;
+            Invoke(nameof(InvokeClearSprite), pendingClearDelay);
+        }
+
+        Invoke(nameof(ResetSkillState), 0.1f);
+    }
+
+    /// <summary>
     /// Server RPC để client owner yêu cầu server kích hoạt skill Melee (animation, không projectile)
     /// </summary>
     [ServerRpc]
@@ -689,8 +765,10 @@ public class PlayerSkillManager : NetworkBehaviour
     /// Phát Animator trigger trên SkillEffect của player cho TẤT CẢ client.
     /// Chỉ gọi từ server.
     /// </summary>
+    // spriteFacesLeft=true : sprite gốc nhìn TRÁI (convention cũ — flip sang phải bằng flipX)
+    // spriteFacesLeft=false: sprite gốc nhìn PHẢI (NormalAttack) — parent scale xử lý flip
     [ClientRpc]
-    private void TriggerSkillEffectAnimationClientRpc(string triggerName)
+    private void TriggerSkillEffectAnimationClientRpc(string triggerName, bool spriteFacesLeft = true)
     {
         GameObject skillEffectObj = defaultSkillEffectObject;
         if (skillEffectObj == null)
@@ -700,11 +778,8 @@ public class PlayerSkillManager : NetworkBehaviour
         if (!skillEffectObj.activeSelf)
             skillEffectObj.SetActive(true);
 
-        // flipX=true: sprite gốc nhìn TRÁI. Parent scale điều khiển hướng.
-        // scale.x=1 (phải): flipX=true → nhìn phải ✓
-        // scale.x=-1 (trái): de-flipped by parent → nhìn trái ✓
         SpriteRenderer sr = skillEffectObj.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.flipX = true;
+        if (sr != null) sr.flipX = spriteFacesLeft;
 
         Animator animator = skillEffectObj.GetComponent<Animator>();
         if (animator == null || animator.runtimeAnimatorController == null) return;

@@ -152,10 +152,26 @@ public class NetworkEnemyHealth : NetworkBehaviour
         }
     }
 
-    // Public API để đọc giá trị
+    // ── Public API ─────────────────────────────────────────────
+
     public int GetCurrentHealth() => networkCurrentHealth.Value;
     public int GetMaxHealth() => maxHealth;
-    public float GetHealthPercent() => (float)networkCurrentHealth.Value / maxHealth;
+    public float GetHealthPercent() => maxHealth > 0
+        ? (float)networkCurrentHealth.Value / maxHealth
+        : 0f;
+
+    /// <summary>
+    /// Khởi tạo HP từ database (gọi bởi NetworkEnemySpawner sau networkObj.Spawn()).
+    /// Ghi đè giá trị maxHealth=10 cứng trong Inspector.
+    /// </summary>
+    public void InitHealth(int maxHp)
+    {
+        if (!IsServer) return;
+        if (maxHp <= 0) return;
+        maxHealth = maxHp;
+        networkCurrentHealth.Value = maxHp;
+        Debug.Log($"[NetworkEnemyHealth] InitHealth: {maxHp} HP (object {NetworkObjectId})");
+    }
 
     /// <summary>
     /// Public method để các script khác gọi (tự động chuyển thành ServerRpc)

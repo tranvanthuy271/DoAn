@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 public class PlayerCombat : MonoBehaviour
 {
@@ -76,7 +77,8 @@ public class PlayerCombat : MonoBehaviour
             }
         }
 
-        // Attack input - Nhấn N để tấn công
+        // Attack input — phím N dùng cho debug/fallback.
+        // Khi PlayerSkillManager có NormalAttack slot, Z / LMB sẽ gọi TriggerAttack() thay thế.
         if (Input.GetKeyDown(KeyCode.N))
         {
             Attack();
@@ -101,6 +103,27 @@ public class PlayerCombat : MonoBehaviour
             attackVisual.localPosition = facingRight ? attackVisualLocalPosRight : attackVisualLocalPosLeft;
         }
     }
+
+    /// <summary>Cho phép hệ thống skill (PlayerSkillManager) kích hoạt đòn đánh thường.</summary>
+    public void TriggerAttack(int overrideDamage = -1)
+    {
+        if (!canAttack) return;
+        if (overrideDamage > 0)
+        {
+            // Dùng damage từ DB thay vì baseDamage
+            int savedBase = controller?.stats?.baseDamage ?? 0;
+            if (controller?.stats != null) controller.stats.baseDamage = overrideDamage;
+            Attack();
+            if (controller?.stats != null) controller.stats.baseDamage = savedBase;
+        }
+        else
+        {
+            Attack();
+        }
+    }
+
+    /// <returns>True nếu skill đánh thường hiện đang sẵn sàng.</returns>
+    public bool CanAttackNow => canAttack;
 
     private void Attack()
     {
@@ -149,6 +172,23 @@ public class PlayerCombat : MonoBehaviour
         // Set cooldown
         canAttack = false;
         attackCooldown = 1f / stats.attackSpeed;
+
+        // PvP: quét thêm player khác trong tầm (không dùng enemyLayers — Player layer thường không ở đó)
+        NetworkObject selfNetObj = GetComponent<NetworkObject>();
+        Collider2D[] pvpHits = Physics2D.OverlapCircleAll(attackPoint.position, attackRange);
+        foreach (Collider2D hit in pvpHits)
+        {
+            if (hit.gameObject == gameObject) continue;
+            NetworkObject hitNetObj = hit.GetComponent<NetworkObject>();
+            if (selfNetObj != null && hitNetObj != null && hitNetObj.NetworkObjectId == selfNetObj.NetworkObjectId) continue;
+            if (!hit.CompareTag("Player")) continue;
+            var netPlayer = hit.GetComponent<NetworkPlayerHealth>();
+            if (netPlayer != null)
+            {
+                netPlayer.TakeDamage(damage);
+                Debug.Log($"[PlayerCombat] Dealt {damage} PvP damage to {hit.name}");
+            }
+        }
     }
 
     private void OnDrawGizmosSelected()

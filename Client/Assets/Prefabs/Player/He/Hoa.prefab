@@ -78,7 +78,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2104443438342645318}
@@ -308,9 +308,29 @@ MonoBehaviour:
     animationTriggerName: 
     playerSkillEffectObject: {fileID: 0}
     projectileSkillEffectPrefab: {fileID: 0}
-    projectileSpriteFacesLeft: 0
+    projectileSpriteFacesLeft: 1
     disablePlayerSkillEffectAnimation: 1
     iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
+  - skillName: "\u0110\xE1nh Th\u01B0\u1EDDng"
+    skillCode: NORMAL_ATTACK
+    skillType: 15
+    activationKey: 122
+    cooldown: 0.8
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0.8
+    projectileLifetime: 0
+    animationTriggerName: NormalAttack
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 0
+    iconId: icon_normal_attack
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -823,7 +843,7 @@ Transform:
   m_GameObject: {fileID: 8908357230803505039}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.685, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -875,7 +895,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 3.96, y: 4.68}
+  m_Size: {x: 2.76, y: 1.32}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0

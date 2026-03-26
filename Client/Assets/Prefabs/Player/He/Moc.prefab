@@ -78,7 +78,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7879928489884549096}
@@ -324,6 +324,26 @@ MonoBehaviour:
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 1
     iconId: icon_skill_5
+    currentEffectValue: 0
+    currentMpCost: 0
+    cooldownTimer: 0
+    canUse: 0
+    isUsing: 0
+  - skillName: "\u0110\xE1nh Th\u01B0\u1EDDng"
+    skillCode: NORMAL_ATTACK
+    skillType: 15
+    activationKey: 122
+    cooldown: 0.8
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+    spawnOffset: 0.8
+    projectileLifetime: 0
+    animationTriggerName: 
+    playerSkillEffectObject: {fileID: 0}
+    projectileSkillEffectPrefab: {fileID: 0}
+    projectileSpriteFacesLeft: 0
+    disablePlayerSkillEffectAnimation: 1
+    iconId: icon_normal_attack
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
