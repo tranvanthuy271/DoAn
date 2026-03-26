@@ -1,7 +1,9 @@
 using GameServerApi.Data;
 using GameServerApi.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace GameServerApi.Controllers
 {
@@ -165,18 +167,25 @@ namespace GameServerApi.Controllers
 
         // ══════════════════════════════════════════════════════════════
         //  POST /api/npc/shop/buy
-        //  Body: { "playerId": 1, "npcId": 1, "shopItemId": 1, "quantity": 1 }
+        //  Headers: Authorization: Bearer <JWT>
+        //  Body: { "npcId": 1, "shopItemId": 1, "quantity": 1 }
         //  Mua item từ shop NPC — server-authoritative
+        //  playerId lấy từ JWT claim (không tin body)
         // ══════════════════════════════════════════════════════════════
+        [Authorize]
         [HttpPost("shop/buy")]
         public async Task<IActionResult> BuyItem([FromBody] System.Text.Json.JsonElement body)
         {
-            if (!body.TryGetProperty("playerId",   out var pidProp)  ||
-                !body.TryGetProperty("npcId",      out var nidProp)  ||
-                !body.TryGetProperty("shopItemId", out var siProp))
-                return BadRequest("Thiếu playerId, npcId hoặc shopItemId.");
+            // Lấy playerId từ JWT claim thay vì tin vào body
+            var playerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                             ?? User.FindFirstValue("sub");
+            if (!int.TryParse(playerIdClaim, out int playerId))
+                return Unauthorized("Token không hợp lệ.");
 
-            int playerId   = pidProp.GetInt32();
+            if (!body.TryGetProperty("npcId",      out var nidProp)  ||
+                !body.TryGetProperty("shopItemId", out var siProp))
+                return BadRequest("Thiếu npcId hoặc shopItemId.");
+
             int npcId      = nidProp.GetInt32();
             int shopItemId = siProp.GetInt32();
             int quantity   = body.TryGetProperty("quantity", out var qProp) ? qProp.GetInt32() : 1;

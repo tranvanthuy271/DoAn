@@ -151,6 +151,93 @@ namespace GameServerApi.Controllers
                 portal_name     = portal.PortalName
             });
         }
+
+        /// <summary>
+        /// GET /api/map/by-scene?scene=GameScene
+        /// Tìm map_config theo scene_name (dùng cho MapManager.cs trên client).
+        /// </summary>
+        [HttpGet("by-scene")]
+        public async Task<IActionResult> GetMapByScene([FromQuery] string scene)
+        {
+            if (string.IsNullOrWhiteSpace(scene))
+                return BadRequest(new { message = "scene param required" });
+
+            var map = await _db.MapConfigs.FirstOrDefaultAsync(m => m.SceneName == scene);
+            if (map == null)
+                return NotFound(new { message = $"Scene '{scene}' không tìm thấy trong map_config." });
+
+            return Ok(new
+            {
+                map_id     = map.MapId,
+                map_name   = map.MapName,
+                scene_name = map.SceneName,
+                min_level  = map.MinLevel,
+                max_level  = map.MaxLevel
+            });
+        }
+
+        /// <summary>
+        /// GET /api/map/zone?mapId=1&amp;zoneIndex=2
+        /// Lấy room_id của zone (dùng server 1 port duy nhất).
+        /// Client không cần reconnect, chỉ cần gửi ServerRpc với room_id này.
+        /// </summary>
+        [HttpGet("zone")]
+        public async Task<IActionResult> GetZoneConfig([FromQuery] int mapId, [FromQuery] int zoneIndex)
+        {
+            var zone = await _db.MapZoneConfigs
+                .FirstOrDefaultAsync(z => z.MapId == mapId && z.ZoneIndex == zoneIndex && z.IsActive);
+
+            if (zone == null)
+                return NotFound(new { message = $"Không tìm thấy zone {zoneIndex} trong map {mapId}." });
+
+            return Ok(new
+            {
+                zone_id   = zone.ZoneId,
+                zone_name = zone.ZoneName,
+                room_id   = zone.RoomId,
+                // Host ngày luôn cố định — tất cả zone dùng cùng 1 NGO server
+                host_ip   = zone.HostIp,
+                host_port = 7777
+            });
+        }
+
+        /// <summary>
+        /// GET /api/map/portal/direction?mapId=1&amp;direction=right
+        /// Lấy portal trái hoặc phải của map (dùng cho MapTransitionButton.cs).
+        /// Quy ước: portal bên phải có src_x lớn nhất, bên trái có src_x nhỏ nhất.
+        /// </summary>
+        [HttpGet("portal/direction")]
+        public async Task<IActionResult> GetPortalByDirection(
+            [FromQuery] int mapId,
+            [FromQuery] string direction)
+        {
+            if (direction != "left" && direction != "right")
+                return BadRequest(new { message = "direction phải là 'left' hoặc 'right'." });
+
+            var portals = await _db.MapPortals
+                .Where(p => p.SourceMapId == mapId && p.PortalType == "world_travel" && p.IsActive)
+                .ToListAsync();
+
+            if (!portals.Any())
+                return NotFound(new { message = $"Map {mapId} không có world_travel portal." });
+
+            var portal = direction == "right"
+                ? portals.OrderByDescending(p => p.SrcX).First()
+                : portals.OrderBy(p => p.SrcX).First();
+
+            return Ok(new
+            {
+                portal_id       = portal.PortalId,
+                portal_name     = portal.PortalName,
+                src_x           = portal.SrcX,
+                src_y           = portal.SrcY,
+                src_radius      = portal.SrcRadius,
+                dest_map_id     = portal.DestMapId,
+                dest_scene_name = portal.DestSceneName,
+                dest_x          = portal.DestX,
+                dest_y          = portal.DestY
+            });
+        }
     }
 
     public class TravelRequest

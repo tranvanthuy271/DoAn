@@ -32,6 +32,7 @@ namespace GameServerApi.Data
         public DbSet<MapPortal>                MapPortals               => Set<MapPortal>();
         public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
         public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
+        public DbSet<MapZoneConfig>            MapZoneConfigs           => Set<MapZoneConfig>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -414,6 +415,24 @@ namespace GameServerApi.Data
                 entity.Property(d => d.QtyMax).HasColumnName("qty_max");
                 entity.Property(d => d.IsActive).HasColumnName("is_active");
                 entity.HasIndex(d => new { d.MapId, d.EnemyId, d.ItemId }).IsUnique();
+            });
+
+            modelBuilder.Entity<MapZoneConfig>(entity =>
+            {
+                entity.ToTable("map_zone_config");
+                entity.HasKey(z => z.ZoneId);
+                entity.Property(z => z.ZoneId).HasColumnName("zone_id").ValueGeneratedOnAdd();
+                entity.Property(z => z.MapId).HasColumnName("map_id");
+                entity.Property(z => z.ZoneIndex).HasColumnName("zone_index");
+                entity.Property(z => z.ZoneName).HasColumnName("zone_name").HasMaxLength(50);
+                entity.Property(z => z.RoomId).HasColumnName("room_id").HasMaxLength(50);
+                entity.Property(z => z.HostIp).HasColumnName("host_ip").HasMaxLength(50);
+                entity.Property(z => z.TriggerXMin).HasColumnName("trigger_x_min");
+                entity.Property(z => z.TriggerXMax).HasColumnName("trigger_x_max");
+                entity.Property(z => z.TriggerYMin).HasColumnName("trigger_y_min");
+                entity.Property(z => z.TriggerYMax).HasColumnName("trigger_y_max");
+                entity.Property(z => z.IsActive).HasColumnName("is_active");
+                entity.HasIndex(z => new { z.MapId, z.ZoneIndex }).IsUnique();
             });
         }
     }
