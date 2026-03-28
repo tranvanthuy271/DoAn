@@ -216,6 +216,54 @@ public class EnemyItemDrop : MonoBehaviour
             maxQuantity = maxQuantity
         });
     }
+
+    /// <summary>
+    /// Ghi đè toàn bộ drop list bằng dữ liệu từ DB config (gọi bởi HostSpawnConfigLoader).
+    /// Nếu items rỗng hoặc ItemManager không tìm được ItemData → giữ list cũ trong Inspector.
+    /// </summary>
+    /// <param name="configItems">Danh sách DropItemEntry đã được validate bởi HostSpawnConfigLoader.</param>
+    public void SetDropsFromConfig(System.Collections.Generic.List<DropItemEntry> configItems)
+    {
+        if (configItems == null || configItems.Count == 0) return;
+
+        var newList = new List<DropItem>();
+        foreach (var entry in configItems)
+        {
+            ItemData itemData = ResolveItemData(entry.item_id);
+            if (itemData == null)
+            {
+                Debug.LogWarning($"[EnemyItemDrop] SetDropsFromConfig: item_id={entry.item_id} không tìm được ItemData → bỏ qua.");
+                continue;
+            }
+
+            newList.Add(new DropItem
+            {
+                itemData    = itemData,
+                dropRate    = entry.rate * 100f,   // chuyển từ 0–1 sang 0–100%
+                minQuantity = entry.qty_min,
+                maxQuantity = entry.qty_max
+            });
+        }
+
+        if (newList.Count > 0)
+        {
+            dropItems = newList;
+            Debug.Log($"[EnemyItemDrop] SetDropsFromConfig: đã cập nhật {newList.Count} drop rules từ DB.");
+        }
+    }
+
+    /// <summary>Lấy ItemData theo ID từ ItemManager hoặc Resources fallback.</summary>
+    private ItemData ResolveItemData(int itemId)
+    {
+        if (ItemManager.Instance != null)
+            return ItemManager.Instance.GetItemData(itemId);
+
+        // Fallback khi ItemManager chưa sẵn sàng
+        foreach (var item in Resources.LoadAll<ItemData>("Items"))
+            if (item.itemID == itemId) return item;
+
+        return null;
+    }
 }
 
 /// <summary>

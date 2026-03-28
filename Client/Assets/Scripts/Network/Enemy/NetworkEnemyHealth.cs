@@ -107,20 +107,18 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// </summary>
     private void HandleDeath()
     {
-        // Tránh xử lý death nhiều lần
         if (isDead) return;
         isDead = true;
 
         Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} died!");
 
-        // Notify clients về death
+        // Notify clients — play Die animation trước khi xóa
         OnDeathClientRpc();
 
-        // Server xóa enemy sau delay (nếu cần animation)
         if (IsServer)
         {
-            // Có thể thêm delay để chơi death animation
-            Invoke(nameof(DestroyEnemyServer), 0.5f);
+            // Chờ animation die (0.8 giây) rồi mới Despawn
+            Invoke(nameof(DestroyEnemyServer), 0.9f);
         }
     }
 
@@ -131,6 +129,20 @@ public class NetworkEnemyHealth : NetworkBehaviour
     private void OnDeathClientRpc()
     {
         OnDeath?.Invoke();
+
+        // Kích hoạt Die animation trên client
+        Animator anim = GetComponent<Animator>();
+        if (anim != null)
+        {
+            foreach (var p in anim.parameters)
+            {
+                if (p.name == "Die")
+                {
+                    anim.SetTrigger("Die");
+                    break;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -172,6 +184,12 @@ public class NetworkEnemyHealth : NetworkBehaviour
         networkCurrentHealth.Value = maxHp;
         Debug.Log($"[NetworkEnemyHealth] InitHealth: {maxHp} HP (object {NetworkObjectId})");
     }
+
+    /// <summary>EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.</summary>
+    public int ExpReward { get; private set; } = 0;
+
+    /// <summary>Lưu EXP override để death handler dùng (gọi bởi EnemyStatOverride).</summary>
+    public void SetExpReward(int exp) => ExpReward = exp;
 
     /// <summary>
     /// Public method để các script khác gọi (tự động chuyển thành ServerRpc)

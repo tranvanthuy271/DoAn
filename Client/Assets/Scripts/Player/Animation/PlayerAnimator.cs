@@ -111,8 +111,20 @@ public class PlayerAnimator : MonoBehaviour
 
     public void TriggerAttack()
     {
-        if (animator != null)
-            animator.SetTrigger(Attack);
+        if (animator == null) return;
+
+        // Thử cả hai biến thể "Attack" và "attack" vì Animator Controller có thể dùng bất kỳ
+        foreach (var p in animator.parameters)
+        {
+            if (p.type != AnimatorControllerParameterType.Trigger) continue;
+            if (p.name == "Attack" || p.name == "attack")
+            {
+                animator.SetTrigger(p.name);
+                return; // chỉ trigger một lần
+            }
+        }
+        // Fallback nếu không tìm thấy — dùng hash gốc
+        animator.SetTrigger(Attack);
     }
 
     public void PlayAnimation(string animationName)
