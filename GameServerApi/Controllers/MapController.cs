@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using GameServerApi.Data;
 using GameServerApi.Models;
 using GameServerApi.Models.Entities;
@@ -7,6 +9,75 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Controllers
 {
+    // ═══════════════════════════════════════════════════════════════════════
+    //  In-memory registry: track which player is hosting each world map.
+    //  Mỗi map chỉ có 1 host tại một thời điểm.
+    //  Entry tự hết hạn sau HostTimeoutSeconds giây (phòng host crash không unregister).
+    // ═══════════════════════════════════════════════════════════════════════
+    internal static class MapHostRegistry
+    {
+        private record HostEntry(string Ip, ushort Port, int PlayerId, DateTime RegisteredAt);
+
+        private static readonly ConcurrentDictionary<int, HostEntry> _registry = new();
+        private const int HostTimeoutSeconds = 120; // host có 120s không heartbeat → bị xoá
+
+        /// <summary>Lấy thông tin host hiện tại của map (null nếu không có hoặc đã hết hạn).</summary>
+        public static (bool hasHost, string ip, ushort port, int playerId) Check(int mapId)
+        {
+            if (_registry.TryGetValue(mapId, out var entry))
+            {
+                if ((DateTime.UtcNow - entry.RegisteredAt).TotalSeconds < HostTimeoutSeconds)
+                    return (true, entry.Ip, entry.Port, entry.PlayerId);
+                // Hết hạn → xoá
+                _registry.TryRemove(mapId, out _);
+            }
+            return (false, "", 0, 0);
+        }
+
+        /// <summary>
+        /// Thử đăng ký làm host cho map.
+        /// - Nếu chưa có host (hoặc entry đã hết hạn): đăng ký thành công → youAreHost=true.
+        /// - Nếu đã có host: trả về thông tin host hiện tại → youAreHost=false.
+        /// </summary>
+        public static (bool youAreHost, string hostIp, ushort hostPort) Register(
+            int mapId, string ip, ushort port, int playerId)
+        {
+            // Xoá entry hết hạn trước khi thêm mới
+            Check(mapId);
+
+            var newEntry = new HostEntry(ip, port, playerId, DateTime.UtcNow);
+
+            // TryAdd: thành công nếu chưa có key, thất bại nếu đã có
+            if (_registry.TryAdd(mapId, newEntry))
+                return (true, ip, port);
+
+            // Ai đó đã đăng ký trước — trả về thông tin của họ
+            if (_registry.TryGetValue(mapId, out var existing))
+                return (false, existing.Ip, existing.Port);
+
+            // Race hiếm: entry vừa bị xoá đúng lúc → thử lại
+            if (_registry.TryAdd(mapId, newEntry))
+                return (true, ip, port);
+
+            return (false, ip, port);
+        }
+
+        /// <summary>Huỷ đăng ký host. Chỉ thành công nếu player_id khớp với host hiện tại.</summary>
+        public static bool Unregister(int mapId, int playerId)
+        {
+            if (_registry.TryGetValue(mapId, out var entry) && entry.PlayerId == playerId)
+                return _registry.TryRemove(mapId, out _);
+            return false;
+        }
+
+        /// <summary>Heartbeat: reset timer để tránh hết hạn. Gọi mỗi ~30s từ client.</summary>
+        public static void Heartbeat(int mapId, int playerId)
+        {
+            if (_registry.TryGetValue(mapId, out var entry) && entry.PlayerId == playerId)
+                _registry[mapId] = entry with { RegisteredAt = DateTime.UtcNow };
+        }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class MapController : ControllerBase
@@ -102,12 +173,18 @@ namespace GameServerApi.Controllers
             if (portal.SourceMapId != req.CurrentMapId)
                 return BadRequest(new { success = false, message = "Vá»‹ trÃ­ khÃ´ng há»£p lá»‡." });
 
-            // Validate khoáº£ng cÃ¡ch giá»¯a player vÃ  portal (chá»‘ng teleport hack)
-            float dx = req.PlayerX - portal.SrcX;
-            float dy = req.PlayerY - portal.SrcY;
-            float dist = MathF.Sqrt(dx * dx + dy * dy);
-            if (dist > portal.SrcRadius * 2f)  // leniency x2 cho Ä‘á»™ trá»… máº¡ng
-                return BadRequest(new { success = false, message = "Báº¡n khÃ´ng á»Ÿ gáº§n cá»•ng." });
+            // Validate khoảng cách giữa player và portal (chống teleport hack)
+            // Biên map (left/right) dùng BoxCollider2D vật lý làm validator — bỏ qua dist check.
+            // Chỉ validate với dungeon portal (enter_dungeon / exit_dungeon / room_transition).
+            bool isEdgePortal = portal.PortalDirection == "left" || portal.PortalDirection == "right";
+            if (!isEdgePortal)
+            {
+                float dx = req.PlayerX - portal.SrcX;
+                float dy = req.PlayerY - portal.SrcY;
+                float dist = MathF.Sqrt(dx * dx + dy * dy);
+                if (dist > portal.SrcRadius * 2f)  // leniency x2 cho độ trễ mạng
+                    return BadRequest(new { success = false, message = "Bạn không ở gần cổng." });
+            }
 
             // Kiá»ƒm tra item cáº§n thiáº¿t (náº¿u cÃ³)
             if (portal.RequiredItemId.HasValue)
@@ -177,34 +254,9 @@ namespace GameServerApi.Controllers
         }
 
         /// <summary>
-        /// GET /api/map/zone?mapId=1&amp;zoneIndex=2
-        /// Lấy room_id của zone (dùng server 1 port duy nhất).
-        /// Client không cần reconnect, chỉ cần gửi ServerRpc với room_id này.
-        /// </summary>
-        [HttpGet("zone")]
-        public async Task<IActionResult> GetZoneConfig([FromQuery] int mapId, [FromQuery] int zoneIndex)
-        {
-            var zone = await _db.MapZoneConfigs
-                .FirstOrDefaultAsync(z => z.MapId == mapId && z.ZoneIndex == zoneIndex && z.IsActive);
-
-            if (zone == null)
-                return NotFound(new { message = $"Không tìm thấy zone {zoneIndex} trong map {mapId}." });
-
-            return Ok(new
-            {
-                zone_id   = zone.ZoneId,
-                zone_name = zone.ZoneName,
-                room_id   = zone.RoomId,
-                // Host ngày luôn cố định — tất cả zone dùng cùng 1 NGO server
-                host_ip   = zone.HostIp,
-                host_port = 7777
-            });
-        }
-
-        /// <summary>
         /// GET /api/map/portal/direction?mapId=1&amp;direction=right
         /// Lấy portal trái hoặc phải của map (dùng cho MapTransitionButton.cs).
-        /// Quy ước: portal bên phải có src_x lớn nhất, bên trái có src_x nhỏ nhất.
+        /// portal_direction trong DB được set trước khi INSERT (left | right | none).
         /// </summary>
         [HttpGet("portal/direction")]
         public async Task<IActionResult> GetPortalByDirection(
@@ -214,16 +266,12 @@ namespace GameServerApi.Controllers
             if (direction != "left" && direction != "right")
                 return BadRequest(new { message = "direction phải là 'left' hoặc 'right'." });
 
-            var portals = await _db.MapPortals
-                .Where(p => p.SourceMapId == mapId && p.PortalType == "world_travel" && p.IsActive)
-                .ToListAsync();
+            var portal = await _db.MapPortals
+                .Where(p => p.SourceMapId == mapId && p.PortalDirection == direction && p.IsActive)
+                .FirstOrDefaultAsync();
 
-            if (!portals.Any())
-                return NotFound(new { message = $"Map {mapId} không có world_travel portal." });
-
-            var portal = direction == "right"
-                ? portals.OrderByDescending(p => p.SrcX).First()
-                : portals.OrderBy(p => p.SrcX).First();
+            if (portal == null)
+                return NotFound(new { message = $"Map {mapId} không có portal hướng '{direction}'." });
 
             return Ok(new
             {
@@ -238,15 +286,103 @@ namespace GameServerApi.Controllers
                 dest_y          = portal.DestY
             });
         }
+
+        // ── Host Registry endpoints ──────────────────────────────────────────
+
+        /// <summary>
+        /// GET /api/map/host/check?mapId=1
+        /// Kiểm tra có host nào đang chạy cho map này không.
+        /// Response: { has_host, host_ip, host_port, player_id }
+        /// </summary>
+        [HttpGet("host/check")]
+        public IActionResult CheckHost([FromQuery] int mapId)
+        {
+            var (hasHost, ip, port, playerId) = MapHostRegistry.Check(mapId);
+            return Ok(new { has_host = hasHost, host_ip = ip, host_port = (int)port, player_id = playerId });
+        }
+
+        /// <summary>
+        /// POST /api/map/host/register
+        /// Đăng ký làm host cho map (atomic: race-safe).
+        /// - Nếu chưa có host: đăng ký thành công → { you_are_host: true, host_ip, host_port }
+        /// - Nếu đã có host: → { you_are_host: false, host_ip: &lt;existing>, host_port: &lt;existing> }
+        /// Body: { map_id, host_ip, host_port, player_id }
+        /// </summary>
+        [HttpPost("host/register")]
+        public IActionResult RegisterHost([FromBody] MapHostRegisterRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.HostIp) || req.HostPort == 0)
+                return BadRequest(new { message = "host_ip và host_port không được để trống." });
+
+            var (youAreHost, hostIp, hostPort) = MapHostRegistry.Register(
+                req.MapId, req.HostIp, (ushort)req.HostPort, req.PlayerId);
+
+            return Ok(new
+            {
+                success      = true,
+                you_are_host = youAreHost,
+                host_ip      = hostIp,
+                host_port    = (int)hostPort
+            });
+        }
+
+        /// <summary>
+        /// POST /api/map/host/unregister
+        /// Huỷ đăng ký host khi player rời map.
+        /// Chỉ thành công nếu player_id khớp với host hiện tại.
+        /// Body: { map_id, player_id }
+        /// </summary>
+        [HttpPost("host/unregister")]
+        public IActionResult UnregisterHost([FromBody] MapHostUnregisterRequest req)
+        {
+            bool removed = MapHostRegistry.Unregister(req.MapId, req.PlayerId);
+            return Ok(new { success = true, removed });
+        }
+
+        /// <summary>
+        /// POST /api/map/host/heartbeat
+        /// Reset timer của host entry để tránh hết hạn (120s timeout).
+        /// Gọi mỗi ~30s từ host client.
+        /// Body: { map_id, player_id }
+        /// </summary>
+        [HttpPost("host/heartbeat")]
+        public IActionResult HostHeartbeat([FromBody] MapHostUnregisterRequest req)
+        {
+            MapHostRegistry.Heartbeat(req.MapId, req.PlayerId);
+            return Ok(new { success = true });
+        }
     }
 
     public class TravelRequest
     {
+        [JsonPropertyName("portal_id")]
         public int PortalId { get; set; }
+
+        [JsonPropertyName("player_id")]
         public int PlayerId { get; set; }
+
+        [JsonPropertyName("current_map_id")]
         public int CurrentMapId { get; set; }
+
+        [JsonPropertyName("player_x")]
         public float PlayerX { get; set; }
+
+        [JsonPropertyName("player_y")]
         public float PlayerY { get; set; }
+    }
+
+    public class MapHostRegisterRequest
+    {
+        [JsonPropertyName("map_id")]   public int    MapId    { get; set; }
+        [JsonPropertyName("host_ip")]  public string HostIp   { get; set; } = "";
+        [JsonPropertyName("host_port")] public int   HostPort { get; set; }
+        [JsonPropertyName("player_id")] public int   PlayerId { get; set; }
+    }
+
+    public class MapHostUnregisterRequest
+    {
+        [JsonPropertyName("map_id")]    public int MapId    { get; set; }
+        [JsonPropertyName("player_id")] public int PlayerId { get; set; }
     }
 }
 

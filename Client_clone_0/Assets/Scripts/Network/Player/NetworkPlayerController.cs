@@ -55,6 +55,9 @@ public class NetworkPlayerController : NetworkBehaviour
         // Chỉ owner mới điều khiển input
         if (IsOwner)
         {
+            // Đặt player vào đúng vị trí đích nếu vừa chuyển map qua portal
+            PortalArrivalHandler.ApplyPendingArrival(transform);
+
             CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
             if (cameraFollow != null)
             {

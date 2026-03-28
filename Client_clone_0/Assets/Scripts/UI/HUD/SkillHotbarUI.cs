@@ -62,7 +62,16 @@ public class SkillHotbarUI : MonoBehaviour
 
     private void Update()
     {
-        if (!autoFind || isBound) return;
+        if (!autoFind) return;
+
+        // Nếu manager cũ bị destroy (player despawn khi chuyển map), reset để retry
+        if (isBound && (boundManager == null || !boundManager.IsSpawned))
+        {
+            isBound = false;
+            boundManager = null;
+        }
+
+        if (isBound) return;
 
         retryTimer -= Time.deltaTime;
         if (retryTimer > 0f) return;

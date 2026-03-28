@@ -351,6 +351,14 @@ public class ItemUseHandler : MonoBehaviour
         inventoryBridge?.RefreshInventoryFromDB();
     }
 
+    /// <summary>Gọi từ bên ngoài (ví dụ NpcMenuUI sau khi mua item) để refresh túi đồ.</summary>
+    public void RequestRefreshInventory()
+    {
+        // Invalidate cache trước để đảm bảo fetch lại dữ liệu mới nhất
+        inventoryBridge?.InvalidateInventoryCache();
+        RefreshInventory();
+    }
+
     private int GetCurrentPlayerId()
     {
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())

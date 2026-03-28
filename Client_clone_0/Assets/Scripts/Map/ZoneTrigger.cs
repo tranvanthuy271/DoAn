@@ -1,126 +1,78 @@
 using UnityEngine;
 using Unity.Netcode;
 using Unity.Collections;
-using System.Collections;
-using UnityEngine.Networking;
 
 /// <summary>
 /// Đặt BoxCollider2D (isTrigger) tại ranh giới giữa hai zone trong cùng map.
 ///
-/// Kiến trúc 1 port (không disconnect/reconnect):
-///   - Player bước qua trigger → fetch room_id của zone đích từ API
-///   - Gửi PlayerZoneHandler.RequestZoneChangeServerRpc(room_id, spawnX, spawnY)
-///   - Server cập nhật room assignment + teleport player
-///   - KHÔNG cần shutdown NGO hay reconnect sang port khác
+/// Kiến trúc 1 port — toàn bộ cấu hình được set trong Inspector, KHÔNG cần DB:
+///   - roomId:  định danh zone đích (VD: "map1_zone1") — set trong Inspector
+///   - spawnX/spawnY: vị trí player khi vào zone mới
+///   - Player bước qua → PlayerZoneHandler.RequestZoneChangeServerRpc(roomId, spawnX, spawnY)
+///   - Server route client vào room đúng, KHÔNG reconnect/shutdown NGO
 ///
 /// Setup:
-///   1. Tạo GameObject, thêm BoxCollider2D (Is Trigger = true).
-///   2. Gắn script này.
-///   3. Điền targetZoneIndex, mapId (hoặc để 0 để tự lấy từ MapManager),
-///      spawnX/spawnY (vị trí player khi vào zone mới).
+///   1. Thêm Empty GameObject tại ranh giới zone, đặt tên "ZoneTrigger_A_to_B".
+///   2. Add Component: BoxCollider2D (Is Trigger = true) + ZoneTrigger.
+///   3. Điền roomId (VD: "map0_zone1"), spawnX / spawnY trong Inspector.
 ///   4. Player Prefab phải có PlayerZoneHandler.cs gắn kèm.
 /// </summary>
 [RequireComponent(typeof(BoxCollider2D))]
 public class ZoneTrigger : MonoBehaviour
 {
     [Header("Zone đích")]
-    [Tooltip("ZoneIndex của zone muốn chuyển đến (theo map_zone_config.zone_index)")]
-    [SerializeField] private int targetZoneIndex;
+    [Tooltip("Tên định danh zone — khớp với PlayerZoneHandler trên server.\nVD: \"map0_zone0\", \"map0_zone1\"")]
+    [SerializeField] private string roomId = "map0_zone0";
 
-    [Tooltip("Map ID của scene này — tự lấy từ MapManager nếu để 0")]
-    [SerializeField] private int mapId = 0;
+    [Tooltip("Tên hiển thị lên UI khi player vào zone này.\nVD: \"Khu Rừng Băng\", \"Đồng Bằng Lửa\"")]
+    [SerializeField] private string zoneName = "";
 
     [Header("Vị trí spawn khi vào zone mới")]
     [SerializeField] private float spawnX;
     [SerializeField] private float spawnY;
 
-    [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
-
-    private bool triggered = false;
-
-    private void Start()
-    {
-        if (mapId == 0 && MapManager.Instance != null)
-            mapId = MapManager.Instance.GetMapId();
-    }
+    private bool _triggered;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (triggered) return;
+        if (_triggered) return;
 
-        // Chỉ xử lý cho player local (owner)
+        // Chỉ xử lý cho local owner
         if (!other.TryGetComponent<NetworkObject>(out var netObj)) return;
         if (!netObj.IsOwner) return;
 
-        triggered = true;
-        StartCoroutine(FetchAndSwitchZone(other.gameObject));
+        _triggered = true;
+        SwitchZone(other.gameObject);
     }
 
-    private IEnumerator FetchAndSwitchZone(GameObject playerObj)
+    private void SwitchZone(GameObject playerObj)
     {
-        // 1. Lấy room_id của zone đích từ API
-        string url = $"{apiBase}/api/map/zone?mapId={mapId}&zoneIndex={targetZoneIndex}";
-        using var req = UnityWebRequest.Get(url);
-        AuthHelper.AddAuthHeader(req);
-        yield return req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
+        if (string.IsNullOrEmpty(roomId))
         {
-            Debug.LogError($"[ZoneTrigger] Lấy zone config thất bại: {req.error}");
-            triggered = false;
-            yield break;
+            Debug.LogError("[ZoneTrigger] roomId chưa được set trong Inspector!");
+            _triggered = false;
+            return;
         }
 
-        ZoneData zoneData;
-        try
-        {
-            zoneData = JsonUtility.FromJson<ZoneData>(req.downloadHandler.text);
-        }
-        catch
-        {
-            Debug.LogError("[ZoneTrigger] Parse zone data thất bại.");
-            triggered = false;
-            yield break;
-        }
-
-        if (string.IsNullOrEmpty(zoneData.room_id))
-        {
-            Debug.LogError($"[ZoneTrigger] Zone {targetZoneIndex} chưa có room_id trong DB!");
-            triggered = false;
-            yield break;
-        }
-
-        // 2. Gửi yêu cầu đổi zone lên server qua PlayerZoneHandler
-        //    KHÔNG cần disconnect/reconnect — server tự route client vào room đúng
         if (playerObj.TryGetComponent<PlayerZoneHandler>(out var handler))
         {
-            handler.RequestZoneChangeServerRpc(
-                new FixedString64Bytes(zoneData.room_id),
-                spawnX,
-                spawnY);
+            handler.RequestZoneChangeServerRpc(new FixedString64Bytes(roomId), spawnX, spawnY);
+            Debug.Log($"[ZoneTrigger] Chuyển zone → '{roomId}' @ ({spawnX},{spawnY})");
 
-            Debug.Log($"[ZoneTrigger] Gửi yêu cầu → zone '{zoneData.room_id}' @ ({spawnX},{spawnY})");
+            // Hiện tên zone trên UI nếu đã set
+            if (!string.IsNullOrEmpty(zoneName))
+                ZoneNameBanner.Instance?.Show(zoneName);
         }
         else
         {
             Debug.LogError("[ZoneTrigger] Player Prefab thiếu PlayerZoneHandler component!");
-            triggered = false;
-            yield break;
+            _triggered = false;
+            return;
         }
 
-        // Reset sau delay để không trigger lại ngay nếu player bước lùi
+        // Reset sau 2 giây để không trigger lại ngay nếu player bước lùi
         Invoke(nameof(ResetTrigger), 2f);
     }
 
-    private void ResetTrigger() => triggered = false;
-
-    [System.Serializable]
-    private class ZoneData
-    {
-        public string room_id;
-        public string zone_name;
-        public string host_ip;   // chỉ để log, không dùng để connect
-        public int    host_port; // luôn là 7777, không dùng để reconnect
-    }
+    private void ResetTrigger() => _triggered = false;
 }

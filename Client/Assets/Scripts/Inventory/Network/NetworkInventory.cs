@@ -92,6 +92,75 @@ public class NetworkInventory : NetworkBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    /// <summary>Wrapper cho JSON serialization mảng InventoryItem qua RPC.</summary>
+    [System.Serializable]
+    public class InventoryJsonWrapper
+    {
+        public InventoryItem[] items;
+    }
+
+    /// <summary>
+    /// Client gọi lên host để yêu cầu dữ liệu inventory.
+    /// Host fetch DB rồi gửi JSON về đúng client đó qua SendInventoryDataClientRpc.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestInventoryDataServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        Debug.Log($"[NetworkInventory] RequestInventoryDataServerRpc từ clientId={senderClientId}");
+
+        // Resolve playerId từ clientId
+        int playerId = 0;
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            var pd = ServerPlayerDataManager.Instance.GetPlayerDataForClient(senderClientId);
+            if (pd != null) playerId = pd.user_id;
+        }
+
+        // Fallback: GameManager (chỉ hợp lệ khi host gọi cho chính mình)
+        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+            playerId = GameManager.Instance.GetPlayerData().user_id;
+
+        if (playerId == 0 || APIClient.Instance == null)
+        {
+            Debug.LogWarning($"[NetworkInventory] RequestInventoryDataServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
+            return;
+        }
+
+        ulong capturedClientId = senderClientId;
+        APIClient.Instance.GetPlayerInventory(
+            playerId,
+            (items) =>
+            {
+                string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
+                Debug.Log($"[NetworkInventory] Host trả dữ liệu inventory ({items.Length} items) về clientId={capturedClientId}");
+                var clientParams = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
+                };
+                SendInventoryDataClientRpc(json, clientParams);
+            },
+            (error) => Debug.LogError($"[NetworkInventory] Lỗi fetch inventory cho clientId={capturedClientId}: {error}")
+        );
+    }
+
+    /// <summary>
+    /// Host gửi JSON inventory về đúng client đã yêu cầu.
+    /// InventoryNetworkBridge phía client nhận và cập nhật cache + UI.
+    /// </summary>
+    [ClientRpc]
+    public void SendInventoryDataClientRpc(string inventoryJson, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[NetworkInventory] 📦 Client nhận inventory data từ host ({inventoryJson?.Length ?? 0} chars)");
+        var bridge = FindObjectOfType<InventoryNetworkBridge>(true);
+        if (bridge != null)
+            bridge.OnReceivedInventoryDataFromHost(inventoryJson);
+        else
+            Debug.LogWarning("[NetworkInventory] SendInventoryDataClientRpc: InventoryNetworkBridge không tìm thấy!");
+    }
+
     public override void OnNetworkDespawn()
     {
         networkInventoryData.OnValueChanged -= OnInventoryDataChanged;

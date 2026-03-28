@@ -2,57 +2,60 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
-using UnityEngine.Networking;
 
 /// <summary>
-/// Panel UI tương tác NPC. Hiển thị dialogue + menu tuỳ theo npc_type.
+/// NPC shop UI panel -- pure UI layer, no direct API calls.
 ///
-/// Setup trong Inspector:
-///   - Tạo Canvas → Panel "NpcMenuPanel" → gắn script này
-///   - Assign đủ tất cả [SerializeField] fields
-///   - Tạo một "ShopItemRow" prefab riêng (xem comment bên dưới)
+/// Data flow:
+///   Server pushes NpcData via NpcInteraction.OpenMenuClientRpc -> Open()
+///   Tab "Cua hang" -> LoadShopServerRpc -> ShowShopClientRpc -> ShowShop()
+///   Click item cell -> BuyItemServerRpc -> BuyResultClientRpc -> OnBuyResult()
+///   Tab "Tui" -> shows player bag panel (connects to inventory system)
 ///
-/// ShopItemRow Prefab gồm:
-///   ├── ItemIcon   (Image)       — optional
-///   ├── ItemName   (TMP_Text)
-///   ├── ItemDetail (TMP_Text)    — optional
-///   ├── Price      (TMP_Text)
-///   ├── Stock      (TMP_Text)    — optional
-///   └── BtnBuy     (Button)
+/// Inspector setup: see HUONG_DAN_NPC_SHOP_UNITY.md section 5.
 /// </summary>
 public class NpcMenuUI : MonoBehaviour
 {
     public static NpcMenuUI Instance { get; private set; }
 
-    // ── Main panel ────────────────────────────────────────────
-    [Header("Panel chính")]
+    // ── Main panel ──────────────────────────────────────────────────────
+    [Header("Panel chinh")]
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private TMP_Text   npcNameText;
     [SerializeField] private TMP_Text   dialogueText;
-
-    [Header("Nút menu")]
-    [SerializeField] private Button     btnBuy;
-    [SerializeField] private Button     btnSell;    // TODO: implement sell flow
     [SerializeField] private Button     btnClose;
 
-    // ── Shop panel ────────────────────────────────────────────
+    // ── Tab buttons ──────────────────────────────────────────────────────
+    [Header("Tabs (Cua hang | Tui)")]
+    [SerializeField] private Button     btnTabShop;
+    [SerializeField] private Button     btnTabBag;
+
+    // ── Shop panel ──────────────────────────────────────────────────────
     [Header("Shop Panel")]
     [SerializeField] private GameObject shopPanel;
-    [SerializeField] private Transform  shopItemContainer;   // Content của ScrollRect
-    [SerializeField] private GameObject shopItemRowPrefab;   // Prefab 1 dòng item
+    [SerializeField] private Transform  shopItemContainer; // Content with GridLayoutGroup
+    [SerializeField] private GameObject shopItemRowPrefab; // ShopItemCell prefab
 
-    // ── Feedback ──────────────────────────────────────────────
-    [Header("Thông báo (tuỳ chọn)")]
-    [SerializeField] private TMP_Text   feedbackText;        // text "Mua thành công!" / lỗi
+    // ── Bag panel ──────────────────────────────────────────────────────
+    [Header("Tui Panel")]
+    [SerializeField] private GameObject bagPanel;
+
+    // ── Icons ──────────────────────────────────────────────────────────
+    [Header("Icons")]
+    [SerializeField] private Sprite     defaultItemIcon;
+
+    // ── Feedback ──────────────────────────────────────────────────────
+    [Header("Thong bao (tuy chon)")]
+    [SerializeField] private TMP_Text   feedbackText;
     [SerializeField] private float      feedbackDuration = 2f;
 
-    [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
+    /// <summary>True khi panel NPC đang hiển thị — dùng để ngăn NpcInteraction nhận click xuyên.</summary>
+    public bool IsOpen => mainPanel != null && mainPanel.activeSelf;
 
-    private NpcSpawner.NpcData currentNpc;
-    private Coroutine feedbackCoroutine;
+    private NpcInteraction _currentInteraction;
+    private Coroutine      _feedbackCoroutine;
 
-    // ─────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -60,191 +63,192 @@ public class NpcMenuUI : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        btnClose.onClick.AddListener(Close);
-        btnBuy.onClick.AddListener(OpenShop);
-        btnSell.onClick.AddListener(OnSellClick);
+        // Re-assign Instance in case this GameObject was inactive at scene start
+        if (Instance == null) Instance = this;
+    }
 
-        mainPanel.SetActive(false);
-        shopPanel.SetActive(false);
+    /// <summary>
+    /// Lazy singleton fallback — Awake() never fires on inactive GameObjects.
+    /// NpcInteraction uses this instead of Instance directly.
+    /// </summary>
+    public static NpcMenuUI GetOrFind()
+    {
+        if (Instance != null) return Instance;
+        Instance = FindObjectOfType<NpcMenuUI>(true); // true = include inactive
+        if (Instance != null) Instance.gameObject.SetActive(false); // keep hidden until Open()
+        return Instance;
+    }
+
+    private bool _initialized;
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
+        btnClose.onClick.AddListener(Close);
+        if (btnTabShop) btnTabShop.onClick.AddListener(ShowShopTab);
+        if (btnTabBag)  btnTabBag.onClick.AddListener(ShowBagTab);
+        if (shopPanel) shopPanel.SetActive(false);
+        if (bagPanel)  bagPanel.SetActive(false);
         if (feedbackText) feedbackText.gameObject.SetActive(false);
     }
 
-    /// <summary>Gọi từ NpcInteraction khi player click NPC.</summary>
-    public void Open(NpcSpawner.NpcData npc)
+    private void Start()
     {
-        currentNpc = npc;
+        EnsureInitialized();
+        mainPanel.SetActive(false);
+    }
+
+    // ── Open / Close ──────────────────────────────────────────────────
+
+    /// <summary>Called by NpcInteraction.OpenMenuClientRpc.</summary>
+    public void Open(NpcData npc, NpcInteraction interaction)
+    {
+        EnsureInitialized();   // covers the inactive-at-start case
+        _currentInteraction = interaction;
         npcNameText.text  = npc.npc_name;
-        dialogueText.text = "...";
-
-        // Hiển thị nút tuỳ loại NPC
-        bool isShop = npc.npc_type is "shop" or "exchange";
-        btnBuy.gameObject.SetActive(isShop);
-        btnSell.gameObject.SetActive(isShop);
-
-        shopPanel.SetActive(false);
+        dialogueText.text = !string.IsNullOrEmpty(npc.dialogue_text)
+            ? npc.dialogue_text
+            : "Xin chao, ta co the giup gi cho nguoi?";
         mainPanel.SetActive(true);
-
-        StartCoroutine(FetchDialogue(npc.npc_id));
+        ShowShopTab();
     }
 
     public void Close()
     {
         mainPanel.SetActive(false);
-        shopPanel.SetActive(false);
-        currentNpc = null;
+        if (shopPanel) shopPanel.SetActive(false);
+        if (bagPanel)  bagPanel.SetActive(false);
+        _currentInteraction = null;
     }
 
-    // ── Dialogue ─────────────────────────────────────────────
+    // ── Tabs ──────────────────────────────────────────────────────────
 
-    private IEnumerator FetchDialogue(int npcId)
+    private void ShowShopTab()
     {
-        string body = JsonUtility.ToJson(new InteractPayload
-        {
-            npc_id    = npcId,
-            player_id = PlayerPrefs.GetInt("USER_ID")
-        });
-
-        using var req = PostJson($"{apiBase}/api/npc/interact", body);
-        yield return req.SendWebRequest();
-
-        if (req.result == UnityWebRequest.Result.Success)
-        {
-            var resp = JsonUtility.FromJson<InteractResponse>(req.downloadHandler.text);
-            dialogueText.text = resp.dialogue_text;
-        }
-        else
-        {
-            dialogueText.text = "Xin chào, ta có thể giúp gì cho ngươi?";
-        }
+        if (shopPanel) shopPanel.SetActive(true);
+        if (bagPanel)  bagPanel.SetActive(false);
+        ClearShopItems();
+        _currentInteraction?.LoadShopServerRpc();
     }
 
-    // ── Shop ─────────────────────────────────────────────────
-
-    private void OpenShop()
+    private void ShowBagTab()
     {
-        shopPanel.SetActive(true);
-        StartCoroutine(LoadShopItems());
+        if (shopPanel) shopPanel.SetActive(false);
+        if (bagPanel)  bagPanel.SetActive(true);
+        // TODO: connect to inventory system to display player bag
     }
 
-    private IEnumerator LoadShopItems()
+    // ── Shop ──────────────────────────────────────────────────────────
+
+    private void ClearShopItems()
     {
-        // Xóa danh sách cũ
         foreach (Transform child in shopItemContainer)
             Destroy(child.gameObject);
+    }
 
-        int playerId = PlayerPrefs.GetInt("USER_ID");
-        string url = $"{apiBase}/api/npc/shop?npcId={currentNpc.npc_id}&playerId={playerId}";
-
-        using var req = UnityWebRequest.Get(url);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
-        yield return req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
-        {
-            Debug.LogError($"[NpcMenuUI] Load shop thất bại: {req.error}");
-            yield break;
-        }
+    /// <summary>Called by NpcInteraction.ShowShopClientRpc with a JSON array of shop items.</summary>
+    public void ShowShop(string shopItemsJson)
+    {
+        ClearShopItems();
 
         ShopListWrapper resp;
         try
         {
-            string raw = req.downloadHandler.text;
-            // API trả về JSON array trực tiếp → bọc lại thành object
-            // Bảo vệ: nếu API trả HTML/lỗi, JsonUtility sẽ throw → bắt ở catch
-            resp = JsonUtility.FromJson<ShopListWrapper>("{\"items\":" + raw + "}");
+            resp = JsonUtility.FromJson<ShopListWrapper>("{\"items\":" + shopItemsJson + "}");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NpcMenuUI] Parse shop data thất bại: {ex.Message}");
-            ShowFeedback("Không thể tải cửa hàng. Thử lại sau!", Color.red);
-            yield break;
+            Debug.LogError($"[NpcMenuUI] Parse shop data error: {ex.Message}");
+            ShowFeedback("Cannot load shop. Try again later!", new Color(1f, 0.4f, 0.4f));
+            return;
         }
 
         if (resp?.items == null || resp.items.Length == 0)
         {
-            ShowFeedback("Cửa hàng chưa có hàng.", Color.yellow);
-            yield break;
+            ShowFeedback("This shop has no items.", new Color(1f, 0.85f, 0f));
+            return;
         }
+
+        // Clear any stale 'no items' feedback before spawning new items
+        if (feedbackText != null) feedbackText.gameObject.SetActive(false);
+        if (_feedbackCoroutine != null) { StopCoroutine(_feedbackCoroutine); _feedbackCoroutine = null; }
 
         foreach (var item in resp.items)
         {
-            var row = Instantiate(shopItemRowPrefab, shopItemContainer);
-
-            // Tên item
-            var nameText = row.transform.Find("ItemName")?.GetComponent<TMP_Text>();
-            if (nameText) nameText.text = item.item_name;
-
-            // Giá
-            var priceText = row.transform.Find("Price")?.GetComponent<TMP_Text>();
-            if (priceText)
-                priceText.text = item.price_gold > 0
-                    ? $"{item.price_gold} Vàng"
-                    : $"{item.price_silver} Bạc";
-
-            // Stock
-            var stockText = row.transform.Find("Stock")?.GetComponent<TMP_Text>();
-            if (stockText)
-                stockText.text = item.stock == -1 ? "∞" : item.stock.ToString();
-
-            // Nút mua
-            var buyBtn = row.transform.Find("BtnBuy")?.GetComponent<Button>();
-            if (buyBtn != null)
+            var cellGO = Instantiate(shopItemRowPrefab, shopItemContainer);
+            var cell   = cellGO.GetComponent<ShopItemRowUI>();
+            if (cell == null)
             {
-                bool canBuy = item.can_afford && item.meets_level;
-                buyBtn.interactable = canBuy;
+                Debug.LogError("[NpcMenuUI] ShopItemCell prefab missing ShopItemRowUI component!");
+                continue;
+            }
 
+            if (cell.itemIcon != null)
+            {
+                var loaded = Resources.Load<Sprite>($"ItemIcons/{item.icon_id}");
+                cell.itemIcon.sprite  = loaded != null ? loaded : defaultItemIcon;
+                cell.itemIcon.enabled = cell.itemIcon.sprite != null;
+            }
+
+            if (cell.itemName != null)
+                cell.itemName.text = item.item_name;
+
+            if (cell.price != null)
+                cell.price.text = item.price_gold > 0
+                    ? item.price_gold.ToString()
+                    : item.price_silver.ToString();
+
+            if (cell.btnBuy != null)
+            {
+                cell.btnBuy.interactable = item.can_afford && item.meets_level;
                 var capturedItem = item;
-                buyBtn.onClick.AddListener(() => StartCoroutine(BuyItem(capturedItem)));
+                cell.btnBuy.onClick.AddListener(() =>
+                {
+                    if (!capturedItem.can_afford)
+                    {
+                        Debug.Log($"[Shop] Không đủ tiền mua '{capturedItem.item_name}'. Cần: {(capturedItem.price_gold > 0 ? capturedItem.price_gold + "g" : capturedItem.price_silver + "s")}");
+                        return;
+                    }
+                    if (!capturedItem.meets_level)
+                    {
+                        Debug.Log($"[Shop] Chưa đủ level. '{capturedItem.item_name}' yêu cầu level {capturedItem.required_level}.");
+                        return;
+                    }
+                    Debug.Log($"[Shop] Gửi mua: shopItemId={capturedItem.shop_item_id} '{capturedItem.item_name}'");
+                    _currentInteraction?.BuyItemServerRpc(capturedItem.shop_item_id, 1);
+                });
             }
         }
     }
 
-    private IEnumerator BuyItem(ShopItem item)
+    // ── Buy result ────────────────────────────────────────────────────
+
+    /// <summary>Called by NpcInteraction.BuyResultClientRpc after server processes purchase.</summary>
+    public void OnBuyResult(bool success, string message, int newGold)
     {
-        string body = JsonUtility.ToJson(new BuyPayload
+        if (success)
         {
-            player_id = PlayerPrefs.GetInt("USER_ID"),
-            npc_id    = currentNpc.npc_id,
-            item_id   = item.item_template_id,
-            quantity  = 1
-        });
-
-        using var req = PostJson($"{apiBase}/api/npc/shop/buy", body);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
-        yield return req.SendWebRequest();
-
-        if (req.result == UnityWebRequest.Result.Success)
-        {
-            ShowFeedback($"Đã mua: {item.item_name}!", Color.green);
-            // Refresh lại danh sách shop
-            StartCoroutine(LoadShopItems());
+            ShowFeedback(!string.IsNullOrEmpty(message) ? message : "Mua thanh cong!", Color.green);
+            _currentInteraction?.LoadShopServerRpc();   // reload shop (stock, can_afford)
+            ItemUseHandler.Instance?.RequestRefreshInventory(); // refresh inventory bag
         }
         else
         {
-            string err = req.downloadHandler.text;
-            ShowFeedback($"Mua thất bại: {err}", Color.red);
-            Debug.LogError($"[NpcMenuUI] Buy error: {err}");
+            ShowFeedback(!string.IsNullOrEmpty(message) ? message : "Mua that bai!",
+                new Color(1f, 0.4f, 0.4f));
         }
     }
 
-    // ── Sell (placeholder) ────────────────────────────────────
-
-    private void OnSellClick()
-    {
-        // TODO: mở inventory panel để player chọn item bán
-        Debug.Log("[NpcMenuUI] Sell panel chưa implement.");
-        ShowFeedback("Chức năng bán đồ sẽ cập nhật sau!", Color.yellow);
-    }
-
-    // ── Feedback ─────────────────────────────────────────────
+    // ── Feedback ──────────────────────────────────────────────────────
 
     private void ShowFeedback(string message, Color color)
     {
         if (feedbackText == null) return;
-        if (feedbackCoroutine != null) StopCoroutine(feedbackCoroutine);
-        feedbackCoroutine = StartCoroutine(FeedbackCoroutine(message, color));
+        if (_feedbackCoroutine != null) StopCoroutine(_feedbackCoroutine);
+        _feedbackCoroutine = StartCoroutine(FeedbackCoroutine(message, color));
     }
 
     private IEnumerator FeedbackCoroutine(string message, Color color)
@@ -256,44 +260,23 @@ public class NpcMenuUI : MonoBehaviour
         feedbackText.gameObject.SetActive(false);
     }
 
-    // ── Helper ───────────────────────────────────────────────
+    // ── Serializable DTOs ─────────────────────────────────────────────
 
-    private static UnityWebRequest PostJson(string url, string json)
-    {
-        var req = new UnityWebRequest(url, "POST");
-        req.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
-        req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Content-Type", "application/json");
-        return req;
-    }
-
-    // ── Serializable DTOs ─────────────────────────────────────
-
-    [System.Serializable] private class InteractPayload  { public int npc_id; public int player_id; }
-    [System.Serializable] private class InteractResponse { public string dialogue_text; }
-
-    [System.Serializable] private class ShopListWrapper  { public ShopItem[] items; }
+    [System.Serializable] private class ShopListWrapper { public ShopItem[] items; }
 
     [System.Serializable]
     public class ShopItem
     {
+        public int    shop_item_id;
         public int    item_template_id;
+        public int    icon_id;
         public string item_name;
         public string item_detail;
         public int    price_silver;
         public int    price_gold;
         public int    stock;
         public int    required_level;
-        public bool   can_afford;      // server tính dựa trên túi tiền player
-        public bool   meets_level;     // server tính dựa trên level player
-    }
-
-    [System.Serializable]
-    private class BuyPayload
-    {
-        public int player_id;
-        public int npc_id;
-        public int item_id;
-        public int quantity;
+        public bool   can_afford;
+        public bool   meets_level;
     }
 }

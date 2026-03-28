@@ -167,6 +167,7 @@ GameObject:
   - component: {fileID: 6774887089995295091}
   - component: {fileID: 4107261217707056751}
   - component: {fileID: -5689402725577751385}
+  - component: {fileID: 2398195998439831791}
   m_Layer: 8
   m_Name: F_Phong
   m_TagString: Player
@@ -354,6 +355,8 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  stepHeight: 0.3
+  stepProbeDistance: 0.1
 --- !u!114 &2345126352762091586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -725,7 +728,7 @@ MonoBehaviour:
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
-  - skillName: "\u0110\u00e1nh Th\u01b0\u1eddng"
+  - skillName: "\u0110\xE1nh Th\u01B0\u1EDDng"
     skillCode: NORMAL_ATTACK
     skillType: 15
     activationKey: 122
@@ -935,6 +938,87 @@ MonoBehaviour:
   dashRightTriggerName: 
   dashLeftTriggerName: 
   skillEffectObject: {fileID: 0}
+--- !u!114 &2398195998439831791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6687994777118489187}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a876e019c7353e146b900c88da17dc89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CurrentRoomId:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
 --- !u!1001 &8066986259931807464
 PrefabInstance:
   m_ObjectHideFlags: 0

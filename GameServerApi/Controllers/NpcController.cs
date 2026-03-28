@@ -26,13 +26,13 @@ namespace GameServerApi.Controllers
                 .Where(n => n.MapId == mapId && n.IsActive)
                 .Select(n => new
                 {
-                    n.NpcId,
-                    n.NpcName,
-                    n.NpcType,
-                    n.PosX,
-                    n.PosY,
-                    n.IconId,
-                    n.DialogueKey,
+                    npc_id       = n.NpcId,
+                    npc_name     = n.NpcName,
+                    npc_type     = n.NpcType,
+                    pos_x        = n.PosX,
+                    pos_y        = n.PosY,
+                    icon_id      = n.IconId,
+                    dialogue_key = n.DialogueKey,
                 })
                 .ToListAsync();
 
@@ -135,34 +135,41 @@ namespace GameServerApi.Controllers
             var info        = player.GetInfoChar();
             int playerLevel = info.Level;
 
-            var items = await _db.NpcShopItems
+            var rawItems = await _db.NpcShopItems
                 .Where(s => s.NpcId == npcId)
                 .Join(_db.ItemTemplates,
                       s => s.ItemTemplateId,
                       t => t.Id,
                       (s, t) => new
                       {
-                          s.Id,
+                          ShopItemId    = s.Id,
                           s.ItemTemplateId,
-                          itemName      = t.Name,
-                          itemType      = t.Type,
-                          iconId        = t.IdIcon,
+                          ItemName      = t.Name,
+                          IconId        = t.IdIcon,
                           s.PriceSilver,
                           s.PriceGold,
                           s.Stock,
                           s.RequiredLevel,
-                          canBuy        = playerLevel >= s.RequiredLevel,
                       })
                 .ToListAsync();
 
-            return Ok(new
+            // Trả về JSON array với snake_case để JsonUtility (Unity) parse được.
+            // ShowShop() phía client bọc thành {"items":[...]} trước khi parse ShopListWrapper.
+            return Ok(rawItems.Select(i => new
             {
-                npcId      = npc.NpcId,
-                npcName    = npc.NpcName,
-                playerGold = info.Gold,
-                playerSilver = info.Silver,
-                items,
-            });
+                shop_item_id     = i.ShopItemId,
+                item_template_id = i.ItemTemplateId,
+                item_name        = i.ItemName,
+                item_detail      = "",
+                icon_id          = i.IconId,
+                price_silver     = i.PriceSilver,
+                price_gold       = i.PriceGold,
+                stock            = i.Stock,
+                required_level   = i.RequiredLevel,
+                can_afford       = i.PriceGold > 0 ? info.Gold >= i.PriceGold
+                                                   : info.Silver >= i.PriceSilver,
+                meets_level      = playerLevel >= i.RequiredLevel,
+            }));
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -238,7 +245,8 @@ namespace GameServerApi.Controllers
             var inventory = ParseJsonList(player.InventoryJson);
             var existing = inventory.FirstOrDefault(s =>
                 s.ContainsKey("itemTemplateId") &&
-                Convert.ToInt32(s["itemTemplateId"]) == shopItem.ItemTemplateId);
+                Convert.ToInt32(s["itemTemplateId"]) == shopItem.ItemTemplateId &&
+                !(s.ContainsKey("isEquipped") && Convert.ToBoolean(s["isEquipped"])));
 
             if (existing != null)
             {
@@ -247,10 +255,21 @@ namespace GameServerApi.Controllers
             }
             else
             {
+                // Tìm slotIndex tiếp theo chưa bị chiếm
+                var usedSlots = new System.Collections.Generic.HashSet<int>(
+                    inventory
+                        .Where(s => s.ContainsKey("slotIndex"))
+                        .Select(s => Convert.ToInt32(s["slotIndex"]))
+                );
+                int nextSlot = 0;
+                while (usedSlots.Contains(nextSlot)) nextSlot++;
+
                 inventory.Add(new Dictionary<string, object>
                 {
+                    ["slotIndex"]      = nextSlot,
                     ["itemTemplateId"] = shopItem.ItemTemplateId,
                     ["itemCode"]       = shopItem.ItemTemplate?.Name ?? "",
+                    ["iconId"]         = shopItem.ItemTemplate?.IdIcon.ToString() ?? "",
                     ["quantity"]       = quantity,
                     ["isEquipped"]     = false,
                     ["upgradeLevel"]   = 0,

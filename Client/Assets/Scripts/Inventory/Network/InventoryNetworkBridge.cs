@@ -32,13 +32,82 @@ public class InventoryNetworkBridge : MonoBehaviour
 
     private bool hasSubscribedToNetworkEvents = false;
 
+    // ── Inventory cache ──────────────────────────────────────────────
+    /// <summary>Raw items nhận lần cuối từ DB (null = chưa từng fetch).</summary>
+    private InventoryItem[] _cachedInventoryItems;
+    /// <summary>true = cache cũ hoặc chưa có, cần fetch lại khi mở túi.</summary>
+    private bool _isCacheDirty = true;
+
     /// <summary>
-    /// Refresh inventory từ DB và update UI (gọi khi mở inventory panel)
+    /// Refresh inventory từ DB và update UI (gọi khi mở inventory panel).
+    /// - Có cache mới → hiển thị ngay từ cache.
+    /// - Client thuần → yêu cầu host qua RPC → host fetch DB → gửi về → cache.
+    /// - Host / offline → fetch API trực tiếp.
     /// </summary>
     public void RefreshInventoryFromDB()
     {
+        // Cache hit: dữ liệu còn mới, không cần gọi mạng
+        if (_cachedInventoryItems != null && !_isCacheDirty)
+        {
+            Debug.Log("[InventoryNetworkBridge] ✅ Cache còn mới, hiển thị từ cache...");
+            UpdateUIFromDBInventory(_cachedInventoryItems);
+            return;
+        }
+
         Debug.Log("[InventoryNetworkBridge] ========== RefreshInventoryFromDB() GỌI! ==========");
-        
+
+        // Đường host-RPC: client thuần gửi yêu cầu lên host, host lấy DB rồi trả về
+        if (networkInventory != null && networkInventory.IsSpawned &&
+            NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+        {
+            Debug.Log("[InventoryNetworkBridge] 📡 Client: yêu cầu inventory từ host qua RPC...");
+            networkInventory.RequestInventoryDataServerRpc();
+            return;
+        }
+
+        // Đường API trực tiếp: host-self hoặc chưa kết nối mạng
+        FetchInventoryDirectFromAPI();
+    }
+
+    /// <summary>
+    /// Đánh dấu cache cũ – gọi ngay sau khi mua item / trang bị / bỏ trang bị.
+    /// Lần mở túi tiếp theo sẽ fetch lại từ host/DB.
+    /// </summary>
+    public void InvalidateInventoryCache()
+    {
+        _isCacheDirty = true;
+        Debug.Log("[InventoryNetworkBridge] 🗑️ Inventory cache invalidated");
+    }
+
+    /// <summary>
+    /// Callback từ NetworkInventory.SendInventoryDataClientRpc – host gửi JSON về client.
+    /// Parse → cache → update UI.
+    /// </summary>
+    public void OnReceivedInventoryDataFromHost(string inventoryJson)
+    {
+        Debug.Log($"[InventoryNetworkBridge] 📦 Nhận inventory từ host ({inventoryJson?.Length ?? 0} chars)");
+
+        if (string.IsNullOrEmpty(inventoryJson))
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] Nhận JSON rỗng từ host!");
+            return;
+        }
+
+        try
+        {
+            var wrapper = JsonUtility.FromJson<NetworkInventory.InventoryJsonWrapper>(inventoryJson);
+            var items = wrapper?.items ?? new InventoryItem[0];
+            Debug.Log($"[InventoryNetworkBridge] Parse thành công {items.Length} items từ host");
+            UpdateUIFromDBInventory(items);  // also saves to cache
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[InventoryNetworkBridge] ❌ Lỗi parse inventory JSON từ host: {ex.Message}");
+        }
+    }
+
+    private void FetchInventoryDirectFromAPI()
+    {
         // ✅ FIX: Lấy playerId từ GameManager (in-memory) thay vì PlayerPrefs
         // PlayerPrefs bị shared giữa ParrelSync host/clone trên Windows,
         // dẫn đến host đọc được USER_ID của clone sau khi clone login
@@ -77,7 +146,6 @@ public class InventoryNetworkBridge : MonoBehaviour
         if (playerId == 0)
         {
             Debug.LogWarning("[InventoryNetworkBridge] playerId = 0, không thể fetch inventory từ DB!");
-            // Vẫn thử refresh từ NetworkInventory hiện tại
             ManualSyncInventoryUI();
             return;
         }
@@ -91,11 +159,8 @@ public class InventoryNetworkBridge : MonoBehaviour
                 (inventoryItems) =>
                 {
                     Debug.Log($"[InventoryNetworkBridge] ✅ Fetch thành công {inventoryItems.Length} items từ DB!");
-                    
-                    // Convert DB items → InventorySlotDto[] và update UI trực tiếp
                     UpdateUIFromDBInventory(inventoryItems);
                     
-                    // Nếu là server/host, sync lại vào NetworkInventory
                     if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer && networkInventory != null)
                     {
                         Debug.Log("[InventoryNetworkBridge] Server/Host: Đang sync DB data vào NetworkInventory...");
@@ -105,7 +170,6 @@ public class InventoryNetworkBridge : MonoBehaviour
                 (error) =>
                 {
                     Debug.LogError($"[InventoryNetworkBridge] ❌ Lỗi khi fetch inventory từ DB: {error}");
-                    // Fallback: Refresh từ NetworkInventory hiện tại
                     ManualSyncInventoryUI();
                 }
             );
@@ -133,13 +197,21 @@ public class InventoryNetworkBridge : MonoBehaviour
         List<InventorySlotDto> slotDtos = new List<InventorySlotDto>();
 
         // Tạo dictionary để map slotIndex → item
+        // Items không có slotIndex (= 0 mặc định) được gán slot tự động để tránh ghi đè
         Dictionary<int, InventoryItem> itemsBySlot = new Dictionary<int, InventoryItem>();
+        int autoSlot = 0;
         foreach (var item in dbItems)
         {
-            if (item.slotIndex >= 0)
+            if (item.quantity <= 0) continue;
+            int slot = item.slotIndex;
+            // Nếu slot đã bị chiếm (nhiều item cùng slotIndex=0), tìm slot tiếp theo
+            if (itemsBySlot.ContainsKey(slot))
             {
-                itemsBySlot[item.slotIndex] = item;
+                while (itemsBySlot.ContainsKey(autoSlot)) autoSlot++;
+                slot = autoSlot;
             }
+            itemsBySlot[slot] = item;
+            if (slot >= autoSlot) autoSlot = slot + 1;
         }
 
         // Tạo DTO cho tất cả slots (giả sử max 20 slots)
@@ -149,12 +221,21 @@ public class InventoryNetworkBridge : MonoBehaviour
             if (itemsBySlot.TryGetValue(i, out InventoryItem item) && item.quantity > 0)
             {
                 // Có item ở slot này
+                // Resolve iconId: server may not store it for old items → fall back to ItemTemplateManager
+                string resolvedIconId = item.iconId;
+                if (string.IsNullOrEmpty(resolvedIconId) && item.itemTemplateId > 0)
+                {
+                    var tpl = ItemTemplateManager.Instance?.GetItemTemplate(item.itemTemplateId);
+                    if (tpl != null && tpl.idIcon > 0)
+                        resolvedIconId = tpl.idIcon.ToString();
+                }
+
                 InventorySlotDto dto = new InventorySlotDto
                 {
                     slotIndex = i,
                     itemTemplateId = item.itemTemplateId,
                     itemCode = item.itemCode,
-                    iconId = item.iconId,
+                    iconId = resolvedIconId,
                     quantity = item.quantity,
                     isEquipped = item.isEquipped
                 };
@@ -181,6 +262,10 @@ public class InventoryNetworkBridge : MonoBehaviour
         Debug.Log($"[InventoryNetworkBridge] Đang gửi {slotDtos.Count} slots cho InventoryUI...");
         inventoryUI.SetInventoryData(slotDtos.ToArray());
         Debug.Log($"[InventoryNetworkBridge] ✅ UI đã được update từ DB data!");
+
+        // Lưu vào cache để lần mở tiếp theo khỏi fetch lại
+        _cachedInventoryItems = dbItems;
+        _isCacheDirty = false;
 
         // Thông báo cho ItemUseHandler để cập nhật stat bar, quick-slots túi, v.v.
         int bagSlots = 20;
@@ -794,6 +879,7 @@ public class InventoryNetworkBridge : MonoBehaviour
                 Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công! Response: {response}");
                 // Server đã update cả inventory + equipment trong DB
                 // Refresh cả inventory và equipment UI từ DB
+                InvalidateInventoryCache();
                 RefreshInventoryFromDB();
                 RefreshEquipmentFromDB();
                 // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng
@@ -846,6 +932,7 @@ public class InventoryNetworkBridge : MonoBehaviour
             (response) =>
             {
                 Debug.Log($"[InventoryNetworkBridge] ✅ Unequip thành công!");
+                InvalidateInventoryCache();
                 RefreshInventoryFromDB();
                 RefreshEquipmentFromDB();
                 // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng

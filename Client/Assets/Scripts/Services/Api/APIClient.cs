@@ -899,6 +899,9 @@ public class APIClient : MonoBehaviour
                     if (response != null)
                     {
                         Debug.Log($"[APIClient] Γ£à Inventory fetched successfully: {response.inventory?.Length ?? 0} items");
+                        // Cập nhật GameManager với dữ liệu mới nhất (gold/silver/level)
+                        if (GameManager.Instance != null)
+                            GameManager.Instance.SetPlayerData(response);
                         onSuccess?.Invoke(response.inventory ?? new InventoryItem[0]);
                     }
                     else

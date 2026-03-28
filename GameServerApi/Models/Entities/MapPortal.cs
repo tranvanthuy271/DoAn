@@ -30,8 +30,11 @@ namespace GameServerApi.Models.Entities
         public float DestY { get; set; } = 0f;
 
         // ── Loại cổng ──
-        /// <summary>enter_dungeon | room_transition | exit_dungeon | world_travel</summary>
-        public string PortalType { get; set; } = "room_transition";
+        /// <summary>world_travel | enter_dungeon | exit_dungeon</summary>
+        public string PortalType { get; set; } = "world_travel";
+
+        /// <summary>left | right | none — hướng trên UI nút chuyển map</summary>
+        public string PortalDirection { get; set; } = "none";
 
         /// <summary>Cần item này trong túi đồ (NULL = không cần)</summary>
         public int? RequiredItemId { get; set; }

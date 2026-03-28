@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
 /// <summary>
@@ -55,15 +56,20 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
         
         _instance = this;
-        // Debug.Log("[NetworkPlayerSpawner] ✓ Instance set as singleton");
+        // Persist qua scene load — prefab references được gán trong GameScene Inspector
+        DontDestroyOnLoad(gameObject);
         
         // Subscribe OnServerStarted trong Awake() để đảm bảo nhận được event ngay cả khi script bị disable
         networkManager = NetworkManager.Singleton;
         if (networkManager != null)
         {
-            // Debug.Log("[NetworkPlayerSpawner] Subscribing to OnServerStarted in Awake()...");
+            networkManager.OnServerStarted -= OnServerStarted; // tránh double-sub
             networkManager.OnServerStarted += OnServerStarted;
         }
+
+        // DDOL persist: khi scene mới load, NetworkManager.Singleton là object MỚI.
+        // Cần re-grab và re-subscribe OnServerStarted để SpawnPlayer hoạt động sau travel.
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void Start()
@@ -121,30 +127,45 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Được gọi bởi SceneManager.sceneLoaded sau mỗi lần load scene.
+    /// Khi object này là DDOL, NetworkManager.Singleton sau scene change là object MỚI.
+    /// Cần re-grab và re-subscribe OnServerStarted để SpawnPlayer hoạt động.
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        var newNm = NetworkManager.Singleton;
+        if (newNm == null || newNm == networkManager) return;
+
+        // Unsubscribe khỏi NM cũ (có thể đã bị destroy)
+        if (networkManager != null)
+        {
+            networkManager.OnServerStarted -= OnServerStarted;
+        }
+
+        networkManager = newNm;
+        networkManager.OnServerStarted -= OnServerStarted;
+        networkManager.OnServerStarted += OnServerStarted;
+        hasSubscribed = false; // reset để SubscribeToEvents() chạy lại khi OnServerStarted
+
+        Debug.Log($"[NetworkPlayerSpawner] Scene '{scene.name}' loaded — re-subscribed OnServerStarted to new NetworkManager");
+    }
+
     private void OnServerStarted()
     {
-        // Guard: instance đã bị destroy nhưng vẫn còn subscribe (do scene transition)
         if (this == null) return;
 
-        // Debug.Log("[NetworkPlayerSpawner] ✓✓✓ OnServerStarted called! Subscribing to events...");
-        
+        Debug.Log("[NetworkPlayerSpawner] OnServerStarted — reset state & re-subscribe");
+
+        // Reset lại để dùng cho session mới (quan trọng khi persist qua scene)
+        spawnedClients.Clear();
+        spawningClients.Clear();
+        hasSubscribed = false;
+
         // Re-enable script nếu đã bị disable
-        if (!this.enabled)
-        {
-            // Debug.Log("[NetworkPlayerSpawner] Re-enabling script after server started...");
-            this.enabled = true;
-        }
+        this.enabled = true;
         
-        if (!hasSubscribed)
-        {
-            SubscribeToEvents();
-        }
-        
-        // QUAN TRỌNG: KHÔNG spawn player trong OnServerStarted() nữa
-        // Vì OnClientConnectedCallback đã tự động spawn player khi client connect
-        // Nếu spawn ở đây sẽ gây duplicate khi host start (host tự động start client)
-        // Chỉ cần đảm bảo events đã được subscribe là đủ
-        // Debug.Log("[NetworkPlayerSpawner] OnServerStarted: Events subscribed. Players will be spawned via OnClientConnectedCallback.");
+        SubscribeToEvents();
     }
 
     private void OnEnable()
@@ -164,6 +185,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         else if (networkManager != null && !networkManager.IsServer && !networkManager.IsHost)
         {
             // Nếu không phải server, subscribe to OnServerStarted để enable lại sau
+            networkManager.OnServerStarted -= OnServerStarted; // tránh double-sub
             networkManager.OnServerStarted += OnServerStarted;
         }
     }
@@ -307,34 +329,39 @@ public class NetworkPlayerSpawner : MonoBehaviour
 
         Vector3 spawnPos;
         int spawnIndex = -1;
-        
-        // Kiểm tra position_x, position_y từ player data
-        if (playerData != null && (playerData.position_x != 0 || playerData.position_y != 0))
+
+        // Ưu tiên 1: PortalArrivalHandler (khi vừa chuyển map qua trigger)
+        if (PortalArrivalHandler.PendingMapId >= 0)
+        {
+            spawnPos = new Vector3(PortalArrivalHandler.PendingDestX, PortalArrivalHandler.PendingDestY, 0f);
+            Debug.Log($"[NetworkPlayerSpawner] Spawn tại cổng đến: {spawnPos}");
+        }
+        // Ưu tiên 2: vị trí đã lưu trong DB (playerData)
+        else if (playerData != null && (playerData.position_x != 0 || playerData.position_y != 0))
         {
             spawnPos = new Vector3(playerData.position_x, playerData.position_y, 0f);
-            // Debug.Log($"[NetworkPlayerSpawner] Spawning at saved position: ({playerData.position_x}, {playerData.position_y})");
         }
+        // Fallback: spawn point trong scene
         else
         {
-            // Chọn spawn point
             if (spawnPoints == null || spawnPoints.Length == 0)
             {
-                // Debug.LogError("[NetworkPlayerSpawner] No spawn points assigned and no saved position!");
+                Debug.LogError("[NetworkPlayerSpawner] Không có spawn point và không có saved position!");
                 return;
             }
-
             spawnIndex = (int)(clientId % (ulong)spawnPoints.Length);
             spawnPos = spawnPoints[spawnIndex].position;
-            // Debug.Log($"[NetworkPlayerSpawner] Spawning at spawn point {spawnIndex}: {spawnPos}");
         }
 
-        // Chọn prefab dựa trên player data (element_type + gender)
-        GameObject prefabToSpawn = GetPlayerPrefabForClient(clientId);
+        // --- Chọn prefab TRỰC TIẾP từ playerData được truyền vào ---
+        // (tránh query lại ServerPlayerDataManager — có thể bị race condition)
+        GameObject prefabToSpawn = GetPrefabForPlayerData(playerData) ?? GetPlayerPrefabForClient(clientId);
         if (prefabToSpawn == null)
         {
-            // Debug.LogError($"[NetworkPlayerSpawner] Could not find prefab for client {clientId}! Using default prefab.");
+            Debug.LogError($"[NetworkPlayerSpawner] Không tìm được prefab cho client {clientId}! Dùng default.");
             prefabToSpawn = networkPlayerPrefab;
         }
+        Debug.Log($"[NetworkPlayerSpawner] Spawn: element={playerData?.element_type} → prefab='{prefabToSpawn.name}' pos={spawnPos}");
 
         if (spawnIndex >= 0)
         {
@@ -413,6 +440,8 @@ public class NetworkPlayerSpawner : MonoBehaviour
         {
             _instance = null;
         }
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
         
         // Dùng Singleton làm fallback phòng trường hợp networkManager field bị null
         var nm = networkManager ?? NetworkManager.Singleton;
@@ -426,6 +455,40 @@ public class NetworkPlayerSpawner : MonoBehaviour
                 hasSubscribed = false;
             }
         }
+    }
+
+    /// <summary>
+    /// Chuyển element_type → prefab trực tiếp từ playerData (không query lại DB/cache).
+    /// Dùng khi đã có playerData sẵn để tránh race condition.
+    /// </summary>
+    private GameObject GetPrefabForPlayerData(PlayerDataResponse playerData)
+    {
+        if (playerData == null) return null;
+
+        // Hybrid trước
+        if (playerData.is_hybrid && playerData.hybrid_id > 0)
+        {
+            string primary = playerData.element_type ?? "";
+            GameObject hybridPrefab = playerData.hybrid_id switch
+            {
+                1  => primary == "Fire"  ? hybridEarthFirePrefab_FirePrimary  : hybridEarthFirePrefab_EarthPrimary,
+                10 => primary == "Water" ? hybridWaterWoodPrefab_WaterPrimary : hybridWaterWoodPrefab_WoodPrimary,
+                13 => primary == "Metal" ? hybridMetalWindPrefab_MetalPrimary : hybridMetalWindPrefab_WindPrimary,
+                _  => null
+            };
+            if (hybridPrefab != null) return hybridPrefab;
+        }
+
+        return (playerData.element_type ?? "") switch
+        {
+            "Metal" => metalPrefab,
+            "Wood"  => woodPrefab,
+            "Water" => waterPrefab,
+            "Fire"  => firePrefab,
+            "Earth" => earthPrefab,
+            "Wind"  => windPrefab,
+            _       => null
+        };
     }
 
     /// <summary>
