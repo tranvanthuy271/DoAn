@@ -231,8 +231,6 @@ public class InventoryTestManager : MonoBehaviour
             itemRequests.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = item.itemTemplateId,
-                itemCode = item.itemCode,
-                iconId = item.iconId,
                 quantity = item.quantity
             });
         }

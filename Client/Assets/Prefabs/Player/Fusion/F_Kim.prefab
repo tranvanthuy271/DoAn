@@ -561,7 +561,7 @@ MonoBehaviour:
   attackRange: 0.5
   enemyLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   attackPointLocalPosRight: {x: 0.5, y: 0, z: 0}
   attackPointLocalPosLeft: {x: -0.5, y: 0, z: 0}
   attackVisual: {fileID: 0}

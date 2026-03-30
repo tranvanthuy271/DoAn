@@ -361,6 +361,13 @@ public class ItemUseHandler : MonoBehaviour
 
     private int GetCurrentPlayerId()
     {
+        // Ưu tiên: dùng inventoryBridge vì nó có logic resolve playerId đầy đủ nhất
+        if (inventoryBridge != null)
+        {
+            int bridgeId = inventoryBridge.GetCurrentPlayerId();
+            if (bridgeId != 0) return bridgeId;
+        }
+
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
             return GameManager.Instance.GetPlayerData().user_id;
 

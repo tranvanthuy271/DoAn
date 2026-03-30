@@ -40,6 +40,11 @@ public class PlayerController : MonoBehaviour
         if (playerLayer >= 0)
             Physics2D.IgnoreLayerCollision(playerLayer, playerLayer, true);
 
+        // Ngăn player và enemy va chạm vật lý (di chuyển qua nhau được)
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (playerLayer >= 0 && enemyLayer >= 0)
+            Physics2D.IgnoreLayerCollision(playerLayer, enemyLayer, true);
+
         // Setup Rigidbody2D cho non-owner (để NetworkTransform hoạt động tốt)
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
         {

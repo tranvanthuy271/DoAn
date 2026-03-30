@@ -426,7 +426,7 @@ public class PlayerSkillManager : NetworkBehaviour
         {
             if (IsServer)
             {
-                UseMeleeLocal(skill);
+                UseMeleeLocal(skill, transform.localScale.x >= 0f);
             }
             else if (IsOwner)
             {
@@ -679,14 +679,14 @@ public class PlayerSkillManager : NetworkBehaviour
         {
             // Client truyền effectValue từ DB để server dùng đúng sát thương
             if (effectValue > 0f) skill.currentEffectValue = effectValue;
-            UseMeleeLocal(skill);
+            UseMeleeLocal(skill, facingRight); // truyền hướng nhìn từ client, tránh sai khi scale chưa sync
         }
     }
 
     /// <summary>
     /// Kích hoạt Melee skill: chỉ trigger animation, không spawn projectile
     /// </summary>
-    private void UseMeleeLocal(SkillData skill)
+    private void UseMeleeLocal(SkillData skill, bool facingRight)
     {
         skill.StartUsing();
 
@@ -704,16 +704,21 @@ public class PlayerSkillManager : NetworkBehaviour
             Invoke(nameof(InvokeClearSprite), pendingClearDelay);
         }
 
-        // Gây damage melee cho enemy và player xung quanh (chỉ server)
+        // Gây damage melee sau delay nhỏ để khớp với hit-frame animation (chỉ server)
         if (IsServer)
-            ApplyMeleeDamage(skill);
+            StartCoroutine(ApplyMeleeDamageDelayed(skill, facingRight));
 
         Invoke(nameof(ResetSkillState), 0.1f);
     }
 
-    private void ApplyMeleeDamage(SkillData skill)
+    private IEnumerator ApplyMeleeDamageDelayed(SkillData skill, bool facingRight, float delay = 0.3f)
     {
-        bool facingRight = transform.localScale.x >= 0f;
+        yield return new WaitForSeconds(delay);
+        ApplyMeleeDamage(skill, facingRight);
+    }
+
+    private void ApplyMeleeDamage(SkillData skill, bool facingRight)
+    {
         float range   = Mathf.Max(skill.spawnOffset * 2f, 1.5f);
         Vector2 center = (Vector2)transform.position
                         + new Vector2(facingRight ? range * 0.5f : -range * 0.5f, 0f);

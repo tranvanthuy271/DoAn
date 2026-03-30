@@ -112,8 +112,6 @@ public class GeneItemDebugAdder : MonoBehaviour
             addedItems.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = cfg.itemId,
-                itemCode       = itemCode,
-                iconId         = iconId,
                 quantity       = amountPerElement
             });
 

@@ -218,6 +218,9 @@ public class NetworkManagerCustom : MonoBehaviour
 
         if (ServerPlayerDataManager.Instance != null)
         {
+            // Lưu JWT của client để dùng khi sync DB
+            ServerPlayerDataManager.Instance.StoreClientJwt(senderClientId, token);
+
             ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
                 senderClientId,
                 userId,
@@ -287,6 +290,9 @@ public class NetworkManagerCustom : MonoBehaviour
             
             if (ServerPlayerDataManager.Instance != null)
             {
+                // Lưu JWT của HOST
+                ServerPlayerDataManager.Instance.StoreClientJwt(clientId, token);
+
                 ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
                     clientId,
                     userId,

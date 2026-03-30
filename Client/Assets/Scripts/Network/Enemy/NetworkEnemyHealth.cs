@@ -19,6 +19,13 @@ public class NetworkEnemyHealth : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // NetworkVariable sync maxHealth — cần để HP bar client hiển thị đúng tỉ lệ
+    private NetworkVariable<int> networkMaxHealth = new NetworkVariable<int>(
+        10,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     [Header("Events")]
     public UnityEvent<int, int> OnHealthChanged; // current, max
     public UnityEvent OnDeath;
@@ -26,6 +33,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
     private bool isDead = false; // Flag để tránh xử lý death nhiều lần
     private bool _healBlocked = false;
+    private ulong _lastAttackerClientId = ulong.MaxValue; // Client ID của người gây damage cuối
 
     /// <summary>Trả về true nếu enemy đang bị chặn hồi HP.</summary>
     public bool IsHealBlocked => _healBlocked;
@@ -36,21 +44,32 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
         // Subscribe to networkCurrentHealth changes
         networkCurrentHealth.OnValueChanged += OnHealthValueChanged;
+        networkMaxHealth.OnValueChanged += OnMaxHealthValueChanged;
 
         // Chỉ server mới set giá trị ban đầu
         if (IsServer)
         {
+            networkMaxHealth.Value = maxHealth;
             networkCurrentHealth.Value = maxHealth;
         }
 
-        // Initialize UI cho tất cả clients
+        // Initialize UI cho tất cả clients (dùng networkMaxHealth.Value để đúng trên mọi client)
         OnHealthValueChanged(0, networkCurrentHealth.Value);
     }
 
     public override void OnNetworkDespawn()
     {
         networkCurrentHealth.OnValueChanged -= OnHealthValueChanged;
+        networkMaxHealth.OnValueChanged -= OnMaxHealthValueChanged;
         base.OnNetworkDespawn();
+    }
+
+    private void OnMaxHealthValueChanged(int oldValue, int newValue)
+    {
+        // Cập nhật maxHealth local khi sync từ server
+        maxHealth = newValue;
+        // Refresh HP bar
+        OnHealthChanged?.Invoke(networkCurrentHealth.Value, newValue);
     }
 
     /// <summary>
@@ -59,8 +78,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// </summary>
     private void OnHealthValueChanged(int oldValue, int newValue)
     {
-        // Invoke event để update UI
-        OnHealthChanged?.Invoke(newValue, maxHealth);
+        // Invoke event để update UI — dùng networkMaxHealth.Value để đảm bảo đúng trên mọi client
+        OnHealthChanged?.Invoke(newValue, networkMaxHealth.Value > 0 ? networkMaxHealth.Value : maxHealth);
 
         // Check death (chỉ xử lý trên server, tránh gọi nhiều lần)
         if (newValue <= 0 && oldValue > 0 && IsServer && !isDead)
@@ -78,6 +97,9 @@ public class NetworkEnemyHealth : NetworkBehaviour
     {
         // Không nhận damage nếu đã chết
         if (networkCurrentHealth.Value <= 0 || isDead) return;
+
+        // Ghi nhớ người đánh cuối để cứu xét EXP
+        _lastAttackerClientId = rpcParams.Receive.SenderClientId;
 
         // Server trừ HP
         int newHealth = networkCurrentHealth.Value - damage;
@@ -110,10 +132,31 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} died!");
+        Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} died! ExpReward={ExpReward} Attacker={_lastAttackerClientId}");
 
         // Notify clients — play Die animation trước khi xóa
         OnDeathClientRpc();
+
+        // Thưởng EXP cho người đánh cuối (chạy trên server)
+        if (ExpReward > 0 && _lastAttackerClientId != ulong.MaxValue)
+        {
+            // Tìm NetworkPlayerDataSync của killer theo OwnerClientId
+            // (dùng SpawnedObjects vì game dùng SpawnWithOwnership, không phải SpawnAsPlayerObject)
+            NetworkPlayerDataSync killerSync = null;
+            foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
+            {
+                if (kvp.Value.OwnerClientId == _lastAttackerClientId)
+                {
+                    var sync = kvp.Value.GetComponent<NetworkPlayerDataSync>();
+                    if (sync != null) { killerSync = sync; break; }
+                }
+            }
+
+            if (killerSync != null)
+                killerSync.AwardExpOnServer(ExpReward);
+            else
+                Debug.LogWarning($"[NetworkEnemyHealth] Không tìm được NetworkPlayerDataSync cho client {_lastAttackerClientId}");
+        }
 
         if (IsServer)
         {
@@ -167,7 +210,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
     // ── Public API ─────────────────────────────────────────────
 
     public int GetCurrentHealth() => networkCurrentHealth.Value;
-    public int GetMaxHealth() => maxHealth;
+    /// <summary>Trả về max HP — dùng networkMaxHealth.Value để đúng trên cả client.</summary>
+    public int GetMaxHealth() => networkMaxHealth.Value > 0 ? networkMaxHealth.Value : maxHealth;
     public float GetHealthPercent() => maxHealth > 0
         ? (float)networkCurrentHealth.Value / maxHealth
         : 0f;
@@ -181,6 +225,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (!IsServer) return;
         if (maxHp <= 0) return;
         maxHealth = maxHp;
+        networkMaxHealth.Value = maxHp;  // sync maxHealth đến tất cả clients
         networkCurrentHealth.Value = maxHp;
         Debug.Log($"[NetworkEnemyHealth] InitHealth: {maxHp} HP (object {NetworkObjectId})");
     }

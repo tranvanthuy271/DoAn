@@ -62,10 +62,15 @@ public class MpBar : MonoBehaviour
 
     private void TryBind()
     {
-        dataSync = FindObjectOfType<NetworkPlayerDataSync>();
+        // Tìm đúng NetworkPlayerDataSync của local player (IsOwner=true)
+        // Dùng FindObjectsOfType để tránh lấy nhầm của player khác trong multiplayer
+        foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
+        {
+            if (s.IsOwner) { dataSync = s; break; }
+        }
         if (dataSync == null) return;
 
-        Debug.Log($"[MpBar] Tìm thấy NetworkPlayerDataSync trên '{dataSync.gameObject.name}' — MP: {dataSync.networkMp.Value}/{dataSync.networkMaxMp.Value}");
+        Debug.Log($"[MpBar] Bind local player '{dataSync.gameObject.name}' — MP: {dataSync.networkMp.Value}/{dataSync.networkMaxMp.Value}");
         dataSync.networkMp.OnValueChanged    += OnMpChanged;
         dataSync.networkMaxMp.OnValueChanged += OnMaxMpChanged;
         UpdateBar(dataSync.networkMp.Value, dataSync.networkMaxMp.Value);

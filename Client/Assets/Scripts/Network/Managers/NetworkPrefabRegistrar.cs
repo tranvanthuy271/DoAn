@@ -94,6 +94,9 @@ public class NetworkPrefabRegistrar : MonoBehaviour
             RegisterItemPickupPrefab(networkManager, ref registeredCount);
         }
 
+        // Tự động đăng ký NPC prefabs từ NpcServerManager
+        RegisterNpcPrefabs(networkManager, ref registeredCount);
+
         Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered {registeredCount} prefab(s) to NetworkManager");
         
         // Log tất cả prefab đã đăng ký để debug
@@ -282,5 +285,32 @@ public class NetworkPrefabRegistrar : MonoBehaviour
     public void ReRegisterPrefabs()
     {
         RegisterPrefabs();
+    }
+
+    /// <summary>
+    /// Tự động đăng ký tất cả NPC prefab từ NpcServerManager trong scene.
+    /// Bắt buộc để client có thể instantiate NPC khi server Spawn().
+    /// </summary>
+    private void RegisterNpcPrefabs(NetworkManager networkManager, ref int registeredCount)
+    {
+        var npcMgr = FindObjectOfType<NpcServerManager>(true);
+        if (npcMgr == null) return;
+
+        // Lấy mảng npcPrefabs qua reflection (private field)
+        var field = typeof(NpcServerManager).GetField("npcPrefabs",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (field == null) return;
+
+        var prefabs = field.GetValue(npcMgr) as GameObject[];
+        if (prefabs == null) return;
+
+        foreach (var prefab in prefabs)
+        {
+            if (prefab != null)
+            {
+                RegisterPrefab(prefab, networkManager, ref registeredCount);
+            }
+        }
+        Debug.Log($"[NetworkPrefabRegistrar] ✓ Đăng ký {prefabs.Length} NPC prefab(s)");
     }
 }

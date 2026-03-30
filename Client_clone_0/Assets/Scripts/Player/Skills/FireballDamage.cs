@@ -20,7 +20,7 @@ public class FireballDamage : MonoBehaviour
     [SerializeField] private bool destroyOnHit = true;
 
     [Tooltip("CÃ³ tá»± há»§y khi va cháº¡m vá»›i ground/wall khÃ´ng")]
-    [SerializeField] private bool destroyOnGround = true;
+    [SerializeField] private bool destroyOnGround = false;
 
     private bool hasHit = false;
 

@@ -33,6 +33,7 @@ public class EnemyAI : MonoBehaviour
     private bool autoPatrolPointsCreated = false;
     private float attackStartTime;
     private float _findPlayerTimer = 0f; // timer tìm lại player
+    private float _retargetTimer   = 0f; // timer retarget player gần nhất
     private const float MAX_ATTACK_DURATION = 2f;
 
     // Skill system — set bởi HostSpawnConfigLoader sau khi spawn
@@ -50,6 +51,10 @@ public class EnemyAI : MonoBehaviour
         networkController = GetComponent<NetworkEnemyController>();
         _originalMoveSpeed = moveSpeed;
         _skillSet = GetComponent<EnemySkillSet>(); // có thể null nếu chưa được gán
+
+        // Đảm bảo NetworkAnimator luôn có Animator – tránh NullRef trong CheckParametersChanged
+        if (networkAnimator != null && networkAnimator.Animator == null)
+            networkAnimator.Animator = animator;
 
         ApplyFacing();
 
@@ -125,6 +130,14 @@ public class EnemyAI : MonoBehaviour
         if (player == null)
         {
             FindPlayerInNetwork();
+        }
+
+        // Retarget lại player gần nhất mỗi 1.5s — để chứa chấp nhận client mới join
+        _retargetTimer -= Time.deltaTime;
+        if (_retargetTimer <= 0f)
+        {
+            FindPlayerInNetwork();
+            _retargetTimer = 1.5f;
         }
         
         if (player == null)

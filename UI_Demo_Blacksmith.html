@@ -1,0 +1,708 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Blacksmith – Demo UI v2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #1a3a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%231a3a1a'/%3E%3Ccircle cx='1' cy='1' r='.5' fill='%23255025' opacity='.4'/%3E%3C/svg%3E");
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+.bs-frame {
+  width: 700px;
+  border: 5px solid #5a3010;
+  border-radius: 16px;
+  box-shadow: 0 0 0 2px #c88030, 0 0 0 5px #7a4818, 0 12px 40px #000a;
+  overflow: hidden; position: relative;
+  background: repeating-linear-gradient(92deg,transparent,transparent 60px,#00000008 60px,#00000008 61px),
+    repeating-linear-gradient(180deg,transparent,transparent 3px,#0000000a 3px,#0000000a 4px),
+    linear-gradient(160deg,#d4924a 0%,#b8762e 35%,#a86820 65%,#c07830 100%);
+}
+.bs-titlebar {
+  background: linear-gradient(180deg,#c88838 0%,#a06820 100%);
+  border-bottom: 3px solid #7a4810;
+  padding: 6px 48px 6px 16px;
+  position: relative; min-height: 10px;
+}
+.btn-close {
+  position: absolute; top: 6px; right: 10px;
+  width: 34px; height: 34px;
+  background: radial-gradient(circle at 40% 35%,#e85030,#901808);
+  border: 3px solid #60100a; border-radius: 50%;
+  color: #fff; font-weight: 900; font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px #000a; user-select: none;
+}
+.btn-close:hover { background: radial-gradient(circle at 40% 35%,#f07050,#b02010); }
+
+.tab-bar {
+  display: flex; gap: 4px;
+  padding: 0 48px 0 8px;
+  background: linear-gradient(180deg,#9a6020 0%,#7a4810 100%);
+  border-bottom: 3px solid #5a3008;
+}
+.tab-btn {
+  flex: 1; padding: 11px 0;
+  border-radius: 8px 8px 0 0;
+  border: 2px solid #7a4808; border-bottom: none;
+  font-weight: bold; font-size: 16px;
+  cursor: pointer; user-select: none; text-align: center;
+  transition: background .15s; letter-spacing: .5px;
+}
+.tab-btn.active {
+  background: linear-gradient(180deg,#f0d060 0%,#d09820 60%,#b07810 100%);
+  color: #3a1a00; box-shadow: 0 -3px 10px #ffd70055;
+}
+.tab-btn.inactive {
+  background: linear-gradient(180deg,#9a6830 0%,#7a5020 100%);
+  color: #d4a050;
+}
+.tab-btn.inactive:hover { background: linear-gradient(180deg,#b07840,#8a5828); }
+
+.panel-body { padding: 14px 16px 18px; }
+.panel-wrap { display: none; }
+.panel-wrap.active { display: block; }
+.hint-label {
+  font-size: 12px; color: #3a1500; font-weight: bold; margin-bottom: 10px;
+  padding: 3px 8px;
+  background: #c88a3055; border-radius: 4px; display: inline-block;
+}
+
+/* CƯỜNG HÓA LAYOUT */
+.ch-layout { display: flex; gap: 16px; }
+.ch-left { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.stone-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; }
+.stone-slot {
+  aspect-ratio: 1; border-radius: 6px; border: 2px solid #7a4a10;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: border-color .12s, box-shadow .12s;
+}
+.stone-slot:hover { border-color: #ffd700; box-shadow: 0 0 8px #ffd70055; }
+.stone-slot.empty {
+  background: linear-gradient(135deg,#c08840 0%,#a07030 40%,#c09040 100%);
+  box-shadow: inset 0 1px 3px #f0d07044, inset 0 -1px 2px #0003;
+}
+.stone-slot.empty::after {
+  content: ""; position: absolute; inset: 3px;
+  background: repeating-linear-gradient(45deg,transparent,transparent 4px,#0000000a 4px,#0000000a 5px);
+  border-radius: 3px;
+}
+.stone-slot.filled {
+  background: linear-gradient(135deg,#5888d0,#4070b0);
+  border-color: #80b8f0; box-shadow: inset 0 1px 3px #a0d0ff44;
+}
+.stone-slot .stone-icon { font-size: 18px; z-index: 1; }
+.stone-slot .stone-qty {
+  position: absolute; bottom: 2px; right: 3px;
+  font-size: 9px; font-weight: bold; color: #ffd700;
+  text-shadow: 0 1px 2px #0008; z-index: 1;
+}
+.stone-bottom { display: flex; gap: 6px; align-items: center; }
+.stone-filter-btn {
+  flex: 0 0 auto; padding: 8px 14px;
+  background: linear-gradient(180deg,#a07030,#7a5020);
+  border: 2px solid #5a3810; border-radius: 8px;
+  color: #f0c860; font-weight: bold; font-size: 13px;
+  cursor: pointer; box-shadow: 0 2px 6px #0005;
+}
+.stone-filter-btn:hover { background: linear-gradient(180deg,#b07838,#8a5828); }
+.btn-arrow {
+  width: 34px; height: 34px;
+  background: linear-gradient(180deg,#d0a030,#a07018);
+  border: 2px solid #7a5010; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: bold; cursor: pointer;
+  color: #3a1a00; box-shadow: 0 2px 6px #0005;
+}
+.btn-tychon {
+  flex: 1; padding: 8px 0;
+  background: linear-gradient(180deg,#d09030,#a06018);
+  border: 2px solid #7a4810; border-radius: 8px;
+  color: #ffe080; font-weight: bold; font-size: 14px;
+  cursor: pointer; text-align: center; box-shadow: 0 2px 6px #0005;
+}
+.btn-tychon:hover { background: linear-gradient(180deg,#e0a040,#b07020); }
+
+.ch-right { width: 210px; display: flex; flex-direction: column; gap: 10px; }
+.ec-row { display: flex; gap: 10px; align-items: flex-start; justify-content: center; }
+.equip-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.equip-slot-btn {
+  width: 78px; height: 78px; border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; position: relative; transition: box-shadow .15s;
+}
+.equip-slot-btn.empty { background: linear-gradient(135deg,#c08840,#a07030); border: 2px solid #7a4a10; }
+.equip-slot-btn.filled {
+  background: linear-gradient(135deg,#4060a0,#284880);
+  border: 2.5px dashed #40c8a0;
+  box-shadow: 0 0 14px #40c8a055, inset 0 0 8px #40c8a022;
+}
+.equip-slot-btn:hover { box-shadow: 0 0 18px #ffd70066; }
+.equip-slot-icon { font-size: 32px; line-height: 1; }
+.equip-slot-level { font-size: 13px; font-weight: bold; color: #ffd700; text-shadow: 0 1px 3px #0008; }
+.ec-arrow { font-size: 26px; color: #5090e0; margin-top: 26px; text-shadow: 0 0 10px #5090e066; flex-shrink: 0; }
+
+.preview-equip-slot {
+  width: 78px; height: 78px; border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; position: relative;
+  background: linear-gradient(135deg,#4060a0,#284880);
+  border: 2.5px dashed #e09030;
+  box-shadow: 0 0 14px #e0903055, inset 0 0 8px #e0903022;
+}
+.preview-equip-icon { font-size: 32px; }
+.preview-equip-level { font-size: 13px; font-weight: bold; color: #ffd700; text-shadow: 0 1px 3px #0008; }
+
+.charm-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px; }
+.charm-slot-btn {
+  width: 66px; height: 66px; border-radius: 8px; cursor: pointer;
+  border: 2px dashed #9a6830;
+  background: linear-gradient(135deg,#8a6030,#6a4820);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: border-color .15s, box-shadow .15s;
+  font-size: 10px; color: #c8a060; text-align: center; line-height: 1.3;
+}
+.charm-slot-btn:hover { border-color: #ffd700; box-shadow: 0 0 10px #ffd70044; }
+.charm-slot-btn.filled { border-color: #c090f0; background: linear-gradient(135deg,#604880,#402860); color: #e0c8ff; }
+
+.cost-row { font-size: 13px; font-weight: bold; color: #ff5050; text-align: center; text-shadow: 0 1px 2px #0006; }
+.levelup-row { display: flex; gap: 6px; align-items: center; }
+.levelup-display {
+  flex: 1; background: linear-gradient(180deg,#8a5828,#6a4018);
+  border: 2px solid #4a2808; border-radius: 8px;
+  padding: 8px 10px; font-size: 14px; font-weight: bold; color: #f0c860;
+  text-align: center; box-shadow: inset 0 1px 3px #0005;
+}
+
+.rate-section { display: flex; flex-direction: column; gap: 4px; }
+.rate-header { display: flex; justify-content: space-between; font-size: 12px; color: #f0d080; }
+.rate-val { color: #60f090; font-weight: bold; }
+.rate-bar-wrap {
+  height: 24px; background: #4a2808; border: 2px solid #3a1808;
+  border-radius: 8px; overflow: hidden; position: relative;
+  box-shadow: inset 0 2px 5px #0006;
+}
+.rate-bar-fill { height: 100%; background: linear-gradient(90deg,#20b060,#60e090); transition: width .4s; border-radius: 6px; box-shadow: 0 0 10px #40d07066; }
+.rate-bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #fff; text-shadow: 0 1px 3px #0008; }
+
+.main-btns { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+.btn-main {
+  padding: 11px 0; border-radius: 10px;
+  font-weight: bold; font-size: 15px; cursor: pointer;
+  text-align: center; border: 2px solid; user-select: none;
+  box-shadow: 0 4px 10px #0007;
+  transition: filter .12s, transform .08s; letter-spacing: .5px;
+}
+.btn-main:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-main:active { transform: translateY(1px); filter: brightness(.95); }
+.btn-ty-cuonghoa { background: linear-gradient(180deg,#c07030,#803010); border-color: #501808; color: #ffd090; }
+.btn-cuonghoa    { background: linear-gradient(180deg,#e07820,#a04808); border-color: #701008; color: #fff0b0; }
+.status-txt { font-size: 13px; text-align: center; min-height: 18px; color: #f0f060; font-weight: bold; text-shadow: 0 1px 3px #0008; }
+
+/* EQUIP INFO BOX */
+.equip-info-box {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 320px;
+  background: linear-gradient(180deg,#6a3c18,#4a2008);
+  border: 3px solid #c07828; border-radius: 12px;
+  box-shadow: 0 8px 32px #000c, 0 0 0 1px #e0a03055;
+  z-index: 100; display: none; flex-direction: column; overflow: hidden;
+}
+.equip-info-box.visible { display: flex; }
+.eib-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 10px;
+  background: linear-gradient(180deg,#7a4820,#5a3010);
+  border-bottom: 2px solid #9a6030;
+}
+.eib-title { font-size: 16px; font-weight: bold; color: #ffd070; text-shadow: 0 1px 3px #0009; }
+.eib-close {
+  width: 26px; height: 26px;
+  background: radial-gradient(circle at 40% 35%,#e85030,#901808);
+  border: 2px solid #60100a; border-radius: 50%;
+  color: #fff; font-size: 13px; font-weight: 900;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px #000a;
+}
+.eib-close:hover { background: radial-gradient(circle at 40% 35%,#f07050,#b02010); }
+.eib-btns { display: flex; gap: 10px; padding: 12px 14px; }
+.eib-btn {
+  flex: 1; padding: 10px 0; border-radius: 8px;
+  font-weight: bold; font-size: 15px; cursor: pointer;
+  text-align: center; border: 2px solid; transition: filter .12s;
+}
+.eib-btn:hover { filter: brightness(1.15); }
+.eib-btn-layra { background: linear-gradient(180deg,#d08030,#a05818); border-color: #7a3808; color: #ffe090; }
+.eib-btn-xem   { background: linear-gradient(180deg,#d08030,#a05818); border-color: #7a3808; color: #ffe090; }
+
+/* ITEM DETAIL OVERLAY */
+.item-detail-overlay {
+  position: fixed; inset: 0; background: #00000088;
+  display: none; align-items: center; justify-content: center; z-index: 200;
+}
+.item-detail-overlay.visible { display: flex; }
+.item-detail-panel {
+  width: 520px; max-height: 70vh;
+  background: linear-gradient(180deg,#5a3010 0%,#3a1a08 100%);
+  border: 3px solid #c07828; border-radius: 14px;
+  box-shadow: 0 12px 40px #000c; display: flex; flex-direction: column; overflow: hidden;
+}
+.idp-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 10px;
+  background: linear-gradient(180deg,#7a4820,#5a3010);
+  border-bottom: 2px solid #9a6030;
+}
+.idp-title-col { flex: 1; }
+.idp-title { font-size: 18px; font-weight: bold; color: #ffd060; text-shadow: 0 1px 4px #000a; line-height: 1.2; }
+.idp-stars { margin-top: 4px; font-size: 18px; line-height: 1; }
+.star-gold  { color: #ffd700; text-shadow: 0 0 5px #ffd70088; }
+.star-empty { color: #6a5030; }
+.idp-icon {
+  width: 64px; height: 64px; border-radius: 8px;
+  border: 2.5px dashed #e09030;
+  background: linear-gradient(135deg,#4060a0,#284880);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; box-shadow: 0 0 14px #e0903055; flex-shrink: 0;
+}
+.idp-close {
+  align-self: flex-start; width: 28px; height: 28px;
+  background: radial-gradient(circle at 40% 35%,#e85030,#901808);
+  border: 2px solid #60100a; border-radius: 50%;
+  color: #fff; font-size: 13px; font-weight: 900;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px #000a; flex-shrink: 0;
+}
+.idp-close:hover { background: radial-gradient(circle at 40% 35%,#f07050,#b02010); }
+.idp-body {
+  padding: 12px 16px 16px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.idp-body::-webkit-scrollbar { width: 6px; }
+.idp-body::-webkit-scrollbar-thumb { background: #c88030aa; border-radius: 3px; }
+.idp-row { font-size: 14px; line-height: 1.9; }
+.idp-row.req    { color: #ff6040; font-weight: bold; }
+.idp-row.normal { color: #f0d880; }
+.idp-row.sep    { border-top: 1px solid #7a501855; margin: 4px 0; }
+.idp-row.desc   { color: #c8a05e; font-size: 13px; font-style: italic; }
+.idp-row.opt    { color: #a0e0a0; font-size: 13px; }
+.idp-row.opt-inactive { color: #808060; font-size: 13px; }
+
+/* TAB 1 - TRANG BỊ */
+.tb-section-title { font-size: 14px; font-weight: bold; color: #f0d070; border-bottom: 2px solid #9a6030; padding-bottom: 5px; margin-bottom: 4px; }
+.tb-scroll { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding: 4px 2px; }
+.tb-scroll::-webkit-scrollbar { width: 5px; }
+.tb-scroll::-webkit-scrollbar-thumb { background: #c88030aa; border-radius: 3px; }
+.tb-row {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(90deg,#c08838,#a07028);
+  border: 2px solid #7a4808; border-radius: 8px;
+  padding: 7px 10px; cursor: pointer; transition: border-color .12s;
+}
+.tb-row:hover { border-color: #ffd700; }
+.tb-row-icon {
+  width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0;
+  background: linear-gradient(135deg,#5080c0,#3060a0);
+  border: 2px dashed #40c8a0; box-shadow: 0 0 10px #40c8a044;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.tb-row-name { flex: 1; font-weight: bold; font-size: 14px; color: #2a1000; }
+.tb-row-level { color: #ffd700; font-weight: bold; font-size: 14px; }
+.btn-nangcap {
+  padding: 6px 12px;
+  background: linear-gradient(180deg,#d09030,#a05818);
+  border: 2px solid #7a3808; border-radius: 7px;
+  color: #ffe080; font-weight: bold; font-size: 13px; cursor: pointer;
+}
+.btn-nangcap:hover { background: linear-gradient(180deg,#e0a040,#b06828); }
+
+/* TAB 2 - TÚI */
+.inv-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; }
+.inv-slot {
+  aspect-ratio: 1; border-radius: 6px; position: relative;
+  border: 2px solid #7a4810;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; font-size: 22px; transition: border-color .12s;
+}
+.inv-slot.empty    { background: linear-gradient(135deg,#c08840,#a07030); }
+.inv-slot.filled-stone { background: linear-gradient(135deg,#4880c0,#3060a0); border-color: #80b0e8; }
+.inv-slot.filled-other { background: linear-gradient(135deg,#5080c0,#3060a0); border-color: #88b8e8; }
+.inv-slot.selectable   { border-color: #40d070; box-shadow: 0 0 10px #40d07044; }
+.inv-slot.selectable:hover { border-color: #80ff90; box-shadow: 0 0 16px #60ff8066; }
+.inv-slot.dimmed   { opacity: 0.3; pointer-events: none; }
+.inv-slot .qty { position: absolute; bottom: 2px; right: 4px; font-size: 10px; font-weight: bold; color: #ffd700; text-shadow: 0 1px 2px #0008; }
+.inv-slot .choose-btn {
+  position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+  background: #20b050; border: none; border-radius: 4px;
+  color: #fff; font-size: 10px; font-weight: bold;
+  padding: 2px 8px; cursor: pointer; white-space: nowrap; display: none;
+}
+.inv-slot.selectable .choose-btn { display: block; }
+.inv-legend { font-size: 11px; color: #c8a050; margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="bs-frame" id="mainPanel">
+  <div class="bs-titlebar">
+    <div class="btn-close" onclick="closeAll()">&#x2715;</div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-btn active"   id="tab0" onclick="switchTab(0)">Cường hóa</div>
+    <div class="tab-btn inactive" id="tab1" onclick="switchTab(1)">Trang bị</div>
+    <div class="tab-btn inactive" id="tab2" onclick="switchTab(2)">Túi</div>
+  </div>
+
+  <!-- TAB 0: CƯỜNG HÓA -->
+  <div class="panel-body panel-wrap active" id="panel0" style="position:relative;">
+    <div class="hint-label">Đặt vào đá và trang bị</div>
+    <div class="ch-layout">
+
+      <!-- LEFT: stone grid -->
+      <div class="ch-left">
+        <div class="stone-grid" id="stoneGrid"></div>
+        <div class="stone-bottom">
+          <div class="stone-filter-btn">Đá dưới cấp 12</div>
+          <div class="btn-arrow">&#9650;</div>
+          <div class="btn-tychon" onclick="switchTab(2)">Tự chọn</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: equip/charm/rate/buttons -->
+      <div class="ch-right">
+
+        <div class="ec-row">
+          <div class="equip-wrap">
+            <div class="equip-slot-btn filled" id="equipSlot" onclick="onEquipSlotClick()">
+              <div class="equip-slot-icon">&#x1F9BA;</div>
+              <div class="equip-slot-level">(+19)</div>
+            </div>
+          </div>
+          <div class="ec-arrow">&#9654;</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div class="preview-equip-slot" onclick="xemEquip()" title="Xem trang bị sau nâng cấp">
+              <div class="preview-equip-icon">&#x1F9BA;</div>
+              <div class="preview-equip-level">(+20)</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;">
+          <div class="charm-wrap">
+            <div class="charm-slot-btn" id="charmSlotBtn" onclick="onCharmSlotClick()">
+              <span style="font-size:18px;">&#x1F52E;</span>
+              <span>Bùa<br>cường</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cost-row">Cần 1,500,000,000 bạc khóa.</div>
+
+        <div class="levelup-row">
+          <div class="levelup-display" id="levelupDisplay">Lên cấp +1</div>
+          <div class="btn-arrow" onclick="incrementLevel()">&#9650;</div>
+        </div>
+
+        <div class="rate-section">
+          <div class="rate-header">
+            <span>Tỉ lệ thành công</span>
+            <span class="rate-val" id="rateVal">0%</span>
+          </div>
+          <div class="rate-bar-wrap">
+            <div class="rate-bar-fill" id="rateFill" style="width:0%"></div>
+            <div class="rate-bar-label" id="rateLabel">0%</div>
+          </div>
+        </div>
+
+        <div class="status-txt" id="statusTxt"></div>
+
+        <div class="main-btns">
+          <div class="btn-main btn-ty-cuonghoa" onclick="autoCuongHoa()">Tự cường hóa</div>
+          <div class="btn-main btn-cuonghoa"    onclick="doCuongHoa()">Cường hóa</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- EQUIP INFO BOX (screenshot 2) -->
+    <div class="equip-info-box" id="equipInfoBox">
+      <div class="eib-title-row">
+        <div class="eib-title" id="eibTitle">Áo Nhẫn Giả Base (+19)</div>
+        <div class="eib-close" onclick="closeEquipInfoBox()">&#x2715;</div>
+      </div>
+      <div class="eib-btns">
+        <div class="eib-btn eib-btn-layra" onclick="layRaEquip()">Lấy ra</div>
+        <div class="eib-btn eib-btn-xem"   onclick="xemEquip()">Xem</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 1: TRANG BỊ -->
+  <div class="panel-body panel-wrap" id="panel1">
+    <div class="tb-section-title">Trang bị đang mặc</div>
+    <div class="tb-scroll">
+      <div class="tb-row">
+        <div class="tb-row-icon">&#x1F9BA;</div>
+        <div class="tb-row-name">Áo Nhẫn Giả Base</div>
+        <div class="tb-row-level">+19</div>
+        <div class="btn-nangcap" onclick="selectEquip('Áo Nhẫn Giả Base',19)">Nâng Cấp</div>
+      </div>
+      <div class="tb-row">
+        <div class="tb-row-icon">&#x2694;&#xFE0F;</div>
+        <div class="tb-row-name">Kiếm Thép Huyền</div>
+        <div class="tb-row-level">+7</div>
+        <div class="btn-nangcap" onclick="selectEquip('Kiếm Thép Huyền',7)">Nâng Cấp</div>
+      </div>
+      <div class="tb-row">
+        <div class="tb-row-icon">&#x1F6E1;&#xFE0F;</div>
+        <div class="tb-row-name">Giáp Rồng</div>
+        <div class="tb-row-level">+3</div>
+        <div class="btn-nangcap" onclick="selectEquip('Giáp Rồng',3)">Nâng Cấp</div>
+      </div>
+      <div class="tb-row">
+        <div class="tb-row-icon">&#x1F462;</div>
+        <div class="tb-row-name">Giày Lữ Hành</div>
+        <div class="tb-row-level">+0</div>
+        <div class="btn-nangcap" onclick="selectEquip('Giày Lữ Hành',0)">Nâng Cấp</div>
+      </div>
+    </div>
+    <div class="tb-section-title" style="margin-top:10px;">Trang bị trong túi</div>
+    <div class="tb-scroll">
+      <div class="tb-row">
+        <div class="tb-row-icon">&#x1F5E1;&#xFE0F;</div>
+        <div class="tb-row-name">Đoản Kiếm Ngọc</div>
+        <div class="tb-row-level">+12</div>
+        <div class="btn-nangcap" onclick="selectEquip('Đoản Kiếm Ngọc',12)">Nâng Cấp</div>
+      </div>
+      <div style="color:#c8a050;font-size:12px;text-align:center;padding:6px;">— Hết danh sách —</div>
+    </div>
+  </div>
+
+  <!-- TAB 2: TÚI -->
+  <div class="panel-body panel-wrap" id="panel2">
+    <div style="font-size:12px;color:#f0d060;font-weight:bold;margin-bottom:8px;">Túi đồ — chọn đá (type=21)</div>
+    <div class="inv-grid" id="invGrid"></div>
+    <div class="inv-legend">
+      <span style="color:#40e070">&#x25A0;</span> Đá nâng cấp — nhấn "Chọn" &nbsp;|&nbsp;
+      <span style="color:#555">&#x25A0;</span> Sai loại — mờ
+    </div>
+  </div>
+
+</div>
+
+<!-- ITEM DETAIL OVERLAY (screenshot 3) -->
+<div class="item-detail-overlay" id="itemDetailOverlay" onclick="maybeCloseItemDetail(event)">
+  <div class="item-detail-panel" onclick="event.stopPropagation()">
+    <div class="idp-header">
+      <div class="idp-title-col">
+        <div class="idp-title" id="idpTitle">Áo Nhẫn Giả Base (+20)</div>
+        <div class="idp-stars">
+          <span class="star-gold">&#9733;&#9733;&#9733;&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="star-empty">&#9734;&#9734;</span>
+        </div>
+      </div>
+      <div class="idp-icon">&#x1F9BA;</div>
+      <div class="idp-close" onclick="closeItemDetail()">&#x2715;</div>
+    </div>
+    <div class="idp-body">
+      <div class="idp-row req">Yêu cầu cấp: 67</div>
+      <div class="idp-row req">Yêu cầu giới tính: Nam</div>
+      <div class="idp-row req">Hệ: Hỏa</div>
+      <div class="idp-row normal">Đã khóa</div>
+      <div class="idp-row sep"></div>
+      <div class="idp-row desc">Có thể đổi 14 Tinh thạch, 1,200 Ngọc Sharingan ở Kinkaku</div>
+      <div class="idp-row sep"></div>
+      <div class="idp-row opt">Phòng thủ vật lý: +480</div>
+      <div class="idp-row opt">HP tối đa: +1,200</div>
+      <div class="idp-row opt">Tốc độ di chuyển: +18</div>
+      <div class="idp-row opt-inactive">(+4) Phòng thủ: +320</div>
+      <div class="idp-row opt-inactive">(+8) Tất cả phòng thủ: +15%</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentEquip = { name: 'Áo Nhẫn Giả Base', level: 19 };
+var stoneCount = 0;
+var upgradeLevel = 1;
+
+(function init() {
+  buildStoneGrid();
+  buildInvGrid();
+  updateRate(0);
+})();
+
+function buildStoneGrid() {
+  var g = document.getElementById('stoneGrid');
+  g.innerHTML = '';
+  for (var i = 0; i < 16; i++) {
+    var d = document.createElement('div');
+    d.className = 'stone-slot empty';
+    d.dataset.idx = i;
+    d.setAttribute('title', 'StoneSlot_' + String(i).padStart(2,'0'));
+    d.innerHTML = '<span style="font-size:16px;color:#c8a05055">+</span>';
+    (function(slot){ slot.onclick = function(){ onStoneSlotClick(slot); }; })(d);
+    g.appendChild(d);
+  }
+}
+
+function buildInvGrid() {
+  var g = document.getElementById('invGrid');
+  var slots = [
+    { type:'stone', icon:'&#x1F48E;', qty:5 },
+    { type:'stone', icon:'&#x1F48E;', qty:3 },
+    { type:'other', icon:'&#x1F9BA;', qty:1 },
+    { type:'other', icon:'&#x1F52E;', qty:2 },
+    { type:'stone', icon:'&#x1F4A0;', qty:7 },
+    { type:'stone', icon:'&#x1F48E;', qty:1 },
+    { type:'other', icon:'&#x2694;&#xFE0F;', qty:1 },
+    { type:'empty' },
+    { type:'empty' },
+    { type:'empty' },
+  ];
+  g.innerHTML = '';
+  slots.forEach(function(s, i) {
+    var d = document.createElement('div');
+    if (s.type === 'empty') {
+      d.className = 'inv-slot empty';
+      d.innerHTML = '<span style="color:#c8a05040;font-size:14px">+</span>';
+    } else if (s.type === 'stone') {
+      d.className = 'inv-slot filled-stone selectable';
+      d.innerHTML = s.icon + '<div class="qty">x' + s.qty + '</div><button class="choose-btn" onclick="chooseStone(this,' + s.qty + ')">Chọn</button>';
+    } else {
+      d.className = 'inv-slot filled-other dimmed';
+      d.innerHTML = s.icon + (s.qty > 1 ? '<div class="qty">x' + s.qty + '</div>' : '');
+    }
+    g.appendChild(d);
+  });
+}
+
+function switchTab(idx) {
+  for (var i = 0; i < 3; i++) {
+    document.getElementById('panel' + i).classList.toggle('active', i === idx);
+    document.getElementById('tab' + i).className = 'tab-btn ' + (i === idx ? 'active' : 'inactive');
+  }
+}
+
+function onEquipSlotClick() {
+  document.getElementById('eibTitle').textContent = currentEquip.name + ' (+' + currentEquip.level + ')';
+  document.getElementById('equipInfoBox').classList.add('visible');
+}
+
+function closeEquipInfoBox() {
+  document.getElementById('equipInfoBox').classList.remove('visible');
+}
+
+function layRaEquip() {
+  closeEquipInfoBox();
+  setStatus('Đã lấy ra trang bị.', '#ffd070');
+  stoneCount = 0;
+  updateRate(0);
+}
+
+function xemEquip() {
+  closeEquipInfoBox();
+  document.getElementById('idpTitle').textContent = currentEquip.name + ' (+' + (currentEquip.level + 1) + ')';
+  document.getElementById('itemDetailOverlay').classList.add('visible');
+}
+
+function closeItemDetail() {
+  document.getElementById('itemDetailOverlay').classList.remove('visible');
+}
+
+function maybeCloseItemDetail(e) {
+  if (e.target === document.getElementById('itemDetailOverlay')) closeItemDetail();
+}
+
+function onCharmSlotClick() {
+  switchTab(2);
+  setStatus('Chọn bùa cường hóa từ túi.', '#c8f0ff');
+}
+
+function onStoneSlotClick(slot) {
+  if (!slot.classList.contains('filled')) {
+    switchTab(2);
+    setStatus('Chọn đá từ túi.', '#c8f0c8');
+  } else {
+    slot.className = 'stone-slot empty';
+    slot.innerHTML = '<span style="font-size:16px;color:#c8a05055">+</span>';
+    stoneCount = Math.max(0, stoneCount - 1);
+    updateRate(stoneCount);
+    setStatus('Đã tháo đá.', '#ffd070');
+  }
+}
+
+function chooseStone(btn, qty) {
+  var parentSlot = btn.parentElement;
+  parentSlot.classList.add('dimmed');
+  var grid = document.getElementById('stoneGrid');
+  var empty = grid.querySelector('.stone-slot.empty');
+  if (empty) {
+    empty.className = 'stone-slot filled';
+    empty.innerHTML = '<span class="stone-icon">&#x1F48E;</span><span class="stone-qty">x' + qty + '</span>';
+    stoneCount++;
+    updateRate(stoneCount);
+  }
+  switchTab(0);
+  setStatus('Đã thêm đá (' + stoneCount + '/16).', '#80ff80');
+}
+
+function updateRate(n) {
+  var pct = Math.min(95, n * 6 + (n > 0 ? 10 : 0));
+  document.getElementById('rateFill').style.width = pct + '%';
+  document.getElementById('rateVal').textContent = pct + '%';
+  document.getElementById('rateLabel').textContent = pct + '%';
+  var fill = document.getElementById('rateFill');
+  if (pct >= 70)      fill.style.background = 'linear-gradient(90deg,#20b060,#60e090)';
+  else if (pct >= 40) fill.style.background = 'linear-gradient(90deg,#b09020,#e0d040)';
+  else                fill.style.background = 'linear-gradient(90deg,#a03010,#e06030)';
+}
+
+function incrementLevel() {
+  upgradeLevel = Math.min(20, upgradeLevel + 1);
+  document.getElementById('levelupDisplay').textContent = 'Lên cấp +' + upgradeLevel;
+}
+
+function doCuongHoa() {
+  if (stoneCount === 0) { setStatus('Cần ít nhất 1 viên đá!', '#ff8060'); return; }
+  setStatus('Đang cường hóa...', '#aaaaaa');
+  setTimeout(function() {
+    var pct = parseInt(document.getElementById('rateLabel').textContent);
+    var ok = Math.random() * 100 < pct;
+    if (ok) {
+      currentEquip.level++;
+      document.getElementById('equipSlot').querySelector('.equip-slot-level').textContent = '(+' + currentEquip.level + ')';
+      setStatus('Thành công! Đạt +' + currentEquip.level, '#ffd700');
+      buildStoneGrid(); stoneCount = 0; updateRate(0);
+    } else {
+      setStatus('Thất bại! Trang bị không đổi.', '#ff7050');
+    }
+  }, 800);
+}
+
+function autoCuongHoa() { setStatus('Đang tự động cường hóa...', '#80d0ff'); }
+function closeAll()     { setStatus('Panel đã đóng.', '#aaaaaa'); }
+
+function selectEquip(name, level) {
+  currentEquip = { name: name, level: level };
+  switchTab(0); stoneCount = 0; buildStoneGrid(); updateRate(0);
+  document.getElementById('equipSlot').querySelector('.equip-slot-level').textContent = '(+' + level + ')';
+  setStatus('Đã chọn: ' + name + ' +' + level, '#ffd700');
+}
+
+function setStatus(msg, color) {
+  var el = document.getElementById('statusTxt');
+  el.textContent = msg; el.style.color = color || '#f0f060';
+}
+</script>
+</body>
+</html>

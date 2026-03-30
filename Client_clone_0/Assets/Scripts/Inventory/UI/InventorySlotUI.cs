@@ -17,6 +17,12 @@ public class InventorySlotUI : MonoBehaviour
     [Tooltip("Image/GameObject hiển thị khi item bị khóa (isLocked = true)")]
     [SerializeField] private GameObject lockMark;
 
+    [Header("Select Mode (Blacksmith – chọn đá/bùa)")]
+    [Tooltip("Button 'Chọn' hiện khi ô khớp filter. Thêm vào prefab slot, ẩn mặc định.")]
+    [SerializeField] private Button chooseButton;
+    [Tooltip("CanvasGroup để mờ ô không khớp filter. Có thể dùng CanvasGroup trên root slot.")]
+    [SerializeField] private CanvasGroup canvasGroup;
+
     private int slotIndex;
     private InventorySlotDto currentData;
 
@@ -61,6 +67,9 @@ public class InventorySlotUI : MonoBehaviour
         {
             lockMark.SetActive(false);
         }
+
+        // Reset select mode
+        SetSelectMode(false, false, null);
     }
 
     /// <summary>
@@ -141,6 +150,31 @@ public class InventorySlotUI : MonoBehaviour
     public InventorySlotDto GetCurrentData()
     {
         return currentData;
+    }
+
+    /// <summary>
+    /// Bật/tắt chế độ chọn item (dùng khi cần chọn đá / bùa cho cường hóa).
+    /// - inSelectMode = true  → ô khớp filter hiện btn "Chọn"; ô không khớp bị mờ
+    /// - canSelect = true     → ô này khớp filter, hiện btn "Chọn"
+    /// - onSelect             → callback khi nhấn "Chọn"
+    /// </summary>
+    public void SetSelectMode(bool inSelectMode, bool canSelect, System.Action onSelect)
+    {
+        if (chooseButton != null)
+        {
+            chooseButton.gameObject.SetActive(inSelectMode && canSelect);
+            chooseButton.onClick.RemoveAllListeners();
+            if (inSelectMode && canSelect && onSelect != null)
+                chooseButton.onClick.AddListener(() => onSelect());
+        }
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = (inSelectMode && !canSelect) ? 0.35f : 1f;
+
+        // Khi đang ở select mode, không cho click thường (sẽ mở ItemDetailPanel)
+        var mainBtn = GetComponent<UnityEngine.UI.Button>();
+        if (mainBtn != null)
+            mainBtn.interactable = !inSelectMode || canSelect;
     }
 
     /// <summary>

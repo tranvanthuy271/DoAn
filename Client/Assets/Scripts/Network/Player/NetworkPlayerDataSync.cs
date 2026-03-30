@@ -471,4 +471,86 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         networkHp.Value = Mathf.Min(networkMaxHp.Value, networkHp.Value + amount);
         Debug.Log($"[NetworkPlayerDataSync] RestoreHp {amount} → HP={networkHp.Value}/{networkMaxHp.Value}");
     }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  EXP AWARD (gọi từ NetworkEnemyHealth khi quái chết)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Server-only: Cộng EXP cho player này và lưu vào DB.
+    /// Được gọi bởi NetworkEnemyHealth.HandleDeath() khi player kill quái.
+    /// </summary>
+    public void AwardExpOnServer(int expAmount)
+    {
+        if (!IsServer) return;
+        int playerId = networkPlayerId.Value;
+        if (playerId <= 0 || expAmount <= 0) return;
+
+        Debug.Log($"[NetworkPlayerDataSync] AwardExp +{expAmount} EXP cho playerId={playerId} (clientId={OwnerClientId})");
+        StartCoroutine(GainExpCoroutine(playerId, expAmount));
+    }
+
+    [System.Serializable]
+    private class GainExpResponse
+    {
+        public bool success;
+        public int experience;
+        public int level;
+        public bool leveled_up;
+    }
+
+    private System.Collections.IEnumerator GainExpCoroutine(int playerId, int expAmount)
+    {
+        string baseUrl = APIClient.Instance != null ? APIClient.Instance.baseURL : "http://localhost:5000/api";
+        string url = $"{baseUrl}/player/{playerId}/gain-exp";
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount}}}");
+
+        using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
+        req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            Debug.Log($"[NetworkPlayerDataSync] GainExp OK: {req.downloadHandler.text}");
+
+            // Parse JSON response để lấy level mới
+            var resp = JsonUtility.FromJson<GainExpResponse>(req.downloadHandler.text);
+
+            // Cập nhật networkLevel.Value trên server → tự động sync về tất cả clients
+            if (resp != null && resp.level > 0 && resp.level != networkLevel.Value)
+            {
+                networkLevel.Value = resp.level;
+                Debug.Log($"[NetworkPlayerDataSync] networkLevel cập nhật → {resp.level}");
+            }
+
+            int newLevel  = resp != null ? resp.level : networkLevel.Value;
+            bool leveledUp = resp != null && resp.leveled_up;
+
+            // Thông báo cho owner client để cập nhật UI
+            NotifyExpGainClientRpc(expAmount, newLevel, leveledUp, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
+        }
+        else
+        {
+            Debug.LogError($"[NetworkPlayerDataSync] GainExp FAIL playerId={playerId}: {req.downloadHandler?.text ?? req.error}");
+        }
+    }
+
+    /// <summary>ClientRpc: thông báo owner client nhận EXP để refresh UI.</summary>
+    [ClientRpc]
+    private void NotifyExpGainClientRpc(int expAmount, int newLevel, bool leveledUp, ClientRpcParams rpcParams = default)
+    {
+        if (leveledUp)
+            Debug.Log($"[NetworkPlayerDataSync] LEVEL UP! Level {newLevel}! (+{expAmount} EXP)");
+        else
+            Debug.Log($"[NetworkPlayerDataSync] +{expAmount} EXP từ kill quái! Level={newLevel}");
+        // Refresh stats UI nếu đang mở
+        if (IsOwner)
+            FindObjectOfType<StatsTabUI>()?.Load();
+    }
 }

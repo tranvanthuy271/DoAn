@@ -295,6 +295,9 @@ public class NetworkInventory : NetworkBehaviour
             int addedQuantity = quantity - remainingQuantity;
             OnItemAddedClientRpc(itemID, addedQuantity);
             Debug.Log($"[NetworkInventory] Added {addedQuantity}x {template.name} to inventory");
+
+            // ✅ Persist to DB sau khi update NetworkVariable
+            SyncInventoryToDB(itemID, template.code, template.icon_id, addedQuantity);
         }
 
         // Nếu còn dư và không thể thêm được nữa
@@ -424,13 +427,13 @@ public class NetworkInventory : NetworkBehaviour
     [ClientRpc]
     private void OnItemAddedClientRpc(int itemID, int quantity)
     {
-        ItemData itemData = GetItemDataByID(itemID);
-        if (itemData != null)
-        {
-            // Tìm slot index
-            int slotIndex = FindSlotIndex(itemID);
-            OnItemAdded?.Invoke(slotIndex, itemData, quantity);
-        }
+        var template = GetItemTemplate(itemID);
+        string itemName = template?.name ?? $"item_id={itemID}";
+        Debug.Log($"[NetworkInventory] Client: Nhận được {quantity}x {itemName}");
+
+        // Force refresh UI — đảm bảo inventory hiển thị mới nhất dù OnValueChanged chưa kịp fire
+        DeserializeInventory(networkInventoryData.Value);
+        OnInventoryChanged?.Invoke();
     }
 
     /// <summary>
@@ -645,59 +648,84 @@ public class NetworkInventory : NetworkBehaviour
     /// </summary>
     private void SyncInventoryToDB(int itemTemplateId, string itemCode, string iconId, int quantity)
     {
-        // ✅ FIX: Lấy playerId từ GameManager (in-memory) thay vì PlayerPrefs
-        // PlayerPrefs bị shared giữa ParrelSync host/clone
         int playerId = 0;
-        
-        // Ưu tiên 1: GameManager (in-memory)
-        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-        {
-            playerId = GameManager.Instance.GetPlayerData().user_id;
-        }
-        
-        // Ưu tiên 2: ServerPlayerDataManager (host-side)
-        if (playerId == 0 && IsServer && ServerPlayerDataManager.Instance != null)
+
+        // Ưu tiên: dùng ServerPlayerDataManager với OwnerClientId — đúng cho cả HOST lẫn CLIENT
+        if (IsServer && ServerPlayerDataManager.Instance != null)
         {
             var playerData = ServerPlayerDataManager.Instance.GetPlayerDataByClientId(OwnerClientId);
             if (playerData != null)
                 playerId = playerData.user_id;
         }
-        
-        // Fallback: PlayerPrefs
+
+        // Fallback: GameManager (chỉ chính xác khi là HOST tự nhặt cho chính mình)
+        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+            playerId = GameManager.Instance.GetPlayerData().user_id;
+
+        // Last fallback: PlayerPrefs
         if (playerId == 0)
             playerId = PlayerPrefs.GetInt("USER_ID", 0);
-        
+
         if (playerId == 0)
         {
-            Debug.LogWarning("[NetworkInventory] SyncInventoryToDB: playerId = 0, không thể sync với DB!");
+            Debug.LogWarning($"[NetworkInventory] SyncInventoryToDB: playerId=0, OwnerClientId={OwnerClientId} — không thể sync DB!");
             return;
         }
 
-        // Tạo request
+        // Chỉ gửi itemTemplateId + quantity — server tự tra item_template
         var item = new APIClient.AddInventoryItemRequest
         {
             itemTemplateId = itemTemplateId,
-            itemCode = itemCode,
-            iconId = iconId,
             quantity = quantity
         };
 
         var items = new APIClient.AddInventoryItemRequest[] { item };
 
+        // Lấy JWT của đúng client (không dùng JWT của HOST khi sync cho CLIENT)
+        string clientJwt = "";
+        if (IsServer && ServerPlayerDataManager.Instance != null)
+            clientJwt = ServerPlayerDataManager.Instance.GetClientJwt(OwnerClientId);
+        // Fallback: JWT của chính máy này (đúng khi HOST sync cho chính mình)
+        if (string.IsNullOrEmpty(clientJwt))
+            clientJwt = PlayerPrefs.GetString("JWT_TOKEN", "");
+
         // Gọi API
         if (APIClient.Instance != null)
         {
+            int capturedPlayerId = playerId;
+            ulong capturedOwnerId = OwnerClientId;
+
             APIClient.Instance.AddItemsToInventory(
                 playerId,
                 items,
                 (response) =>
                 {
                     Debug.Log($"[NetworkInventory] ✅ Đã sync inventory với DB thành công! Response: {response}");
+
+                    // ✅ Push inventory mới nhất từ DB về đúng client để update UI
+                    APIClient.Instance.GetPlayerInventory(
+                        capturedPlayerId,
+                        (freshItems) =>
+                        {
+                            string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = freshItems });
+                            var clientParams = new ClientRpcParams
+                            {
+                                Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedOwnerId } }
+                            };
+                            SendInventoryDataClientRpc(json, clientParams);
+                            Debug.Log($"[NetworkInventory] 📡 Đã push {freshItems.Length} items về client {capturedOwnerId} sau khi lưu DB");
+                        },
+                        (fetchError) =>
+                        {
+                            Debug.LogError($"[NetworkInventory] ❌ Lỗi fetch inventory sau sync DB: {fetchError}");
+                        }
+                    );
                 },
                 (error) =>
                 {
                     Debug.LogError($"[NetworkInventory] ❌ Lỗi khi sync inventory với DB: {error}");
-                }
+                },
+                jwtOverride: clientJwt
             );
         }
         else

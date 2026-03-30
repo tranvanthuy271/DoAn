@@ -24,6 +24,22 @@ public class ServerPlayerDataManager : NetworkBehaviour
     // Dictionary để map clientId -> PlayerDataResponse (để truy cập nhanh)
     private Dictionary<ulong, PlayerDataResponse> clientIdToPlayerData = new Dictionary<ulong, PlayerDataResponse>();
 
+    // Dictionary để map clientId -> JWT token (để dùng khi sync DB cho client đúng token)
+    private Dictionary<ulong, string> clientIdToJwt = new Dictionary<ulong, string>();
+
+    /// <summary>Lưu JWT token của client khi họ gửi auth</summary>
+    public void StoreClientJwt(ulong clientId, string jwt)
+    {
+        if (!string.IsNullOrEmpty(jwt))
+            clientIdToJwt[clientId] = jwt;
+    }
+
+    /// <summary>Lấy JWT token đã lưu của client. Trả về chuỗi rỗng nếu chưa có.</summary>
+    public string GetClientJwt(ulong clientId)
+    {
+        return clientIdToJwt.TryGetValue(clientId, out var jwt) ? jwt : "";
+    }
+
     private void Awake()
     {
         // Singleton pattern

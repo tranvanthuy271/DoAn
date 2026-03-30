@@ -30,7 +30,9 @@ public class UpgradeRequestDto
     public int       playerId;
     public string    slotKey;            // "weapon"/"helmet"/... hoặc slot index (từ inventory)
     public bool      isFromInventory;    // true = item trong túi đồ, false = đang mặc
-    public List<int> stoneSlotIndices;   // inventory slot index của mỗi viên đá đặt vào
+    public List<int> stoneSlotIndices;   // inventory slot index của từng viên đá trong 16 ô
+    public List<int> charmSlotIndices;   // inventory slot index bùa (id=8), thường <= 1
+    public int       clientRatePercent;  // tỉ lệ client tính (server so sánh để chống cheat)
 }
 
 /// <summary>

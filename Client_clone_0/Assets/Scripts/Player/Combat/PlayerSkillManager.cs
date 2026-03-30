@@ -426,7 +426,7 @@ public class PlayerSkillManager : NetworkBehaviour
         {
             if (IsServer)
             {
-                UseMeleeLocal(skill);
+                UseMeleeLocal(skill, transform.localScale.x >= 0f);
             }
             else if (IsOwner)
             {
@@ -679,14 +679,14 @@ public class PlayerSkillManager : NetworkBehaviour
         {
             // Client truyền effectValue từ DB để server dùng đúng sát thương
             if (effectValue > 0f) skill.currentEffectValue = effectValue;
-            UseMeleeLocal(skill);
+            UseMeleeLocal(skill, facingRight); // truyền hướng nhìn từ client, tránh sai khi scale chưa sync
         }
     }
 
     /// <summary>
     /// Kích hoạt Melee skill: chỉ trigger animation, không spawn projectile
     /// </summary>
-    private void UseMeleeLocal(SkillData skill)
+    private void UseMeleeLocal(SkillData skill, bool facingRight)
     {
         skill.StartUsing();
 
@@ -704,41 +704,82 @@ public class PlayerSkillManager : NetworkBehaviour
             Invoke(nameof(InvokeClearSprite), pendingClearDelay);
         }
 
-        // Gây damage melee cho enemy và player xung quanh (chỉ server)
-        if (IsServer && skill.currentEffectValue > 0f)
-            ApplyMeleeDamage(skill);
+        // Gây damage melee sau delay nhỏ để khớp với hit-frame animation (chỉ server)
+        if (IsServer)
+            StartCoroutine(ApplyMeleeDamageDelayed(skill, facingRight));
 
         Invoke(nameof(ResetSkillState), 0.1f);
     }
 
-    private void ApplyMeleeDamage(SkillData skill)
+    private IEnumerator ApplyMeleeDamageDelayed(SkillData skill, bool facingRight, float delay = 0.3f)
     {
-        bool facingRight = transform.localScale.x >= 0f;
+        yield return new WaitForSeconds(delay);
+        ApplyMeleeDamage(skill, facingRight);
+    }
+
+    private void ApplyMeleeDamage(SkillData skill, bool facingRight)
+    {
         float range   = Mathf.Max(skill.spawnOffset * 2f, 1.5f);
         Vector2 center = (Vector2)transform.position
                         + new Vector2(facingRight ? range * 0.5f : -range * 0.5f, 0f);
+        
         int dmg = (int)skill.currentEffectValue;
+        if (dmg <= 0)
+        {
+            var stats = GetComponent<PlayerController>()?.stats;
+            dmg = stats != null ? stats.baseDamage : 10;
+        }
 
+        Debug.Log($"[PlayerSkillManager] ApplyMeleeDamage | center={center} range={range} dmg={dmg}");
+
+        // Không lọc LayerMask ở đây vì collider của enemy có thể nằm ở bất kỳ layer nào
         Collider2D[] hits = Physics2D.OverlapCircleAll(center, range);
+        System.Collections.Generic.HashSet<int> damaged = new System.Collections.Generic.HashSet<int>();
         foreach (var hit in hits)
         {
-            // Bỏ qua bản thân
-            var netObj = hit.GetComponent<NetworkObject>();
-            if (netObj != null && netObj.NetworkObjectId == NetworkObjectId) continue;
+            if (hit == null) continue;
 
-            // Gây damage cho enemy
-            var netEnemy = hit.GetComponent<NetworkEnemyHealth>();
-            if (netEnemy != null) { netEnemy.TakeDamage(dmg); continue; }
-            var localEnemy = hit.GetComponent<EnemyHealth>();
-            if (localEnemy != null) { localEnemy.TakeDamage(dmg); continue; }
+            // Bỏ qua collider của chính mình (so sánh qua NetworkObject trên root)
+            var selfNetObj = GetComponent<NetworkObject>();
+            var hitRootNetObj = hit.GetComponentInParent<NetworkObject>();
+            if (selfNetObj != null && hitRootNetObj != null && hitRootNetObj.NetworkObjectId == selfNetObj.NetworkObjectId) continue;
+
+            // Tránh damage cùng một enemy 2 lần (nếu có nhiều collider)
+            int goId = hit.gameObject.GetInstanceID();
+            int rootId = hit.transform.root.gameObject.GetInstanceID();
+            if (damaged.Contains(rootId)) continue;
+
+            // Gây damage cho enemy — dùng GetComponentInParent để tìm cả khi collider là child
+            var netEnemy = hit.GetComponentInParent<NetworkEnemyHealth>();
+            if (netEnemy != null)
+            {
+                Debug.Log($"[PlayerSkillManager] Melee hit NetworkEnemyHealth: {hit.transform.root.name} for {dmg}");
+                netEnemy.TakeDamage(dmg);
+                damaged.Add(rootId);
+                continue;
+            }
+            var localEnemy = hit.GetComponentInParent<EnemyHealth>();
+            if (localEnemy != null)
+            {
+                Debug.Log($"[PlayerSkillManager] Melee hit EnemyHealth: {hit.transform.root.name} for {dmg}");
+                localEnemy.TakeDamage(dmg);
+                damaged.Add(rootId);
+                continue;
+            }
 
             // PvP: gây damage cho player khác
-            if (hit.CompareTag("Player"))
+            if (hit.CompareTag("Player") || hit.transform.root.CompareTag("Player"))
             {
-                var netPlayer = hit.GetComponent<NetworkPlayerHealth>();
-                if (netPlayer != null) netPlayer.TakeDamage(dmg);
+                var netPlayer = hit.GetComponentInParent<NetworkPlayerHealth>();
+                if (netPlayer != null && !damaged.Contains(rootId))
+                {
+                    netPlayer.TakeDamage(dmg);
+                    damaged.Add(rootId);
+                }
             }
         }
+
+        Debug.Log($"[PlayerSkillManager] ApplyMeleeDamage done | {damaged.Count} targets hit.");
     }
 
     private float pendingClearDelay;

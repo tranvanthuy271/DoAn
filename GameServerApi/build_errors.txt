@@ -1,0 +1,45 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(335,43): error CS1061: 'Enemy' does not contain a definition for 'KhangHoa' and no accessible extension method 'KhangHoa' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(336,43): error CS1061: 'Enemy' does not contain a definition for 'KhangThuy' and no accessible extension method 'KhangThuy' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(337,43): error CS1061: 'Enemy' does not contain a definition for 'KhangTho' and no accessible extension method 'KhangTho' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(338,43): error CS1061: 'Enemy' does not contain a definition for 'KhangMoc' and no accessible extension method 'KhangMoc' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(339,43): error CS1061: 'Enemy' does not contain a definition for 'KhangKim' and no accessible extension method 'KhangKim' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(340,43): error CS1061: 'Enemy' does not contain a definition for 'KhangPhong' and no accessible extension method 'KhangPhong' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(343,43): error CS1061: 'Enemy' does not contain a definition for 'PhasesJson' and no accessible extension method 'PhasesJson' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(476,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(825,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(871,40): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(898,54): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(905,59): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(985,43): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1052,54): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1059,59): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1096,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1146,44): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1190,29): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+
+Build FAILED.
+
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(476,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(825,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(871,40): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(898,54): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(905,59): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(985,43): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1052,54): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1059,59): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1096,49): warning CS8601: Possible null reference assignment. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1146,44): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\PlayerController.cs(1190,29): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(335,43): error CS1061: 'Enemy' does not contain a definition for 'KhangHoa' and no accessible extension method 'KhangHoa' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(336,43): error CS1061: 'Enemy' does not contain a definition for 'KhangThuy' and no accessible extension method 'KhangThuy' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(337,43): error CS1061: 'Enemy' does not contain a definition for 'KhangTho' and no accessible extension method 'KhangTho' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(338,43): error CS1061: 'Enemy' does not contain a definition for 'KhangMoc' and no accessible extension method 'KhangMoc' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(339,43): error CS1061: 'Enemy' does not contain a definition for 'KhangKim' and no accessible extension method 'KhangKim' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(340,43): error CS1061: 'Enemy' does not contain a definition for 'KhangPhong' and no accessible extension method 'KhangPhong' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+C:\Hub\DoAn\GameServerApi\Controllers\DungeonController.cs(343,43): error CS1061: 'Enemy' does not contain a definition for 'PhasesJson' and no accessible extension method 'PhasesJson' accepting a first argument of type 'Enemy' could be found (are you missing a using directive or an assembly reference?) [C:\Hub\DoAn\GameServerApi\GameServerApi.csproj]
+    11 Warning(s)
+    7 Error(s)
+
+Time Elapsed 00:00:00.99

@@ -331,16 +331,8 @@ namespace GameServerApi.Controllers
                 exp_reward        = enemy.ExpReward,
                 gold_reward       = enemy.GoldReward,
                 silver_reward     = enemy.SilverReward,
-                // Kháng nguyên tố
-                khang_hoa         = enemy.KhangHoa,
-                khang_thuy        = enemy.KhangThuy,
-                khang_tho         = enemy.KhangTho,
-                khang_moc         = enemy.KhangMoc,
-                khang_kim         = enemy.KhangKim,
-                khang_phong       = enemy.KhangPhong,
-                // Kỹ năng & giai đoạn (raw JSON — BossAI deserialize phía client)
+                // Kỹ năng (raw JSON — BossAI deserialize phía client)
                 skills_json       = enemy.SkillsJson,
-                phases_json       = enemy.PhasesJson,
                 drop_items_json   = enemy.DropItemsJson,
                 // Spawn config
                 spawn_config = bossConfig == null ? null : new

@@ -81,24 +81,18 @@ public class AutoEquipDebugger : MonoBehaviour
             stones.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = 1,
-                itemCode       = "Đá Nâng Cấp",
-                iconId         = GetIcon(1),
                 quantity       = upgradeStoneCount
             });
         if (luckyStoneCount > 0)
             stones.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = 8,
-                itemCode       = "Đá May Mắn",
-                iconId         = GetIcon(8),
                 quantity       = luckyStoneCount
             });
         if (protectionStoneCount > 0)
             stones.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = 9,
-                itemCode       = "Đá Bảo Vệ",
-                iconId         = GetIcon(9),
                 quantity       = protectionStoneCount
             });
 
@@ -154,10 +148,10 @@ public class AutoEquipDebugger : MonoBehaviour
 
         var stones = new APIClient.AddInventoryItemRequest[]
         {
-            new APIClient.AddInventoryItemRequest { itemTemplateId = 17, itemCode = "Linh Thạch Sơ Cấp",     iconId = GetIcon(17), quantity = geneStoneCount },
-            new APIClient.AddInventoryItemRequest { itemTemplateId = 18, itemCode = "Linh Thạch Trung Cấp",  iconId = GetIcon(18), quantity = geneStoneCount },
-            new APIClient.AddInventoryItemRequest { itemTemplateId = 19, itemCode = "Linh Thạch Cao Cấp",    iconId = GetIcon(19), quantity = geneStoneCount },
-            new APIClient.AddInventoryItemRequest { itemTemplateId = 20, itemCode = "Linh Thạch Thượng Cấp", iconId = GetIcon(20), quantity = geneStoneCount },
+            new APIClient.AddInventoryItemRequest { itemTemplateId = 17, quantity = geneStoneCount },
+            new APIClient.AddInventoryItemRequest { itemTemplateId = 18, quantity = geneStoneCount },
+            new APIClient.AddInventoryItemRequest { itemTemplateId = 19, quantity = geneStoneCount },
+            new APIClient.AddInventoryItemRequest { itemTemplateId = 20, quantity = geneStoneCount },
         };
 
         bool done = false;
@@ -226,15 +220,12 @@ public class AutoEquipDebugger : MonoBehaviour
                 continue;
             }
 
-            string icon = tmpl.idIcon.ToString();
             toAdd.Add(new APIClient.AddInventoryItemRequest
             {
                 itemTemplateId = tmpl.id,
-                itemCode       = tmpl.name,
-                iconId         = icon,
                 quantity       = quantityPerItem
             });
-            Debug.Log($"[AutoEquipDebugger] Sẽ thêm: [{tmpl.name}] id={tmpl.id} type={equipType} icon={icon}");
+            Debug.Log($"[AutoEquipDebugger] Sẽ thêm: [{tmpl.name}] id={tmpl.id} type={equipType}");
         }
 
         if (toAdd.Count == 0)

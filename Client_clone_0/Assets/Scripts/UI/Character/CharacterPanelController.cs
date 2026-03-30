@@ -133,6 +133,17 @@ public class CharacterPanelController : MonoBehaviour
     public void Hide() => panelRoot.SetActive(false);
 
     /// <summary>
+    /// Hiện panel nhân vật và chuyển thẳng vào tab Trang Bị (index 1).
+    /// Gọi từ BlacksmithTabPanel khi bấm tab "Trang Bị".
+    /// </summary>
+    public void ShowEquipmentTab()
+    {
+        if (panelRoot != null) panelRoot.SetActive(true);
+        if (contentRoot != null && contentRoot != panelRoot) contentRoot.SetActive(true);
+        SwitchTab(1);
+    }
+
+    /// <summary>
     /// Chỉ hiện phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
     /// Dùng bởi InformationPanelController khi bấm BtnThongTin.
     /// </summary>

@@ -328,10 +328,10 @@ public class InventoryNetworkBridge : MonoBehaviour
     {
         Debug.Log("==================== [InventoryNetworkBridge] START() ĐƯỢC GỌI! ====================");
         
-        // Tìm InventoryUI nếu chưa gán
+        // Tìm InventoryUI nếu chưa gán — includeInactive=true vì panel thường bị ẩn khi Start()
         if (inventoryUI == null)
         {
-            inventoryUI = FindObjectOfType<InventoryUI>();
+            inventoryUI = FindObjectOfType<InventoryUI>(true);
             if (inventoryUI == null)
             {
                 Debug.LogWarning("[InventoryNetworkBridge] Không tìm thấy InventoryUI trong scene!");
@@ -762,7 +762,7 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// <summary>
     /// Lấy playerId hiện tại từ GameManager hoặc PlayerPrefs
     /// </summary>
-    private int GetCurrentPlayerId()
+    public int GetCurrentPlayerId()
     {
         int playerId = 0;
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())

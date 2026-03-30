@@ -19,7 +19,11 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
 
     private void Awake()
     {
-        enemyHealth = GetComponent<NetworkEnemyHealth>();
+        // Lấy NetworkEnemyHealth từ root enemy, không lấy từ chính object này
+        // (EnemyHealthBarSpawner có thể nằm trên HP bar canvas child, tránh lấy nhầm component ở đó)
+        enemyHealth = transform.root.GetComponent<NetworkEnemyHealth>();
+        if (enemyHealth == null)
+            enemyHealth = GetComponentInParent<NetworkEnemyHealth>();
     }
 
     public override void OnNetworkSpawn()
@@ -86,6 +90,15 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
             return;
         }
 
+        // ⭐ Nếu đã có EnemyHealthBar trên cùng object (HP bar canvas baked-in vào enemy prefab),
+        // tái sử dụng thay vì spawn thêm — tránh xuất hiện 2 thanh HP bar
+        EnemyHealthBar existingBar = GetComponent<EnemyHealthBar>();
+        if (existingBar != null)
+        {
+            existingBar.Setup(enemyHealth, transform.root);
+            return;
+        }
+
         // Spawn health bar như child của enemy
         // Lưu scale và size từ prefab TRƯỚC KHI spawn (để preserve)
         Vector3 prefabScale = healthBarPrefab.transform.localScale;
@@ -117,7 +130,7 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         EnemyHealthBar healthBarComponent = healthBarInstance.GetComponent<EnemyHealthBar>();
         if (healthBarComponent != null)
         {
-            healthBarComponent.Setup(enemyHealth, transform);
+            healthBarComponent.Setup(enemyHealth, transform.root);
             // Debug.Log($"[EnemyHealthBarSpawner] Health bar spawned for {gameObject.name}");
         }
         else

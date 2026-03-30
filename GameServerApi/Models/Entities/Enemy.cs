@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace GameServerApi.Models
 {
@@ -26,34 +26,9 @@ namespace GameServerApi.Models
         public string? ElementType { get; set; }
         public string? EnemyType { get; set; }
 
-        // Khang nguyen to (0-100%) - tu LangLa: khangHoa, khangThuy...
-        public int KhangHoa { get; set; } = 0;
-        public int KhangThuy { get; set; } = 0;
-        public int KhangTho { get; set; } = 0;
-        public int KhangMoc { get; set; } = 0;
-        public int KhangKim { get; set; } = 0;
-        public int KhangPhong { get; set; } = 0;
-
-        // Tang sat thuong khi tan cong nhan vat nguyen to tuong ung (%)
-        // Tu LangLa: tangDameLenHoa, tangDameLenThuy...
-        public int TangDameHoa { get; set; } = 0;
-        public int TangDameThuy { get; set; } = 0;
-        public int TangDameTho { get; set; } = 0;
-        public int TangDameMoc { get; set; } = 0;
-        public int TangDameKim { get; set; } = 0;
-        public int TangDamePhong { get; set; } = 0;
-
-        // Chi so dac biet
-        public int HpRegenPerSec { get; set; } = 0;  // LangLa: HoiHp
-        public int EvasionRate { get; set; } = 0;     // LangLa: NeTranh (0-100%)
-        public int CounterRate { get; set; } = 0;     // LangLa: PhanDon (0-100%)
-
         // Boss only
         /// <summary>JSON ky nang boss: [{"skill_id":"FIRE_BREATH","damage_multiplier":2.5,"cooldown_sec":8,"aoe":false}]</summary>
         public string? SkillsJson { get; set; }
-
-        /// <summary>JSON giai doan boss: [{"hp_pct_threshold":50,"action":"summon","mob_id":6,"mob_count":2}]</summary>
-        public string? PhasesJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

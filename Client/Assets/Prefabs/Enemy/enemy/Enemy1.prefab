@@ -96,7 +96,6 @@ GameObject:
   - component: {fileID: 3575548799258533928}
   - component: {fileID: 5048159133175404825}
   - component: {fileID: 680814825976844875}
-  - component: {fileID: 8336499826987306257}
   - component: {fileID: 6609937226400778080}
   - component: {fileID: 9054956945427330979}
   - component: {fileID: 2678882230517900661}
@@ -392,27 +391,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &8336499826987306257
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4006840501700251420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ee9569b8119cde4f92fc126f0b70f4a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dropItems:
-  - itemData: {fileID: 11400000, guid: 1f64964ac8fa0c44c86f0f74daaaecc8, type: 2}
-    dropRate: 100
-    minQuantity: 1
-    maxQuantity: 2
-  itemPickupPrefab: {fileID: 8692212924319202129, guid: 1dc4833df1dacc54bb566191ed13b6db, type: 3}
-  dropForce: 3
-  dropSpread: 1
-  autoPickupRange: 3
 --- !u!114 &6609937226400778080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -448,7 +426,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dropItems: []
-  itemPickupPrefab: {fileID: 0}
+  itemPickupPrefab: {fileID: 6871831055281633949, guid: 7bc62197cc348e744a9ac3b4622752d7, type: 3}
   dropForce: 3
   dropSpread: 1
   autoPickupRange: 3
@@ -676,9 +654,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2478416576691095722}
-    - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1951611436286590977}
     - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       insertIndex: -1
@@ -692,29 +667,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
   m_PrefabInstance: {fileID: 30774136887136600}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2478416576691095722
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 235540465479565718}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 786184227
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!114 &1951611436286590977
 MonoBehaviour:
   m_ObjectHideFlags: 0

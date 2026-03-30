@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameServerApi.Data;
@@ -6,6 +6,7 @@ using GameServerApi.Models;
 using GameServerApi.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GameServerApi.Controllers
 {
@@ -83,10 +84,15 @@ namespace GameServerApi.Controllers
     public class MapController : ControllerBase
     {
         private readonly GameDbContext _db;
+        private readonly IMemoryCache  _cache;
 
-        public MapController(GameDbContext db)
+        // Thời gian cache spawn-config — tránh gọi DB liên tục mỗi lần host join map
+        private static readonly TimeSpan SpawnConfigCacheTtl = TimeSpan.FromMinutes(5);
+
+        public MapController(GameDbContext db, IMemoryCache cache)
         {
-            _db = db;
+            _db    = db;
+            _cache = cache;
         }
 
         /// <summary>
@@ -351,6 +357,176 @@ namespace GameServerApi.Controllers
             MapHostRegistry.Heartbeat(req.MapId, req.PlayerId);
             return Ok(new { success = true });
         }
+
+        // ──────────────────────────────────────────────────────────────────
+        //  Spawn Config — JSON-based enemy spawn + drop configuration
+        // ──────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// GET /api/map/{mapId}/spawn-config
+        /// Lấy cấu hình spawn enemy và tỉ lệ drop item cho map.
+        /// Unity host gọi endpoint này khi scene load để fetch toàn bộ spawn data.
+        ///
+        /// Response:
+        /// {
+        ///   "map_id": 0,
+        ///   "spawns": [{enemy_id, hp, exp, cx, cy, is_boss, count, respawn_time}, ...],
+        ///   "drops":  [{enemy_id, items:[{item_id, rate, qty_min, qty_max}]}, ...]
+        /// }
+        ///
+        /// Nếu chưa có config → trả về spawns:[], drops:[] (không lỗi).
+        /// Host có thể fallback sang endpoint /enemyspawn/{mapId}/spawns cũ.
+        /// </summary>
+        [HttpGet("{mapId}/spawn-config")]
+        public async Task<IActionResult> GetSpawnConfig(int mapId)
+        {
+            // —— Hit cache trước ——
+            string cacheKey = $"spawn_config_{mapId}";
+            if (_cache.TryGetValue(cacheKey, out object? cached))
+                return Ok(cached);
+
+            var config = await _db.MapSpawnConfigs
+                .FirstOrDefaultAsync(c => c.MapId == mapId);
+
+            if (config == null)
+            {
+                var empty = new
+                {
+                    map_id       = mapId,
+                    spawns       = Array.Empty<object>(),
+                    drops        = Array.Empty<object>(),
+                    enemy_skills = Array.Empty<object>()
+                };
+                // Cache empty result ngắn hơn (30 giây) để tự refresh khi admin thêm data
+                _cache.Set(cacheKey, empty, TimeSpan.FromSeconds(30));
+                return Ok(empty);
+            }
+
+            // Deserialize JSONs để trả về đã parse (tránh double-encode string)
+            object spawnsObj;
+            object dropsObj;
+            try { spawnsObj = JsonSerializer.Deserialize<object>(config.SpawnJson) ?? Array.Empty<object>(); }
+            catch (JsonException) { spawnsObj = Array.Empty<object>(); }
+
+            try { dropsObj = JsonSerializer.Deserialize<object>(config.DropJson) ?? Array.Empty<object>(); }
+            catch (JsonException) { dropsObj = Array.Empty<object>(); }
+
+            // Lấy skills từ bảng enemy cho tất cả enemy_id có mặt trong spawn_json.
+            var enemySkillsObj = await BuildEnemySkillsResponseAsync(config.SpawnJson);
+
+            var result = new
+            {
+                map_id       = config.MapId,
+                spawns       = spawnsObj,
+                drops        = dropsObj,
+                enemy_skills = enemySkillsObj
+            };
+
+            // Lưu vào cache
+            _cache.Set(cacheKey, result, SpawnConfigCacheTtl);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Parse spawn_json để lấy unique enemy_id, sau đó query bảng enemy lấy
+        /// base_damage, element_type, skills_json cho từng loại quái.
+        /// </summary>
+        private async Task<object[]> BuildEnemySkillsResponseAsync(string spawnJson)
+        {
+            // Lấy unique enemy_ids từ spawn_json
+            var enemyIds = new HashSet<int>();
+            try
+            {
+                using var doc = JsonDocument.Parse(spawnJson);
+                foreach (var elem in doc.RootElement.EnumerateArray())
+                {
+                    if (elem.TryGetProperty("enemy_id", out var idProp)
+                        && idProp.TryGetInt32(out int eid) && eid > 0)
+                    {
+                        enemyIds.Add(eid);
+                    }
+                }
+            }
+            catch (JsonException) { return Array.Empty<object>(); }
+
+            if (enemyIds.Count == 0) return Array.Empty<object>();
+
+            var rows = await _db.Enemies
+                .Where(e => enemyIds.Contains(e.EnemyId))
+                .ToListAsync();
+
+            return rows.Select(e => (object)new
+            {
+                enemy_id     = e.EnemyId,
+                enemy_name   = e.EnemyName,   // ← thêm để client hiển thị đúng tên
+                base_damage  = e.BaseDamage,
+                element_type = e.ElementType ?? "None",
+                // skills_json được parse sẵn để client không cần double-decode
+                skills       = ParseJsonOrEmpty(e.SkillsJson)
+            }).ToArray();
+        }
+
+        private static object ParseJsonOrEmpty(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return Array.Empty<object>();
+            try { return JsonSerializer.Deserialize<object>(json) ?? Array.Empty<object>(); }
+            catch (JsonException) { return Array.Empty<object>(); }
+        }
+
+        /// <summary>
+        /// PUT /api/map/{mapId}/spawn-config
+        /// Cập nhật cấu hình spawn JSON cho map (admin/tool use).
+        /// Body: { spawn_json: "...", drop_json: "..." }
+        /// </summary>
+        [HttpPut("{mapId}/spawn-config")]
+        public async Task<IActionResult> UpsertSpawnConfig(int mapId,
+            [FromBody] SpawnConfigUpsertRequest req)
+        {
+            // Validate JSON strings trước khi lưu
+            if (!IsValidJson(req.SpawnJson))
+                return BadRequest(new { message = "spawn_json không hợp lệ." });
+            if (!IsValidJson(req.DropJson))
+                return BadRequest(new { message = "drop_json không hợp lệ." });
+
+            var mapExists = await _db.MapConfigs.AnyAsync(m => m.MapId == mapId);
+            if (!mapExists)
+                return NotFound(new { message = $"Map {mapId} không tồn tại trong map_config." });
+
+            var existing = await _db.MapSpawnConfigs
+                .FirstOrDefaultAsync(c => c.MapId == mapId);
+
+            if (existing == null)
+            {
+                _db.MapSpawnConfigs.Add(new Models.Entities.MapSpawnConfig
+                {
+                    MapId     = mapId,
+                    SpawnJson = req.SpawnJson,
+                    DropJson  = req.DropJson,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existing.SpawnJson = req.SpawnJson;
+                existing.DropJson  = req.DropJson;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            // Xóa cache để lần đọc tiếp theo lấy data mới từ DB
+            _cache.Remove($"spawn_config_{mapId}");
+
+            return Ok(new { success = true, map_id = mapId });
+        }
+
+        private static bool IsValidJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return false;
+            try { JsonSerializer.Deserialize<object>(json); return true; }
+            catch (JsonException) { return false; }
+        }
     }
 
     public class TravelRequest
@@ -383,6 +559,12 @@ namespace GameServerApi.Controllers
     {
         [JsonPropertyName("map_id")]    public int MapId    { get; set; }
         [JsonPropertyName("player_id")] public int PlayerId { get; set; }
+    }
+
+    public class SpawnConfigUpsertRequest
+    {
+        [JsonPropertyName("spawn_json")] public string SpawnJson { get; set; } = "[]";
+        [JsonPropertyName("drop_json")]  public string DropJson  { get; set; } = "[]";
     }
 }
 

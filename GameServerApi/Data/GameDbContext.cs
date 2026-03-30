@@ -32,6 +32,7 @@ namespace GameServerApi.Data
         public DbSet<MapPortal>                MapPortals               => Set<MapPortal>();
         public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
         public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
+        public DbSet<MapSpawnConfig>           MapSpawnConfigs          => Set<MapSpawnConfig>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -123,23 +124,7 @@ namespace GameServerApi.Data
                 entity.Property(e => e.DropItemsJson).HasColumnName("drop_items_json");
                 entity.Property(e => e.ElementType).HasColumnName("element_type");
                 entity.Property(e => e.EnemyType).HasColumnName("enemy_type");
-                entity.Property(e => e.KhangHoa).HasColumnName("khang_hoa");
-                entity.Property(e => e.KhangThuy).HasColumnName("khang_thuy");
-                entity.Property(e => e.KhangTho).HasColumnName("khang_tho");
-                entity.Property(e => e.KhangMoc).HasColumnName("khang_moc");
-                entity.Property(e => e.KhangKim).HasColumnName("khang_kim");
-                entity.Property(e => e.KhangPhong).HasColumnName("khang_phong");
-                entity.Property(e => e.TangDameHoa).HasColumnName("tang_dame_hoa");
-                entity.Property(e => e.TangDameThuy).HasColumnName("tang_dame_thuy");
-                entity.Property(e => e.TangDameTho).HasColumnName("tang_dame_tho");
-                entity.Property(e => e.TangDameMoc).HasColumnName("tang_dame_moc");
-                entity.Property(e => e.TangDameKim).HasColumnName("tang_dame_kim");
-                entity.Property(e => e.TangDamePhong).HasColumnName("tang_dame_phong");
-                entity.Property(e => e.HpRegenPerSec).HasColumnName("hp_regen_per_sec");
-                entity.Property(e => e.EvasionRate).HasColumnName("evasion_rate");
-                entity.Property(e => e.CounterRate).HasColumnName("counter_rate");
                 entity.Property(e => e.SkillsJson).HasColumnName("skills_json");
-                entity.Property(e => e.PhasesJson).HasColumnName("phases_json");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             });
@@ -415,6 +400,18 @@ namespace GameServerApi.Data
                 entity.Property(d => d.QtyMax).HasColumnName("qty_max");
                 entity.Property(d => d.IsActive).HasColumnName("is_active");
                 entity.HasIndex(d => new { d.MapId, d.EnemyId, d.ItemId }).IsUnique();
+            });
+
+            modelBuilder.Entity<MapSpawnConfig>(entity =>
+            {
+                entity.ToTable("map_spawn_config");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.MapId).HasColumnName("map_id");
+                entity.Property(e => e.SpawnJson).HasColumnName("spawn_json");
+                entity.Property(e => e.DropJson).HasColumnName("drop_json");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.HasIndex(e => e.MapId).IsUnique();
             });
 
             // map_zone_config đã bị xóa — zone assignment xử lý trong Unity Inspector

@@ -15,8 +15,11 @@ public class EnemyProjectile : MonoBehaviour
     [Tooltip("Layer của player (để check collision)")]
     public LayerMask playerLayer = 1 << 6; // Layer 6 = Player (mặc định)
 
-    [Tooltip("Có tự hủy sau khi va chạm không")]
+    [Tooltip("Có tự hủy sau khi va chạm với player không")]
     public bool destroyOnHit = true;
+
+    [Tooltip("Có tự hủy khi chạm ground/wall không (mặc định false để projectile bay qua sàn)")]
+    public bool destroyOnGround = false;
 
     private bool hasHit = false;
 
@@ -50,10 +53,10 @@ public class EnemyProjectile : MonoBehaviour
                 }
             }
         }
-        // Nếu va chạm với ground/wall, hủy projectile
+        // Nếu va chạm với ground/wall, chỉ hủy nếu destroyOnGround = true
         else if (collision.CompareTag("Ground") || collision.CompareTag("Wall"))
         {
-            if (destroyOnHit)
+            if (destroyOnGround)
             {
                 Destroy(gameObject);
             }

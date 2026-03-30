@@ -44,7 +44,15 @@ public class PlayerCombat : MonoBehaviour
 
     private void Start()
     {
-        // Create attack point if not assigned
+        // Fallback: if the mask wasn't set in the Inspector, default to the "Enemy" layer.
+        if (enemyLayers.value == 0)
+        {
+            enemyLayers = LayerMask.GetMask("Enemy");
+            Debug.Log("[PlayerCombat] enemyLayers was 0, automatically set to 'Enemy' layer mask.");
+        }
+        Debug.Log($"[PlayerCombat] enemyLayers mask value: {enemyLayers.value}");
+
+        // Create attack point if not assigned in Inspector
         if (attackPoint == null)
         {
             GameObject attackPointObj = new GameObject("AttackPoint");
@@ -131,7 +139,7 @@ public class PlayerCombat : MonoBehaviour
 
         PlayerStats stats = controller.stats;
         if (stats == null) return;
-
+        int damage = stats.baseDamage; // Use base damage for melee attacks
         Debug.Log("Player attacks!");
 
         // Play attack animation
@@ -142,29 +150,32 @@ public class PlayerCombat : MonoBehaviour
 
         // Detect enemies in range
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
-
-        // Damage enemies
-        int damage = stats.baseDamage; // Lấy damage từ PlayerStats
+        Debug.Log($"[PlayerCombat] Detected {hitEnemies.Length} enemies in range.");
+        foreach (var e in hitEnemies)
+        {
+            Debug.Log($"[PlayerCombat] Hit candidate: {e.name}, tag={e.tag}, layer={LayerMask.LayerToName(e.gameObject.layer)}");
+        }
         foreach (Collider2D enemy in hitEnemies)
         {
             Debug.Log($"Hit {enemy.name} for {damage} damage");
             
             // Try to damage enemy - Ưu tiên dùng NetworkEnemyHealth (network sync)
-            var networkEnemyHealth = enemy.GetComponent<NetworkEnemyHealth>();
+            // Dùng GetComponentInParent để tìm được khi collider nằm ở child object
+            var networkEnemyHealth = enemy.GetComponentInParent<NetworkEnemyHealth>();
             if (networkEnemyHealth != null)
             {
                 // Gây damage từ baseDamage trong PlayerStats (tự động gọi ServerRpc)
                 networkEnemyHealth.TakeDamage(damage);
-                Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.name} (NetworkEnemyHealth)");
+                Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (NetworkEnemyHealth)");
             }
             else
             {
                 // Fallback: Dùng EnemyHealth cũ (không network)
-                var enemyHealth = enemy.GetComponent<EnemyHealth>();
+                var enemyHealth = enemy.GetComponentInParent<EnemyHealth>();
                 if (enemyHealth != null)
                 {
                     enemyHealth.TakeDamage(damage);
-                    Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.name} (EnemyHealth - fallback)");
+                    Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (EnemyHealth - fallback)");
                 }
             }
         }

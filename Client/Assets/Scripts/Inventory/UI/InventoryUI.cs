@@ -306,6 +306,80 @@ public class InventoryUI : MonoBehaviour
         _itemDetailPanelInstance?.Hide();
     }
 
+    // ═══════════════════════════════════════════════════════
+    // STONE / ITEM SELECT MODE  (dùng cho cửa sổ Thợ Rèn)
+    // ═══════════════════════════════════════════════════════
+
+    private bool _inSelectMode    = false;
+    private int  _selectFilterId  = 0;    // lọc theo item_template.id (0 = không filter)
+    private int  _selectFilterType= 0;    // lọc theo item type (0 = không filter)
+    private System.Action<InventorySlotDto> _selectCallback;
+
+    /// <summary>
+    /// Vào chế độ chọn item: các ô khớp filter sẽ hiện nút "Chọn",
+    /// các ô khác bị mờ.
+    /// </summary>
+    public void EnterItemSelectMode(int filterById = 0, int filterByType = 0,
+                                    System.Action<InventorySlotDto> callback = null)
+    {
+        _inSelectMode     = true;
+        _selectFilterId   = filterById;
+        _selectFilterType = filterByType;
+        _selectCallback   = callback;
+        ApplySelectModeToSlots();
+    }
+
+    /// <summary>Thoát khỏi chế độ chọn, khôi phục UI bình thường.</summary>
+    public void ExitItemSelectMode()
+    {
+        _inSelectMode     = false;
+        _selectFilterId   = 0;
+        _selectFilterType = 0;
+        _selectCallback   = null;
+        ApplySelectModeToSlots();
+    }
+
+    private void ApplySelectModeToSlots()
+    {
+        if (slotUIs == null) return;
+        foreach (var slotUI in slotUIs)
+        {
+            if (slotUI == null) continue;
+            var data = slotUI.GetCurrentData();
+
+            if (!_inSelectMode)
+            {
+                slotUI.SetSelectMode(false, false, null);
+                continue;
+            }
+
+            bool match = false;
+            if (data != null && data.quantity > 0)
+            {
+                if (_selectFilterId > 0)
+                    match = data.id == _selectFilterId;
+                else if (_selectFilterType > 0)
+                {
+                    var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(data.id);
+                    match = tmpl != null && tmpl.type == _selectFilterType;
+                }
+                else
+                    match = true;
+            }
+
+            slotUI.SetSelectMode(
+                inSelectMode: true,
+                canSelect:    match,
+                onSelect:     match ? () => OnSelectModeSlotClicked(data) : (System.Action)null
+            );
+        }
+    }
+
+    private void OnSelectModeSlotClicked(InventorySlotDto data)
+    {
+        _selectCallback?.Invoke(data);
+    }
+
     private void OnDestroy()
     {
         // Unsubscribe events

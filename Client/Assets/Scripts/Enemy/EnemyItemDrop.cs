@@ -21,10 +21,6 @@ public class EnemyItemDrop : MonoBehaviour
     [Tooltip("Random spread khi drop")]
     [SerializeField] private float dropSpread = 1f;
 
-    [Header("Auto Pickup")]
-    [Tooltip("Bán kính tìm player gần nhất để tự động nhặt item ngay khi drop")]
-    [SerializeField] private float autoPickupRange = 3f;
-
     private NetworkEnemyHealth enemyHealth;
     private EnemyHealth standaloneEnemyHealth;
     private bool hasDropped = false;
@@ -81,7 +77,11 @@ public class EnemyItemDrop : MonoBehaviour
     /// </summary>
     private void DropItems()
     {
-        if (dropItems == null || dropItems.Count == 0) return;
+        if (dropItems == null || dropItems.Count == 0)
+        {
+            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: DropItems() — dropItems rỗng! Kiểm tra SetDropsFromConfig hoặc Inspector.");
+            return;
+        }
         if (itemPickupPrefab == null)
         {
             Debug.LogWarning("[EnemyItemDrop] ItemPickupPrefab chưa được gán!");
@@ -89,28 +89,34 @@ public class EnemyItemDrop : MonoBehaviour
         }
 
         Vector3 dropPosition = transform.position;
+        int droppedCount = 0;
 
         foreach (var dropItem in dropItems)
         {
-            if (dropItem.itemData == null) continue;
+            if (dropItem.itemId <= 0) continue;
 
-            // Random theo drop rate
-            float randomValue = Random.Range(0f, 100f);
-            if (randomValue > dropItem.dropRate) continue;
+            // Random theo drop rate (dropRate đã là 0–100)
+            float roll = Random.Range(0f, 100f);
+            bool passed = roll <= dropItem.dropRate;
+            Debug.Log($"[EnemyItemDrop] item_id={dropItem.itemId} rate={dropItem.dropRate:F1}% roll={roll:F1} → {(passed ? "DROP" : "miss")}");
+            if (!passed) continue;
 
-            // Random số lượng
+            // Random số lượng trong khoảng qty_min ~ qty_max
             int quantity = Random.Range(dropItem.minQuantity, dropItem.maxQuantity + 1);
             if (quantity <= 0) continue;
 
             // Spawn item pickup
-            SpawnItemPickup(dropItem.itemData, quantity, dropPosition);
+            SpawnItemPickup(dropItem.itemId, quantity, dropPosition);
+            droppedCount++;
         }
+
+        Debug.Log($"[EnemyItemDrop] {gameObject.name}: Dropped {droppedCount}/{dropItems.Count} entries (0 = tất cả miss rate check, bình thường).");
     }
 
     /// <summary>
-    /// Spawn ItemPickup tại vị trí
+    /// Spawn ItemPickup tại vị trí, dùng item_id trực tiếp (không cần ItemData ScriptableObject).
     /// </summary>
-    private void SpawnItemPickup(ItemData itemData, int quantity, Vector3 position)
+    private void SpawnItemPickup(int itemId, int quantity, Vector3 position)
     {
         // Random offset để item không spawn chồng lên nhau
         Vector3 spawnPosition = position + new Vector3(
@@ -119,99 +125,46 @@ public class EnemyItemDrop : MonoBehaviour
             0f
         );
 
-        GameObject itemObj;
-        
-        // Spawn network object nếu đang ở network mode
+        // Instantiate trước
+        GameObject itemObj = Instantiate(itemPickupPrefab, spawnPosition, Quaternion.identity);
+
+        // QUAN TRỌNG: Set item data TRƯỚC khi Spawn() để initial spawn packet gửi đến client
+        // đã có networkItemId đúng — tránh client nhận id=0 rồi mới nhận delta update.
+        ItemPickup itemPickup = itemObj.GetComponent<ItemPickup>();
+        if (itemPickup != null)
+        {
+            itemPickup.SetItemId(itemId, quantity);
+        }
+
+        // Spawn network object sau khi data đã được set
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
         {
-            itemObj = Instantiate(itemPickupPrefab, spawnPosition, Quaternion.identity);
             NetworkObject networkObject = itemObj.GetComponent<NetworkObject>();
             if (networkObject != null)
             {
                 networkObject.Spawn();
             }
         }
-        else
-        {
-            // Standalone mode
-            itemObj = Instantiate(itemPickupPrefab, spawnPosition, Quaternion.identity);
-        }
 
-        // Set item data
-        ItemPickup itemPickup = itemObj.GetComponent<ItemPickup>();
-        if (itemPickup != null)
-        {
-            itemPickup.SetItemData(itemData, quantity);
-        }
+        // Không dùng AddForce — item ở nguyên vị trí spawn (gravityScale=0)
+        // Nếu muốn item rơi xuống ground: bật gravityScale=1 trong ItemPickup prefab
+        // và đảm bảo ground có Collider2D không phải trigger.
 
-        // Add force để item bay ra
-        Rigidbody2D rb = itemObj.GetComponent<Rigidbody2D>();
-        if (rb != null)
-        {
-            Vector2 force = new Vector2(
-                Random.Range(-dropForce, dropForce),
-                Random.Range(dropForce * 0.5f, dropForce)
-            );
-            rb.AddForce(force, ForceMode2D.Impulse);
-        }
-
-        Debug.Log($"[EnemyItemDrop] Dropped {quantity}x {itemData.itemName} at {spawnPosition}");
-
-        // Tự động nhặt luôn cho player gần nhất (chỉ trên server)
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer && itemPickup != null)
-        {
-            AutoPickupForNearestPlayer(itemPickup, spawnPosition);
-        }
-    }
-
-    /// <summary>
-    /// Tìm player gần nhất quanh vị trí spawn và yêu cầu nhặt item ngay lập tức
-    /// </summary>
-    private void AutoPickupForNearestPlayer(ItemPickup itemPickup, Vector3 spawnPosition)
-    {
-        // Tìm tất cả player trong bán kính autoPickupRange
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(spawnPosition, autoPickupRange);
-
-        float closestDist = float.MaxValue;
-        NetworkObject closestPlayerNetObj = null;
-
-        foreach (var col in colliders)
-        {
-            if (!col.CompareTag("Player")) continue;
-
-            NetworkObject netObj = col.GetComponent<NetworkObject>();
-            if (netObj == null) continue;
-
-            float dist = Vector2.Distance(spawnPosition, col.transform.position);
-            if (dist < closestDist)
-            {
-                closestDist = dist;
-                closestPlayerNetObj = netObj;
-            }
-        }
-
-        if (closestPlayerNetObj != null)
-        {
-            // Gọi RequestPickup để server cho item vào túi player đó
-            itemPickup.RequestPickup(closestPlayerNetObj.NetworkObjectId);
-            Debug.Log($"[EnemyItemDrop] Auto-picked {itemPickup.name} for player {closestPlayerNetObj.NetworkObjectId}");
-        }
+        Debug.Log($"[EnemyItemDrop] Dropped {quantity}x item_id={itemId} at {spawnPosition}");
     }
 
     /// <summary>
     /// Thêm item vào drop list (dùng trong Inspector hoặc code)
     /// </summary>
-    public void AddDropItem(ItemData itemData, float dropRate, int minQuantity, int maxQuantity)
+    public void AddDropItem(int itemId, float dropRate, int minQuantity, int maxQuantity)
     {
         if (dropItems == null)
-        {
             dropItems = new List<DropItem>();
-        }
 
         dropItems.Add(new DropItem
         {
-            itemData = itemData,
-            dropRate = dropRate,
+            itemId      = itemId,
+            dropRate    = dropRate,
             minQuantity = minQuantity,
             maxQuantity = maxQuantity
         });
@@ -219,26 +172,29 @@ public class EnemyItemDrop : MonoBehaviour
 
     /// <summary>
     /// Ghi đè toàn bộ drop list bằng dữ liệu từ DB config (gọi bởi HostSpawnConfigLoader).
-    /// Nếu items rỗng hoặc ItemManager không tìm được ItemData → giữ list cũ trong Inspector.
+    /// Không cần ItemData ScriptableObject — lưu item_id trực tiếp.
     /// </summary>
     /// <param name="configItems">Danh sách DropItemEntry đã được validate bởi HostSpawnConfigLoader.</param>
     public void SetDropsFromConfig(System.Collections.Generic.List<DropItemEntry> configItems)
     {
-        if (configItems == null || configItems.Count == 0) return;
+        if (configItems == null || configItems.Count == 0)
+        {
+            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig nhận null/empty — enemy này không có drop config trong DB!");
+            return;
+        }
 
         var newList = new List<DropItem>();
         foreach (var entry in configItems)
         {
-            ItemData itemData = ResolveItemData(entry.item_id);
-            if (itemData == null)
+            if (entry.item_id <= 0)
             {
-                Debug.LogWarning($"[EnemyItemDrop] SetDropsFromConfig: item_id={entry.item_id} không tìm được ItemData → bỏ qua.");
+                Debug.LogWarning($"[EnemyItemDrop] SetDropsFromConfig: item_id={entry.item_id} không hợp lệ → bỏ qua.");
                 continue;
             }
 
             newList.Add(new DropItem
             {
-                itemData    = itemData,
+                itemId      = entry.item_id,
                 dropRate    = entry.rate * 100f,   // chuyển từ 0–1 sang 0–100%
                 minQuantity = entry.qty_min,
                 maxQuantity = entry.qty_max
@@ -248,32 +204,24 @@ public class EnemyItemDrop : MonoBehaviour
         if (newList.Count > 0)
         {
             dropItems = newList;
-            Debug.Log($"[EnemyItemDrop] SetDropsFromConfig: đã cập nhật {newList.Count} drop rules từ DB.");
+            Debug.Log($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig: đã cập nhật {newList.Count} drop rules từ DB.");
         }
-    }
-
-    /// <summary>Lấy ItemData theo ID từ ItemManager hoặc Resources fallback.</summary>
-    private ItemData ResolveItemData(int itemId)
-    {
-        if (ItemManager.Instance != null)
-            return ItemManager.Instance.GetItemData(itemId);
-
-        // Fallback khi ItemManager chưa sẵn sàng
-        foreach (var item in Resources.LoadAll<ItemData>("Items"))
-            if (item.itemID == itemId) return item;
-
-        return null;
+        else
+        {
+            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig: không có item_id hợp lệ nào trong config!");
+        }
     }
 }
 
 /// <summary>
-/// Struct để định nghĩa item drop
+/// Struct để định nghĩa item drop — dùng itemId thay vì ItemData ScriptableObject
+/// để hoạt động với mọi item trong DB mà không cần tạo asset thủ công.
 /// </summary>
 [System.Serializable]
 public class DropItem
 {
-    [Tooltip("ItemData của item sẽ drop")]
-    public ItemData itemData;
+    [Tooltip("ID của item (item_template.id trong DB)")]
+    public int itemId;
     
     [Tooltip("Tỷ lệ drop (0-100%)")]
     [Range(0f, 100f)]

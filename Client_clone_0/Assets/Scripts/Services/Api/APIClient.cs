@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -698,9 +698,10 @@ public class APIClient : MonoBehaviour
     public class AddInventoryItemRequest
     {
         public int itemTemplateId;
-        public string itemCode;
-        public string iconId;
         public int quantity;
+        // upgradeLevel và strOptions chỉ dùng khi thêm item trang bị/có nâng cấp
+        public int upgradeLevel;
+        public string strOptions;
     }
 
     [System.Serializable]
@@ -709,12 +710,12 @@ public class APIClient : MonoBehaviour
         public AddInventoryItemRequest[] items;
     }
 
-    public void AddItemsToInventory(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess = null, System.Action<string> onError = null)
+    public void AddItemsToInventory(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess = null, System.Action<string> onError = null, string jwtOverride = null)
     {
-        StartCoroutine(AddItemsToInventoryCoroutine(playerId, items, onSuccess, onError));
+        StartCoroutine(AddItemsToInventoryCoroutine(playerId, items, onSuccess, onError, jwtOverride));
     }
 
-    private System.Collections.IEnumerator AddItemsToInventoryCoroutine(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess, System.Action<string> onError)
+    private System.Collections.IEnumerator AddItemsToInventoryCoroutine(int playerId, AddInventoryItemRequest[] items, System.Action<string> onSuccess, System.Action<string> onError, string jwtOverride = null)
     {
         string url = $"{baseURL}/player/{playerId}/inventory/add";
         
@@ -732,9 +733,10 @@ public class APIClient : MonoBehaviour
             www.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
             
-            if (!string.IsNullOrEmpty(jwtToken))
+            string effectiveJwt = !string.IsNullOrEmpty(jwtOverride) ? jwtOverride : jwtToken;
+            if (!string.IsNullOrEmpty(effectiveJwt))
             {
-                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+                www.SetRequestHeader("Authorization", $"Bearer {effectiveJwt}");
             }
             
             yield return www.SendWebRequest();

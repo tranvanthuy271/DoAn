@@ -11,6 +11,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
+// In-memory cache: dùng cho spawn-config, enemy data (tránh gọi DB thừa)
+builder.Services.AddMemoryCache();
+
 // DbContext
 builder.Services.AddDbContext<GameDbContext>(options =>
 {

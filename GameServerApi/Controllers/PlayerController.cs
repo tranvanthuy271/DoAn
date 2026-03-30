@@ -487,6 +487,34 @@ namespace GameServerApi.Controllers
                     }
                 }
 
+                // NORMALIZE: Gán slotIndex cho các item cũ không có slotIndex
+                // (tránh tình trạng format cũ + mới trộn lẫn gây lỗi load)
+                {
+                    int maxSlotsNorm = 20;
+                    int autoSlot = 0;
+                    foreach (var item in inventory)
+                    {
+                        if (!item.ContainsKey("slotIndex"))
+                        {
+                            while (autoSlot < maxSlotsNorm &&
+                                   inventory.Any(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == autoSlot))
+                                autoSlot++;
+                            if (autoSlot < maxSlotsNorm)
+                            {
+                                item["slotIndex"] = autoSlot;
+                                autoSlot++;
+                            }
+                        }
+                        // Xóa các field dư thừa cũ
+                        item.Remove("iconId");
+                        item.Remove("isEquipped");
+                        item.Remove("itemCode");
+                        // Đảm bảo strOptions có mặt
+                        if (!item.ContainsKey("strOptions"))
+                            item["strOptions"] = "";
+                    }
+                }
+
                 // Parse items cần thêm
                 if (!body.TryGetProperty("items", out var itemsProp))
                 {
@@ -505,25 +533,55 @@ namespace GameServerApi.Controllers
                 foreach (var itemToAdd in itemsToAdd)
                 {
                     if (!itemToAdd.TryGetValue("itemTemplateId", out var templateIdElem) ||
-                        !itemToAdd.TryGetValue("itemCode", out var codeElem) ||
-                        !itemToAdd.TryGetValue("iconId", out var iconIdElem) ||
                         !itemToAdd.TryGetValue("quantity", out var qtyElem))
                     {
-                        continue; // Skip invalid item
+                        continue; // Skip: thiếu field bắt buộc
                     }
 
                     int itemTemplateId = templateIdElem.GetInt32();
-                    string itemCode = codeElem.GetString() ?? "";
-                    string iconId = iconIdElem.GetString() ?? "";
                     int quantity = qtyElem.GetInt32();
+                    if (itemTemplateId <= 0 || quantity <= 0) continue;
+
+                    // Đọc upgradeLevel và strOptions (tuỳ chọn)
+                    int addUpgradeLevel = 0;
+                    if (itemToAdd.TryGetValue("upgradeLevel", out var lvlElem))
+                        addUpgradeLevel = lvlElem.TryGetInt32(out var lv) ? lv : 0;
+
+                    string addStrOptions = "";
+                    if (itemToAdd.TryGetValue("strOptions", out var strOptElem))
+                        addStrOptions = strOptElem.GetString() ?? "";
+                    if (string.IsNullOrEmpty(addStrOptions))
+                        addStrOptions = GetDefaultStrOptions(itemTemplateId);
+
+                    // Kiểm tra isXepChong từ item_template
+                    var itemTemplate = await _db.ItemTemplates.FindAsync(itemTemplateId);
+                    bool isStackable = itemTemplate != null &&
+                        string.Equals(itemTemplate.IsXepChong, "True", StringComparison.OrdinalIgnoreCase);
+
+                    // Nếu stackable: thử gộp vào slot đã có
+                    if (isStackable && addUpgradeLevel == 0)
+                    {
+                        var existingSlot = inventory.FirstOrDefault(s =>
+                            s.ContainsKey("itemTemplateId") &&
+                            Convert.ToInt32(s["itemTemplateId"]) == itemTemplateId);
+
+                        if (existingSlot != null)
+                        {
+                            int currentQty = existingSlot.ContainsKey("quantity")
+                                ? Convert.ToInt32(existingSlot["quantity"]) : 0;
+                            existingSlot["quantity"] = currentQty + quantity;
+                            addedCount++;
+                            continue; // Không cần tạo slot mới
+                        }
+                    }
 
                     // Tìm slot trống
                     int emptySlotIndex = -1;
                     for (int i = 0; i < maxSlots; i++)
                     {
-                        var existingSlot = inventory.FirstOrDefault(s => 
+                        var existingSlot = inventory.FirstOrDefault(s =>
                             s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == i);
-                        
+
                         if (existingSlot == null || !existingSlot.ContainsKey("quantity") || Convert.ToInt32(existingSlot["quantity"]) == 0)
                         {
                             emptySlotIndex = i;
@@ -537,26 +595,12 @@ namespace GameServerApi.Controllers
                         continue;
                     }
 
-                    // Đọc upgradeLevel và strOptions (tuỳ chọn)
-                    int addUpgradeLevel = 0;
-                    if (itemToAdd.TryGetValue("upgradeLevel", out var lvlElem))
-                        addUpgradeLevel = lvlElem.TryGetInt32(out var lv) ? lv : 0;
-
-                    string addStrOptions = "";
-                    if (itemToAdd.TryGetValue("strOptions", out var strOptElem))
-                        addStrOptions = strOptElem.GetString() ?? "";
-                    if (string.IsNullOrEmpty(addStrOptions))
-                        addStrOptions = GetDefaultStrOptions(itemTemplateId);
-
-                    // Thêm item vào slot trống
+                    // Thêm item vào slot mới — chỉ lưu các field cần thiết, không lưu isEquipped/iconId
                     var newSlot = new Dictionary<string, object>
                     {
                         ["slotIndex"]      = emptySlotIndex,
                         ["itemTemplateId"] = itemTemplateId,
-                        ["itemCode"]       = itemCode,
-                        ["iconId"]         = iconId,
                         ["quantity"]       = quantity,
-                        ["isEquipped"]     = false,
                         ["upgradeLevel"]   = addUpgradeLevel,
                         ["strOptions"]     = addStrOptions
                     };
@@ -1727,6 +1771,48 @@ namespace GameServerApi.Controllers
             {
                 return BadRequest($"Lỗi khi phân bổ tiềm năng: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/gain-exp
+        /// Body: { "amount": 50 }
+        /// Cộng thêm EXP vào player (delta, không set tuyệt đối).
+        /// Tự động xử lý level-up nếu đủ EXP.
+        /// Được gọi bởi server khi player kill quái.
+        /// </summary>
+        [HttpPost("{playerId}/gain-exp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GainExp(int playerId, [FromBody] JsonElement body)
+        {
+            if (!body.TryGetProperty("amount", out var amtProp))
+                return BadRequest("Thiếu field 'amount'.");
+
+            if (!amtProp.TryGetInt32(out int amount) || amount <= 0)
+                return BadRequest("'amount' phải là số nguyên dương.");
+
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var info = player.GetInfoChar();
+            info.Experience += amount;
+
+            var (leveledUp, expAtCurrent, expForNext) = await ProcessLevelUpAsync(info);
+
+            player.SetInfoChar(info);
+            player.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            Console.WriteLine($"[PlayerCtrl] GainExp playerId={playerId} +{amount} EXP → total={info.Experience} level={info.Level} leveledUp={leveledUp}");
+
+            return Ok(new
+            {
+                success     = true,
+                experience  = info.Experience,
+                level       = info.Level,
+                leveled_up  = leveledUp,
+                exp_at_current_level = expAtCurrent,
+                exp_for_next_level   = expForNext
+            });
         }
     }
 }

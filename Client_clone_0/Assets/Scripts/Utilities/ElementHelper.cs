@@ -77,11 +77,33 @@ public static class ElementHelper
     public static int ToId(string englishKey)
     {
         if (string.IsNullOrEmpty(englishKey)) return -1;
+        
+        string key = englishKey.Trim();
+        
+        // 1. Check English Keys
         for (int i = 0; i < EnglishKeys.Length; i++)
         {
-            if (string.Equals(EnglishKeys[i], englishKey, System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(EnglishKeys[i], key, System.StringComparison.OrdinalIgnoreCase))
                 return i;
         }
+        
+        // 2. Check Vietnamese Names (e.g., Phong, Kim)
+        for (int i = 0; i < VietnameseNames.Length; i++)
+        {
+            if (string.Equals(VietnameseNames[i], key, System.StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+        
+        // 3. Xử lý trường hợp không dấu
+        if (string.Equals(key, "Moc", System.StringComparison.OrdinalIgnoreCase)) return 1;
+        if (string.Equals(key, "Thuy", System.StringComparison.OrdinalIgnoreCase)) return 2;
+        if (string.Equals(key, "Hoa", System.StringComparison.OrdinalIgnoreCase)) return 3;
+        if (string.Equals(key, "Tho", System.StringComparison.OrdinalIgnoreCase)) return 4;
+
+        // 4. Khả năng parse số
+        if (int.TryParse(key, out int numericId) && IsValid(numericId))
+            return numericId;
+
         return -1;
     }
 

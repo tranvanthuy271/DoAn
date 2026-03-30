@@ -90,15 +90,18 @@ public class NpcMenuUI : MonoBehaviour
         btnClose.onClick.AddListener(Close);
         if (btnTabShop) btnTabShop.onClick.AddListener(ShowShopTab);
         if (btnTabBag)  btnTabBag.onClick.AddListener(ShowBagTab);
-        if (shopPanel) shopPanel.SetActive(false);
-        if (bagPanel)  bagPanel.SetActive(false);
+        // Hide all sub-panels here so the guard runs on the first Open() call
+        // regardless of whether the GameObject was active at scene start.
+        if (mainPanel)   mainPanel.SetActive(false);
+        if (shopPanel)   shopPanel.SetActive(false);
+        if (bagPanel)    bagPanel.SetActive(false);
         if (feedbackText) feedbackText.gameObject.SetActive(false);
     }
 
     private void Start()
     {
         EnsureInitialized();
-        mainPanel.SetActive(false);
+        // mainPanel is hidden inside EnsureInitialized() so Start() has nothing extra to do.
     }
 
     // ── Open / Close ──────────────────────────────────────────────────
@@ -106,12 +109,37 @@ public class NpcMenuUI : MonoBehaviour
     /// <summary>Called by NpcInteraction.OpenMenuClientRpc.</summary>
     public void Open(NpcData npc, NpcInteraction interaction)
     {
-        EnsureInitialized();   // covers the inactive-at-start case
+        EnsureInitialized();   // hides mainPanel on first call; safe to call on inactive objects
         _currentInteraction = interaction;
         npcNameText.text  = npc.npc_name;
         dialogueText.text = !string.IsNullOrEmpty(npc.dialogue_text)
             ? npc.dialogue_text
             : "Xin chao, ta co the giup gi cho nguoi?";
+
+        // Blacksmith NPC: chỉ mở BlacksmithTabPanel — KHÔNG kích hoạt root NpcMenuUI
+        if (npc.npc_type == "blacksmith")
+        {
+            if (BlacksmithTabPanel.Instance != null)
+            {
+                BlacksmithTabPanel.Instance.Open(0);  // mặc định tab Cường Hóa
+            }
+            else if (UpgradePanel.Instance != null)
+            {
+                // Fallback nếu chưa có BlacksmithTabPanel trong scene
+                var bridge = FindObjectOfType<InventoryNetworkBridge>();
+                var inv = bridge != null ? bridge.CurrentInventory : null;
+                UpgradePanel.Instance.OpenEmpty(inv);
+            }
+            else
+            {
+                Debug.LogWarning("[NpcMenuUI] BlacksmithTabPanel.Instance và UpgradePanel.Instance đều chưa có trong scene!");
+            }
+            return; // không mở NPC menu thông thường
+        }
+
+        // Non-blacksmith: kích hoạt root và hiện mainPanel
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
         mainPanel.SetActive(true);
         ShowShopTab();
     }

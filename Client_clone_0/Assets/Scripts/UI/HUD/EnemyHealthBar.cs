@@ -34,18 +34,18 @@ public class EnemyHealthBar : MonoBehaviour
     [SerializeField] private bool hideWhenDead = true; // Ẩn khi chết
 
     private Camera mainCamera;
+    private bool _setupDone = false; // flag tránh double subscribe khi cả Setup() lẫn Start() đều chạy
     private Canvas canvas;
     private RectTransform rectTransform;
     private Vector2 preservedSize; // Lưu size ban đầu để preserve
 
     private void Awake()
     {
-        // Tìm enemy health nếu chưa gán (ưu tiên NetworkEnemyHealth)
-        // Tìm trong parent vì health bar canvas là child của enemy
+        // Luôn lấy NetworkEnemyHealth từ root enemy (tránh lấy nhầm component duplicate trên HP bar canvas)
+        // transform.root trả về đỉnh hierarchy (Enemy1), bỏ qua component cùng cấp với HP bar
+        networkEnemyHealth = transform.root.GetComponent<NetworkEnemyHealth>();
         if (networkEnemyHealth == null)
-        {
             networkEnemyHealth = GetComponentInParent<NetworkEnemyHealth>();
-        }
 
         // Fallback: Tìm EnemyHealth nếu không có NetworkEnemyHealth
         if (networkEnemyHealth == null && enemyHealth == null)
@@ -123,6 +123,10 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void Start()
     {
+        // Nếu Setup() đã được gọi từ EnemyHealthBarSpawner thì không subscribe lại (tránh double-call)
+        if (networkEnemyHealth != null && _setupDone) return;
+        if (enemyHealth != null && _setupDone) return;
+
         // Ưu tiên dùng NetworkEnemyHealth
         if (networkEnemyHealth != null)
         {
@@ -345,6 +349,7 @@ public class EnemyHealthBar : MonoBehaviour
             networkEnemyHealth.OnDeath.AddListener(OnEnemyDeath);
             UpdateHealthBar(networkEnemyHealth.GetCurrentHealth(), networkEnemyHealth.GetMaxHealth());
         }
+        _setupDone = true;
     }
 
     /// <summary>
@@ -371,5 +376,6 @@ public class EnemyHealthBar : MonoBehaviour
             enemyHealth.OnDeath.AddListener(OnEnemyDeath);
             UpdateHealthBar(enemyHealth.GetCurrentHealth(), enemyHealth.GetMaxHealth());
         }
+        _setupDone = true;
     }
 }

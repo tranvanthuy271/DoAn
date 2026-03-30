@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -159,8 +160,93 @@ public class ItemDetailPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// Ẩn panel chi tiết
+    /// Hiển thị chi tiết trang bị (EquipmentItemDto) kèm các chỉ số strOptions.
+    /// Gọi từ UpgradePanel khi click ô trang bị, bùa, hoặc nút "Xem TT".
     /// </summary>
+    public void ShowEquipmentItem(EquipmentItemDto item, List<OptionTemplateDto> optTemplates = null)
+    {
+        if (item == null) return;
+
+        var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(item.id);
+
+        // Icon
+        if (itemIcon != null && tmpl != null && IconDatabase.Instance != null)
+        {
+            var sp = IconDatabase.Instance.GetIcon(tmpl.idIcon.ToString());
+            itemIcon.sprite  = sp;
+            itemIcon.enabled = sp != null;
+        }
+        else if (itemIcon != null)
+        {
+            itemIcon.enabled = false;
+        }
+
+        // Tên + cấp nâng
+        if (itemNameText != null)
+        {
+            string n = tmpl != null ? tmpl.name : $"Item #{item.id}";
+            itemNameText.text = item.upgradeLevel > 0 ? $"{n}  +{item.upgradeLevel}" : n;
+        }
+
+        // Mô tả + chỉ số
+        if (itemDescriptionText != null)
+        {
+            var sb = new System.Text.StringBuilder();
+
+            if (tmpl != null)
+            {
+                if (tmpl.levelNeed > 0)
+                    sb.AppendLine($"<color=#ff6060>Yêu cầu cấp: {tmpl.levelNeed}</color>");
+
+                if (tmpl.gioiTinh == 0)
+                    sb.AppendLine("<color=#ff6060>Yêu cầu giới tính: Nam</color>");
+                else if (tmpl.gioiTinh == 1)
+                    sb.AppendLine("<color=#ff6060>Yêu cầu giới tính: Nữ</color>");
+
+                if (tmpl.idClass > 0)
+                {
+                    string[] elements = { "", "Hỏa", "Thủy", "Thổ", "Kim", "Mộc" };
+                    string elem = tmpl.idClass < elements.Length ? elements[tmpl.idClass] : tmpl.idClass.ToString();
+                    sb.AppendLine($"<color=#ff6060>Hệ: {elem}</color>");
+                }
+
+                if (tmpl.isLock)
+                    sb.AppendLine("Đã khóa");
+
+                if (!string.IsNullOrWhiteSpace(tmpl.detail))
+                {
+                    sb.AppendLine();
+                    sb.AppendLine(tmpl.detail);
+                }
+            }
+
+            // strOptions stats
+            if (!string.IsNullOrEmpty(item.strOptions))
+            {
+                if (sb.Length > 0) sb.AppendLine("───────────────");
+                var opts = EquippedOptionDisplay.ParseAll(item.strOptions);
+                foreach (var opt in opts)
+                {
+                    OptionTemplateDto ot = optTemplates?.Find(t => t.id == opt.optionId);
+                    string line = ot != null
+                        ? ot.BuildLabel(opt.value)
+                        : $"[{opt.optionId}] +{opt.value}";
+                    // Màu: trắng nếu active, xám nếu chưa đạt cấp
+                    bool active = ot == null || ot.IsActive(item.upgradeLevel);
+                    // TMP rich text không cần ở đây vì itemDescriptionText không set color per-line
+                    sb.AppendLine(line);
+                }
+            }
+
+            itemDescriptionText.text = sb.ToString().TrimEnd();
+        }
+
+        // Ẩn nút sử dụng (trang bị đang ở ô, không dùng được)
+        if (useButton != null) useButton.gameObject.SetActive(false);
+
+        gameObject.SetActive(true);
+        transform.SetAsLastSibling();
+    }
     public void Hide()
     {
         gameObject.SetActive(false);
