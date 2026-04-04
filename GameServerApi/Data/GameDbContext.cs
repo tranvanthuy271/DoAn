@@ -438,7 +438,9 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.MapId).IsUnique();
             });
 
-            // map_zone_config đã bị xóa — zone assignment xử lý trong Unity Inspector
+            // map_zone_config không còn là nguồn dữ liệu chính.
+            // Zone thường được Unity server tự sinh theo MapWorldConfig,
+            // còn zone riêng/phó bản tồn tại runtime trong memory.
 
             // ── Normalized player data tables ──────────────────────────────
             modelBuilder.Entity<PlayerEquipment>(entity =>

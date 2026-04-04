@@ -15,9 +15,11 @@ using TMPro;
 /// </summary>
 public class GameSceneNetworkInitializer : MonoBehaviour
 {
+    private const ushort ModernZoneServerPort = 7777;
+
     [Header("Server Config")]
     public string serverIP = "127.0.0.1";
-    public ushort serverPort = 2003;
+    public ushort serverPort = ModernZoneServerPort;
 
     [Header("UI Elements (Optional - cho Host)")]
     [SerializeField] private UnityEngine.UI.Button startHostButton;
@@ -63,17 +65,10 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         }
 
         // Setup server IP và port
+        serverIP = ResolveServerIp();
+        serverPort = ResolveServerPort();
         networkManager.serverIP = serverIP;
         networkManager.serverPort = serverPort;
-
-        // Đảm bảo có các component cần thiết cho Host
-        SetupHostComponents();
-
-        // Đăng ký authSenderPrefab nếu có
-        if (authSenderPrefab != null)
-        {
-            RegisterAuthSenderPrefab(authSenderPrefab);
-        }
 
         // Kiểm tra xem có cần tự động start client không
         CheckAutoStartClient();
@@ -334,7 +329,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     private void StartClientConnection()
     {
         Debug.Log($"[GameSceneNetworkInitializer] Starting CLIENT mode, connecting to {serverIP}:{serverPort}...");
-        Debug.Log("[GameSceneNetworkInitializer] After connection, auth will be sent via Named Message (CustomMessagingManager).");
+        Debug.Log("[GameSceneNetworkInitializer] Auth sẽ đi trong ConnectionData payload (JWT + mapId + zoneId).");
 
         // Connect to host - auth sẽ được gửi tự động qua Named Message trong OnClientConnected
         networkManager.ConnectToServer();
@@ -370,9 +365,22 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         // Debug.Log("[GameSceneNetworkInitializer] ===== STARTING HOST MODE =====");
         isHostMode = true;
 
+        SetupHostComponents();
+
+        if (authSenderPrefab != null)
+        {
+            RegisterAuthSenderPrefab(authSenderPrefab);
+        }
+
         // Đảm bảo ConnectionApprovalCallback đã được register
         StartCoroutine(StartHostAfterDelay());
     }
+
+    private string ResolveServerIp() =>
+        string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
+
+    private ushort ResolveServerPort() =>
+        serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;
 
     /// <summary>
     /// Button click: Start Client (manual)

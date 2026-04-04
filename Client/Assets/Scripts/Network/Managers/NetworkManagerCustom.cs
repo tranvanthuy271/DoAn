@@ -1,3 +1,4 @@
+using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Netcode.Transports.UTP;
@@ -11,14 +12,17 @@ using Unity.Collections;
 /// </summary>
 public class NetworkManagerCustom : MonoBehaviour
 {
+    private const ushort ModernZoneServerPort = 7777;
+
     [Header("Server Config")]
     public string serverIP = "127.0.0.1"; // localhost (cho client)
-    public ushort serverPort = 2003;
+    public ushort serverPort = ModernZoneServerPort;
 
     private const string AUTH_MESSAGE_NAME = "ClientAuth";
     private NetworkManager networkManager;
     private bool callbacksSubscribed = false;
     private bool authMessageHandlerRegistered = false;
+    private bool useConnectionApprovalPayload = true;
 
     void Start()
     {
@@ -71,9 +75,10 @@ public class NetworkManagerCustom : MonoBehaviour
         EnsureCallbacksSubscribed();
 
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
-        if (userId == 0)
+        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        if (string.IsNullOrWhiteSpace(token))
         {
-            Debug.LogError("[NetworkManagerCustom] USER_ID not found in PlayerPrefs! Cannot connect.");
+            Debug.LogError("[NetworkManagerCustom] JWT_TOKEN not found in PlayerPrefs! Cannot connect.");
             return;
         }
 
@@ -84,16 +89,27 @@ public class NetworkManagerCustom : MonoBehaviour
             return;
         }
 
-        transport.ConnectionData.Address = serverIP;
-        transport.ConnectionData.Port = serverPort;
+        string effectiveIp = ResolveServerIp();
+        ushort effectivePort = ResolveServerPort();
+        int mapId = ResolveInitialMapId();
+        int zoneId = ResolveInitialZoneId();
+        string payload = BuildConnectionPayload(token, mapId, zoneId);
 
-        Debug.Log($"[NetworkManagerCustom] ConnectToServer: callbacksSubscribed={callbacksSubscribed}, address={serverIP}:{serverPort}, userId={userId}");
+        transport.ConnectionData.Address = effectiveIp;
+        transport.ConnectionData.Port = effectivePort;
+        networkManager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(payload);
+
+        serverIP = effectiveIp;
+        serverPort = effectivePort;
+
+        Debug.Log($"[NetworkManagerCustom] ConnectToServer: callbacksSubscribed={callbacksSubscribed}, " +
+                  $"address={effectiveIp}:{effectivePort}, userId={userId}, mapId={mapId}, zoneId={zoneId}, tokenLength={token.Length}");
 
         try
         {
             if (networkManager.StartClient())
             {
-                Debug.Log($"[NetworkManagerCustom] ✓ StartClient() OK. Connecting to {serverIP}:{serverPort}");
+                Debug.Log($"[NetworkManagerCustom] ✓ StartClient() OK. Connecting to {effectiveIp}:{effectivePort} with approval payload.");
             }
             else
             {
@@ -104,6 +120,44 @@ public class NetworkManagerCustom : MonoBehaviour
         {
             Debug.LogError($"[NetworkManagerCustom] ✗ Exception in StartClient: {ex.Message}\n{ex.StackTrace}");
         }
+    }
+
+    private string ResolveServerIp() =>
+        string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
+
+    private ushort ResolveServerPort() =>
+        serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;
+
+    private static int ResolveInitialMapId()
+    {
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentMapId >= 0)
+            return ClientSceneController.Instance.CurrentMapId;
+
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            var playerData = GameManager.Instance.GetPlayerData();
+            if (playerData != null)
+                return playerData.map_id;
+        }
+
+        if (MapManager.Instance != null)
+            return MapManager.Instance.GetMapId();
+
+        return PlayerPrefs.GetInt("SelectedMapId", 0);
+    }
+
+    private static int ResolveInitialZoneId()
+    {
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentZoneId >= 0)
+            return ClientSceneController.Instance.CurrentZoneId;
+
+        return 0;
+    }
+
+    private static string BuildConnectionPayload(string token, int mapId, int zoneId)
+    {
+        string escapedToken = token.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        return $"{{\"token\":\"{escapedToken}\",\"mapId\":{mapId},\"zoneId\":{zoneId}}}";
     }
 
     /// <summary>
@@ -313,6 +367,12 @@ public class NetworkManagerCustom : MonoBehaviour
         }
         else if (networkManager != null && networkManager.IsClient && !networkManager.IsServer)
         {
+            if (useConnectionApprovalPayload)
+            {
+                Debug.Log($"[NetworkManagerCustom] Client-side: approved via ConnectionData payload for clientId {clientId}. Skipping legacy Named Message auth.");
+                return;
+            }
+
             // Client: Gửi auth NGAY LẬP TỨC qua Named Message (không cần đợi player spawn)
             Debug.Log($"[NetworkManagerCustom] Client-side: Sending auth immediately via Named Message for clientId {clientId}...");
             SendAuthToServer();

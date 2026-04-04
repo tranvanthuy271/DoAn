@@ -1617,7 +1617,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   serverIP: 127.0.0.1
-  serverPort: 2003
+  serverPort: 7777
 --- !u!1 &818936184
 GameObject:
   m_ObjectHideFlags: 0

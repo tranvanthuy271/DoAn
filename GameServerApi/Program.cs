@@ -110,6 +110,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
+// Game server (Unity) dùng X-Zone-Api-Key header thay JWT Bearer
+app.UseMiddleware<GameServerApi.Middleware.ZoneApiKeyMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

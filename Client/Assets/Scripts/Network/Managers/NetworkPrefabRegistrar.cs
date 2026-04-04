@@ -161,6 +161,12 @@ public class NetworkPrefabRegistrar : MonoBehaviour
     /// </summary>
     private void RegisterItemPickupPrefab(NetworkManager networkManager, ref int registeredCount)
     {
+        if (HasRegisteredPrefab(networkManager, prefab =>
+            prefab.name == "ItemPickup" || prefab.GetComponent<ItemPickup>() != null))
+        {
+            return;
+        }
+
         GameObject prefabToRegister = null;
 
         // 1. Thử dùng direct reference nếu đã được gán
@@ -218,6 +224,26 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         {
             Debug.LogWarning($"[NetworkPrefabRegistrar] ItemPickup prefab not found! Please assign it in Inspector or make sure ItemSpawner/EnemyItemDrop exists in scene.");
         }
+    }
+
+    private static bool HasRegisteredPrefab(NetworkManager networkManager, System.Predicate<GameObject> predicate)
+    {
+        var prefabsList = networkManager.NetworkConfig?.Prefabs;
+        if (prefabsList?.Prefabs == null)
+        {
+            return false;
+        }
+
+        foreach (var registeredPrefab in prefabsList.Prefabs)
+        {
+            GameObject prefab = registeredPrefab?.Prefab;
+            if (prefab != null && predicate(prefab))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

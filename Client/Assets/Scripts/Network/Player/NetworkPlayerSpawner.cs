@@ -45,6 +45,13 @@ public class NetworkPlayerSpawner : MonoBehaviour
 
     private void Awake()
     {
+        if (FindObjectOfType<MapWorldBootstrap>() != null)
+        {
+            Debug.Log("[NetworkPlayerSpawner] MapWorldBootstrap detected — disabling legacy player spawner.");
+            enabled = false;
+            return;
+        }
+
         // Debug.Log("[NetworkPlayerSpawner] Awake called!");
         
         // Singleton: Nếu đã có instance khác, destroy instance này
@@ -56,6 +63,8 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
         
         _instance = this;
+        if (transform.parent != null)
+            transform.SetParent(null, true);
         // Persist qua scene load — prefab references được gán trong GameScene Inspector
         DontDestroyOnLoad(gameObject);
         

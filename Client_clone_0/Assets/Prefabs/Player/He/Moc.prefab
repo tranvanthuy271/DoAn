@@ -62,6 +62,7 @@ GameObject:
   - component: {fileID: 1000000000000000008}
   - component: {fileID: 463542903263459331}
   - component: {fileID: -926568400030177891}
+  - component: {fileID: 529134805388067727}
   m_Layer: 8
   m_Name: Moc
   m_TagString: Player
@@ -639,6 +640,16 @@ MonoBehaviour:
     m_InternalValue: 5
   networkGeneTier:
     m_InternalValue: 1
+  networkGeneExpBonusPct:
+    m_InternalValue: 0
+  networkExpBonusPct:
+    m_InternalValue: 0
+  networkPhucBonusPct:
+    m_InternalValue: 0
+  networkAttackBonusPct:
+    m_InternalValue: 0
+  networkDefenseBonusPct:
+    m_InternalValue: 0
 --- !u!50 &6885856511105507158
 Rigidbody2D:
   serializedVersion: 4
@@ -832,6 +843,19 @@ MonoBehaviour:
         byte0059: 0
         byte0060: 0
         byte0061: 0
+--- !u!114 &529134805388067727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537112853871840549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5238a1e97c793d40aa05b8b4293d5da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _alwaysVisibleToServer: 1
 --- !u!1001 &8475817096867874760
 PrefabInstance:
   m_ObjectHideFlags: 0

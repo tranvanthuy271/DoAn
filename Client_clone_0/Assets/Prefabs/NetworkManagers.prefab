@@ -1,0 +1,135 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1000000000000000002}
+  - component: {fileID: 1000000000000000003}
+  - component: {fileID: 1000000000000000004}
+  - component: {fileID: 1000000000000000005}
+  m_Layer: 0
+  m_Name: NetworkManagers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1000000000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1000000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1932938421
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1000000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72126c660c792524ebf29f14a6bd9ea6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _transferCooldown: 2
+--- !u!114 &1000000000000000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 645865f0d5aa6bc42ae4a47d714c5bce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 11400000, guid: 8a132f0a3cfc5164eab9c1907044fdbb, type: 2}
+  _playerPrefabs:
+  - elementType: Fire
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 8479569071951265586, guid: 648217e7452ceb9489abf42181e52f90, type: 3}
+  - elementType: Water
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 6340084123535375091, guid: 05c6c343b1a6334499b0afe5a8db9218, type: 3}
+  - elementType: Earth
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 2438885394459664199, guid: d89dc45c28ed3ba4aaf48752209089e4, type: 3}
+  - elementType: Wood
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 8537112853871840549, guid: d3d69a88b184c404f823b3270e4676f7, type: 3}
+  - elementType: Metal
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 2093030462349691606, guid: 9436db06863aca84da30f665874f4586, type: 3}
+  - elementType: Wind
+    gender: He
+    isHybrid: 0
+    prefab: {fileID: 1497464214385531803, guid: dd93a9d7c4061974c870117ac97c5dd0, type: 3}
+  - elementType: Fire
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 516947175467335845, guid: 509e00b61e508064b9bfc44194928f38, type: 3}
+  - elementType: Water
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 5586504133544203253, guid: 0855a32aeaa1d9d48ae230e81e40cb64, type: 3}
+  - elementType: Earth
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 4132664463887209372, guid: 49116924f992fd34dad4c7eade48e63e, type: 3}
+  - elementType: Wood
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 580626100454965037, guid: c8b4d883366aadf43a7446056518ae74, type: 3}
+  - elementType: Metal
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 2182822885804579736, guid: 28eb6ee773e6df04cb0e19f8453b9b34, type: 3}
+  - elementType: Wind
+    gender: He
+    isHybrid: 1
+    prefab: {fileID: 6687994777118489187, guid: 65ed249b88156044e8654c5a842eaa5b, type: 3}
+  _dataLoadTimeout: 10

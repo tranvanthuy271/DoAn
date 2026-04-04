@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th4 04, 2026 lúc 08:58 AM
+-- Thời gian đã tạo: Th4 04, 2026 lúc 11:24 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -610,7 +610,7 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 (50, 'Lõi Đột Biến Kim', 'Lõi mang tinh hoa hệ Kim. Dùng để thực hiện Hybrid Fusion khi hệ phụ là Kim.', 'True', 2, 25, 4, 0, 50, 0, -1, 0, 0, 0),
 (51, 'Lõi Đột Biến Mộc', 'Lõi mang tinh hoa hệ Mộc. Dùng để thực hiện Hybrid Fusion khi hệ phụ là Mộc.', 'True', 2, 25, 5, 0, 50, 0, -1, 0, 0, 0),
 (52, 'Lõi Đột Biến Phong', 'Lõi mang tinh hoa hệ Phong. Dùng để thực hiện Hybrid Fusion khi hệ phụ là Phong.', 'True', 2, 25, 6, 0, 50, 0, -1, 0, 0, 0),
-(100, 'Mũ Da Nam', 'Mũ da cơ bản, thích hợp nam lính mới', 'False', 0, 0, 0, 10, 1, 0, -1, 0, 0, 0),
+(100, 'Mũ Da Nam', 'Mũ da cơ bản, thích hợp nam lính mới', 'False', 0, 0, 0, 118, 1, 0, -1, 0, 0, 0),
 (101, 'Mũ Sắt Nam', 'Mũ sắt bền, bảo vệ hiệu quả', 'False', 0, 0, 0, 119, 10, 0, -1, 0, 0, 0),
 (102, 'Mũ Thép Nam', 'Mũ thép vững chắc của chiến binh', 'False', 0, 0, 0, 120, 20, 0, -1, 0, 0, 0),
 (103, 'Mũ Chiến Binh Nam', 'Mũ cao cấp của chiến binh tinh nhuệ', 'False', 0, 0, 0, 121, 35, 0, -1, 0, 0, 0),
@@ -620,7 +620,7 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 (107, 'Mũ Ngọc Nữ', 'Mũ nạm ngọc quý, tăng cường ma lực', 'False', 1, 0, 0, 125, 20, 0, -1, 0, 0, 0),
 (108, 'Mũ Nữ Chiến Binh', 'Mũ chiến đấu cao cấp dành cho nữ', 'False', 1, 0, 0, 126, 35, 0, -1, 0, 0, 0),
 (109, 'Mũ Tinh Luyện Nữ', 'Mũ nữ tinh luyện bằng năng lượng tinh khiết', 'False', 1, 0, 0, 127, 50, 0, -1, 0, 0, 0),
-(110, 'Áo Da Nam', 'Áo da cơ bản', 'False', 0, 2, 0, 11, 1, 0, -1, 0, 0, 0),
+(110, 'Áo Da Nam', 'Áo da cơ bản', 'False', 0, 2, 0, 103, 1, 0, -1, 0, 0, 0),
 (111, 'Áo Sắt Nam', 'Áo giáp sắt rèn thủ công', 'False', 0, 2, 0, 104, 10, 0, -1, 0, 0, 0),
 (112, 'Áo Thép Nam', 'Áo giáp thép của lính tinh nhuệ', 'False', 0, 2, 0, 105, 20, 0, -1, 0, 0, 0),
 (113, 'Áo Chiến Binh Nam', 'Áo giáp cao cấp', 'False', 0, 2, 0, 106, 35, 0, -1, 0, 0, 0),
@@ -648,7 +648,7 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 (142, 'Nhẫn Vàng', 'Nhẫn vàng, tăng đáng kể HP và ATK', 'False', 2, 5, 0, 115, 20, 0, -1, 0, 0, 0),
 (143, 'Nhẫn Ma', 'Nhẫn ám ma, chứa sức mạnh tối thượng', 'False', 2, 5, 0, 115, 35, 0, -1, 0, 0, 0),
 (144, 'Nhẫn Huyền Thoại', 'Nhẫn huyền thoại, vượt qua mọi giới hạn', 'False', 2, 5, 0, 117, 50, 0, -1, 0, 0, 0),
-(150, 'Giày Da Nam', 'Giày da cơ bản', 'False', 0, 4, 0, 13, 1, 0, -1, 0, 0, 0),
+(150, 'Giày Da Nam', 'Giày da cơ bản', 'False', 0, 4, 0, 148, 1, 0, -1, 0, 0, 0),
 (151, 'Giày Sắt Nam', 'Giày sắt bảo vệ chân', 'False', 0, 4, 0, 148, 10, 0, -1, 0, 0, 0),
 (152, 'Giày Thép Nam', 'Giày thép vững chắc', 'False', 0, 4, 0, 149, 20, 0, -1, 0, 0, 0),
 (153, 'Giày Chiến Binh Nam', 'Giày cao cấp, tăng tốc độ', 'False', 0, 4, 0, 150, 35, 0, -1, 0, 0, 0),
@@ -881,108 +881,87 @@ INSERT INTO `npc_shop_item` (`id`, `npc_id`, `item_template_id`, `price_silver`,
 (10, 1, 121, 15000, 0, -1, 1),
 (11, 1, 122, 15000, 0, -1, 1),
 (12, 1, 161, 15000, 0, -1, 1),
--- NPC 5: Binh Khí – bán vũ khí theo hệ (type=1)
--- Kiếm Hỏa (idClass=1)
 (13, 5, 200, 1000, 0, -1, 1),
 (14, 5, 201, 5000, 0, -1, 10),
 (15, 5, 202, 15000, 0, -1, 20),
 (16, 5, 203, 50000, 0, -1, 35),
 (17, 5, 204, 150000, 0, -1, 50),
--- Gậy Thủy (idClass=2)
 (18, 5, 205, 1000, 0, -1, 1),
 (19, 5, 206, 5000, 0, -1, 10),
 (20, 5, 207, 15000, 0, -1, 20),
 (21, 5, 208, 50000, 0, -1, 35),
 (22, 5, 209, 150000, 0, -1, 50),
--- Ám Thổ (idClass=3)
 (23, 5, 210, 1000, 0, -1, 1),
 (24, 5, 211, 5000, 0, -1, 10),
 (25, 5, 212, 15000, 0, -1, 20),
 (26, 5, 213, 50000, 0, -1, 35),
 (27, 5, 214, 150000, 0, -1, 50),
--- Đao Kim (idClass=4)
 (28, 5, 215, 1000, 0, -1, 1),
 (29, 5, 216, 5000, 0, -1, 10),
 (30, 5, 217, 15000, 0, -1, 20),
 (31, 5, 218, 50000, 0, -1, 35),
 (32, 5, 219, 150000, 0, -1, 50),
--- Dao Mộc (idClass=5)
 (33, 5, 220, 1000, 0, -1, 1),
 (34, 5, 221, 5000, 0, -1, 10),
 (35, 5, 222, 15000, 0, -1, 20),
 (36, 5, 223, 50000, 0, -1, 35),
 (37, 5, 224, 150000, 0, -1, 50),
--- Dao Phong (idClass=6)
 (38, 5, 225, 1000, 0, -1, 1),
 (39, 5, 226, 5000, 0, -1, 10),
 (40, 5, 227, 15000, 0, -1, 20),
 (41, 5, 228, 50000, 0, -1, 35),
 (42, 5, 229, 150000, 0, -1, 50),
--- NPC 7: Trang bị – bán mũ/áo/quần/giày/nhẫn (type=0,2,3,4,5)
--- Mũ Nam (type=0, gioiTinh=0)
 (43, 7, 100, 500, 0, -1, 1),
 (44, 7, 101, 3000, 0, -1, 10),
 (45, 7, 102, 10000, 0, -1, 20),
 (46, 7, 103, 35000, 0, -1, 35),
 (47, 7, 104, 100000, 0, -1, 50),
--- Mũ Nữ (type=0, gioiTinh=1)
 (48, 7, 105, 500, 0, -1, 1),
 (49, 7, 106, 3000, 0, -1, 10),
 (50, 7, 107, 10000, 0, -1, 20),
 (51, 7, 108, 35000, 0, -1, 35),
 (52, 7, 109, 100000, 0, -1, 50),
--- Áo Nam (type=2, gioiTinh=0)
 (53, 7, 110, 500, 0, -1, 1),
 (54, 7, 111, 3000, 0, -1, 10),
 (55, 7, 112, 10000, 0, -1, 20),
 (56, 7, 113, 35000, 0, -1, 35),
 (57, 7, 114, 100000, 0, -1, 50),
--- Áo Nữ (type=2, gioiTinh=1)
 (58, 7, 115, 500, 0, -1, 1),
 (59, 7, 116, 3000, 0, -1, 10),
 (60, 7, 117, 10000, 0, -1, 20),
 (61, 7, 118, 35000, 0, -1, 35),
 (62, 7, 119, 100000, 0, -1, 50),
--- Quần Nam (type=3, gioiTinh=0)
 (63, 7, 130, 500, 0, -1, 1),
 (64, 7, 131, 3000, 0, -1, 10),
 (65, 7, 132, 10000, 0, -1, 20),
 (66, 7, 133, 35000, 0, -1, 35),
 (67, 7, 134, 100000, 0, -1, 50),
--- Quần Nữ (type=3, gioiTinh=1)
 (68, 7, 135, 500, 0, -1, 1),
 (69, 7, 136, 3000, 0, -1, 10),
 (70, 7, 137, 10000, 0, -1, 20),
 (71, 7, 138, 35000, 0, -1, 35),
 (72, 7, 139, 100000, 0, -1, 50),
--- Giày Nam (type=4, gioiTinh=0)
 (73, 7, 150, 500, 0, -1, 1),
 (74, 7, 151, 3000, 0, -1, 10),
 (75, 7, 152, 10000, 0, -1, 20),
 (76, 7, 153, 35000, 0, -1, 35),
 (77, 7, 154, 100000, 0, -1, 50),
--- Giày Nữ (type=4, gioiTinh=1)
 (78, 7, 155, 500, 0, -1, 1),
 (79, 7, 156, 3000, 0, -1, 10),
 (80, 7, 157, 10000, 0, -1, 20),
 (81, 7, 158, 35000, 0, -1, 35),
 (82, 7, 159, 100000, 0, -1, 50),
--- Nhẫn (type=5, gioiTinh=2)
 (83, 7, 140, 1000, 0, -1, 1),
 (84, 7, 141, 5000, 0, -1, 10),
 (85, 7, 142, 15000, 0, -1, 20),
 (86, 7, 143, 50000, 0, -1, 35),
 (87, 7, 144, 150000, 0, -1, 50),
--- NPC 8: Tiên Dược – bán item buff (type=24)
--- Nhân Sâm tăng Gene EXP
 (88, 8, 121, 5000, 0, -1, 1),
 (89, 8, 122, 15000, 0, -1, 20),
 (90, 8, 123, 50000, 0, -1, 40),
--- Đan Cường Sinh tăng Max HP
 (91, 8, 161, 8000, 0, -1, 5),
 (92, 8, 162, 25000, 0, -1, 20),
 (93, 8, 163, 80000, 0, -1, 40),
--- Linh Dược Hồi Khí tăng Max MP
 (94, 8, 171, 8000, 0, -1, 5),
 (95, 8, 172, 25000, 0, -1, 20),
 (96, 8, 173, 80000, 0, -1, 40);
@@ -1098,7 +1077,7 @@ INSERT INTO `player_data` (`player_id`, `character_name`, `gender`, `info_char`,
 (11, 'thuy', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Water\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":29.57438,\"position_y\":-1.942338}', '{}', '[]', '[]', '{}', '2026-03-28 21:31:28', '[]'),
 (12, 'hoa', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":39.30009,\"position_y\":7.455923}', '{}', '[]', '[]', '{}', '2026-03-29 22:04:57', '[]'),
 (13, 'Tho', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Earth\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":7.746673,\"position_y\":-1.157384}', '{}', '[]', '[]', '{}', '2026-03-27 01:16:44', '[]'),
-(16, 'Phong', 'Female', '{\"level\":1,\"experience\":0,\"gold\":1000000,\"silver\":222500,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Wind\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":70,\"max_hp\":100,\"mp\":30,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":1.508539,\"position_y\":3.85973}', '{}', '[{\"slotIndex\":0,\"itemTemplateId\":1,\"quantity\":17,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":1,\"itemTemplateId\":11,\"strOptions\":\"\",\"quantity\":7,\"upgradeLevel\":0},{\"slotIndex\":2,\"itemTemplateId\":14,\"strOptions\":\"\",\"quantity\":2,\"upgradeLevel\":0}]', '[]', '{}', '2026-04-04 06:52:20', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-04T06:51:40.7961329Z\"}]'),
+(16, 'Phong', 'Female', '{\"level\":100,\"experience\":0,\"gold\":1000000,\"silver\":1743500,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Wind\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":50,\"max_hp\":100,\"mp\":22,\"max_mp\":137,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":16.02058,\"position_y\":-1.913391}', '{\"weapon\":{\"itemTemplateId\":200,\"itemCode\":\"\",\"iconId\":\"168\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"itemType\":1,\"upgradeLevel\":1,\"strOptions\":\"1,12\"},\"helmet\":null,\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":null}', '[{\"slotIndex\":0,\"itemTemplateId\":100,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":1,\"itemTemplateId\":110,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"2,8;3,30\"},{\"slotIndex\":2,\"itemTemplateId\":130,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"2,8\"},{\"slotIndex\":3,\"itemTemplateId\":150,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"4,5\"},{\"slotIndex\":4,\"itemTemplateId\":140,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":5,\"itemTemplateId\":14,\"itemCode\":\"B\\u00ECnh MP Nh\\u1ECF\",\"iconId\":\"236\",\"quantity\":3,\"isEquipped\":false,\"upgradeLevel\":0}]', '[]', '{}', '2026-04-04 20:41:31', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-04T20:41:32.5317872Z\"}]'),
 (17, 'kim', 'Male', '{\"level\":1,\"experience\":0,\"gold\":10000,\"silver\":699849000,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Metal\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":-2.353325,\"position_y\":1.327723}', '{}', '[{\"slotIndex\":0,\"itemTemplateId\":161,\"itemCode\":\"\\u0110an C\\u01B0\\u1EDDng Sinh Nh\\u1ECF\",\"iconId\":\"388\",\"quantity\":3,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":1,\"itemTemplateId\":11,\"itemCode\":\"B\\u00ECnh HP Nh\\u1ECF\",\"iconId\":\"409\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":2,\"itemTemplateId\":122,\"itemCode\":\"Nh\\u00E2n S\\u00E2m Th\\u1EA7n Th\\u00E1nh\",\"iconId\":\"435\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":121,\"itemCode\":\"Nh\\u00E2n S\\u00E2m T\\u00E2m Linh\",\"iconId\":\"434\",\"quantity\":3,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":4,\"itemTemplateId\":14,\"itemCode\":\"B\\u00ECnh MP Nh\\u1ECF\",\"iconId\":\"236\",\"quantity\":1,\"isEquipped\":false,\"upgradeLevel\":0}]', '[]', '{}', '2026-04-04 03:08:00', '[{\"effectType\":\"GeneExpBuff\",\"value\":20,\"iconId\":562,\"name\":\"EXP Gene \\u002B20%\",\"detail\":\"\\u002B20% EXP Gene (30 ph\\u00FAt)\",\"expireAt\":\"2026-04-04T03:33:52.8352166Z\"}]');
 
 -- --------------------------------------------------------
@@ -1233,7 +1212,7 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `created_a
 (13, 'tho', 'tho@gmail.com', '123456', '2026-03-16 11:24:42', '2026-03-27 01:16:33'),
 (14, 'phong1', 'phong1@gmail.com', '123456', '2026-03-19 18:14:50', '2026-03-19 18:14:58'),
 (15, 'tho1', 'tho1@gmail.com', '123456', '2026-03-22 22:04:49', '2026-03-22 22:06:52'),
-(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-04-04 06:55:47'),
+(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-04-04 07:24:52'),
 (17, 'kim', 'kim@gmail.com', '$2a$12$G1hEIuasIWxnsJsYm4g.YexoQdX2lV5rucvhH04mRlGJ3Vd4KDkTy', '2026-04-01 19:29:09', '2026-04-04 03:02:45');
 
 --
@@ -1527,7 +1506,7 @@ ALTER TABLE `map_spawn_config`
 -- AUTO_INCREMENT cho bảng `npc_config`
 --
 ALTER TABLE `npc_config`
-  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT cho bảng `npc_dialogue`
@@ -1539,7 +1518,7 @@ ALTER TABLE `npc_dialogue`
 -- AUTO_INCREMENT cho bảng `npc_shop_item`
 --
 ALTER TABLE `npc_shop_item`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
 
 --
 -- AUTO_INCREMENT cho bảng `player_action_log`

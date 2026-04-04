@@ -241,6 +241,7 @@ namespace GameServerApi.Controllers
                 gold = info.Gold,
                 silver = info.Silver,
                 map_id = info.MapId,
+                zone_id = info.ZoneId,
                 position_x = info.PositionX,
                 position_y = info.PositionY,
                 base_stats = new
@@ -293,20 +294,32 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// PUT /api/player/{playerId}/position
-        /// Update position của player (khi out game hoặc disconnect)
+        /// Update position của player (khi out game hoặc disconnect).
+        /// Chấp nhận cả player JWT (Bearer) và game server X-Zone-Api-Key.
         /// </summary>
         [HttpPut("{playerId}/position")]
         public async Task<IActionResult> UpdatePlayerPosition(int playerId, [FromBody] JsonElement body)
         {
             try
             {
-                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
-                if (userIdClaim == null) return Unauthorized();
-                int targetPlayerId = int.Parse(userIdClaim.Value);
+                // Game server dùng X-Zone-Api-Key → role "GameServer", dùng playerId từ URL.
+                // Player dùng JWT Bearer → lấy user_id từ claim để đảm bảo chỉ sửa của mình.
+                int targetPlayerId;
+                if (User.IsInRole("GameServer"))
+                {
+                    targetPlayerId = playerId;
+                }
+                else
+                {
+                    var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                    if (userIdClaim == null) return Unauthorized();
+                    targetPlayerId = int.Parse(userIdClaim.Value);
+                }
 
                 int mapId = body.GetProperty("map_id").GetInt32();
                 float positionX = (float)body.GetProperty("position_x").GetDouble();
                 float positionY = (float)body.GetProperty("position_y").GetDouble();
+                int zoneId = body.TryGetProperty("zone_id", out var zp) ? zp.GetInt32() : 0;
 
                 var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
@@ -316,6 +329,7 @@ namespace GameServerApi.Controllers
 
                 var posInfo = player.GetInfoChar();
                 posInfo.MapId = mapId;
+                posInfo.ZoneId = zoneId;
                 posInfo.PositionX = positionX;
                 posInfo.PositionY = positionY;
                 player.SetInfoChar(posInfo);
@@ -327,6 +341,7 @@ namespace GameServerApi.Controllers
                 {
                     message = "Position updated successfully",
                     map_id = posInfo.MapId,
+                    zone_id = posInfo.ZoneId,
                     position_x = posInfo.PositionX,
                     position_y = posInfo.PositionY
                 });

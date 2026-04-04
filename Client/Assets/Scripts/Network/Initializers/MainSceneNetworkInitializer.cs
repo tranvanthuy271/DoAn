@@ -171,7 +171,9 @@ public class MainSceneNetworkInitializer : MonoBehaviour
 
         // Lấy server IP và port
         string serverIP = PlayerPrefs.GetString("SERVER_IP", "127.0.0.1");
-        int serverPort = PlayerPrefs.GetInt("SERVER_PORT", 2003);
+        int serverPort = PlayerPrefs.GetInt("SERVER_PORT", 0);
+        if (serverPort <= 0 || serverPort == 2003)
+            serverPort = 7777;
 
         // Debug.Log($"[MainSceneNetworkInitializer] Đang kết nối đến server {serverIP}:{serverPort}...");
 
@@ -225,11 +227,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
                 // Debug.Log($"[MainSceneNetworkInitializer] ✓ This is LOCAL client {clientId}. Connection established!");
                 // Debug.Log($"[MainSceneNetworkInitializer] IsClient: {networkManagerSingleton.IsClient}, IsServer: {networkManagerSingleton.IsServer}");
                 
-                // Gửi auth NGAY LẬP TỨC sau khi connect thành công
-                // ClientAuthSender sẽ gửi user_id lên host qua ServerRpc
-                // Host sẽ query ServerAPI để lấy player data và spawn player
-                // Debug.Log($"[MainSceneNetworkInitializer] Sending user_id to host IMMEDIATELY for client {clientId}...");
-                ClientAuthSender.SendAuthAfterConnection(clientId);
+                Debug.Log($"[MainSceneNetworkInitializer] Client {clientId} connected. Auth đã được gửi trong ConnectionData payload.");
             }
         }
         

@@ -16,7 +16,6 @@ GameObject:
   - component: {fileID: 1992477308169052106}
   - component: {fileID: 3647367252129881292}
   - component: {fileID: 6488837221891272854}
-  - component: {fileID: 3610783189151650013}
   m_Layer: 0
   m_Name: NPC_Blacksmith_Prefab
   m_TagString: Untagged
@@ -241,17 +240,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TransitionStateInfoList: []
   m_Animator: {fileID: 3647367252129881292}
---- !u!114 &3610783189151650013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3955432116211834629}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TransitionStateInfoList: []
-  m_Animator: {fileID: 0}

@@ -243,8 +243,12 @@ public class EquipmentPanelUI : MonoBehaviour
     {
         if (slotUIs.Count == 0)
         {
-            Debug.LogWarning("[EquipmentPanelUI] Chưa có slot UI! Gọi InitSlots() trước.");
             InitSlots();
+            if (slotUIs.Count == 0)
+            {
+                Debug.LogWarning("[EquipmentPanelUI] Chưa thể khởi tạo slot UI. Kiểm tra cấu hình Inspector.");
+                return;
+            }
         }
 
         foreach (var kvp in slotUIs)

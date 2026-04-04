@@ -66,6 +66,7 @@ GameObject:
   - component: {fileID: 1000000000000000004}
   - component: {fileID: 533381409250059111}
   - component: {fileID: 773942771704494688}
+  - component: {fileID: -7786943702000723381}
   m_Layer: 8
   m_Name: F_Tho
   m_TagString: Player
@@ -724,6 +725,16 @@ MonoBehaviour:
     m_InternalValue: 5
   networkGeneTier:
     m_InternalValue: 1
+  networkGeneExpBonusPct:
+    m_InternalValue: 0
+  networkExpBonusPct:
+    m_InternalValue: 0
+  networkPhucBonusPct:
+    m_InternalValue: 0
+  networkAttackBonusPct:
+    m_InternalValue: 0
+  networkDefenseBonusPct:
+    m_InternalValue: 0
 --- !u!50 &8319443331650068036
 Rigidbody2D:
   serializedVersion: 4
@@ -994,6 +1005,19 @@ MonoBehaviour:
         byte0059: 0
         byte0060: 0
         byte0061: 0
+--- !u!114 &-7786943702000723381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4132664463887209372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5238a1e97c793d40aa05b8b4293d5da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _alwaysVisibleToServer: 1
 --- !u!1 &8827832093981760745
 GameObject:
   m_ObjectHideFlags: 0

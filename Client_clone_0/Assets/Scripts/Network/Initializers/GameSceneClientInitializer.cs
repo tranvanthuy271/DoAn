@@ -8,9 +8,11 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class GameSceneClientInitializer : MonoBehaviour
 {
+    private const ushort ModernZoneServerPort = 7777;
+
     [Header("Server Config")]
     public string serverIP = "127.0.0.1";
-    public ushort serverPort = 2003;
+    public ushort serverPort = ModernZoneServerPort;
 
     [Header("References")]
     private APIClient apiClient;
@@ -18,6 +20,15 @@ public class GameSceneClientInitializer : MonoBehaviour
 
     private bool playerDataLoaded = false;
     private bool isInitializing = false;
+
+    private void Awake()
+    {
+        if (FindObjectOfType<GameSceneNetworkInitializer>() != null)
+        {
+            Debug.Log("[GameSceneClientInitializer] GameSceneNetworkInitializer đã tồn tại — tắt initializer cũ để tránh double-connect.");
+            enabled = false;
+        }
+    }
 
     private void Start()
     {
@@ -166,8 +177,8 @@ public class GameSceneClientInitializer : MonoBehaviour
         }
 
         // Setup server IP và port
-        networkManager.serverIP = serverIP;
-        networkManager.serverPort = serverPort;
+        networkManager.serverIP = string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
+        networkManager.serverPort = serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;
 
         // Connect to host
         networkManager.ConnectToServer();

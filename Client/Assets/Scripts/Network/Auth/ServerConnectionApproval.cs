@@ -12,20 +12,42 @@ public class ServerConnectionApproval : MonoBehaviour
     private ServerPlayerDataManager playerDataManager;
     private bool callbackRegistered = false;
 
+    private bool HasMapWorldBootstrap()
+    {
+        bool hasMapWorld = FindObjectOfType<MapWorldBootstrap>() != null;
+        if (hasMapWorld)
+        {
+            enabled = false;
+        }
+        return hasMapWorld;
+    }
+
     private void Awake()
     {
+        if (HasMapWorldBootstrap())
+        {
+            Debug.Log("[ServerConnectionApproval] MapWorldBootstrap detected — disabling legacy approval handler.");
+            return;
+        }
+
         // Đăng ký callback trong Awake() để đảm bảo có sẵn trước khi StartHost() được gọi
         RegisterCallback();
     }
 
     private void OnEnable()
     {
+        if (HasMapWorldBootstrap())
+            return;
+
         // Đăng ký lại khi object được enable (nếu chưa đăng ký)
         RegisterCallback();
     }
 
     private void RegisterCallback()
     {
+        if (HasMapWorldBootstrap())
+            return;
+
         if (callbackRegistered)
         {
             // Debug.Log("[ServerConnectionApproval] Callback already registered, skipping...");
@@ -62,6 +84,9 @@ public class ServerConnectionApproval : MonoBehaviour
 
     private void Start()
     {
+        if (HasMapWorldBootstrap())
+            return;
+
         // Đảm bảo callback được đăng ký (nếu Awake()/OnEnable() chưa kịp chạy)
         RegisterCallback();
         

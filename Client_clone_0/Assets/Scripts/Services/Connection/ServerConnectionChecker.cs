@@ -11,7 +11,7 @@ public class ServerConnectionChecker : MonoBehaviour
     [Header("Server Config")]
     public string apiBaseURL = "http://localhost:5000/api";
     public string netcodeServerIP = "127.0.0.1";
-    public ushort netcodeServerPort = 2003;
+    public ushort netcodeServerPort = 7777;
     public float checkInterval = 2f; // Check mỗi 2 giây
 
     [Header("Connection Timeout")]

@@ -10,8 +10,8 @@ using Unity.Netcode.Transports.UTP;
 public class ServerBootstrap : MonoBehaviour
 {
     [Header("Server Config")]
-    [Tooltip("Port để server listen (mặc định: 2003)")]
-    public ushort serverPort = 2003;
+    [Tooltip("Port để server listen (mặc định: 7777)")]
+    public ushort serverPort = 7777;
     
     [Tooltip("IP để server listen (0.0.0.0 = listen all interfaces)")]
     public string serverIP = "0.0.0.0";

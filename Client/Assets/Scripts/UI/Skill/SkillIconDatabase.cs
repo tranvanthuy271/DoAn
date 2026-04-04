@@ -33,6 +33,8 @@ public class SkillIconDatabase : MonoBehaviour
             return;
         }
         Instance = this;
+        if (transform.parent != null)
+            transform.SetParent(null, true);
         DontDestroyOnLoad(gameObject);
         LoadAllIcons();
     }

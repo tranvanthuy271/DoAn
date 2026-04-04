@@ -214,10 +214,14 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     public void RefreshAllSlots()
     {
-        if (slotUIs == null)
+        if (slotUIs == null || slotUIs.Length == 0)
         {
-            Debug.LogWarning("[InventoryUI] RefreshAllSlots: slotUIs is null! Có thể chưa InitSlots()?");
-            return;
+            InitSlots();
+            if (slotUIs == null || slotUIs.Length == 0)
+            {
+                Debug.LogWarning("[InventoryUI] RefreshAllSlots: slotUIs chưa sẵn sàng sau InitSlots().");
+                return;
+            }
         }
 
         Debug.Log($"[InventoryUI] RefreshAllSlots: Bắt đầu refresh {slotUIs.Length} slots...");

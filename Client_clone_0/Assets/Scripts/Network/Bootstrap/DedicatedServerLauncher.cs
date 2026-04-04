@@ -12,7 +12,7 @@ public class DedicatedServerLauncher : MonoBehaviour
 {
     [Header("Server Config")]
     public string apiServerPath = ""; // Path đến GameServerApi.exe
-    public ushort netcodePort = 2003;
+    public ushort netcodePort = 7777;
     public string serverIP = "127.0.0.1";
 
     [Header("API Server Config")]

@@ -61,6 +61,7 @@ GameObject:
   - component: {fileID: 1000000000000000007}
   - component: {fileID: 1546188620056719567}
   - component: {fileID: -3729664516434248239}
+  - component: {fileID: -5786545097923655235}
   m_Layer: 8
   m_Name: Kim
   m_TagString: Player
@@ -601,6 +602,16 @@ MonoBehaviour:
     m_InternalValue: 5
   networkGeneTier:
     m_InternalValue: 1
+  networkGeneExpBonusPct:
+    m_InternalValue: 0
+  networkExpBonusPct:
+    m_InternalValue: 0
+  networkPhucBonusPct:
+    m_InternalValue: 0
+  networkAttackBonusPct:
+    m_InternalValue: 0
+  networkDefenseBonusPct:
+    m_InternalValue: 0
 --- !u!114 &1362119551849730216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -869,6 +880,19 @@ MonoBehaviour:
         byte0059: 0
         byte0060: 0
         byte0061: 0
+--- !u!114 &-5786545097923655235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093030462349691606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5238a1e97c793d40aa05b8b4293d5da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _alwaysVisibleToServer: 1
 --- !u!1 &8234735932101947168
 GameObject:
   m_ObjectHideFlags: 0

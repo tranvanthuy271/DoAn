@@ -3417,7 +3417,7 @@ MonoBehaviour:
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
     Address: 127.0.0.1
-    Port: 2003
+    Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
     PacketDelayMS: 0
@@ -3898,7 +3898,7 @@ MonoBehaviour:
   fillImage: {fileID: 494981898}
   mpText: {fileID: 2009660657}
   fullMpColor: {r: 0.2, g: 0.4, b: 1, a: 1}
-  lowMpColor: {r: 0.6, g: 0.2, b: 0.8, a: 1}
+  lowMpColor: {r: 0.2, g: 0.4, b: 1, a: 0.98039216}
   lowMpThreshold: 0.25
 --- !u!1 &181782701
 GameObject:
@@ -6290,7 +6290,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.19215687, g: 0.19215687, b: 0.19215687, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -12951,6 +12951,8 @@ MonoBehaviour:
   itemNameText: {fileID: 0}
   upgradeButton: {fileID: 331707797}
   slotType: 2
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!224 &501692195 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5766752980429798597, guid: 4d07e2edbf01d584aa7f0628e29ffa25, type: 3}
@@ -13488,6 +13490,8 @@ MonoBehaviour:
   itemNameText: {fileID: 0}
   upgradeButton: {fileID: 1734266057}
   slotType: 3
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!224 &518707827 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5766752980429798597, guid: 4d07e2edbf01d584aa7f0628e29ffa25, type: 3}
@@ -18902,7 +18906,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.19215687, g: 0.19215687, b: 0.19215687, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -20323,6 +20327,8 @@ MonoBehaviour:
   itemNameText: {fileID: 631712650}
   upgradeButton: {fileID: 775356185}
   slotType: 0
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!1 &786309903
 GameObject:
   m_ObjectHideFlags: 0
@@ -23066,6 +23072,17 @@ MonoBehaviour:
   - {fileID: 7383106255219387862, guid: c004d950b51bfea4683563f0179d2ae9, type: 3}
   - {fileID: 4291549408555319772, guid: a70492a103000224bbee0418aef55459, type: 3}
   - {fileID: 5964468023193513581, guid: 5df2c43d755fe03489f0f517cfff3f3b, type: 3}
+  - {fileID: 542508579181072655, guid: 3837e5ffe28b29e4e876744f78143dc6, type: 3}
+  - {fileID: 5964468023193513581, guid: 5df2c43d755fe03489f0f517cfff3f3b, type: 3}
+  - {fileID: 542508579181072655, guid: 70eba1461c6bf4541ab035a4edfc8262, type: 3}
+  - {fileID: 542508579181072655, guid: d33e97d8878d55b48850f23988031943, type: 3}
+  npcPrefabsById:
+  - npcId: 5
+    prefab: {fileID: 542508579181072655, guid: 3837e5ffe28b29e4e876744f78143dc6, type: 3}
+  - npcId: 7
+    prefab: {fileID: 542508579181072655, guid: 70eba1461c6bf4541ab035a4edfc8262, type: 3}
+  - npcId: 8
+    prefab: {fileID: 542508579181072655, guid: d33e97d8878d55b48850f23988031943, type: 3}
 --- !u!1 &884967441
 GameObject:
   m_ObjectHideFlags: 0
@@ -26725,7 +26742,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -666.01, y: 466}
+  m_AnchoredPosition: {x: -666.01, y: 467.8}
   m_SizeDelta: {x: 251.98, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1032118514
@@ -26775,8 +26792,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -31336,7 +31353,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   serverIP: 127.0.0.1
-  serverPort: 2003
+  serverPort: 7777
 --- !u!1 &1226924456
 GameObject:
   m_ObjectHideFlags: 0
@@ -31787,7 +31804,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   serverIP: 127.0.0.1
-  serverPort: 2003
+  serverPort: 7777
   startHostButton: {fileID: 1131870150}
   startClientButton: {fileID: 1880532684}
   statusText: {fileID: 1231354365}
@@ -34451,8 +34468,8 @@ MonoBehaviour:
   healthSlider: {fileID: 353585851}
   fillImage: {fileID: 219892781}
   healthTextTMP: {fileID: 1032118514}
-  fullHealthColor: {r: 0, g: 1, b: 0, a: 1}
-  lowHealthColor: {r: 1, g: 0, b: 0, a: 1}
+  fullHealthColor: {r: 1, g: 0.029988142, b: 0, a: 1}
+  lowHealthColor: {r: 0.7924528, g: 0.51576966, b: 0.31025273, a: 1}
   lowHealthThreshold: 0.3
 --- !u!1 &1327149442
 GameObject:
@@ -35003,6 +35020,8 @@ MonoBehaviour:
   itemNameText: {fileID: 0}
   upgradeButton: {fileID: 264190591}
   slotType: 5
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!114 &1340160986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35522,6 +35541,8 @@ MonoBehaviour:
   itemNameText: {fileID: 0}
   upgradeButton: {fileID: 1650327112}
   slotType: 4
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!1 &1352717666
 GameObject:
   m_ObjectHideFlags: 0
@@ -37922,6 +37943,8 @@ MonoBehaviour:
   itemNameText: {fileID: 0}
   upgradeButton: {fileID: 815270352}
   slotType: 1
+  iconPadding: {x: 16, y: 16}
+  fallbackIconMaxSize: {x: 84, y: 84}
 --- !u!1 &1459483220
 GameObject:
   m_ObjectHideFlags: 0
@@ -48860,6 +48883,7 @@ MonoBehaviour:
   shopItemRowPrefab: {fileID: 8195739617124027259, guid: 470b034bae0d91444a3d12ac7e4b6796, type: 3}
   bagPanel: {fileID: 1568607722}
   defaultItemIcon: {fileID: 0}
+  itemDetailPanel: {fileID: 0}
   feedbackText: {fileID: 1655891142}
   feedbackDuration: 2
 --- !u!114 &1876825713
@@ -51705,8 +51729,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

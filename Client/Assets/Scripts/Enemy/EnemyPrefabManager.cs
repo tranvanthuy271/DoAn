@@ -38,6 +38,8 @@ public class EnemyPrefabManager : MonoBehaviour
         if (instance == null)
         {
             instance = this;
+            if (transform.parent != null)
+                transform.SetParent(null, true);
             DontDestroyOnLoad(gameObject);
             BuildDictionary();
         }

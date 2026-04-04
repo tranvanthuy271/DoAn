@@ -42,6 +42,13 @@ public class ServerPlayerDataManager : NetworkBehaviour
 
     private void Awake()
     {
+        if (FindObjectOfType<MapWorldBootstrap>() != null)
+        {
+            Debug.Log("[ServerPlayerDataManager] MapWorldBootstrap detected — disabling legacy player data manager.");
+            enabled = false;
+            return;
+        }
+
         // Singleton pattern
         if (Instance == null)
         {

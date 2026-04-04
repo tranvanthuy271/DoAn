@@ -8,7 +8,7 @@ using Unity.Netcode;
 public class HostSceneInitializer : MonoBehaviour
 {
     [Header("Server Config")]
-    public ushort serverPort = 2003;
+    public ushort serverPort = 7777;
 
     [Header("Auth Sender Prefab (Optional)")]
     [Tooltip("Prefab cho AuthSenderNetworkObject. Nếu để trống, sẽ tự động tạo một prefab tạm.")]
@@ -19,6 +19,13 @@ public class HostSceneInitializer : MonoBehaviour
 
     private void Start()
     {
+        if (FindObjectOfType<MapWorldBootstrap>() != null)
+        {
+            Debug.Log("[HostSceneInitializer] MapWorldBootstrap detected — disabling legacy host initializer.");
+            enabled = false;
+            return;
+        }
+
         // Debug.Log("[HostSceneInitializer] Initializing Host Scene...");
 
         // QUAN TRỌNG: Đăng ký prefab TRƯỚC KHI start host

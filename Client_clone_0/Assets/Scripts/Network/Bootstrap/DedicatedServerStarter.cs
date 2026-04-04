@@ -9,7 +9,7 @@ using Unity.Netcode.Transports.UTP;
 public class DedicatedServerStarter : MonoBehaviour
 {
     [Header("Server Config")]
-    [SerializeField] private ushort serverPort = 2003;
+    [SerializeField] private ushort serverPort = 7777;
     [SerializeField] private bool autoStartOnAwake = true;
     [SerializeField] private bool isDedicatedServer = false;
 

@@ -66,6 +66,7 @@ namespace GameServerApi.Models
 
         // ---- Position ----
         [JsonPropertyName("map_id")]     public int   MapId     { get; set; } = 0;
+        [JsonPropertyName("zone_id")]    public int   ZoneId    { get; set; } = 0;
         [JsonPropertyName("position_x")] public float PositionX { get; set; } = 0f;
         [JsonPropertyName("position_y")] public float PositionY { get; set; } = 0f;
     }

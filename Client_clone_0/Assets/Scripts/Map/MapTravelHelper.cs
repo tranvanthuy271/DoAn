@@ -293,7 +293,7 @@ public class MapTravelHelper : MonoBehaviour
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
         if (transport != null && transport.ConnectionData.Port > 0)
             return transport.ConnectionData.Port;
-        return 2003; // default
+        return 7777; // default zone-server port
     }
 
     /// <summary>
@@ -336,7 +336,7 @@ public class MapTravelHelper : MonoBehaviour
     {
         public bool   youAreHost;
         public string hostIp   = "127.0.0.1";
-        public ushort hostPort = 2003;
+        public ushort hostPort = 7777;
         public bool   done;
     }
 

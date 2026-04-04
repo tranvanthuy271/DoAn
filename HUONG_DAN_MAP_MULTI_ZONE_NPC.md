@@ -3,302 +3,126 @@
 > **Dự án:** DoAn — Unity (Netcode for GameObjects) + ASP.NET Core API + MySQL  
 > **Phạm vi:** Tài liệu này **tập trung vào setup trong Unity** — cấu hình DB xem file `db_migration_map.sql`.
 
+> **Lưu ý kiến trúc mới:** phần zone trong tài liệu này đã được cập nhật theo mô hình LangLa.
+> Map thường không còn khai báo từng zone thủ công trong scene hoặc DB nữa.
+> Nguồn dữ liệu đúng hiện tại là `MapWorldConfig` + `ZoneRoomRegistry` + `ZoneTransitionController`.
+> Các script `ZoneTrigger`, `PlayerZoneHandler`, `ZoneRoomManager` chỉ nên xem là luồng legacy nếu bạn vẫn giữ scene cũ.
+
 ---
 
 ## Mục Lục
 
 1. [Config Nhiều Map](#1-config-nhiều-map)
-2. [Phân Vùng Zone — Inspector-Driven](#2-phân-vùng-zone--inspector-driven)
+2. [Phân Vùng Zone — Server Tự Sinh](#2-phân-vùng-zone--server-tự-sinh)
 3. [Config Enemy — Wiring HP từ DB](#3-config-enemy--wiring-hp-từ-db)
 4. [Trigger Chuyển Map Biên Trái / Phải](#4-trigger-chuyển-map-biên-trái--phải)
 5. [Config NPC — Spawn & Menu](#5-config-npc--spawn--menu)
 6. [Config Hình Ảnh Hệ Nguyên Tố](#6-config-hình-ảnh-hệ-nguyên-tố)
 7. [Danh Sách File .cs](#7-danh-sách-file-cs)
 8. [Checklist Nhanh](#8-checklist-nhanh)
+## 2. Phân Vùng Zone — Server Tự Sinh
 
----
-
-## 1. Config Nhiều Map
-
-### 1.1 — Kiến trúc
+### 2.1 — Mô hình đúng theo LangLa
 
 ```
-GameScene.unity   map_id = 0  (Làng Khởi Đầu)
-Map1.unity        map_id = 1  (Cánh Đồng Lửa)
-Map2.unity        map_id = 2  (Rừng Băng)
-Map3.unity        map_id = 3  (Sa Mạc Phong)
+Map thuong
+    MapWorldConfig.MapDefinition
+        zoneTopology = SharedPublic
+        publicZoneCountOverride = 0  -> dung sharedMapDefaultZoneCount
+
+Server start
+    ZoneRoomRegistry.Initialize()
+        -> tu sinh zone 0..N-1 cho moi map thuong
+
+Map pho ban / dungeon
+    MapDefinition.zoneTopology = InstanceOnly
+    -> KHONG auto-create public zones
+    -> server tao room runtime khi can (zone_id am)
 ```
 
-Mỗi map = **1 scene Unity riêng**. `MapManager` tự gọi `GET /api/map/by-scene?scene=<tên>` khi scene load.
+Khac biet quan trong so voi tai lieu cu:
 
-> **DB:** Chạy `db_migration_map.sql` để tạo/điền bảng `map_config`.
+- Khong con mo hinh moi zone la 1 object can config tay trong scene.
+- Khong con bang `map_zone_config` de khai bao tung zone thuong.
+- Player chi duoc tu doi khu o map thuong.
+- Zone rieng/pho ban do server tao bang code, khong do client request truc tiep.
 
-### 1.2 — Đăng ký scene vào Build Settings
+### 2.2 — Source of truth hien tai
 
-1. Mở **File → Build Settings**
-2. Kéo tất cả scene vào danh sách
-3. Tên scene phải **khớp chính xác** với `scene_name` trong bảng `map_config`
+| File | Vai tro |
+|---|---|
+| `Network/Shared/MapWorldConfig.cs` | Khai bao map, policy zone, fallback map, max players |
+| `Network/Server/ZoneRoomRegistry.cs` | Tu sinh public zones luc boot, quan ly custom room runtime |
+| `Network/Server/ZoneConnectionApprovalV2.cs` | Resolve map/zone luc login, fallback neu zone cu khong con hop le |
+| `Network/Server/ZoneTransitionController.cs` | Chuyen khu instant, cap nhat session, save vi tri |
+| `Network/Server/ZoneServerHeartbeat.cs` | Bao cao tat ca room dang ton tai, gom ca custom room |
 
-### 1.3 — MapManager.cs (Setup Inspector)
+### 2.3 — Setup trong Inspector
 
-> File: `Client/Assets/Scripts/Map/MapManager.cs` — đã implement.
-
-Gắn vào 1 **persistent GameObject** (ví dụ: GameManager). Script tự fetch `map_id` từ API mỗi khi scene load.
-
-```
-Inspector:
-  MapManager.cs:
-    apiBase = "http://localhost:5000"
-```
-
-Nếu API fail → fallback về `mapId` set trong Inspector (mặc định 0).
-
----
-
-## 2. Phân Vùng Zone — Inspector-Driven
-
-### 2.1 — Mô hình Zone (1 port)
+Trong `MapWorldConfig.asset`, moi map chi can khai bao:
 
 ```
-Map1.unity
-  Zone A   roomId = "map1_zone0"   |
-  Zone B   roomId = "map1_zone1"   |-- 1 NGO server :7777
-  Zone C   roomId = "map1_zone2"   |
+Map Id
+Map Name
+Scene Name
+Zone Topology
+Public Zone Count Override   (0 = dung default 15)
+Public Zone Max Players      (0 = dung default chung)
+Custom Zone Max Players      (0 = dung default chung)
+Allow Player Zone Switch
+Entry Points
 ```
 
-Toàn bộ cấu hình zone set **trong Unity Inspector** — không cần DB, không cần API.  
-Player bước qua `BoxCollider2D` của `ZoneTrigger` → gửi `ServerRpc` → server teleport + cập nhật room.
-
-> **Không còn bảng `map_zone_config`** — đã xóa (chạy `db_migration_map.sql`).
-
----
-
-### 2.2 — Các file .cs tham gia
-
-| File | Đặt ở | Vai trò |
-|---|---|---|
-| `ZoneTrigger.cs` | scene, trên BoxCollider2D tại ranh giới | Client: phát hiện player đi qua, gửi ServerRpc |
-| `PlayerZoneHandler.cs` | **Player Prefab** | Chứa ServerRpc đổi zone + NetworkVariable CurrentRoomId |
-| `ZoneRoomManager.cs` | persistent GameObject (server) | Server: theo dõi client nào đang ở zone nào |
-| `RoomBroadcast.cs` | không attach, dùng như static utility | Server: lọc ClientRpc chỉ gửi đến đúng zone |
-
----
-
-### 2.3 — Luồng hoạt động khi player đổi zone
+Vi du:
 
 ```
-1. Player bước vào BoxCollider2D của ZoneTrigger_A_to_B
-2. [Client] ZoneTrigger → PlayerZoneHandler.RequestZoneChangeServerRpc("map1_zone1", 22, 0)
-3. [Server] PlayerZoneHandler nhận RPC:
-       a. ZoneRoomManager.AssignClientToRoom(clientId, "map1_zone1")
-       b. CurrentRoomId.Value = "map1_zone1"   ← sync xuống tất cả client
-       c. transform.position = (22, 0, 0)       ← teleport, server-authoritative
-       d. OnZoneChangedClientRpc(...)            ← callback riêng về client đó
-4. [Client owner] nhận OnZoneChangedClientRpc → có thể hiện thông báo / ẩn loading
+Element 0  (Lang)
+    Map Id                   = 0
+    Scene Name               = GameScene
+    Zone Topology            = SharedPublic
+    Public Zone Count Override = 0
+    Allow Player Zone Switch = true
+
+Element 10 (DungeonLua)
+    Map Id                   = 10
+    Scene Name               = DungeonFire_1
+    Zone Topology            = InstanceOnly
+    Allow Player Zone Switch = false
 ```
 
----
-
-### 2.4 — Bước 1: Thêm ZoneRoomManager vào scene
-
-> File: `Client/Assets/Scripts/Map/ZoneRoomManager.cs` — đã có.
-
-1. Tạo Empty GameObject, đặt tên `ZoneRoomManager`
-2. Add Component → `ZoneRoomManager`
-3. Đặt object này ở **persistent scene** hoặc scene đầu tiên load (DontDestroyOnLoad tự xử lý)
+### 2.4 — Flow doi khu map thuong
 
 ```
-Hierarchy (persistent / DontDestroyOnLoad)
-└── ZoneRoomManager
-      ZoneRoomManager.cs  ← không có field nào cần set
+Client request zone change (map thuong)
+        -> ZoneTransitionController.RequestZoneTransferServerRpc(mapId, zoneId, entryPointId)
+        -> server validate map co cho doi khu khong
+        -> registry tim room cong khai hop le
+        -> AssignClientToRoom()
+        -> ZonePlayerSessionManager.UpdateZone()
+        -> TeleportToZoneClientRpc()
+        -> PUT /api/player/{id}/position
 ```
 
-> Script chạy **chỉ trên server**. Client không cần làm gì với script này.
-
----
-
-### 2.5 — Bước 2: Thêm PlayerZoneHandler vào Player Prefab
-
-> File: `Client/Assets/Scripts/Player/PlayerZoneHandler.cs` — đã có.
-
-1. Mở **Player Prefab** trong Project window
-2. Add Component → `PlayerZoneHandler`
-3. Không có field nào cần set trong Inspector
+### 2.5 — Flow vao pho ban / zone rieng
 
 ```
-Player Prefab
-  NetworkObject       ← đã có
-  NetworkPlayerController
-  PlayerZoneHandler   ← THÊM MỚI (không cần config)
-    [auto] CurrentRoomId : NetworkVariable<FixedString64Bytes>
+Server gameplay logic (DungeonManager / portal / party system)
+        -> ZoneTransitionController.ServerTransferClientToCustomRoom(...)
+        -> ZoneRoomRegistry.CreateCustomRoom()
+        -> room moi nhan zone_id am: -1, -2, -3...
+        -> client duoc teleport vao scene/map pho ban
 ```
 
-**Sau khi đổi zone thành công**, `PlayerZoneHandler.CurrentRoomId.Value` được sync xuống tất cả client — có thể dùng để:
-- Hiện tên zone trên UI: `zoneLabel.text = zoneHandler.RoomId;`
-- Kiểm tra 2 player có cùng zone: `handlerA.IsSameRoom(handlerB)`
+### 2.6 — Ghi chu ve script legacy
 
----
+Neu scene cu van dung cac script sau thi xem chung la lop compatibility tam thoi, khong phai architecture chuan nua:
 
-### 2.6 — Bước 3: Tạo ZoneTrigger trên scene
+- `Map/ZoneTrigger.cs`
+- `Map/ZoneRoomManager.cs`
+- `Player/PlayerZoneHandler.cs`
+- `Map/RoomBroadcast.cs`
 
-> File: `Client/Assets/Scripts/Map/ZoneTrigger.cs` — đã có.
-
-1. Tạo Empty GameObject tại **ranh giới giữa 2 zone**, đặt tên `ZoneTrigger_A_to_B`
-2. Add Component → `BoxCollider2D` → tick **Is Trigger = true**
-3. Chỉnh size BoxCollider2D thành dải dọc hẹp (ví dụ: Width = 1, Height = 10)
-4. Add Component → `ZoneTrigger`
-5. Điền vào Inspector:
-
-```
-Inspector — ZoneTrigger.cs:
-  [Zone đích]
-  Room Id   =  "map1_zone1"          ← định danh nội bộ (server dùng)
-  Zone Name =  "Đồng Bằng Lửa"      ← TÊN HIỆN LÊN UI cho người chơi
-                                        (để trống = không hiện banner)
-  [Vị trí spawn]
-  Spawn X   =  22
-  Spawn Y   =  0
-```
-
-6. Tạo thêm trigger **chiều ngược lại** `ZoneTrigger_B_to_A` với:
-
-```
-  Room Id   =  "map1_zone0"
-  Zone Name =  "Khu Vực Làng"
-  Spawn X   =  18
-  Spawn Y   =  0
-```
-
-> **Quy tắc đặt tên roomId:** `map{mapId}_zone{index}` — ví dụ `map1_zone0`, `map1_zone1`.  
-> `Zone Name` thì đặt tự do theo ý nghĩa địa điểm — đây là chuỗi hiển thị lên UI, không lưu DB.
-
----
-
-### 2.6b — Bước 3b: Setup ZoneNameBanner UI
-
-> File mới: `Client/Assets/Scripts/Map/ZoneNameBanner.cs`
-
-Khi player bước qua trigger, banner xuất hiện giữa trên màn hình → hiện **tên zone** → fade out sau 3 giây.
-
-**Setup trong Unity:**
-
-1. Trong Canvas (HUD), tạo Empty GameObject → đặt tên `ZoneNameBanner`
-2. Add Component → `Image` (nền tối mờ) — màu `(0, 0, 0, 180)`
-3. Trong `ZoneNameBanner`, tạo child `ZoneNameText` → Add Component → `TextMeshPro - Text (UI)`
-   - Font Size: 28, Alignment: Center, Bold
-4. Add Component → `CanvasGroup` (để fade)
-5. Add Component → `ZoneNameBanner.cs` → kéo các field:
-
-```
-Inspector — ZoneNameBanner.cs:
-  Zone Name Text    → kéo TextMeshPro "ZoneNameText"
-  Display Duration  =  3          ← giây hiển thị trước khi fade
-  Canvas Group      → kéo CanvasGroup của panel này
-```
-
-6. **Tắt active** của `ZoneNameBanner` GameObject (script tự bật khi cần)
-
-```
-Canvas (HUD)
-└── ZoneNameBanner              ← Panel, mặc định Inactive
-      Image (nền mờ)
-      CanvasGroup
-      ZoneNameBanner.cs:
-        zoneNameText  → ZoneNameText
-        displayDuration = 3
-        canvasGroup   → CanvasGroup
-      └── ZoneNameText          ← TMP_Text
-            Font Size: 28
-            Text: "Đồng Bằng Lửa"   ← preview
-```
-
-**Kết quả:** Mỗi khi player vào zone mới có `Zone Name` được điền → banner hiện tên khu vực → fade out sau 3 giây.
-
----
-
-### 2.7 — Bước 4: Hierarchy hoàn chỉnh trong Map1.unity
-
-```
-Map1.unity  Hierarchy
-│
-├── [Persistent - DontDestroyOnLoad]
-│     └── ZoneRoomManager
-│           ZoneRoomManager.cs
-│
-├── ZoneBoundaries                    ← parent gom tất cả trigger
-│   ├── ZoneTrigger_A_to_B            ← ranh giới Zone A / Zone B (x = 20)
-│   │     BoxCollider2D: isTrigger=true, Size (1, 20)
-│   │     ZoneTrigger.cs:
-│   │       Room Id = "map1_zone1"
-│   │       Spawn X = 22
-│   │       Spawn Y = 0
-│   │
-│   ├── ZoneTrigger_B_to_A            ← chiều ngược (cùng vị trí, offset nhỏ)
-│   │     BoxCollider2D: isTrigger=true, Size (1, 20)
-│   │     ZoneTrigger.cs:
-│   │       Room Id = "map1_zone0"
-│   │       Spawn X = 18
-│   │       Spawn Y = 0
-│   │
-│   ├── ZoneTrigger_B_to_C            ← ranh giới Zone B / Zone C (x = 60)
-│   │     ZoneTrigger.cs:
-│   │       Room Id = "map1_zone2"
-│   │       Spawn X = 62
-│   │       Spawn Y = 0
-│   │
-│   └── ZoneTrigger_C_to_B
-│         ZoneTrigger.cs:
-│           Room Id = "map1_zone1"
-│           Spawn X = 58
-│           Spawn Y = 0
-│
-└── Player Prefab (đã có PlayerZoneHandler.cs)
-```
-
----
-
-### 2.8 — Bước 5: Dùng RoomBroadcast để lọc damage theo zone
-
-Khi broadcast damage/effect, chỉ gửi đến client **trong cùng zone** với enemy:
-
-```csharp
-// NetworkEnemyHealth.cs — chỉ gửi sync đến đúng zone
-[ServerRpc(RequireOwnership = false)]
-public void TakeDamageServerRpc(int damage)
-{
-    CurrentHealth.Value = Mathf.Max(0, CurrentHealth.Value - Mathf.Max(0, damage));
-
-    // Lấy room của enemy này (gắn EnemyZoneTag khi spawn)
-    string myRoom = GetComponent<EnemyZoneTag>()?.RoomId ?? "";
-
-    var target = RoomBroadcast.ToRoom(myRoom, ZoneRoomManager.Instance);
-    ShowDamageClientRpc(damage, target);  // chỉ client trong zone nhận
-
-    if (CurrentHealth.Value <= 0) Die();
-}
-
-[ClientRpc]
-private void ShowDamageClientRpc(int damage, ClientRpcParams rpcParams = default)
-{
-    // Hiện damage popup
-}
-```
-
-> `EnemyZoneTag` là component đơn giản: `public string RoomId;` — gắn vào enemy và set `RoomId` khi spawn trong `NetworkEnemySpawner`.
-
----
-
-### 2.9 — Kiểm tra hoạt động
-
-Sau khi setup xong, chạy game (host + 1 client):
-
-1. **Player bước qua trigger** → Console server phải in:  
-   `[ZoneRoomManager] Client 1 → room 'map1_zone1' (tổng trong room: 1)`
-2. **Client nhận callback** → Console client phải in:  
-   `[PlayerZoneHandler] Đã vào zone 'map1_zone1' tại (22.0, 0.0)`
-3. **Player teleport** đến `(22, 0)` ngay lập tức (server-authoritative)
-
----
+Khi mo rong he thong zone trong tuong lai, uu tien noi vao `ZoneTransitionController` thay vi them logic moi vao nhom script legacy nay.
 
 ## 3. Config Enemy — Wiring HP từ DB
 
@@ -1264,15 +1088,18 @@ void RefreshElementIcon(string elementType)
 | File | Trạng thái | Mô tả |
 |---|---|---|
 | `Map/MapManager.cs` | ✅ | Singleton, auto-fetch mapId khi scene load |
-| `Map/ZoneTrigger.cs` | ✅ Rewrite | Inspector-driven: roomId + zoneName + spawnX/Y, không gọi API |
+| `Network/Shared/MapWorldConfig.cs` | ✅ Rewrite | Chinh sach zone theo map; map thuong auto-generate zone, map instance tao room runtime |
+| `Network/Server/ZoneRoomRegistry.cs` | ✅ Rewrite | Registry duy nhat cua tat ca public room va custom room |
+| `Network/Server/ZoneTransitionController.cs` | ✅ Rewrite | Chuyen khu instant, chan client vao private zone, cap nhat session dung |
+| `Map/ZoneTrigger.cs` | Legacy | Script cu inspector-driven, khong con la source of truth cho zone model |
 | `Map/ZoneNameBanner.cs` | ✅ Mới | UI banner hiện tên zone, singleton, fade out |
-| `Map/ZoneRoomManager.cs` | ✅ | Server-side room assignment |
-| `Map/RoomBroadcast.cs` | ✅ | Utility lọc ClientRpc theo zone |
+| `Map/ZoneRoomManager.cs` | Legacy | He room string cu, chi dung neu can giu scene cu |
+| `Map/RoomBroadcast.cs` | Legacy | Utility cua he room string cu |
 | `Map/MapEdgeTrigger.cs` | ✅ Mới | Trigger biên map trái/phải, inspector-driven, tự lookup portal |
 | `Map/MapTravelHelper.cs` | ✅ Mới | DontDestroyOnLoad helper: Shutdown → LoadSceneAsync → StartHost |
 | `Map/MapPortalTrigger.cs` | ✅ | Portal phó bản/dungeon (cần portalId + chìa khóa) |
 | ~~`Map/MapTransitionButton.cs`~~ | ❌ Xóa | Thay bằng `MapEdgeTrigger` |
-| `Player/PlayerZoneHandler.cs` | ✅ | NetworkBehaviour xử lý zone switch ServerRpc |
+| `Player/PlayerZoneHandler.cs` | Legacy | NetworkBehaviour room string cu; khong nen mo rong them |
 | `NPC/NpcData.cs` | ✅ Mới | Shared DTO `[Serializable]`, dùng chung server + client, truyền qua RPC dưới dạng JSON string |
 | `NPC/NpcServerManager.cs` | ✅ Rewrite | NetworkBehaviour, chỉ chạy khi `IsServer` — fetch API + `NetworkObject.Spawn()` NPC |
 | `NPC/NpcInteraction.cs` | ✅ Rewrite | NetworkBehaviour, `ServerRpc`/`ClientRpc` — client click → server validate → client render |
@@ -1295,13 +1122,14 @@ void RefreshElementIcon(string elementType)
 
 - [ ] Scene tạo xong, đăng ký **Build Settings**, tên khớp `scene_name` trong DB
 - [ ] `MapManager.cs` gắn vào persistent GameObject (1 lần cho toàn game)
+- [ ] `MapWorldConfig.asset` có map policy đúng: map thường = `SharedPublic`, dungeon = `InstanceOnly`
+- [ ] `sharedMapDefaultZoneCount` được set đúng số khu mặc định mong muốn
 - [ ] `NpcServerManager.cs` gắn vào persistent GameObject, set `mapId` + assign `npcPrefabs` (index khớp `npc_type_id`)
 - [ ] Mỗi NPC prefab có `NetworkObject` component + đăng ký vào **NetworkManager → NetworkPrefabs** list
 - [ ] `NpcMenuUI.cs` trên Canvas, assign tất cả UI fields
 - [ ] `MapEdgeTrigger.cs` tại **rìa trái/phải** scene: `direction = "left"/"right"`, `currentMapId` = mapId scene (hoặc để 0)
-- [ ] `ZoneTrigger.cs` tại ranh giới zone: điền `roomId`, `zoneName`, `spawnX`, `spawnY` trong Inspector
 - [ ] `ZoneNameBanner` Panel trong Canvas HUD: assign `zoneNameText`, `canvasGroup`, để mặc định Inactive
-- [ ] `PlayerZoneHandler.cs` gắn vào Player Prefab
+- [ ] `ServerBootstrap` có `ZoneRoomRegistry`, `ZoneConnectionApprovalV2`, `ZoneTransitionController`, `ZonePlayerSessionManager`
 - [ ] `ElementIconLoader.cs` gắn vào GameManager, set `apiBase`
 - [ ] 6 sprite PNG vào `Assets/Resources/Elements/`
 
