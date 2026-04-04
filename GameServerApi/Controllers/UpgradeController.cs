@@ -6,14 +6,19 @@ using GameServerApi.Data;
 using GameServerApi.Models.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Controllers
 {
     [ApiController]
     [Route("api/upgrade")]
-    [AllowAnonymous]
+    [Authorize]
     public class UpgradeController : ControllerBase
     {
+        private const int LuckyStoneItemId = 8;
+        private const int ProtectionStoneItemId = 9;
+        private const float LuckyStoneBonusRate = 0.15f;
+
         private readonly GameDbContext _db;
 
         public UpgradeController(GameDbContext db)
@@ -141,6 +146,9 @@ namespace GameServerApi.Controllers
                 int    playerId       = pidProp.GetInt32();
                 string slotKey        = slotKeyProp.GetString() ?? "";
                 bool   isFromInventory = fromInvProp.GetBoolean();
+                int clientRatePercent = body.TryGetProperty("clientRatePercent", out var rateProp)
+                    ? rateProp.GetInt32()
+                    : -1;
 
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null) return NotFound("Player không tồn tại.");
@@ -181,40 +189,84 @@ namespace GameServerApi.Controllers
                 if (cfg == null)
                     return BadRequest($"Không có config nâng cấp cho bậc +{targetLevel}.");
 
-                // Đọc stoneSlotIndices từ request
-                var stoneIndices = new List<int>();
-                if (body.TryGetProperty("stoneSlotIndices", out var stonesProp))
-                    foreach (var el in stonesProp.EnumerateArray())
-                        stoneIndices.Add(el.GetInt32());
+                var stoneRequests = TryBuildRequestedSlotCountMap(
+                    body,
+                    usagePropertyName: "stoneUsages",
+                    indexPropertyName: "stoneSlotIndices",
+                    out string? stoneRequestError);
+                if (stoneRequestError != null)
+                    return BadRequest(stoneRequestError);
 
-                // Đếm số lượng từng loại đá
+                var charmRequests = TryBuildRequestedSlotCountMap(
+                    body,
+                    usagePropertyName: "charmUsages",
+                    indexPropertyName: "charmSlotIndices",
+                    out string? charmRequestError);
+                if (charmRequestError != null)
+                    return BadRequest(charmRequestError);
+
                 int upgradeStoneCount = 0;
                 int luckyStoneCount   = 0;
-                bool hasProtection    = false;
+                int protectionStoneCount = 0;
 
-                foreach (int idx in stoneIndices)
+                foreach (var request in stoneRequests)
                 {
-                    var stone = inventory.FirstOrDefault(s =>
-                        s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == idx);
-                    if (stone == null) continue;
+                    var stone = FindInventorySlotByIndex(inventory, request.Key);
+                    if (stone == null)
+                        return BadRequest($"Không tìm thấy vật liệu ở slot {request.Key}.");
 
-                    int stoneItemId = stone.ContainsKey("itemTemplateId") ? Convert.ToInt32(stone["itemTemplateId"]) : 0;
-                    if (stoneItemId == cfg.StoneId) upgradeStoneCount++;
-                    else if (stoneItemId == 8)      luckyStoneCount++;
-                    else if (stoneItemId == 9)      hasProtection = true;
+                    int amount = GetSlotAmount(stone);
+                    if (amount < request.Value)
+                        return BadRequest($"Slot {request.Key} không đủ số lượng vật liệu. Cần {request.Value}, hiện có {amount}.");
+
+                    int stoneItemId = GetSlotItemTemplateId(stone);
+                    if (stoneItemId == cfg.StoneId)
+                        upgradeStoneCount += request.Value;
+                    else if (stoneItemId == ProtectionStoneItemId)
+                        protectionStoneCount += request.Value;
+                    else
+                        return BadRequest($"Vật liệu ở slot {request.Key} không hợp lệ cho bậc +{targetLevel}.");
                 }
+
+                foreach (var request in charmRequests)
+                {
+                    var charm = FindInventorySlotByIndex(inventory, request.Key);
+                    if (charm == null)
+                        return BadRequest($"Không tìm thấy bùa ở slot {request.Key}.");
+
+                    int amount = GetSlotAmount(charm);
+                    if (amount < request.Value)
+                        return BadRequest($"Slot {request.Key} không đủ số lượng Đá May Mắn. Cần {request.Value}, hiện có {amount}.");
+
+                    int charmItemId = GetSlotItemTemplateId(charm);
+                    if (charmItemId != LuckyStoneItemId)
+                        return BadRequest($"Item ở slot {request.Key} không phải Đá May Mắn.");
+
+                    luckyStoneCount += request.Value;
+                }
+
+                if (luckyStoneCount > 1)
+                    return BadRequest("Chỉ được dùng 1 Đá May Mắn mỗi lần cường hóa.");
+
+                if (protectionStoneCount > 1)
+                    return BadRequest("Chỉ được dùng 1 Đá Bảo Vệ mỗi lần cường hóa.");
 
                 if (upgradeStoneCount < cfg.StoneMin)
                     return BadRequest($"Cần ít nhất {cfg.StoneMin} đá nâng cấp. Hiện có: {upgradeStoneCount}.");
 
                 // Tỉ lệ thành công
                 float stoneRatio = Math.Min((float)upgradeStoneCount / cfg.StoneNeeded, 1f);
-                float rate       = cfg.BaseSuccessRate * stoneRatio + luckyStoneCount * 0.15f;
+                float rate       = cfg.BaseSuccessRate * stoneRatio + luckyStoneCount * LuckyStoneBonusRate;
                 rate = Math.Clamp(rate, 0f, 1f);
+
+                int serverRatePercent = (int)Math.Round(rate * 100f, MidpointRounding.AwayFromZero);
+                if (clientRatePercent >= 0 && Math.Abs(clientRatePercent - serverRatePercent) > 1)
+                    return BadRequest($"Tỉ lệ client không khớp server. Client={clientRatePercent}% | Server={serverRatePercent}%.");
 
                 bool success    = new Random().NextDouble() < rate;
                 bool downgraded = false;
                 int  newLevel   = currentLevel;
+                bool hasProtection = protectionStoneCount > 0;
 
                 if (success)
                 {
@@ -233,17 +285,8 @@ namespace GameServerApi.Controllers
                 info.Silver -= cfg.SilverCost;
                 player.SetInfoChar(info);
 
-                // Trừ đá khỏi inventory (giảm amount từng cái, xóa khi hết)
-                foreach (int idx in stoneIndices)
-                {
-                    var stone = inventory.FirstOrDefault(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == idx);
-                    if (stone == null) continue;
-                    int amt = stone.ContainsKey("amount") ? Convert.ToInt32(stone["amount"]) : 1;
-                    if (amt <= 1)
-                        inventory.RemoveAll(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == idx);
-                    else
-                        stone["amount"] = amt - 1;
-                }
+                ConsumeRequestedInventorySlots(inventory, stoneRequests);
+                ConsumeRequestedInventorySlots(inventory, charmRequests);
 
                 // Tính lại strOptions theo bậc mới
                 string currentStrOptions = itemDict.ContainsKey("strOptions") ? itemDict["strOptions"]?.ToString() ?? "" : "";
@@ -280,16 +323,42 @@ namespace GameServerApi.Controllers
                         ? $"💔 Thất bại! Về +{newLevel}"
                         : "😞 Thất bại! Trang bị không đổi.";
 
-                // Build inventory response (chỉ fields client cần)
-                var updatedInv = inventory.Select(s => new Dictionary<string, object>
-                {
-                    ["slotIndex"]      = s.ContainsKey("slotIndex")      ? s["slotIndex"]      : 0,
-                    ["itemTemplateId"] = s.ContainsKey("itemTemplateId") ? s["itemTemplateId"] : 0,
-                    ["upgradeLevel"]   = s.ContainsKey("upgradeLevel")   ? s["upgradeLevel"]   : 0,
-                    ["strOptions"]     = s.ContainsKey("strOptions")     ? s["strOptions"] ?? "" : "",
-                    ["amount"]         = s.ContainsKey("amount")         ? s["amount"] : (s.ContainsKey("quantity") ? s["quantity"] : 1),
-                    ["isEquipped"]     = s.ContainsKey("isEquipped")     ? s["isEquipped"]     : false,
-                }).ToList();
+                var templateIds = inventory
+                    .Select(GetSlotItemTemplateId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+
+                var templateMap = await _db.ItemTemplates
+                    .Where(t => templateIds.Contains(t.Id))
+                    .ToDictionaryAsync(t => t.Id);
+
+                var updatedInv = inventory
+                    .OrderBy(GetSlotIndex)
+                    .Select(s =>
+                    {
+                        int templateId = GetSlotItemTemplateId(s);
+                        templateMap.TryGetValue(templateId, out var template);
+                        string iconId = template != null && template.IdIcon > 0
+                            ? template.IdIcon.ToString()
+                            : GetSlotString(s, "iconId", "");
+
+                        string itemCode = GetSlotString(s, "itemCode", template?.Name ?? $"Item #{templateId}");
+
+                        return new
+                        {
+                            slotIndex = GetSlotIndex(s),
+                            id = templateId,
+                            amount = GetSlotAmount(s),
+                            isEquipped = GetSlotBool(s, "isEquipped"),
+                            isLocked = GetSlotBool(s, "isLocked") || (template?.IsLock ?? false),
+                            upgradeLevel = GetSlotInt(s, "upgradeLevel"),
+                            strOptions = GetSlotString(s, "strOptions", ""),
+                            itemCode,
+                            iconId,
+                        };
+                    })
+                    .ToList();
 
                 return Ok(new
                 {
@@ -299,6 +368,7 @@ namespace GameServerApi.Controllers
                     updatedStrOptions = newStrOptions,
                     silver            = info.Silver,
                     message           = msg,
+                    actualRatePercent = serverRatePercent,
                     final_stats = new
                     {
                         hp         = upgFs.Hp,
@@ -346,6 +416,147 @@ namespace GameServerApi.Controllers
                     result.Add(pair); // giữ nguyên nếu không tìm thấy template
             }
             return string.Join(";", result);
+        }
+
+        private static Dictionary<int, int> BuildRequestedSlotCountMap(IEnumerable<int> indices)
+        {
+            var result = new Dictionary<int, int>();
+            if (indices == null)
+                return result;
+
+            foreach (int slotIndex in indices)
+            {
+                if (!result.ContainsKey(slotIndex))
+                    result[slotIndex] = 0;
+                result[slotIndex]++;
+            }
+
+            return result;
+        }
+
+        private static Dictionary<int, int> TryBuildRequestedSlotCountMap(
+            JsonElement body,
+            string usagePropertyName,
+            string indexPropertyName,
+            out string? error)
+        {
+            error = null;
+
+            if (body.TryGetProperty(usagePropertyName, out var usagesProp) && usagesProp.ValueKind == JsonValueKind.Array)
+            {
+                var usageMap = new Dictionary<int, int>();
+                foreach (var usage in usagesProp.EnumerateArray())
+                {
+                    if (usage.ValueKind != JsonValueKind.Object)
+                    {
+                        error = $"{usagePropertyName} phải là mảng object {{ slotIndex, count }}.";
+                        return new Dictionary<int, int>();
+                    }
+
+                    if (!usage.TryGetProperty("slotIndex", out var slotProp) || !slotProp.TryGetInt32(out int slotIndex))
+                    {
+                        error = $"{usagePropertyName} đang thiếu slotIndex hợp lệ.";
+                        return new Dictionary<int, int>();
+                    }
+
+                    int count = 1;
+                    if (usage.TryGetProperty("count", out var countProp))
+                    {
+                        if (!countProp.TryGetInt32(out count) || count <= 0)
+                        {
+                            error = $"{usagePropertyName} có count không hợp lệ ở slot {slotIndex}.";
+                            return new Dictionary<int, int>();
+                        }
+                    }
+
+                    if (!usageMap.ContainsKey(slotIndex))
+                        usageMap[slotIndex] = 0;
+                    usageMap[slotIndex] += count;
+                }
+
+                return usageMap;
+            }
+
+            var indices = new List<int>();
+            if (body.TryGetProperty(indexPropertyName, out var indicesProp) && indicesProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var el in indicesProp.EnumerateArray())
+                {
+                    if (!el.TryGetInt32(out int slotIndex))
+                    {
+                        error = $"{indexPropertyName} chứa slotIndex không hợp lệ.";
+                        return new Dictionary<int, int>();
+                    }
+                    indices.Add(slotIndex);
+                }
+            }
+
+            return BuildRequestedSlotCountMap(indices);
+        }
+
+        private static Dictionary<string, object>? FindInventorySlotByIndex(List<Dictionary<string, object>> inventory, int slotIndex)
+        {
+            return inventory.FirstOrDefault(s => GetSlotIndex(s) == slotIndex);
+        }
+
+        private static int GetSlotIndex(Dictionary<string, object> slot)
+        {
+            return GetSlotInt(slot, "slotIndex");
+        }
+
+        private static int GetSlotItemTemplateId(Dictionary<string, object> slot)
+        {
+            if (slot.ContainsKey("itemTemplateId"))
+                return Convert.ToInt32(slot["itemTemplateId"]);
+            if (slot.ContainsKey("id"))
+                return Convert.ToInt32(slot["id"]);
+            return 0;
+        }
+
+        private static int GetSlotAmount(Dictionary<string, object> slot)
+        {
+            if (slot.ContainsKey("amount"))
+                return Convert.ToInt32(slot["amount"]);
+            if (slot.ContainsKey("quantity"))
+                return Convert.ToInt32(slot["quantity"]);
+            return 1;
+        }
+
+        private static int GetSlotInt(Dictionary<string, object> slot, string key)
+        {
+            return slot.ContainsKey(key) ? Convert.ToInt32(slot[key]) : 0;
+        }
+
+        private static bool GetSlotBool(Dictionary<string, object> slot, string key)
+        {
+            return slot.ContainsKey(key) && Convert.ToBoolean(slot[key]);
+        }
+
+        private static string GetSlotString(Dictionary<string, object> slot, string key, string fallback = "")
+        {
+            if (!slot.ContainsKey(key) || slot[key] == null)
+                return fallback;
+            return slot[key]?.ToString() ?? fallback;
+        }
+
+        private static void ConsumeRequestedInventorySlots(List<Dictionary<string, object>> inventory, Dictionary<int, int> requests)
+        {
+            foreach (var request in requests)
+            {
+                var slot = FindInventorySlotByIndex(inventory, request.Key);
+                if (slot == null)
+                    continue;
+
+                int remaining = GetSlotAmount(slot) - request.Value;
+                if (remaining <= 0)
+                {
+                    inventory.Remove(slot);
+                    continue;
+                }
+
+                slot["amount"] = remaining;
+                slot["quantity"] = remaining;
+            }
         }
 
         private static List<Dictionary<string, object>> ParseJsonList(string json)

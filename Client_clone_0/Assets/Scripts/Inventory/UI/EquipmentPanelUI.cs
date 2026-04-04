@@ -73,6 +73,8 @@ public class EquipmentPanelUI : MonoBehaviour
             panelRoot = gameObject;
         }
 
+        UIRuntimeAssetHelper.ApplyNotoSans(titleText, unequipItemNameText);
+
         // Setup title
         if (titleText != null)
         {

@@ -1,5 +1,8 @@
 using System.Text;
 using GameServerApi.Data;
+using GameServerApi.Middleware;
+using GameServerApi.Services;
+using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +16,10 @@ builder.Services.AddOpenApi();
 
 // In-memory cache: dùng cho spawn-config, enemy data (tránh gọi DB thừa)
 builder.Services.AddMemoryCache();
+
+// ── Application services ──────────────────────────────────────────────────────
+builder.Services.AddScoped<IAuthService,   AuthService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
 
 // DbContext
 builder.Services.AddDbContext<GameDbContext>(options =>
@@ -100,6 +107,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 

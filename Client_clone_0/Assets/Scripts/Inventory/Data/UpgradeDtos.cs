@@ -25,14 +25,23 @@ public class UpgradeConfigDto
 /// Request nâng cấp – gửi lên POST /api/upgrade/equipment
 /// </summary>
 [Serializable]
+public class UpgradeMaterialUsageDto
+{
+    public int slotIndex;
+    public int count;
+}
+
+[Serializable]
 public class UpgradeRequestDto
 {
-    public int       playerId;
-    public string    slotKey;            // "weapon"/"helmet"/... hoặc slot index (từ inventory)
-    public bool      isFromInventory;    // true = item trong túi đồ, false = đang mặc
-    public List<int> stoneSlotIndices;   // inventory slot index của từng viên đá trong 16 ô
-    public List<int> charmSlotIndices;   // inventory slot index bùa (id=8), thường <= 1
-    public int       clientRatePercent;  // tỉ lệ client tính (server so sánh để chống cheat)
+    public int                          playerId;
+    public string                       slotKey;            // "weapon"/"helmet"/... hoặc slot index (từ inventory)
+    public bool                         isFromInventory;    // true = item trong túi đồ, false = đang mặc
+    public List<int>                    stoneSlotIndices;   // legacy fallback
+    public List<int>                    charmSlotIndices;   // legacy fallback
+    public List<UpgradeMaterialUsageDto> stoneUsages;       // slotIndex + count cho đá nâng cấp
+    public List<UpgradeMaterialUsageDto> charmUsages;       // slotIndex + count cho đá may mắn
+    public int                          clientRatePercent;  // tỉ lệ client tính (server so sánh để chống cheat)
 }
 
 /// <summary>
@@ -46,6 +55,7 @@ public class UpgradeResponseDto
     public int    newUpgradeLevel;     // bậc mới của item
     public string updatedStrOptions;   // strOptions mới sau nâng cấp
     public int    silver;              // số bạc còn lại sau khi nâng cấp
+    public int    actualRatePercent;   // tỉ lệ server đã dùng để roll
     public string message;             // thông báo từ server
     public FinalStats final_stats;      // base + equipment + potential — dùng update UI
 

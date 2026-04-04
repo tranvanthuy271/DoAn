@@ -72,7 +72,9 @@ public class MobPatrolAI : MonoBehaviour
     private float     _lastAttack   = 0f;
     private float     _hpRegenAccum = 0f;
 
+#pragma warning disable CS0414
     private bool _patrolPointsAuto = false;
+#pragma warning restore CS0414
 
     private enum State { Patrol, Chase, Attack, Stunned, Dead }
     private State _state = State.Patrol;

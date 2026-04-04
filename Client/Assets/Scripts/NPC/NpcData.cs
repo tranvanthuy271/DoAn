@@ -20,3 +20,11 @@ public class NpcData
 /// <summary>Wrapper dùng khi API trả về JSON array thô — bọc lại cho JsonUtility parse.</summary>
 [Serializable]
 public class NpcListWrapper { public NpcData[] npcs; }
+
+/// <summary>Map npc_id cụ thể → prefab riêng, dùng trong NpcServerManager.npcPrefabsById[].</summary>
+[System.Serializable]
+public struct NpcIdPrefabEntry
+{
+    public int            npcId;
+    public UnityEngine.GameObject prefab;
+}

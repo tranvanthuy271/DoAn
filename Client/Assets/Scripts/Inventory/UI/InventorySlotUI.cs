@@ -10,12 +10,20 @@ using System;
 /// </summary>
 public class InventorySlotUI : MonoBehaviour
 {
+    private const string RuntimeIconObjectName = "RuntimeItemIcon";
+
     [Header("UI References")]
     [SerializeField] private Image iconImage;
     [SerializeField] private TMP_Text quantityText;
     [SerializeField] private GameObject equippedMark;
     [Tooltip("Image/GameObject hiển thị khi item bị khóa (isLocked = true)")]
     [SerializeField] private GameObject lockMark;
+
+    [Header("Icon Layout")]
+    [Tooltip("Padding để icon không chạm viền slot.")]
+    [SerializeField] private Vector2 iconPadding = new Vector2(20f, 20f);
+    [Tooltip("Kích thước fallback nếu RectTransform slot chưa có size ở frame đầu.")]
+    [SerializeField] private Vector2 fallbackIconMaxSize = new Vector2(80f, 80f);
 
     [Header("Select Mode (Blacksmith – chọn đá/bùa)")]
     [Tooltip("Button 'Chọn' hiện khi ô khớp filter. Thêm vào prefab slot, ẩn mặc định.")]
@@ -25,6 +33,15 @@ public class InventorySlotUI : MonoBehaviour
 
     private int slotIndex;
     private InventorySlotDto currentData;
+    private bool _inSelectMode;
+    private bool _canSelectInSelectMode;
+    private Action _selectModeCallback;
+
+    private void Awake()
+    {
+        EnsureRuntimeReferences();
+        ApplyTheme();
+    }
 
     /// <summary>
     /// Event khi người chơi click vào slot có item
@@ -37,6 +54,15 @@ public class InventorySlotUI : MonoBehaviour
     public void Init(int index)
     {
         slotIndex = index;
+
+        EnsureRuntimeReferences();
+        ApplyTheme();
+
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
         Clear();
     }
 
@@ -45,6 +71,7 @@ public class InventorySlotUI : MonoBehaviour
     /// </summary>
     public void Clear()
     {
+        EnsureRuntimeReferences();
         currentData = null;
 
         if (iconImage != null)
@@ -77,6 +104,7 @@ public class InventorySlotUI : MonoBehaviour
     /// </summary>
     public void SetSlot(InventorySlotDto slot)
     {
+        EnsureRuntimeReferences();
         currentData = slot;
 
         if (slot == null || slot.quantity <= 0)
@@ -102,19 +130,32 @@ public class InventorySlotUI : MonoBehaviour
             }
             else
             {
-                Sprite icon = IconDatabase.Instance.GetIcon(slot.iconId);
+                Sprite icon = null;
+                string resolvedIconId = slot.iconId;
+
+                if (!string.IsNullOrEmpty(resolvedIconId))
+                    icon = IconDatabase.Instance.GetIcon(resolvedIconId);
+
+                if (icon == null && slot.id > 0)
+                {
+                    var template = ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
+                    if (template != null && template.idIcon > 0)
+                    {
+                        resolvedIconId = template.idIcon.ToString();
+                        icon = IconDatabase.Instance.GetIcon(resolvedIconId);
+                    }
+                }
 
                 if (icon != null)
                 {
-                    iconImage.enabled = true;
-                    iconImage.sprite = icon;
-                    Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - Đã load icon thành công: {slot.iconId}");
+                    UIRuntimeAssetHelper.SetSpriteWithNativeFit(iconImage, icon, GetMaxIconSize());
+                    Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - Đã load icon thành công: {resolvedIconId}");
                 }
                 else
                 {
                     iconImage.enabled = false;
                     iconImage.sprite = null;
-                    Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - KHÔNG tìm thấy icon với iconId='{slot.iconId}' trong IconDatabase!");
+                    Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - KHÔNG tìm thấy icon với iconId='{resolvedIconId}' trong IconDatabase!");
                 }
             }
         }
@@ -160,6 +201,10 @@ public class InventorySlotUI : MonoBehaviour
     /// </summary>
     public void SetSelectMode(bool inSelectMode, bool canSelect, System.Action onSelect)
     {
+        _inSelectMode = inSelectMode;
+        _canSelectInSelectMode = canSelect;
+        _selectModeCallback = onSelect;
+
         if (chooseButton != null)
         {
             chooseButton.gameObject.SetActive(inSelectMode && canSelect);
@@ -186,10 +231,89 @@ public class InventorySlotUI : MonoBehaviour
         if (currentData == null || currentData.quantity <= 0)
             return;
 
+        // Fallback cho prefab cũ không có ChooseButton:
+        // nếu đang ở select mode của Blacksmith thì click trực tiếp vào slot để chọn item.
+        if (_inSelectMode)
+        {
+            if (_canSelectInSelectMode)
+                _selectModeCallback?.Invoke();
+            return;
+        }
+
         Debug.Log($"[InventorySlotUI] Clicked slot {slotIndex} - itemCode={currentData.itemCode}, qty={currentData.quantity}");
 
         // Fire event để InventoryUI mở panel chi tiết
         OnSlotClicked?.Invoke(currentData);
+    }
+
+    private void ApplyTheme()
+    {
+        UIRuntimeAssetHelper.ApplyNotoSans(quantityText);
+    }
+
+    private void EnsureRuntimeReferences()
+    {
+        bool iconUsesRootGraphic = iconImage == null || iconImage.gameObject == gameObject;
+        if (!iconUsesRootGraphic)
+        {
+            iconImage.raycastTarget = false;
+            iconImage.preserveAspect = true;
+            return;
+        }
+
+        Transform existingTransform = transform.Find(RuntimeIconObjectName);
+        RectTransform iconRect;
+        Image dedicatedIconImage;
+
+        if (existingTransform == null)
+        {
+            GameObject iconObject = new GameObject(RuntimeIconObjectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            iconRect = iconObject.GetComponent<RectTransform>();
+            iconRect.SetParent(transform, false);
+            iconRect.anchorMin = new Vector2(0.5f, 0.5f);
+            iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRect.pivot = new Vector2(0.5f, 0.5f);
+            iconRect.anchoredPosition = Vector2.zero;
+            iconRect.sizeDelta = fallbackIconMaxSize;
+            iconRect.SetAsFirstSibling();
+
+            dedicatedIconImage = iconObject.GetComponent<Image>();
+        }
+        else
+        {
+            iconRect = existingTransform as RectTransform;
+            dedicatedIconImage = existingTransform.GetComponent<Image>();
+            if (dedicatedIconImage == null)
+            {
+                dedicatedIconImage = existingTransform.gameObject.AddComponent<Image>();
+            }
+
+            iconRect.SetAsFirstSibling();
+        }
+
+        dedicatedIconImage.raycastTarget = false;
+        dedicatedIconImage.preserveAspect = true;
+        dedicatedIconImage.enabled = false;
+        iconImage = dedicatedIconImage;
+    }
+
+    private Vector2 GetMaxIconSize()
+    {
+        RectTransform rootRect = transform as RectTransform;
+        if (rootRect == null)
+        {
+            return fallbackIconMaxSize;
+        }
+
+        Vector2 slotSize = rootRect.rect.size;
+        if (slotSize.x <= 0f || slotSize.y <= 0f)
+        {
+            return fallbackIconMaxSize;
+        }
+
+        return new Vector2(
+            Mathf.Max(0f, slotSize.x - iconPadding.x),
+            Mathf.Max(0f, slotSize.y - iconPadding.y));
     }
 }
 

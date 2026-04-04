@@ -15,7 +15,9 @@ public class TeleportSkill : NetworkBehaviour
 
     [Header("Teleport Settings")]
     [Tooltip("Phím để kích hoạt skill teleport")]
+#pragma warning disable CS0414
     [SerializeField] private KeyCode teleportKey = KeyCode.T;
+#pragma warning restore CS0414
     
     [Tooltip("Cooldown giữa các lần sử dụng teleport (seconds)")]
     [SerializeField] public float cooldown = 3f;

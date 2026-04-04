@@ -13,19 +13,262 @@ MonoBehaviour:
   m_Name: UpgradeStoneConfig
   m_EditorClassIdentifier: 
   stones:
-  - itemId: 0
-    stoneName: 
+  - itemId: 1
+    stoneName: Đá Nâng Cấp Cấp 1
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 2
+    stoneName: Đá Nâng Cấp Cấp 2
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 3
+    stoneName: Đá Nâng Cấp Cấp 3
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 4
+    stoneName: Đá Nâng Cấp Cấp 4
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 5
+    stoneName: Đá Nâng Cấp Cấp 5
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 6
+    stoneName: Đá Nâng Cấp Cấp 6
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 7
+    stoneName: Đá Nâng Cấp Cấp 7
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 8
+    stoneName: Đá May Mắn
+    ratePointPerStone: 15
+    maxRatePointFromThisStone: 15
+  - itemId: 9
+    stoneName: Đá Bảo Vệ
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 10
+    stoneName: Đá Hồi Phục
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 42
+    stoneName: Đá Nâng Cấp Cấp 8
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 43
+    stoneName: Đá Nâng Cấp Cấp 9
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 44
+    stoneName: Đá Nâng Cấp Cấp 10
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 45
+    stoneName: Đá Nâng Cấp Cấp 11
+    ratePointPerStone: 0
+    maxRatePointFromThisStone: 0
+  - itemId: 46
+    stoneName: Đá Nâng Cấp Cấp 12
     ratePointPerStone: 0
     maxRatePointFromThisStone: 0
   charmItemId: 8
-  charmBonusPercent: 3
-  itemConfigs:
-  - itemTemplateId: 0
-    itemName: 
-    baseSuccessPercent: 0
-    successDecreasePerLevel: 0
-    maxUpgradeLevel: 0
-    stoneMinOverride: 0
-    stoneNeededOverride: 0
+  charmBonusPercent: 15
+  protectionItemId: 9
+  itemConfigs: []
+  levelConfigs:
+  - targetLevel: 1
+    silverCost: 1000
+    stoneId: 1
+    stoneName: Đá Nâng Cấp Cấp 1
+    baseSuccessPercent: 100
+    stoneNeeded: 3
+    stoneMin: 1
+    failPolicy: 0
+  - targetLevel: 2
+    silverCost: 2000
+    stoneId: 1
+    stoneName: Đá Nâng Cấp Cấp 1
+    baseSuccessPercent: 100
+    stoneNeeded: 5
+    stoneMin: 2
+    failPolicy: 0
+  - targetLevel: 3
+    silverCost: 4000
+    stoneId: 1
+    stoneName: Đá Nâng Cấp Cấp 1
+    baseSuccessPercent: 95
+    stoneNeeded: 8
+    stoneMin: 3
+    failPolicy: 0
+  - targetLevel: 4
+    silverCost: 8000
+    stoneId: 2
+    stoneName: Đá Nâng Cấp Cấp 2
+    baseSuccessPercent: 90
+    stoneNeeded: 5
+    stoneMin: 2
+    failPolicy: 0
+  - targetLevel: 5
+    silverCost: 15000
+    stoneId: 2
+    stoneName: Đá Nâng Cấp Cấp 2
+    baseSuccessPercent: 85
+    stoneNeeded: 7
+    stoneMin: 3
+    failPolicy: 0
+  - targetLevel: 6
+    silverCost: 25000
+    stoneId: 2
+    stoneName: Đá Nâng Cấp Cấp 2
+    baseSuccessPercent: 80
+    stoneNeeded: 10
+    stoneMin: 4
+    failPolicy: 0
+  - targetLevel: 7
+    silverCost: 40000
+    stoneId: 3
+    stoneName: Đá Nâng Cấp Cấp 3
+    baseSuccessPercent: 75
+    stoneNeeded: 5
+    stoneMin: 2
+    failPolicy: 1
+  - targetLevel: 8
+    silverCost: 60000
+    stoneId: 3
+    stoneName: Đá Nâng Cấp Cấp 3
+    baseSuccessPercent: 70
+    stoneNeeded: 7
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 9
+    silverCost: 90000
+    stoneId: 3
+    stoneName: Đá Nâng Cấp Cấp 3
+    baseSuccessPercent: 65
+    stoneNeeded: 10
+    stoneMin: 4
+    failPolicy: 1
+  - targetLevel: 10
+    silverCost: 130000
+    stoneId: 4
+    stoneName: Đá Nâng Cấp Cấp 4
+    baseSuccessPercent: 60
+    stoneNeeded: 5
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 11
+    silverCost: 180000
+    stoneId: 4
+    stoneName: Đá Nâng Cấp Cấp 4
+    baseSuccessPercent: 55
+    stoneNeeded: 7
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 12
+    silverCost: 250000
+    stoneId: 4
+    stoneName: Đá Nâng Cấp Cấp 4
+    baseSuccessPercent: 50
+    stoneNeeded: 10
+    stoneMin: 4
+    failPolicy: 1
+  - targetLevel: 13
+    silverCost: 350000
+    stoneId: 5
+    stoneName: Đá Nâng Cấp Cấp 5
+    baseSuccessPercent: 45
+    stoneNeeded: 5
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 14
+    silverCost: 480000
+    stoneId: 5
+    stoneName: Đá Nâng Cấp Cấp 5
+    baseSuccessPercent: 40
+    stoneNeeded: 7
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 15
+    silverCost: 650000
+    stoneId: 5
+    stoneName: Đá Nâng Cấp Cấp 5
+    baseSuccessPercent: 35
+    stoneNeeded: 10
+    stoneMin: 4
+    failPolicy: 1
+  - targetLevel: 16
+    silverCost: 900000
+    stoneId: 6
+    stoneName: Đá Nâng Cấp Cấp 6
+    baseSuccessPercent: 30
+    stoneNeeded: 5
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 17
+    silverCost: 1200000
+    stoneId: 6
+    stoneName: Đá Nâng Cấp Cấp 6
+    baseSuccessPercent: 28
+    stoneNeeded: 7
+    stoneMin: 3
+    failPolicy: 1
+  - targetLevel: 18
+    silverCost: 1600000
+    stoneId: 6
+    stoneName: Đá Nâng Cấp Cấp 6
+    baseSuccessPercent: 25
+    stoneNeeded: 10
+    stoneMin: 5
+    failPolicy: 1
+  - targetLevel: 19
+    silverCost: 2200000
+    stoneId: 7
+    stoneName: Đá Nâng Cấp Cấp 7
+    baseSuccessPercent: 20
+    stoneNeeded: 10
+    stoneMin: 5
+    failPolicy: 1
+  - targetLevel: 20
+    silverCost: 3000000
+    stoneId: 7
+    stoneName: Đá Nâng Cấp Cấp 7
+    baseSuccessPercent: 15
+    stoneNeeded: 15
+    stoneMin: 7
+    failPolicy: 1
+  - targetLevel: 21
+    silverCost: 4200000
+    stoneId: 42
+    stoneName: Đá Nâng Cấp Cấp 8
+    baseSuccessPercent: 12
+    stoneNeeded: 20
+    stoneMin: 8
+    failPolicy: 1
+  - targetLevel: 22
+    silverCost: 5500000
+    stoneId: 42
+    stoneName: Đá Nâng Cấp Cấp 8
+    baseSuccessPercent: 10
+    stoneNeeded: 25
+    stoneMin: 10
+    failPolicy: 1
+  - targetLevel: 23
+    silverCost: 7000000
+    stoneId: 43
+    stoneName: Đá Nâng Cấp Cấp 9
+    baseSuccessPercent: 8
+    stoneNeeded: 30
+    stoneMin: 12
+    failPolicy: 2
+  - targetLevel: 24
+    silverCost: 9000000
+    stoneId: 43
+    stoneName: Đá Nâng Cấp Cấp 9
+    baseSuccessPercent: 6
+    stoneNeeded: 40
+    stoneMin: 15
+    failPolicy: 2
   fullRatePoints: 100
-  maxSuccessPercent: 95
+  maxSuccessPercent: 100

@@ -1,13 +1,8 @@
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using GameServerApi.Data;
 using GameServerApi.Models;
+using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace GameServerApi.Controllers
 {
@@ -16,12 +11,14 @@ namespace GameServerApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly GameDbContext _db;
-        private readonly IConfiguration _config;
+        private readonly IAuthService  _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(GameDbContext db, IConfiguration config)
+        public AuthController(GameDbContext db, IAuthService authService, ILogger<AuthController> logger)
         {
-            _db = db;
-            _config = config;
+            _db          = db;
+            _authService = authService;
+            _logger      = logger;
         }
 
         [HttpPost("register")]
@@ -42,28 +39,27 @@ namespace GameServerApi.Controllers
                 return BadRequest("Username hoặc email đã tồn tại.");
             }
 
-            // TODO: dùng bcrypt/argon2. Tạm thời demo: lưu plain text (không dùng cho production).
             var user = new User
             {
-                Username = request.Username,
-                Email = request.Email,
-                PasswordHash = request.Password,
-                CreatedAt = DateTime.UtcNow
+                Username     = request.Username,
+                Email        = request.Email,
+                PasswordHash = _authService.HashPassword(request.Password),
+                CreatedAt    = DateTime.UtcNow
             };
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user);
+            var token = _authService.GenerateJwtToken(user);
 
-            var response = new
+            _logger.LogInformation("Register thành công: {Username} (userId={UserId})", user.Username, user.UserId);
+
+            return Ok(new
             {
-                token = token,
+                token   = token,
                 user_id = user.UserId,
                 message = "Register thành công."
-            };
-
-            return Ok(response);
+            });
         }
 
         [HttpPost("login")]
@@ -83,8 +79,7 @@ namespace GameServerApi.Controllers
                 return Unauthorized("Sai username hoặc password.");
             }
 
-            // TODO: so sánh password đã hash. Tạm thời so sánh plain text cho demo.
-            if (user.PasswordHash != request.Password)
+            if (!_authService.VerifyPassword(request.Password, user.PasswordHash))
             {
                 return Unauthorized("Sai username hoặc password.");
             }
@@ -92,43 +87,16 @@ namespace GameServerApi.Controllers
             user.LastLogin = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user);
+            var token = _authService.GenerateJwtToken(user);
 
-            var response = new
+            _logger.LogInformation("Login thành công: {Username} (userId={UserId})", user.Username, user.UserId);
+
+            return Ok(new
             {
-                token = token,
-                user_id = user.UserId,
+                token    = token,
+                user_id  = user.UserId,
                 username = user.Username
-            };
-
-            return Ok(response);
-        }
-
-        private string GenerateJwtToken(User user)
-        {
-            var jwtSection = _config.GetSection("Jwt");
-            var key = jwtSection["Key"] ?? "DEV_KEY_CHANGE_ME";
-            var issuer = jwtSection["Issuer"] ?? "GameServerApi";
-            var audience = jwtSection["Audience"] ?? "GameClient";
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim("user_id", user.UserId.ToString())
-            };
-
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var creds = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            });
         }
     }
 }

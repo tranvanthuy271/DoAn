@@ -1,9 +1,25 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace GameServerApi.Models
 {
+    // ----------------------------------------------------------------
+    // ActiveBuff : 1 buff đang active, lưu trong player_data.active_buffs
+    // ----------------------------------------------------------------
+    public class ActiveBuff
+    {
+        [JsonPropertyName("effectType")]  public string EffectType  { get; set; } = string.Empty;
+        [JsonPropertyName("value")]       public int    Value       { get; set; }
+        [JsonPropertyName("iconId")]      public int    IconId      { get; set; }
+        [JsonPropertyName("name")]        public string Name        { get; set; } = string.Empty;
+        [JsonPropertyName("detail")]      public string Detail      { get; set; } = string.Empty;
+        /// <summary>UTC expiry thời điểm; null nếu instant (đã apply rồi).</summary>
+        [JsonPropertyName("expireAt")]    public DateTime? ExpireAt { get; set; }
+    }
+
+
     // ----------------------------------------------------------------
     // InfoChar : tất cả chỉ số & trạng thái nhân vật được pack vào 1 cột JSON.
     // Mapping với cột  player_data.info_char  (LONGTEXT).
@@ -72,6 +88,9 @@ namespace GameServerApi.Models
         public string SkillsJson        { get; set; } = "[]";
         public string PotentialStatsJson{ get; set; } = "{}";
 
+        /// <summary>JSON array of active timed buffs (ActiveBuff[]).</summary>
+        public string ActiveBuffsJson   { get; set; } = "[]";
+
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // ---- Helpers ----
@@ -93,6 +112,22 @@ namespace GameServerApi.Models
         public void SetInfoChar(InfoChar ic)
         {
             InfoCharJson = JsonSerializer.Serialize(ic);
+        }
+
+        // ---- ActiveBuffs helpers ----
+        public List<ActiveBuff> GetActiveBuffs()
+        {
+            if (string.IsNullOrWhiteSpace(ActiveBuffsJson) || ActiveBuffsJson == "[]")
+                return new List<ActiveBuff>();
+            try { return JsonSerializer.Deserialize<List<ActiveBuff>>(ActiveBuffsJson, _opts) ?? new List<ActiveBuff>(); }
+            catch { return new List<ActiveBuff>(); }
+        }
+
+        public void SetActiveBuffs(List<ActiveBuff> buffs)
+        {
+            // Loại bỏ buff đã hết hạn trước khi lưu
+            buffs.RemoveAll(b => b.ExpireAt.HasValue && b.ExpireAt.Value <= DateTime.UtcNow);
+            ActiveBuffsJson = JsonSerializer.Serialize(buffs);
         }
 
         /// <summary>Build a default InfoChar for a brand-new player.</summary>

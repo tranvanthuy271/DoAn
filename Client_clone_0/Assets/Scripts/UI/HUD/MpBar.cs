@@ -51,6 +51,14 @@ public class MpBar : MonoBehaviour
 
     private void Update()
     {
+        // Phát hiện dataSync không còn hợp lệ (player bị despawn khi NGO shutdown hoặc chuyển scene)
+        if (dataSync != null && !dataSync.IsSpawned)
+        {
+            dataSync.networkMp.OnValueChanged    -= OnMpChanged;
+            dataSync.networkMaxMp.OnValueChanged -= OnMaxMpChanged;
+            dataSync = null;
+        }
+
         if (dataSync != null) return;
 
         retryTimer -= Time.deltaTime;
@@ -66,7 +74,7 @@ public class MpBar : MonoBehaviour
         // Dùng FindObjectsOfType để tránh lấy nhầm của player khác trong multiplayer
         foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
         {
-            if (s.IsOwner) { dataSync = s; break; }
+            if (s.IsSpawned && s.IsOwner) { dataSync = s; break; }
         }
         if (dataSync == null) return;
 

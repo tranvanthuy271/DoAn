@@ -8,7 +8,9 @@ using System.Collections;
 public class PlayerPositionUpdater : NetworkBehaviour
 {
     private APIClient apiClient;
+#pragma warning disable CS0414
     private float lastUpdateTime = 0f;
+#pragma warning restore CS0414
     private const float UPDATE_INTERVAL = 5f; // Update mỗi 5 giây (hoặc khi disconnect)
 
     private void Start()
@@ -141,7 +143,7 @@ public class PlayerPositionUpdater : NetworkBehaviour
         UpdatePositionToServer(useCoroutine: false); // Không dùng coroutine khi disconnect
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         // Update position khi object bị destroy (disconnect)
         // QUAN TRỌNG: Không dùng coroutine vì GameObject đang bị destroy
@@ -149,5 +151,6 @@ public class PlayerPositionUpdater : NetworkBehaviour
         {
             UpdatePositionOnDisconnect();
         }
+        base.OnDestroy();
     }
 }

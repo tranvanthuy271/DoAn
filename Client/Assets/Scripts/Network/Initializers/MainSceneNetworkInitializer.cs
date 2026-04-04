@@ -14,8 +14,12 @@ public class MainSceneNetworkInitializer : MonoBehaviour
 
     private bool playerDataLoaded = false;
     private bool isInitializing = false;
+#pragma warning disable CS0414
     private bool isConnecting = false;
+#pragma warning restore CS0414
+#pragma warning disable CS0414
     private bool connectionSuccess = false;
+#pragma warning restore CS0414
 
     private void Start()
     {

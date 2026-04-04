@@ -190,13 +190,20 @@ public class NetworkPlayerHealth : NetworkBehaviour
             return;
         }
 
+        // Áp dụng DefenseBuff giảm sát thương nhận
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync != null && dataSync.networkDefenseBonusPct.Value > 0)
+        {
+            float defBonus = dataSync.networkDefenseBonusPct.Value / 100f;
+            damage = Mathf.Max(1, Mathf.RoundToInt(damage / (1f + defBonus)));
+        }
+
         // Server trừ HP
         int newHealth = networkCurrentHealth.Value - damage;
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;
 
         // Sync HP về NetworkPlayerDataSync để HealthBar cập nhật
-        var dataSync = GetComponent<NetworkPlayerDataSync>();
         if (dataSync != null)
             dataSync.networkHp.Value = newHealth;
 
@@ -259,6 +266,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
         newHealth = Mathf.Min(newHealth, maxHealth);
         networkCurrentHealth.Value = newHealth;
 
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync != null)
+            dataSync.networkHp.Value = newHealth;
+
         // Notify clients
         OnHealClientRpc(amount);
 
@@ -283,6 +294,9 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (isDead) return;
 
         networkCurrentHealth.Value = maxHealth;
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync != null)
+            dataSync.networkHp.Value = maxHealth;
         OnHealClientRpc(maxHealth);
     }
 
@@ -323,10 +337,29 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (!IsServer) return;
 
         // Chọn spawn point ngẫu nhiên
-        Vector3 spawnPosition = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        Vector3 spawnPosition = Vector3.zero;
+        if (spawnPoints != null && spawnPoints.Length > 0)
+            spawnPosition = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        else
+            Debug.LogWarning("[NetworkPlayerHealth] spawnPoints trống — respawn tại (0,0,0)");
 
-        // Reset HP
-        networkCurrentHealth.Value = maxHealth;
+        // Lấy HP/MP max thực tế từ NetworkPlayerDataSync (authoritative stats từ API)
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        int fullHp = (dataSync != null && dataSync.networkMaxHp.Value > 0)
+                     ? dataSync.networkMaxHp.Value
+                     : maxHealth;
+
+        // Đồng bộ maxHealth trong NetworkPlayerHealth cho nhất quán
+        maxHealth = fullHp;
+
+        // Reset HP — cập nhật CẢ HAI system để HealthBar nhận được callback
+        networkCurrentHealth.Value = fullHp;
+        if (dataSync != null)
+        {
+            dataSync.networkHp.Value = fullHp;                           // HealthBar subscribe cái này
+            dataSync.networkMp.Value = dataSync.networkMaxMp.Value;      // MpBar subscribe cái này
+        }
+
         isDead = false;
         isInvincible = false;
 
@@ -336,7 +369,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         // Notify clients về respawn
         OnRespawnClientRpc(spawnPosition);
 
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} respawned at {spawnPosition}");
+        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} respawned at {spawnPosition} HP={fullHp}/{fullHp}");
     }
 
     /// <summary>

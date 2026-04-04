@@ -23,6 +23,19 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     public NetworkVariable<float> networkMoveSpeed = new NetworkVariable<float>(5f);
     public NetworkVariable<int> networkGeneTier = new NetworkVariable<int>(1);
 
+    // ── Buff stat modifiers (set by server from ActiveBuff) ──────────────
+    /// <summary>% bonus EXP gene nạp vào (e.g. 20 = +20%). Set bởi server khi dùng GeneExpBuff item.</summary>
+    public NetworkVariable<int> networkGeneExpBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>% bonus EXP khi kill enemy (e.g. 25 = +25%).</summary>
+    public NetworkVariable<int> networkExpBonusPct      = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>% bonus vàng và EXP drop (Phúc buff).</summary>
+    public NetworkVariable<int> networkPhucBonusPct     = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>% tăng sát thương (AttackBuff).</summary>
+    public NetworkVariable<int> networkAttackBonusPct   = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>% giảm sát thương nhận (DefenseBuff).</summary>
+    public NetworkVariable<int> networkDefenseBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+
     [Header("References")]
     private PlayerController playerController;
     private NetworkPlayerHealth playerHealth;
@@ -156,7 +169,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.final_stats.hp;
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.max_mp; // Initialize full MP on spawn
+            networkMp.Value        = playerData.final_stats.mp;
             networkMaxMp.Value     = playerData.final_stats.max_mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
@@ -166,7 +179,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.max_mp; // Initialize full MP on spawn
+            networkMp.Value        = playerData.base_stats.mp;
             networkMaxMp.Value     = playerData.base_stats.max_mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
@@ -234,7 +247,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.final_stats.hp;
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.max_mp; // Initialize full MP on spawn
+            networkMp.Value        = playerData.final_stats.mp;
             networkMaxMp.Value     = playerData.final_stats.max_mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
@@ -244,7 +257,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.max_mp; // Initialize full MP on spawn
+            networkMp.Value        = playerData.base_stats.mp;
             networkMaxMp.Value     = playerData.base_stats.max_mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
@@ -328,16 +341,19 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             playerHealth.SetHealth(newValue);
         }
+        if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
     private void OnMpChanged(int oldValue, int newValue)
     {
         Debug.Log($"[NetworkPlayerDataSync] MP: {oldValue} → {newValue}/{networkMaxMp.Value}");
+        if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
     private void OnMaxMpChanged(int oldValue, int newValue)
     {
         // Max MP changed (e.g. after equipment update)
+        if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
     private void OnMaxHpChanged(int oldValue, int newValue)
@@ -350,6 +366,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour
         {
             playerHealth.SetMaxHealth(newValue);
         }
+        if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
     private void OnAttackChanged(int oldValue, int newValue)
@@ -437,6 +454,17 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     }
 
     /// <summary>
+    /// ServerRpc nhẹ: chỉ cập nhật Max HP / Max MP (dùng sau khi HpBuff / MpBuff áp dụng).
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void UpdateMaxHpMpServerRpc(int newMaxHp, int newMaxMp, ServerRpcParams rpcParams = default)
+    {
+        if (newMaxHp > 0) networkMaxHp.Value = newMaxHp;
+        if (newMaxMp > 0) networkMaxMp.Value = newMaxMp;
+        Debug.Log($"[NetworkPlayerDataSync] UpdateMaxHpMp → maxHp={newMaxHp} maxMp={newMaxMp}");
+    }
+
+    /// <summary>
     /// Get player data (để hiển thị trong UI, name tag, etc.)
     /// </summary>
     public string GetCharacterName() => networkCharacterName.Value.ToString();
@@ -501,6 +529,12 @@ public class NetworkPlayerDataSync : NetworkBehaviour
 
     private System.Collections.IEnumerator GainExpCoroutine(int playerId, int expAmount)
     {
+        // Áp dụng ExpBuff + PhucBuff trước khi gửi lên REST API
+        float expPct  = networkExpBonusPct.Value  / 100f;
+        float phucPct = networkPhucBonusPct.Value / 100f;
+        if (expPct + phucPct > 0f)
+            expAmount = Mathf.RoundToInt(expAmount * (1f + expPct + phucPct));
+
         string baseUrl = APIClient.Instance != null ? APIClient.Instance.baseURL : "http://localhost:5000/api";
         string url = $"{baseUrl}/player/{playerId}/gain-exp";
         byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount}}}");

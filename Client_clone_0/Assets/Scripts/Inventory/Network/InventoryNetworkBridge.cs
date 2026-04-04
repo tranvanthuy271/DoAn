@@ -28,7 +28,9 @@ public class InventoryNetworkBridge : MonoBehaviour
 
     [Header("Debug")]
     [Tooltip("Hiển thị debug logs chi tiết")]
+#pragma warning disable CS0414
     [SerializeField] private bool verboseDebug = true;
+#pragma warning restore CS0414
 
     private bool hasSubscribedToNetworkEvents = false;
 
@@ -37,6 +39,44 @@ public class InventoryNetworkBridge : MonoBehaviour
     private InventoryItem[] _cachedInventoryItems;
     /// <summary>true = cache cũ hoặc chưa có, cần fetch lại khi mở túi.</summary>
     private bool _isCacheDirty = true;
+
+    /// <summary>
+    /// Sắp xếp inventory (gom item về phía trước) theo đường đúng:
+    /// - Client → gửi ServerRpc lên host → host sort DB → host fetch fresh → gửi ClientRpc về client.
+    /// - Host/offline → gọi API trực tiếp → fetch lại.
+    /// </summary>
+    public void RequestSortAndRefresh()
+    {
+        _isCacheDirty = true;
+
+        // Client: đường host-mediated (host sort rồi push kết quả về)
+        if (networkInventory != null && networkInventory.IsSpawned &&
+            NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+        {
+            Debug.Log("[InventoryNetworkBridge] 📡 Client: yêu cầu host sort inventory...");
+            networkInventory.RequestSortInventoryServerRpc();
+            return;
+        }
+
+        // Host / offline: sort trực tiếp rồi refresh UI
+        int playerId = GetCurrentPlayerId();
+        if (playerId == 0 || APIClient.Instance == null)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] RequestSortAndRefresh: playerId=0 hoặc APIClient null.");
+            return;
+        }
+
+        Debug.Log($"[InventoryNetworkBridge] 🔀 Host: sort inventory cho player={playerId}...");
+        APIClient.Instance.SortInventory(
+            playerId,
+            _ =>
+            {
+                Debug.Log("[InventoryNetworkBridge] ✅ Sort thành công, đang fetch lại...");
+                FetchInventoryDirectFromAPI();
+            },
+            err => Debug.LogError($"[InventoryNetworkBridge] ❌ Sort thất bại: {err}")
+        );
+    }
 
     /// <summary>
     /// Refresh inventory từ DB và update UI (gọi khi mở inventory panel).
@@ -372,6 +412,9 @@ public class InventoryNetworkBridge : MonoBehaviour
         {
             Debug.LogWarning("[InventoryNetworkBridge] ⚠️ Chưa tìm thấy NetworkInventory trong Start(), sẽ tìm lại sau khi client connect.");
         }
+
+        // Subscribe heal-over-time tick từ ActiveBuffManager
+        ActiveBuffManager.OnHealTick += ApplyHealTick;
     }
 
     private void SubscribeToNetworkEvents()
@@ -488,6 +531,9 @@ public class InventoryNetworkBridge : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Unsubscribe heal tick
+        ActiveBuffManager.OnHealTick -= ApplyHealTick;
+
         // Unsubscribe từ NetworkInventory
         if (networkInventory != null)
         {
@@ -500,6 +546,20 @@ public class InventoryNetworkBridge : MonoBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             hasSubscribedToNetworkEvents = false;
         }
+    }
+
+    /// <summary>
+    /// Gửi heal tick lên NGO server mỗi giây khi có buff HpRestoreOverTime / MpRestoreOverTime.
+    /// </summary>
+    private void ApplyHealTick(int hpPerSec, int mpPerSec)
+    {
+        if (networkInventory == null)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] ApplyHealTick: networkInventory null, thử tìm lại...");
+            FindPlayerInventory();
+            if (networkInventory == null) return;
+        }
+        networkInventory.ApplyHealTickServerRpc(hpPerSec, mpPerSec);
     }
 
     /// <summary>
@@ -845,6 +905,58 @@ public class InventoryNetworkBridge : MonoBehaviour
     }
 
     // ==================== EQUIPMENT ====================
+
+    /// <summary>
+    /// Gửi request áp dụng stat effect (HP/MP) của consumable lên server qua NGO.
+    /// Gọi SAU KHI REST API đã persist việc tiêu thụ item.
+    /// </summary>
+    public void RequestApplyStatEffect(int templateId)
+    {
+        if (networkInventory == null)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] RequestApplyStatEffect: networkInventory is null!");
+            return;
+        }
+        networkInventory.ApplyConsumableStatServerRpc(templateId);
+    }
+
+    /// <summary>
+    /// Sync HP/MP trực tiếp từ giá trị authoritative của REST API lên NGO.
+    /// Dùng cho instant HP/MP restore để thanh HP/MP cập nhật ngay lập tức.
+    /// </summary>
+    public void RequestSyncHpMp(int currentHp, int currentMp)
+    {
+        if (networkInventory == null) return;
+        networkInventory.ApplySyncHpMpServerRpc(currentHp, currentMp);
+    }
+
+    /// <summary>
+    /// Sync % bonus buff (GeneExp, Exp, Phúc, ATK, DEF) lên server qua NGO.
+    /// Gọi sau khi client nhận active_buffs từ REST API.
+    /// Dùng ActiveBuffManager.GetBonusPct() để lấy tổng %.
+    /// </summary>
+    public void RequestSyncBuffBonuses()
+    {
+        if (networkInventory == null || ActiveBuffManager.Instance == null) return;
+        int geneExp  = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("GeneExpBuff")  * 100);
+        int exp      = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("ExpBuff")       * 100);
+        int phuc     = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("PhucBuff")      * 100);
+        int atk      = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("AttackBuff")    * 100);
+        int def      = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("DefenseBuff")   * 100);
+        networkInventory.SyncBuffBonusesServerRpc(geneExp, exp, phuc, atk, def);
+    }
+
+    /// <summary>
+    /// Cập nhật Max HP / Max MP lên NGO server sau khi HpBuff / MpBuff được áp dụng.
+    /// Gọi sau khi reload player data từ REST API.
+    /// </summary>
+    public void RequestUpdatePlayerStats(int newMaxHp, int newMaxMp)
+    {
+        if (networkInventory == null) return;
+        var dataSync = networkInventory.GetComponent<NetworkPlayerDataSync>();
+        if (dataSync == null) return;
+        dataSync.UpdateMaxHpMpServerRpc(newMaxHp, newMaxMp);
+    }
 
     /// <summary>
     /// Gửi request trang bị item lên server

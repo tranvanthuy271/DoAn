@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic;
 
 /// <summary>
 /// InventoryUI - Quản lý panel túi đồ và các ô item UI
@@ -35,6 +36,7 @@ public class InventoryUI : MonoBehaviour
 
     private InventorySlotUI[] slotUIs;
     private InventorySlotDto[] currentSlots;
+    private readonly Dictionary<int, int> _reservedQuantities = new Dictionary<int, int>();
 
     /// <summary>Snapshot túi đồ hiện tại (dùng cho UpgradePanel)</summary>
     public InventorySlotDto[] CurrentSlots => currentSlots;
@@ -241,6 +243,13 @@ public class InventoryUI : MonoBehaviour
 
             if (slotData != null && slotData.quantity > 0)
             {
+                if (_reservedQuantities.TryGetValue(i, out int reservedQuantity) && reservedQuantity > 0)
+                {
+                    InventorySlotDto displaySlot = CloneSlot(slotData);
+                    displaySlot.quantity = Mathf.Max(0, slotData.quantity - reservedQuantity);
+                    slotData = displaySlot;
+                }
+
                 slotsWithItems++;
                 Debug.Log($"[InventoryUI] RefreshAllSlots: Slot {i} có item - code={slotData.itemCode}, iconId={slotData.iconId}, qty={slotData.quantity}");
             }
@@ -248,7 +257,40 @@ public class InventoryUI : MonoBehaviour
             slotUIs[i].SetSlot(slotData);
         }
 
+        ApplySelectModeToSlots();
+
         Debug.Log($"[InventoryUI] RefreshAllSlots: Hoàn thành! Có {slotsWithItems} slots có item được hiển thị.");
+    }
+
+    public void SetReservedQuantities(Dictionary<int, int> reservedQuantities)
+    {
+        _reservedQuantities.Clear();
+        if (reservedQuantities != null)
+        {
+            foreach (var entry in reservedQuantities)
+            {
+                if (entry.Value > 0)
+                    _reservedQuantities[entry.Key] = entry.Value;
+            }
+        }
+        RefreshAllSlots();
+    }
+
+    private static InventorySlotDto CloneSlot(InventorySlotDto slot)
+    {
+        if (slot == null) return null;
+        return new InventorySlotDto
+        {
+            slotIndex = slot.slotIndex,
+            id = slot.id,
+            amount = slot.amount,
+            isEquipped = slot.isEquipped,
+            isLocked = slot.isLocked,
+            upgradeLevel = slot.upgradeLevel,
+            strOptions = slot.strOptions,
+            itemCode = slot.itemCode,
+            iconId = slot.iconId
+        };
     }
 
     /// <summary>
@@ -264,21 +306,46 @@ public class InventoryUI : MonoBehaviour
             return null;
         }
 
-        // Ưu tiên parent được chỉ định; nếu không, tìm root Canvas có sorting order cao nhất
+        // Ưu tiên parent được chỉ định; nếu không, tìm root Canvas Screen Space (không phải World Space)
         Transform parent = itemDetailPanelParent;
         if (parent == null)
         {
             Canvas best = null;
             int bestOrder = int.MinValue;
-            foreach (var c in FindObjectsOfType<Canvas>())
+            // includeInactive=true: tránh bỏ qua Canvas đang bị tắt (ví dụ inventory panel đóng)
+            foreach (var c in FindObjectsOfType<Canvas>(true))
             {
-                if (c.isRootCanvas && c.sortingOrder >= bestOrder)
+                if (!c.isRootCanvas) continue;
+                // Bỏ qua World Space canvas (ví dụ PlayerHpBarCanvas trên đầu player)
+                if (c.renderMode == RenderMode.WorldSpace) continue;
+                if (c.sortingOrder > bestOrder)
                 {
                     bestOrder = c.sortingOrder;
                     best = c;
                 }
             }
-            parent = best != null ? best.transform : transform.root;
+
+            if (best != null)
+            {
+                parent = best.transform;
+            }
+            else
+            {
+                // Fallback theo tên cố định trước khi dùng transform.root
+                var namedCanvas = GameObject.Find("ScreenSpaceCanvas")
+                               ?? GameObject.Find("InformationCanvas")
+                               ?? GameObject.Find("Canvas");
+                if (namedCanvas != null)
+                {
+                    parent = namedCanvas.transform;
+                    Debug.LogWarning($"[InventoryUI] Không tìm được Screen Space Canvas qua loop, dùng fallback theo tên '{namedCanvas.name}'");
+                }
+                else
+                {
+                    parent = transform.root;
+                    Debug.LogWarning($"[InventoryUI] Không tìm được bất kỳ Screen Space Canvas nào — ItemDetailPanel sẽ được tạo dưới '{parent.name}'. Hãy gán 'itemDetailPanelParent' trong Inspector!");
+                }
+            }
         }
 
         _itemDetailPanelInstance = Instantiate(itemDetailPanelPrefab, parent);
@@ -286,16 +353,27 @@ public class InventoryUI : MonoBehaviour
         return _itemDetailPanelInstance;
     }
 
+    public ItemDetailPanel GetSharedItemDetailPanel()
+    {
+        return GetOrCreateDetailPanel();
+    }
+
+    public void ShowItemDetail(InventorySlotDto slotData, bool showUseButton = true,
+                               string buttonTextOverride = null, System.Action primaryButtonAction = null)
+    {
+        var panel = GetOrCreateDetailPanel();
+        if (panel != null)
+            panel.ShowItem(slotData, showUseButton, buttonTextOverride, primaryButtonAction);
+        else
+            Debug.LogWarning("[InventoryUI] itemDetailPanel chưa được gán trong Inspector!");
+    }
+
     /// <summary>
     /// Callback khi người chơi nhấn vào 1 slot có item
     /// </summary>
     private void OnSlotItemClicked(InventorySlotDto slotData)
     {
-        var panel = GetOrCreateDetailPanel();
-        if (panel != null)
-            panel.ShowItem(slotData);
-        else
-            Debug.LogWarning("[InventoryUI] itemDetailPanel chưa được gán trong Inspector!");
+        ShowItemDetail(slotData);
     }
 
     /// <summary>

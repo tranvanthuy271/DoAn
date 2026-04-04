@@ -30,6 +30,7 @@ public class MapTravelHelper : MonoBehaviour
     private float  _destY;
     private int    _destMapId;
     private int    _srcMapId;
+    private readonly System.Collections.Generic.List<GameObject> _persistedObjects = new System.Collections.Generic.List<GameObject>();
 
     private string ApiBase =>
         APIClient.Instance != null
@@ -69,7 +70,7 @@ public class MapTravelHelper : MonoBehaviour
         }
 
         // ── 3. Persist Canvas UI trước khi scene unload ──
-        PersistCanvasObjects();
+        PersistCanvasObjects(_persistedObjects);
 
         // ── 4. Shutdown NGO — chờ thực sự ──
         var nm = NetworkManager.Singleton;
@@ -88,6 +89,14 @@ public class MapTravelHelper : MonoBehaviour
         Debug.Log($"[MapTravelHelper] Loading scene '{_destScene}'...");
         yield return SceneManager.LoadSceneAsync(_destScene);
         yield return null; // để Awake/Start của scene mới chạy trước
+
+        // ── 5.5. Xoá Canvas cũ (DontDestroyOnLoad) để tránh trùng lặp với Canvas của scene mới ──
+        // Nếu giữ lại chúng, sẽ có 2 HpBar/MpBar chồng lên nhau: cái cũ hiển thị giá trị cũ (stale)
+        foreach (var go in _persistedObjects)
+        {
+            if (go != null) Destroy(go);
+        }
+        _persistedObjects.Clear();
 
         // ── 6. Reset auth flag ──
         ClientAuthSender.Reset();
@@ -290,9 +299,11 @@ public class MapTravelHelper : MonoBehaviour
     /// <summary>
     /// Đánh dấu DontDestroyOnLoad cho các Canvas/EventSystem cần tồn tại qua scene load.
     /// Gọi TRƯỚC Shutdown() để objects chưa bị destroy.
+    /// Trả về danh sách object đã persist để sau khi scene mới load có thể Destroy chúng.
     /// </summary>
-    private static void PersistCanvasObjects()
+    private static void PersistCanvasObjects(System.Collections.Generic.List<GameObject> outList)
     {
+        outList.Clear();
         string[] persistNames =
         {
             "ScreenSpaceCanvas",
@@ -312,6 +323,7 @@ public class MapTravelHelper : MonoBehaviour
             if (go == null) continue;
             if (go.scene.name == "DontDestroyOnLoad") continue;
             DontDestroyOnLoad(go);
+            outList.Add(go);
             Debug.Log($"[MapTravelHelper] Canvas persist: '{name}'");
         }
     }

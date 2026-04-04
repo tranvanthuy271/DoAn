@@ -43,7 +43,10 @@ public class NpcMenuUI : MonoBehaviour
     // ── Icons ──────────────────────────────────────────────────────────
     [Header("Icons")]
     [SerializeField] private Sprite     defaultItemIcon;
-
+    // ── Item Detail Panel (dùng chung với túĩ đồ) ──────────────────────
+    [Header("Item Detail (dùng chung với túĩ đồ)")]
+    [Tooltip("Kéo ItemDetailPanel prefab/instance vào đây. Khi nhấn vào icon item trong shop sẽ hiện panel này.")]
+    [SerializeField] private ItemDetailPanel itemDetailPanel;
     // ── Feedback ──────────────────────────────────────────────────────
     [Header("Thong bao (tuy chon)")]
     [SerializeField] private TMP_Text   feedbackText;
@@ -90,12 +93,23 @@ public class NpcMenuUI : MonoBehaviour
         btnClose.onClick.AddListener(Close);
         if (btnTabShop) btnTabShop.onClick.AddListener(ShowShopTab);
         if (btnTabBag)  btnTabBag.onClick.AddListener(ShowBagTab);
+        ApplyTheme();
         // Hide all sub-panels here so the guard runs on the first Open() call
         // regardless of whether the GameObject was active at scene start.
         if (mainPanel)   mainPanel.SetActive(false);
         if (shopPanel)   shopPanel.SetActive(false);
         if (bagPanel)    bagPanel.SetActive(false);
         if (feedbackText) feedbackText.gameObject.SetActive(false);
+    }
+
+    private void ApplyTheme()
+    {
+        if (mainPanel == null)
+        {
+            return;
+        }
+
+        UIRuntimeAssetHelper.ApplyNotoSans(mainPanel.GetComponentsInChildren<TMP_Text>(true));
     }
 
     private void Start()
@@ -149,6 +163,7 @@ public class NpcMenuUI : MonoBehaviour
         mainPanel.SetActive(false);
         if (shopPanel) shopPanel.SetActive(false);
         if (bagPanel)  bagPanel.SetActive(false);
+        HideItemDetailPanelIfOpen();
         _currentInteraction = null;
     }
 
@@ -158,6 +173,7 @@ public class NpcMenuUI : MonoBehaviour
     {
         if (shopPanel) shopPanel.SetActive(true);
         if (bagPanel)  bagPanel.SetActive(false);
+        HideItemDetailPanelIfOpen();
         ClearShopItems();
         _currentInteraction?.LoadShopServerRpc();
     }
@@ -166,6 +182,7 @@ public class NpcMenuUI : MonoBehaviour
     {
         if (shopPanel) shopPanel.SetActive(false);
         if (bagPanel)  bagPanel.SetActive(true);
+        HideItemDetailPanelIfOpen();
         // TODO: connect to inventory system to display player bag
     }
 
@@ -214,11 +231,12 @@ public class NpcMenuUI : MonoBehaviour
                 continue;
             }
 
+            cell.EnsureVisualsConfigured();
+
             if (cell.itemIcon != null)
             {
                 var loaded = Resources.Load<Sprite>($"ItemIcons/{item.icon_id}");
-                cell.itemIcon.sprite  = loaded != null ? loaded : defaultItemIcon;
-                cell.itemIcon.enabled = cell.itemIcon.sprite != null;
+                cell.SetItemIcon(loaded != null ? loaded : defaultItemIcon);
             }
 
             if (cell.itemName != null)
@@ -233,23 +251,98 @@ public class NpcMenuUI : MonoBehaviour
             {
                 cell.btnBuy.interactable = item.can_afford && item.meets_level;
                 var capturedItem = item;
-                cell.btnBuy.onClick.AddListener(() =>
-                {
-                    if (!capturedItem.can_afford)
-                    {
-                        Debug.Log($"[Shop] Không đủ tiền mua '{capturedItem.item_name}'. Cần: {(capturedItem.price_gold > 0 ? capturedItem.price_gold + "g" : capturedItem.price_silver + "s")}");
-                        return;
-                    }
-                    if (!capturedItem.meets_level)
-                    {
-                        Debug.Log($"[Shop] Chưa đủ level. '{capturedItem.item_name}' yêu cầu level {capturedItem.required_level}.");
-                        return;
-                    }
-                    Debug.Log($"[Shop] Gửi mua: shopItemId={capturedItem.shop_item_id} '{capturedItem.item_name}'");
-                    _currentInteraction?.BuyItemServerRpc(capturedItem.shop_item_id, 1);
-                });
+                cell.btnBuy.onClick.AddListener(() => TryBuyShopItem(capturedItem));
+            }
+
+            // Nhấn vào icon item -> hiện ItemDetailPanel dùng chung với túi đồ.
+            if (cell.itemIcon != null)
+            {
+                var iconBtn = cell.itemIcon.gameObject.GetComponent<Button>()
+                              ?? cell.itemIcon.gameObject.AddComponent<Button>();
+                iconBtn.transition = Selectable.Transition.None;
+                iconBtn.targetGraphic = cell.itemIcon;
+                var capturedForInfo = item;
+                iconBtn.onClick.RemoveAllListeners();
+                iconBtn.onClick.AddListener(() => ShowShopItemDetail(capturedForInfo));
             }
         }
+    }
+
+    private bool TryBuyShopItem(ShopItem shopItem)
+    {
+        if (!shopItem.can_afford)
+        {
+            string needText = shopItem.price_gold > 0
+                ? shopItem.price_gold + "g"
+                : shopItem.price_silver + "s";
+            Debug.Log($"[Shop] Không đủ tiền mua '{shopItem.item_name}'. Cần: {needText}");
+            ShowFeedback($"Không đủ tiền mua {shopItem.item_name}.", new Color(1f, 0.4f, 0.4f));
+            return false;
+        }
+
+        if (!shopItem.meets_level)
+        {
+            Debug.Log($"[Shop] Chưa đủ level. '{shopItem.item_name}' yêu cầu level {shopItem.required_level}.");
+            ShowFeedback($"Cần cấp {shopItem.required_level} để mua {shopItem.item_name}.", new Color(1f, 0.4f, 0.4f));
+            return false;
+        }
+
+        Debug.Log($"[Shop] Gửi mua: shopItemId={shopItem.shop_item_id} '{shopItem.item_name}'");
+        _currentInteraction?.BuyItemServerRpc(shopItem.shop_item_id, 1);
+        return true;
+    }
+
+    private void ShowShopItemDetail(ShopItem shopItem)
+    {
+        var inventoryUi = FindObjectOfType<InventoryUI>(true);
+        var detailPanel = inventoryUi != null
+            ? inventoryUi.GetSharedItemDetailPanel()
+            : itemDetailPanel;
+
+        if (detailPanel == null)
+        {
+            detailPanel = FindObjectOfType<ItemDetailPanel>(true);
+        }
+
+        if (detailPanel == null)
+        {
+            Debug.LogWarning("[NpcMenuUI] Không tìm thấy ItemDetailPanel để hiển thị thông tin item trong shop.");
+            return;
+        }
+
+        itemDetailPanel = detailPanel;
+
+        var stub = new InventorySlotDto
+        {
+            id = shopItem.item_template_id,
+            iconId = shopItem.icon_id.ToString(),
+            itemCode = shopItem.item_name,
+            quantity = 1,
+            slotIndex = -1
+        };
+
+        detailPanel.ShowItem(
+            stub,
+            showUseButton: true,
+            buttonTextOverride: "Mua",
+            primaryButtonAction: () =>
+            {
+                if (TryBuyShopItem(shopItem))
+                    detailPanel.Hide();
+            });
+    }
+
+    private void HideItemDetailPanelIfOpen()
+    {
+        if (itemDetailPanel != null)
+        {
+            itemDetailPanel.Hide();
+            return;
+        }
+
+        var existingPanel = FindObjectOfType<ItemDetailPanel>(true);
+        if (existingPanel != null)
+            existingPanel.Hide();
     }
 
     // ── Buy result ────────────────────────────────────────────────────

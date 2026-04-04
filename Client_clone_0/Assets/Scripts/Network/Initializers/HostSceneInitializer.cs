@@ -156,7 +156,7 @@ public class HostSceneInitializer : MonoBehaviour
             networkManager.AddNetworkPrefab(prefab);
             // Debug.Log($"[HostSceneInitializer] ✓ Registered AuthSender prefab: {prefab.name}");
         }
-        catch (System.Exception ex)
+        catch (System.Exception)
         {
             // Debug.LogError($"[HostSceneInitializer] Failed to register AuthSender prefab: {ex.Message}");
         }

@@ -33,6 +33,13 @@ namespace GameServerApi.Data
         public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
         public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
         public DbSet<MapSpawnConfig>           MapSpawnConfigs          => Set<MapSpawnConfig>();
+        public DbSet<ItemEffectTemplate>       ItemEffectTemplates       => Set<ItemEffectTemplate>();
+
+        // ── Normalized player data tables (Phase 2) ──────────────────
+        public DbSet<PlayerEquipment>   PlayerEquipments   => Set<PlayerEquipment>();
+        public DbSet<PlayerInventory>   PlayerInventories  => Set<PlayerInventory>();
+        public DbSet<PlayerSkillRecord> PlayerSkillRecords => Set<PlayerSkillRecord>();
+        public DbSet<PlayerActionLog>   PlayerActionLogs   => Set<PlayerActionLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -71,6 +78,7 @@ namespace GameServerApi.Data
                 entity.Property(p => p.InventoryJson).HasColumnName("inventory");
                 entity.Property(p => p.SkillsJson).HasColumnName("skills");
                 entity.Property(p => p.PotentialStatsJson).HasColumnName("potential_stats");
+                entity.Property(p => p.ActiveBuffsJson).HasColumnName("active_buffs");
 
                 entity.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             });
@@ -125,6 +133,22 @@ namespace GameServerApi.Data
                 entity.Property(e => e.ElementType).HasColumnName("element_type");
                 entity.Property(e => e.EnemyType).HasColumnName("enemy_type");
                 entity.Property(e => e.SkillsJson).HasColumnName("skills_json");
+                entity.Property(e => e.KhangHoa).HasColumnName("khang_hoa");
+                entity.Property(e => e.KhangThuy).HasColumnName("khang_thuy");
+                entity.Property(e => e.KhangTho).HasColumnName("khang_tho");
+                entity.Property(e => e.KhangMoc).HasColumnName("khang_moc");
+                entity.Property(e => e.KhangKim).HasColumnName("khang_kim");
+                entity.Property(e => e.KhangPhong).HasColumnName("khang_phong");
+                entity.Property(e => e.TangDameHoa).HasColumnName("tang_dame_hoa");
+                entity.Property(e => e.TangDameThuy).HasColumnName("tang_dame_thuy");
+                entity.Property(e => e.TangDameTho).HasColumnName("tang_dame_tho");
+                entity.Property(e => e.TangDameMoc).HasColumnName("tang_dame_moc");
+                entity.Property(e => e.TangDameKim).HasColumnName("tang_dame_kim");
+                entity.Property(e => e.TangDamePhong).HasColumnName("tang_dame_phong");
+                entity.Property(e => e.HpRegenPerSec).HasColumnName("hp_regen_per_sec");
+                entity.Property(e => e.EvasionRate).HasColumnName("evasion_rate");
+                entity.Property(e => e.CounterRate).HasColumnName("counter_rate");
+                entity.Property(e => e.PhasesJson).HasColumnName("phases_json");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             });
@@ -415,6 +439,87 @@ namespace GameServerApi.Data
             });
 
             // map_zone_config đã bị xóa — zone assignment xử lý trong Unity Inspector
+
+            // ── Normalized player data tables ──────────────────────────────
+            modelBuilder.Entity<PlayerEquipment>(entity =>
+            {
+                entity.ToTable("player_equipment");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("player_id");
+                entity.Property(e => e.Slot).HasColumnName("slot");
+                entity.Property(e => e.ItemTemplateId).HasColumnName("item_template_id");
+                entity.Property(e => e.UpgradeLevel).HasColumnName("upgrade_level");
+                entity.Property(e => e.StrOptions).HasColumnName("str_options");
+                entity.Property(e => e.EquippedAt).HasColumnName("equipped_at");
+
+                entity.HasIndex(e => new { e.PlayerId, e.Slot }).IsUnique();
+                entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PlayerInventory>(entity =>
+            {
+                entity.ToTable("player_inventory");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("player_id");
+                entity.Property(e => e.ItemTemplateId).HasColumnName("item_template_id");
+                entity.Property(e => e.Quantity).HasColumnName("quantity");
+                entity.Property(e => e.SlotIndex).HasColumnName("slot_index");
+                entity.Property(e => e.UpgradeLevel).HasColumnName("upgrade_level");
+                entity.Property(e => e.StrOptions).HasColumnName("str_options");
+                entity.Property(e => e.IsLocked).HasColumnName("is_locked");
+                entity.Property(e => e.AcquiredAt).HasColumnName("acquired_at");
+
+                entity.HasIndex(e => e.PlayerId);
+                entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PlayerSkillRecord>(entity =>
+            {
+                entity.ToTable("player_skill_record");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("player_id");
+                entity.Property(e => e.SkillId).HasColumnName("skill_id");
+                entity.Property(e => e.SkillLevel).HasColumnName("skill_level");
+                entity.Property(e => e.IsEquipped).HasColumnName("is_equipped");
+                entity.Property(e => e.HotbarSlot).HasColumnName("hotbar_slot");
+
+                entity.HasIndex(e => new { e.PlayerId, e.SkillId }).IsUnique();
+                entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PlayerActionLog>(entity =>
+            {
+                entity.ToTable("player_action_log");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("player_id");
+                entity.Property(e => e.ActionType).HasColumnName("action_type");
+                entity.Property(e => e.DetailJson).HasColumnName("detail_json");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+                entity.HasIndex(e => e.PlayerId);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ItemEffectTemplate>(entity =>
+            {
+                entity.ToTable("item_effect_template");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.ItemTemplateId).HasColumnName("item_template_id");
+                entity.Property(e => e.EffectType).HasColumnName("effect_type");
+                entity.Property(e => e.Value).HasColumnName("value");
+                entity.Property(e => e.DurationSec).HasColumnName("duration_sec");
+                entity.Property(e => e.IconId).HasColumnName("icon_id");
+                entity.Property(e => e.DisplayName).HasColumnName("display_name");
+                entity.Property(e => e.Detail).HasColumnName("detail");
+                entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+                entity.HasIndex(e => e.ItemTemplateId);
+            });
         }
     }
 }

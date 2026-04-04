@@ -42,10 +42,22 @@ public class SkillHotbarUI : MonoBehaviour
     private PlayerSkillManager boundManager;
     private float retryTimer;
     private bool isBound;
+    private int _lastManagerCount = -1; // track để detect khi player mới spawn
 
     // ════════════════════════════════════════════════════════════════════════
     //  Public API
     // ════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Buộc rebind ngay lập tức — gọi từ PlayerSkillManager.OnNetworkSpawn() khi IsOwner
+    /// </summary>
+    public void ForceRebind()
+    {
+        isBound = false;
+        boundManager = null;
+        retryTimer = 0f;
+        Debug.Log("[SkillHotbarUI] ForceRebind() được gọi — reset và tìm lại PlayerSkillManager.");
+    }
 
     /// <summary>
     /// Gán thủ công PlayerSkillManager (nếu autoFind = false)
@@ -89,20 +101,39 @@ public class SkillHotbarUI : MonoBehaviour
         PlayerSkillManager[] all = FindObjectsByType<PlayerSkillManager>(FindObjectsSortMode.None);
         Debug.Log($"[SkillHotbarUI] TryFindAndBind — tìm thấy {all.Length} PlayerSkillManager trong scene.");
 
+        // Nếu số manager tăng lên (player mới spawn) và có owner mới → force rebind
+        if (isBound && all.Length != _lastManagerCount)
+        {
+            bool ownerExists = System.Array.Exists(all, m => m.IsSpawned && m.IsOwner);
+            if (ownerExists && (boundManager == null || !boundManager.IsOwner))
+            {
+                Debug.Log("[SkillHotbarUI] Phát hiện owner manager mới — rebind.");
+                isBound = false;
+                boundManager = null;
+            }
+        }
+        _lastManagerCount = all.Length;
+
+        if (isBound) return;
+
         foreach (var mgr in all)
         {
             Debug.Log($"[SkillHotbarUI]   • '{mgr.name}' IsSpawned={mgr.IsSpawned} IsOwner={mgr.IsOwner} skillCount={mgr.GetSkillCount()}");
-            if (mgr.IsOwner)
+            if (mgr.IsSpawned && mgr.IsOwner)
             {
                 BindToManager(mgr);
                 return;
             }
         }
 
-        // Fallback: nếu chỉ có 1 instance (single-player / host)
-        if (all.Length == 1)
+        // Fallback CHỈ khi không có mạng (offline / single-player)
+        bool isMultiplayer = Unity.Netcode.NetworkManager.Singleton != null
+            && (Unity.Netcode.NetworkManager.Singleton.IsHost
+                || Unity.Netcode.NetworkManager.Singleton.IsClient
+                || Unity.Netcode.NetworkManager.Singleton.IsServer);
+        if (!isMultiplayer && all.Length == 1)
         {
-            Debug.Log($"[SkillHotbarUI] Fallback bind vào instance duy nhất '{all[0].name}'.");
+            Debug.Log($"[SkillHotbarUI] Offline fallback bind vào '{all[0].name}'.");
             BindToManager(all[0]);
         }
         else if (all.Length == 0)
@@ -111,7 +142,7 @@ public class SkillHotbarUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng không cái nào IsOwner — sẽ thử lại.");
+            Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng chưa tìm thấy IsOwner — sẽ thử lại.");
         }
     }
 

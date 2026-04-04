@@ -135,6 +135,9 @@ public class ItemUseHandler : MonoBehaviour
         int itemType = template?.type ?? -1;
         Debug.Log($"[ItemUseHandler] RequestUseItem: slot={slot.slotIndex}, templateId={slot.itemTemplateId}, type={itemType}");
 
+        if (TryUseItemInBlacksmith(slot))
+            return;
+
         if (itemType >= 0 && itemType <= ItemTypeEquipMax)
         {
             // Trang bị
@@ -166,18 +169,86 @@ public class ItemUseHandler : MonoBehaviour
         inventoryBridge?.RequestEquipItem(slot.slotIndex, slot.itemCode);
     }
 
-    /// <summary>Sử dụng item tiêu thụ (type 21-29): gọi API use-item.</summary>
+    /// <summary>Sử dụng item tiêu thụ (type 21-29): gọi API → áp dụng HP/MP qua NGO → cập nhật buff HUD.</summary>
     private void DoUseConsumableItem(InventorySlotDto slot)
     {
         Debug.Log($"[ItemUseHandler] 🍶 Sử dụng consumable: slot={slot.slotIndex}");
         int playerId = GetCurrentPlayerId();
         if (playerId == 0 || APIClient.Instance == null) return;
 
+        if (TryGetCurrentVitals(out int currentHp, out int maxHp, out int currentMp, out int maxMp))
+        {
+            string vitalsJson =
+                $"{{\"hp\":{currentHp},\"max_hp\":{maxHp},\"mp\":{currentMp},\"max_mp\":{maxMp}}}";
+
+            APIClient.Instance.UpdatePlayerData(
+                playerId,
+                vitalsJson,
+                onSuccess: () => SendUseConsumableRequest(slot, playerId),
+                onError: error =>
+                {
+                    Debug.LogWarning($"[ItemUseHandler] Sync vitals trước khi dùng item thất bại: {error}. Tiếp tục use-item.");
+                    SendUseConsumableRequest(slot, playerId);
+                }
+            );
+            return;
+        }
+
+        SendUseConsumableRequest(slot, playerId);
+    }
+
+    private void SendUseConsumableRequest(InventorySlotDto slot, int playerId)
+    {
+        int templateId = slot.itemTemplateId;
+
         APIClient.Instance.UseInventoryItem(
             playerId, slot.slotIndex,
             response =>
             {
                 Debug.Log($"[ItemUseHandler] ✅ UseItem OK: {response.message}");
+
+                // Hồi HP/MP: dùng giá trị authoritative từ REST API để sync ngược lên NGO
+                // (thay thế ApplyStatEffect cũ để tránh lấy value từ ScriptableObject sai)
+                if (response.hp_restore > 0 || response.mp_restore > 0)
+                    inventoryBridge?.RequestSyncHpMp(response.current_hp, response.current_mp);
+
+                // Cập nhật gene_exp của player nếu có GeneExpAdd
+                if (response.gene_exp > 0)
+                {
+                    var pd = GameManager.Instance?.GetPlayerData();
+                    if (pd != null)
+                    {
+                        pd.gene_exp = response.gene_exp;
+                        GameManager.Instance.SetPlayerData(pd);
+                    }
+                }
+
+                // Cập nhật buff HUD với danh sách buff mới từ server
+                if (response.active_buffs != null && response.active_buffs.Length > 0)
+                {
+                    ActiveBuffManager.Instance?.OnBuffsReceived(response.active_buffs);
+                    inventoryBridge?.RequestSyncBuffBonuses(); // sync % bonus lên NGO
+
+                    // HpBuff / MpBuff thay đổi max HP/MP → reload toàn bộ player data
+                    bool hasStatBuff = System.Array.Exists(response.active_buffs,
+                        b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
+                    if (hasStatBuff)
+                        ReloadPlayerStats();
+                }
+                else if (response.new_buffs != null && response.new_buffs.Length > 0)
+                {
+                    ActiveBuffManager.Instance?.OnBuffsAdded(response.new_buffs);
+                    inventoryBridge?.RequestSyncBuffBonuses();
+
+                    bool hasStatBuff = System.Array.Exists(response.new_buffs,
+                        b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
+                    if (hasStatBuff)
+                        ReloadPlayerStats();
+                }
+
+                // Chốt lại HUD theo dữ liệu authoritative từ server.
+                ActiveBuffManager.Instance?.LoadFromServer();
+
                 RefreshInventory();
             },
             error => Debug.LogError($"[ItemUseHandler] ❌ UseItem thất bại: {error}")
@@ -204,6 +275,37 @@ public class ItemUseHandler : MonoBehaviour
         );
     }
 
+    private bool TryUseItemInBlacksmith(InventorySlotDto slot)
+    {
+        if (BlacksmithTabPanel.Instance == null || !BlacksmithTabPanel.Instance.gameObject.activeInHierarchy)
+            return false;
+
+        if (UpgradePanel.Instance == null)
+            return false;
+
+        bool handled = UpgradePanel.Instance.TryUseInventoryItemForUpgrade(slot);
+        if (handled)
+        {
+            inventoryUI?.HideItemDetail();
+            Debug.Log($"[ItemUseHandler] Redirected item use into Blacksmith flow: slot={slot.slotIndex}, item={slot.itemCode}");
+            return true;
+        }
+
+        ItemTemplateDto template = ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
+        int itemType = template?.type ?? -1;
+        bool isBlacksmithItem = slot.id == UpgradePanel.CHARM_ITEM_ID
+            || itemType == UpgradePanel.STONE_ITEM_TYPE
+            || (itemType >= 0 && itemType <= ItemTypeEquipMax);
+
+        if (isBlacksmithItem)
+        {
+            inventoryUI?.HideItemDetail();
+            return true;
+        }
+
+        return false;
+    }
+
     // ── Sort ──────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -212,31 +314,28 @@ public class ItemUseHandler : MonoBehaviour
     /// </summary>
     public void RequestSortInventory()
     {
-        int playerId = GetCurrentPlayerId();
-        if (playerId == 0 || APIClient.Instance == null)
+        if (inventoryBridge == null)
         {
-            Debug.LogWarning("[ItemUseHandler] RequestSortInventory: playerId=0 hoặc APIClient null.");
+            Debug.LogWarning("[ItemUseHandler] RequestSortInventory: inventoryBridge null.");
             return;
         }
 
         Debug.Log("[ItemUseHandler] 🔀 Gửi request sắp xếp inventory...");
-
         if (sortButton != null) sortButton.interactable = false;
 
-        APIClient.Instance.SortInventory(
-            playerId,
-            _ =>
-            {
-                Debug.Log("[ItemUseHandler] ✅ Sort inventory thành công.");
-                if (sortButton != null) sortButton.interactable = true;
-                RefreshInventory();
-            },
-            error =>
-            {
-                Debug.LogError($"[ItemUseHandler] ❌ Sort thất bại: {error}");
-                if (sortButton != null) sortButton.interactable = true;
-            }
-        );
+        // Delegate toàn bộ logic về bridge:
+        // - Client  → host-mediated qua ServerRpc (host sort DB → push ClientRpc về client)
+        // - Host/offline → sort trực tiếp qua API rồi fetch lại
+        inventoryBridge.RequestSortAndRefresh();
+
+        // Re-enable sau 1 giây để tránh spam (không cần chờ callback)
+        StartCoroutine(ReenableSortButtonAfterDelay(1f));
+    }
+
+    private System.Collections.IEnumerator ReenableSortButtonAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (sortButton != null) sortButton.interactable = true;
     }
 
     // ── UI Update ─────────────────────────────────────────────────────────
@@ -348,7 +447,26 @@ public class ItemUseHandler : MonoBehaviour
 
     private void RefreshInventory()
     {
+        // Invalidate cache trước mọi lần refresh sau khi dùng item/sắp xếp
+        // để đảm bảo dữ liệu luôn được lấy mới từ DB
+        inventoryBridge?.InvalidateInventoryCache();
         inventoryBridge?.RefreshInventoryFromDB();
+    }
+
+    /// <summary>Reload toàn bộ player data từ REST API bao gồm final_stats (có HpBuff/MpBuff).</summary>
+    private void ReloadPlayerStats()
+    {
+        int playerId = GetCurrentPlayerId();
+        if (playerId <= 0 || APIClient.Instance == null) return;
+        APIClient.Instance.LoadPlayerData(playerId,
+            data =>
+            {
+                GameManager.Instance?.SetPlayerData(data);
+                // Sync maxHp/maxMp lên NGO nếu có InventoryNetworkBridge
+                if (data?.final_stats != null && inventoryBridge != null)
+                    inventoryBridge.RequestUpdatePlayerStats(data.final_stats.max_hp, data.final_stats.max_mp);
+            },
+            _ => { });
     }
 
     /// <summary>Gọi từ bên ngoài (ví dụ NpcMenuUI sau khi mua item) để refresh túi đồ.</summary>
@@ -357,6 +475,38 @@ public class ItemUseHandler : MonoBehaviour
         // Invalidate cache trước để đảm bảo fetch lại dữ liệu mới nhất
         inventoryBridge?.InvalidateInventoryCache();
         RefreshInventory();
+    }
+
+    private bool TryGetCurrentVitals(out int currentHp, out int maxHp, out int currentMp, out int maxMp)
+    {
+        currentHp = 0;
+        maxHp = 0;
+        currentMp = 0;
+        maxMp = 0;
+
+        var syncs = FindObjectsOfType<NetworkPlayerDataSync>();
+        foreach (var sync in syncs)
+        {
+            if (sync == null || !sync.IsOwner) continue;
+
+            currentHp = sync.networkHp.Value;
+            maxHp = sync.networkMaxHp.Value;
+            currentMp = sync.networkMp.Value;
+            maxMp = sync.networkMaxMp.Value;
+            return true;
+        }
+
+        var pd = GameManager.Instance?.GetPlayerData();
+        if (pd?.final_stats != null)
+        {
+            currentHp = pd.final_stats.hp;
+            maxHp = pd.final_stats.max_hp;
+            currentMp = pd.final_stats.mp;
+            maxMp = pd.final_stats.max_mp;
+            return true;
+        }
+
+        return false;
     }
 
     private int GetCurrentPlayerId()

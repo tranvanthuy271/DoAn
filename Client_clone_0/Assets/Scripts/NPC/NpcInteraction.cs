@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Networking;
@@ -19,11 +20,38 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 {
     private NpcData _npcData;   // chỉ server có — set bởi NpcServerManager.InitOnServer()
 
+    // NetworkVariable sync tên NPC từ server → tất cả client
+    private readonly NetworkVariable<FixedString128Bytes> _networkNpcName =
+        new NetworkVariable<FixedString128Bytes>(
+            default,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+    private NpcNameLabel _nameLabel;
+
     private const float MAX_DIST = 3.5f;    // khoảng cách tối đa tương tác (units)
     private const float LENIENCY = 1.5f;    // hệ số khoan nhượng bù lag mạng
 
     /// <summary>Gọi bởi NpcServerManager ngay sau NetworkObject.Spawn(). Chỉ chạy trên server.</summary>
-    public void InitOnServer(NpcData data) => _npcData = data;
+    public void InitOnServer(NpcData data)
+    {
+        _npcData = data;
+        // Sync tên sang tất cả client qua NetworkVariable
+        _networkNpcName.Value = new FixedString128Bytes(data.npc_name ?? "");
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        // Tự thêm NpcNameLabel nếu prefab chưa có
+        _nameLabel = GetComponent<NpcNameLabel>() ?? gameObject.AddComponent<NpcNameLabel>();
+
+        // Lắng nghe thay đổi tên (server set → client nhận)
+        _networkNpcName.OnValueChanged += (_, newVal) => _nameLabel.SetName(newVal.ToString());
+
+        // Nếu giá trị đã có sẵn (client join muộn) thì set ngay
+        if (!_networkNpcName.Value.IsEmpty)
+            _nameLabel.SetName(_networkNpcName.Value.ToString());
+    }
 
     // ── CLIENT — Click / Tap ──────────────────────────────────
 
@@ -101,12 +129,14 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int userId = ServerPlayerDataManager.Instance != null
             ? ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId)
             : PlayerPrefs.GetInt("USER_ID");
+        string jwtToken = ResolveClientJwt(clientId);
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
         string body    = JsonUtility.ToJson(new InteractPayload { npc_id = data.npc_id, player_id = userId });
 
         using var req = PostJson($"{apiBase}/api/npc/interact", body);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        if (!string.IsNullOrEmpty(jwtToken))
+            req.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
         yield return req.SendWebRequest();
 
         data.dialogue_text = "Xin chào, ta có thể giúp gì cho ngươi?";
@@ -144,12 +174,14 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int userId = ServerPlayerDataManager.Instance != null
             ? ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId)
             : PlayerPrefs.GetInt("USER_ID");
+        string jwtToken = ResolveClientJwt(clientId);
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
         string url     = $"{apiBase}/api/npc/shop?npcId={data.npc_id}&playerId={userId}";
 
         using var req = UnityWebRequest.Get(url);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        if (!string.IsNullOrEmpty(jwtToken))
+            req.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
         yield return req.SendWebRequest();
 
         string json = req.result == UnityWebRequest.Result.Success
@@ -188,7 +220,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             yield break;
         }
 
-        string jwtToken = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string jwtToken = ResolveClientJwt(clientId);
         if (string.IsNullOrEmpty(jwtToken))
         {
             Debug.LogWarning("[Buy] JWT_TOKEN trống — chưa đăng nhập.");
@@ -242,6 +274,18 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
     };
+
+    private static string ResolveClientJwt(ulong clientId)
+    {
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            string jwt = ServerPlayerDataManager.Instance.GetClientJwt(clientId);
+            if (!string.IsNullOrEmpty(jwt))
+                return jwt;
+        }
+
+        return PlayerPrefs.GetString("JWT_TOKEN", "");
+    }
 
     private static UnityWebRequest PostJson(string url, string json)
     {

@@ -138,7 +138,7 @@ namespace GameServerApi.Controllers
         //  vào túi đồ. Không dùng trên production.
         // ══════════════════════════════════════════════════════════════
         [HttpPost("debug/add-fusion-cores")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DebugAddFusionCores([FromQuery] int playerId)
         {
             // Mapping element → item_id (phải đồng bộ với GeneController)

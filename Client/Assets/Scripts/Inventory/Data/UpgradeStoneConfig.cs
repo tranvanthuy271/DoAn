@@ -8,8 +8,8 @@ using UnityEngine;
 /// ══════════════════════════════════════════════════════════
 /// TẠO ASSET: Project → Create → Upgrade / Stone Config
 /// ══════════════════════════════════════════════════════════
-/// Kéo asset vào UpgradePanel.upgradeStoneConfig trong Inspector.
-/// Host (server) phải có cùng asset (hoặc đọc từ DB) để validate.
+/// Dữ liệu nên mirror từ DB equipment_upgrade_config để client hiển thị
+/// đúng cùng tỉ lệ mà server dùng để validate.
 /// ══════════════════════════════════════════════════════════
 /// </summary>
 [CreateAssetMenu(menuName = "Upgrade/Stone Config", fileName = "UpgradeStoneConfig")]
@@ -42,8 +42,12 @@ public class UpgradeStoneConfig : ScriptableObject
     [Tooltip("item_template.id của bùa cường hóa")]
     public int charmItemId = 8;
 
-    [Tooltip("% tỉ lệ cộng thêm khi dùng bùa (int). Mặc định 3 = +3%)")]
-    public int charmBonusPercent = 3;
+    [Tooltip("% tỉ lệ cộng thêm khi dùng Đá May Mắn. DB hiện tại dùng 15 = +15%.")]
+    public int charmBonusPercent = 15;
+
+    [Header("Đá bảo vệ (itemId=9)")]
+    [Tooltip("item_template.id của đá bảo vệ. Không tăng tỉ lệ, chỉ chặn fail policy.")]
+    public int protectionItemId = 9;
 
     // ─── Cấu hình từng món đồ ────────────────────────────────────
 
@@ -75,6 +79,37 @@ public class UpgradeStoneConfig : ScriptableObject
     [Header("Cấu hình tỉ lệ từng món đồ (nếu không có sẽ dùng giá trị từ server DB)")]
     public ItemUpgradeEntry[] itemConfigs;
 
+    [Serializable]
+    public class LevelRateEntry
+    {
+        [Tooltip("Bậc muốn đạt tới, ví dụ 1 = +0 → +1")]
+        public int targetLevel;
+
+        [Tooltip("Bạc cần cho bậc này")]
+        public int silverCost;
+
+        [Tooltip("ID đá nâng cấp chính cần dùng cho bậc này")]
+        public int stoneId;
+
+        [Tooltip("Tên đá chính, để debug/Inspector dễ đọc")]
+        public string stoneName;
+
+        [Tooltip("Tỉ lệ tối đa ở bậc này khi đủ stoneNeeded viên, tính theo %")]
+        public int baseSuccessPercent;
+
+        [Tooltip("Số đá chính để đạt baseSuccessPercent")]
+        public int stoneNeeded;
+
+        [Tooltip("Số đá chính tối thiểu mới cho phép nâng")]
+        public int stoneMin;
+
+        [Tooltip("0 = an toàn, 1 = -1 bậc, 2 = về +0")]
+        public int failPolicy;
+    }
+
+    [Header("Dữ liệu theo từng bậc nâng (mirror equipment_upgrade_config)")]
+    public LevelRateEntry[] levelConfigs;
+
     // ─── Cài đặt chung ────────────────────────────────────────────
 
     [Header("Tổng điểm tỉ lệ cần để coi là 100% thành công")]
@@ -105,6 +140,14 @@ public class UpgradeStoneConfig : ScriptableObject
         return null;
     }
 
+    public LevelRateEntry GetLevelConfig(int targetLevel)
+    {
+        if (levelConfigs == null) return null;
+        foreach (var cfg in levelConfigs)
+            if (cfg.targetLevel == targetLevel) return cfg;
+        return null;
+    }
+
     /// <summary>
     /// Tính tỉ lệ % từ danh sách đá đã chọn + charm + level hiện tại của item.
     /// Trả về giá trị 0-100 (int).
@@ -115,6 +158,36 @@ public class UpgradeStoneConfig : ScriptableObject
     /// <param name="hasCharm">Có đặt bùa hay không</param>
     public int CalcSuccessPercent(int itemTemplateId, int currentLevel, List<int> stoneIds, bool hasCharm)
     {
+        int targetLevel = currentLevel + 1;
+        var levelCfg = GetLevelConfig(targetLevel);
+        if (levelCfg != null)
+        {
+            int mainStoneCount = 0;
+            if (stoneIds != null)
+            {
+                foreach (int stoneId in stoneIds)
+                {
+                    if (stoneId == levelCfg.stoneId)
+                        mainStoneCount++;
+                }
+            }
+
+            if (mainStoneCount < levelCfg.stoneMin)
+                return 0;
+
+            float ratio = levelCfg.stoneNeeded > 0
+                ? Mathf.Min((float)mainStoneCount / levelCfg.stoneNeeded, 1f)
+                : 0f;
+
+            int levelTotal = Mathf.RoundToInt(levelCfg.baseSuccessPercent * ratio);
+            if (hasCharm)
+                levelTotal += charmBonusPercent;
+
+            if (maxSuccessPercent > 0)
+                levelTotal = Mathf.Min(levelTotal, maxSuccessPercent);
+            return Mathf.Clamp(levelTotal, 0, 100);
+        }
+
         // 1. Tỉ lệ cơ bản theo item + level
         int basePercent = 80;
         int decrease    = 5;

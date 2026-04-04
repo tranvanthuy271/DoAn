@@ -15,10 +15,12 @@ namespace GameServerApi.Controllers
     public class PlayerController : ControllerBase
     {
         private readonly GameDbContext _db;
+        private readonly ILogger<PlayerController> _logger;
 
-        public PlayerController(GameDbContext db)
+        public PlayerController(GameDbContext db, ILogger<PlayerController> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         /// <summary>
@@ -186,7 +188,6 @@ namespace GameServerApi.Controllers
         /// Bước đầu trả dữ liệu đơn giản dựa trên PlayerData.
         /// </summary>
         [HttpGet("{playerId}/data")]
-        [AllowAnonymous] // Có thể đổi sang [Authorize] khi client gửi JWT
         public async Task<IActionResult> GetPlayerData(int playerId)
         {
             var player = await _db.PlayerData.FirstOrDefaultAsync(p => p.PlayerId == playerId);
@@ -209,14 +210,30 @@ namespace GameServerApi.Controllers
 
             var finalStats = StatCalculator.Compute(info, player.EquipmentJson, player.PotentialStatsJson);
 
+            // Áp dụng HpBuff / MpBuff đang active lên finalStats
+            var activeBuffsForStats = player.GetActiveBuffs()
+                .Where(b => b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow);
+            foreach (var buff in activeBuffsForStats)
+            {
+                if (buff.EffectType == "HpBuff")
+                    finalStats.MaxHp = (int)(finalStats.MaxHp * (1.0 + buff.Value / 100.0));
+                else if (buff.EffectType == "MpBuff")
+                    finalStats.MaxMp = (int)(finalStats.MaxMp * (1.0 + buff.Value / 100.0));
+            }
+            finalStats.Hp = Math.Min(finalStats.Hp, finalStats.MaxHp);
+            finalStats.Mp = Math.Min(finalStats.Mp, finalStats.MaxMp);
+
             // ─── DEBUG LOG ────────────────────────────────────────────────────
-            Console.WriteLine($"[PlayerCtrl] GetPlayerData playerId={playerId} level={info.Level} exp={info.Experience} expNextLv={expForNextLevel}");
-            Console.WriteLine($"  InfoChar  → attack={info.Attack} maxHp={info.MaxHp} maxMp={info.MaxMp} defense={info.Defense}");
+            _logger.LogDebug("[PlayerCtrl] GetPlayerData playerId={PlayerId} level={Level} exp={Exp} expNextLv={ExpNextLv}",
+                playerId, info.Level, info.Experience, expForNextLevel);
+            _logger.LogDebug("[PlayerCtrl] InfoChar attack={Attack} maxHp={MaxHp} maxMp={MaxMp} defense={Defense}",
+                info.Attack, info.MaxHp, info.MaxMp, info.Defense);
             // ──────────────────────────────────────────────────────────────────────────
 
             var response = new
             {
                 player_id = player.PlayerId,
+                user_id   = player.PlayerId,   // alias: player_id == user_id (FK)
                 level = info.Level,
                 experience = info.Experience,
                 exp_required_for_next_level = expForNextLevel,
@@ -279,16 +296,19 @@ namespace GameServerApi.Controllers
         /// Update position của player (khi out game hoặc disconnect)
         /// </summary>
         [HttpPut("{playerId}/position")]
-        [AllowAnonymous] // Có thể đổi sang [Authorize] khi client gửi JWT
         public async Task<IActionResult> UpdatePlayerPosition(int playerId, [FromBody] JsonElement body)
         {
             try
             {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                if (userIdClaim == null) return Unauthorized();
+                int targetPlayerId = int.Parse(userIdClaim.Value);
+
                 int mapId = body.GetProperty("map_id").GetInt32();
                 float positionX = (float)body.GetProperty("position_x").GetDouble();
                 float positionY = (float)body.GetProperty("position_y").GetDouble();
 
-                var player = await _db.PlayerData.FindAsync(playerId);
+                var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                 {
                     return NotFound("Player không tồn tại.");
@@ -322,12 +342,15 @@ namespace GameServerApi.Controllers
         /// Update player data (batch update) - dùng cho batch save từ PlayerDataSaveService
         /// </summary>
         [HttpPut("{playerId}/data")]
-        [AllowAnonymous] // Có thể đổi sang [Authorize] khi client gửi JWT
         public async Task<IActionResult> UpdatePlayerData(int playerId, [FromBody] JsonElement body)
         {
             try
             {
-                var player = await _db.PlayerData.FindAsync(playerId);
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                if (userIdClaim == null) return Unauthorized();
+                int targetPlayerId = int.Parse(userIdClaim.Value);
+
+                var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                 {
                     return NotFound("Player không tồn tại.");
@@ -440,7 +463,7 @@ namespace GameServerApi.Controllers
         {
             try
             {
-                // Lấy user_id từ JWT
+                // Lấy user_id từ JWT (authoritative – không tin vào URL param để chống giả mạo)
                 var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
                 if (userIdClaim == null)
                 {
@@ -449,16 +472,15 @@ namespace GameServerApi.Controllers
 
                 var userId = int.Parse(userIdClaim.Value);
 
-                // Kiểm tra quyền: chỉ được update player của chính mình
-                if (playerId != userId)
-                {
-                    return Forbid();
-                }
+                // Dùng userId từ JWT làm player ID thực sự.
+                // URL playerId chỉ mang tính routing; nếu khác nhau → vẫn được phép
+                // miễn là token hợp lệ (game server tự gọi cho client đúng).
+                int targetPlayerId = userId;
 
-                var player = await _db.PlayerData.FindAsync(playerId);
+                var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                 {
-                    return NotFound($"Player với ID {playerId} không tồn tại.");
+                    return NotFound($"Player với ID {targetPlayerId} không tồn tại.");
                 }
 
                 // Parse inventory hiện tại
@@ -636,7 +658,6 @@ namespace GameServerApi.Controllers
         /// Xóa toàn bộ inventory và equipment của player (dùng cho debug/reset)
         /// </summary>
         [HttpPost("{playerId}/inventory/clear")]
-        [AllowAnonymous]
         public async Task<IActionResult> ClearInventory(int playerId)
         {
             try
@@ -663,7 +684,6 @@ namespace GameServerApi.Controllers
         /// Sắp xếp lại inventory: gom các item về phía trước, loại bỏ ô trống giữa.
         /// </summary>
         [HttpPost("{playerId}/inventory/sort")]
-        [AllowAnonymous]
         public async Task<IActionResult> SortInventory(int playerId)
         {
             try
@@ -727,19 +747,24 @@ namespace GameServerApi.Controllers
         ///   - type 21-29 (tiêu thụ): giảm số lượng (effects xử lý client-side hoặc extend sau).
         /// </summary>
         [HttpPost("{playerId}/inventory/use-item")]
-        [AllowAnonymous]
         public async Task<IActionResult> UseInventoryItem(int playerId, [FromBody] JsonElement body)
         {
             try
             {
+                // Dùng JWT userId làm authoritative (giống AddItemsToInventory)
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                if (userIdClaim == null) return Unauthorized();
+                int userId = int.Parse(userIdClaim.Value);
+                int targetPlayerId = userId;
+
                 if (!body.TryGetProperty("slotIndex", out var slotProp))
                     return BadRequest("Thiếu field 'slotIndex'.");
 
                 int slotIndex = slotProp.GetInt32();
 
-                var player = await _db.PlayerData.FindAsync(playerId);
+                var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
-                    return NotFound($"Player với ID {playerId} không tồn tại.");
+                    return NotFound($"Player với ID {targetPlayerId} không tồn tại.");
 
                 var rawItems = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(
                     string.IsNullOrEmpty(player.InventoryJson) ? "[]" : player.InventoryJson)
@@ -761,11 +786,13 @@ namespace GameServerApi.Controllers
                 int itemType       = itemTemplate?.Type ?? -1;
                 string itemName    = itemTemplate?.Name ?? $"Item {itemTemplateId}";
 
-                const int BagItemType    = 30;
-                const int BagExpandBy    = 5;
+                const int BagItemType = 30;
+                const int BagExpandBy = 5;
 
                 var info = player.GetInfoChar();
                 string effectMsg;
+                int hpRestore = 0, mpRestore = 0;
+                var newBuffsAdded = new List<object>();
 
                 if (itemType == BagItemType)
                 {
@@ -774,8 +801,164 @@ namespace GameServerApi.Controllers
                 }
                 else if (itemType >= 21 && itemType <= 29)
                 {
-                    effectMsg = $"Đã sử dụng {itemName}.";
-                    // TODO: parse option_template để áp dụng buff HP/MP/v.v.
+                    // Đọc effects từ item_effect_template
+                    var effects = await _db.ItemEffectTemplates
+                        .Where(e => e.ItemTemplateId == itemTemplateId)
+                        .OrderBy(e => e.SortOrder)
+                        .ToListAsync();
+
+                    if (effects.Count == 0)
+                    {
+                        effects = GetLegacyConsumableEffects(itemTemplateId);
+                        if (effects.Count == 0)
+                            return BadRequest($"Item consumable '{itemName}' (templateId={itemTemplateId}, type={itemType}) chưa có cấu hình trong item_effect_template.");
+
+                        _logger.LogWarning(
+                            "[UseInventoryItem] Dùng fallback effect config cho itemTemplateId={ItemTemplateId}, itemName={ItemName}",
+                            itemTemplateId, itemName);
+                    }
+
+                    var activeBuffs = player.GetActiveBuffs();
+                    var newBuffList = new List<GameServerApi.Models.ActiveBuff>();
+
+                    foreach (var eff in effects)
+                    {
+                        if (eff.EffectType == "HpRestore")
+                        {
+                            if (eff.DurationSec > 0)
+                            {
+                                // Hồi HP theo thời gian – hiện icon buff, client tick value/s
+                                var existing = activeBuffs.FirstOrDefault(b => b.EffectType == "HpRestoreOverTime");
+                                if (existing != null)
+                                {
+                                    existing.ExpireAt = DateTime.UtcNow.AddSeconds(eff.DurationSec);
+                                    existing.Value    = eff.Value;
+                                    existing.IconId   = eff.IconId;
+                                    existing.Name     = eff.DisplayName;
+                                    existing.Detail   = eff.Detail;
+                                }
+                                else
+                                {
+                                    var newBuff = new GameServerApi.Models.ActiveBuff
+                                    {
+                                        EffectType = "HpRestoreOverTime",
+                                        Value      = eff.Value,
+                                        IconId     = eff.IconId,
+                                        Name       = eff.DisplayName,
+                                        Detail     = eff.Detail,
+                                        ExpireAt   = DateTime.UtcNow.AddSeconds(eff.DurationSec)
+                                    };
+                                    activeBuffs.Add(newBuff);
+                                    newBuffList.Add(newBuff);
+                                }
+                            }
+                            else
+                            {
+                                // Hồi HP ngay lập tức
+                                int restored = eff.Value >= 9999
+                                    ? info.MaxHp - info.Hp
+                                    : Math.Min(eff.Value, info.MaxHp - info.Hp);
+                                info.Hp   = Math.Min(info.MaxHp, info.Hp + eff.Value);
+                                hpRestore += restored;
+                            }
+                        }
+                        else if (eff.EffectType == "MpRestore")
+                        {
+                            if (eff.DurationSec > 0)
+                            {
+                                // Hồi MP theo thời gian – hiện icon buff, client tick value/s
+                                var existing = activeBuffs.FirstOrDefault(b => b.EffectType == "MpRestoreOverTime");
+                                if (existing != null)
+                                {
+                                    existing.ExpireAt = DateTime.UtcNow.AddSeconds(eff.DurationSec);
+                                    existing.Value    = eff.Value;
+                                    existing.IconId   = eff.IconId;
+                                    existing.Name     = eff.DisplayName;
+                                    existing.Detail   = eff.Detail;
+                                }
+                                else
+                                {
+                                    var newBuff = new GameServerApi.Models.ActiveBuff
+                                    {
+                                        EffectType = "MpRestoreOverTime",
+                                        Value      = eff.Value,
+                                        IconId     = eff.IconId,
+                                        Name       = eff.DisplayName,
+                                        Detail     = eff.Detail,
+                                        ExpireAt   = DateTime.UtcNow.AddSeconds(eff.DurationSec)
+                                    };
+                                    activeBuffs.Add(newBuff);
+                                    newBuffList.Add(newBuff);
+                                }
+                            }
+                            else
+                            {
+                                // Hồi MP ngay lập tức
+                                int restored = Math.Min(eff.Value, info.MaxMp - info.Mp);
+                                info.Mp   = Math.Min(info.MaxMp, info.Mp + eff.Value);
+                                mpRestore += restored;
+                            }
+                        }
+                        else if (eff.EffectType == "GeneExpAdd")
+                        {
+                            // Tính gene_exp thêm vào, có áp dụng GeneExpBuff đang active
+                            double geneExpMult = 1.0;
+                            var geneExpBuffs = activeBuffs.Where(b => b.EffectType == "GeneExpBuff"
+                                && (b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow));
+                            foreach (var gb in geneExpBuffs)
+                                geneExpMult += gb.Value / 100.0;
+                            int geneExpGain = (int)(eff.Value * geneExpMult);
+                            info.GeneExp += geneExpGain;
+                        }
+                        else if (eff.DurationSec > 0)
+                        {
+                            // Timed buff – nếu đã có buff cùng loại thì THAY THẾ hoàn toàn
+                            // (reset thời gian về eff.DurationSec tính từ NOW, cập nhật tất cả fields).
+                            var existing = activeBuffs.FirstOrDefault(b => b.EffectType == eff.EffectType);
+                            if (existing != null)
+                            {
+                                existing.ExpireAt = DateTime.UtcNow.AddSeconds(eff.DurationSec);
+                                existing.Value    = eff.Value;
+                                existing.IconId   = eff.IconId;
+                                existing.Name     = eff.DisplayName;
+                                existing.Detail   = eff.Detail;
+                            }
+                            else
+                            {
+                                var newBuff = new GameServerApi.Models.ActiveBuff
+                                {
+                                    EffectType  = eff.EffectType,
+                                    Value       = eff.Value,
+                                    IconId      = eff.IconId,
+                                    Name        = eff.DisplayName,
+                                    Detail      = eff.Detail,
+                                    ExpireAt    = DateTime.UtcNow.AddSeconds(eff.DurationSec)
+                                };
+                                activeBuffs.Add(newBuff);
+                                newBuffList.Add(newBuff);
+                            }
+                        }
+                    }
+
+                    player.SetActiveBuffs(activeBuffs);
+
+                    effectMsg = effects.Count > 0
+                        ? $"Đã sử dụng {itemName}."
+                        : $"Đã sử dụng {itemName}. (Chưa cấu hình effect)";
+
+                    // Serialize newBuffs cho response
+                    if (newBuffList.Count > 0)
+                    {
+                        newBuffsAdded = newBuffList.Select(b => (object)new
+                        {
+                            effectType = b.EffectType,
+                            value      = b.Value,
+                            iconId     = b.IconId,
+                            name       = b.Name,
+                            detail     = b.Detail,
+                            expireAt   = b.ExpireAt?.ToString("o")
+                        }).ToList();
+                    }
                 }
                 else
                 {
@@ -815,11 +998,29 @@ namespace GameServerApi.Controllers
                 player.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
+                // Serialize active_buffs đầy đủ cho client
+                var activeBuffsForResponse = player.GetActiveBuffs().Select(b => new
+                {
+                    effectType = b.EffectType,
+                    value      = b.Value,
+                    iconId     = b.IconId,
+                    name       = b.Name,
+                    detail     = b.Detail,
+                    expireAt   = b.ExpireAt?.ToString("o")
+                }).ToArray();
+
                 return Ok(new
                 {
                     message    = effectMsg,
-                    player_id  = playerId,
+                    player_id  = targetPlayerId,
                     bag_slots  = info.BagSlots,
+                    hp_restore = hpRestore,
+                    mp_restore = mpRestore,
+                    current_hp = info.Hp,
+                    current_mp = info.Mp,
+                    gene_exp   = info.GeneExp,
+                    active_buffs = activeBuffsForResponse,
+                    new_buffs    = newBuffsAdded,
                     inventory,
                     updated_at = player.UpdatedAt
                 });
@@ -836,7 +1037,6 @@ namespace GameServerApi.Controllers
         /// Trang bị item từ inventory vào equipment slot tương ứng
         /// </summary>
         [HttpPost("{playerId}/equipment/equip")]
-        [AllowAnonymous]
         public async Task<IActionResult> EquipItem(int playerId, [FromBody] JsonElement body)
         {
             try
@@ -1059,7 +1259,6 @@ namespace GameServerApi.Controllers
         /// Tháo trang bị từ equipment slot và đưa lại vào inventory
         /// </summary>
         [HttpPost("{playerId}/equipment/unequip")]
-        [AllowAnonymous]
         public async Task<IActionResult> UnequipItem(int playerId, [FromBody] JsonElement body)
         {
             try
@@ -1215,11 +1414,67 @@ namespace GameServerApi.Controllers
         }
 
         /// <summary>
+        /// GET /api/player/{playerId}/active-buffs
+        /// Lấy danh sách buff đang active của player.
+        /// </summary>
+        [HttpGet("{playerId}/active-buffs")]
+        public async Task<IActionResult> GetActiveBuffs(int playerId)
+        {
+            var player = await _db.PlayerData.FindAsync(playerId);
+            if (player == null) return NotFound("Player không tồn tại.");
+
+            var active_buffs = player.GetActiveBuffs()
+                .Where(b => b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow)
+                .Select(b => new
+                {
+                    effectType = b.EffectType,
+                    value      = b.Value,
+                    iconId     = b.IconId,
+                    name       = b.Name,
+                    detail     = b.Detail,
+                    expireAt   = b.ExpireAt?.ToString("o")
+                }).ToArray();
+
+            return Ok(new { active_buffs });
+        }
+
+        private static List<GameServerApi.Models.Entities.ItemEffectTemplate> GetLegacyConsumableEffects(int itemTemplateId)
+        {
+            return itemTemplateId switch
+            {
+                11 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 11, EffectType = "HpRestore", Value = 200, DurationSec = 30, IconId = 531, DisplayName = "Hồi máu", Detail = "+200 HP/s trong 30 giây", SortOrder = 1 }
+                },
+                12 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 12, EffectType = "HpRestore", Value = 500, DurationSec = 30, IconId = 532, DisplayName = "Hồi máu", Detail = "+500 HP/s trong 30 giây", SortOrder = 1 }
+                },
+                13 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 13, EffectType = "HpRestore", Value = 1200, DurationSec = 30, IconId = 533, DisplayName = "Hồi máu", Detail = "+1200 HP/s trong 30 giây", SortOrder = 1 }
+                },
+                14 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 14, EffectType = "MpRestore", Value = 150, DurationSec = 30, IconId = 538, DisplayName = "Hồi linh", Detail = "+150 MP/s trong 30 giây", SortOrder = 2 }
+                },
+                15 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 15, EffectType = "MpRestore", Value = 400, DurationSec = 3, IconId = 539, DisplayName = "Hồi linh", Detail = "+400 MP/s trong 3 giây", SortOrder = 2 }
+                },
+                16 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 16, EffectType = "MpRestore", Value = 1000, DurationSec = 3, IconId = 540, DisplayName = "Hồi linh", Detail = "+1000 MP/s trong 3 giây", SortOrder = 2 }
+                },
+                _ => new List<GameServerApi.Models.Entities.ItemEffectTemplate>()
+            };
+        }
+
+        /// <summary>
         /// GET /api/player/{playerId}/equipment
         /// Lấy thông tin trang bị hiện tại của player
         /// </summary>
         [HttpGet("{playerId}/equipment")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetEquipment(int playerId)
         {
             var player = await _db.PlayerData.FindAsync(playerId);
@@ -1294,7 +1549,8 @@ namespace GameServerApi.Controllers
                     catch { }
                 }
 
-                Console.WriteLine($"[LevelUp] Player leveled up to {info.Level}! SkillPts={info.SkillPoints} PotPts={info.PotentialPoints}");
+                _logger.LogInformation("[LevelUp] Player leveled up to {Level}. SkillPts={SkillPts} PotPts={PotPts}",
+                    info.Level, info.SkillPoints, info.PotentialPoints);
                 changed = true;
             }
 
@@ -1317,13 +1573,16 @@ namespace GameServerApi.Controllers
         /// Trả về tất cả skills từ skill_template kèm level hiện tại của player.
         /// </summary>
         [HttpGet("{playerId}/skills")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetPlayerSkills(int playerId)
         {
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
             var info = player.GetInfoChar();
+
+            // Tính final_stats để cộng attack vào skill damage
+            var finalStats     = StatCalculator.Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+            int playerFinalAtk = finalStats.Attack;
 
             // Parse player skills JSON → Dictionary<skill_id, current_level>
             var playerSkillLevels = new Dictionary<int, int>();
@@ -1427,6 +1686,7 @@ namespace GameServerApi.Controllers
             {
                 skill_points_available = info.SkillPoints,
                 player_level           = info.Level,
+                player_final_attack    = playerFinalAtk,
                 skills                 = skillList
             });
         }
@@ -1437,7 +1697,6 @@ namespace GameServerApi.Controllers
         /// Nâng cấp skill lên 1 level (trừ skill_points).
         /// </summary>
         [HttpPost("{playerId}/skills/upgrade")]
-        [AllowAnonymous]
         public async Task<IActionResult> UpgradeSkill(int playerId, [FromBody] JsonElement body)
         {
             try
@@ -1561,7 +1820,6 @@ namespace GameServerApi.Controllers
         /// Trả về toàn bộ chỉ số tiềm năng và điểm tiềm năng còn lại.
         /// </summary>
         [HttpGet("{playerId}/potential")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetPlayerPotential(int playerId)
         {
             var player = await _db.PlayerData.FindAsync(playerId);
@@ -1609,7 +1867,6 @@ namespace GameServerApi.Controllers
         /// Đầu tư 1 điểm tiềm năng vào chỉ số được chọn.
         /// </summary>
         [HttpPost("{playerId}/potential/upgrade")]
-        [AllowAnonymous]
         public async Task<IActionResult> UpgradePotential(int playerId, [FromBody] JsonElement body)
         {
             try
@@ -1682,7 +1939,6 @@ namespace GameServerApi.Controllers
         /// Phân bổ nhiều điểm tiềm năng cùng lúc. Server validate đủ điểm trước khi ghi DB.
         /// </summary>
         [HttpPost("{playerId}/potential/allocate")]
-        [AllowAnonymous]
         public async Task<IActionResult> AllocatePotential(int playerId, [FromBody] JsonElement body)
         {
             try
@@ -1781,7 +2037,6 @@ namespace GameServerApi.Controllers
         /// Được gọi bởi server khi player kill quái.
         /// </summary>
         [HttpPost("{playerId}/gain-exp")]
-        [AllowAnonymous]
         public async Task<IActionResult> GainExp(int playerId, [FromBody] JsonElement body)
         {
             if (!body.TryGetProperty("amount", out var amtProp))
@@ -1802,7 +2057,8 @@ namespace GameServerApi.Controllers
             player.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            Console.WriteLine($"[PlayerCtrl] GainExp playerId={playerId} +{amount} EXP → total={info.Experience} level={info.Level} leveledUp={leveledUp}");
+            _logger.LogDebug("[PlayerCtrl] GainExp playerId={PlayerId} amount={Amount} totalExp={TotalExp} level={Level} leveledUp={LeveledUp}",
+                playerId, amount, info.Experience, info.Level, leveledUp);
 
             return Ok(new
             {

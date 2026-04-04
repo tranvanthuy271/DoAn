@@ -29,7 +29,9 @@ public class MapEdgeTrigger : MonoBehaviour
 
     [Header("UX")]
     [SerializeField] private GameObject loadingPanel;
+#pragma warning disable CS0414
     [SerializeField] private float transitionDelay = 0.5f;
+#pragma warning restore CS0414
 
     [Header("API")]
     [SerializeField] private string apiBase = "http://localhost:5000";

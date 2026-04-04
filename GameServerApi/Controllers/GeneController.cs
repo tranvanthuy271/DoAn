@@ -13,7 +13,7 @@ namespace GameServerApi.Controllers
 {
     [ApiController]
     [Route("api/gene")]
-    [AllowAnonymous]
+    [Authorize]
     public class GeneController : ControllerBase
     {
         private readonly GameDbContext _db;

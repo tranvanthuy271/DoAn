@@ -134,7 +134,7 @@ public class ServerConnectionApproval : MonoBehaviour
             // Debug.Log($"[ServerConnectionApproval] Approved: {response.Approved}, CreatePlayerObject: {response.CreatePlayerObject}");
             // Debug.Log($"[ServerConnectionApproval] Client will send user_id via ServerRpc after connection (ClientAuthSender)");
         }
-        catch (System.Exception ex)
+        catch (System.Exception)
         {
             // Debug.LogError($"[ServerConnectionApproval] ✗ EXCEPTION in ApprovalCheck: {ex.Message}");
             // Debug.LogError($"[ServerConnectionApproval] Stack trace: {ex.StackTrace}");
@@ -147,7 +147,7 @@ public class ServerConnectionApproval : MonoBehaviour
                 response.CreatePlayerObject = false;
                 // Debug.LogError($"[ServerConnectionApproval] ✓ Approved connection for clientId {clientId} despite exception (fallback)");
             }
-            catch (System.Exception ex2)
+            catch (System.Exception)
             {
                 // Debug.LogError($"[ServerConnectionApproval] ✗✗✗ CRITICAL: Cannot approve connection even in fallback! {ex2.Message}");
             }

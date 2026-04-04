@@ -43,10 +43,6 @@ public class UpgradePanel : MonoBehaviour
 {
     public static UpgradePanel Instance { get; private set; }
 
-    // ══════════════════════════════════════════════════════════════
-    // INSPECTOR
-    // ══════════════════════════════════════════════════════════════
-
     [Header("── Ô Trang Bị ─────────────────────────────────────")]
     [SerializeField] private Button    equipSlotButton;       // Click khi trống → tab Trang Bị
     [SerializeField] private Image     equipSlotIcon;         // Icon item đang chọn
@@ -127,6 +123,7 @@ public class UpgradePanel : MonoBehaviour
 
     // slotIndex trong inventory → index trong stoneSlots array (để gửi lên server)
     private readonly Dictionary<int,int> _stoneArrayIdxToInvSlotIdx = new();
+    private readonly Dictionary<int,int> _reservedMaterialCounts = new();
 
     private ItemDetailPanel _detailPanelInstance;
 
@@ -177,7 +174,9 @@ public class UpgradePanel : MonoBehaviour
     /// <summary>Mở panel trống – từ NPC blacksmith.</summary>
     public void OpenEmpty(InventorySlotDto[] inventory)
     {
-        _inventoryCache   = inventory;
+        ClearReservedMaterialCounts();
+        EnsureBlacksmithUpgradeTabVisible();
+        _inventoryCache   = GetFreshInventorySnapshot(inventory);
         _equippedItem     = null;
         _charmSlot        = null;
         _pendingStoneSlot = null;
@@ -194,7 +193,9 @@ public class UpgradePanel : MonoBehaviour
     /// <summary>Mở từ trang bị đang mặc.</summary>
     public void OpenForEquipped(EquipmentItemDto item, string equipSlotKey, InventorySlotDto[] inventory)
     {
-        _inventoryCache   = inventory;
+        ClearReservedMaterialCounts();
+        EnsureBlacksmithUpgradeTabVisible();
+        _inventoryCache   = GetFreshInventorySnapshot(inventory);
         _isFromInventory  = false;
         _slotKey          = equipSlotKey;
         _charmSlot        = null;
@@ -204,14 +205,16 @@ public class UpgradePanel : MonoBehaviour
         ResetCharmDisplay();
         HidePreview();
         ApplyEquippedItem(item);
-        StartCoroutine(LoadConfigAndRefresh());
         gameObject.SetActive(true);
+        StartCoroutine(LoadConfigAndRefresh());
     }
 
     /// <summary>Mở từ túi đồ.</summary>
     public void OpenForInventory(InventorySlotDto slot, InventorySlotDto[] inventory)
     {
-        _inventoryCache   = inventory;
+        ClearReservedMaterialCounts();
+        EnsureBlacksmithUpgradeTabVisible();
+        _inventoryCache   = GetFreshInventorySnapshot(inventory);
         _isFromInventory  = true;
         _slotKey          = slot.slotIndex.ToString();
         _charmSlot        = null;
@@ -227,13 +230,14 @@ public class UpgradePanel : MonoBehaviour
             strOptions   = slot.strOptions
         };
         ApplyEquippedItem(dto);
-        StartCoroutine(LoadConfigAndRefresh());
         gameObject.SetActive(true);
+        StartCoroutine(LoadConfigAndRefresh());
     }
 
     /// <summary>Gọi từ BlacksmithTabPanel khi đóng.</summary>
     public void CloseFromTabPanel()
     {
+        ClearReservedMaterialCounts();
         _equippedItem     = null;
         _charmSlot        = null;
         _pendingStoneSlot = null;
@@ -259,6 +263,7 @@ public class UpgradePanel : MonoBehaviour
     private void OnEquipRemoveClicked()
     {
         HideEquipInfoBox();
+        ClearReservedMaterialCounts();
         _equippedItem = null;
         _slotKey      = null;
         _config       = null;
@@ -284,6 +289,7 @@ public class UpgradePanel : MonoBehaviour
     /// </summary>
     public void SetChosenEquipItem(EquipmentItemDto item, string slotKey, bool fromInventory, InventorySlotDto[] inventory)
     {
+        ClearReservedMaterialCounts();
         _inventoryCache  = inventory ?? _inventoryCache;
         _isFromInventory = fromInventory;
         _slotKey         = slotKey;
@@ -342,6 +348,7 @@ public class UpgradePanel : MonoBehaviour
     private void OnCharmRemoveClicked()
     {
         HideCharmInfoBox();
+        ReleaseReservedMaterial(_charmSlot);
         _charmSlot = null;
         ResetCharmDisplay();
         RefreshRateDisplay();
@@ -357,14 +364,32 @@ public class UpgradePanel : MonoBehaviour
     /// <summary>Người chơi chọn bùa (id=8) từ túi đồ.</summary>
     public void SetCharmFromInventory(InventorySlotDto slot)
     {
+        TrySetCharmFromInventory(slot);
+    }
+
+    private bool TrySetCharmFromInventory(InventorySlotDto slot)
+    {
+        if (slot == null) return false;
+
+        RememberInventorySlot(slot);
+
+        if (_charmSlot != null)
+            ReleaseReservedMaterial(_charmSlot);
+
+        if (!ReserveReservedMaterial(slot))
+        {
+            SetStatus("Không đủ bùa trong túi!", Color.red);
+            return false;
+        }
+
         _charmSlot = slot;
 
         var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
-        charmSlotNameText.text = tmpl != null ? tmpl.name : slot.itemCode;
+        charmSlotNameText.text = GetInventorySlotDisplayName(slot, tmpl);
 
         if (charmSlotIcon != null && IconDatabase.Instance != null)
         {
-            var sp = IconDatabase.Instance.GetIcon(slot.iconId);
+            var sp = ResolveInventorySlotIcon(slot, tmpl);
             charmSlotIcon.sprite  = sp;
             charmSlotIcon.enabled = sp != null;
         }
@@ -372,6 +397,7 @@ public class UpgradePanel : MonoBehaviour
         // Buttons are inside charmInfoBox; shown only when popup is opened via OnCharmSlotClicked
         RefreshRateDisplay();
         BlacksmithTabPanel.Instance?.SwitchTab(0);
+        return true;
     }
 
     private void ResetCharmDisplay()
@@ -397,6 +423,7 @@ public class UpgradePanel : MonoBehaviour
     {
         int idx = System.Array.IndexOf(stoneSlots, slot);
         if (idx >= 0) _stoneArrayIdxToInvSlotIdx.Remove(idx);
+        ReleaseReservedMaterial(slot?.ItemData);
         slot.Clear();
         RefreshRateDisplay();
     }
@@ -406,13 +433,28 @@ public class UpgradePanel : MonoBehaviour
     /// </summary>
     public void OnStoneSelectedFromInventory(InventorySlotDto stone)
     {
-        if (_pendingStoneSlot == null) return;
+        TrySetStoneFromInventory(stone);
+    }
 
-        int usedFromThisSlot = CountStonesFromInvSlot(stone.slotIndex);
-        if (usedFromThisSlot >= stone.quantity)
+    private bool TrySetStoneFromInventory(InventorySlotDto stone)
+    {
+        if (stone == null) return false;
+
+        RememberInventorySlot(stone);
+
+        if (_pendingStoneSlot == null)
+            _pendingStoneSlot = FindFirstEmptyStoneSlot();
+
+        if (_pendingStoneSlot == null)
         {
-            SetStatus($"Không đủ {stone.itemCode}!", Color.red);
-            return;
+            SetStatus("Đã đầy 16 ô đá rồi.", Color.yellow);
+            return false;
+        }
+
+        if (!ReserveReservedMaterial(stone))
+        {
+            SetStatus($"Không đủ {GetInventorySlotDisplayName(stone)}!", Color.red);
+            return false;
         }
 
         int arrayIdx = System.Array.IndexOf(stoneSlots, _pendingStoneSlot);
@@ -423,6 +465,32 @@ public class UpgradePanel : MonoBehaviour
         _pendingStoneSlot = null;
         RefreshRateDisplay();
         BlacksmithTabPanel.Instance?.SwitchTab(0);
+        return true;
+    }
+
+    public bool TryUseInventoryItemForUpgrade(InventorySlotDto slot)
+    {
+        if (slot == null || slot.quantity <= 0) return false;
+
+        RememberInventorySlot(slot);
+
+        ItemTemplateDto template = ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
+        int itemType = template?.type ?? -1;
+
+        if (slot.id == CHARM_ITEM_ID)
+            return TrySetCharmFromInventory(slot);
+
+        if (itemType == STONE_ITEM_TYPE)
+            return TrySetStoneFromInventory(slot);
+
+        if (itemType >= 0 && itemType <= 5)
+        {
+            OpenForInventory(slot, GetFreshInventorySnapshot(_inventoryCache));
+            BlacksmithTabPanel.Instance?.SwitchTab(0);
+            return true;
+        }
+
+        return false;
     }
 
     private int CountStonesFromInvSlot(int invSlotIndex)
@@ -431,6 +499,32 @@ public class UpgradePanel : MonoBehaviour
         foreach (var s in stoneSlots)
             if (s != null && !s.IsEmpty && s.InventorySlotIndex == invSlotIndex) count++;
         return count;
+    }
+
+    private static List<UpgradeMaterialUsageDto> BuildMaterialUsageList(IEnumerable<int> slotIndices)
+    {
+        var usageMap = new Dictionary<int, int>();
+        if (slotIndices != null)
+        {
+            foreach (int slotIndex in slotIndices)
+            {
+                if (!usageMap.ContainsKey(slotIndex))
+                    usageMap[slotIndex] = 0;
+                usageMap[slotIndex]++;
+            }
+        }
+
+        var result = new List<UpgradeMaterialUsageDto>(usageMap.Count);
+        foreach (var usage in usageMap)
+        {
+            result.Add(new UpgradeMaterialUsageDto
+            {
+                slotIndex = usage.Key,
+                count = usage.Value,
+            });
+        }
+
+        return result;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -646,12 +740,21 @@ public class UpgradePanel : MonoBehaviour
         int playerId = GameManager.Instance?.currentPlayerData?.player_id ?? 0;
 
         var stoneIndices = new List<int>(_stoneArrayIdxToInvSlotIdx.Values);
+        var stoneUsages = BuildMaterialUsageList(stoneIndices);
         var charmIndices = new List<int>();
         if (_charmSlot != null) charmIndices.Add(_charmSlot.slotIndex);
+        var charmUsages = BuildMaterialUsageList(charmIndices);
 
-        // Tính rate client để server so sánh, phát hiện cheat
-        int clientPercent = 0;
-        if (rateText != null && int.TryParse(rateText.text.Replace("%","").Trim(), out int p)) clientPercent = p;
+        int clientPercent = upgradeStoneConfig != null
+            ? upgradeStoneConfig.CalcSuccessPercent(
+                _equippedItem.id,
+                _equippedItem.upgradeLevel,
+                CollectPlacedStoneIds(),
+                _charmSlot != null)
+            : 0;
+
+        if (clientPercent <= 0 && rateText != null && int.TryParse(rateText.text.Replace("%", "").Trim(), out int p))
+            clientPercent = p;
 
         var request = new UpgradeRequestDto
         {
@@ -660,6 +763,8 @@ public class UpgradePanel : MonoBehaviour
             isFromInventory   = _isFromInventory,
             stoneSlotIndices  = stoneIndices,
             charmSlotIndices  = charmIndices,
+            stoneUsages       = stoneUsages,
+            charmUsages       = charmUsages,
             clientRatePercent = clientPercent
         };
 
@@ -693,7 +798,17 @@ public class UpgradePanel : MonoBehaviour
             }
         }
 
+        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        bridge?.InvalidateInventoryCache();
+
         if (resp.updatedInventory != null) _inventoryCache = resp.updatedInventory;
+        ClearReservedMaterialCounts();
+
+        var invUI = FindObjectOfType<InventoryUI>(true);
+        if (invUI != null && resp.updatedInventory != null)
+            invUI.SetInventoryData(resp.updatedInventory);
+        else
+            bridge?.RefreshInventoryFromDB();
 
         var pd = GameManager.Instance?.currentPlayerData;
         if (pd != null)
@@ -811,6 +926,169 @@ public class UpgradePanel : MonoBehaviour
         var rootImage = GetComponent<Image>();
         if (rootImage != null && rootImage.color.a <= 0.001f)
             rootImage.raycastTarget = false;
+    }
+
+    private void EnsureBlacksmithUpgradeTabVisible()
+    {
+        if (BlacksmithTabPanel.Instance != null)
+        {
+            if (!BlacksmithTabPanel.Instance.gameObject.activeInHierarchy)
+                BlacksmithTabPanel.Instance.Open(0);
+            else
+                BlacksmithTabPanel.Instance.SwitchTab(0);
+        }
+
+        Transform current = transform;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+                current.gameObject.SetActive(true);
+            current = current.parent;
+        }
+    }
+
+    private UpgradeStoneSlot FindFirstEmptyStoneSlot()
+    {
+        foreach (var stoneSlot in stoneSlots)
+        {
+            if (stoneSlot != null && stoneSlot.IsEmpty)
+                return stoneSlot;
+        }
+        return null;
+    }
+
+    private bool ReserveReservedMaterial(InventorySlotDto slot)
+    {
+        if (slot == null) return false;
+
+        RememberInventorySlot(slot);
+
+        InventorySlotDto source = FindInventorySlot(slot.slotIndex) ?? slot;
+        int sourceQuantity = Mathf.Max(source.quantity, slot.quantity);
+        if (sourceQuantity <= 0)
+            return false;
+
+        int reserved = _reservedMaterialCounts.TryGetValue(slot.slotIndex, out int currentReserved)
+            ? currentReserved
+            : 0;
+
+        int available = Mathf.Max(0, sourceQuantity - reserved);
+        if (available <= 0)
+            return false;
+
+        _reservedMaterialCounts[slot.slotIndex] = reserved + 1;
+        SyncReservedMaterialCountsToInventoryUI();
+        return true;
+    }
+
+    private void ReleaseReservedMaterial(InventorySlotDto slot)
+    {
+        if (slot == null) return;
+
+        if (_reservedMaterialCounts.TryGetValue(slot.slotIndex, out int reserved) && reserved > 0)
+        {
+            reserved--;
+            if (reserved <= 0)
+                _reservedMaterialCounts.Remove(slot.slotIndex);
+            else
+                _reservedMaterialCounts[slot.slotIndex] = reserved;
+
+            SyncReservedMaterialCountsToInventoryUI();
+        }
+    }
+
+    private void ClearReservedMaterialCounts()
+    {
+        if (_reservedMaterialCounts.Count == 0)
+            return;
+
+        _reservedMaterialCounts.Clear();
+        SyncReservedMaterialCountsToInventoryUI();
+    }
+
+    private void SyncReservedMaterialCountsToInventoryUI()
+    {
+        var invUI = FindObjectOfType<InventoryUI>(true);
+        invUI?.SetReservedQuantities(_reservedMaterialCounts);
+    }
+
+    private InventorySlotDto FindInventorySlot(int slotIndex)
+    {
+        _inventoryCache = GetFreshInventorySnapshot(_inventoryCache);
+        if (_inventoryCache == null) return null;
+        foreach (var slot in _inventoryCache)
+        {
+            if (slot != null && slot.slotIndex == slotIndex)
+                return slot;
+        }
+        return null;
+    }
+
+    private void RememberInventorySlot(InventorySlotDto slot)
+    {
+        if (slot == null)
+            return;
+
+        InventorySlotDto[] snapshot = GetFreshInventorySnapshot(_inventoryCache);
+        if (snapshot == null || snapshot.Length == 0)
+        {
+            _inventoryCache = new[] { slot };
+            return;
+        }
+
+        _inventoryCache = snapshot;
+    }
+
+    private InventorySlotDto[] GetFreshInventorySnapshot(InventorySlotDto[] preferred)
+    {
+        if (HasInventorySnapshot(preferred))
+            return preferred;
+
+        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        if (HasInventorySnapshot(bridge?.CurrentInventory))
+            return bridge.CurrentInventory;
+
+        var inventoryUI = FindObjectOfType<InventoryUI>(true);
+        if (HasInventorySnapshot(inventoryUI?.CurrentSlots))
+            return inventoryUI.CurrentSlots;
+
+        return preferred ?? _inventoryCache;
+    }
+
+    private static bool HasInventorySnapshot(InventorySlotDto[] inventory)
+    {
+        return inventory != null && inventory.Length > 0;
+    }
+
+    private string GetInventorySlotDisplayName(InventorySlotDto slot, ItemTemplateDto template = null)
+    {
+        template ??= ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
+        if (template != null && !string.IsNullOrEmpty(template.name))
+            return template.name;
+
+        if (!string.IsNullOrEmpty(slot?.itemCode))
+            return slot.itemCode;
+
+        return slot != null && slot.id > 0 ? $"Item #{slot.id}" : "vật liệu";
+    }
+
+    private Sprite ResolveInventorySlotIcon(InventorySlotDto slot, ItemTemplateDto template = null)
+    {
+        if (slot == null || IconDatabase.Instance == null)
+            return null;
+
+        if (!string.IsNullOrEmpty(slot.iconId))
+        {
+            var icon = IconDatabase.Instance.GetIcon(slot.iconId);
+            if (icon != null)
+                return icon;
+        }
+
+        template ??= ItemTemplateManager.Instance?.GetItemTemplate(slot.id);
+        if (template != null && template.idIcon > 0)
+            return IconDatabase.Instance.GetIcon(template.idIcon.ToString());
+
+        return null;
     }
 
     private void SetStatus(string msg, Color color)

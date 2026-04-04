@@ -38,6 +38,18 @@ public class AutoEquipDebugger : MonoBehaviour
 
     private bool isBusy = false;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void BootstrapRuntimeDebugger()
+    {
+        if (FindObjectOfType<AutoEquipDebugger>() != null)
+            return;
+
+        var runtimeObject = new GameObject("AutoEquipDebugger_Runtime");
+        runtimeObject.AddComponent<AutoEquipDebugger>();
+        DontDestroyOnLoad(runtimeObject);
+        Debug.Log("[AutoEquipDebugger] Runtime bootstrap created automatically.");
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(triggerKey) && !isBusy)
@@ -69,20 +81,24 @@ public class AutoEquipDebugger : MonoBehaviour
             yield break;
         }
 
-        // Lookup icon từ ItemTemplateManager (nếu có)
-        string GetIcon(int itemId)
-        {
-            var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(itemId);
-            return tmpl != null ? tmpl.idIcon.ToString() : itemId.ToString();
-        }
+        int upgradeStoneItemId = FindFirstUpgradeStoneTemplateId();
 
         var stones = new List<APIClient.AddInventoryItemRequest>();
         if (upgradeStoneCount > 0)
+        {
+            if (upgradeStoneItemId <= 0)
+            {
+                Debug.LogError("[AutoEquipDebugger] Không tìm thấy item đá nâng cấp type=21 trong ItemTemplateManager!");
+                isBusy = false;
+                yield break;
+            }
+
             stones.Add(new APIClient.AddInventoryItemRequest
             {
-                itemTemplateId = 1,
+                itemTemplateId = upgradeStoneItemId,
                 quantity       = upgradeStoneCount
             });
+        }
         if (luckyStoneCount > 0)
             stones.Add(new APIClient.AddInventoryItemRequest
             {
@@ -120,6 +136,21 @@ public class AutoEquipDebugger : MonoBehaviour
         isBusy = false;
     }
 
+    private int FindFirstUpgradeStoneTemplateId()
+    {
+        var allTemplates = ItemTemplateManager.Instance?.GetAllItemTemplates();
+        if (allTemplates == null)
+            return 0;
+
+        var stoneTemplate = allTemplates
+            .Where(t => t != null && t.type == UpgradePanel.STONE_ITEM_TYPE && t.id != UpgradePanel.CHARM_ITEM_ID)
+            .OrderBy(t => t.levelNeed)
+            .ThenBy(t => t.id)
+            .FirstOrDefault();
+
+        return stoneTemplate != null ? stoneTemplate.id : 0;
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Phím Y: Thêm Linh Thạch gene (id 17-20) vào túi đồ
     // ──────────────────────────────────────────────────────────────
@@ -138,12 +169,6 @@ public class AutoEquipDebugger : MonoBehaviour
             Debug.LogError("[AutoEquipDebugger] Không lấy được playerId!");
             isBusy = false;
             yield break;
-        }
-
-        string GetIcon(int itemId)
-        {
-            var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(itemId);
-            return tmpl != null ? tmpl.idIcon.ToString() : itemId.ToString();
         }
 
         var stones = new APIClient.AddInventoryItemRequest[]
@@ -273,24 +298,30 @@ public class AutoEquipDebugger : MonoBehaviour
     {
         int playerId = 0;
 
-        // Ưu tiên 1: GameManager in-memory
+        // Ưu tiên 1: GameManager in-memory (user_id được set từ login hoặc server response)
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-            playerId = GameManager.Instance.GetPlayerData().user_id;
+        {
+            var pd = GameManager.Instance.GetPlayerData();
+            // user_id được set khi login; player_id được set khi load player data
+            playerId = pd.user_id != 0 ? pd.user_id : pd.player_id;
+        }
 
-        // Ưu tiên 2: ServerPlayerDataManager (khi chạy dưới dạng host)
+        // Ưu tiên 2: ServerPlayerDataManager – dùng clientIdToUserId (chính xác hơn playerData.user_id)
         if (playerId == 0 && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
         {
             var serverDataMgr = ServerPlayerDataManager.Instance;
             if (serverDataMgr != null)
             {
                 ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                var playerData = serverDataMgr.GetPlayerDataForClient(localClientId);
-                if (playerData != null)
-                    playerId = playerData.user_id;
+                // GetUserIdFromClientId trả về userId đã được lưu từ login, KHÔNG phụ thuộc
+                // vào việc server có trả về user_id trong response hay không
+                int userIdFromCache = serverDataMgr.GetUserIdFromClientId(localClientId);
+                if (userIdFromCache != 0)
+                    playerId = userIdFromCache;
             }
         }
 
-        // Fallback: PlayerPrefs
+        // Fallback: PlayerPrefs (set tại login)
         if (playerId == 0)
             playerId = PlayerPrefs.GetInt("USER_ID", 0);
 

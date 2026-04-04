@@ -55,6 +55,10 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
         // Initialize UI cho tất cả clients (dùng networkMaxHealth.Value để đúng trên mọi client)
         OnHealthValueChanged(0, networkCurrentHealth.Value);
+
+        // Client: đảm bảo EnemyClickHandler tồn tại để click chọn enemy hoạt động
+        if (IsClient && GetComponent<EnemyClickHandler>() == null)
+            gameObject.AddComponent<EnemyClickHandler>();
     }
 
     public override void OnNetworkDespawn()

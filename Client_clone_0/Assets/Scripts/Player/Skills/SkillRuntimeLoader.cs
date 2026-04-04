@@ -146,6 +146,8 @@ public class SkillRuntimeLoader : NetworkBehaviour
             return;
         }
 
+        int playerFinalAtk = response.player_final_attack;
+
         // Build lookup theo skill_code
         var lookup = new Dictionary<string, PlayerSkillInfo>(System.StringComparer.OrdinalIgnoreCase);
         foreach (var info in response.skills)
@@ -165,18 +167,24 @@ public class SkillRuntimeLoader : NetworkBehaviour
             if (!TryGetPlayerSkillInfo(lookup, sd.skillCode, out PlayerSkillInfo info)) continue;
 
             // Apply stats từ DB — kể cả khi current_level=0 (dùng stats level 1 làm base)
-            // Giúp skill luôn hiển thị đúng MP cost / cooldown ngay cả khi chưa nâng cấp
+            sd.cooldown      = info.current_cooldown_sec > 0 ? info.current_cooldown_sec : sd.cooldown;
+            sd.currentMpCost = info.current_mp_cost;
 
-            // Ghi đè stats
-            sd.cooldown           = info.current_cooldown_sec > 0 ? info.current_cooldown_sec : sd.cooldown;
-            sd.currentEffectValue = info.current_effect_value;
-            sd.currentMpCost      = info.current_mp_cost;
+            // ── Tính tổng sát thương: skill base + player final attack ──────────────
+            // Chỉ áp dụng cho các skill gây sát thương trực tiếp, không áp dụng cho
+            // buff/utility skill nơi effect_value là khoảng cách / lượng buff.
+            float effectValue = info.current_effect_value;
+            if (IsDamageSkill(sd.skillType) && playerFinalAtk > 0)
+            {
+                effectValue += playerFinalAtk;
+            }
+            sd.currentEffectValue = effectValue;
 
             // Đồng bộ sang component chuyên biệt nếu có
             if (sd.skillType == SkillType.WindStep && windStepSkill != null)
             {
-                windStepSkill.cooldown      = sd.cooldown;
-                windStepSkill.dashDistance  = info.current_effect_value; // effect_value = units di chuyển
+                windStepSkill.cooldown     = sd.cooldown;
+                windStepSkill.dashDistance = info.current_effect_value; // effect_value = units di chuyển (KHÔNG cộng atk)
             }
             else if (sd.skillType == SkillType.Teleport && teleportSkill != null)
             {
@@ -184,13 +192,13 @@ public class SkillRuntimeLoader : NetworkBehaviour
             }
 
             // Đồng bộ effectValue sang HybridSkillBase component nếu là hybrid skill
-            if (info.current_effect_value > 0f)
+            if (effectValue > 0f)
             {
                 foreach (var hc in GetComponents<HybridSkillBase>())
                 {
                     if (string.Equals(hc.skillCode, sd.skillCode, System.StringComparison.OrdinalIgnoreCase))
                     {
-                        hc.effectValue = info.current_effect_value;
+                        hc.effectValue = effectValue;
                         hc.cooldown    = sd.cooldown;
                         hc.mpCost      = info.current_mp_cost;
                         break;
@@ -199,11 +207,43 @@ public class SkillRuntimeLoader : NetworkBehaviour
             }
 
             matched++;
-            Debug.Log($"[SkillRuntimeLoader] Applied '{sd.skillCode}' lv{info.current_level}: CD={sd.cooldown}s EV={sd.currentEffectValue} MP={sd.currentMpCost}");
+            Debug.Log($"[SkillRuntimeLoader] Applied '{sd.skillCode}' lv{info.current_level}: CD={sd.cooldown}s base_EV={info.current_effect_value} atkBonus={playerFinalAtk} totalEV={effectValue} MP={sd.currentMpCost}");
         }
 
         loaded = true;
-        Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill đã apply từ DB.");
+        Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill, player_final_attack={playerFinalAtk}");
+    }
+
+    /// <summary>
+    /// Trả về true nếu skill này gây sát thương trực tiếp và cần cộng player attack vào effectValue.
+    /// Các skill buff/utility (dash distance, shield, armor buff, aura buff) trả về false.
+    /// </summary>
+    private static bool IsDamageSkill(SkillType type)
+    {
+        switch (type)
+        {
+            case SkillType.Projectile:
+            case SkillType.Melee:
+            case SkillType.NormalAttack:
+            case SkillType.FireRain:
+            case SkillType.WaterPillar:
+            case SkillType.EarthBoomerang:
+            case SkillType.EarthBlinkStrike:
+            case SkillType.HybridBarrage:
+            case SkillType.HybridLavaAura:
+            case SkillType.HybridVenom:
+                return true;
+
+            // Utility & buff skills — effect_value là khoảng cách, thời gian, hoặc lượng buff
+            case SkillType.Teleport:
+            case SkillType.WindStep:
+            case SkillType.MetalShield:
+            case SkillType.WaterArmorBuff:
+            case SkillType.EarthAura:
+            case SkillType.Dash:
+            default:
+                return false;
+        }
     }
 
     private bool TryGetPlayerSkillInfo(Dictionary<string, PlayerSkillInfo> lookup, string skillCode, out PlayerSkillInfo info)

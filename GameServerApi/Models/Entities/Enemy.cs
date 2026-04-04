@@ -30,6 +30,30 @@ namespace GameServerApi.Models
         /// <summary>JSON ky nang boss: [{"skill_id":"FIRE_BREATH","damage_multiplier":2.5,"cooldown_sec":8,"aoe":false}]</summary>
         public string? SkillsJson { get; set; }
 
+        // Kháng nguyên tố (%)
+        public int KhangHoa { get; set; } = 0;
+        public int KhangThuy { get; set; } = 0;
+        public int KhangTho { get; set; } = 0;
+        public int KhangMoc { get; set; } = 0;
+        public int KhangKim { get; set; } = 0;
+        public int KhangPhong { get; set; } = 0;
+
+        // Tăng sát thương theo nguyên tố (%)
+        public int TangDameHoa { get; set; } = 0;
+        public int TangDameThuy { get; set; } = 0;
+        public int TangDameTho { get; set; } = 0;
+        public int TangDameMoc { get; set; } = 0;
+        public int TangDameKim { get; set; } = 0;
+        public int TangDamePhong { get; set; } = 0;
+
+        // Chỉ số phụ
+        public int HpRegenPerSec { get; set; } = 0;
+        public int EvasionRate { get; set; } = 0;
+        public int CounterRate { get; set; } = 0;
+
+        // Giai đoạn boss (chỉ dùng cho boss): JSON phases
+        public string? PhasesJson { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

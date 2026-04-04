@@ -151,7 +151,7 @@ public static class ElementHelper
     /// English key → English key bị khắc.
     /// Wind không tham gia vòng khắc chuẩn (trả về null).
     /// </summary>
-    public static string? GetCounteredElement(string englishKey) => englishKey switch
+    public static string GetCounteredElement(string englishKey) => englishKey switch
     {
         "Metal" => "Wood",
         "Wood"  => "Water",
@@ -166,7 +166,7 @@ public static class ElementHelper
     ///   Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
     /// Trả về null nếu englishKey không hợp lệ.
     /// </summary>
-    public static string? GetFixedSecondary(string englishKey) => englishKey switch
+    public static string GetFixedSecondary(string englishKey) => englishKey switch
     {
         "Fire"  => "Earth",
         "Earth" => "Fire",

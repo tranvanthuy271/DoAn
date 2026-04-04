@@ -21,6 +21,7 @@ using System.IO;
 public static class CreateShopItemRowPrefab
 {
     private const string PREFAB_PATH = "Assets/Prefabs/UI/ShopItemRow.prefab";
+    private const string NOTO_SANS_ASSET_PATH = "Assets/TextMesh Pro/Resources/Fonts & Materials/NotoSans-Regular SDF.asset";
 
     [MenuItem("Tools/NPC Shop/Create ShopItemRow Prefab")]
     public static void Create()
@@ -141,6 +142,15 @@ public static class CreateShopItemRowPrefab
         var nameLE = nameGO.AddComponent<LayoutElement>();
         nameLE.preferredHeight = 22;
         nameLE.flexibleHeight  = 0;
+
+        var notoSans = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NOTO_SANS_ASSET_PATH);
+        if (notoSans != null)
+        {
+            priceTmp.font = notoSans;
+            priceTmp.fontSharedMaterial = notoSans.material;
+            nameTmp.font = notoSans;
+            nameTmp.fontSharedMaterial = notoSans.material;
+        }
 
         // ── ShopItemRowUI -- wire all references ────────────────────────
         var rowUI = root.AddComponent<ShopItemRowUI>();

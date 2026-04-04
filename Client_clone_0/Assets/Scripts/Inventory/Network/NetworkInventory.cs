@@ -147,6 +147,60 @@ public class NetworkInventory : NetworkBehaviour
     }
 
     /// <summary>
+    /// Client gọi lên host để yêu cầu sắp xếp inventory (gom item về phía trước).
+    /// Host sort DB → fetch lại dữ liệu mới → gửi về đúng client đó qua SendInventoryDataClientRpc.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestSortInventoryServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        Debug.Log($"[NetworkInventory] RequestSortInventoryServerRpc từ clientId={senderClientId}");
+
+        int playerId = 0;
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            var pd = ServerPlayerDataManager.Instance.GetPlayerDataForClient(senderClientId);
+            if (pd != null) playerId = pd.user_id;
+        }
+        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+            playerId = GameManager.Instance.GetPlayerData().user_id;
+
+        if (playerId == 0 || APIClient.Instance == null)
+        {
+            Debug.LogWarning($"[NetworkInventory] RequestSortInventoryServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
+            return;
+        }
+
+        ulong capturedClientId = senderClientId;
+        // Bước 1: sort trên DB
+        APIClient.Instance.SortInventory(
+            playerId,
+            _ =>
+            {
+                Debug.Log($"[NetworkInventory] Sort thành công cho playerId={playerId}, đang fetch dữ liệu mới...");
+                // Bước 2: fetch lại inventory mới nhất sau khi sort
+                APIClient.Instance.GetPlayerInventory(
+                    playerId,
+                    items =>
+                    {
+                        string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
+                        var clientParams = new ClientRpcParams
+                        {
+                            Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
+                        };
+                        Debug.Log($"[NetworkInventory] Gửi inventory đã sort ({items.Length} items) về clientId={capturedClientId}");
+                        SendInventoryDataClientRpc(json, clientParams);
+                    },
+                    err => Debug.LogError($"[NetworkInventory] Fetch sau sort thất bại cho clientId={capturedClientId}: {err}")
+                );
+            },
+            err => Debug.LogError($"[NetworkInventory] Sort thất bại cho clientId={capturedClientId}: {err}")
+        );
+    }
+
+    /// <summary>
     /// Host gửi JSON inventory về đúng client đã yêu cầu.
     /// InventoryNetworkBridge phía client nhận và cập nhật cache + UI.
     /// </summary>
@@ -351,7 +405,8 @@ public class NetworkInventory : NetworkBehaviour
     }
 
     /// <summary>
-    /// ServerRpc: Sử dụng item (consumable)
+    /// ServerRpc: Sử dụng item (consumable) — NGO-only path, giảm NGO cache inventory.
+    /// Dùng khi KHÔNG có REST API (testing/offline). Production dùng ApplyConsumableStatServerRpc.
     /// </summary>
     [ServerRpc(RequireOwnership = false)]
     public void UseItemServerRpc(int slotIndex, ServerRpcParams rpcParams = default)
@@ -360,39 +415,38 @@ public class NetworkInventory : NetworkBehaviour
         if (slotIndex < 0 || slotIndex >= maxSlots) return;
 
         var currentData = networkInventoryData.Value;
-        
+
         // Đảm bảo slotData được khởi tạo
         if (currentData.slotData == null || currentData.slotData.Length == 0)
         {
             currentData.slotData = new InventorySlotData[maxSlots];
             for (int i = 0; i < maxSlots; i++)
-            {
                 currentData.slotData[i] = new InventorySlotData { itemID = 0, quantity = 0 };
-            }
         }
 
         var slot = currentData.slotData[slotIndex];
-        
         if (slot.itemID == 0) return;
 
         var template = GetItemTemplate(slot.itemID);
         if (template == null) return;
-        
-        // Check if item is usable (consumable)
-        if (template.item_type != 1) return; // 1 = Consumable
 
-        // Xử lý effect của item (ví dụ: heal, buff)
-        ApplyItemEffectServerRpc(slot.itemID, rpcParams);
+        // Chỉ xử lý consumable (type 21-29) và bag item (type 30)
+        int itemType = template.type;
+        bool isConsumable = itemType >= 21 && itemType <= 29;
+        bool isBagItem    = itemType == 30;
+        if (!isConsumable && !isBagItem) return;
 
-        // Giảm quantity hoặc xóa item
+        // Áp dụng effect
+        ApplyItemEffect(slot.itemID, itemType, rpcParams.Receive.SenderClientId);
+
+        // Giảm quantity hoặc xóa item khỏi NGO cache
         int oldQuantity = slot.quantity;
         slot.quantity--;
         if (slot.quantity <= 0)
         {
-            slot.itemID = 0;
+            slot.itemID  = 0;
             slot.quantity = 0;
         }
-
         currentData.slotData[slotIndex] = slot;
         networkInventoryData.Value = currentData;
 
@@ -400,25 +454,148 @@ public class NetworkInventory : NetworkBehaviour
     }
 
     /// <summary>
-    /// ServerRpc: Áp dụng effect của item
+    /// ServerRpc: Áp dụng heal tick mỗi giây từ HpRestoreOverTime / MpRestoreOverTime buff.
+    /// Gọi từ InventoryNetworkBridge khi ActiveBuffManager.OnHealTick fire.
     /// </summary>
     [ServerRpc(RequireOwnership = false)]
-    private void ApplyItemEffectServerRpc(int itemID, ServerRpcParams rpcParams = default)
+    public void ApplyHealTickServerRpc(int hpHeal, int mpHeal, ServerRpcParams rpcParams = default)
     {
-        var template = GetItemTemplate(itemID);
-        if (template == null) return;
+        if (!IsServer) return;
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync == null) return;
 
-        // Tìm player owner
-        var playerHealth = GetComponent<NetworkPlayerHealth>();
-        if (playerHealth != null && template.item_type == 1) // 1 = Consumable
+        if (hpHeal > 0)
+            dataSync.networkHp.Value = Mathf.Min(
+                dataSync.networkMaxHp.Value,
+                dataSync.networkHp.Value + hpHeal);
+
+        if (mpHeal > 0)
+            dataSync.networkMp.Value = Mathf.Min(
+                dataSync.networkMaxMp.Value,
+                dataSync.networkMp.Value + mpHeal);
+
+        Debug.Log($"[NetworkInventory] 💉 Heal tick: +{hpHeal} HP / +{mpHeal} MP");
+    }
+
+    /// <summary>
+    /// ServerRpc: Đặt HP/MP về giá trị chính xác từ REST API (server-authoritative).
+    /// Gọi từ ItemUseHandler sau khi sử dụng item hồi phục HP/MP tức thì.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void ApplySyncHpMpServerRpc(int syncHp, int syncMp, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync == null) return;
+
+        if (syncHp > 0)
+            dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value, syncHp);
+
+        if (syncMp > 0)
+            dataSync.networkMp.Value = Mathf.Min(dataSync.networkMaxMp.Value, syncMp);
+
+        Debug.Log($"[NetworkInventory] ✅ Sync HP={syncHp} MP={syncMp} từ REST API");
+    }
+
+    /// <summary>
+    /// ServerRpc: CHỈ áp dụng stat effect (HP/MP) của consumable — KHÔNG giảm inventory.
+    /// Gọi sau khi REST API đã persist việc tiêu thụ item lên DB.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void ApplyConsumableStatServerRpc(int templateId, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+
+        var template = ItemTemplateManager.Instance != null
+            ? ItemTemplateManager.Instance.GetItemTemplate(templateId)
+            : null;
+        if (template == null)
         {
-            // TODO: Implement healing logic based on item stats
-            // playerHealth.Heal(template.value);
-            Debug.Log($"[NetworkInventory] Used item {template.name} - Effect not implemented yet");
+            Debug.LogWarning($"[NetworkInventory] ApplyConsumableStatServerRpc: template {templateId} not found");
+            return;
         }
 
-        // Notify clients về effect
-        OnItemUsedClientRpc(itemID);
+        int itemType = template.type;
+        if (itemType < 21 || itemType > 29)
+        {
+            Debug.LogWarning($"[NetworkInventory] ApplyConsumableStatServerRpc: item type {itemType} is not consumable (21-29)");
+            return;
+        }
+
+        ApplyItemEffect(templateId, itemType, rpcParams.Receive.SenderClientId);
+    }
+
+    /// <summary>
+    /// Áp dụng HP/MP heal lên player. Chạy trên server.
+    /// Với consumable type 22 (HP) / 23 (MP) – dùng giá trị từ ItemData ScriptableObject.
+    /// Với type 24 (timed buff) – chỉ notify client; timed buff quản lý bởi ActiveBuffManager.
+    /// </summary>
+    private void ApplyItemEffect(int itemID, int itemType, ulong senderClientId)
+    {
+        var itemData     = ItemManager.Instance != null ? ItemManager.Instance.GetItemData(itemID) : null;
+        int healValue    = itemData != null && itemData.value > 0 ? itemData.value : 50;
+        var playerHealth = GetComponent<NetworkPlayerHealth>();
+        var dataSync     = GetComponent<NetworkPlayerDataSync>();
+
+        // type 22 = HP Potion
+        if (itemType == 22 && dataSync != null)
+        {
+            dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value,
+                dataSync.networkHp.Value + healValue);
+            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP (type=22)");
+        }
+        // type 23 = MP Potion
+        else if (itemType == 23 && dataSync != null)
+        {
+            dataSync.networkMp.Value = Mathf.Min(dataSync.networkMaxMp.Value, dataSync.networkMp.Value + healValue);
+            Debug.Log($"[NetworkInventory] 🔵 +{healValue} MP (type=23)");
+        }
+        // type 24 = Timed buff — buff đã được server persist trong active_buffs;
+        //   chỉ cần notify client reload buff HUD.
+        else if (itemType == 24)
+        {
+            Debug.Log($"[NetworkInventory] ✨ Timed buff item (type=24, id={itemID}) — client sẽ refresh buff HUD.");
+            // Client tự handle qua UseItemResponse.active_buffs từ REST API
+        }
+        // Fallback (generic consumable): ưu tiên sync vào dataSync để HP bar/UI luôn cập nhật.
+        else if (dataSync != null)
+        {
+            dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value,
+                dataSync.networkHp.Value + healValue);
+            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP fallback qua dataSync (type={itemType})");
+        }
+        else if (playerHealth != null)
+        {
+            playerHealth.HealServerRpc(healValue);
+            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP fallback (type={itemType})");
+        }
+
+        ClientRpcParams clientParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { senderClientId } }
+        };
+        OnItemUsedClientRpc(itemID, clientParams);
+    }
+
+    /// <summary>
+    /// ServerRpc: Cập nhật % bonus buff vào NetworkPlayerDataSync.
+    /// Gọi sau khi client nhận active_buffs từ REST API và muốn sync lên NGO.
+    /// geneExpBonusPct, expBonusPct, phucBonusPct, attackBonusPct, defenseBonusPct = tổng % (sum của tất cả buff đang active cùng loại).
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void SyncBuffBonusesServerRpc(int geneExpBonusPct, int expBonusPct, int phucBonusPct,
+                                          int attackBonusPct, int defenseBonusPct,
+                                          ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        if (dataSync == null) return;
+        dataSync.networkGeneExpBonusPct.Value = geneExpBonusPct;
+        dataSync.networkExpBonusPct.Value     = expBonusPct;
+        dataSync.networkPhucBonusPct.Value    = phucBonusPct;
+        dataSync.networkAttackBonusPct.Value  = attackBonusPct;
+        dataSync.networkDefenseBonusPct.Value = defenseBonusPct;
+        Debug.Log($"[NetworkInventory] 🎯 Sync buff bonuses: GeneEXP+{geneExpBonusPct}% EXP+{expBonusPct}% Phuc+{phucBonusPct}% ATK+{attackBonusPct}% DEF+{defenseBonusPct}%");
     }
 
     /// <summary>
@@ -453,7 +630,7 @@ public class NetworkInventory : NetworkBehaviour
     /// ClientRpc: Notify về item được sử dụng
     /// </summary>
     [ClientRpc]
-    private void OnItemUsedClientRpc(int itemID)
+    private void OnItemUsedClientRpc(int itemID, ClientRpcParams clientRpcParams = default)
     {
         // Có thể play sound/effect ở đây
         Debug.Log($"[NetworkInventory] Item {itemID} được sử dụng");

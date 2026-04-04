@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace GameServerApi.Models.Services
 {
@@ -38,6 +39,10 @@ namespace GameServerApi.Models.Services
     /// </summary>
     public static class StatCalculator
     {
+        private static readonly ILogger _logger =
+            LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug))
+                         .CreateLogger(nameof(StatCalculator));
+
         public static FinalStats Compute(InfoChar baseInfo, string equipmentJson, string potentialStatsJson)
         {
             var (eqHp, eqMp, eqAtk, eqDef, eqSpd) = ParseEquipBonus(equipmentJson);
@@ -50,10 +55,10 @@ namespace GameServerApi.Models.Services
             float spd  = 5f              + eqSpd + ptSpd;
 
             // ─── DEBUG LOG ────────────────────────────────────
-            Console.WriteLine($"  [StatCalc] baseAtk={baseInfo.Attack} eqAtk={eqAtk} ptAtk={ptAtk} ⇒ attack={attack}");
-            Console.WriteLine($"  [StatCalc] baseHp={baseInfo.MaxHp} eqHp={eqHp} ptHp={ptHp} ⇒ maxHp={maxHp}");
-            Console.WriteLine($"  [StatCalc] baseMp={baseInfo.MaxMp} ptMp={ptMp} ⇒ maxMp={maxMp}");
-            Console.WriteLine($"  [StatCalc] eqSpd={eqSpd} ptSpd={ptSpd} ⇒ spd={spd}");
+            _logger.LogDebug("[StatCalc] baseAtk={BaseAtk} eqAtk={EqAtk} ptAtk={PtAtk} finalAtk={Attack}", baseInfo.Attack, eqAtk, ptAtk, attack);
+            _logger.LogDebug("[StatCalc] baseHp={BaseHp} eqHp={EqHp} ptHp={PtHp} maxHp={MaxHp}", baseInfo.MaxHp, eqHp, ptHp, maxHp);
+            _logger.LogDebug("[StatCalc] baseMp={BaseMp} ptMp={PtMp} maxMp={MaxMp}", baseInfo.MaxMp, ptMp, maxMp);
+            _logger.LogDebug("[StatCalc] eqSpd={EqSpd} ptSpd={PtSpd} spd={Spd}", eqSpd, ptSpd, spd);
             // ────────────────────────────────────────────────────────
 
             return new FinalStats

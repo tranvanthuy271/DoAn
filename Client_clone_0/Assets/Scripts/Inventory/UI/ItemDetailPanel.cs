@@ -42,9 +42,18 @@ public class ItemDetailPanel : MonoBehaviour
     [Tooltip("Ẩn panel khi Start")]
     [SerializeField] private bool hideOnStart = true;
 
+    [Header("Icon Layout")]
+    [Tooltip("Kích thước fallback nếu icon chưa có RectTransform hợp lệ ở frame đầu.")]
+    [SerializeField] private Vector2 fallbackIconMaxSize = new Vector2(128f, 128f);
+
     // Dữ liệu item đang hiển thị
     private InventorySlotDto currentSlotData;
     private ItemTemplateDto currentTemplate;
+    private Vector2 itemIconMaxSize;
+    private Action _primaryButtonActionOverride;
+
+    // Cờ để Start() biết ShowItem/ShowEquipmentItem đã được gọi trước khi Start() chạy
+    private bool _hasBeenShown;
 
     // Event khi nhấn nút sử dụng - các script khác có thể subscribe
     public event Action<InventorySlotDto> OnUseItemClicked;
@@ -65,17 +74,27 @@ public class ItemDetailPanel : MonoBehaviour
 
         if (GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
             gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        itemIconMaxSize = ResolveItemIconMaxSize();
+        UIRuntimeAssetHelper.ApplyNotoSans(itemNameText, itemDescriptionText, useButtonText);
     }
 
     private void Start()
     {
-        if (hideOnStart)
+        // Chỉ ẩn nếu ShowItem/ShowEquipmentItem chưa được gọi trước Start().
+        // Trường hợp: panel được Instantiate() rồi ShowItem() gọi ngay cùng frame,
+        // Start() chạy frame sau → không được ẩn panel đang hiển thị.
+        if (hideOnStart && !_hasBeenShown)
         {
             Hide();
         }
     }
 
-    public void ShowItem(InventorySlotDto slotData)
+    /// <param name="showUseButton">false khi không muốn hiện nút hành động.</param>
+    /// <param name="buttonTextOverride">Cho phép đổi text nút thành "Mua" hoặc text khác.</param>
+    /// <param name="primaryButtonAction">Callback tùy biến cho nút hành động; null = dùng luồng mặc định của inventory.</param>
+    public void ShowItem(InventorySlotDto slotData, bool showUseButton = true,
+                         string buttonTextOverride = null, Action primaryButtonAction = null)
     {
         if (slotData == null || slotData.quantity <= 0)
         {
@@ -85,6 +104,7 @@ public class ItemDetailPanel : MonoBehaviour
 
         currentSlotData = slotData;
         currentTemplate = null;
+        _primaryButtonActionOverride = primaryButtonAction;
 
         if (ItemTemplateManager.Instance != null)
         {
@@ -100,8 +120,7 @@ public class ItemDetailPanel : MonoBehaviour
             Sprite icon = null;
             if (IconDatabase.Instance != null && !string.IsNullOrEmpty(slotData.iconId))
                 icon = IconDatabase.Instance.GetIcon(slotData.iconId);
-            itemIcon.sprite  = icon;
-            itemIcon.enabled = icon != null;
+            UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, icon, itemIconMaxSize);
         }
 
         // 2. Tên item (bold, góc trên-trái)
@@ -149,12 +168,27 @@ public class ItemDetailPanel : MonoBehaviour
             itemDescriptionText.text = sb.ToString().TrimEnd();
         }
 
-        // 4. Text nút sử dụng
-        if (useButtonText != null && currentTemplate != null)
+        // 4. Nút hành động
+        if (useButton != null)
+            useButton.gameObject.SetActive(showUseButton);
+
+        if (showUseButton && useButtonText != null)
         {
-            useButtonText.text = currentTemplate.category == 1 ? "Trang bị" : "Sử dụng";
+            if (!string.IsNullOrEmpty(buttonTextOverride))
+            {
+                useButtonText.text = buttonTextOverride;
+            }
+            else if (currentTemplate != null)
+            {
+                useButtonText.text = currentTemplate.category == 1 ? "Trang bị" : "Sử dụng";
+            }
+            else
+            {
+                useButtonText.text = "Sử dụng";
+            }
         }
 
+        _hasBeenShown = true;
         gameObject.SetActive(true);
         transform.SetAsLastSibling();
     }
@@ -167,14 +201,14 @@ public class ItemDetailPanel : MonoBehaviour
     {
         if (item == null) return;
 
+        _primaryButtonActionOverride = null;
         var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(item.id);
 
         // Icon
         if (itemIcon != null && tmpl != null && IconDatabase.Instance != null)
         {
             var sp = IconDatabase.Instance.GetIcon(tmpl.idIcon.ToString());
-            itemIcon.sprite  = sp;
-            itemIcon.enabled = sp != null;
+            UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, sp, itemIconMaxSize);
         }
         else if (itemIcon != null)
         {
@@ -244,6 +278,7 @@ public class ItemDetailPanel : MonoBehaviour
         // Ẩn nút sử dụng (trang bị đang ở ô, không dùng được)
         if (useButton != null) useButton.gameObject.SetActive(false);
 
+        _hasBeenShown = true;
         gameObject.SetActive(true);
         transform.SetAsLastSibling();
     }
@@ -252,6 +287,7 @@ public class ItemDetailPanel : MonoBehaviour
         gameObject.SetActive(false);
         currentSlotData = null;
         currentTemplate = null;
+        _primaryButtonActionOverride = null;
     }
 
     /// <summary>
@@ -267,6 +303,12 @@ public class ItemDetailPanel : MonoBehaviour
     /// </summary>
     private void OnUseButtonPressed()
     {
+        if (_primaryButtonActionOverride != null)
+        {
+            _primaryButtonActionOverride.Invoke();
+            return;
+        }
+
         if (currentSlotData == null)
         {
             Debug.LogWarning("[ItemDetailPanel] OnUseButtonPressed: Không có item nào đang được chọn!");
@@ -300,5 +342,27 @@ public class ItemDetailPanel : MonoBehaviour
             useButton.onClick.RemoveListener(OnUseButtonPressed);
         if (btnClose != null)
             btnClose.onClick.RemoveListener(Hide);
+    }
+
+    private Vector2 ResolveItemIconMaxSize()
+    {
+        if (itemIcon == null)
+        {
+            return fallbackIconMaxSize;
+        }
+
+        Vector2 currentSize = itemIcon.rectTransform.sizeDelta;
+        if (currentSize.x > 0f && currentSize.y > 0f)
+        {
+            return currentSize;
+        }
+
+        Vector2 rectSize = itemIcon.rectTransform.rect.size;
+        if (rectSize.x > 0f && rectSize.y > 0f)
+        {
+            return rectSize;
+        }
+
+        return fallbackIconMaxSize;
     }
 }

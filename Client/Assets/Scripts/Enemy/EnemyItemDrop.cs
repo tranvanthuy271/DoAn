@@ -16,7 +16,9 @@ public class EnemyItemDrop : MonoBehaviour
     [SerializeField] private GameObject itemPickupPrefab;
     
     [Tooltip("Force khi drop item (để item bay ra xa)")]
+#pragma warning disable CS0414
     [SerializeField] private float dropForce = 3f;
+#pragma warning restore CS0414
     
     [Tooltip("Random spread khi drop")]
     [SerializeField] private float dropSpread = 1f;

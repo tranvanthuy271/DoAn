@@ -34,8 +34,15 @@ public class EquipmentSlotUI : MonoBehaviour
     [Tooltip("Loại slot trang bị")]
     [SerializeField] private EquipmentSlotType slotType = EquipmentSlotType.Weapon;
 
+    [Header("Icon Layout")]
+    [Tooltip("Padding để icon không chạm viền slot.")]
+    [SerializeField] private Vector2 iconPadding = new Vector2(16f, 16f);
+    [Tooltip("Kích thước fallback nếu RectTransform icon chưa sẵn sàng.")]
+    [SerializeField] private Vector2 fallbackIconMaxSize = new Vector2(84f, 84f);
+
     // Data hiện tại
     private EquipmentItemDto currentItem;
+    private Vector2 iconMaxSize;
 
     /// <summary>
     /// Event khi click vào slot (để mở chi tiết hoặc tháo trang bị)
@@ -46,6 +53,9 @@ public class EquipmentSlotUI : MonoBehaviour
 
     private void Awake()
     {
+        CacheIconBounds();
+        ApplyTheme();
+
         // Gán label theo slot type
         UpdateSlotLabel();
     }
@@ -56,6 +66,8 @@ public class EquipmentSlotUI : MonoBehaviour
     public void Init(EquipmentSlotType type)
     {
         slotType = type;
+        CacheIconBounds();
+        ApplyTheme();
         UpdateSlotLabel();
         Clear();
     }
@@ -82,6 +94,7 @@ public class EquipmentSlotUI : MonoBehaviour
         {
             iconImage.enabled = false;
             iconImage.sprite = null;
+            iconImage.preserveAspect = true;
         }
 
         if (placeholderImage != null)
@@ -122,8 +135,7 @@ public class EquipmentSlotUI : MonoBehaviour
 
             if (icon != null)
             {
-                iconImage.sprite = icon;
-                iconImage.enabled = true;
+                UIRuntimeAssetHelper.SetSpriteWithNativeFit(iconImage, icon, iconMaxSize);
             }
             else
             {
@@ -194,5 +206,41 @@ public class EquipmentSlotUI : MonoBehaviour
         string slotKey = slotType.ToString().ToLower();
 
         UpgradePanel.Instance.OpenForEquipped(currentItem, slotKey, inventory);
+    }
+
+    private void ApplyTheme()
+    {
+        UIRuntimeAssetHelper.ApplyNotoSans(slotLabelText, itemNameText);
+    }
+
+    private void CacheIconBounds()
+    {
+        if (iconImage == null)
+        {
+            iconMaxSize = fallbackIconMaxSize;
+            return;
+        }
+
+        iconImage.preserveAspect = true;
+
+        Vector2 rectSize = iconImage.rectTransform.rect.size;
+        if (rectSize.x <= 0f || rectSize.y <= 0f)
+        {
+            rectSize = iconImage.rectTransform.sizeDelta;
+        }
+
+        if (rectSize.x <= 0f || rectSize.y <= 0f)
+        {
+            rectSize = fallbackIconMaxSize;
+        }
+
+        iconMaxSize = new Vector2(
+            Mathf.Max(0f, rectSize.x - iconPadding.x),
+            Mathf.Max(0f, rectSize.y - iconPadding.y));
+
+        if (iconMaxSize.x <= 0f || iconMaxSize.y <= 0f)
+        {
+            iconMaxSize = fallbackIconMaxSize;
+        }
     }
 }

@@ -20,4 +20,38 @@ public class ShopItemRowUI : MonoBehaviour
 
     [Header("Button")]
     [SerializeField] public Button       btnBuy;     // root button -- whole cell is clickable
+
+    private Vector2 itemIconMaxSize = new Vector2(100f, 100f);
+
+    private void Awake()
+    {
+        EnsureVisualsConfigured();
+    }
+
+    public void EnsureVisualsConfigured()
+    {
+        if (itemIcon != null)
+        {
+            Vector2 currentSize = itemIcon.rectTransform.sizeDelta;
+            if (currentSize.x > 0f && currentSize.y > 0f)
+            {
+                itemIconMaxSize = currentSize;
+            }
+
+            itemIcon.preserveAspect = true;
+        }
+
+        if (coinIcon != null)
+        {
+            coinIcon.preserveAspect = true;
+        }
+
+        UIRuntimeAssetHelper.ApplyNotoSans(itemName, price, stock);
+    }
+
+    public void SetItemIcon(Sprite sprite)
+    {
+        EnsureVisualsConfigured();
+        UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, sprite, itemIconMaxSize);
+    }
 }

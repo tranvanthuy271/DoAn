@@ -32,9 +32,12 @@ public class NpcServerManager : MonoBehaviour
     [Tooltip("MapId của scene này. Để 0 → tự lấy từ MapManager (có thể race condition nếu MapManager chưa fetch xong).")]
     [SerializeField] private int mapId = 0;
 
-    [Header("NPC Prefabs — index khớp với npc_type: shop=0, blacksmith=1, quest=2, exchange=3, event=4")]
+    [Header("NPC Prefabs theo type — shop=0, blacksmith=1, quest=2, exchange=3, event=4")]
     [Tooltip("Element 0=shop, 1=blacksmith, 2=quest, 3=exchange, 4=event")]
     [SerializeField] private GameObject[] npcPrefabs;
+
+    [Header("NPC Prefabs theo ID (ưu tiên hơn type — dùng khi cùng type nhưng khác prefab)")]
+    [SerializeField] private NpcIdPrefabEntry[] npcPrefabsById;
 
     /// <summary>Server-side cache: NetworkObjectId → NpcData (dùng để validate trong NpcInteraction).</summary>
     private readonly Dictionary<ulong, NpcData> _npcCache = new();
@@ -121,7 +124,7 @@ public class NpcServerManager : MonoBehaviour
 
         foreach (var npc in resp.npcs)
         {
-            var prefab = GetPrefab(npc.npc_type);
+            var prefab = GetPrefab(npc);
             if (prefab == null)
             {
                 Debug.LogWarning($"[NpcServerManager] Không tìm được prefab cho npc_type='{npc.npc_type}'. Bỏ qua '{npc.npc_name}'.");
@@ -151,9 +154,20 @@ public class NpcServerManager : MonoBehaviour
         Debug.Log($"[NpcServerManager] Đã spawn {resp.npcs.Length} NPC trên mapId={mapId}.");
     }
 
-    private GameObject GetPrefab(string typeName)
+    private GameObject GetPrefab(NpcData npc)
     {
-        int idx = typeName switch
+        // Ưu tiên map theo npc_id trước
+        if (npcPrefabsById != null)
+        {
+            foreach (var entry in npcPrefabsById)
+            {
+                if (entry.npcId == npc.npc_id && entry.prefab != null)
+                    return entry.prefab;
+            }
+        }
+
+        // Fallback: map theo npc_type
+        int idx = npc.npc_type switch
         {
             "shop"       => 0,
             "blacksmith" => 1,

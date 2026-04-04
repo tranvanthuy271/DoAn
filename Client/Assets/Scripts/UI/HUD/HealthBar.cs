@@ -42,7 +42,15 @@ public class HealthBar : MonoBehaviour
 
     private void Update()
     {
-        if (dataSync != null) return; // đã bind thành công
+        // Phát hiện dataSync không còn hợp lệ (player bị despawn khi NGO shutdown hoặc chuyển scene)
+        if (dataSync != null && !dataSync.IsSpawned)
+        {
+            dataSync.networkHp.OnValueChanged    -= OnHpChanged;
+            dataSync.networkMaxHp.OnValueChanged -= OnMaxHpChanged;
+            dataSync = null;
+        }
+
+        if (dataSync != null) return; // đã bind và còn valid
 
         retryTimer -= Time.deltaTime;
         if (retryTimer > 0f) return;
@@ -57,7 +65,7 @@ public class HealthBar : MonoBehaviour
         // Dùng FindObjectsOfType để tránh lấy nhầm của player khác trong multiplayer
         foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
         {
-            if (s.IsOwner) { dataSync = s; break; }
+            if (s.IsSpawned && s.IsOwner) { dataSync = s; break; }
         }
         if (dataSync == null) return;
 

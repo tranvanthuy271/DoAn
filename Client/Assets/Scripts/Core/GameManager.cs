@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -5,6 +6,12 @@ using UnityEngine;
 /// </summary>
 public class GameManager : MonoBehaviour
 {
+    /// <summary>
+    /// Fired bất cứ khi nào player data được set (login, reconnect, scene load).
+    /// ActiveBuffManager subscribe để reload buff sau khi player ID đã sẵn sàng.
+    /// </summary>
+    public static event Action<PlayerDataResponse> OnPlayerDataSet;
+
     public static GameManager Instance { get; private set; }
 
     [Header("Game State")]
@@ -87,6 +94,7 @@ public class GameManager : MonoBehaviour
     {
         currentPlayerData = data;
         Debug.Log($"[GameManager] Player data set: Level {data.level}, Map {data.map_id}");
+        OnPlayerDataSet?.Invoke(data);
     }
 
     public PlayerDataResponse GetPlayerData()

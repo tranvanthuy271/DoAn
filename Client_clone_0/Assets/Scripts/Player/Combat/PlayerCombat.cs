@@ -139,7 +139,18 @@ public class PlayerCombat : MonoBehaviour
 
         PlayerStats stats = controller.stats;
         if (stats == null) return;
-        int damage = stats.baseDamage; // Use base damage for melee attacks
+
+        // ── Tính damage có xét AttackBuff ─────────────────────────────────
+        // Tham khảo: Effect.setEff() id=61 (TanCong ±= value) trong LangLaServer
+        int damage = stats.baseDamage;
+        if (ActiveBuffManager.Instance != null)
+        {
+            float attackBonusPct = ActiveBuffManager.Instance.GetBonusPct("AttackBuff");
+            if (attackBonusPct > 0f)
+                damage = Mathf.RoundToInt(damage * (1f + attackBonusPct));
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         Debug.Log("Player attacks!");
 
         // Play attack animation

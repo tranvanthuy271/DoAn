@@ -122,9 +122,15 @@ public class EquipRowUI : MonoBehaviour
         {
             result[i] = new InventorySlotDto
             {
-                slotIndex = items[i].slotIndex,
-                itemCode  = items[i].itemCode,
-                iconId    = items[i].iconId,
+                slotIndex    = items[i].slotIndex > 0 ? items[i].slotIndex : items[i].slot_index,
+                id           = items[i].itemTemplateId > 0 ? items[i].itemTemplateId : items[i].item_id,
+                quantity     = items[i].quantity,
+                itemCode     = items[i].itemCode,
+                iconId       = items[i].iconId,
+                isEquipped   = items[i].isEquipped,
+                isLocked     = items[i].isLocked,
+                upgradeLevel = items[i].upgradeLevel,
+                strOptions   = items[i].strOptions,
             };
         }
         return result;

@@ -80,6 +80,14 @@ public class PlayerSkillManager : NetworkBehaviour
     {
         base.OnNetworkSpawn();
         InitializeSkills();
+
+        // Nếu là owner (local player), thông báo SkillHotbarUI rebind ngay
+        if (IsOwner)
+        {
+            var hotbar = FindObjectOfType<SkillHotbarUI>();
+            if (hotbar != null)
+                hotbar.ForceRebind();
+        }
     }
     
     private void Start()

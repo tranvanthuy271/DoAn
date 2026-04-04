@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -16,7 +17,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
     [Header("UI")]
     [SerializeField] private Image     iconImage;
     [SerializeField] private TMP_Text  quantityText;
-    [SerializeField] private GameObject emptyIndicator;   // icon "+" hoặc placeholder khi trống
+    [SerializeField] private GameObject emptyIndicator;   // placeholder/background khi trống
     [SerializeField] private Image     highlightBorder;   // border khi hover (tuỳ chọn)
 
     // ── Trạng thái ───────────────────────────────────────────────
@@ -28,6 +29,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
 
     private void Awake()
     {
+        ResolveReferences();
         panel = GetComponentInParent<UpgradePanel>();
     }
 
@@ -36,39 +38,118 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
     /// <summary>Đặt đá vào ô này (gọi từ UpgradePanel khi chọn từ picker)</summary>
     public void SetItem(InventorySlotDto slot)
     {
+        ResolveReferences();
         ItemData = slot;
         IsEmpty  = false;
 
         // Hiển thị icon đá
-        if (iconImage != null && IconDatabase.Instance != null)
+        if (iconImage != null)
         {
-            var tmpl = ItemTemplateManager.Instance != null
-                ? ItemTemplateManager.Instance.GetItemTemplate(slot.id)
-                : null;
+            if (!iconImage.gameObject.activeSelf)
+                iconImage.gameObject.SetActive(true);
 
-            if (tmpl != null)
+            Sprite sprite = null;
+            if (IconDatabase.Instance != null)
             {
-                var sprite = IconDatabase.Instance.GetIcon(tmpl.idIcon.ToString());
-                iconImage.sprite  = sprite;
-                iconImage.enabled = sprite != null;
+                if (!string.IsNullOrEmpty(slot.iconId))
+                    sprite = IconDatabase.Instance.GetIcon(slot.iconId);
+
+                if (sprite == null)
+                {
+                    var tmpl = ItemTemplateManager.Instance != null
+                        ? ItemTemplateManager.Instance.GetItemTemplate(slot.id)
+                        : null;
+                    if (tmpl != null)
+                        sprite = IconDatabase.Instance.GetIcon(tmpl.idIcon.ToString());
+                }
             }
+
+            iconImage.sprite  = sprite;
+            iconImage.enabled = sprite != null;
         }
 
         if (quantityText) quantityText.text = "1";
-        if (emptyIndicator) emptyIndicator.SetActive(false);
+        SetEmptyIndicatorVisible(false);
         if (highlightBorder) highlightBorder.enabled = false;
     }
 
     /// <summary>Xoá đá khỏi ô này</summary>
     public void Clear()
     {
+        ResolveReferences();
         ItemData = null;
         IsEmpty  = true;
 
-        if (iconImage)      { iconImage.sprite = null; iconImage.enabled = false; }
+        if (iconImage)
+        {
+            if (!iconImage.gameObject.activeSelf)
+                iconImage.gameObject.SetActive(true);
+            iconImage.sprite = null;
+            iconImage.enabled = false;
+        }
         if (quantityText)   quantityText.text = "";
-        if (emptyIndicator) emptyIndicator.SetActive(true);
+        SetEmptyIndicatorVisible(true);
         if (highlightBorder) highlightBorder.enabled = false;
+    }
+
+    private void ResolveReferences()
+    {
+        if (iconImage == null)
+        {
+            var iconTransform = transform.Find("IconImage");
+            if (iconTransform != null)
+                iconImage = iconTransform.GetComponent<Image>();
+        }
+
+        if (quantityText == null)
+        {
+            var quantityTransform = transform.Find("QuantityText");
+            if (quantityTransform != null)
+                quantityText = quantityTransform.GetComponent<TMP_Text>();
+        }
+
+        if (emptyIndicator == null || (iconImage != null && emptyIndicator == iconImage.gameObject))
+        {
+            var placeholderTransform = transform.Find("Image");
+            if (placeholderTransform != null)
+                emptyIndicator = placeholderTransform.gameObject;
+        }
+
+        if (iconImage != null)
+            iconImage.raycastTarget = false;
+
+        if (quantityText != null)
+            quantityText.raycastTarget = false;
+
+        if (emptyIndicator != null)
+        {
+            var backgroundImage = emptyIndicator.GetComponent<Image>();
+            if (backgroundImage != null && string.Equals(emptyIndicator.name, "Image", StringComparison.OrdinalIgnoreCase))
+                backgroundImage.raycastTarget = true;
+        }
+    }
+
+    private void SetEmptyIndicatorVisible(bool visible)
+    {
+        if (emptyIndicator == null)
+            return;
+
+        bool isBackgroundImage = string.Equals(emptyIndicator.name, "Image", StringComparison.OrdinalIgnoreCase);
+        if (isBackgroundImage)
+        {
+            if (!emptyIndicator.activeSelf)
+                emptyIndicator.SetActive(true);
+
+            var backgroundImage = emptyIndicator.GetComponent<Image>();
+            if (backgroundImage != null)
+            {
+                backgroundImage.enabled = true;
+                backgroundImage.raycastTarget = true;
+            }
+            return;
+        }
+
+        emptyIndicator.SetActive(visible);
     }
 
     // ── Click handling ────────────────────────────────────────────

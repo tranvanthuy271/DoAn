@@ -327,7 +327,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
             return;
         }
 
-        Vector3 spawnPos;
+        Vector3 spawnPos = Vector3.zero;
         int spawnIndex = -1;
 
         // Ưu tiên 1: PortalArrivalHandler (khi vừa chuyển map qua trigger)
@@ -344,13 +344,35 @@ public class NetworkPlayerSpawner : MonoBehaviour
         // Fallback: spawn point trong scene
         else
         {
-            if (spawnPoints == null || spawnPoints.Length == 0)
+            bool foundSpawnPoint = false;
+            if (spawnPoints != null && spawnPoints.Length > 0)
             {
-                Debug.LogError("[NetworkPlayerSpawner] Không có spawn point và không có saved position!");
-                return;
+                spawnIndex = (int)(clientId % (ulong)spawnPoints.Length);
+                if (spawnPoints[spawnIndex] != null)
+                {
+                    spawnPos = spawnPoints[spawnIndex].position;
+                    foundSpawnPoint = true;
+                }
+                else
+                {
+                    Debug.LogWarning($"[NetworkPlayerSpawner] spawnPoints[{spawnIndex}] is null — check Inspector assignments!");
+                }
             }
-            spawnIndex = (int)(clientId % (ulong)spawnPoints.Length);
-            spawnPos = spawnPoints[spawnIndex].position;
+            if (!foundSpawnPoint)
+            {
+                // Thử tìm qua tag "Respawn" trong scene
+                var taggedSpawn = GameObject.FindWithTag("Respawn");
+                if (taggedSpawn != null)
+                {
+                    spawnPos = taggedSpawn.transform.position;
+                    Debug.LogWarning("[NetworkPlayerSpawner] Dùng GameObject có tag 'Respawn' làm spawn point.");
+                }
+                else
+                {
+                    spawnPos = Vector3.zero;
+                    Debug.LogWarning("[NetworkPlayerSpawner] Không có spawn point hợp lệ — spawn tại (0,0,0). Hãy gán spawnPoints trong Inspector!");
+                }
+            }
         }
 
         // --- Chọn prefab TRỰC TIẾP từ playerData được truyền vào ---
