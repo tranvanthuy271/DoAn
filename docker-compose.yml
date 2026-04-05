@@ -62,6 +62,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    network_mode: host
     working_dir: /app
     volumes:
       - ./unity-server/GameServer:/app
@@ -69,19 +70,17 @@ services:
     environment:
       VPS_IP: ${VPS_IP}
       GAME_PORT: ${GAME_SERVER_PORT}
-      API_URL: http://api:5000/api
+      API_URL: http://localhost:5000/api
+      JWT_SECRET: ${JWT_SECRET}
+      ZONE_API_KEY: ${ZONE_API_KEY}
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
         apt-get update -qq && apt-get install -y -qq libgdiplus libc6-dev > /dev/null 2>&1
         mkdir -p /app/GameServer_Data/StreamingAssets
-        echo "{\"apiBaseUrl\":\"http://api:5000\",\"gameServerIp\":\"$$VPS_IP\",\"gameServerPort\":$$GAME_PORT}" > /app/GameServer_Data/StreamingAssets/server_config.json
+        echo "{\"apiBaseUrl\":\"http://localhost:5000\",\"gameServerIp\":\"$$VPS_IP\",\"gameServerPort\":$$GAME_PORT}" > /app/GameServer_Data/StreamingAssets/server_config.json
         echo "Starting Unity Dedicated Server on port $$GAME_PORT..."
         exec /app/GameServer.x86_64 -batchmode -nographics --port=$$GAME_PORT --publicIp=$$VPS_IP --apiUrl=$$API_URL
-    ports:
-      - "${GAME_SERVER_PORT}:${GAME_SERVER_PORT}/udp"
-    networks:
-      - gameserver-net
 
 volumes:
   db_data:

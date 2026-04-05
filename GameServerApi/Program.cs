@@ -1,8 +1,10 @@
 using System.Text;
+using GameServerApi.Auth;
 using GameServerApi.Data;
 using GameServerApi.Middleware;
 using GameServerApi.Services;
 using GameServerApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +35,8 @@ builder.Services.AddCors(options =>
 
 // In-memory cache: dùng cho spawn-config, enemy data (tránh gọi DB thừa)
 builder.Services.AddMemoryCache();
+
+builder.Services.AddAuthorization();
 
 // ── Application services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService,   AuthService>();
@@ -76,8 +80,15 @@ var jwtAudience = jwtSection["Audience"] ?? "GameClient";
 builder.Services
     .AddAuthentication(options =>
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = "HybridAuth";
+        options.DefaultChallengeScheme = "HybridAuth";
+    })
+    .AddPolicyScheme("HybridAuth", "JWT hoặc Zone API key", options =>
+    {
+        options.ForwardDefaultSelector = context =>
+            context.Request.Headers.ContainsKey(ZoneApiKeyAuthenticationHandler.HeaderName)
+                ? ZoneApiKeyAuthenticationHandler.SchemeName
+                : JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
@@ -93,7 +104,10 @@ builder.Services
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, ZoneApiKeyAuthenticationHandler>(
+        ZoneApiKeyAuthenticationHandler.SchemeName,
+        _ => { });
 
 var app = builder.Build();
 

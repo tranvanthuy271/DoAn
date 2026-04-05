@@ -67,6 +67,8 @@ cd /home/azureuser/DoAn/DoAn
 docker compose up unity -d
 ```
 
+> **Lưu ý:** Unity server container đang chạy bằng **host network** để các chỗ hardcode `localhost:5000` trong build hiện tại vẫn gọi được API. Vì vậy `docker ps` có thể **không hiện mapping port** cho `gameserver-unity`, nhưng server vẫn bind trực tiếp `7777/udp` trên VPS.
+
 Kiểm tra log:
 ```bash
 docker logs -f gameserver-unity
@@ -118,7 +120,7 @@ Expected:
 NAMES            STATUS       PORTS
 gameserver-api   Up (healthy) 0.0.0.0:5000->5000/tcp
 gameserver-db    Up (healthy) 127.0.0.1:3306->3306/tcp
-gameserver-unity Up           0.0.0.0:7777->7777/udp
+gameserver-unity Up           (host network - có thể không hiện PORTS)
 ```
 
 ### Test API từ bên ngoài:
