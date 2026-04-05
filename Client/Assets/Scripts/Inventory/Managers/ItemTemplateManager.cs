@@ -115,7 +115,7 @@ public class ItemTemplateManager : MonoBehaviour
         if (isLoading || isLoaded) yield break;
         isLoading = true;
 
-        string apiBase = "http://localhost:5000/api";
+        string apiBase = ServerAddressConfig.Instance.ApiUrl;
         // Thử lấy API URL từ MapWorldConfig nếu có
         var bootstrap = FindObjectOfType<MapWorldBootstrap>();
         if (bootstrap != null)

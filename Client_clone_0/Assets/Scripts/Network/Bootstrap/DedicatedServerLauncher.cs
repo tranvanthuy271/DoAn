@@ -13,10 +13,10 @@ public class DedicatedServerLauncher : MonoBehaviour
     [Header("Server Config")]
     public string apiServerPath = ""; // Path đến GameServerApi.exe
     public ushort netcodePort = 7777;
-    public string serverIP = "127.0.0.1";
+    public string serverIP = "";
 
     [Header("API Server Config")]
-    public string apiBaseURL = "http://localhost:5000/api";
+    public string apiBaseURL = "";
 
     private NetworkManager networkManager;
     private Process apiServerProcess;
@@ -35,6 +35,12 @@ public class DedicatedServerLauncher : MonoBehaviour
 
     private void Start()
     {
+        // Init from config
+        var cfg = ServerAddressConfig.Instance;
+        if (string.IsNullOrWhiteSpace(serverIP)) serverIP = cfg.gameServerIp;
+        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = cfg.ApiUrl;
+        if (netcodePort == 0) netcodePort = cfg.gameServerPort;
+
         networkManager = NetworkManager.Singleton;
         
         // Chỉ auto start nếu đang trong scene ServerScene

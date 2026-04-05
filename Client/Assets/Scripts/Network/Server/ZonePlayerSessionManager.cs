@@ -162,7 +162,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     private IEnumerator LoadAndSpawnPlayer(ulong clientId, ApprovedUserInfo userInfo)
     {
         // 1 — Fetch PlayerData từ API: GET /api/player/{id}/data
-        string apiBase = _config != null ? _config.apiBaseUrl : "http://localhost:5000/api";
+        string apiBase = _config != null ? _config.apiBaseUrl : ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase}/player/{userInfo.UserId}/data";
         string apiKey = _config != null ? _config.GetZoneApiKey() : "dev-zone-key";
 
@@ -335,7 +335,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         if (session.NetworkObject == null) yield break;
 
         Vector3 pos = session.NetworkObject.transform.position;
-        string apiBase = _config != null ? _config.apiBaseUrl : "http://localhost:5000/api";
+        string apiBase = _config != null ? _config.apiBaseUrl : ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase}/player/{session.UserId}/position";
         // Body theo PUT /api/player/{id}/position (PlayerController thực tế)
         string body = $"{{\"map_id\":{session.MapId},\"zone_id\":{session.ZoneId}," +

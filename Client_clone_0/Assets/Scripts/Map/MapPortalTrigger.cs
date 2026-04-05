@@ -72,7 +72,7 @@ public class MapPortalTrigger : MonoBehaviour
         Vector3 pos   = player.transform.position;
 
         // Gọi API validate
-        string url  = $"{ServerConfig.BaseUrl}/api/map/travel";
+        string url  = $"{ServerConfig.GetBaseUrl()}/api/map/travel";
         string body = JsonUtility.ToJson(new TravelRequestPayload
         {
             portal_id      = portalId,
@@ -227,5 +227,12 @@ public class PlayerDataHolder : MonoBehaviour
 /// </summary>
 public static class ServerConfig
 {
-    public static string BaseUrl = "http://localhost:5000";
+    public static string BaseUrl = "";
+
+    public static string GetBaseUrl()
+    {
+        if (string.IsNullOrEmpty(BaseUrl))
+            BaseUrl = ServerAddressConfig.Instance.ApiRoot;
+        return BaseUrl;
+    }
 }

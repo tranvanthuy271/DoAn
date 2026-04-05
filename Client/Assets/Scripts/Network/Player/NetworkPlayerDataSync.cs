@@ -578,7 +578,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         if (expPct + phucPct > 0f)
             expAmount = Mathf.RoundToInt(expAmount * (1f + expPct + phucPct));
 
-        string baseUrl = APIClient.Instance != null ? APIClient.Instance.baseURL : "http://localhost:5000/api";
+        string baseUrl = APIClient.Instance != null ? APIClient.Instance.baseURL : ServerAddressConfig.Instance.ApiUrl;
         string url = $"{baseUrl}/player/{playerId}/gain-exp";
         byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount}}}");
 

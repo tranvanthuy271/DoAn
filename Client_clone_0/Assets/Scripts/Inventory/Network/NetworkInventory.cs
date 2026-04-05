@@ -1030,7 +1030,7 @@ public class NetworkInventory : NetworkBehaviour
 
     private IEnumerator SyncInventoryToApiDirect(int playerId, APIClient.AddInventoryItemRequest[] items, string clientJwt, ulong targetClientId)
     {
-        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/inventory/add";
 
         var requestBody = new APIClient.AddInventoryItemsRequest
@@ -1063,7 +1063,7 @@ public class NetworkInventory : NetworkBehaviour
 
     private IEnumerator SortInventoryDirect(int playerId, ulong targetClientId)
     {
-        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
         string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/inventory/sort";
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes("{}");
@@ -1109,7 +1109,7 @@ public class NetworkInventory : NetworkBehaviour
 
     private IEnumerator FetchInventoryFromApiDirect(int playerId, System.Action<InventoryItem[]> onSuccess, System.Action<string> onError = null)
     {
-        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string apiKey  = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
         string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/data";
 

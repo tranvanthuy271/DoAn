@@ -34,10 +34,12 @@ public class MapTransitionButton : MonoBehaviour
     [SerializeField] private float       errorDisplayTime = 3f;
 
     [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
+    [SerializeField] private string apiBase = "";
 
     private void Start()
     {
+        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+
         if (currentMapId == 0 && MapManager.Instance != null)
             currentMapId = MapManager.Instance.GetMapId();
 

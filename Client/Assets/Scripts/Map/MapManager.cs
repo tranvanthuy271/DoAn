@@ -18,7 +18,7 @@ public class MapManager : MonoBehaviour
     public string mapName = "Main Map";
 
     [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
+    [SerializeField] private string apiBase = "";
 
     private static MapManager instance;
     public static MapManager Instance
@@ -53,6 +53,7 @@ public class MapManager : MonoBehaviour
 
     private void Start()
     {
+        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
         // Load map info cho scene khởi đầu
         StartCoroutine(FetchMapConfigByScene(SceneManager.GetActiveScene().name));
     }

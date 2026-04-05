@@ -170,7 +170,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         PlayerPrefs.DeleteKey("CONNECT_TO_SERVER");
 
         // Lấy server IP và port
-        string serverIP = PlayerPrefs.GetString("SERVER_IP", "127.0.0.1");
+        string serverIP = PlayerPrefs.GetString("SERVER_IP", ServerAddressConfig.Instance.gameServerIp);
         int serverPort = PlayerPrefs.GetInt("SERVER_PORT", 0);
         if (serverPort <= 0 || serverPort == 2003)
             serverPort = 7777;

@@ -278,18 +278,25 @@ public class APIClient : MonoBehaviour
     public static APIClient Instance { get; private set; }
 
     [Header("API Config")]
-    public string baseURL = "http://localhost:5000/api"; //
+    public string baseURL = "http://localhost:5000/api";
 
     /// <summary>Server root without the /api path segment (used by panels that construct /api/... URLs themselves).</summary>
     public static string BASE_URL
     {
         get
         {
-            if (Instance == null) return "http://localhost:5000";
+            if (Instance == null) return ServerAddressConfig.Instance.ApiRoot;
             var url = Instance.baseURL.TrimEnd('/');
             if (url.EndsWith("/api")) url = url.Substring(0, url.Length - 4);
             return url;
         }
+    }
+
+    private void InitBaseUrl()
+    {
+        // Nếu baseURL vẫn là default localhost, lấy từ ServerAddressConfig
+        if (baseURL == "http://localhost:5000/api" || string.IsNullOrWhiteSpace(baseURL))
+            baseURL = ServerAddressConfig.Instance.ApiUrl;
     }
 
     private string jwtToken = "";
@@ -306,7 +313,9 @@ public class APIClient : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // Load token tß╗½ PlayerPrefs nß║┐u c├│
+        InitBaseUrl();
+
+        // Load token từ PlayerPrefs nếu có
         jwtToken = PlayerPrefs.GetString("JWT_TOKEN", "");
     }
 
@@ -659,12 +668,12 @@ public class APIClient : MonoBehaviour
     /// <summary>
     /// Update player data (batch update) l├¬n server
     /// </summary>
-    public void UpdatePlayerData(int playerId, string jsonData, System.Action onSuccess = null, System.Action<string> onError = null, string jwtOverride = null)
+    public void UpdatePlayerData(int playerId, string jsonData, System.Action onSuccess = null, System.Action<string> onError = null)
     {
-        StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData, onSuccess, onError, jwtOverride));
+        StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData, onSuccess, onError));
     }
 
-    private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData, System.Action onSuccess, System.Action<string> onError, string jwtOverride = null)
+    private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData, System.Action onSuccess, System.Action<string> onError)
     {
         string url = $"{baseURL}/player/{playerId}/data";
         
@@ -672,10 +681,9 @@ public class APIClient : MonoBehaviour
         {
             www.SetRequestHeader("Content-Type", "application/json");
             
-            string effectiveJwt = !string.IsNullOrEmpty(jwtOverride) ? jwtOverride : jwtToken;
-            if (!string.IsNullOrEmpty(effectiveJwt))
+            if (!string.IsNullOrEmpty(jwtToken))
             {
-                www.SetRequestHeader("Authorization", $"Bearer {effectiveJwt}");
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
             }
             
             yield return www.SendWebRequest();
@@ -907,16 +915,9 @@ public class APIClient : MonoBehaviour
                     if (response != null)
                     {
                         Debug.Log($"[APIClient] Γ£à Inventory fetched successfully: {response.inventory?.Length ?? 0} items");
-                        // Chỉ cập nhật GameManager khi fetch cho chính player local.
-                        // Khi HOST fetch inventory cho CLIENT (RequestInventoryDataServerRpc),
-                        // KHÔNG ghi đè GameManager của HOST với data của CLIENT.
+                        // Cập nhật GameManager với dữ liệu mới nhất (gold/silver/level)
                         if (GameManager.Instance != null)
-                        {
-                            int localId = GameManager.Instance.HasPlayerData()
-                                ? GameManager.Instance.GetPlayerData().user_id : 0;
-                            if (localId == 0 || localId == playerId)
-                                GameManager.Instance.SetPlayerData(response);
-                        }
+                            GameManager.Instance.SetPlayerData(response);
                         onSuccess?.Invoke(response.inventory ?? new InventoryItem[0]);
                     }
                     else
@@ -1818,60 +1819,12 @@ public class APIClient : MonoBehaviour
             }
         }
     }
-
-    // ==================== BUFF API ====================
-
-    /// <summary>
-    /// GET /api/player/{playerId}/active-buffs
-    /// Lấy danh sách buff đang active của player.
-    /// </summary>
-    public void GetActiveBuffs(int playerId,
-                               System.Action<ActiveBuffDto[]> onSuccess,
-                               System.Action<string> onError = null)
-    {
-        StartCoroutine(GetActiveBuffsCoroutine(playerId, onSuccess, onError));
-    }
-
-    private System.Collections.IEnumerator GetActiveBuffsCoroutine(int playerId,
-                                                                    System.Action<ActiveBuffDto[]> onSuccess,
-                                                                    System.Action<string> onError)
-    {
-        string url = $"{baseURL}/player/{playerId}/active-buffs";
-        using (var www = UnityEngine.Networking.UnityWebRequest.Get(url))
-        {
-            if (!string.IsNullOrEmpty(jwtToken))
-                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
-            yield return www.SendWebRequest();
-            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-            {
-                try
-                {
-                    var resp = JsonUtility.FromJson<ActiveBuffsResponse>(www.downloadHandler.text);
-                    onSuccess?.Invoke(resp?.active_buffs ?? new ActiveBuffDto[0]);
-                }
-                catch (System.Exception ex) { onError?.Invoke(ex.Message); }
-            }
-            else
-            {
-                string err = www.downloadHandler?.text ?? www.error;
-                Debug.LogError($"[APIClient] GetActiveBuffs failed: {err}");
-                onError?.Invoke(err);
-            }
-        }
-    }
 }
 
 [System.Serializable]
 public class UseItemResponse
 {
-    public string          message;
-    public int             player_id;
-    public int             bag_slots;
-    public int             hp_restore;
-    public int             mp_restore;
-    public int             current_hp;
-    public int             current_mp;
-    public int             gene_exp;
-    public ActiveBuffDto[] active_buffs;
-    public ActiveBuffDto[] new_buffs;
+    public string message;
+    public int    player_id;
+    public int    bag_slots;
 }

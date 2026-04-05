@@ -19,7 +19,7 @@ public class ElementIconLoader : MonoBehaviour
 {
     public static ElementIconLoader Instance { get; private set; }
 
-    [SerializeField] private string apiBaseUrl = "http://localhost:5000";
+    [SerializeField] private string apiBaseUrl = "";
 
     /// <summary>Cache sprite — element_key → Sprite (từ Resources)</summary>
     public Dictionary<string, Sprite> Icons  { get; private set; } = new Dictionary<string, Sprite>();
@@ -36,7 +36,11 @@ public class ElementIconLoader : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    private void Start() => StartCoroutine(LoadAllElements());
+    private void Start()
+    {
+        if (string.IsNullOrWhiteSpace(apiBaseUrl)) apiBaseUrl = ServerAddressConfig.Instance.ApiRoot;
+        StartCoroutine(LoadAllElements());
+    }
 
     // ──────────────────────────────────────────────────────────────────
 

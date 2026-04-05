@@ -27,7 +27,7 @@ public class NpcServerManager : MonoBehaviour
     public static NpcServerManager Instance { get; private set; }
 
     [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
+    [SerializeField] private string apiBase = "";
 
     [Tooltip("MapId của scene này. Để 0 → tự lấy từ MapManager (có thể race condition nếu MapManager chưa fetch xong).")]
     [SerializeField] private int mapId = 0;
@@ -52,6 +52,7 @@ public class NpcServerManager : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
     }
 
     private void Start()

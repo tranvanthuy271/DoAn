@@ -28,6 +28,16 @@ public class MapWorldConfig : ScriptableObject
     [Tooltip("IP public mà client dùng để kết nối")]
     public string publicIp = "127.0.0.1";
 
+    /// <summary>Auto-fill from ServerAddressConfig if still defaults.</summary>
+    public void ResolveFromGlobalConfig()
+    {
+        var cfg = ServerAddressConfig.Instance;
+        if (apiBaseUrl == "http://localhost:5000/api" || string.IsNullOrWhiteSpace(apiBaseUrl))
+            apiBaseUrl = cfg.ApiUrl;
+        if (publicIp == "127.0.0.1" || string.IsNullOrWhiteSpace(publicIp))
+            publicIp = cfg.gameServerIp;
+    }
+
     [Header("Security")]
     [Tooltip("Bật DTLS encryption cho NGO UDP transport. BẮT BUỘC trong production.")]
     public bool enableDtlsEncryption = false;

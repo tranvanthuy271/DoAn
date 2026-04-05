@@ -15,8 +15,17 @@ public class NetworkManagerCustom : MonoBehaviour
     private const ushort ModernZoneServerPort = 7777;
 
     [Header("Server Config")]
-    public string serverIP = "127.0.0.1"; // localhost (cho client)
+    public string serverIP = "127.0.0.1";
     public ushort serverPort = ModernZoneServerPort;
+
+    private void InitFromConfig()
+    {
+        var cfg = ServerAddressConfig.Instance;
+        if (serverIP == "127.0.0.1" || string.IsNullOrWhiteSpace(serverIP))
+            serverIP = cfg.gameServerIp;
+        if (serverPort == 0 || serverPort == ModernZoneServerPort)
+            serverPort = cfg.gameServerPort;
+    }
 
     private const string AUTH_MESSAGE_NAME = "ClientAuth";
     private NetworkManager networkManager;
@@ -26,6 +35,7 @@ public class NetworkManagerCustom : MonoBehaviour
 
     void Start()
     {
+        InitFromConfig();
         EnsureCallbacksSubscribed();
     }
 
@@ -123,7 +133,7 @@ public class NetworkManagerCustom : MonoBehaviour
     }
 
     private string ResolveServerIp() =>
-        string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
+        string.IsNullOrWhiteSpace(serverIP) ? ServerAddressConfig.Instance.gameServerIp : serverIP;
 
     private ushort ResolveServerPort() =>
         serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;

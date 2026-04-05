@@ -9,9 +9,17 @@ using Unity.Netcode;
 public class ServerConnectionChecker : MonoBehaviour
 {
     [Header("Server Config")]
-    public string apiBaseURL = "http://localhost:5000/api";
-    public string netcodeServerIP = "127.0.0.1";
-    public ushort netcodeServerPort = 7777;
+    public string apiBaseURL = "";
+    public string netcodeServerIP = "";
+    public ushort netcodeServerPort = 0;
+
+    private void InitFromConfig()
+    {
+        var cfg = ServerAddressConfig.Instance;
+        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = cfg.ApiUrl;
+        if (string.IsNullOrWhiteSpace(netcodeServerIP)) netcodeServerIP = cfg.gameServerIp;
+        if (netcodeServerPort == 0) netcodeServerPort = cfg.gameServerPort;
+    }
     public float checkInterval = 2f; // Check mỗi 2 giây
 
     [Header("Connection Timeout")]
@@ -22,6 +30,7 @@ public class ServerConnectionChecker : MonoBehaviour
 
     private void Start()
     {
+        InitFromConfig();
         networkManager = NetworkManager.Singleton;
     }
 

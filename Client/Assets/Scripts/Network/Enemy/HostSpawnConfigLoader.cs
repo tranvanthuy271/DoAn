@@ -28,7 +28,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
     [Header("API")]
     [Tooltip("Base URL của GameServerApi. Ví dụ: http://localhost:5000/api")]
-    public string apiBaseURL = "http://localhost:5000/api";
+    public string apiBaseURL = "";
 
     [Header("Map")]
     [Tooltip("Map ID cần load config. Để 0 sẽ tự lấy từ MapManager.Instance.")]
@@ -81,7 +81,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
         if (_started) return;
         _started = true;
-
+        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = ServerAddressConfig.Instance.ApiUrl;
         // Lấy mapId từ MapManager nếu chưa set
         if (mapId == 0 && MapManager.Instance != null)
             mapId = MapManager.Instance.GetMapId();

@@ -129,7 +129,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
 
-        string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
+        string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
         string body    = JsonUtility.ToJson(new InteractPayload { npc_id = data.npc_id, player_id = userId });
 
         using var req = PostJson($"{apiBase}/api/npc/interact", body);
@@ -172,7 +172,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
 
-        string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
+        string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
         string url     = $"{apiBase}/api/npc/shop?npcId={data.npc_id}&playerId={userId}";
 
         using var req = UnityWebRequest.Get(url);
@@ -222,7 +222,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             yield break;
         }
 
-        string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
+        string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
         string body = JsonUtility.ToJson(new BuyPayload
         {
             npcId      = data.npc_id,

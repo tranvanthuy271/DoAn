@@ -14,7 +14,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
     public EnemyPrefabManager enemyPrefabManager;
     
     [Tooltip("API Base URL")]
-    public string apiBaseURL = "http://localhost:5000/api";
+    public string apiBaseURL = "";
     
     [Tooltip("Map ID (sẽ lấy từ MapManager nếu không set)")]
     public int mapId = 0;
@@ -32,6 +32,8 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
     private void Start()
     {
+        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = ServerAddressConfig.Instance.ApiUrl;
+
         // Lấy Map ID từ MapManager nếu chưa set
         if (mapId == 0 && MapManager.Instance != null && !IsDedicatedWorldServer())
         {

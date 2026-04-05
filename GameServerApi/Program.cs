@@ -9,10 +9,27 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Kestrel: lắng nghe trên tất cả interface (0.0.0.0) ───────────────────────
+// Cho phép client từ bất kỳ đâu kết nối tới API, không chỉ localhost.
+// Có thể override bằng --urls="http://0.0.0.0:5000" hoặc biến môi trường ASPNETCORE_URLS.
+var urls = builder.Configuration["Urls"] ?? "http://0.0.0.0:5000";
+builder.WebHost.UseUrls(urls);
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
+// ── CORS: cho phép Unity client gọi API từ bất kỳ origin ─────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // In-memory cache: dùng cho spawn-config, enemy data (tránh gọi DB thừa)
 builder.Services.AddMemoryCache();
@@ -110,10 +127,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
-// Game server (Unity) dùng X-Zone-Api-Key header thay JWT Bearer
-app.UseMiddleware<GameServerApi.Middleware.ZoneApiKeyMiddleware>();
+// Bỏ HTTPS redirect khi chạy production HTTP (nếu cần HTTPS thì dùng reverse proxy)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

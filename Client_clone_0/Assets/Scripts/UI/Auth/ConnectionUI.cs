@@ -31,7 +31,7 @@ public class ConnectionUI : MonoBehaviour
         // Setup IP input (mặc định localhost)
         if (ipInputField != null)
         {
-            ipInputField.text = "127.0.0.1";
+            ipInputField.text = ServerAddressConfig.Instance.gameServerIp;
         }
 
         UpdateUI();

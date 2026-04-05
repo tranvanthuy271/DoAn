@@ -37,12 +37,17 @@ public class MapEdgeTrigger : MonoBehaviour
 #pragma warning restore CS0414
 
     [Header("API")]
-    [SerializeField] private string apiBase = "http://localhost:5000";
+    [SerializeField] private string apiBase = "";
 
     private bool _isTransitioning = false;
 
     // Không dùng Start() để resolve mapId nữa — resolve tại thời điểm trigger
     // (tránh race condition với MapManager.FetchMapConfigByScene coroutine)
+
+    private void Awake()
+    {
+        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {

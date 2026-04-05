@@ -18,8 +18,8 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     private const ushort ModernZoneServerPort = 7777;
 
     [Header("Server Config")]
-    public string serverIP = "127.0.0.1";
-    public ushort serverPort = ModernZoneServerPort;
+    public string serverIP = "";
+    public ushort serverPort = 0;
 
     [Header("UI Elements (Optional - cho Host)")]
     [SerializeField] private UnityEngine.UI.Button startHostButton;
@@ -377,10 +377,10 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     }
 
     private string ResolveServerIp() =>
-        string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
+        string.IsNullOrWhiteSpace(serverIP) ? ServerAddressConfig.Instance.gameServerIp : serverIP;
 
     private ushort ResolveServerPort() =>
-        serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;
+        serverPort == 0 || serverPort == 2003 ? ServerAddressConfig.Instance.gameServerPort : serverPort;
 
     /// <summary>
     /// Button click: Start Client (manual)

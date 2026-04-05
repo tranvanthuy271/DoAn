@@ -45,6 +45,7 @@ public class MapWorldBootstrap : MonoBehaviour
             return;
         }
 
+        _config.ResolveFromGlobalConfig();
         _port      = _config.port;
         _publicIp  = _config.publicIp;
         _apiBaseUrl = _config.apiBaseUrl;

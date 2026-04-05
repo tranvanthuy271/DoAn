@@ -11,8 +11,8 @@ public class GameSceneClientInitializer : MonoBehaviour
     private const ushort ModernZoneServerPort = 7777;
 
     [Header("Server Config")]
-    public string serverIP = "127.0.0.1";
-    public ushort serverPort = ModernZoneServerPort;
+    public string serverIP = "";
+    public ushort serverPort = 0;
 
     [Header("References")]
     private APIClient apiClient;
@@ -177,8 +177,8 @@ public class GameSceneClientInitializer : MonoBehaviour
         }
 
         // Setup server IP và port
-        networkManager.serverIP = string.IsNullOrWhiteSpace(serverIP) ? "127.0.0.1" : serverIP;
-        networkManager.serverPort = serverPort == 0 || serverPort == 2003 ? ModernZoneServerPort : serverPort;
+        networkManager.serverIP = string.IsNullOrWhiteSpace(serverIP) ? ServerAddressConfig.Instance.gameServerIp : serverIP;
+        networkManager.serverPort = serverPort == 0 || serverPort == 2003 ? ServerAddressConfig.Instance.gameServerPort : serverPort;
 
         // Connect to host
         networkManager.ConnectToServer();
