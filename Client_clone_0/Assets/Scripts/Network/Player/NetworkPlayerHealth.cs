@@ -168,29 +168,21 @@ public class NetworkPlayerHealth : NetworkBehaviour
     }
 
     /// <summary>
-    /// ServerRpc: Client yêu cầu server gây damage
-    /// Chỉ server mới có thể thực sự trừ HP
+    /// Internal: Xử lý damage trên server (không qua RPC).
+    /// Gọi bởi TakeDamage (khi IsServer) và TakeDamageServerRpc (khi client gửi RPC).
     /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void TakeDamageServerRpc(int damage, ServerRpcParams rpcParams = default)
+    private void TakeDamageInternal(int damage)
     {
-        // Server validate và xử lý damage
         if (isDead) return;
 
-        // God mode prevents damage (nếu có)
         if (controller != null && controller.godMode)
         {
             Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} - God Mode: Damage blocked!");
             return;
         }
 
-        // Invincibility check (server cần tự quản lý)
-        if (isInvincible)
-        {
-            return;
-        }
+        if (isInvincible) return;
 
-        // Áp dụng DefenseBuff giảm sát thương nhận
         var dataSync = GetComponent<NetworkPlayerDataSync>();
         if (dataSync != null && dataSync.networkDefenseBonusPct.Value > 0)
         {
@@ -198,35 +190,31 @@ public class NetworkPlayerHealth : NetworkBehaviour
             damage = Mathf.Max(1, Mathf.RoundToInt(damage / (1f + defBonus)));
         }
 
-        // Server trừ HP
         int newHealth = networkCurrentHealth.Value - damage;
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;
 
-        // Sync HP về NetworkPlayerDataSync để HealthBar cập nhật
         if (dataSync != null)
             dataSync.networkHp.Value = newHealth;
 
-        // Start invincibility frames
         if (newHealth > 0)
         {
-            StartInvincibilityServerRpc();
+            isInvincible = true;
+            invincibilityTimer = invincibilityDuration;
         }
 
-        // Notify clients về damage (để play sound/effect + stun + gray overlay)
         OnTakeDamageClientRpc(damage);
 
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
     }
 
     /// <summary>
-    /// ServerRpc: Start invincibility frames
+    /// ServerRpc: Client yêu cầu server gây damage
     /// </summary>
     [ServerRpc(RequireOwnership = false)]
-    private void StartInvincibilityServerRpc()
+    public void TakeDamageServerRpc(int damage, ServerRpcParams rpcParams = default)
     {
-        isInvincible = true;
-        invincibilityTimer = invincibilityDuration;
+        TakeDamageInternal(damage);
     }
 
     /// <summary>
@@ -255,6 +243,11 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void HealServerRpc(int amount, ServerRpcParams rpcParams = default)
     {
+        HealInternal(amount);
+    }
+
+    private void HealInternal(int amount)
+    {
         if (isDead) return;
         if (isHealBlocked)
         {
@@ -270,7 +263,6 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (dataSync != null)
             dataSync.networkHp.Value = newHealth;
 
-        // Notify clients
         OnHealClientRpc(amount);
 
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} healed {amount}. Health: {newHealth}/{maxHealth}");
@@ -290,6 +282,11 @@ public class NetworkPlayerHealth : NetworkBehaviour
     /// </summary>
     [ServerRpc(RequireOwnership = false)]
     public void HealFullServerRpc()
+    {
+        HealFullInternal();
+    }
+
+    private void HealFullInternal()
     {
         if (isDead) return;
 
@@ -401,24 +398,28 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         if (IsServer)
         {
-            // Nếu đã là server, gọi trực tiếp
-            TakeDamageServerRpc(damage);
+            TakeDamageInternal(damage);
         }
         else
         {
-            // Nếu là client, gửi request lên server
             TakeDamageServerRpc(damage);
         }
     }
 
     public void Heal(int amount)
     {
-        HealServerRpc(amount);
+        if (IsServer)
+            HealInternal(amount);
+        else
+            HealServerRpc(amount);
     }
 
     public void HealFull()
     {
-        HealFullServerRpc();
+        if (IsServer)
+            HealFullInternal();
+        else
+            HealFullServerRpc();
     }
 
     /// <summary>

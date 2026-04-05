@@ -10,28 +10,45 @@ using UnityEngine;
 ///   "client được thấy object NẾU cùng zone với owner của object".
 ///
 /// QUAN TRỌNG:
-/// - Gắn lên NetworkObject prefab, KHÔNG phải spawn manual.
-/// - Chạy server-side only (CheckObjectVisibility chỉ chạy trên server).
-/// - Gọi RefreshVisibility() sau mỗi zone transfer để NGO re-evaluate.
+/// - Đây là component server-side thuần, có thể add runtime TRƯỚC khi Spawn().
+/// - Không dùng NetworkBehaviour vì NPC/enemy đang được tạo từ prefab instance runtime.
+/// - Gọi InitializeForServer() trước Spawn(), rồi RefreshVisibility() sau khi client đổi zone.
 /// </summary>
 [RequireComponent(typeof(NetworkObject))]
 [DisallowMultipleComponent]
-public class NetworkVisibilityZoneFilter : NetworkBehaviour
+public class NetworkVisibilityZoneFilter : MonoBehaviour
 {
     [Tooltip("Nếu true: server luôn thấy object này (dedicated server không render nên ok).")]
     [SerializeField] private bool _alwaysVisibleToServer = true;
 
     private NetworkObject _netObj;
+    private bool _initialized;
 
-    public override void OnNetworkSpawn()
+    private void Awake()
     {
-        if (!IsServer) return;
-
         _netObj = GetComponent<NetworkObject>();
+    }
+
+    public void InitializeForServer()
+    {
+        _netObj ??= GetComponent<NetworkObject>();
+        if (_netObj == null)
+        {
+            Debug.LogWarning("[NetworkVisibilityZoneFilter] Thiếu NetworkObject, không thể khởi tạo visibility filter.");
+            return;
+        }
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
 
         // Đăng ký delegate CheckObjectVisibility với NGO
         // Delegate này sẽ được NGO gọi cho mỗi connected client để quyết định visibility.
         _netObj.CheckObjectVisibility = IsVisibleTo;
+        _initialized = true;
+
+        var zoneTag = GetComponent<ZoneOwnerTag>();
+        Debug.Log($"[NetworkVisibilityZoneFilter] Initialized on '{gameObject.name}' " +
+                  $"(netId={_netObj.NetworkObjectId}, zoneTag={zoneTag?.MapId}_{zoneTag?.ZoneId})");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -44,29 +61,38 @@ public class NetworkVisibilityZoneFilter : NetworkBehaviour
     /// </summary>
     private bool IsVisibleTo(ulong clientId)
     {
+        _netObj ??= GetComponent<NetworkObject>();
+        if (_netObj == null)
+            return false;
+
         // Server có thể xử lý mà không cần visibility
         if (_alwaysVisibleToServer && clientId == NetworkManager.ServerClientId)
             return true;
 
         var registry = ZoneRoomRegistry.Instance;
-        if (registry == null) return true; // Default open khi chưa init
+        if (registry == null)
+        {
+            Debug.LogWarning($"[NetworkVisibilityZoneFilter] registry=null → default visible for '{gameObject.name}' client={clientId}");
+            return true; // Default open khi chưa init
+        }
 
         ulong ownerClientId = _netObj.OwnerClientId;
 
-        // Object không có owner rõ ràng (ví dụ: server-owned NPC)
-        // → dùng chính clientId để kiểm tra zone của NPC
-        // (NPC nằm ở zone nào thì chỉ client zone đó thấy)
+        // Server-owned objects (NPC, Enemy, Chest, etc.)
+        // → dùng MAP-BASED visibility: tất cả player cùng map đều thấy, bất kể zone
         if (ownerClientId == NetworkManager.ServerClientId ||
             ownerClientId == ulong.MaxValue)
         {
-            // Cho NPC/server-owned objects: lấy zone từ component tag
             var zoneTag = GetComponent<ZoneOwnerTag>();
-            if (zoneTag == null) return true; // static object, visible to all
+            if (zoneTag == null)
+                return true; // static object, visible to all
 
-            ZoneRoom objectZone = registry.GetRoom(zoneTag.MapId, zoneTag.ZoneId);
-            if (objectZone == null) return true;
+            // Lấy zone hiện tại của client → kiểm tra cùng MAP
+            var clientRoom = registry.GetClientRoom(clientId);
+            if (clientRoom == null)
+                return false; // client chưa được assign vào zone nào
 
-            return objectZone.Contains(clientId);
+            return clientRoom.MapId == zoneTag.MapId;
         }
 
         // Player-owned object: cùng zone thì thấy nhau
@@ -79,7 +105,13 @@ public class NetworkVisibilityZoneFilter : NetworkBehaviour
     /// </summary>
     public void RefreshVisibility()
     {
-        if (!IsServer || _netObj == null) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+
+        if (!_initialized)
+            InitializeForServer();
+
+        if (_netObj == null) return;
 
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
@@ -87,9 +119,15 @@ public class NetworkVisibilityZoneFilter : NetworkBehaviour
             bool isCurrentlyVisible = _netObj.IsNetworkVisibleTo(clientId);
 
             if (shouldBeVisible && !isCurrentlyVisible)
+            {
                 _netObj.NetworkShow(clientId);
+                Debug.Log($"[NetworkVisibilityZoneFilter] SHOW '{gameObject.name}' to client {clientId}");
+            }
             else if (!shouldBeVisible && isCurrentlyVisible)
+            {
                 _netObj.NetworkHide(clientId);
+                Debug.Log($"[NetworkVisibilityZoneFilter] HIDE '{gameObject.name}' from client {clientId}");
+            }
         }
     }
 }

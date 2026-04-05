@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public class CameraFollow : MonoBehaviour
 {
@@ -62,6 +63,13 @@ public class CameraFollow : MonoBehaviour
     // ---------------------------------------------------------------------------
     private void DetectMaxMapBounds()
     {
+        // Reset trước — tránh bounds cũ của map trước còn hiệu lực khi map mới không có layer
+        useBounds = false;
+
+        Scene boundsScene = gameObject.scene.IsValid() && gameObject.scene.name != "DontDestroyOnLoad"
+            ? gameObject.scene
+            : SceneManager.GetActiveScene();
+
         int layerId = LayerMask.NameToLayer("MaxMap");
         string layerUsed = "MaxMap";
         if (layerId < 0)
@@ -83,6 +91,9 @@ public class CameraFollow : MonoBehaviour
 
         foreach (var col in allCols)
         {
+            if (col == null || col.gameObject.scene != boundsScene)
+                continue;
+
             if (col.gameObject.layer == layerId)
             {
                 mapCols.Add(col);
@@ -93,7 +104,7 @@ public class CameraFollow : MonoBehaviour
 
         if (!found)
         {
-            Debug.LogWarning($"[CameraFollow] Không tìm thấy Collider2D nào trên layer '{layerUsed}'.");
+            Debug.LogWarning($"[CameraFollow] Không tìm thấy Collider2D nào trên layer '{layerUsed}' trong scene '{boundsScene.name}'.");
             return;
         }
 
@@ -141,7 +152,7 @@ public class CameraFollow : MonoBehaviour
             maxBounds = new Vector2(combined.max.x, combined.max.y);
         }
 
-        Debug.Log($"[CameraFollow] Map bounds ({layerUsed}): min={minBounds}, max={maxBounds}");
+        Debug.Log($"[CameraFollow] Map bounds ({layerUsed}, scene={boundsScene.name}): min={minBounds}, max={maxBounds}");
     }
 
     // ---------------------------------------------------------------------------
@@ -185,14 +196,14 @@ public class CameraFollow : MonoBehaviour
     /// Gán target mới cho camera. Gọi từ NetworkPlayerController.OnNetworkSpawn()
     /// hoặc từ bất kỳ PlayerController nào (kể cả Fusion F_Phong, F_Kim, ...).
     /// </summary>
-    public void SetTarget(Transform newTarget)
+    public void SetTarget(Transform newTarget, bool snapImmediately = false)
     {
         bool wasNull = (target == null);
         target = newTarget;
 
         // Lần đầu tiên nhận được target: snap camera đến đúng vị trí ngay lập tức
         // tránh hiệu ứng camera "bay" từ xa đến chỗ player
-        if (wasNull && newTarget != null)
+        if ((wasNull || snapImmediately) && newTarget != null)
         {
             Vector3 snapPos = newTarget.position + offset;
             if (useBounds && cam != null && cam.orthographic)

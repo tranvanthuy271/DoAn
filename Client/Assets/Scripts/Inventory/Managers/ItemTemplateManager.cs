@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using System.Linq;
 
 /// <summary>
@@ -19,6 +20,17 @@ using System.Linq;
 public class ItemTemplateManager : MonoBehaviour
 {
     public static ItemTemplateManager Instance { get; private set; }
+
+    /// <summary>
+    /// Đảm bảo singleton tồn tại (dành cho dedicated server, tự tạo nếu chưa có).
+    /// </summary>
+    public static void EnsureInstance()
+    {
+        if (Instance != null) return;
+        var go = new GameObject("ItemTemplateManager_AutoCreated");
+        go.AddComponent<ItemTemplateManager>();
+        Debug.Log("[ItemTemplateManager] EnsureInstance: tự tạo singleton cho dedicated server.");
+    }
 
     [Header("Settings")]
     [Tooltip("Có tự động load item templates khi Start không")]
@@ -85,14 +97,79 @@ public class ItemTemplateManager : MonoBehaviour
         
         if (APIClient.Instance == null)
         {
-            Debug.LogError("[ItemTemplateManager] ❌ APIClient vẫn null sau 10 giây! Kiểm tra xem APIClient GameObject có trong scene không.");
-            Debug.LogError("[ItemTemplateManager] 💡 TIP: Tạo GameObject 'APIClient' trong scene và gắn script APIClient.cs");
+            Debug.LogWarning("[ItemTemplateManager] APIClient null (dedicated server?) → dùng UnityWebRequest trực tiếp.");
+            StartCoroutine(LoadItemTemplatesDirect());
         }
         else
         {
             Debug.Log($"[ItemTemplateManager] ✅ APIClient đã sẵn sàng sau {elapsed:F1}s");
             LoadItemTemplatesFromAPI();
         }
+    }
+
+    /// <summary>
+    /// Fallback: load templates trực tiếp bằng UnityWebRequest (dành cho dedicated server không có APIClient).
+    /// </summary>
+    private System.Collections.IEnumerator LoadItemTemplatesDirect()
+    {
+        if (isLoading || isLoaded) yield break;
+        isLoading = true;
+
+        string apiBase = "http://localhost:5000/api";
+        // Thử lấy API URL từ MapWorldConfig nếu có
+        var bootstrap = FindObjectOfType<MapWorldBootstrap>();
+        if (bootstrap != null)
+        {
+            var configField = bootstrap.GetType().GetField("_apiBaseUrl",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (configField != null)
+            {
+                string val = configField.GetValue(bootstrap) as string;
+                if (!string.IsNullOrEmpty(val)) apiBase = val;
+            }
+        }
+
+        string url = $"{apiBase.TrimEnd('/')}/item/templates";
+        Debug.Log($"[ItemTemplateManager] LoadItemTemplatesDirect: GET {url}");
+
+        using (var www = UnityWebRequest.Get(url))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[ItemTemplateManager] LoadItemTemplatesDirect FAILED: {www.error}");
+                isLoading = false;
+                yield break;
+            }
+
+            string json = www.downloadHandler.text;
+            try
+            {
+                var response = JsonUtility.FromJson<ItemTemplatesResponse>(json);
+                if (response != null && response.item_templates != null)
+                {
+                    OnItemTemplatesLoaded(response.item_templates);
+                    isLoaded = true;
+                    Debug.Log($"[ItemTemplateManager] ✅ LoadItemTemplatesDirect: loaded {response.item_templates.Length} templates.");
+                }
+                else
+                {
+                    Debug.LogError("[ItemTemplateManager] LoadItemTemplatesDirect: response hoặc item_templates null.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[ItemTemplateManager] LoadItemTemplatesDirect parse error: {ex.Message}");
+            }
+            isLoading = false;
+        }
+    }
+
+    [System.Serializable]
+    private class ItemTemplatesResponse
+    {
+        public ItemTemplateDto[] item_templates;
     }
 
     /// <summary>

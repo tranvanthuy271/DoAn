@@ -125,7 +125,7 @@ public class EarthAttackBuffSkill : NetworkBehaviour
         foreach (var hit in hits)
         {
             if (!hit.CompareTag("Player")) continue;
-            PlayerHealth ph = hit.GetComponent<PlayerHealth>();
+            PlayerHealth ph = hit.GetComponentInParent<PlayerHealth>();
             if (ph != null)
                 ph.ApplyAttackBuff(attackBonusPercent, buffDuration);
         }

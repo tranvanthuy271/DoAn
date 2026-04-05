@@ -41,16 +41,20 @@ public class EnemyProjectile : MonoBehaviour
         // Check nếu va chạm với player
         if (collision.CompareTag("Player"))
         {
-            PlayerHealth playerHealth = collision.GetComponent<PlayerHealth>();
+            NetworkPlayerHealth netPlayerHealth = collision.GetComponentInParent<NetworkPlayerHealth>();
+            if (netPlayerHealth != null)
+            {
+                netPlayerHealth.TakeDamage(damage);
+                hasHit = true;
+                if (destroyOnHit) Destroy(gameObject);
+                return;
+            }
+            PlayerHealth playerHealth = collision.GetComponentInParent<PlayerHealth>();
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(damage);
                 hasHit = true;
-
-                if (destroyOnHit)
-                {
-                    Destroy(gameObject);
-                }
+                if (destroyOnHit) Destroy(gameObject);
             }
         }
         // Nếu va chạm với ground/wall, chỉ hủy nếu destroyOnGround = true

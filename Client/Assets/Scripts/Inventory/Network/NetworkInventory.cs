@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
@@ -111,39 +112,36 @@ public class NetworkInventory : NetworkBehaviour
         ulong senderClientId = rpcParams.Receive.SenderClientId;
         Debug.Log($"[NetworkInventory] RequestInventoryDataServerRpc từ clientId={senderClientId}");
 
-        // Resolve playerId từ clientId
-        int playerId = 0;
-        if (ServerPlayerDataManager.Instance != null)
-        {
-            var pd = ServerPlayerDataManager.Instance.GetPlayerDataForClient(senderClientId);
-            if (pd != null) playerId = pd.user_id;
-        }
+        int playerId = ResolveInventoryApiPlayerId(senderClientId);
 
-        // Fallback: GameManager (chỉ hợp lệ khi host gọi cho chính mình)
-        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-            playerId = GameManager.Instance.GetPlayerData().user_id;
-
-        if (playerId == 0 || APIClient.Instance == null)
+        if (playerId == 0)
         {
             Debug.LogWarning($"[NetworkInventory] RequestInventoryDataServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
             return;
         }
 
         ulong capturedClientId = senderClientId;
-        APIClient.Instance.GetPlayerInventory(
-            playerId,
-            (items) =>
-            {
-                string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
-                Debug.Log($"[NetworkInventory] Host trả dữ liệu inventory ({items.Length} items) về clientId={capturedClientId}");
-                var clientParams = new ClientRpcParams
+        if (APIClient.Instance != null)
+        {
+            APIClient.Instance.GetPlayerInventory(
+                playerId,
+                (items) =>
                 {
-                    Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
-                };
-                SendInventoryDataClientRpc(json, clientParams);
-            },
-            (error) => Debug.LogError($"[NetworkInventory] Lỗi fetch inventory cho clientId={capturedClientId}: {error}")
-        );
+                    string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
+                    Debug.Log($"[NetworkInventory] Host trả dữ liệu inventory ({items.Length} items) về clientId={capturedClientId}");
+                    var clientParams = new ClientRpcParams
+                    {
+                        Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
+                    };
+                    SendInventoryDataClientRpc(json, clientParams);
+                },
+                (error) => Debug.LogError($"[NetworkInventory] Lỗi fetch inventory cho clientId={capturedClientId}: {error}")
+            );
+            return;
+        }
+
+        Debug.Log("[NetworkInventory] RequestInventoryDataServerRpc: APIClient null, dùng direct API fetch.");
+        StartCoroutine(PushInventoryDataToClientDirect(playerId, capturedClientId));
     }
 
     /// <summary>
@@ -158,22 +156,22 @@ public class NetworkInventory : NetworkBehaviour
         ulong senderClientId = rpcParams.Receive.SenderClientId;
         Debug.Log($"[NetworkInventory] RequestSortInventoryServerRpc từ clientId={senderClientId}");
 
-        int playerId = 0;
-        if (ServerPlayerDataManager.Instance != null)
-        {
-            var pd = ServerPlayerDataManager.Instance.GetPlayerDataForClient(senderClientId);
-            if (pd != null) playerId = pd.user_id;
-        }
-        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-            playerId = GameManager.Instance.GetPlayerData().user_id;
+        int playerId = ResolveInventoryApiPlayerId(senderClientId);
 
-        if (playerId == 0 || APIClient.Instance == null)
+        if (playerId == 0)
         {
             Debug.LogWarning($"[NetworkInventory] RequestSortInventoryServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
             return;
         }
 
         ulong capturedClientId = senderClientId;
+        if (APIClient.Instance == null)
+        {
+            Debug.Log("[NetworkInventory] RequestSortInventoryServerRpc: APIClient null, dùng direct API sort.");
+            StartCoroutine(SortInventoryDirect(playerId, capturedClientId));
+            return;
+        }
+
         // Bước 1: sort trên DB
         APIClient.Instance.SortInventory(
             playerId,
@@ -281,11 +279,35 @@ public class NetworkInventory : NetworkBehaviour
     {
         if (!IsServer) return;
 
+        TryAddItemInternal(itemID, quantity, out _);
+    }
+
+    public bool TryAddItemOnServer(int itemID, int quantity)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("[NetworkInventory] TryAddItemOnServer chỉ được gọi trên server.");
+            return false;
+        }
+
+        return TryAddItemInternal(itemID, quantity, out _);
+    }
+
+    private bool TryAddItemInternal(int itemID, int quantity, out int addedQuantity)
+    {
+        addedQuantity = 0;
+
+        if (quantity <= 0)
+        {
+            Debug.LogWarning($"[NetworkInventory] Bỏ qua AddItem vì quantity={quantity} không hợp lệ.");
+            return false;
+        }
+
         var template = GetItemTemplate(itemID);
         if (template == null)
         {
             Debug.LogWarning($"[NetworkInventory] ItemID {itemID} không tồn tại!");
-            return;
+            return false;
         }
 
         int remainingQuantity = quantity;
@@ -341,17 +363,16 @@ public class NetworkInventory : NetworkBehaviour
             }
         }
 
-        networkInventoryData.Value = currentData;
-
-        // Notify clients
         if (remainingQuantity < quantity)
         {
-            int addedQuantity = quantity - remainingQuantity;
+            addedQuantity = quantity - remainingQuantity;
+            networkInventoryData.Value = currentData;
             OnItemAddedClientRpc(itemID, addedQuantity);
             Debug.Log($"[NetworkInventory] Added {addedQuantity}x {template.name} to inventory");
 
             // ✅ Persist to DB sau khi update NetworkVariable
             SyncInventoryToDB(itemID, template.code, template.icon_id, addedQuantity);
+            return true;
         }
 
         // Nếu còn dư và không thể thêm được nữa
@@ -359,6 +380,8 @@ public class NetworkInventory : NetworkBehaviour
         {
             Debug.LogWarning($"[NetworkInventory] Inventory đầy! Không thể thêm {remainingQuantity}x {template.name}");
         }
+
+        return false;
     }
 
     /// <summary>
@@ -637,27 +660,28 @@ public class NetworkInventory : NetworkBehaviour
     }
 
     /// <summary>
-    /// Tìm slot index của item
-    /// </summary>
-    private int FindSlotIndex(int itemID)
-    {
-        var data = networkInventoryData.Value;
-        for (int i = 0; i < data.slotData.Length; i++)
-        {
-            if (data.slotData[i].itemID == itemID)
-                return i;
-        }
-        return -1;
-    }
-
-    /// <summary>
     /// Lấy ItemTemplateDto từ ItemID (dùng ItemTemplateManager mới)
     /// </summary>
     private ItemTemplateDto GetItemTemplate(int itemID)
     {
         if (ItemTemplateManager.Instance == null)
         {
-            Debug.LogWarning($"[NetworkInventory] ItemTemplateManager chưa sẵn sàng!");
+            // Dedicated server: tự tạo singleton nếu chưa có
+            if (IsServer)
+            {
+                ItemTemplateManager.EnsureInstance();
+                Debug.LogWarning($"[NetworkInventory] ItemTemplateManager vừa được tạo tự động, đang load...");
+            }
+            else
+            {
+                Debug.LogWarning($"[NetworkInventory] ItemTemplateManager chưa sẵn sàng!");
+            }
+            return null;
+        }
+
+        if (!ItemTemplateManager.Instance.IsLoaded())
+        {
+            Debug.LogWarning($"[NetworkInventory] ItemTemplateManager chưa load xong templates!");
             return null;
         }
 
@@ -669,18 +693,15 @@ public class NetworkInventory : NetworkBehaviour
         return template;
     }
 
-    /// <summary>
-    /// DEPRECATED: Giữ lại để tương thích code cũ
-    /// </summary>
-    private ItemData GetItemDataByID(int itemID)
-    {
-        Debug.LogWarning($"[NetworkInventory] GetItemDataByID() is deprecated! Use GetItemTemplate() instead.");
-        return null;
-    }
-
     // Public API
     public void AddItem(int itemID, int quantity)
     {
+        if (IsServer)
+        {
+            TryAddItemInternal(itemID, quantity, out _);
+            return;
+        }
+
         AddItemServerRpc(itemID, quantity);
     }
 
@@ -825,29 +846,15 @@ public class NetworkInventory : NetworkBehaviour
     /// </summary>
     private void SyncInventoryToDB(int itemTemplateId, string itemCode, string iconId, int quantity)
     {
-        int playerId = 0;
-
-        // Ưu tiên: dùng ServerPlayerDataManager với OwnerClientId — đúng cho cả HOST lẫn CLIENT
-        if (IsServer && ServerPlayerDataManager.Instance != null)
-        {
-            var playerData = ServerPlayerDataManager.Instance.GetPlayerDataByClientId(OwnerClientId);
-            if (playerData != null)
-                playerId = playerData.user_id;
-        }
-
-        // Fallback: GameManager (chỉ chính xác khi là HOST tự nhặt cho chính mình)
-        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-            playerId = GameManager.Instance.GetPlayerData().user_id;
-
-        // Last fallback: PlayerPrefs
-        if (playerId == 0)
-            playerId = PlayerPrefs.GetInt("USER_ID", 0);
+        int playerId = ResolveInventoryApiPlayerId(OwnerClientId);
 
         if (playerId == 0)
         {
             Debug.LogWarning($"[NetworkInventory] SyncInventoryToDB: playerId=0, OwnerClientId={OwnerClientId} — không thể sync DB!");
             return;
         }
+
+        Debug.Log($"[NetworkInventory] SyncInventoryToDB: owner={OwnerClientId}, playerId={playerId}, itemTemplateId={itemTemplateId}, quantity={quantity}");
 
         // Chỉ gửi itemTemplateId + quantity — server tự tra item_template
         var item = new APIClient.AddInventoryItemRequest
@@ -859,12 +866,7 @@ public class NetworkInventory : NetworkBehaviour
         var items = new APIClient.AddInventoryItemRequest[] { item };
 
         // Lấy JWT của đúng client (không dùng JWT của HOST khi sync cho CLIENT)
-        string clientJwt = "";
-        if (IsServer && ServerPlayerDataManager.Instance != null)
-            clientJwt = ServerPlayerDataManager.Instance.GetClientJwt(OwnerClientId);
-        // Fallback: JWT của chính máy này (đúng khi HOST sync cho chính mình)
-        if (string.IsNullOrEmpty(clientJwt))
-            clientJwt = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string clientJwt = ResolveClientJwt(OwnerClientId);
 
         // Gọi API
         if (APIClient.Instance != null)
@@ -907,7 +909,14 @@ public class NetworkInventory : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[NetworkInventory] APIClient.Instance is null! Không thể sync với DB.");
+            if (string.IsNullOrEmpty(clientJwt))
+            {
+                Debug.LogWarning("[NetworkInventory] APIClient.Instance is null và không có JWT client! Không thể sync với DB.");
+                return;
+            }
+
+            Debug.Log("[NetworkInventory] APIClient null (dedicated server) → sync inventory qua UnityWebRequest trực tiếp.");
+            StartCoroutine(SyncInventoryToApiDirect(playerId, items, clientJwt, OwnerClientId));
         }
     }
 
@@ -922,31 +931,7 @@ public class NetworkInventory : NetworkBehaviour
             return;
         }
 
-        // Get playerId từ ServerPlayerDataManager dựa vào OwnerClientId
-        int playerId = 0;
-        
-        if (ServerPlayerDataManager.Instance != null)
-        {
-            var playerData = ServerPlayerDataManager.Instance.GetPlayerDataByClientId(OwnerClientId);
-            if (playerData != null)
-            {
-                playerId = playerData.player_id;
-            }
-        }
-        
-        // Fallback 1: GameManager (in-memory, không bị shared giữa host/clone)
-        if (playerId == 0 && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-        {
-            playerId = GameManager.Instance.GetPlayerData().user_id;
-            Debug.Log($"[NetworkInventory] Fallback to GameManager: playerId = {playerId}");
-        }
-        
-        // Fallback 2: PlayerPrefs (có thể bị shared giữa ParrelSync host/clone)
-        if (playerId == 0)
-        {
-            playerId = PlayerPrefs.GetInt("USER_ID", 0);
-            Debug.LogWarning($"[NetworkInventory] Fallback to PlayerPrefs: playerId = {playerId} (có thể không chính xác khi dùng ParrelSync!)");
-        }
+        int playerId = ResolveInventoryApiPlayerId(OwnerClientId);
         
         if (playerId == 0)
         {
@@ -981,8 +966,198 @@ public class NetworkInventory : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[NetworkInventory] APIClient.Instance is null!");
+            // Dedicated server không có APIClient → gọi API trực tiếp
+            Debug.Log("[NetworkInventory] APIClient null (dedicated server) → dùng UnityWebRequest trực tiếp.");
+            StartCoroutine(LoadInventoryFromApiDirect(playerId));
         }
+    }
+
+    private int ResolveInventoryApiPlayerId(ulong clientId)
+    {
+        if (ZonePlayerSessionManager.Instance != null)
+        {
+            string sessionUserId = ZonePlayerSessionManager.Instance.GetPlayerId(clientId);
+            if (int.TryParse(sessionUserId, out int zoneUserId) && zoneUserId > 0)
+                return zoneUserId;
+        }
+
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            var playerData = ServerPlayerDataManager.Instance.GetPlayerDataByClientId(clientId);
+            if (playerData != null && playerData.player_id > 0)
+                return playerData.player_id;
+        }
+
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            int gameManagerPlayerId = GameManager.Instance.GetPlayerData().player_id;
+            if (gameManagerPlayerId > 0)
+                return gameManagerPlayerId;
+        }
+
+        int prefsPlayerId = PlayerPrefs.GetInt("PLAYER_ID", 0);
+        if (prefsPlayerId > 0)
+            return prefsPlayerId;
+
+        int prefsUserId = PlayerPrefs.GetInt("USER_ID", 0);
+        if (prefsUserId > 0)
+        {
+            Debug.LogWarning($"[NetworkInventory] ResolveInventoryApiPlayerId: fallback USER_ID={prefsUserId} cho clientId={clientId}. Kiểm tra luồng set PLAYER_ID/player_id.");
+            return prefsUserId;
+        }
+
+        return 0;
+    }
+
+    private string ResolveClientJwt(ulong clientId)
+    {
+        string clientJwt = "";
+
+        if (IsServer && ServerPlayerDataManager.Instance != null)
+            clientJwt = ServerPlayerDataManager.Instance.GetClientJwt(clientId);
+
+        if (string.IsNullOrEmpty(clientJwt) && ZonePlayerSessionManager.Instance != null)
+            clientJwt = ZonePlayerSessionManager.Instance.GetClientJwt(clientId) ?? "";
+
+        if (string.IsNullOrEmpty(clientJwt) && APIClient.Instance != null)
+            clientJwt = APIClient.Instance.GetToken();
+
+        if (string.IsNullOrEmpty(clientJwt))
+            clientJwt = PlayerPrefs.GetString("JWT_TOKEN", "");
+
+        return clientJwt;
+    }
+
+    private IEnumerator SyncInventoryToApiDirect(int playerId, APIClient.AddInventoryItemRequest[] items, string clientJwt, ulong targetClientId)
+    {
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/inventory/add";
+
+        var requestBody = new APIClient.AddInventoryItemsRequest
+        {
+            items = items
+        };
+
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(requestBody));
+
+        using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
+        req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", $"Bearer {clientJwt}");
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
+                ? req.downloadHandler.text
+                : req.error;
+            Debug.LogError($"[NetworkInventory] ❌ Direct sync inventory failed: {errorMessage}");
+            yield break;
+        }
+
+        Debug.Log($"[NetworkInventory] ✅ Direct sync inventory thành công: {req.downloadHandler.text}");
+        yield return PushInventoryDataToClientDirect(playerId, targetClientId);
+    }
+
+    private IEnumerator SortInventoryDirect(int playerId, ulong targetClientId)
+    {
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
+        string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/inventory/sort";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes("{}");
+
+        using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
+        req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("X-Zone-Api-Key", apiKey);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
+                ? req.downloadHandler.text
+                : req.error;
+            Debug.LogError($"[NetworkInventory] ❌ Direct sort inventory failed: {errorMessage}");
+            yield break;
+        }
+
+        Debug.Log($"[NetworkInventory] ✅ Direct sort inventory thành công: {req.downloadHandler.text}");
+        yield return PushInventoryDataToClientDirect(playerId, targetClientId);
+    }
+
+    private IEnumerator PushInventoryDataToClientDirect(int playerId, ulong targetClientId)
+    {
+        yield return FetchInventoryFromApiDirect(
+            playerId,
+            freshItems =>
+            {
+                string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = freshItems });
+                var clientParams = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientId } }
+                };
+                SendInventoryDataClientRpc(json, clientParams);
+                Debug.Log($"[NetworkInventory] 📡 Direct push {freshItems.Length} items về client {targetClientId}");
+            },
+            error => Debug.LogError($"[NetworkInventory] ❌ Direct push inventory thất bại cho clientId={targetClientId}: {error}")
+        );
+    }
+
+    private IEnumerator FetchInventoryFromApiDirect(int playerId, System.Action<InventoryItem[]> onSuccess, System.Action<string> onError = null)
+    {
+        string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? "http://localhost:5000/api";
+        string apiKey  = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
+        string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/data";
+
+        using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+        req.SetRequestHeader("X-Zone-Api-Key", apiKey);
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
+                ? req.downloadHandler.text
+                : req.error;
+            onError?.Invoke(errorMessage);
+            yield break;
+        }
+
+        try
+        {
+            var response = JsonUtility.FromJson<PlayerDataResponse>(req.downloadHandler.text);
+            onSuccess?.Invoke(response?.inventory ?? System.Array.Empty<InventoryItem>());
+        }
+        catch (System.Exception ex)
+        {
+            onError?.Invoke($"Parse player data failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Fallback cho dedicated server: gọi API trực tiếp khi APIClient.Instance null.
+    /// </summary>
+    private IEnumerator LoadInventoryFromApiDirect(int playerId)
+    {
+        yield return FetchInventoryFromApiDirect(
+            playerId,
+            items =>
+            {
+                if (items != null && items.Length > 0)
+                {
+                    Debug.Log($"[NetworkInventory] ✅ Load thành công {items.Length} items từ API (direct)!");
+                    PopulateInventoryFromDB(items);
+                }
+                else
+                {
+                    Debug.Log("[NetworkInventory] Inventory trong DB trống (player mới) — direct API.");
+                }
+            },
+            error => Debug.LogWarning($"[NetworkInventory] Direct API load failed: {error}")
+        );
     }
 
     /// <summary>
@@ -1056,6 +1231,9 @@ public struct NetworkInventoryData : INetworkSerializable
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
+        // Đảm bảo slotData không null khi serialize (tránh NullRef trên ItemPickup prefab)
+        if (serializer.IsWriter && slotData == null)
+            slotData = System.Array.Empty<InventorySlotData>();
         serializer.SerializeValue(ref slotData);
     }
 }

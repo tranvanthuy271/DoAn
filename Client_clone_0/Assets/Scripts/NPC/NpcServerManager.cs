@@ -41,6 +41,8 @@ public class NpcServerManager : MonoBehaviour
 
     /// <summary>Server-side cache: NetworkObjectId → NpcData (dùng để validate trong NpcInteraction).</summary>
     private readonly Dictionary<ulong, NpcData> _npcCache = new();
+    private readonly HashSet<string> _spawnedNpcKeys = new();
+    private bool _hasSpawned;
 
     public string ApiBase => apiBase;
 
@@ -83,19 +85,74 @@ public class NpcServerManager : MonoBehaviour
 
     private void SpawnAll()
     {
-        if (mapId == 0 && MapManager.Instance != null)
-            mapId = MapManager.Instance.GetMapId();
+        if (_hasSpawned)
+            return;
 
-        StartCoroutine(LoadAndSpawnNpcs());
+        _hasSpawned = true;
+        StartCoroutine(LoadAndSpawnConfiguredMaps());
     }
 
     // ─────────────────────────────────────────────────────────
 
-    private IEnumerator LoadAndSpawnNpcs()
+    private IEnumerator LoadAndSpawnConfiguredMaps()
     {
-        string url = $"{apiBase}/api/npc/list?mapId={mapId}";
+        foreach (int targetMapId in ResolveTargetMapIds())
+            yield return StartCoroutine(LoadAndSpawnNpcsForMap(targetMapId));
+    }
+
+    private IEnumerable<int> ResolveTargetMapIds()
+    {
+        var yielded = new HashSet<int>();
+
+        if (mapId >= 0)
+        {
+            int resolvedMapId = ResolveSingleMapId(mapId);
+            if (yielded.Add(resolvedMapId))
+                yield return resolvedMapId;
+            yield break;
+        }
+
+        MapWorldConfig config = ZoneRoomRegistry.Instance?.Config;
+        if (config != null && config.maps != null)
+        {
+            foreach (var mapDef in config.maps)
+            {
+                if (yielded.Add(mapDef.mapId))
+                    yield return mapDef.mapId;
+            }
+            yield break;
+        }
+
+        if (MapManager.Instance != null)
+        {
+            int currentMapId = MapManager.Instance.GetMapId();
+            if (yielded.Add(currentMapId))
+                yield return currentMapId;
+        }
+    }
+
+    private int ResolveSingleMapId(int configuredMapId)
+    {
+        if (configuredMapId == 0 && MapManager.Instance != null && !IsDedicatedWorldServer())
+            return MapManager.Instance.GetMapId();
+
+        return configuredMapId;
+    }
+
+    private IEnumerator LoadAndSpawnNpcsForMap(int targetMapId)
+    {
+        string url = $"{apiBase}/api/npc/list?mapId={targetMapId}";
         using var req = UnityWebRequest.Get(url);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        if (IsDedicatedWorldServer())
+        {
+            string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey();
+            if (!string.IsNullOrWhiteSpace(apiKey))
+                req.SetRequestHeader("X-Zone-Api-Key", apiKey);
+        }
+        else
+        {
+            req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
@@ -118,10 +175,12 @@ public class NpcServerManager : MonoBehaviour
 
         if (resp?.npcs == null)
         {
-            Debug.LogWarning($"[NpcServerManager] Không có NPC nào cho mapId={mapId}.");
+            Debug.LogWarning($"[NpcServerManager] Không có NPC nào cho mapId={targetMapId}.");
             yield break;
         }
 
+        // Spawn MỖI NPC đúng 1 lần cho cả map — KHÔNG nhân bản theo zone.
+        // Visibility sẽ filter theo MAP (tất cả player cùng map thấy NPC, bất kể zone nào).
         foreach (var npc in resp.npcs)
         {
             var prefab = GetPrefab(npc);
@@ -131,28 +190,72 @@ public class NpcServerManager : MonoBehaviour
                 continue;
             }
 
-            var obj    = Instantiate(prefab, new Vector3(npc.pos_x, npc.pos_y, 0f), Quaternion.identity);
-            var netObj = obj.GetComponent<NetworkObject>();
-            if (netObj == null)
-            {
-                Debug.LogError($"[NpcServerManager] Prefab '{prefab.name}' thiếu NetworkObject component! Thêm NetworkObject vào prefab và đăng ký trong NetworkManager → NetworkPrefabs.");
-                Destroy(obj);
-                continue;
-            }
-
-            netObj.Spawn();   // chỉ server gọi được — client nhận bản sao tự động qua NGO
-
-            var inter = obj.GetComponent<NpcInteraction>();
-            if (inter != null)
-                inter.InitOnServer(npc);
-
-            _npcCache[netObj.NetworkObjectId] = npc;
-
-            Debug.Log($"[NpcServerManager] Spawned '{npc.npc_name}' ({npc.npc_type}) tại ({npc.pos_x}, {npc.pos_y})");
+            SpawnNpcInstance(prefab, npc, targetMapId);
         }
 
-        Debug.Log($"[NpcServerManager] Đã spawn {resp.npcs.Length} NPC trên mapId={mapId}.");
+        Debug.Log($"[NpcServerManager] Đã spawn {resp.npcs.Length} NPC(s) trên mapId={targetMapId}.");
     }
+
+    private void SpawnNpcInstance(GameObject prefab, NpcData npc, int targetMapId)
+    {
+        string spawnKey = $"map{targetMapId}_npc{npc.npc_id}";
+        if (!_spawnedNpcKeys.Add(spawnKey))
+            return;
+
+        var obj = Instantiate(prefab, new Vector3(npc.pos_x, npc.pos_y, 0f), Quaternion.identity);
+        var netObj = obj.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogError($"[NpcServerManager] Prefab '{prefab.name}' thiếu NetworkObject! Destroy.");
+            Destroy(obj);
+            return;
+        }
+
+        // Server-side: tắt physics (NPC là static, không cần Rigidbody2D trên server)
+        var rb = obj.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.simulated = false;
+        }
+
+        // Gắn map-based visibility (visible cho TẤT CẢ player cùng map, bất kể zone)
+        ApplyMapVisibility(obj, targetMapId);
+
+        netObj.Spawn();
+        StartCoroutine(DelayedRefreshVisibility(obj));
+
+        var inter = obj.GetComponent<NpcInteraction>();
+        if (inter != null)
+            inter.InitOnServer(npc);
+
+        _npcCache[netObj.NetworkObjectId] = npc;
+
+        Debug.Log($"[NpcServerManager] Spawned '{npc.npc_name}' ({npc.npc_type}) tại ({npc.pos_x}, {npc.pos_y}) map={targetMapId}");
+    }
+
+    /// <summary>
+    /// Gắn map-based visibility: NPC visible cho TẤT CẢ player cùng map (bất kể zone).
+    /// Zone chỉ dùng để isolate player-to-player, không dùng cho NPC/Enemy.
+    /// </summary>
+    private static void ApplyMapVisibility(GameObject obj, int targetMapId)
+    {
+        var zoneTag = obj.GetComponent<ZoneOwnerTag>() ?? obj.AddComponent<ZoneOwnerTag>();
+        zoneTag.SetZone(targetMapId, 0);
+
+        var filter = obj.GetComponent<NetworkVisibilityZoneFilter>() ?? obj.AddComponent<NetworkVisibilityZoneFilter>();
+        filter.InitializeForServer();
+    }
+
+    private IEnumerator DelayedRefreshVisibility(GameObject obj)
+    {
+        yield return null;
+        if (obj != null)
+            obj.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
+    }
+
+    private static bool IsDedicatedWorldServer()
+        => FindAnyObjectByType<MapWorldBootstrap>() != null;
 
     private GameObject GetPrefab(NpcData npc)
     {

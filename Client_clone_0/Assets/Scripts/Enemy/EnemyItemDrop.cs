@@ -62,6 +62,15 @@ public class EnemyItemDrop : MonoBehaviour
     /// </summary>
     private void OnEnemyDeath()
     {
+        HandleDeathDrop();
+    }
+
+    /// <summary>
+    /// Dedicated server không nhận ClientRpc như host/client, nên NetworkEnemyHealth
+    /// gọi trực tiếp method này để đảm bảo nhánh drop luôn chạy trên server.
+    /// </summary>
+    public void HandleDeathDrop()
+    {
         if (hasDropped) return;
         hasDropped = true;
 
@@ -130,15 +139,7 @@ public class EnemyItemDrop : MonoBehaviour
         // Instantiate trước
         GameObject itemObj = Instantiate(itemPickupPrefab, spawnPosition, Quaternion.identity);
 
-        // QUAN TRỌNG: Set item data TRƯỚC khi Spawn() để initial spawn packet gửi đến client
-        // đã có networkItemId đúng — tránh client nhận id=0 rồi mới nhận delta update.
-        ItemPickup itemPickup = itemObj.GetComponent<ItemPickup>();
-        if (itemPickup != null)
-        {
-            itemPickup.SetItemId(itemId, quantity);
-        }
-
-        // Spawn network object sau khi data đã được set
+        // Spawn network object TRƯỚC, sau đó mới set data
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
         {
             NetworkObject networkObject = itemObj.GetComponent<NetworkObject>();
@@ -146,6 +147,13 @@ public class EnemyItemDrop : MonoBehaviour
             {
                 networkObject.Spawn();
             }
+        }
+
+        // Set item data SAU khi Spawn() — tránh warning "NetworkVariable written before spawn"
+        ItemPickup itemPickup = itemObj.GetComponent<ItemPickup>();
+        if (itemPickup != null)
+        {
+            itemPickup.SetItemId(itemId, quantity);
         }
 
         // Không dùng AddForce — item ở nguyên vị trí spawn (gravityScale=0)

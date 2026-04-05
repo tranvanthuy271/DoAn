@@ -75,7 +75,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     /// <summary>
     /// Gọi từ ZoneConnectionApprovalV2 khi client được approve.
     /// </summary>
-    public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId)
+    public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null)
     {
         lock (_lock)
         {
@@ -84,7 +84,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                 UserId   = userId,
                 Username = username,
                 MapId    = mapId,
-                ZoneId   = zoneId
+                ZoneId   = zoneId,
+                JwtToken = jwtToken ?? string.Empty
             };
         }
     }
@@ -108,6 +109,15 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s.UserId : null;
+    }
+
+    /// <summary>
+    /// Trả về JWT token của client (để game server gọi REST API thay mặt client).
+    /// </summary>
+    public string GetClientJwt(ulong clientId)
+    {
+        lock (_lock)
+            return _activeSessions.TryGetValue(clientId, out var s) ? s.JwtToken : null;
     }
 
     /// <summary>
@@ -240,6 +250,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             {
                 ClientId      = clientId,
                 UserId        = userInfo.UserId,
+                JwtToken      = userInfo.JwtToken,
                 NetworkObject = netObj,
                 MapId         = userInfo.MapId,
                 ZoneId        = userInfo.ZoneId
@@ -247,6 +258,10 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
 
         _approvedUsers.Remove(clientId);
+
+        foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
+            filter.RefreshVisibility();
+
         Debug.Log($"[ZonePlayerSessionManager] ✓ Spawned player clientId={clientId} " +
                   $"userId={userInfo.UserId} at {spawnPos}");
     }
@@ -349,12 +364,14 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public string Username;
         public int    MapId;
         public int    ZoneId;
+        public string JwtToken;
     }
 
     public class PlayerSession
     {
         public ulong         ClientId;
         public string        UserId;
+        public string        JwtToken;
         public NetworkObject NetworkObject;
         public int           MapId;
         public int           ZoneId;
@@ -380,13 +397,49 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int    gene_tier;
         public int    gene_exp;
         public bool   is_hybrid;
-        public string hybrid_prefab_path; // Resources path cho hybrid prefab (từ gene_hybrid_config)
-        // final_stats sub-object không serialize tự động với JsonUtility
-        // → dùng custom parse nếu cần, hoặc chỉ đọc raw fields ở đây
+        public string hybrid_prefab_path;
+
+        // Nested sub-objects — JsonUtility hỗ trợ [Serializable] class
+        public FinalStatsDto final_stats;
+        public BaseStatsDto  base_stats;
+
+        // Flat fields cho backward compat
         public int    hp;
         public int    max_hp;
         public int    mp;
         public int    max_mp;
+
+        /// <summary>Lấy max_hp đúng: ưu tiên final_stats, fallback flat field.</summary>
+        public int GetMaxHp() => final_stats != null && final_stats.max_hp > 0 ? final_stats.max_hp : max_hp;
+        public int GetMaxMp() => final_stats != null && final_stats.max_mp > 0 ? final_stats.max_mp : max_mp;
+        public int GetHp()    => final_stats != null && final_stats.hp > 0 ? final_stats.hp : hp;
+        public int GetMp()    => final_stats != null && final_stats.mp > 0 ? final_stats.mp : mp;
+        public int GetAttack()   => final_stats != null ? final_stats.attack : 10;
+        public int GetDefense()  => final_stats != null ? final_stats.defense : 0;
+        public float GetMoveSpeed() => final_stats != null && final_stats.move_speed > 0 ? final_stats.move_speed : 5f;
+    }
+
+    [Serializable]
+    public class FinalStatsDto
+    {
+        public int   hp;
+        public int   max_hp;
+        public int   mp;
+        public int   max_mp;
+        public int   attack;
+        public int   defense;
+        public float move_speed;
+    }
+
+    [Serializable]
+    public class BaseStatsDto
+    {
+        public int hp;
+        public int max_hp;
+        public int mp;
+        public int max_mp;
+        public int attack;
+        public int defense;
     }
 }
 

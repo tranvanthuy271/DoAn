@@ -189,6 +189,12 @@ public class ItemPickup : NetworkBehaviour
     /// <summary>Gửi pickup request — server sẽ tự biết ai gửi qua SenderClientId.</summary>
     private void DoPickupByLocalPlayer()
     {
+        if (!canPickup.Value)
+        {
+            Debug.Log("[ItemPickup] Click ignored: item đang được xử lý nhặt hoặc đã bị khóa.");
+            return;
+        }
+
         Debug.Log($"[ItemPickup] Click: gửi PickupByClickServerRpc item_id={networkItemId.Value}");
         PickupByClickServerRpc();
     }
@@ -214,10 +220,7 @@ public class ItemPickup : NetworkBehaviour
         var inv = netObj.GetComponent<NetworkInventory>();
         if (inv == null) return;
 
-        canPickup.Value = false;
-        inv.AddItemServerRpc(idToPickup, networkQuantity.Value);
-        DespawnItemClientRpc();
-        Debug.Log($"[ItemPickup] AutoPickup: player {netObj.NetworkObjectId} nhặt {networkQuantity.Value}x item_id={idToPickup}");
+        ExecutePickup(netObj);
     }
 
     /// <summary>
@@ -288,7 +291,9 @@ public class ItemPickup : NetworkBehaviour
         foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
         {
             var no = kvp.Value;
-            if (no.OwnerClientId == clientId && no.GetComponent<NetworkInventory>() != null)
+            if (no.OwnerClientId == clientId
+                && no.GetComponent<NetworkInventory>() != null
+                && no.GetComponent<ItemPickup>() == null)  // bỏ qua item drop có NetworkInventory
                 return no;
         }
         return null;
@@ -333,8 +338,17 @@ public class ItemPickup : NetworkBehaviour
         }
 
         canPickup.Value = false;
-        inventory.AddItemServerRpc(itemIdToPickup, networkQuantity.Value);
+        if (!inventory.TryAddItemOnServer(itemIdToPickup, networkQuantity.Value))
+        {
+            canPickup.Value = true;
+            Debug.LogWarning($"[ItemPickup][Server] Không thể thêm item_id={itemIdToPickup} vào inventory của player {playerObject.NetworkObjectId}. Hủy pickup.");
+            return;
+        }
+
+        // Dedicated server không chạy ClientRpc trên chính server process,
+        // nên phải tự schedule despawn local ở đây.
         DespawnItemClientRpc();
+        Invoke(nameof(DespawnItem), 0.3f);
         Debug.Log($"[ItemPickup][Server] Nhặt thành công: player {playerObject.NetworkObjectId} lấy {networkQuantity.Value}x item_id={itemIdToPickup}");
     }
 
@@ -348,8 +362,6 @@ public class ItemPickup : NetworkBehaviour
 
         if (animator != null)
             animator.SetTrigger("Pickup");
-
-        Invoke(nameof(DespawnItem), 0.3f);
     }
 
     /// <summary>

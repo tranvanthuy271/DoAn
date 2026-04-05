@@ -75,20 +75,17 @@ public class DotDamage : NetworkBehaviour
 
         if (hasHit) return;
 
-        if (collision.CompareTag("Enemy"))
-        {
-            EnemyHealth eh = collision.GetComponent<EnemyHealth>();
-            NetworkEnemyHealth neh = collision.GetComponent<NetworkEnemyHealth>();
+        // Component-based detection (khong phu thuoc tag)
+        EnemyHealth eh = collision.GetComponentInParent<EnemyHealth>();
+        NetworkEnemyHealth neh = collision.GetComponentInParent<NetworkEnemyHealth>();
 
-            if (eh != null || neh != null)
-            {
-                hasHit = true;
-                // Đồng bộ hit animation sang tất cả client
-                MarkHitClientRpc();
-                StartCoroutine(ApplyDotEnemy(eh, neh));
-                if (destroyOnHit)
-                    StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
-            }
+        if (eh != null || neh != null)
+        {
+            hasHit = true;
+            MarkHitClientRpc();
+            StartCoroutine(ApplyDotEnemy(eh, neh));
+            if (destroyOnHit)
+                StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
         }
         else if (collision.CompareTag("Player"))
         {
@@ -97,8 +94,8 @@ public class DotDamage : NetworkBehaviour
             if (targetNetObj != null && ownerNetworkObjectId != 0 && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
                 return;
 
-            NetworkPlayerHealth nph = collision.GetComponent<NetworkPlayerHealth>();
-            PlayerHealth ph = collision.GetComponent<PlayerHealth>();
+            NetworkPlayerHealth nph = collision.GetComponentInParent<NetworkPlayerHealth>();
+            PlayerHealth ph = collision.GetComponentInParent<PlayerHealth>();
 
             if (nph != null || ph != null)
             {

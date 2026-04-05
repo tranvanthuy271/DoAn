@@ -96,27 +96,29 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// ServerRpc: Client yêu cầu server gây damage
     /// Chỉ server mới có thể thực sự trừ HP
     /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void TakeDamageServerRpc(int damage, ServerRpcParams rpcParams = default)
+    /// <summary>
+    /// Internal: Xử lý damage trên server (không qua RPC).
+    /// </summary>
+    private void TakeDamageInternal(int damage, ulong attackerClientId)
     {
-        // Không nhận damage nếu đã chết
         if (networkCurrentHealth.Value <= 0 || isDead) return;
 
-        // Ghi nhớ người đánh cuối để cứu xét EXP
-        _lastAttackerClientId = rpcParams.Receive.SenderClientId;
+        if (attackerClientId != ulong.MaxValue)
+            _lastAttackerClientId = attackerClientId;
 
-        // Server trừ HP
         int newHealth = networkCurrentHealth.Value - damage;
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;
 
-        // Notify clients về damage
         OnTakeDamageClientRpc(damage);
 
         Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
+    }
 
-        // Không gọi HandleDeath() ở đây nữa - để OnHealthValueChanged xử lý
-        // Tránh gọi death nhiều lần
+    [ServerRpc(RequireOwnership = false)]
+    public void TakeDamageServerRpc(int damage, ServerRpcParams rpcParams = default)
+    {
+        TakeDamageInternal(damage, rpcParams.Receive.SenderClientId);
     }
 
     /// <summary>
@@ -137,6 +139,19 @@ public class NetworkEnemyHealth : NetworkBehaviour
         isDead = true;
 
         Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} died! ExpReward={ExpReward} Attacker={_lastAttackerClientId}");
+
+        if (IsServer)
+        {
+            try
+            {
+                var itemDrop = GetComponent<EnemyItemDrop>();
+                itemDrop?.HandleDeathDrop();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[NetworkEnemyHealth] HandleDeathDrop failed: {ex.Message}");
+            }
+        }
 
         // Notify clients — play Die animation trước khi xóa
         OnDeathClientRpc();
@@ -245,7 +260,10 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// </summary>
     public void TakeDamage(int damage)
     {
-        TakeDamageServerRpc(damage);
+        if (IsServer)
+            TakeDamageInternal(damage, ulong.MaxValue);
+        else
+            TakeDamageServerRpc(damage);
     }
 
     /// <summary>

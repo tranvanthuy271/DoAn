@@ -51,8 +51,8 @@ public class BarrageBulletDamage : NetworkBehaviour
             && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
             return;
 
-        // Ưu tiên NetworkEnemyHealth (multiplayer)
-        var netHealth = other.GetComponent<NetworkEnemyHealth>();
+        // Ưu tiên NetworkEnemyHealth (multiplayer, tìm cả parent)
+        var netHealth = other.GetComponentInParent<NetworkEnemyHealth>();
         if (netHealth != null)
         {
             _hasHit = true;
@@ -62,7 +62,7 @@ public class BarrageBulletDamage : NetworkBehaviour
         }
 
         // Fallback: EnemyHealth cũ (single-player / local test)
-        var localHealth = other.GetComponent<EnemyHealth>();
+        var localHealth = other.GetComponentInParent<EnemyHealth>();
         if (localHealth != null)
         {
             _hasHit = true;
@@ -74,7 +74,7 @@ public class BarrageBulletDamage : NetworkBehaviour
         // PvP: gây damage cho player khác
         if (other.CompareTag("Player"))
         {
-            var netPlayer = other.GetComponent<NetworkPlayerHealth>();
+            var netPlayer = other.GetComponentInParent<NetworkPlayerHealth>();
             if (netPlayer != null)
             {
                 _hasHit = true;

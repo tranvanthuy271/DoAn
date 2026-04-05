@@ -87,6 +87,8 @@ public class PeriodicSyncService : NetworkBehaviour
             string jwtOverride = "";
             if (ServerPlayerDataManager.Instance != null)
                 jwtOverride = ServerPlayerDataManager.Instance.GetClientJwt(player.OwnerClientId);
+            if (string.IsNullOrEmpty(jwtOverride) && ZonePlayerSessionManager.Instance != null)
+                jwtOverride = ZonePlayerSessionManager.Instance.GetClientJwt(player.OwnerClientId) ?? "";
             if (string.IsNullOrEmpty(jwtOverride) && APIClient.Instance != null)
                 jwtOverride = APIClient.Instance.GetToken();
 
@@ -190,6 +192,12 @@ public class PeriodicSyncService : NetworkBehaviour
             if (ServerPlayerDataManager.Instance != null)
             {
                 string playerJwt = ServerPlayerDataManager.Instance.GetClientJwt(player.OwnerClientId);
+                if (!string.IsNullOrEmpty(playerJwt))
+                    jwtOverride = playerJwt;
+            }
+            if (string.IsNullOrEmpty(jwtOverride) && ZonePlayerSessionManager.Instance != null)
+            {
+                string playerJwt = ZonePlayerSessionManager.Instance.GetClientJwt(player.OwnerClientId);
                 if (!string.IsNullOrEmpty(playerJwt))
                     jwtOverride = playerJwt;
             }

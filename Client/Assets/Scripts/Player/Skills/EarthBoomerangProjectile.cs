@@ -128,8 +128,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         int finalDamage = damage > 0 ? damage : 50;
 
         // Damage enemy
-        var netEnemy = other.GetComponent<NetworkEnemyHealth>()
-                    ?? other.GetComponentInParent<NetworkEnemyHealth>();
+        var netEnemy = other.GetComponentInParent<NetworkEnemyHealth>();
         if (netEnemy != null) { netEnemy.TakeDamage(finalDamage); return; }
 
         var localEnemy = other.GetComponent<EnemyHealth>()

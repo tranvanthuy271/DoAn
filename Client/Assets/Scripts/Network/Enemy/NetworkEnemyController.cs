@@ -43,6 +43,9 @@ public class NetworkEnemyController : NetworkBehaviour
             {
                 rb.bodyType = RigidbodyType2D.Dynamic;
             }
+            // Tắt gravity để enemy không rơi (server đã set gravityScale=0,
+            // client cũng phải tắt vì Awake chạy trên mọi instance)
+            rb.gravityScale = 0f;
         }
     }
 

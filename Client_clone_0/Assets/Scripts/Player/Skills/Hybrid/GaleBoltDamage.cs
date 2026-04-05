@@ -47,8 +47,8 @@ public class GaleBoltDamage : MonoBehaviour
             && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
             return;
 
-        // Multiplayer enemy
-        var netHealth = other.GetComponent<NetworkEnemyHealth>();
+        // Multiplayer enemy (tìm trên object hoặc parent — collider có thể ở child)
+        var netHealth = other.GetComponentInParent<NetworkEnemyHealth>();
         if (netHealth != null)
         {
             netHealth.TakeDamage(damage);
@@ -58,7 +58,7 @@ public class GaleBoltDamage : MonoBehaviour
         }
 
         // Fallback: EnemyHealth cũ
-        var localHealth = other.GetComponent<EnemyHealth>();
+        var localHealth = other.GetComponentInParent<EnemyHealth>();
         if (localHealth != null)
         {
             localHealth.TakeDamage(damage);
@@ -70,7 +70,7 @@ public class GaleBoltDamage : MonoBehaviour
         // PvP: gây damage cho player khác
         if (other.CompareTag("Player"))
         {
-            var netPlayer = other.GetComponent<NetworkPlayerHealth>();
+            var netPlayer = other.GetComponentInParent<NetworkPlayerHealth>();
             if (netPlayer != null)
             {
                 netPlayer.TakeDamage(damage);

@@ -318,7 +318,9 @@ public class BossAI : MonoBehaviour
         foreach (var col in colliders)
         {
             if (!col.CompareTag("Player")) continue;
-            var ph = col.GetComponent<PlayerHealth>();
+            var nph = col.GetComponentInParent<NetworkPlayerHealth>();
+            if (nph != null) { nph.TakeDamage(dmg); continue; }
+            var ph = col.GetComponentInParent<PlayerHealth>();
             ph?.TakeDamage(dmg);
         }
 

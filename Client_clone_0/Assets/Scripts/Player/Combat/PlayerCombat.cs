@@ -168,6 +168,9 @@ public class PlayerCombat : MonoBehaviour
         }
         foreach (Collider2D enemy in hitEnemies)
         {
+            // Bỏ qua chính mình — enemyLayers mask có thể bao gồm Player layer
+            if (enemy.transform.root == transform.root) continue;
+
             Debug.Log($"Hit {enemy.name} for {damage} damage");
             
             // Try to damage enemy - Ưu tiên dùng NetworkEnemyHealth (network sync)
@@ -204,7 +207,7 @@ public class PlayerCombat : MonoBehaviour
             NetworkObject hitNetObj = hit.GetComponent<NetworkObject>();
             if (selfNetObj != null && hitNetObj != null && hitNetObj.NetworkObjectId == selfNetObj.NetworkObjectId) continue;
             if (!hit.CompareTag("Player")) continue;
-            var netPlayer = hit.GetComponent<NetworkPlayerHealth>();
+            var netPlayer = hit.GetComponentInParent<NetworkPlayerHealth>();
             if (netPlayer != null)
             {
                 netPlayer.TakeDamage(damage);

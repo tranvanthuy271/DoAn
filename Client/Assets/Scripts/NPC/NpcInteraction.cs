@@ -126,9 +126,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
     private IEnumerator FetchDialogueAndSend(NpcData data, ulong clientId)
     {
-        int userId = ServerPlayerDataManager.Instance != null
-            ? ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId)
-            : PlayerPrefs.GetInt("USER_ID");
+        int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
@@ -171,9 +169,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         NpcData data = _npcData;
         if (data == null) yield break;
 
-        int userId = ServerPlayerDataManager.Instance != null
-            ? ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId)
-            : PlayerPrefs.GetInt("USER_ID");
+        int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? "http://localhost:5000";
@@ -209,9 +205,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private IEnumerator ProcessBuy(ulong clientId, int shopItemId, int quantity)
     {
         NpcData data = _npcData;
-        int userId = ServerPlayerDataManager.Instance != null
-            ? ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId)
-            : PlayerPrefs.GetInt("USER_ID");
+        int userId = ResolveClientUserId(clientId);
 
         if (data == null)
         {
@@ -275,15 +269,43 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
     };
 
+    private static int ResolveClientUserId(ulong clientId)
+    {
+        // 1. ServerPlayerDataManager (host mode)
+        if (ServerPlayerDataManager.Instance != null)
+        {
+            int uid = ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId);
+            if (uid > 0) return uid;
+        }
+
+        // 2. ZonePlayerSessionManager (dedicated 1-port server)
+        if (ZonePlayerSessionManager.Instance != null)
+        {
+            string s = ZonePlayerSessionManager.Instance.GetPlayerId(clientId);
+            if (!string.IsNullOrEmpty(s) && int.TryParse(s, out int uid)) return uid;
+        }
+
+        // 3. Fallback: PlayerPrefs (chỉ đúng khi host call cho chính mình)
+        return PlayerPrefs.GetInt("USER_ID", 0);
+    }
+
     private static string ResolveClientJwt(ulong clientId)
     {
+        // 1. ServerPlayerDataManager (host mode)
         if (ServerPlayerDataManager.Instance != null)
         {
             string jwt = ServerPlayerDataManager.Instance.GetClientJwt(clientId);
-            if (!string.IsNullOrEmpty(jwt))
-                return jwt;
+            if (!string.IsNullOrEmpty(jwt)) return jwt;
         }
 
+        // 2. ZonePlayerSessionManager (dedicated 1-port server)
+        if (ZonePlayerSessionManager.Instance != null)
+        {
+            string jwt = ZonePlayerSessionManager.Instance.GetClientJwt(clientId);
+            if (!string.IsNullOrEmpty(jwt)) return jwt;
+        }
+
+        // 3. Fallback: JWT của chính process (chỉ đúng khi là chính host/self)
         return PlayerPrefs.GetString("JWT_TOKEN", "");
     }
 

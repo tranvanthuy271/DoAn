@@ -6,7 +6,7 @@ using Unity.Collections;
 /// Đồng bộ player data (element_type, gender, character_name, stats) từ API qua NetworkVariable
 /// Shared script - dùng cho cả client và server
 /// </summary>
-public class NetworkPlayerDataSync : NetworkBehaviour
+public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 {
     [Header("Player Data (Synced)")]
     public NetworkVariable<int> networkPlayerId = new NetworkVariable<int>(0);
@@ -268,6 +268,41 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     }
 
     /// <summary>
+    /// IPlayerDataReceiver — gọi bởi ZonePlayerSessionManager ngay sau khi spawn.
+    /// Đẩy data từ API trực tiếp vào NetworkVariable mà không cần ServerPlayerDataManager.
+    /// </summary>
+    public void OnPlayerDataLoaded(ZonePlayerSessionManager.PlayerDataResponse data, ulong clientId)
+    {
+        if (!IsServer || data == null) return;
+
+        networkPlayerId.Value      = data.player_id;
+        networkElementType.Value   = (Unity.Collections.FixedString32Bytes)(data.element_type ?? "Fire");
+        networkGender.Value        = (Unity.Collections.FixedString32Bytes)(data.gender ?? "Male");
+        networkCharacterName.Value = (Unity.Collections.FixedString64Bytes)(data.character_name ?? "");
+        networkLevel.Value         = data.level;
+        networkGeneTier.Value      = data.gene_tier;
+
+        // Stats — ưu tiên final_stats (đã có buff), fallback flat fields
+        networkMaxHp.Value     = data.GetMaxHp();
+        networkHp.Value        = data.GetHp();
+        networkMaxMp.Value     = data.GetMaxMp();
+        networkMp.Value        = data.GetMp();
+        networkAttack.Value    = data.GetAttack();
+        networkDefense.Value   = data.GetDefense();
+        networkMoveSpeed.Value = data.GetMoveSpeed();
+
+        // Sync vào NetworkPlayerHealth
+        var nph = GetComponent<NetworkPlayerHealth>();
+        if (nph != null)
+        {
+            nph.SetMaxHealth(networkMaxHp.Value);
+            nph.SetHealth(networkHp.Value);
+        }
+
+        Debug.Log($"[NetworkPlayerDataSync] IPlayerDataReceiver → {data.character_name} HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} ATK={networkAttack.Value}");
+    }
+
+    /// <summary>
     /// Apply player data vào PlayerController và các components khác
     /// </summary>
     private void ApplyPlayerData()
@@ -461,6 +496,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour
     {
         if (newMaxHp > 0) networkMaxHp.Value = newMaxHp;
         if (newMaxMp > 0) networkMaxMp.Value = newMaxMp;
+
+        // Đồng bộ maxHealth sang NetworkPlayerHealth để HP bar hiển thị đúng
+        if (newMaxHp > 0)
+        {
+            var nph = GetComponent<NetworkPlayerHealth>();
+            if (nph != null) nph.SetMaxHealth(newMaxHp);
+        }
+
         Debug.Log($"[NetworkPlayerDataSync] UpdateMaxHpMp → maxHp={newMaxHp} maxMp={newMaxMp}");
     }
 

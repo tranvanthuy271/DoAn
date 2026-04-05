@@ -58,41 +58,23 @@ public class FireballDamage : MonoBehaviour
 
         int finalDamage = damage + damage * attackBonusPercent / 100;
 
-        // Check náº¿u va cháº¡m vá»›i enemy
-        if (collision.CompareTag("Enemy"))
+        // Check enemy: component-based detection (khong phu thuoc tag)
+        NetworkEnemyHealth networkEnemyHealth = collision.GetComponentInParent<NetworkEnemyHealth>();
+        EnemyHealth enemyHealth = collision.GetComponentInParent<EnemyHealth>();
+
+        if (networkEnemyHealth != null)
         {
-            // TÃ¬m component EnemyHealth hoáº·c NetworkEnemyHealth
-            EnemyHealth enemyHealth = collision.GetComponent<EnemyHealth>();
-            NetworkEnemyHealth networkEnemyHealth = collision.GetComponent<NetworkEnemyHealth>();
-
-            if (enemyHealth != null)
-            {
-                // Standalone mode: dÃ¹ng EnemyHealth
-                enemyHealth.TakeDamage(finalDamage);
-                hasHit = true;
-                Debug.Log($"[FireballDamage] Fireball Ä‘Ã£ damage enemy {collision.name} vá»›i {damage} damage!");
-
-                if (destroyOnHit)
-                {
-                    Destroy(gameObject);
-                }
-            }
-            else if (networkEnemyHealth != null)
-            {
-                // Network mode: dÃ¹ng NetworkEnemyHealth
-                networkEnemyHealth.TakeDamage(finalDamage);
-                hasHit = true;
-                Debug.Log($"[FireballDamage] Fireball Ä‘Ã£ damage enemy {collision.name} vá»›i {damage} damage! (Network)");
-
-                if (destroyOnHit)
-                {
-                    Destroy(gameObject);
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[FireballDamage] Enemy {collision.name} khÃ´ng cÃ³ EnemyHealth hoáº·c NetworkEnemyHealth component!");
-            }
+            networkEnemyHealth.TakeDamage(finalDamage);
+            hasHit = true;
+            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network)");
+            if (destroyOnHit) Destroy(gameObject);
+        }
+        else if (enemyHealth != null)
+        {
+            enemyHealth.TakeDamage(finalDamage);
+            hasHit = true;
+            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage!");
+            if (destroyOnHit) Destroy(gameObject);
         }        // Check va cháº¡m vá»›i Player (PvP)
         else if (collision.CompareTag("Player"))
         {
@@ -102,7 +84,7 @@ public class FireballDamage : MonoBehaviour
                 return;
 
             // Network mode: dÃ¹ng NetworkPlayerHealth
-            NetworkPlayerHealth networkPlayerHealth = collision.GetComponent<NetworkPlayerHealth>();
+            NetworkPlayerHealth networkPlayerHealth = collision.GetComponentInParent<NetworkPlayerHealth>();
             if (networkPlayerHealth != null)
             {
                 networkPlayerHealth.TakeDamage(finalDamage);
@@ -113,7 +95,7 @@ public class FireballDamage : MonoBehaviour
             }
 
             // Standalone mode: dÃ¹ng PlayerHealth
-            PlayerHealth playerHealth = collision.GetComponent<PlayerHealth>();
+            PlayerHealth playerHealth = collision.GetComponentInParent<PlayerHealth>();
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(finalDamage);

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
@@ -182,6 +183,11 @@ public class ZoneTransitionController : NetworkBehaviour
         ZonePlayerSessionManager.Instance?.UpdateZone(clientId, targetRoom.MapId, targetRoom.ZoneId);
         Debug.Log($"[ZoneTransitionController] Client {clientId} → map{targetRoom.MapId}_zone{targetRoom.ZoneId} ({entry})");
 
+        // 7b. Di chuyển player NetworkObject server-side đến vị trí mới
+        var session = ZonePlayerSessionManager.Instance?.GetSession(clientId);
+        if (session?.NetworkObject != null)
+            session.NetworkObject.transform.position = new Vector3(entry.x, entry.y, 0);
+
         // 8. Refresh NGO visibility (players, enemies, items trong zone cũ/mới)
         RefreshVisibilityForClient(clientId);
 
@@ -262,16 +268,8 @@ public class ZoneTransitionController : NetworkBehaviour
     /// </summary>
     private void RefreshVisibilityForClient(ulong movedClientId)
     {
-        foreach (var netObj in FindObjectsByType<NetworkObject>(FindObjectsSortMode.None))
-        {
-            if (!netObj.IsSpawned) continue;
-            var filter = netObj.GetComponent<NetworkVisibilityZoneFilter>();
-            if (filter != null)
-            {
-                netObj.NetworkShow(movedClientId);  // NGO sẽ re-evaluate CheckObjectVisibility
-                // NetworkHide/NetworkShow triggers OnNetworkObjectVisibilityChanged
-            }
-        }
+        foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
+            filter.RefreshVisibility();
     }
 
     private static ClientRpcParams BuildSingleClientRpcParams(ulong clientId) =>
@@ -291,9 +289,10 @@ public class ZoneTransitionController : NetworkBehaviour
         string playerId = ZonePlayerSessionManager.Instance?.GetPlayerId(clientId) ?? clientId.ToString();
         if (!int.TryParse(playerId, out int playerIdInt)) yield break;
 
-        // body theo PUT /api/player/{id}/position
+        // body theo PUT /api/player/{id}/position (dùng InvariantCulture tránh locale dùng dấu phẩy)
         string body = $"{{\"map_id\":{room.MapId},\"zone_id\":{room.ZoneId},"
-                      + $"\"position_x\":{pos.x:F2},\"position_y\":{pos.y:F2}}}";
+                      + $"\"position_x\":{pos.x.ToString("F2", CultureInfo.InvariantCulture)},"
+                      + $"\"position_y\":{pos.y.ToString("F2", CultureInfo.InvariantCulture)}}}";
 
         string url = $"{_config.apiBaseUrl.TrimEnd('/')}/player/{playerIdInt}/position";
         using var req = new UnityEngine.Networking.UnityWebRequest(url, "PUT")

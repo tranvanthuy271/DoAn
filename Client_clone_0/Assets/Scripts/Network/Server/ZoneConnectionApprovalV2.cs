@@ -109,7 +109,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
 
         // 7 — Lưu session (userId, username)
         ZonePlayerSessionManager.Instance?.RegisterSession(clientId, result.UserId, result.Username,
-            room.MapId, room.ZoneId);
+            room.MapId, room.ZoneId, token);
 
         Debug.Log($"[ZoneConnectionApprovalV2] ✓ Client {clientId} ({result.Username}) " +
                   $"→ map{room.MapId}_zone{room.ZoneId}");

@@ -404,12 +404,27 @@ namespace GameServerApi.Controllers
 
             // Deserialize JSONs để trả về đã parse (tránh double-encode string)
             object spawnsObj;
-            object dropsObj;
             try { spawnsObj = JsonSerializer.Deserialize<object>(config.SpawnJson) ?? Array.Empty<object>(); }
             catch (JsonException) { spawnsObj = Array.Empty<object>(); }
 
-            try { dropsObj = JsonSerializer.Deserialize<object>(config.DropJson) ?? Array.Empty<object>(); }
-            catch (JsonException) { dropsObj = Array.Empty<object>(); }
+            // drop_json: nếu rỗng/[] → tự động build từ enemy.drop_items_json (không cần admin config riêng)
+            object dropsObj = Array.Empty<object>();
+            bool dropJsonPopulated = false;
+            if (!string.IsNullOrWhiteSpace(config.DropJson) && config.DropJson.Trim() != "[]")
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<JsonElement>(config.DropJson);
+                    if (parsed.ValueKind == JsonValueKind.Array && parsed.GetArrayLength() > 0)
+                    {
+                        dropsObj = JsonSerializer.Deserialize<object>(config.DropJson)!;
+                        dropJsonPopulated = true;
+                    }
+                }
+                catch (JsonException) { }
+            }
+            if (!dropJsonPopulated)
+                dropsObj = await BuildDropsFromEnemyTableAsync(config.SpawnJson);
 
             // Lấy skills từ bảng enemy cho tất cả enemy_id có mặt trong spawn_json.
             var enemySkillsObj = await BuildEnemySkillsResponseAsync(config.SpawnJson);
@@ -472,6 +487,60 @@ namespace GameServerApi.Controllers
             if (string.IsNullOrWhiteSpace(json)) return Array.Empty<object>();
             try { return JsonSerializer.Deserialize<object>(json) ?? Array.Empty<object>(); }
             catch (JsonException) { return Array.Empty<object>(); }
+        }
+
+        /// <summary>
+        /// Khi drop_json trong map_spawn_config rỗng → tự động build drops từ enemy.drop_items_json.
+        /// Output format: [{enemy_id, items:[{item_id, rate, qty_min, qty_max}]}]
+        /// rate là 0–1 (khớp với DropItemEntry.rate trong client EnemyItemDrop).
+        /// </summary>
+        private async Task<object[]> BuildDropsFromEnemyTableAsync(string spawnJson)
+        {
+            var enemyIds = new HashSet<int>();
+            try
+            {
+                using var doc = JsonDocument.Parse(spawnJson);
+                foreach (var elem in doc.RootElement.EnumerateArray())
+                    if (elem.TryGetProperty("enemy_id", out var p) && p.TryGetInt32(out int id) && id > 0)
+                        enemyIds.Add(id);
+            }
+            catch (JsonException) { return Array.Empty<object>(); }
+
+            if (enemyIds.Count == 0) return Array.Empty<object>();
+
+            var enemies = await _db.Enemies
+                .Where(e => enemyIds.Contains(e.EnemyId) && e.DropItemsJson != null)
+                .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var enemy in enemies)
+            {
+                if (string.IsNullOrWhiteSpace(enemy.DropItemsJson)) continue;
+
+                // DB dùng "drop_chance"; client DTO dùng "rate" → cần normalize
+                var normalizedItems = new List<object>();
+                try
+                {
+                    using var doc2 = JsonDocument.Parse(enemy.DropItemsJson);
+                    if (doc2.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var d in doc2.RootElement.EnumerateArray())
+                        {
+                            int item_id  = d.TryGetProperty("item_id",     out var ii) ? ii.GetInt32()  : 0;
+                            double rate  = d.TryGetProperty("drop_chance", out var dc) ? dc.GetDouble() : 0;
+                            int qty_min  = d.TryGetProperty("qty_min",     out var qn) ? qn.GetInt32()  : 1;
+                            int qty_max  = d.TryGetProperty("qty_max",     out var qx) ? qx.GetInt32()  : qty_min;
+                            if (item_id > 0)
+                                normalizedItems.Add(new { item_id, rate, qty_min, qty_max });
+                        }
+                    }
+                }
+                catch (JsonException) { continue; }
+
+                if (normalizedItems.Count == 0) continue;
+                result.Add(new { enemy_id = enemy.EnemyId, items = normalizedItems });
+            }
+            return result.ToArray();
         }
 
         /// <summary>

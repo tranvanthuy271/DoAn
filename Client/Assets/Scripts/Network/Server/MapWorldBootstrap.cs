@@ -145,6 +145,9 @@ public class MapWorldBootstrap : MonoBehaviour
         var heartbeat = GetComponent<ZoneServerHeartbeat>()
                      ?? gameObject.AddComponent<ZoneServerHeartbeat>();
         heartbeat.Initialize(_config, _apiBaseUrl, _port);
+
+        // 9 — Khởi tạo ItemTemplateManager trên dedicated server
+        ItemTemplateManager.EnsureInstance();
     }
 
     private IEnumerator RegisterServerWithApi()

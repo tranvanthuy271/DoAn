@@ -536,24 +536,25 @@ public class PlayerDash : NetworkBehaviour
     private void ResetDashAnimation()
     {
         if (skillEffectAnimator == null || skillEffectAnimator.runtimeAnimatorController == null)
-        {
             return;
+
+        if (!skillEffectAnimator.gameObject.activeInHierarchy)
+            return;
+
+        // Kiểm tra parameter tồn tại trước khi ResetTrigger (tương tự TriggerDashAnimation)
+        bool hasParameter = false;
+        foreach (AnimatorControllerParameter param in skillEffectAnimator.parameters)
+        {
+            if (param.name == dashTriggerName && param.type == AnimatorControllerParameterType.Trigger)
+            {
+                hasParameter = true;
+                break;
+            }
         }
 
-        try
-        {
-            skillEffectAnimator.ResetTrigger(dashTriggerName);
-            skillEffectAnimator.Play("Empty", 0, 0f);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"[PlayerDash] Không thể reset animation: {e.Message}");
-            try
-            {
-                skillEffectAnimator.ResetTrigger(dashTriggerName);
-            }
-            catch { }
-        }
+        if (!hasParameter) return;
+
+        skillEffectAnimator.ResetTrigger(dashTriggerName);
     }
 
     #endregion
@@ -577,32 +578,23 @@ public class PlayerDash : NetworkBehaviour
 
         foreach (Collider2D enemyCollider in enemies)
         {
-            if (enemyCollider.CompareTag("Enemy"))
-            {
-                // Tìm component EnemyHealth hoặc NetworkEnemyHealth
-                EnemyHealth enemyHealth = enemyCollider.GetComponent<EnemyHealth>();
-                NetworkEnemyHealth networkEnemyHealth = enemyCollider.GetComponent<NetworkEnemyHealth>();
+            // Component-based detection (khong phu thuoc tag)
+            NetworkEnemyHealth networkEnemyHealth = enemyCollider.GetComponentInParent<NetworkEnemyHealth>();
+            EnemyHealth enemyHealth = enemyCollider.GetComponentInParent<EnemyHealth>();
 
-                if (enemyHealth != null)
-                {
-                    // Standalone mode: dùng EnemyHealth
-                    enemyHealth.TakeDamage(dashDamage);
-                    hasDamagedThisDash = true;
-                    Debug.Log($"[PlayerDash] Dash đã damage enemy {enemyCollider.name} với {dashDamage} damage!");
-                    
-                    // Chỉ damage một enemy mỗi lần dash (tránh damage nhiều enemy cùng lúc)
-                    break;
-                }
-                else if (networkEnemyHealth != null)
-                {
-                    // Network mode: dùng NetworkEnemyHealth
-                    networkEnemyHealth.TakeDamage(dashDamage);
-                    hasDamagedThisDash = true;
-                    Debug.Log($"[PlayerDash] Dash đã damage enemy {networkEnemyHealth.name} với {dashDamage} damage! (Network)");
-                    
-                    // Chỉ damage một enemy mỗi lần dash
-                    break;
-                }
+            if (networkEnemyHealth != null)
+            {
+                networkEnemyHealth.TakeDamage(dashDamage);
+                hasDamagedThisDash = true;
+                Debug.Log($"[PlayerDash] Dash damage enemy {networkEnemyHealth.name} voi {dashDamage} damage! (Network)");
+                break;
+            }
+            else if (enemyHealth != null)
+            {
+                enemyHealth.TakeDamage(dashDamage);
+                hasDamagedThisDash = true;
+                Debug.Log($"[PlayerDash] Dash damage enemy {enemyCollider.name} voi {dashDamage} damage!");
+                break;
             }
         }
     }

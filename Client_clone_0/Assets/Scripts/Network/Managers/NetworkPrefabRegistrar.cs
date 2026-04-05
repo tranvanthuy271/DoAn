@@ -105,8 +105,10 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         {
             if (missingSharedPrefabs != null && missingSharedPrefabs.Count > 0)
             {
-                Debug.LogError(
-                    $"[NetworkPrefabRegistrar] Shared prefab mode detected nhưng còn thiếu {missingSharedPrefabs.Count} prefab trong DefaultNetworkPrefabs.asset: {string.Join(", ", missingSharedPrefabs)}");
+                // Chỉ warning — prefab có thể đã nằm trong DefaultNetworkPrefabs.asset
+                // nhưng chưa resolve reference tại thời điểm validation.
+                Debug.LogWarning(
+                    $"[NetworkPrefabRegistrar] Shared prefab mode: {missingSharedPrefabs.Count} prefab(s) chưa xác nhận trong DefaultNetworkPrefabs.asset (có thể false-positive): {string.Join(", ", missingSharedPrefabs)}");
             }
         }
         else

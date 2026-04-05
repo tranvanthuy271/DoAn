@@ -73,23 +73,50 @@ public class ClientSceneController : MonoBehaviour
         // 2 — Chờ 1 frame để UI render
         yield return null;
 
-        // 3 — Chỉ load scene nếu khác scene hiện tại
-        string currentScene = SceneManager.GetActiveScene().name;
-        if (!string.IsNullOrEmpty(sceneName) && currentScene != sceneName)
+        Scene oldScene = SceneManager.GetActiveScene();
+        string oldSceneName = oldScene.name;
+
+        // 3 — Load scene mới theo kiểu ADDITIVE
+        //     Giữ scene cũ nguyên vẹn để NetworkObjects (player, NPC, enemy)
+        //     không bị Unity destroy. Sau đó move + unload.
+        if (!string.IsNullOrEmpty(sceneName) && oldSceneName != sceneName)
         {
-            Debug.Log($"[ClientSceneController] Loading scene: {sceneName}");
-            var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
-            asyncOp.allowSceneActivation = false;
-
-            // Chờ load xong (progress >= 0.9 = "gần hoàn thành")
-            while (asyncOp.progress < 0.9f)
+            Debug.Log($"[ClientSceneController] Loading scene (additive): {sceneName}");
+            var loadOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            while (!loadOp.isDone)
                 yield return null;
 
-            asyncOp.allowSceneActivation = true;
+            Scene newScene = SceneManager.GetSceneByName(sceneName);
+            if (!newScene.IsValid())
+            {
+                Debug.LogError($"[ClientSceneController] Scene '{sceneName}' không hợp lệ sau khi load!");
+                HideLoadingScreen();
+                _isTransitioning = false;
+                yield break;
+            }
 
-            // Chờ scene activate hoàn toàn
-            while (!asyncOp.isDone)
-                yield return null;
+            // 3a — Di chuyển tất cả root NetworkObjects từ scene cũ sang scene mới
+            //       để chúng sống sót khi unload scene cũ.
+            int moved = 0;
+            foreach (var rootObj in oldScene.GetRootGameObjects())
+            {
+                if (rootObj == null) continue;
+                if (rootObj.GetComponent<NetworkObject>() != null)
+                {
+                    SceneManager.MoveGameObjectToScene(rootObj, newScene);
+                    moved++;
+                }
+            }
+            Debug.Log($"[ClientSceneController] Moved {moved} NetworkObject(s) → {sceneName}");
+
+            // 3b — Đặt scene mới làm active
+            SceneManager.SetActiveScene(newScene);
+
+            // 3c — Unload scene cũ (NetworkObjects đã chuyển sang scene mới, an toàn)
+            var unloadOp = SceneManager.UnloadSceneAsync(oldScene);
+            if (unloadOp != null)
+                while (!unloadOp.isDone)
+                    yield return null;
         }
 
         // 4 — Cập nhật trạng thái zone
@@ -108,33 +135,66 @@ public class ClientSceneController : MonoBehaviour
 
     private IEnumerator RepositionLocalPlayer(Vector3 pos)
     {
-        // Chờ vài frame cho NetworkObjects spawn sau khi scene load
-        for (int i = 0; i < 3; i++) yield return null;
-
-        // Tìm NetworkObject của local player (chính là owner)
-        ulong localId = NetworkManager.Singleton?.LocalClientId ?? ulong.MaxValue;
-        if (localId == ulong.MaxValue) yield break;
+        // Chờ vài frame cho scene ổn định
+        for (int i = 0; i < 5; i++) yield return null;
 
         NetworkObject playerNetObj = null;
 
-        // Tìm trong tất cả spawned NetworkObjects
-        foreach (var netObj in FindObjectsByType<NetworkObject>(FindObjectsSortMode.None))
+        for (int attempt = 0; attempt < 60; attempt++)
         {
-            if (netObj.IsOwner && netObj.IsLocalPlayer)
+            // Cách 1: LocalClient.PlayerObject — đây là player NetworkObject được đăng ký chính thức
+            try { playerNetObj = NetworkManager.Singleton?.LocalClient?.PlayerObject; }
+            catch { /* ignore */ }
+            if (playerNetObj != null) break;
+
+            // Cách 2: SpawnedObjectsList — bắt buộc phải có NetworkPlayerController
+            // (tránh nhầm NetworkInventory hay NetworkPlayerDataSync cũng là IsOwner)
+            try
             {
-                playerNetObj = netObj;
-                break;
+                var spawnedList = NetworkManager.Singleton?.SpawnManager?.SpawnedObjectsList;
+                if (spawnedList != null)
+                {
+                    foreach (var so in spawnedList)
+                    {
+                        if (so != null && so.IsOwner && so.GetComponent<NetworkPlayerController>() != null)
+                        {
+                            playerNetObj = so;
+                            break;
+                        }
+                    }
+                }
             }
+            catch { /* ignore */ }
+            if (playerNetObj != null) break;
+
+            // Cách 3: FindObjectsByType — ưu tiên NetworkPlayerController
+            foreach (var ctrl in FindObjectsByType<NetworkPlayerController>(FindObjectsSortMode.None))
+            {
+                if (ctrl != null && ctrl.IsOwner)
+                {
+                    playerNetObj = ctrl.GetComponent<NetworkObject>();
+                    if (playerNetObj != null) break;
+                }
+            }
+            if (playerNetObj != null) break;
+
+            yield return null;
         }
 
         if (playerNetObj != null)
         {
             playerNetObj.transform.position = pos;
+
+            // Cập nhật camera — refresh bounds trước rồi mới snap để bounds mới được dùng
+            var cam = FindAnyObjectByType<CameraFollow>();
+            cam?.RefreshMaxMapBounds();
+            cam?.SetTarget(playerNetObj.transform, true);
+
             Debug.Log($"[ClientSceneController] Player repositioned → {pos}");
         }
         else
         {
-            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject.");
+            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject sau 60 frames.");
         }
     }
 

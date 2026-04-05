@@ -79,7 +79,16 @@ public class EnemyPrefabManager : MonoBehaviour
         {
             return prefab;
         }
-        
+
+        foreach (var enemyData in enemyPrefabs)
+        {
+            if (enemyData.enemyPrefab == null)
+                continue;
+
+            Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found. Falling back to prefab '{enemyData.enemyPrefab.name}' from Enemy ID {enemyData.enemyId}.");
+            return enemyData.enemyPrefab;
+        }
+
         Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found! Returning null.");
         return null;
     }

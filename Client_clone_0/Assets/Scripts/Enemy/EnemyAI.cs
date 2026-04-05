@@ -340,9 +340,9 @@ public class EnemyAI : MonoBehaviour
     /// <summary>Shared helper: apply damage to player by checking NetworkPlayerHealth first.</summary>
     private void ApplyDamageToTarget(GameObject target, int dmg)
     {
-        var netHealth = target.GetComponent<NetworkPlayerHealth>();
+        var netHealth = target.GetComponentInParent<NetworkPlayerHealth>();
         if (netHealth != null) { netHealth.TakeDamage(dmg); return; }
-        var ph = target.GetComponent<PlayerHealth>();
+        var ph = target.GetComponentInParent<PlayerHealth>();
         if (ph != null) ph.TakeDamage(dmg);
     }
 

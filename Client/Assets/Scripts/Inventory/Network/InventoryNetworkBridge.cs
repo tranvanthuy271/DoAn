@@ -200,12 +200,6 @@ public class InventoryNetworkBridge : MonoBehaviour
                 {
                     Debug.Log($"[InventoryNetworkBridge] ✅ Fetch thành công {inventoryItems.Length} items từ DB!");
                     UpdateUIFromDBInventory(inventoryItems);
-                    
-                    if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer && networkInventory != null)
-                    {
-                        Debug.Log("[InventoryNetworkBridge] Server/Host: Đang sync DB data vào NetworkInventory...");
-                        SyncDBInventoryToNetwork(inventoryItems);
-                    }
                 },
                 (error) =>
                 {
@@ -319,16 +313,6 @@ public class InventoryNetworkBridge : MonoBehaviour
             silver   = pd.silver;
         }
         ItemUseHandler.Instance?.OnInventoryRefreshed(slotDtos.ToArray(), bagSlots, gold, silver);
-    }
-
-    /// <summary>
-    /// Sync DB inventory vào NetworkInventory (chỉ server/host gọi)
-    /// </summary>
-    private void SyncDBInventoryToNetwork(InventoryItem[] dbItems)
-    {
-        // TODO: Implement if needed - Server sẽ populate NetworkInventory từ DB
-        // Hiện tại NetworkInventory đã tự load từ DB khi spawn
-        Debug.Log("[InventoryNetworkBridge] SyncDBInventoryToNetwork: TODO - Server should handle this in NetworkInventory.LoadInventoryFromDB()");
     }
 
     /// <summary>

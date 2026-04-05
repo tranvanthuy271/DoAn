@@ -228,21 +228,20 @@ public class ItemUseHandler : MonoBehaviour
                 {
                     ActiveBuffManager.Instance?.OnBuffsReceived(response.active_buffs);
                     inventoryBridge?.RequestSyncBuffBonuses(); // sync % bonus lên NGO
-
-                    // HpBuff / MpBuff thay đổi max HP/MP → reload toàn bộ player data
-                    bool hasStatBuff = System.Array.Exists(response.active_buffs,
-                        b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
-                    if (hasStatBuff)
-                        ReloadPlayerStats();
                 }
                 else if (response.new_buffs != null && response.new_buffs.Length > 0)
                 {
                     ActiveBuffManager.Instance?.OnBuffsAdded(response.new_buffs);
                     inventoryBridge?.RequestSyncBuffBonuses();
+                }
 
-                    bool hasStatBuff = System.Array.Exists(response.new_buffs,
+                // Chỉ reload stats khi LẦN NÀY có thêm buff mới ảnh hưởng max HP/MP
+                // (kiểm tra new_buffs thay vì active_buffs để tránh reload sai khi buff cũ còn active)
+                if (response.new_buffs != null && response.new_buffs.Length > 0)
+                {
+                    bool hasNewStatBuff = System.Array.Exists(response.new_buffs,
                         b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
-                    if (hasStatBuff)
+                    if (hasNewStatBuff)
                         ReloadPlayerStats();
                 }
 
