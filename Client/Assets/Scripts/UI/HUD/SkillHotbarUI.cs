@@ -43,6 +43,8 @@ public class SkillHotbarUI : MonoBehaviour
     private float retryTimer;
     private bool isBound;
     private int _lastManagerCount = -1; // track để detect khi player mới spawn
+    private bool _loggedNoManagerWarning;
+    private bool _loggedNoOwnerWarning;
 
     // ════════════════════════════════════════════════════════════════════════
     //  Public API
@@ -99,7 +101,10 @@ public class SkillHotbarUI : MonoBehaviour
     private void TryFindAndBind()
     {
         PlayerSkillManager[] all = FindObjectsByType<PlayerSkillManager>(FindObjectsSortMode.None);
-        Debug.Log($"[SkillHotbarUI] TryFindAndBind — tìm thấy {all.Length} PlayerSkillManager trong scene.");
+        if (all.Length != _lastManagerCount)
+        {
+            Debug.Log($"[SkillHotbarUI] TryFindAndBind — tìm thấy {all.Length} PlayerSkillManager trong scene.");
+        }
 
         // Nếu số manager tăng lên (player mới spawn) và có owner mới → force rebind
         if (isBound && all.Length != _lastManagerCount)
@@ -116,11 +121,16 @@ public class SkillHotbarUI : MonoBehaviour
 
         if (isBound) return;
 
+        var networkManager = Unity.Netcode.NetworkManager.Singleton;
+        bool isNetworkActive = networkManager != null
+            && (networkManager.IsHost || networkManager.IsClient || networkManager.IsServer);
+
         foreach (var mgr in all)
         {
-            Debug.Log($"[SkillHotbarUI]   • '{mgr.name}' IsSpawned={mgr.IsSpawned} IsOwner={mgr.IsOwner} skillCount={mgr.GetSkillCount()}");
             if (mgr.IsSpawned && mgr.IsOwner)
             {
+                _loggedNoManagerWarning = false;
+                _loggedNoOwnerWarning = false;
                 BindToManager(mgr);
                 return;
             }
@@ -134,15 +144,26 @@ public class SkillHotbarUI : MonoBehaviour
         if (!isMultiplayer && all.Length == 1)
         {
             Debug.Log($"[SkillHotbarUI] Offline fallback bind vào '{all[0].name}'.");
+            _loggedNoManagerWarning = false;
+            _loggedNoOwnerWarning = false;
             BindToManager(all[0]);
         }
         else if (all.Length == 0)
         {
-            Debug.LogWarning("[SkillHotbarUI] Chưa tìm thấy PlayerSkillManager nào — sẽ thử lại.");
+            if (isNetworkActive && !_loggedNoManagerWarning)
+            {
+                Debug.LogWarning("[SkillHotbarUI] Chưa tìm thấy PlayerSkillManager nào — sẽ thử lại.");
+                _loggedNoManagerWarning = true;
+            }
         }
         else
         {
-            Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng chưa tìm thấy IsOwner — sẽ thử lại.");
+            _loggedNoManagerWarning = false;
+            if (isNetworkActive && !_loggedNoOwnerWarning)
+            {
+                Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng chưa tìm thấy IsOwner — sẽ thử lại.");
+                _loggedNoOwnerWarning = true;
+            }
         }
     }
 

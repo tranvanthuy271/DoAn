@@ -27,6 +27,9 @@ public class MapEdgeTrigger : MonoBehaviour
     [Tooltip("MapId của scene này.\n-1 = tự lấy từ MapManager (chỉ dùng nếu MapManager đã fetch xong)\n 0 = GameScene\n 1 = Map1 ...")]
     [SerializeField] private int currentMapId = -1;
 
+    [Tooltip("Zone đích ưu tiên trong map mới. 0 = zone public mặc định đầu tiên")]
+    [SerializeField] private int preferredZoneId = 0;
+
     [Header("UX")]
     [SerializeField] private GameObject loadingPanel;
 #pragma warning disable CS0414
@@ -124,15 +127,23 @@ public class MapEdgeTrigger : MonoBehaviour
             yield break;
         }
 
-        // ── Bước 3: spawn MapTravelHelper (DontDestroyOnLoad) để xử lý Shutdown→Load→Host/Client ──
-        // KHÔNG thể làm trong coroutine này vì MapEdgeTrigger sẽ bị destroy khi scene unload.
-        var helperObj = new GameObject("[MapTravelHelper]");
-        DontDestroyOnLoad(helperObj);
-        helperObj.AddComponent<MapTravelHelper>().Execute(
-            resp.dest_scene_name, resp.dest_x, resp.dest_y, resp.dest_map_id,
-            srcMapId: mapId);  // truyền map hiện tại để helper unregister host nếu cần
+        // ── Bước 3: gửi ServerRpc portal-transfer theo kiến trúc 1-port ──
+        var transitionController = FindAnyObjectByType<ZoneTransitionController>();
+        if (transitionController == null)
+        {
+            Debug.LogWarning("[MapEdgeTrigger] Không tìm thấy ZoneTransitionController để chuyển map.");
+            ResetTrigger();
+            yield break;
+        }
 
-        Debug.Log($"[MapEdgeTrigger] Bước 3 — Spawned MapTravelHelper → '{resp.dest_scene_name}' @ ({resp.dest_x},{resp.dest_y})");
+        transitionController.RequestMapPortalTransferServerRpc(
+            resp.dest_map_id,
+            preferredZoneId,
+            resp.dest_x,
+            resp.dest_y);
+
+        Debug.Log($"[MapEdgeTrigger] Bước 3 — RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({resp.dest_x},{resp.dest_y})");
+        ResetTrigger();
     }
 
     private void ResetTrigger()

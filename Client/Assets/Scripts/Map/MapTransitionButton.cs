@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using Unity.Netcode;
 using System.Collections;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
@@ -23,6 +22,9 @@ public class MapTransitionButton : MonoBehaviour
 
     [Tooltip("Map ID của scene hiện tại (tự lấy từ MapManager nếu để 0)")]
     [SerializeField] private int currentMapId = 0;
+
+    [Tooltip("Zone đích ưu tiên trong map mới. 0 = zone public mặc định đầu tiên")]
+    [SerializeField] private int preferredZoneId = 0;
 
     [Header("UI")]
     [SerializeField] private Button      button;
@@ -111,19 +113,23 @@ public class MapTransitionButton : MonoBehaviour
 
         var resp = JsonUtility.FromJson<TravelResponse>(travelReq.downloadHandler.text);
 
-        // 3. Lưu tọa độ đến
-        PortalArrivalHandler.PendingDestX  = resp.dest_x;
-        PortalArrivalHandler.PendingDestY  = resp.dest_y;
-        PortalArrivalHandler.PendingMapId  = resp.dest_map_id;
+        // 3. Gửi yêu cầu chuyển map theo kiến trúc 1-port
+        var transitionController = FindAnyObjectByType<ZoneTransitionController>();
+        if (transitionController == null)
+        {
+            Debug.LogError("[MapTransitionButton] Không tìm thấy ZoneTransitionController trong scene.");
+            ShowError("Không thể chuyển map lúc này.");
+            ResetButton();
+            yield break;
+        }
 
-        // 4. Shutdown NGO trước khi load scene
-        var nm = NetworkManager.Singleton;
-        if (nm != null && (nm.IsClient || nm.IsHost || nm.IsServer))
-            nm.Shutdown();
+        transitionController.RequestMapPortalTransferServerRpc(
+            resp.dest_map_id,
+            preferredZoneId,
+            resp.dest_x,
+            resp.dest_y);
 
-        yield return new WaitForSeconds(0.2f);
-
-        SceneManager.LoadScene(resp.dest_scene_name);
+        ResetButton();
     }
 
     private void ResetButton()

@@ -49,25 +49,3 @@ MonoBehaviour:
     allowPlayerZoneSwitch: 1
     entryPoints:
     - {x: 2, y: 1}
-  - mapId: 2
-    mapName: Rung_Bang
-    sceneName: Map2
-    zoneTopology: 0
-    allowCustomZones: 0
-    publicZoneCountOverride: 0
-    publicZoneMaxPlayersOverride: 0
-    customZoneMaxPlayersOverride: 0
-    allowPlayerZoneSwitch: 1
-    entryPoints:
-    - {x: 0, y: 2}
-  - mapId: 3
-    mapName: SaMac_Phong
-    sceneName: Map3
-    zoneTopology: 0
-    allowCustomZones: 0
-    publicZoneCountOverride: 0
-    publicZoneMaxPlayersOverride: 0
-    customZoneMaxPlayersOverride: 0
-    allowPlayerZoneSwitch: 1
-    entryPoints:
-    - {x: 3, y: 0}

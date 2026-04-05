@@ -87,19 +87,8 @@ public class ZoneTransitionController : NetworkBehaviour
     {
         ulong clientId = rpc.Receive.SenderClientId;
 
-        // 1. Rate-limit (chống double-trigger và race condition)
-        if (_lastTransferTime.TryGetValue(clientId, out float last) &&
-            Time.time - last < _transferCooldown)
-        {
-            Debug.Log($"[ZoneTransitionController] Client {clientId} request quá nhanh (cooldown). Bỏ qua.");
+        if (!CanProcessTransferRequest(clientId))
             return;
-        }
-
-        if (_registry == null)
-        {
-            Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
-            return;
-        }
 
         if (targetZoneId < 0)
         {
@@ -124,11 +113,39 @@ public class ZoneTransitionController : NetworkBehaviour
         ExecuteTransferToRoom(clientId, requestedRoom, entryPointId);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestMapPortalTransferServerRpc(
+        int targetMapId,
+        int preferredZoneId,
+        float targetX,
+        float targetY,
+        ServerRpcParams rpc = default)
+    {
+        ulong clientId = rpc.Receive.SenderClientId;
+
+        if (!CanProcessTransferRequest(clientId))
+            return;
+
+        ZoneRoom requestedRoom = ResolvePortalTargetRoom(targetMapId, preferredZoneId);
+        if (requestedRoom == null)
+        {
+            Debug.LogWarning($"[ZoneTransitionController] Portal transfer thất bại: map={targetMapId}, zone={preferredZoneId}");
+            SendTransferFailedClientRpc("MAP_NOT_FOUND", BuildSingleClientRpcParams(clientId));
+            return;
+        }
+
+        ExecuteTransferToRoom(clientId, requestedRoom, explicitPosition: new Vector2(targetX, targetY));
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Core transfer logic (server-side only)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void ExecuteTransferToRoom(ulong clientId, ZoneRoom targetRoom, int entryPointId)
+    private void ExecuteTransferToRoom(
+        ulong clientId,
+        ZoneRoom targetRoom,
+        int entryPointId = 0,
+        Vector2? explicitPosition = null)
     {
         if (targetRoom == null)
         {
@@ -154,7 +171,7 @@ public class ZoneTransitionController : NetworkBehaviour
         _lastTransferTime[clientId] = Time.time;
 
         // 5. Lấy entry point
-        Vector2 entry = targetRoom.GetEntryPoint(entryPointId);
+        Vector2 entry = explicitPosition ?? targetRoom.GetEntryPoint(entryPointId);
 
         // 6. Lấy scene tương ứng map
         MapDefinition mapDef = _config?.GetMap(targetRoom.MapId);
@@ -179,6 +196,36 @@ public class ZoneTransitionController : NetworkBehaviour
 
         // 10. Save vị trí mới vào API (fire-and-forget, không block)
         StartCoroutine(SavePositionFireAndForget(clientId, targetRoom, entry));
+    }
+
+    private bool CanProcessTransferRequest(ulong clientId)
+    {
+        if (_lastTransferTime.TryGetValue(clientId, out float last) &&
+            Time.time - last < _transferCooldown)
+        {
+            Debug.Log($"[ZoneTransitionController] Client {clientId} request quá nhanh (cooldown). Bỏ qua.");
+            return false;
+        }
+
+        if (_registry == null)
+        {
+            Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
+            return false;
+        }
+
+        return true;
+    }
+
+    private ZoneRoom ResolvePortalTargetRoom(int targetMapId, int preferredZoneId)
+    {
+        if (_registry == null)
+            return null;
+
+        ZoneRoom directRoom = _registry.GetRoom(targetMapId, preferredZoneId);
+        if (directRoom != null)
+            return directRoom;
+
+        return _registry.FindLeastLoadedZone(targetMapId, preferredZoneId < 0 ? 0 : preferredZoneId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

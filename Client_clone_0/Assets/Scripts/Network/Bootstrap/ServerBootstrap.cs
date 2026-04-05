@@ -22,6 +22,12 @@ public class ServerBootstrap : MonoBehaviour
 
     void Start()
     {
+        if (FindAnyObjectByType<MapWorldBootstrap>() != null)
+        {
+            enabled = false;
+            return;
+        }
+
         // Chỉ auto start nếu đang trong scene ServerScene
         // Nếu không phải ServerScene, không tự động start (để client chỉ connect)
         string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
@@ -76,15 +82,15 @@ public class ServerBootstrap : MonoBehaviour
 
         // Debug.Log($"[ServerBootstrap] Starting dedicated server on {serverIP}:{serverPort}...");
 
-        // Start Host (vừa server vừa client) để có thể join vào map
-        if (networkManager.StartHost())
+        // Dedicated server chỉ cần StartServer; local client không còn được tạo trong kiến trúc mới.
+        if (networkManager.StartServer())
         {
-            // Debug.Log($"[ServerBootstrap] ✓✓✓ Dedicated Host started successfully on {serverIP}:{serverPort} ✓✓✓");
-            // Debug.Log($"[ServerBootstrap] Host is ready. Waiting for clients to connect...");
+            // Debug.Log($"[ServerBootstrap] ✓✓✓ Dedicated Server started successfully on {serverIP}:{serverPort} ✓✓✓");
+            // Debug.Log($"[ServerBootstrap] Server is ready. Waiting for clients to connect...");
         }
         else
         {
-            // Debug.LogError("[ServerBootstrap] ✗ Failed to start dedicated host!");
+            // Debug.LogError("[ServerBootstrap] ✗ Failed to start dedicated server!");
             // Debug.LogError("[ServerBootstrap] Check if port is already in use or NetworkManager is configured correctly.");
         }
     }

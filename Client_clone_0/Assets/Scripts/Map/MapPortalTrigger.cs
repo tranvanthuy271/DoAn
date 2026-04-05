@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Networking;
 using Unity.Netcode;
 
@@ -35,6 +34,10 @@ public class MapPortalTrigger : MonoBehaviour
     public string destSceneName;
     public float destX;
     public float destY;
+
+    [Header("Zone Transfer")]
+    [Tooltip("Zone đích ưu tiên trong map mới. 0 = zone public mặc định đầu tiên")]
+    public int preferredZoneId = 0;
 
     [Header("Điều kiện vào")]
     [Tooltip("0 = không cần item. Ngược lại = item_template.id của Chìa Khóa")]
@@ -103,18 +106,25 @@ public class MapPortalTrigger : MonoBehaviour
             yield break;
         }
 
-        // Thành công — lưu destination để PortalArrivalHandler nhận sau khi load scene
-        PortalArrivalHandler.PendingDestX = response.dest_x;
-        PortalArrivalHandler.PendingDestY = response.dest_y;
-        PortalArrivalHandler.PendingMapId = response.dest_map_id;
-
-        // Fade out rồi load scene
+        // Fade out rồi gửi ServerRpc chuyển map theo kiến trúc 1-port
         yield return new WaitForSeconds(transitionDelay);
 
-        if (!string.IsNullOrEmpty(response.dest_scene_name))
-            SceneManager.LoadScene(response.dest_scene_name);
-        else
-            Debug.LogError("[MapPortalTrigger] dest_scene_name trống — kiểm tra DB map_portal.");
+        var transitionController = FindAnyObjectByType<ZoneTransitionController>();
+        if (transitionController == null)
+        {
+            Debug.LogError("[MapPortalTrigger] Không tìm thấy ZoneTransitionController trong scene.");
+            ShowDenied("Không thể chuyển khu lúc này.");
+            _isTransitioning = false;
+            yield break;
+        }
+
+        transitionController.RequestMapPortalTransferServerRpc(
+            response.dest_map_id,
+            preferredZoneId,
+            response.dest_x,
+            response.dest_y);
+
+        _isTransitioning = false;
     }
 
     private void ShowDenied(string msg)
