@@ -1,0 +1,10 @@
+bin/
+obj/
+artifacts/
+build_verify_tmp/
+build_verify_tmp2/
+build_verify_tmp3/
+*.sql
+*.md
+*.http
+.git/

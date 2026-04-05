@@ -168,3 +168,14 @@ Desktop.ini
 # ParrelSync
 [Aa]ssets/ParrelSync/
 
+# Docker secrets
+.env
+
+# Unity server build (too large for git)
+unity-server/GameServer
+unity-server/GameServer_Data/
+unity-server/UnityPlayer.so
+
+# DB data
+db_data/
+
