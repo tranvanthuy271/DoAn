@@ -32,7 +32,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
     private void Start()
     {
-        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = ServerAddressConfig.Instance.ApiUrl;
+        apiBaseURL = ServerAddressConfig.Instance.ResolveApiUrl(apiBaseURL);
 
         // Lấy Map ID từ MapManager nếu chưa set
         if (mapId == 0 && MapManager.Instance != null && !IsDedicatedWorldServer())

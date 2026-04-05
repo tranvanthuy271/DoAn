@@ -52,7 +52,7 @@ public class NpcServerManager : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+        apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
     }
 
     private void Start()

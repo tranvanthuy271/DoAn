@@ -38,7 +38,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         // Init from config
         var cfg = ServerAddressConfig.Instance;
         if (string.IsNullOrWhiteSpace(serverIP)) serverIP = cfg.gameServerIp;
-        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = cfg.ApiUrl;
+        apiBaseURL = cfg.ResolveApiUrl(apiBaseURL);
         if (netcodePort == 0) netcodePort = cfg.gameServerPort;
 
         networkManager = NetworkManager.Singleton;

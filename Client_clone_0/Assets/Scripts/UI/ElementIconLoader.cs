@@ -38,7 +38,7 @@ public class ElementIconLoader : MonoBehaviour
 
     private void Start()
     {
-        if (string.IsNullOrWhiteSpace(apiBaseUrl)) apiBaseUrl = ServerAddressConfig.Instance.ApiRoot;
+        apiBaseUrl = ServerAddressConfig.Instance.ResolveApiRoot(apiBaseUrl);
         StartCoroutine(LoadAllElements());
     }
 

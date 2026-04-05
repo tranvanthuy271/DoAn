@@ -46,7 +46,7 @@ public class MapEdgeTrigger : MonoBehaviour
 
     private void Awake()
     {
-        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+        apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

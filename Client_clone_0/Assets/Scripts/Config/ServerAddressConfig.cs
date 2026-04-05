@@ -13,6 +13,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ServerAddressConfig", menuName = "DoAn/ServerAddressConfig")]
 public class ServerAddressConfig : ScriptableObject
 {
+    private const string DefaultApiBasePlaceholder = "http://localhost:5000";
+
     // ── Singleton (auto-load từ Resources/ServerAddressConfig) ─────────────────
     private static ServerAddressConfig _instance;
     public static ServerAddressConfig Instance
@@ -49,10 +51,24 @@ public class ServerAddressConfig : ScriptableObject
     // ── Derived helpers (read-only) ───────────────────────────────────────────
 
     /// <summary>API base kèm /api. Ví dụ: http://localhost:5000/api</summary>
-    public string ApiUrl => $"{apiBaseUrl.TrimEnd('/')}/api";
+    public string ApiUrl => NormalizeApiUrl(apiBaseUrl);
 
     /// <summary>API base KHÔNG có /api. Ví dụ: http://localhost:5000</summary>
-    public string ApiRoot => apiBaseUrl.TrimEnd('/');
+    public string ApiRoot => NormalizeApiRoot(apiBaseUrl);
+
+    public string ResolveApiRoot(string configuredValue)
+    {
+        return ShouldUseRuntimeApiOverride(configuredValue)
+            ? ApiRoot
+            : NormalizeApiRoot(configuredValue);
+    }
+
+    public string ResolveApiUrl(string configuredValue)
+    {
+        return ShouldUseRuntimeApiOverride(configuredValue)
+            ? ApiUrl
+            : NormalizeUrl(configuredValue);
+    }
 
     // ── Runtime JSON override ─────────────────────────────────────────────────
     private bool _overridesApplied;
@@ -87,6 +103,32 @@ public class ServerAddressConfig : ScriptableObject
         {
             Debug.LogWarning($"[ServerAddressConfig] Parse server_config.json thất bại: {ex.Message}");
         }
+    }
+
+    private static string NormalizeApiRoot(string value)
+    {
+        string normalized = NormalizeUrl(value);
+        if (normalized.EndsWith("/api", System.StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring(0, normalized.Length - 4);
+        return normalized;
+    }
+
+    private static string NormalizeApiUrl(string value)
+    {
+        string root = NormalizeApiRoot(value);
+        return string.IsNullOrEmpty(root) ? string.Empty : $"{root}/api";
+    }
+
+    private static string NormalizeUrl(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().TrimEnd('/');
+    }
+
+    private static bool ShouldUseRuntimeApiOverride(string configuredValue)
+    {
+        if (string.IsNullOrWhiteSpace(configuredValue)) return true;
+        return NormalizeApiRoot(configuredValue)
+            .Equals(DefaultApiBasePlaceholder, System.StringComparison.OrdinalIgnoreCase);
     }
 
     [System.Serializable]

@@ -286,17 +286,13 @@ public class APIClient : MonoBehaviour
         get
         {
             if (Instance == null) return ServerAddressConfig.Instance.ApiRoot;
-            var url = Instance.baseURL.TrimEnd('/');
-            if (url.EndsWith("/api")) url = url.Substring(0, url.Length - 4);
-            return url;
+            return ServerAddressConfig.Instance.ResolveApiRoot(Instance.baseURL);
         }
     }
 
     private void InitBaseUrl()
     {
-        // Nếu baseURL vẫn là default localhost, lấy từ ServerAddressConfig
-        if (baseURL == "http://localhost:5000/api" || string.IsNullOrWhiteSpace(baseURL))
-            baseURL = ServerAddressConfig.Instance.ApiUrl;
+        baseURL = ServerAddressConfig.Instance.ResolveApiUrl(baseURL);
     }
 
     private string jwtToken = "";

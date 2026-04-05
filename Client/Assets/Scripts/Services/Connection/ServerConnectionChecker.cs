@@ -16,7 +16,7 @@ public class ServerConnectionChecker : MonoBehaviour
     private void InitFromConfig()
     {
         var cfg = ServerAddressConfig.Instance;
-        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = cfg.ApiUrl;
+        apiBaseURL = cfg.ResolveApiUrl(apiBaseURL);
         if (string.IsNullOrWhiteSpace(netcodeServerIP)) netcodeServerIP = cfg.gameServerIp;
         if (netcodeServerPort == 0) netcodeServerPort = cfg.gameServerPort;
     }

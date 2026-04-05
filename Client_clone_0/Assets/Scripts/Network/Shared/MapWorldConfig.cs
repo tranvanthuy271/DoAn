@@ -32,8 +32,7 @@ public class MapWorldConfig : ScriptableObject
     public void ResolveFromGlobalConfig()
     {
         var cfg = ServerAddressConfig.Instance;
-        if (apiBaseUrl == "http://localhost:5000/api" || string.IsNullOrWhiteSpace(apiBaseUrl))
-            apiBaseUrl = cfg.ApiUrl;
+        apiBaseUrl = cfg.ResolveApiUrl(apiBaseUrl);
         if (publicIp == "127.0.0.1" || string.IsNullOrWhiteSpace(publicIp))
             publicIp = cfg.gameServerIp;
     }

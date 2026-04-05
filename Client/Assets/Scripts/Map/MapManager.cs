@@ -53,7 +53,7 @@ public class MapManager : MonoBehaviour
 
     private void Start()
     {
-        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+        apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
         // Load map info cho scene khởi đầu
         StartCoroutine(FetchMapConfigByScene(SceneManager.GetActiveScene().name));
     }

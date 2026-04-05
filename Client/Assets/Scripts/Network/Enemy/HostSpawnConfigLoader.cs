@@ -81,7 +81,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
         if (_started) return;
         _started = true;
-        if (string.IsNullOrWhiteSpace(apiBaseURL)) apiBaseURL = ServerAddressConfig.Instance.ApiUrl;
+        apiBaseURL = ServerAddressConfig.Instance.ResolveApiUrl(apiBaseURL);
         // Lấy mapId từ MapManager nếu chưa set
         if (mapId == 0 && MapManager.Instance != null)
             mapId = MapManager.Instance.GetMapId();

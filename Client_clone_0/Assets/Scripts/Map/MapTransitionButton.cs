@@ -38,7 +38,7 @@ public class MapTransitionButton : MonoBehaviour
 
     private void Start()
     {
-        if (string.IsNullOrWhiteSpace(apiBase)) apiBase = ServerAddressConfig.Instance.ApiRoot;
+        apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
 
         if (currentMapId == 0 && MapManager.Instance != null)
             currentMapId = MapManager.Instance.GetMapId();
