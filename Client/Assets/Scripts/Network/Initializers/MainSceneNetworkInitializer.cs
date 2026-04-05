@@ -170,10 +170,15 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         PlayerPrefs.DeleteKey("CONNECT_TO_SERVER");
 
         // Lấy server IP và port
-        string serverIP = PlayerPrefs.GetString("SERVER_IP", ServerAddressConfig.Instance.gameServerIp);
+        string configuredIp = ServerAddressConfig.Instance.gameServerIp;
+        string serverIP = PlayerPrefs.GetString("SERVER_IP", "");
+        if (string.IsNullOrWhiteSpace(serverIP) || serverIP == "127.0.0.1" || serverIP == "localhost")
+            serverIP = string.IsNullOrWhiteSpace(configuredIp) ? "127.0.0.1" : configuredIp;
+
+        int configuredPort = ServerAddressConfig.Instance.gameServerPort;
         int serverPort = PlayerPrefs.GetInt("SERVER_PORT", 0);
-        if (serverPort <= 0 || serverPort == 2003)
-            serverPort = 7777;
+        if (serverPort <= 0 || serverPort == 2003 || serverPort == 7777)
+            serverPort = configuredPort > 0 ? configuredPort : 7777;
 
         // Debug.Log($"[MainSceneNetworkInitializer] Đang kết nối đến server {serverIP}:{serverPort}...");
 

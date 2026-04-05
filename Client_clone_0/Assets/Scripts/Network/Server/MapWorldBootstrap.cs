@@ -98,7 +98,7 @@ public class MapWorldBootstrap : MonoBehaviour
             yield break;
         }
 
-        transport.SetConnectionData(_config.listenAddress, _port, _publicIp);
+        transport.SetConnectionData(_publicIp, _port, _config.listenAddress);
 
         // 3 — DTLS encryption (bắt buộc khi production)
         if (_config.enableDtlsEncryption)

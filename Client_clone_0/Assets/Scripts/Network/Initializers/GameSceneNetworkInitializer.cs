@@ -376,11 +376,21 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         StartCoroutine(StartHostAfterDelay());
     }
 
-    private string ResolveServerIp() =>
-        string.IsNullOrWhiteSpace(serverIP) ? ServerAddressConfig.Instance.gameServerIp : serverIP;
+    private string ResolveServerIp()
+    {
+        string configuredIp = ServerAddressConfig.Instance.gameServerIp;
+        if (string.IsNullOrWhiteSpace(serverIP) || serverIP == "127.0.0.1" || serverIP == "localhost")
+            return string.IsNullOrWhiteSpace(configuredIp) ? "127.0.0.1" : configuredIp;
+        return serverIP;
+    }
 
-    private ushort ResolveServerPort() =>
-        serverPort == 0 || serverPort == 2003 ? ServerAddressConfig.Instance.gameServerPort : serverPort;
+    private ushort ResolveServerPort()
+    {
+        ushort configuredPort = ServerAddressConfig.Instance.gameServerPort;
+        if (serverPort == 0 || serverPort == 2003 || serverPort == ModernZoneServerPort)
+            return configuredPort == 0 ? ModernZoneServerPort : configuredPort;
+        return serverPort;
+    }
 
     /// <summary>
     /// Button click: Start Client (manual)

@@ -177,8 +177,15 @@ public class GameSceneClientInitializer : MonoBehaviour
         }
 
         // Setup server IP và port
-        networkManager.serverIP = string.IsNullOrWhiteSpace(serverIP) ? ServerAddressConfig.Instance.gameServerIp : serverIP;
-        networkManager.serverPort = serverPort == 0 || serverPort == 2003 ? ServerAddressConfig.Instance.gameServerPort : serverPort;
+        string configuredIp = ServerAddressConfig.Instance.gameServerIp;
+        networkManager.serverIP = (string.IsNullOrWhiteSpace(serverIP) || serverIP == "127.0.0.1" || serverIP == "localhost")
+            ? (string.IsNullOrWhiteSpace(configuredIp) ? "127.0.0.1" : configuredIp)
+            : serverIP;
+
+        ushort configuredPort = ServerAddressConfig.Instance.gameServerPort;
+        networkManager.serverPort = (serverPort == 0 || serverPort == 2003 || serverPort == 7777)
+            ? (configuredPort == 0 ? (ushort)7777 : configuredPort)
+            : serverPort;
 
         // Connect to host
         networkManager.ConnectToServer();
