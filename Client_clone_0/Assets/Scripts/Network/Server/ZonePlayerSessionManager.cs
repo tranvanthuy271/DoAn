@@ -65,8 +65,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback   -= OnClientDisconnected;
     }
 
-    private void OnDestroy()
+        public override void OnDestroy()
     {
+        base.OnDestroy();
         if (Instance == this) Instance = null;
     }
 

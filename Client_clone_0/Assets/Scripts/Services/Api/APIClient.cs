@@ -668,12 +668,12 @@ public class APIClient : MonoBehaviour
     /// <summary>
     /// Update player data (batch update) l├¬n server
     /// </summary>
-    public void UpdatePlayerData(int playerId, string jsonData, System.Action onSuccess = null, System.Action<string> onError = null)
+    public void UpdatePlayerData(int playerId, string jsonData, System.Action onSuccess = null, System.Action<string> onError = null, string jwtOverride = null)
     {
-        StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData, onSuccess, onError));
+        StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData, onSuccess, onError, jwtOverride));
     }
 
-    private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData, System.Action onSuccess, System.Action<string> onError)
+    private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData, System.Action onSuccess, System.Action<string> onError, string jwtOverride = null)
     {
         string url = $"{baseURL}/player/{playerId}/data";
         
@@ -681,9 +681,10 @@ public class APIClient : MonoBehaviour
         {
             www.SetRequestHeader("Content-Type", "application/json");
             
-            if (!string.IsNullOrEmpty(jwtToken))
+            string token = !string.IsNullOrEmpty(jwtOverride) ? jwtOverride : jwtToken;
+            if (!string.IsNullOrEmpty(token))
             {
-                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+                www.SetRequestHeader("Authorization", $"Bearer {token}");
             }
             
             yield return www.SendWebRequest();
@@ -1819,6 +1820,43 @@ public class APIClient : MonoBehaviour
             }
         }
     }
+
+    /// <summary>
+    /// GET /api/player/{playerId}/active-buffs
+    /// </summary>
+    public void GetActiveBuffs(int playerId,
+        System.Action<ActiveBuffDto[]> onSuccess,
+        System.Action<string> onError = null)
+    {
+        StartCoroutine(GetActiveBuffsCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator GetActiveBuffsCoroutine(int playerId,
+        System.Action<ActiveBuffDto[]> onSuccess,
+        System.Action<string> onError)
+    {
+        string url = $"{baseURL}/player/{playerId}/active-buffs";
+        using (var www = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            if (!string.IsNullOrEmpty(jwtToken))
+                www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    var wrapper = JsonUtility.FromJson<ActiveBuffsWrapper>(www.downloadHandler.text);
+                    onSuccess?.Invoke(wrapper?.active_buffs ?? new ActiveBuffDto[0]);
+                }
+                catch (System.Exception ex) { onError?.Invoke(ex.Message); }
+            }
+            else
+                onError?.Invoke(www.downloadHandler?.text ?? www.error);
+        }
+    }
+
+    [System.Serializable]
+    private class ActiveBuffsWrapper { public ActiveBuffDto[] active_buffs; }
 }
 
 [System.Serializable]
@@ -1827,4 +1865,11 @@ public class UseItemResponse
     public string message;
     public int    player_id;
     public int    bag_slots;
+    public int    hp_restore;
+    public int    mp_restore;
+    public int    current_hp;
+    public int    current_mp;
+    public int    gene_exp;
+    public ActiveBuffDto[] active_buffs;
+    public ActiveBuffDto[] new_buffs;
 }
