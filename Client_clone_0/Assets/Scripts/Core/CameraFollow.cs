@@ -10,6 +10,7 @@ public class CameraFollow : MonoBehaviour
     [Header("Follow Settings")]
     [SerializeField] private Vector3 offset = new Vector3(0, 0, -10);
     [SerializeField] private float smoothSpeed = 8f;
+    [SerializeField] private bool instantFollow = true;
     [SerializeField] private bool followX = true;
     [SerializeField] private bool followY = true;
 
@@ -29,9 +30,63 @@ public class CameraFollow : MonoBehaviour
     private Camera cam;
     private NetworkManager networkManager;
 
+    // Singleton: chỉ có 1 CameraFollow tồn tại xuyên suốt game
+    public static CameraFollow Instance { get; private set; }
+
     private void Awake()
     {
         cam = GetComponent<Camera>();
+
+        // Singleton + DontDestroyOnLoad: Camera sống sót khi chuyển scene/map
+        if (Instance != null && Instance != this)
+        {
+            var duplicateCamera = GetComponent<Camera>();
+            if (duplicateCamera != null)
+                duplicateCamera.enabled = false;
+
+            var duplicateListener = GetComponent<AudioListener>();
+            if (duplicateListener != null)
+                duplicateListener.enabled = false;
+
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Refresh bounds + target sau mỗi scene load (camera có thể ở scene cũ khi scene mới load additive)
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(RefreshAfterSceneLoad(scene, mode));
+    }
+
+    private System.Collections.IEnumerator RefreshAfterSceneLoad(Scene scene, LoadSceneMode mode)
+    {
+        // Additive transition sẽ SetActiveScene ở frame kế tiếp.
+        yield return null;
+
+        if (autoDetectMaxMap)
+            DetectMaxMapBounds();
+
+        if (target == null)
+            FindLocalPlayer();
+
+        if (target != null && instantFollow)
+            transform.position = GetClampedPosition(target.position + offset);
+
+        Debug.Log($"[CameraFollow] OnSceneLoaded scene={scene.name} mode={mode} | activeScene={SceneManager.GetActiveScene().name} | target={(target != null ? target.name : "null")}");
     }
 
     private void Start()
@@ -205,25 +260,7 @@ public class CameraFollow : MonoBehaviour
         // tránh hiệu ứng camera "bay" từ xa đến chỗ player
         if ((wasNull || snapImmediately) && newTarget != null)
         {
-            Vector3 snapPos = newTarget.position + offset;
-            if (useBounds && cam != null && cam.orthographic)
-            {
-                float halfH = cam.orthographicSize;
-                float halfW = halfH * cam.aspect;
-
-                float clampMinX = minBounds.x + halfW;
-                float clampMaxX = maxBounds.x - halfW;
-                float clampMinY = minBounds.y + halfH;
-                float clampMaxY = maxBounds.y - halfH;
-
-                snapPos.x = (clampMinX > clampMaxX)
-                    ? (minBounds.x + maxBounds.x) * 0.5f
-                    : Mathf.Clamp(snapPos.x, clampMinX, clampMaxX);
-                snapPos.y = (clampMinY > clampMaxY)
-                    ? (minBounds.y + maxBounds.y) * 0.5f
-                    : Mathf.Clamp(snapPos.y, clampMinY, clampMaxY);
-            }
-            transform.position = snapPos;
+            transform.position = GetClampedPosition(newTarget.position + offset);
         }
 
         Debug.Log($"[CameraFollow] Target đã được gán: {newTarget?.name}");
@@ -254,6 +291,14 @@ public class CameraFollow : MonoBehaviour
 
         if (!followX) desiredPosition.x = transform.position.x;
         if (!followY) desiredPosition.y = transform.position.y;
+
+        desiredPosition = GetClampedPosition(desiredPosition);
+
+        if (instantFollow)
+        {
+            transform.position = desiredPosition;
+            return;
+        }
 
         // Smooth follow – dùng Time.deltaTime để tốc độ không phụ thuộc framerate
         // smoothSpeed = 8 → camera bắt kịp player trong ~0.2 giây
@@ -288,6 +333,34 @@ public class CameraFollow : MonoBehaviour
         }
 
         transform.position = smoothed;
+    }
+
+    private Vector3 GetClampedPosition(Vector3 desiredPosition)
+    {
+        if (!useBounds)
+            return desiredPosition;
+
+        float halfH = 0f;
+        float halfW = 0f;
+        if (cam != null && cam.orthographic)
+        {
+            halfH = cam.orthographicSize;
+            halfW = halfH * cam.aspect;
+        }
+
+        float clampMinX = minBounds.x + halfW;
+        float clampMaxX = maxBounds.x - halfW;
+        float clampMinY = minBounds.y + halfH;
+        float clampMaxY = maxBounds.y - halfH;
+
+        desiredPosition.x = (clampMinX > clampMaxX)
+            ? (minBounds.x + maxBounds.x) * 0.5f
+            : Mathf.Clamp(desiredPosition.x, clampMinX, clampMaxX);
+        desiredPosition.y = (clampMinY > clampMaxY)
+            ? (minBounds.y + maxBounds.y) * 0.5f
+            : Mathf.Clamp(desiredPosition.y, clampMinY, clampMaxY);
+
+        return desiredPosition;
     }
 
     // ---------------------------------------------------------------------------

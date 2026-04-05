@@ -27,6 +27,7 @@ public class InputManager : MonoBehaviour
     private bool _mobileJumpPressed;  // one-frame flag
     private bool _mobileJumpHeld;
     private bool _mobileAttackPressed; // one-frame flag
+    private bool _mobileFallThroughPressed; // one-frame flag (nút rơi xuống platform)
 
     private void Awake()
     {
@@ -46,6 +47,7 @@ public class InputManager : MonoBehaviour
         // Clear one-frame mobile flags after each frame
         _mobileJumpPressed = false;
         _mobileAttackPressed = false;
+        _mobileFallThroughPressed = false;
     }
 
     // ── Mobile setters (called by UI components) ────────────────────────────
@@ -65,6 +67,12 @@ public class InputManager : MonoBehaviour
     public void SetMobileAttack()
     {
         _mobileAttackPressed = true;
+    }
+
+    /// <summary>Gọi từ MobileFallThroughButton khi người chơi nhấn nút rơi xuống platform.</summary>
+    public void SetMobileFallThrough()
+    {
+        _mobileFallThroughPressed = true;
     }
 
     // ── Input queries (keyboard OR mobile) ──────────────────────────────────
@@ -101,6 +109,13 @@ public class InputManager : MonoBehaviour
     {
         if (!inputEnabled) return false;
         return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(0) || _mobileAttackPressed;
+    }
+
+    /// <summary>Trả về true trong ĐÚNG 1 frame khi người chơi nhấn S/DownArrow hoặc nút ↓ mobile.</summary>
+    public bool GetFallThroughPressed()
+    {
+        if (!inputEnabled) return false;
+        return Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow) || _mobileFallThroughPressed;
     }
 
     public void EnableInput(bool enable)

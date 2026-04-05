@@ -68,10 +68,11 @@ public class PlayerController : MonoBehaviour
 
             if (isLocalPlayer)
             {
-                CameraFollow cam = FindObjectOfType<CameraFollow>();
+                CameraFollow cam = CameraFollow.Instance ?? FindAnyObjectByType<CameraFollow>();
                 if (cam != null)
                 {
-                    cam.SetTarget(transform);
+                    cam.RefreshMaxMapBounds();
+                    cam.SetTarget(transform, true);
                     Debug.Log($"[PlayerController] Camera gán target: {gameObject.name}");
                 }
             }

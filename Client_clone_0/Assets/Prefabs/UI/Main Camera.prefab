@@ -107,10 +107,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   offset: {x: 0, y: 2, z: -10}
-  smoothSpeed: 0.125
+  smoothSpeed: 30
+  instantFollow: 1
   followX: 1
   followY: 1
   followLocalPlayerOnly: 1
   useBounds: 0
+  autoDetectMaxMap: 1
   minBounds: {x: 0, y: 0}
   maxBounds: {x: 0, y: 0}

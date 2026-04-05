@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using Unity.Netcode;
 
 /// <summary>
@@ -97,6 +98,7 @@ public class ClientSceneController : MonoBehaviour
 
             // 3a — Di chuyển tất cả root NetworkObjects từ scene cũ sang scene mới
             //       để chúng sống sót khi unload scene cũ.
+            //       Đồng thời protect Canvas/EventSystem chưa được GameUIPersist bảo vệ.
             int moved = 0;
             foreach (var rootObj in oldScene.GetRootGameObjects())
             {
@@ -105,18 +107,35 @@ public class ClientSceneController : MonoBehaviour
                 {
                     SceneManager.MoveGameObjectToScene(rootObj, newScene);
                     moved++;
+                    continue;
+                }
+                // Safety net: bảo vệ Canvas/EventSystem còn sót trong scene cũ
+                // (trường hợp GameUIPersist chưa được gán trong Inspector)
+                bool isCanvas    = rootObj.GetComponent<Canvas>() != null;
+                bool isEventSys  = rootObj.GetComponent<EventSystem>() != null;
+                bool hasUIPersist = rootObj.GetComponent<GameUIPersist>() != null;
+                if ((isCanvas || isEventSys) && !hasUIPersist)
+                {
+                    ProtectLegacyUiRoot(rootObj);
                 }
             }
             Debug.Log($"[ClientSceneController] Moved {moved} NetworkObject(s) → {sceneName}");
 
             // 3b — Đặt scene mới làm active
             SceneManager.SetActiveScene(newScene);
+            CleanupDuplicateEventSystems();
+
+            // Camera persistent phải refresh bounds theo active scene mới,
+            // không dùng scene cũ vừa unload.
+            CameraFollow.Instance?.RefreshMaxMapBounds();
 
             // 3c — Unload scene cũ (NetworkObjects đã chuyển sang scene mới, an toàn)
             var unloadOp = SceneManager.UnloadSceneAsync(oldScene);
             if (unloadOp != null)
                 while (!unloadOp.isDone)
                     yield return null;
+
+            CleanupDuplicateEventSystems();
         }
 
         // 4 — Cập nhật trạng thái zone
@@ -186,7 +205,7 @@ public class ClientSceneController : MonoBehaviour
             playerNetObj.transform.position = pos;
 
             // Cập nhật camera — refresh bounds trước rồi mới snap để bounds mới được dùng
-            var cam = FindAnyObjectByType<CameraFollow>();
+            var cam = CameraFollow.Instance ?? FindAnyObjectByType<CameraFollow>();
             cam?.RefreshMaxMapBounds();
             cam?.SetTarget(playerNetObj.transform, true);
 
@@ -219,6 +238,66 @@ public class ClientSceneController : MonoBehaviour
     {
         if (_loadingScreenInstance != null)
             _loadingScreenInstance.SetActive(false);
+    }
+
+    private static void ProtectLegacyUiRoot(GameObject rootObj)
+    {
+        if (rootObj == null)
+            return;
+
+        EventSystem eventSystem = rootObj.GetComponent<EventSystem>();
+        if (eventSystem != null)
+        {
+            EventSystem existingPersistentEventSystem = FindPreferredEventSystem(eventSystem);
+            if (existingPersistentEventSystem != null)
+            {
+                Debug.LogWarning($"[ClientSceneController] Duplicate EventSystem '{rootObj.name}' detected while transitioning scene — destroying scene-local copy.");
+                Destroy(rootObj);
+                return;
+            }
+        }
+
+        Debug.LogWarning($"[ClientSceneController] '{rootObj.name}' là Canvas/EventSystem chưa có GameUIPersist — tự động thêm GameUIPersist để tránh mất UI.");
+        rootObj.AddComponent<GameUIPersist>();
+    }
+
+    private static void CleanupDuplicateEventSystems()
+    {
+        EventSystem[] eventSystems = FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+        if (eventSystems == null || eventSystems.Length <= 1)
+            return;
+
+        EventSystem preferred = FindPreferredEventSystem();
+        preferred ??= eventSystems[0];
+
+        foreach (EventSystem eventSystem in eventSystems)
+        {
+            if (eventSystem == null || eventSystem == preferred)
+                continue;
+
+            Debug.LogWarning($"[ClientSceneController] Destroying duplicate EventSystem '{eventSystem.gameObject.name}' after scene transition.");
+            Destroy(eventSystem.gameObject);
+        }
+    }
+
+    private static EventSystem FindPreferredEventSystem(EventSystem exclude = null)
+    {
+        EventSystem[] eventSystems = FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+        foreach (EventSystem eventSystem in eventSystems)
+        {
+            if (eventSystem == null || eventSystem == exclude)
+                continue;
+
+            if (eventSystem.GetComponent<GameUIPersist>() != null || IsPersistentObject(eventSystem.gameObject))
+                return eventSystem;
+        }
+
+        return null;
+    }
+
+    private static bool IsPersistentObject(GameObject obj)
+    {
+        return obj != null && obj.scene.buildIndex < 0;
     }
 
     private void OnDestroy()

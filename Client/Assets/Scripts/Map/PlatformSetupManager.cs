@@ -1,15 +1,18 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Tự động tìm và cấu hình tất cả nền nổi (platform) trong scene khi game bắt đầu.
 ///
 /// LOGIC phát hiện platform:
 ///   - Collider2D thuộc layer "Ground"
-///   - Vị trí center trong world > platformMinY (mặc định 1.0)
-///   - Bề ngang > bề dọc * 2 (vật nằm ngang, không phải tường dọc)
+///   - Bề ngang > bề dọc * 1.5 (vật nằm ngang, không phải tường dọc)
+///   → Chỉ apply cho collider nằm ngang để tường dọc vẫn solid bình thường.
 ///
-/// Kết quả: player nhảy từ dưới lên xuyên qua, đứng từ trên xuống được,
-///          đi ngang qua cũng được (không bị chặn bởi cạnh bên).
+/// Kết quả:
+///   - Player nhảy từ dưới lên xuyên qua.
+///   - Đứng từ trên xuống được.
+///   - Đi NGANG qua cũng được (không bị dính cạnh bên).
 ///
 /// CÁCH DÙNG:
 /// 1. Tạo GameObject rỗng trong scene (ví dụ "MapSetup")
@@ -18,15 +21,62 @@ using UnityEngine;
 /// </summary>
 public class PlatformSetupManager : MonoBehaviour
 {
-    [Tooltip("Chỉ coi là platform nếu center của collider cao hơn giá trị này (world Y)")]
-    [SerializeField] private float platformMinY = 1.0f;
+    private static PlatformSetupManager instance;
 
-    [Tooltip("Góc solid arc của PlatformEffector2D. 150 = bên hông pass-through, " +
-             "mặt trên solid, mặt dưới pass-through. " +
-             "Giá trị nhỏ hơn → dễ đi ngang qua platform hơn.")]
+    [Tooltip("Góc solid arc của PlatformEffector2D. 150 = mặt trên solid, bên hông và dưới pass-through.")]
     [SerializeField] private float surfaceArc = 150f;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void AutoBootstrap()
+    {
+        if (instance != null) return;
+
+        var existing = FindFirstObjectByType<PlatformSetupManager>();
+        if (existing != null)
+        {
+            instance = existing;
+            return;
+        }
+
+        GameObject go = new GameObject("PlatformSetupManager [Auto]");
+        instance = go.AddComponent<PlatformSetupManager>();
+        DontDestroyOnLoad(go);
+    }
+
+    private void Awake()
+    {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        if (instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
     private void Start()
+    {
+        ConfigurePlatforms();
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ConfigurePlatforms();
+    }
+
+    private void ConfigurePlatforms()
     {
         int groundLayer = LayerMask.NameToLayer("Ground");
         if (groundLayer < 0)
@@ -43,9 +93,10 @@ public class PlatformSetupManager : MonoBehaviour
             if (col.gameObject.layer != groundLayer) continue;
 
             Bounds b = col.bounds;
-            bool isThinHorizontal = b.size.x > b.size.y * 2f;
+            // Chỉ áp dụng cho collider nằm ngang (để tường dọc vẫn solid)
+            bool isHorizontal = b.size.x > b.size.y * 1.5f;
 
-            // Pass 1: collider đã có PlatformEffector2D trong scene (dù ở độ cao nào)
+            // Pass 1: collider đã có PlatformEffector2D trong scene
             // → chỉ cần bật usedByEffector và cập nhật thông số
             var existingEffector = col.gameObject.GetComponent<PlatformEffector2D>();
             if (existingEffector != null)
@@ -60,10 +111,8 @@ public class PlatformSetupManager : MonoBehaviour
                 continue;
             }
 
-            // Pass 2: collider chưa có PlatformEffector2D
-            // → chỉ thêm mới khi đủ điều kiện: đủ cao + nằm ngang
-            if (b.center.y <= platformMinY) continue;
-            if (!isThinHorizontal) continue;
+            // Pass 2: collider chưa có PlatformEffector2D → chỉ thêm mới khi nằm ngang
+            if (!isHorizontal) continue;
 
             var newEffector = col.gameObject.AddComponent<PlatformEffector2D>();
             newEffector.useOneWay = true;

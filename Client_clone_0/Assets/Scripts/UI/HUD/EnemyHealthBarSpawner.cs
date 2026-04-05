@@ -1,12 +1,12 @@
-using UnityEngine;
+using System.Collections;
 using Unity.Netcode;
+using UnityEngine;
 
 /// <summary>
-/// EnemyHealthBarSpawner - Tự động spawn health bar khi enemy spawn trên network
-/// Health bar được tạo local trên mỗi client (không cần network sync)
+/// EnemyHealthBarSpawner - Tự động bind health bar local sau khi enemy root được spawn.
+/// Health bar là UI local, không phải NetworkObject.
 /// </summary>
-[RequireComponent(typeof(NetworkObject))]
-public class EnemyHealthBarSpawner : NetworkBehaviour
+public class EnemyHealthBarSpawner : MonoBehaviour
 {
     [Header("Health Bar Prefab")]
     [Tooltip("Prefab của Enemy Health Bar (Canvas World Space với EnemyHealthBar component)")]
@@ -16,54 +16,79 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
     private NetworkEnemyHealth enemyHealth; // Dùng NetworkEnemyHealth thay vì EnemyHealth
     private GameObject healthBarInstance;
     private bool hasSpawned = false; // Flag để tránh spawn nhiều lần
+    private Coroutine spawnRoutine;
 
     private void Awake()
     {
-        // Lấy NetworkEnemyHealth từ root enemy, không lấy từ chính object này
-        // (EnemyHealthBarSpawner có thể nằm trên HP bar canvas child, tránh lấy nhầm component ở đó)
-        enemyHealth = transform.root.GetComponent<NetworkEnemyHealth>();
-        if (enemyHealth == null)
-            enemyHealth = GetComponentInParent<NetworkEnemyHealth>();
+        ResolveEnemyHealth();
     }
 
-    public override void OnNetworkSpawn()
+    private void OnEnable()
     {
-        base.OnNetworkSpawn();
-        
-        // Tránh spawn nhiều lần
-        if (hasSpawned)
-        {
-            // Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar already spawned for {gameObject.name}!");
-            return;
-        }
-        
-        if (enemyHealth == null)
-        {
-            enemyHealth = GetComponent<NetworkEnemyHealth>();
-        }
-        
-        if (enemyHealth == null)
-        {
-            // Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth not found on {gameObject.name}!");
-            return;
-        }
-
-        // Spawn health bar trên TẤT CẢ clients (local, không cần network sync)
-        SpawnHealthBar();
-        hasSpawned = true;
+        BeginSpawnRoutine();
     }
 
-    public override void OnNetworkDespawn()
+    private void OnDisable()
     {
-        // Cleanup health bar khi enemy despawn
+        if (spawnRoutine != null)
+        {
+            StopCoroutine(spawnRoutine);
+            spawnRoutine = null;
+        }
+    }
+
+    private void OnDestroy()
+    {
         if (healthBarInstance != null)
         {
             Destroy(healthBarInstance);
             healthBarInstance = null;
         }
-        
+
         hasSpawned = false;
-        base.OnNetworkDespawn();
+    }
+
+    private void ResolveEnemyHealth()
+    {
+        enemyHealth = transform.root.GetComponent<NetworkEnemyHealth>();
+        if (enemyHealth == null)
+            enemyHealth = GetComponentInParent<NetworkEnemyHealth>();
+    }
+
+    private NetworkObject GetRootNetworkObject()
+    {
+        return transform.root.GetComponent<NetworkObject>() ?? GetComponentInParent<NetworkObject>();
+    }
+
+    private void BeginSpawnRoutine()
+    {
+        if (hasSpawned || spawnRoutine != null)
+            return;
+
+        spawnRoutine = StartCoroutine(WaitForSpawnReady());
+    }
+
+    private IEnumerator WaitForSpawnReady()
+    {
+        while (isActiveAndEnabled && !hasSpawned)
+        {
+            ResolveEnemyHealth();
+
+            NetworkObject rootNetworkObject = GetRootNetworkObject();
+            bool rootReady = rootNetworkObject == null || rootNetworkObject.IsSpawned;
+
+            if (enemyHealth != null && rootReady)
+            {
+                SpawnHealthBar();
+                hasSpawned = true;
+                spawnRoutine = null;
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        spawnRoutine = null;
     }
 
     /// <summary>
@@ -78,6 +103,15 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
             return;
         }
 
+        // ⭐ Nếu đã có EnemyHealthBar trên cùng object (HP bar canvas baked-in vào enemy prefab),
+        // tái sử dụng thay vì yêu cầu một prefab khác.
+        EnemyHealthBar existingBar = GetComponent<EnemyHealthBar>();
+        if (existingBar != null)
+        {
+            existingBar.Setup(enemyHealth, transform.root);
+            return;
+        }
+
         if (healthBarPrefab == null)
         {
             // Debug.LogWarning($"[EnemyHealthBarSpawner] Health bar prefab not assigned on {gameObject.name}!");
@@ -87,15 +121,6 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
         if (enemyHealth == null)
         {
             // Debug.LogWarning($"[EnemyHealthBarSpawner] NetworkEnemyHealth is null on {gameObject.name}!");
-            return;
-        }
-
-        // ⭐ Nếu đã có EnemyHealthBar trên cùng object (HP bar canvas baked-in vào enemy prefab),
-        // tái sử dụng thay vì spawn thêm — tránh xuất hiện 2 thanh HP bar
-        EnemyHealthBar existingBar = GetComponent<EnemyHealthBar>();
-        if (existingBar != null)
-        {
-            existingBar.Setup(enemyHealth, transform.root);
             return;
         }
 
@@ -144,9 +169,9 @@ public class EnemyHealthBarSpawner : NetworkBehaviour
     /// </summary>
     public void SpawnHealthBarManually()
     {
-        // Chỉ spawn nếu chưa spawn
         if (!hasSpawned && healthBarInstance == null)
         {
+            ResolveEnemyHealth();
             SpawnHealthBar();
             hasSpawned = true;
         }

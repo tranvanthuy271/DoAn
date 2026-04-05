@@ -654,9 +654,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1951611436286590977}
-    - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1310156119396352522}
     - targetCorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       insertIndex: -1
@@ -667,40 +664,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 227882736479539406, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
   m_PrefabInstance: {fileID: 30774136887136600}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1951611436286590977
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 235540465479565718}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 10
-  OnHealthChanged:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 235540465479565718}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  OnDeath:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTakeDamage:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1310156119396352522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -731,7 +694,7 @@ MonoBehaviour:
   backgroundImage: {fileID: 5937031067475502835}
   healthText: {fileID: 0}
   healthText3D: {fileID: 0}
-  networkEnemyHealth: {fileID: 1951611436286590977}
+  networkEnemyHealth: {fileID: 0}
   enemyHealth: {fileID: 0}
   enemyTransform: {fileID: 0}
   healthColor: {r: 1, g: 0, b: 0, a: 1}

@@ -179,8 +179,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
         if (IsServer)
         {
-            // Chờ animation die (0.8 giây) rồi mới Despawn
-            Invoke(nameof(DestroyEnemyServer), 0.9f);
+            // Despawn ngay lập tức (không chờ animation) — OnDeathClientRpc đã được queue trước
+            DestroyEnemyServer();
         }
     }
 

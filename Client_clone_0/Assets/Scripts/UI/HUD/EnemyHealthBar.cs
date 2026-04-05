@@ -39,6 +39,63 @@ public class EnemyHealthBar : MonoBehaviour
     private RectTransform rectTransform;
     private Vector2 preservedSize; // Lưu size ban đầu để preserve
 
+    private void ApplyVisualDefaults()
+    {
+        if (healthSlider != null)
+        {
+            healthSlider.minValue = 0;
+            healthSlider.maxValue = 1;
+            healthSlider.value = 1;
+        }
+
+        if (fillImage != null)
+        {
+            fillImage.color = healthColor;
+        }
+
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = damageColor;
+        }
+    }
+
+    private void UnregisterHealthEvents()
+    {
+        if (networkEnemyHealth != null)
+        {
+            networkEnemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+            networkEnemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
+        }
+
+        if (enemyHealth != null)
+        {
+            enemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+            enemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
+        }
+    }
+
+    private void RegisterNetworkHealthEvents()
+    {
+        if (networkEnemyHealth == null)
+            return;
+
+        networkEnemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+        networkEnemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
+        networkEnemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
+        networkEnemyHealth.OnDeath.AddListener(OnEnemyDeath);
+    }
+
+    private void RegisterEnemyHealthEvents()
+    {
+        if (enemyHealth == null)
+            return;
+
+        enemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
+        enemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
+        enemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
+        enemyHealth.OnDeath.AddListener(OnEnemyDeath);
+    }
+
     private void Awake()
     {
         // Luôn lấy NetworkEnemyHealth từ root enemy (tránh lấy nhầm component duplicate trên HP bar canvas)
@@ -124,51 +181,35 @@ public class EnemyHealthBar : MonoBehaviour
     private void Start()
     {
         // Nếu Setup() đã được gọi từ EnemyHealthBarSpawner thì không subscribe lại (tránh double-call)
-        if (networkEnemyHealth != null && _setupDone) return;
-        if (enemyHealth != null && _setupDone) return;
+        if (_setupDone && (networkEnemyHealth != null || enemyHealth != null))
+        {
+            ApplyVisualDefaults();
+            return;
+        }
 
         // Ưu tiên dùng NetworkEnemyHealth
         if (networkEnemyHealth != null)
         {
-            // Subscribe to health changed event
-            networkEnemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            networkEnemyHealth.OnDeath.AddListener(OnEnemyDeath);
+            RegisterNetworkHealthEvents();
 
             // Initialize
             UpdateHealthBar(networkEnemyHealth.GetCurrentHealth(), networkEnemyHealth.GetMaxHealth());
+            _setupDone = true;
         }
         else if (enemyHealth != null)
         {
-            // Fallback: Dùng EnemyHealth (không network)
-            enemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            enemyHealth.OnDeath.AddListener(OnEnemyDeath);
+            RegisterEnemyHealthEvents();
 
             // Initialize
             UpdateHealthBar(enemyHealth.GetCurrentHealth(), enemyHealth.GetMaxHealth());
+            _setupDone = true;
         }
         else
         {
             // Debug.LogWarning($"[EnemyHealthBar] NetworkEnemyHealth or EnemyHealth not found on {gameObject.name}!");
         }
 
-        // Setup slider if exists
-        if (healthSlider != null)
-        {
-            healthSlider.minValue = 0;
-            healthSlider.maxValue = 1;
-            healthSlider.value = 1; // Ban đầu đầy HP
-        }
-
-        // Setup colors
-        if (fillImage != null)
-        {
-            fillImage.color = healthColor; // Màu đỏ cho phần HP còn lại
-        }
-
-        if (backgroundImage != null)
-        {
-            backgroundImage.color = damageColor; // Màu trắng cho phần đã mất (background của slider)
-        }
+        ApplyVisualDefaults();
 
         // ⭐ DISABLED: Không set position ban đầu - Giữ nguyên position từ prefab/scene
         // if (enemyTransform != null)
@@ -311,18 +352,7 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Unsubscribe from events
-        if (networkEnemyHealth != null)
-        {
-            networkEnemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
-            networkEnemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
-        }
-
-        if (enemyHealth != null)
-        {
-            enemyHealth.OnHealthChanged.RemoveListener(UpdateHealthBar);
-            enemyHealth.OnDeath.RemoveListener(OnEnemyDeath);
-        }
+        UnregisterHealthEvents();
     }
 
     /// <summary>
@@ -330,7 +360,12 @@ public class EnemyHealthBar : MonoBehaviour
     /// </summary>
     public void Setup(NetworkEnemyHealth health, Transform enemyTransform)
     {
+        if (_setupDone && networkEnemyHealth == health && this.enemyTransform == enemyTransform)
+            return;
+
+        UnregisterHealthEvents();
         this.networkEnemyHealth = health;
+        this.enemyHealth = null;
         this.enemyTransform = enemyTransform;
 
         // ⭐ DISABLED: Không set position - Giữ nguyên position từ prefab/scene
@@ -345,10 +380,11 @@ public class EnemyHealthBar : MonoBehaviour
 
         if (networkEnemyHealth != null)
         {
-            networkEnemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            networkEnemyHealth.OnDeath.AddListener(OnEnemyDeath);
+            RegisterNetworkHealthEvents();
             UpdateHealthBar(networkEnemyHealth.GetCurrentHealth(), networkEnemyHealth.GetMaxHealth());
         }
+
+        ApplyVisualDefaults();
         _setupDone = true;
     }
 
@@ -357,7 +393,12 @@ public class EnemyHealthBar : MonoBehaviour
     /// </summary>
     public void Setup(EnemyHealth health, Transform enemyTransform)
     {
+        if (_setupDone && enemyHealth == health && this.enemyTransform == enemyTransform)
+            return;
+
+        UnregisterHealthEvents();
         this.enemyHealth = health;
+        this.networkEnemyHealth = null;
         this.enemyTransform = enemyTransform;
 
         // ⭐ DISABLED: Không set position - Giữ nguyên position từ prefab/scene
@@ -372,10 +413,11 @@ public class EnemyHealthBar : MonoBehaviour
 
         if (enemyHealth != null)
         {
-            enemyHealth.OnHealthChanged.AddListener(UpdateHealthBar);
-            enemyHealth.OnDeath.AddListener(OnEnemyDeath);
+            RegisterEnemyHealthEvents();
             UpdateHealthBar(enemyHealth.GetCurrentHealth(), enemyHealth.GetMaxHealth());
         }
+
+        ApplyVisualDefaults();
         _setupDone = true;
     }
 }

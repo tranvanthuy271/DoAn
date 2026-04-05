@@ -13,6 +13,7 @@ public class NetworkPlayerController : NetworkBehaviour
     [Header("Network Movement")]
     // Dùng để detect GetKeyDown trong Update rồi consume trong FixedUpdate
     private bool pendingJump = false;
+    private bool pendingFallThrough = false;
 
     [Header("Network Sync")]
     // NetworkVariable để sync flip direction (localScale.x) cho non-owner clients
@@ -66,10 +67,11 @@ public class NetworkPlayerController : NetworkBehaviour
             // Đặt player vào đúng vị trí đích nếu vừa chuyển map qua portal
             PortalArrivalHandler.ApplyPendingArrival(transform);
 
-            CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
+            CameraFollow cameraFollow = CameraFollow.Instance ?? FindAnyObjectByType<CameraFollow>();
             if (cameraFollow != null)
             {
-                cameraFollow.SetTarget(transform);
+                cameraFollow.RefreshMaxMapBounds();
+                cameraFollow.SetTarget(transform, true);
                 Debug.Log($"[NetworkPlayerController] Camera target set to {gameObject.name}");
             }
             else
@@ -103,6 +105,11 @@ public class NetworkPlayerController : NetworkBehaviour
         var im = InputManager.Instance;
         if (im != null ? im.GetJumpPressed() : (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)))
             pendingJump = true;
+
+        // Detect fall-through trong Update (cần GetKeyDown, không thể dùng GetKey)
+        if (im != null ? im.GetFallThroughPressed()
+                       : (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)))
+            pendingFallThrough = true;
     }
 
     private bool _moveDiagLogged = false;
@@ -175,6 +182,14 @@ public class NetworkPlayerController : NetworkBehaviour
                 if (jump && isGrounded && rb.velocity.y < 1f)
                     rb.AddForce(Vector2.up * stats.jumpForce, ForceMode2D.Impulse);
                 rb.gravityScale = stats.gravity;
+            }
+
+            // Fall-through one-way platform (S/DownArrow hoặc nút mobile ↓)
+            if (pendingFallThrough)
+            {
+                pendingFallThrough = false;
+                if (isGrounded)
+                    movement.TryFallThroughPlatform();
             }
 
             // Update animation cục bộ ngay (không chờ UpdateAnimationClientRpc)

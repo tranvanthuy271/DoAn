@@ -36,6 +36,17 @@ public class PlayerMovement : MonoBehaviour
     private bool isFlying;       // chỉ true trong god mode
     private bool shouldJump;    // được set ở Update, consume ở FixedUpdate
 
+    [Header("Fall-through Platform")]
+    [Tooltip("Khoảng cách tìm kiếm ground bên dưới platform hiện tại để kiểm tra có ground nào nữa không")]
+    [SerializeField] private float fallThroughSearchDistance = 15f;
+    [Tooltip("Thời gian ignore collision với platform khi nhấn S/Down. Tăng x3 để player rơi hẳn xuống dưới.")]
+    [SerializeField] private float fallThroughIgnoreDuration = 1.05f;
+    [Tooltip("Khoảng đẩy xuống ngay khi bắt đầu fall-through để tránh bị snap ngược về platform cũ")]
+    [SerializeField] private float fallThroughInitialDrop = 0.2f;
+    [Tooltip("Vận tốc rơi tối thiểu khi bắt đầu fall-through")]
+    [SerializeField] private float fallThroughMinVelocity = 4f;
+    private bool shouldFallThrough; // detectt ở HandleInput, consume ở HandleMovement / NetworkPlayerController
+
     [Header("Stun (bất động khi trúng skill)")]
     private bool isStunned;
     private float stunTimer;
@@ -141,6 +152,12 @@ public class PlayerMovement : MonoBehaviour
         jumpHeld    = im != null ? im.GetJumpHeld()
                                  : (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W));
 
+        // Fall-through: nhấn S/DownArrow (hay nút ↓ mobile) khi đang đứng trên one-way platform
+        bool fallThroughKey = im != null ? im.GetFallThroughPressed()
+                                         : (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow));
+        if (fallThroughKey && isGrounded)
+            shouldFallThrough = true;
+
         // isGrounded đã được update ở đầu HandleInput() rồi, không cần check lại
 
         // Cho phép nhảy nếu đang ở dưới đất và nhLetấn jump
@@ -224,6 +241,12 @@ public class PlayerMovement : MonoBehaviour
                 rb.AddForce(Vector2.up * stats.jumpForce, ForceMode2D.Impulse);
                 shouldJump = false;
             }
+            // Fall-through one-way platform
+            if (shouldFallThrough)
+            {
+                shouldFallThrough = false;
+                TryFallThroughPlatform();
+            }
             isFlying = false;
             // Trọng lực luôn bật – không treo lơ lừng khi nhấn A/D trên không
             rb.gravityScale = stats.gravity;
@@ -303,6 +326,111 @@ public class PlayerMovement : MonoBehaviour
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fall-through one-way platform (S / ↓ / mobile button)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Dùng bởi NetworkPlayerController để consume flag shouldFallThrough và gọi TryFallThroughPlatform.
+    /// </summary>
+    public bool ConsumePendingFallThrough()
+    {
+        bool v = shouldFallThrough;
+        shouldFallThrough = false;
+        return v;
+    }
+
+    /// <summary>
+    /// Thực hiện rơi xuyên qua one-way platform đang đứng trên, nếu có ground phía dưới nó.
+    /// Gọi từ HandleMovement() (standalone) hoặc NetworkPlayerController.FixedUpdate() (network).
+    /// </summary>
+    public void TryFallThroughPlatform()
+    {
+        Collider2D platform = GetCurrentOneWayPlatform();
+        if (platform == null) return;
+        if (!HasGroundBelow(platform))
+        {
+            Debug.Log("[PlayerMovement] Fall-through bị chặn: không có ground bên dưới platform này.");
+            return;
+        }
+        StartCoroutine(FallThroughCoroutine(platform));
+    }
+
+    /// <summary>Tìm one-way platform trực tiếp bên dưới player (nơi đang đứng).</summary>
+    private Collider2D GetCurrentOneWayPlatform()
+    {
+        if (groundCheck == null) return null;
+        // Raycast ngắn từ groundCheck xuống để tìm collider có PlatformEffector2D
+        RaycastHit2D[] hits = Physics2D.RaycastAll(
+            groundCheck.position,
+            Vector2.down,
+            groundCheckRadius + 0.2f,
+            groundLayer);
+        foreach (var hit in hits)
+        {
+            if (hit.collider == null) continue;
+            var eff = hit.collider.GetComponent<PlatformEffector2D>();
+            if (eff != null && eff.useOneWay)
+                return hit.collider;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Kiểm tra có ground nào khác bên dưới platform hiện tại không.
+    /// Nếu KHÔNG có → đây là ground cuối cùng → không cho rơi xuống.
+    /// </summary>
+    private bool HasGroundBelow(Collider2D currentPlatform)
+    {
+        float startY = currentPlatform.bounds.min.y - 0.05f;
+        RaycastHit2D[] downHits = Physics2D.RaycastAll(
+            new Vector2(transform.position.x, startY),
+            Vector2.down,
+            fallThroughSearchDistance,
+            groundLayer);
+        foreach (var hit in downHits)
+        {
+            if (hit.collider != null && hit.collider != currentPlatform)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Tắt collision với platform 0.35s để player rơi xuyên qua, rồi bật lại.</summary>
+    private System.Collections.IEnumerator FallThroughCoroutine(Collider2D platform)
+    {
+        Collider2D playerCol = GetComponent<Collider2D>();
+        if (playerCol == null || platform == null || rb == null) yield break;
+
+        Bounds platformBounds = platform.bounds;
+
+        Physics2D.IgnoreCollision(playerCol, platform, true);
+        rb.position = new Vector2(rb.position.x, rb.position.y - fallThroughInitialDrop);
+        rb.velocity = new Vector2(rb.velocity.x, Mathf.Min(rb.velocity.y, -fallThroughMinVelocity));
+
+        float elapsed = 0f;
+        float maxWait = fallThroughIgnoreDuration + 0.75f;
+
+        while (elapsed < maxWait)
+        {
+            elapsed += Time.deltaTime;
+
+            bool minimumDurationElapsed = elapsed >= fallThroughIgnoreDuration;
+            bool fullyBelowPlatform = playerCol != null && platform != null
+                ? playerCol.bounds.max.y < platformBounds.min.y - 0.05f
+                : true;
+
+            if (minimumDurationElapsed && fullyBelowPlatform)
+                break;
+
+            yield return null;
+        }
+
+        // Guard: collider vẫn còn tồn tại sau khi chờ
+        if (playerCol != null && platform != null)
+            Physics2D.IgnoreCollision(playerCol, platform, false);
     }
 
     /// <summary>Áp dụng bất động cho player (chặn input) trong thời gian duration giây.</summary>

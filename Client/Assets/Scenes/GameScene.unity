@@ -26817,7 +26817,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   offset: {x: 0, y: 2, z: -10}
-  smoothSpeed: 8
+  smoothSpeed: 30
+  instantFollow: 1
   followX: 1
   followY: 1
   followLocalPlayerOnly: 1
