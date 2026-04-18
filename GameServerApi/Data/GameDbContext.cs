@@ -31,15 +31,18 @@ namespace GameServerApi.Data
         public DbSet<NpcDialogue>              NpcDialogues             => Set<NpcDialogue>();
         public DbSet<MapPortal>                MapPortals               => Set<MapPortal>();
         public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
-        public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
-        public DbSet<MapSpawnConfig>           MapSpawnConfigs          => Set<MapSpawnConfig>();
         public DbSet<ItemEffectTemplate>       ItemEffectTemplates       => Set<ItemEffectTemplate>();
+        public DbSet<OptionTemplate>           OptionTemplates          => Set<OptionTemplate>();
+        public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
 
         // ── Normalized player data tables (Phase 2) ──────────────────
         public DbSet<PlayerEquipment>   PlayerEquipments   => Set<PlayerEquipment>();
         public DbSet<PlayerInventory>   PlayerInventories  => Set<PlayerInventory>();
         public DbSet<PlayerSkillRecord> PlayerSkillRecords => Set<PlayerSkillRecord>();
         public DbSet<PlayerActionLog>   PlayerActionLogs   => Set<PlayerActionLog>();
+
+        // ── Chat & Social ─────────────────────────────────────────────────────
+        public DbSet<GameServerApi.Models.Entities.FriendRelation> FriendRelations => Set<GameServerApi.Models.Entities.FriendRelation>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -60,6 +63,20 @@ namespace GameServerApi.Data
 
                 entity.HasIndex(u => u.Username).IsUnique();
                 entity.HasIndex(u => u.Email).IsUnique();
+            });
+
+            // ── FriendRelation ──────────────────────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.FriendRelation>(entity =>
+            {
+                entity.HasIndex(r => new { r.UserId, r.FriendId }).IsUnique();
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(r => r.Friend)
+                      .WithMany()
+                      .HasForeignKey(r => r.FriendId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PlayerData>(entity =>
@@ -411,11 +428,22 @@ namespace GameServerApi.Data
                 entity.Property(b => b.IsActive).HasColumnName("is_active");
             });
 
+            modelBuilder.Entity<OptionTemplate>(entity =>
+            {
+                entity.ToTable("option_template");
+                entity.HasKey(o => o.Id);
+                entity.Property(o => o.Id).HasColumnName("id");
+                entity.Property(o => o.Name).HasColumnName("name").HasMaxLength(200);
+                entity.Property(o => o.Type).HasColumnName("type");
+                entity.Property(o => o.Level).HasColumnName("level");
+                entity.Property(o => o.StrOption).HasColumnName("strOption");
+            });
+
             modelBuilder.Entity<MapEnemyDrop>(entity =>
             {
                 entity.ToTable("map_enemy_drop");
                 entity.HasKey(d => d.Id);
-                entity.Property(d => d.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(d => d.Id).HasColumnName("id");
                 entity.Property(d => d.MapId).HasColumnName("map_id");
                 entity.Property(d => d.EnemyId).HasColumnName("enemy_id");
                 entity.Property(d => d.ItemId).HasColumnName("item_id");
@@ -423,19 +451,6 @@ namespace GameServerApi.Data
                 entity.Property(d => d.QtyMin).HasColumnName("qty_min");
                 entity.Property(d => d.QtyMax).HasColumnName("qty_max");
                 entity.Property(d => d.IsActive).HasColumnName("is_active");
-                entity.HasIndex(d => new { d.MapId, d.EnemyId, d.ItemId }).IsUnique();
-            });
-
-            modelBuilder.Entity<MapSpawnConfig>(entity =>
-            {
-                entity.ToTable("map_spawn_config");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-                entity.Property(e => e.MapId).HasColumnName("map_id");
-                entity.Property(e => e.SpawnJson).HasColumnName("spawn_json");
-                entity.Property(e => e.DropJson).HasColumnName("drop_json");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-                entity.HasIndex(e => e.MapId).IsUnique();
             });
 
             // map_zone_config không còn là nguồn dữ liệu chính.

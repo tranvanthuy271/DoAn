@@ -1,9 +1,9 @@
 using GameServerApi.Data;
 using GameServerApi.Models;
+using GameServerApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Globalization;
 
 namespace GameServerApi.Controllers
 {
@@ -12,10 +12,12 @@ namespace GameServerApi.Controllers
     public class EnemySpawnController : ControllerBase
     {
         private readonly GameDbContext _db;
+        private readonly ILogger<EnemySpawnController> _logger;
 
-        public EnemySpawnController(GameDbContext db)
+        public EnemySpawnController(GameDbContext db, ILogger<EnemySpawnController> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         /// <summary>
@@ -25,46 +27,30 @@ namespace GameServerApi.Controllers
         [HttpGet("{mapId}/spawns")]
         public async Task<IActionResult> GetEnemySpawns(int mapId)
         {
-            var mapSpawnConfig = await _db.MapSpawnConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.MapId == mapId);
+            var enemySpawns = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+                _db,
+                mapId,
+                _logger,
+                HttpContext.RequestAborted);
 
-            if (mapSpawnConfig != null)
-            {
-                object[] configuredSpawns = await BuildSpawnsFromMapSpawnConfigAsync(mapSpawnConfig.SpawnJson);
-                if (configuredSpawns.Length > 0)
-                {
-                    return Ok(new
-                    {
-                        map_id = mapId,
-                        enemy_spawns = configuredSpawns
-                    });
-                }
-            }
-
-            var enemySpawns = await _db.EnemySpawns
-                .Where(e => e.MapId == mapId)
-                .Include(e => e.Enemy) // Join với bảng enemy để lấy thông tin chi tiết
-                .ToListAsync();
-
-            if (enemySpawns != null && enemySpawns.Count > 0)
+            if (enemySpawns.Count > 0)
             {
                 return Ok(new
                 {
                     map_id = mapId,
-                    enemy_spawns = enemySpawns.Select(e => new
+                    enemy_spawns = enemySpawns.Select(spawn => new
                     {
-                        spawn_id = e.SpawnId,
-                        enemy_type_id = e.EnemyTypeId,
-                        spawn_x = e.SpawnX,
-                        spawn_y = e.SpawnY,
-                        max_spawn_count = e.MaxSpawnCount,
-                        respawn_time = e.RespawnTime,
-                        override_hp = 0,
-                        override_exp = 0,
-                        is_boss = false,
-                        level = 0,
-                        enemy = CreateEnemyPayload(e.Enemy)
+                        spawn_id = spawn.SpawnId,
+                        enemy_type_id = spawn.EnemyTypeId,
+                        spawn_x = spawn.SpawnX,
+                        spawn_y = spawn.SpawnY,
+                        max_spawn_count = spawn.MaxSpawnCount,
+                        respawn_time = spawn.RespawnTime,
+                        override_hp = spawn.OverrideHp,
+                        override_exp = spawn.OverrideExp,
+                        is_boss = spawn.IsBoss,
+                        level = spawn.Level,
+                        enemy = CreateEnemyPayload(spawn.Enemy)
                     }).ToArray()
                 });
             }
@@ -76,111 +62,87 @@ namespace GameServerApi.Controllers
             });
         }
 
-        private async Task<object[]> BuildSpawnsFromMapSpawnConfigAsync(string spawnJson)
-        {
-            if (string.IsNullOrWhiteSpace(spawnJson))
-                return Array.Empty<object>();
-
-            List<SpawnConfigEntry>? entries;
-            try
-            {
-                entries = JsonSerializer.Deserialize<List<SpawnConfigEntry>>(spawnJson, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch (JsonException)
-            {
-                return Array.Empty<object>();
-            }
-
-            if (entries == null || entries.Count == 0)
-                return Array.Empty<object>();
-
-            int[] enemyIds = entries
-                .Where(entry => entry.EnemyId > 0)
-                .Select(entry => entry.EnemyId)
-                .Distinct()
-                .ToArray();
-
-            var enemyLookup = await _db.Enemies
-                .Where(enemy => enemyIds.Contains(enemy.EnemyId))
-                .ToDictionaryAsync(enemy => enemy.EnemyId);
-
-            return entries
-                .Where(entry => entry.EnemyId > 0)
-                .Select((entry, index) => (object)new
-                {
-                    spawn_id = index + 1,
-                    enemy_type_id = entry.EnemyId,
-                    spawn_x = entry.Cx,
-                    spawn_y = entry.Cy,
-                    max_spawn_count = entry.Count > 0 ? entry.Count : 1,
-                    respawn_time = entry.RespawnTime > 0 ? entry.RespawnTime : 30,
-                    override_hp = entry.Hp,
-                    override_exp = entry.Exp,
-                    is_boss = entry.IsBoss,
-                    level = entry.Level,
-                    enemy = enemyLookup.TryGetValue(entry.EnemyId, out var enemy)
-                        ? CreateEnemyPayload(enemy)
-                        : null
-                })
-                .ToArray();
-        }
-
         private static object? CreateEnemyPayload(Enemy? enemy)
         {
             if (enemy == null)
                 return null;
 
+            var drops = new List<object>();
+
+            if (!string.IsNullOrWhiteSpace(enemy.DropItemsJson))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(enemy.DropItemsJson);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var drop in doc.RootElement.EnumerateArray())
+                        {
+                            int itemId = GetIntValueOrDefault(drop, "item_id", 0);
+                            double rate = GetDoubleValueOrDefault(drop, "drop_chance", 0d);
+                            int qtyMin = GetIntValueOrDefault(drop, "qty_min", 1);
+                            int qtyMax = GetIntValueOrDefault(drop, "qty_max", qtyMin);
+                            if (itemId > 0)
+                                drops.Add(new { item_id = itemId, rate, qty_min = qtyMin, qty_max = qtyMax });
+                        }
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                }
+            }
+
             return new
             {
-                enemy_id = enemy.EnemyId,
-                enemy_name = enemy.EnemyName,
+                enemy_id      = enemy.EnemyId,
+                enemy_name    = enemy.EnemyName,
                 enemy_description = enemy.EnemyDescription,
-                level = enemy.Level,
-                base_hp = enemy.BaseHp,
-                base_mp = enemy.BaseMp,
-                base_damage = enemy.BaseDamage,
-                base_defense = enemy.BaseDefense,
-                move_speed = enemy.MoveSpeed,
-                attack_speed = enemy.AttackSpeed,
-                exp_reward = enemy.ExpReward,
-                gold_reward = enemy.GoldReward,
-                drop_items_json = enemy.DropItemsJson,
-                element_type = enemy.ElementType,
-                enemy_type = enemy.EnemyType
+                level         = enemy.Level,
+                base_hp       = enemy.BaseHp,
+                base_mp       = enemy.BaseMp,
+                base_damage   = enemy.BaseDamage,
+                base_defense  = enemy.BaseDefense,
+                move_speed    = enemy.MoveSpeed,
+                attack_speed  = enemy.AttackSpeed,
+                exp_reward    = enemy.ExpReward,
+                gold_reward   = enemy.GoldReward,
+                silver_reward = enemy.SilverReward,
+                drops         = drops,
+                element_type  = enemy.ElementType,
+                enemy_type    = enemy.EnemyType
             };
         }
 
-        private sealed class SpawnConfigEntry
+        private static int GetIntValueOrDefault(System.Text.Json.JsonElement element, string propertyName, int defaultValue)
         {
-            [JsonPropertyName("enemy_id")]
-            public int EnemyId { get; set; }
+            if (element.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !element.TryGetProperty(propertyName, out var property))
+            {
+                return defaultValue;
+            }
 
-            [JsonPropertyName("hp")]
-            public int Hp { get; set; }
+            return property.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.Number when property.TryGetInt32(out int numberValue) => numberValue,
+                System.Text.Json.JsonValueKind.String when int.TryParse(property.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int stringValue) => stringValue,
+                _ => defaultValue
+            };
+        }
 
-            [JsonPropertyName("exp")]
-            public int Exp { get; set; }
+        private static double GetDoubleValueOrDefault(System.Text.Json.JsonElement element, string propertyName, double defaultValue)
+        {
+            if (element.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !element.TryGetProperty(propertyName, out var property))
+            {
+                return defaultValue;
+            }
 
-            [JsonPropertyName("cx")]
-            public float Cx { get; set; }
-
-            [JsonPropertyName("cy")]
-            public float Cy { get; set; }
-
-            [JsonPropertyName("is_boss")]
-            public bool IsBoss { get; set; }
-
-            [JsonPropertyName("count")]
-            public int Count { get; set; }
-
-            [JsonPropertyName("respawn_time")]
-            public int RespawnTime { get; set; }
-
-            [JsonPropertyName("level")]
-            public int Level { get; set; }
+            return property.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.Number when property.TryGetDouble(out double numberValue) => numberValue,
+                System.Text.Json.JsonValueKind.String when double.TryParse(property.GetString(), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double stringValue) => stringValue,
+                _ => defaultValue
+            };
         }
     }
 }

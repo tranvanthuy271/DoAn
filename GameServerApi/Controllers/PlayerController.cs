@@ -14,6 +14,11 @@ namespace GameServerApi.Controllers
     [Authorize]
     public class PlayerController : ControllerBase
     {
+        private const int StartMapId = 0;
+        private const int StartZoneId = 0;
+        private const float StartPositionX = 0f;
+        private const float StartPositionY = 0f;
+
         private readonly GameDbContext _db;
         private readonly ILogger<PlayerController> _logger;
 
@@ -316,10 +321,30 @@ namespace GameServerApi.Controllers
                     targetPlayerId = int.Parse(userIdClaim.Value);
                 }
 
-                int mapId = body.GetProperty("map_id").GetInt32();
-                float positionX = (float)body.GetProperty("position_x").GetDouble();
-                float positionY = (float)body.GetProperty("position_y").GetDouble();
-                int zoneId = body.TryGetProperty("zone_id", out var zp) ? zp.GetInt32() : 0;
+                bool resetToStartMap = body.TryGetProperty("reset_to_start_map", out var resetProp)
+                    && resetProp.ValueKind == JsonValueKind.True;
+
+                int mapId = StartMapId;
+                int zoneId = StartZoneId;
+                float positionX = StartPositionX;
+                float positionY = StartPositionY;
+
+                if (!resetToStartMap)
+                {
+                    if (!body.TryGetProperty("map_id", out var mapProp) || mapProp.ValueKind != JsonValueKind.Number)
+                        return BadRequest("Thiếu map_id hợp lệ.");
+
+                    if (!body.TryGetProperty("position_x", out var posXProp) || posXProp.ValueKind != JsonValueKind.Number)
+                        return BadRequest("Thiếu position_x hợp lệ.");
+
+                    if (!body.TryGetProperty("position_y", out var posYProp) || posYProp.ValueKind != JsonValueKind.Number)
+                        return BadRequest("Thiếu position_y hợp lệ.");
+
+                    mapId = mapProp.GetInt32();
+                    positionX = (float)posXProp.GetDouble();
+                    positionY = (float)posYProp.GetDouble();
+                    zoneId = body.TryGetProperty("zone_id", out var zp) ? zp.GetInt32() : StartZoneId;
+                }
 
                 var player = await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
@@ -339,7 +364,7 @@ namespace GameServerApi.Controllers
 
                 return Ok(new
                 {
-                    message = "Position updated successfully",
+                    message = resetToStartMap ? "Player returned to start map successfully" : "Position updated successfully",
                     map_id = posInfo.MapId,
                     zone_id = posInfo.ZoneId,
                     position_x = posInfo.PositionX,
@@ -2083,6 +2108,177 @@ namespace GameServerApi.Controllers
                 leveled_up  = leveledUp,
                 exp_at_current_level = expAtCurrent,
                 exp_for_next_level   = expForNext
+            });
+        }
+
+        /// <summary>
+        /// GET /api/player/by-user/{userId}
+        /// Trả về thông tin tóm tắt nhân vật của một người dùng khác (dùng cho Friend Profile).
+        /// Chỉ trả về thông tin công khai: tên, level, nguyên tố, trang bị, kỹ năng, tiềm năng.
+        /// </summary>
+        [HttpGet("by-user/{userId}")]
+        public async Task<IActionResult> GetPlayerByUserId(int userId)
+        {
+            _logger.LogInformation("[PlayerController] GetPlayerByUserId requested userId={UserId}", userId);
+
+            var player = await _db.PlayerData.FirstOrDefaultAsync(p => p.PlayerId == userId);
+            if (player == null)
+            {
+                _logger.LogWarning("[PlayerController] GetPlayerByUserId failed userId={UserId}: player not found", userId);
+                return NotFound("Người chơi chưa tạo nhân vật.");
+            }
+
+            var info = player.GetInfoChar();
+            var finalStats = StatCalculator.Compute(info, player.EquipmentJson, player.PotentialStatsJson);
+
+            object equipment;
+            try
+            {
+                equipment = JsonSerializer.Deserialize<object>(player.EquipmentJson) ?? new { };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[PlayerController] GetPlayerByUserId equipment parse failed userId={UserId}", userId);
+                equipment = new { };
+            }
+
+            var skillRows = await _db.PlayerSkillRecords
+                .Where(s => s.PlayerId == player.PlayerId)
+                .Join(
+                    _db.SkillTemplates,
+                    record => record.SkillId,
+                    template => template.SkillId,
+                    (record, template) => new { record, template })
+                .OrderBy(x => x.template.ElementType)
+                .ThenBy(x => x.template.SkillId)
+                .ToListAsync();
+
+            var skills = skillRows.Select(row =>
+            {
+                float currentCooldownSec = 3f;
+                float currentEffectValue = 0f;
+                int currentMpCost = 0;
+                string currentDesc = row.template.Description ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(row.template.LevelsJson))
+                {
+                    try
+                    {
+                        var levels = JsonSerializer.Deserialize<List<JsonElement>>(row.template.LevelsJson);
+                        if (levels != null && levels.Count > 0)
+                        {
+                            int index = Math.Clamp(row.record.SkillLevel - 1, 0, levels.Count - 1);
+                            var current = levels[index];
+                            if (current.TryGetProperty("cooldown_sec", out var cooldownProp))
+                                currentCooldownSec = (float)cooldownProp.GetDouble();
+                            if (current.TryGetProperty("effect_value", out var effectProp))
+                                currentEffectValue = (float)effectProp.GetDouble();
+                            if (current.TryGetProperty("mp_cost", out var mpProp))
+                                currentMpCost = mpProp.GetInt32();
+                            if (current.TryGetProperty("desc", out var descProp))
+                                currentDesc = descProp.GetString() ?? currentDesc;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "[PlayerController] GetPlayerByUserId skill levels parse failed userId={UserId} skillId={SkillId}",
+                            userId,
+                            row.template.SkillId);
+                    }
+                }
+
+                return new
+                {
+                    skill_id = row.template.SkillId,
+                    skill_code = row.template.SkillCode,
+                    skill_name = row.template.SkillName,
+                    description = row.template.Description,
+                    element_type = row.template.ElementType,
+                    max_level = row.template.MaxLevel,
+                    level_to_unlock = row.template.LevelToUnlock,
+                    gene_tier_required = row.template.GeneTierRequired,
+                    current_level = row.record.SkillLevel,
+                    current_cooldown_sec = currentCooldownSec,
+                    current_effect_value = currentEffectValue,
+                    current_mp_cost = currentMpCost,
+                    can_upgrade = false,
+                    next_level_player_req = 0,
+                    next_level_sp_cost = 0,
+                    next_level_desc = currentDesc,
+                    icon_id = row.template.IconId
+                };
+            }).ToList();
+
+            var potentialPoints = new Dictionary<string, int>
+            {
+                ["attack"] = 0,
+                ["hp"] = 0,
+                ["mp"] = 0,
+                ["defense"] = 0,
+                ["gene"] = 0
+            };
+
+            try
+            {
+                if (!string.IsNullOrEmpty(player.PotentialStatsJson) && player.PotentialStatsJson != "{}")
+                {
+                    var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(player.PotentialStatsJson);
+                    if (raw != null)
+                    {
+                        foreach (var kvp in raw)
+                        {
+                            if (potentialPoints.ContainsKey(kvp.Key))
+                                potentialPoints[kvp.Key] = kvp.Value.TryGetInt32(out var value) ? value : 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[PlayerController] GetPlayerByUserId potential parse failed userId={UserId}", userId);
+            }
+
+            var potentialStats = PotentialStatConfig.Select(cfg => new
+            {
+                stat_name = cfg.Key,
+                display_name = cfg.Value.DisplayName,
+                current_points = potentialPoints.TryGetValue(cfg.Key, out var points) ? points : 0,
+                value_per_point = cfg.Value.ValuePerPoint,
+                total_value = (potentialPoints.TryGetValue(cfg.Key, out var totalPoints) ? totalPoints : 0) * cfg.Value.ValuePerPoint
+            }).ToList();
+
+            _logger.LogInformation(
+                "[PlayerController] GetPlayerByUserId success userId={UserId} playerId={PlayerId} skills={SkillCount} potentialStats={PotentialCount}",
+                userId,
+                player.PlayerId,
+                skills.Count,
+                potentialStats.Count);
+
+            return Ok(new
+            {
+                player_id = player.PlayerId,
+                user_id = userId,
+                character_name = player.CharacterName,
+                element_type = info.ElementType,
+                gender = player.Gender,
+                level = info.Level,
+                gold = info.Gold,
+                gene_tier = info.GeneTier,
+                is_hybrid = info.IsHybrid,
+                equipment,
+                skills,
+                potential_stats = potentialStats,
+                final_stats = new
+                {
+                    hp = finalStats.Hp,
+                    max_hp = finalStats.MaxHp,
+                    mp = finalStats.Mp,
+                    max_mp = finalStats.MaxMp,
+                    attack = finalStats.Attack,
+                    defense = finalStats.Defense,
+                    move_speed = finalStats.MoveSpeed,
+                }
             });
         }
     }

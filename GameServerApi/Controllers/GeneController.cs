@@ -603,10 +603,9 @@ namespace GameServerApi.Controllers
             if (cfg == null)
                 return NotFound($"Không tìm thấy config hybrid cho {info.ElementType} + {info.SecondaryElement}.");
 
-            var item = await _db.ItemTemplates.FindAsync(cfg.FusionItemId);
             var inventory = ParseJsonList(player.InventoryJson);
-            // Dùng lõi đột biến theo hệ PHỤ (secondary element)
-            int fusionItemId = GetFusionItemId(info.SecondaryElement!);
+            // Dùng lõi đột biến theo hệ CHÍNH (primary element) vì đây là gene mutation của nhân vật
+            int fusionItemId = GetFusionItemId(info.ElementType!);
             var fusionItem   = await _db.ItemTemplates.FindAsync(fusionItemId);
             int available = inventory
                 .Where(s => s.ContainsKey("itemTemplateId") &&
@@ -619,12 +618,15 @@ namespace GameServerApi.Controllers
                 hybridDescription = cfg.HybridDescription,
                 elementA          = info.ElementType,
                 elementB          = info.SecondaryElement,
+                elementATier      = info.GeneTier,
+                elementBTier      = info.SecondaryGeneTier ?? 0,
                 bonusTargets      = cfg.GetBonusTargets(),
                 immuneElements    = cfg.GetImmuneElements(),
                 atkBonusPercent   = cfg.AtkBonusPercent,
                 fusionGoldCost    = cfg.FusionGoldCost,
                 fusionItemId,
-                fusionItemName    = fusionItem?.Name ?? $"Lõi Đột Biến ({info.SecondaryElement})",
+                fusionItemName    = fusionItem?.Name ?? $"Lõi Đột Biến ({info.ElementType})",
+                fusionItemIcon    = fusionItem?.IdIcon ?? 0,
                 fusionItemCount   = cfg.FusionItemCount,
                 availableItems    = available,
                 itemSufficient    = available >= cfg.FusionItemCount,
@@ -689,16 +691,16 @@ namespace GameServerApi.Controllers
                 if (info.Gold < cfg.FusionGoldCost)
                     return BadRequest($"Không đủ vàng. Cần {cfg.FusionGoldCost:N0}, có {info.Gold:N0}.");
 
-                // Kiểm tra item — lõi đột biến theo hệ PHỤ
+                // Kiểm tra item — lõi đột biến theo hệ CHÍNH (primary element)
                 var inventory = ParseJsonList(player.InventoryJson);
-                int fusionItemId = GetFusionItemId(info.SecondaryElement!);
+                int fusionItemId = GetFusionItemId(info.ElementType!);
                 int available = inventory
                     .Where(s => s.ContainsKey("itemTemplateId") &&
                                 Convert.ToInt32(s["itemTemplateId"]) == fusionItemId)
                     .Sum(s => s.ContainsKey("quantity") ? Convert.ToInt32(s["quantity"]) : 0);
 
                 if (available < cfg.FusionItemCount)
-                    return BadRequest($"Cần {cfg.FusionItemCount}x lõi đột biến hệ {info.SecondaryElement} (id={fusionItemId}), có {available}.");
+                    return BadRequest($"Cần {cfg.FusionItemCount}x lõi đột biến hệ {info.ElementType} (id={fusionItemId}), có {available}.");
 
                 // Trừ vàng
                 info.Gold -= cfg.FusionGoldCost;

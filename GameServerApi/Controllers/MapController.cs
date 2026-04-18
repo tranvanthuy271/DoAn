@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameServerApi.Data;
 using GameServerApi.Models;
 using GameServerApi.Models.Entities;
+using GameServerApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -85,14 +87,22 @@ namespace GameServerApi.Controllers
     {
         private readonly GameDbContext _db;
         private readonly IMemoryCache  _cache;
+        private readonly ILogger<MapController> _logger;
 
         // Thời gian cache spawn-config — tránh gọi DB liên tục mỗi lần host join map
         private static readonly TimeSpan SpawnConfigCacheTtl = TimeSpan.FromMinutes(5);
 
-        public MapController(GameDbContext db, IMemoryCache cache)
+        public MapController(GameDbContext db, IMemoryCache cache, ILogger<MapController> logger)
         {
             _db    = db;
             _cache = cache;
+            _logger = logger;
+        }
+
+        private sealed class RuntimeEntryPointDto
+        {
+            public float x { get; set; }
+            public float y { get; set; }
         }
 
         /// <summary>
@@ -127,6 +137,112 @@ namespace GameServerApi.Controllers
             {
                 return Ok(new { map_id = mapId, map_name = mapConfig.MapName, scene_name = mapConfig.SceneName, spawn_points = new[] { new { x = 0f, y = 0f } } });
             }
+        }
+
+        /// <summary>
+        /// GET /api/map/runtime-bootstrap
+        /// Dedicated ServerScene dùng endpoint này để nạp runtime map definitions từ DB
+        /// thay vì phụ thuộc hoàn toàn vào MapWorldConfig.asset tĩnh.
+        ///
+        /// Quy ước hiện tại:
+        /// - map open world     -> zone_topology = 0 (SharedPublic)
+        /// - map dungeon/room   -> zone_topology = 1 (InstanceOnly)
+        ///
+        /// Việc phân loại dungeon map được suy ra từ dungeon_config + map_portal.
+        /// </summary>
+        [HttpGet("runtime-bootstrap")]
+        public async Task<IActionResult> GetRuntimeBootstrap()
+        {
+            var maps = await _db.MapConfigs
+                .OrderBy(m => m.MapId)
+                .ToListAsync();
+
+            var dungeonConfigs = await _db.DungeonConfigs
+                .Where(d => d.IsActive)
+                .Select(d => new { d.DungeonId, d.MapId, d.MaxPlayers })
+                .ToListAsync();
+
+            var dungeonPortals = await _db.MapPortals
+                .Where(p => p.IsActive && p.DungeonId != null)
+                .Select(p => new
+                {
+                    p.SourceMapId,
+                    p.DestMapId,
+                    p.PortalType,
+                    DungeonId = p.DungeonId!.Value
+                })
+                .ToListAsync();
+
+            var instanceMapIds = new HashSet<int>(dungeonConfigs.Select(d => d.MapId));
+            var mapToDungeonId = new Dictionary<int, int>();
+            var dungeonMaxPlayersById = dungeonConfigs
+                .GroupBy(d => d.DungeonId)
+                .ToDictionary(g => g.Key, g => g.Max(x => x.MaxPlayers));
+
+            foreach (var dungeon in dungeonConfigs)
+                mapToDungeonId.TryAdd(dungeon.MapId, dungeon.DungeonId);
+
+            foreach (var portal in dungeonPortals)
+            {
+                if (portal.PortalType == "enter_dungeon" || portal.PortalType == "room_transition")
+                {
+                    instanceMapIds.Add(portal.DestMapId);
+                    mapToDungeonId.TryAdd(portal.DestMapId, portal.DungeonId);
+                }
+
+                if (portal.PortalType == "room_transition" || portal.PortalType == "exit_dungeon")
+                {
+                    instanceMapIds.Add(portal.SourceMapId);
+                    mapToDungeonId.TryAdd(portal.SourceMapId, portal.DungeonId);
+                }
+            }
+
+            var response = maps.Select(map =>
+            {
+                bool isInstanceMap = instanceMapIds.Contains(map.MapId);
+                int customZoneMaxPlayers = 0;
+
+                if (isInstanceMap &&
+                    mapToDungeonId.TryGetValue(map.MapId, out int dungeonId) &&
+                    dungeonMaxPlayersById.TryGetValue(dungeonId, out int dungeonMaxPlayers))
+                {
+                    customZoneMaxPlayers = dungeonMaxPlayers;
+                }
+
+                return new
+                {
+                    map_id = map.MapId,
+                    map_name = map.MapName,
+                    scene_name = map.SceneName,
+                    zone_topology = isInstanceMap ? 1 : 0,
+                    allow_custom_zones = isInstanceMap,
+                    public_zone_count_override = 0,
+                    public_zone_max_players_override = 0,
+                    custom_zone_max_players_override = customZoneMaxPlayers,
+                    allow_player_zone_switch = !isInstanceMap,
+                    entry_points = ParseRuntimeEntryPoints(map.SpawnPointsJson)
+                };
+            }).ToArray();
+
+            return Ok(new { maps = response });
+        }
+
+        private static RuntimeEntryPointDto[] ParseRuntimeEntryPoints(string? spawnPointsJson)
+        {
+            if (string.IsNullOrWhiteSpace(spawnPointsJson))
+                return new[] { new RuntimeEntryPointDto { x = 0f, y = 0f } };
+
+            try
+            {
+                var points = JsonSerializer.Deserialize<RuntimeEntryPointDto[]>(spawnPointsJson);
+                if (points != null && points.Length > 0)
+                    return points;
+            }
+            catch (JsonException)
+            {
+            }
+
+            return new[] { new RuntimeEntryPointDto { x = 0f, y = 0f } };
         }
 
         /// <summary>
@@ -364,18 +480,20 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// GET /api/map/{mapId}/spawn-config
-        /// Lấy cấu hình spawn enemy và tỉ lệ drop item cho map.
+        /// Lấy cấu hình spawn enemy cho map.
         /// Unity host gọi endpoint này khi scene load để fetch toàn bộ spawn data.
         ///
         /// Response:
         /// {
         ///   "map_id": 0,
-        ///   "spawns": [{enemy_id, hp, exp, cx, cy, is_boss, count, respawn_time}, ...],
-        ///   "drops":  [{enemy_id, items:[{item_id, rate, qty_min, qty_max}]}, ...]
+        ///   "spawns": [{enemy_id, cx, cy, is_boss, count, respawn_time, level}, ...],
+        ///   "enemy_skills": [{enemy_id, enemy_name, base_hp, base_damage, element_type,
+        ///                      exp_reward, gold_reward, silver_reward,
+        ///                      drops:[{item_id, rate, qty_min, qty_max}],
+        ///                      skills:[...]}]
         /// }
-        ///
-        /// Nếu chưa có config → trả về spawns:[], drops:[] (không lỗi).
-        /// Host có thể fallback sang endpoint /enemyspawn/{mapId}/spawns cũ.
+        /// HP, EXP, drop → lấy từ enemy_skills (nguồn là bảng enemy cột trực tiếp).
+        /// Nếu chưa có config → trả về spawns:[] (không lỗi).
         /// </summary>
         [HttpGet("{mapId}/spawn-config")]
         public async Task<IActionResult> GetSpawnConfig(int mapId)
@@ -385,100 +503,107 @@ namespace GameServerApi.Controllers
             if (_cache.TryGetValue(cacheKey, out object? cached))
                 return Ok(cached);
 
-            var config = await _db.MapSpawnConfigs
-                .FirstOrDefaultAsync(c => c.MapId == mapId);
+            var spawnRows = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+                _db,
+                mapId,
+                _logger,
+                HttpContext.RequestAborted);
 
-            if (config == null)
+            if (spawnRows.Count == 0)
             {
                 var empty = new
                 {
                     map_id       = mapId,
                     spawns       = Array.Empty<object>(),
-                    drops        = Array.Empty<object>(),
                     enemy_skills = Array.Empty<object>()
                 };
-                // Cache empty result ngắn hơn (30 giây) để tự refresh khi admin thêm data
                 _cache.Set(cacheKey, empty, TimeSpan.FromSeconds(30));
                 return Ok(empty);
             }
 
-            // Deserialize JSONs để trả về đã parse (tránh double-encode string)
-            object spawnsObj;
-            try { spawnsObj = JsonSerializer.Deserialize<object>(config.SpawnJson) ?? Array.Empty<object>(); }
-            catch (JsonException) { spawnsObj = Array.Empty<object>(); }
-
-            // drop_json: nếu rỗng/[] → tự động build từ enemy.drop_items_json (không cần admin config riêng)
-            object dropsObj = Array.Empty<object>();
-            bool dropJsonPopulated = false;
-            if (!string.IsNullOrWhiteSpace(config.DropJson) && config.DropJson.Trim() != "[]")
+            var spawnsObj = spawnRows.Select(spawn => (object)new
             {
-                try
-                {
-                    var parsed = JsonSerializer.Deserialize<JsonElement>(config.DropJson);
-                    if (parsed.ValueKind == JsonValueKind.Array && parsed.GetArrayLength() > 0)
-                    {
-                        dropsObj = JsonSerializer.Deserialize<object>(config.DropJson)!;
-                        dropJsonPopulated = true;
-                    }
-                }
-                catch (JsonException) { }
-            }
-            if (!dropJsonPopulated)
-                dropsObj = await BuildDropsFromEnemyTableAsync(config.SpawnJson);
+                enemy_id     = spawn.EnemyTypeId,
+                cx           = spawn.SpawnX,
+                cy           = spawn.SpawnY,
+                is_boss      = spawn.IsBoss,
+                count        = spawn.MaxSpawnCount,
+                respawn_time = spawn.RespawnTime,
+                level        = spawn.Level,
+                // ✅ FIX: Truyền override HP/EXP từ map_spawn_config (legacy) nếu có
+                override_hp  = spawn.OverrideHp,
+                override_exp = spawn.OverrideExp
+            }).ToArray();
 
-            // Lấy skills từ bảng enemy cho tất cả enemy_id có mặt trong spawn_json.
-            var enemySkillsObj = await BuildEnemySkillsResponseAsync(config.SpawnJson);
+            var enemySkillsObj = await BuildEnemySkillsResponseAsync(
+                spawnRows.Select(spawn => spawn.EnemyTypeId).Where(id => id > 0).Distinct().ToArray());
 
             var result = new
             {
-                map_id       = config.MapId,
+                map_id       = mapId,
                 spawns       = spawnsObj,
-                drops        = dropsObj,
                 enemy_skills = enemySkillsObj
             };
 
-            // Lưu vào cache
             _cache.Set(cacheKey, result, SpawnConfigCacheTtl);
 
             return Ok(result);
         }
 
         /// <summary>
-        /// Parse spawn_json để lấy unique enemy_id, sau đó query bảng enemy lấy
-        /// base_damage, element_type, skills_json cho từng loại quái.
+        /// Lấy unique enemy_id từ enemy_spawns, sau đó query bảng enemy lấy
+        /// base_hp, base_damage, element_type, skills_json, reward_json cho từng loại quái.
+        /// reward_json được parse và flatten (drop_chance → rate) để client dùng trực tiếp.
         /// </summary>
-        private async Task<object[]> BuildEnemySkillsResponseAsync(string spawnJson)
+        private async Task<object[]> BuildEnemySkillsResponseAsync(IEnumerable<int> enemyIds)
         {
-            // Lấy unique enemy_ids từ spawn_json
-            var enemyIds = new HashSet<int>();
-            try
-            {
-                using var doc = JsonDocument.Parse(spawnJson);
-                foreach (var elem in doc.RootElement.EnumerateArray())
-                {
-                    if (elem.TryGetProperty("enemy_id", out var idProp)
-                        && idProp.TryGetInt32(out int eid) && eid > 0)
-                    {
-                        enemyIds.Add(eid);
-                    }
-                }
-            }
-            catch (JsonException) { return Array.Empty<object>(); }
-
-            if (enemyIds.Count == 0) return Array.Empty<object>();
+            int[] ids = enemyIds.Where(id => id > 0).Distinct().ToArray();
+            if (ids.Length == 0) return Array.Empty<object>();
 
             var rows = await _db.Enemies
-                .Where(e => enemyIds.Contains(e.EnemyId))
+                .AsNoTracking()
+                .Where(e => ids.Contains(e.EnemyId))
+                .OrderBy(e => e.EnemyId)
                 .ToListAsync();
 
-            return rows.Select(e => (object)new
+            return rows.Select(e =>
             {
-                enemy_id     = e.EnemyId,
-                enemy_name   = e.EnemyName,   // ← thêm để client hiển thị đúng tên
-                base_damage  = e.BaseDamage,
-                element_type = e.ElementType ?? "None",
-                // skills_json được parse sẵn để client không cần double-decode
-                skills       = ParseJsonOrEmpty(e.SkillsJson)
+                // Parse drop_items_json → flatten drops
+                var dropsList = new List<object>();
+                if (!string.IsNullOrWhiteSpace(e.DropItemsJson))
+                {
+                    try
+                    {
+                        using var rdoc = JsonDocument.Parse(e.DropItemsJson);
+                        if (rdoc.RootElement.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var d in rdoc.RootElement.EnumerateArray())
+                            {
+                                int    item_id = GetIntValueOrDefault(d, "item_id", 0);
+                                double rate    = GetDoubleValueOrDefault(d, "drop_chance", 0);
+                                int    qty_min = GetIntValueOrDefault(d, "qty_min", 1);
+                                int    qty_max = GetIntValueOrDefault(d, "qty_max", qty_min);
+                                if (item_id > 0)
+                                    dropsList.Add(new { item_id, rate, qty_min, qty_max });
+                            }
+                        }
+                    }
+                    catch (JsonException) { }
+                }
+
+                return (object)new
+                {
+                    enemy_id     = e.EnemyId,
+                    enemy_name   = e.EnemyName,
+                    base_hp      = e.BaseHp,
+                    base_damage  = e.BaseDamage,
+                    element_type = e.ElementType ?? "None",
+                    exp_reward   = e.ExpReward,
+                    gold_reward  = e.GoldReward,
+                    silver_reward= e.SilverReward,
+                    drops        = dropsList,
+                    skills       = ParseJsonOrEmpty(e.SkillsJson)
+                };
             }).ToArray();
         }
 
@@ -489,112 +614,124 @@ namespace GameServerApi.Controllers
             catch (JsonException) { return Array.Empty<object>(); }
         }
 
-        /// <summary>
-        /// Khi drop_json trong map_spawn_config rỗng → tự động build drops từ enemy.drop_items_json.
-        /// Output format: [{enemy_id, items:[{item_id, rate, qty_min, qty_max}]}]
-        /// rate là 0–1 (khớp với DropItemEntry.rate trong client EnemyItemDrop).
-        /// </summary>
-        private async Task<object[]> BuildDropsFromEnemyTableAsync(string spawnJson)
+        private static int GetIntValueOrDefault(JsonElement element, string propertyName, int defaultValue)
         {
-            var enemyIds = new HashSet<int>();
-            try
+            if (element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty(propertyName, out var property))
             {
-                using var doc = JsonDocument.Parse(spawnJson);
-                foreach (var elem in doc.RootElement.EnumerateArray())
-                    if (elem.TryGetProperty("enemy_id", out var p) && p.TryGetInt32(out int id) && id > 0)
-                        enemyIds.Add(id);
+                return defaultValue;
             }
-            catch (JsonException) { return Array.Empty<object>(); }
 
-            if (enemyIds.Count == 0) return Array.Empty<object>();
-
-            var enemies = await _db.Enemies
-                .Where(e => enemyIds.Contains(e.EnemyId) && e.DropItemsJson != null)
-                .ToListAsync();
-
-            var result = new List<object>();
-            foreach (var enemy in enemies)
+            return property.ValueKind switch
             {
-                if (string.IsNullOrWhiteSpace(enemy.DropItemsJson)) continue;
+                JsonValueKind.Number when property.TryGetInt32(out int numberValue) => numberValue,
+                JsonValueKind.String when int.TryParse(property.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int stringValue) => stringValue,
+                _ => defaultValue
+            };
+        }
 
-                // DB dùng "drop_chance"; client DTO dùng "rate" → cần normalize
-                var normalizedItems = new List<object>();
-                try
-                {
-                    using var doc2 = JsonDocument.Parse(enemy.DropItemsJson);
-                    if (doc2.RootElement.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var d in doc2.RootElement.EnumerateArray())
-                        {
-                            int item_id  = d.TryGetProperty("item_id",     out var ii) ? ii.GetInt32()  : 0;
-                            double rate  = d.TryGetProperty("drop_chance", out var dc) ? dc.GetDouble() : 0;
-                            int qty_min  = d.TryGetProperty("qty_min",     out var qn) ? qn.GetInt32()  : 1;
-                            int qty_max  = d.TryGetProperty("qty_max",     out var qx) ? qx.GetInt32()  : qty_min;
-                            if (item_id > 0)
-                                normalizedItems.Add(new { item_id, rate, qty_min, qty_max });
-                        }
-                    }
-                }
-                catch (JsonException) { continue; }
-
-                if (normalizedItems.Count == 0) continue;
-                result.Add(new { enemy_id = enemy.EnemyId, items = normalizedItems });
+        private static double GetDoubleValueOrDefault(JsonElement element, string propertyName, double defaultValue)
+        {
+            if (element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty(propertyName, out var property))
+            {
+                return defaultValue;
             }
-            return result.ToArray();
+
+            return property.ValueKind switch
+            {
+                JsonValueKind.Number when property.TryGetDouble(out double numberValue) => numberValue,
+                JsonValueKind.String when double.TryParse(property.GetString(), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double stringValue) => stringValue,
+                _ => defaultValue
+            };
         }
 
         /// <summary>
         /// PUT /api/map/{mapId}/spawn-config
         /// Cập nhật cấu hình spawn JSON cho map (admin/tool use).
-        /// Body: { spawn_json: "...", drop_json: "..." }
+        /// Body: { spawn_json: "[{enemy_id, cx, cy, is_boss, count, respawn_time, level}...]" }
+        /// Drop config chỉnh trong enemy.reward_json, không cần gửi kèm đây.
         /// </summary>
         [HttpPut("{mapId}/spawn-config")]
         public async Task<IActionResult> UpsertSpawnConfig(int mapId,
             [FromBody] SpawnConfigUpsertRequest req)
         {
-            // Validate JSON strings trước khi lưu
-            if (!IsValidJson(req.SpawnJson))
+            if (!TryParseSpawnEntries(req.SpawnJson, out var spawnEntries))
                 return BadRequest(new { message = "spawn_json không hợp lệ." });
-            if (!IsValidJson(req.DropJson))
-                return BadRequest(new { message = "drop_json không hợp lệ." });
 
             var mapExists = await _db.MapConfigs.AnyAsync(m => m.MapId == mapId);
             if (!mapExists)
                 return NotFound(new { message = $"Map {mapId} không tồn tại trong map_config." });
 
-            var existing = await _db.MapSpawnConfigs
-                .FirstOrDefaultAsync(c => c.MapId == mapId);
+            int[] enemyIds = spawnEntries
+                .Where(entry => entry.EnemyId > 0)
+                .Select(entry => entry.EnemyId)
+                .Distinct()
+                .ToArray();
 
-            if (existing == null)
+            int existingEnemyCount = await _db.Enemies
+                .CountAsync(enemy => enemyIds.Contains(enemy.EnemyId));
+
+            if (existingEnemyCount != enemyIds.Length)
+                return BadRequest(new { message = "spawn_json chứa enemy_id không tồn tại trong bảng enemy." });
+
+            var existingSpawns = await _db.EnemySpawns
+                .Where(spawn => spawn.MapId == mapId)
+                .ToListAsync();
+
+            if (existingSpawns.Count > 0)
+                _db.EnemySpawns.RemoveRange(existingSpawns);
+
+            foreach (var entry in spawnEntries)
             {
-                _db.MapSpawnConfigs.Add(new Models.Entities.MapSpawnConfig
+                if (entry.EnemyId <= 0)
+                    continue;
+
+                _db.EnemySpawns.Add(new EnemySpawn
                 {
-                    MapId     = mapId,
-                    SpawnJson = req.SpawnJson,
-                    DropJson  = req.DropJson,
+                    MapId         = mapId,
+                    EnemyTypeId   = entry.EnemyId,
+                    SpawnX        = entry.Cx,
+                    SpawnY        = entry.Cy,
+                    MaxSpawnCount = entry.Count > 0 ? entry.Count : 1,
+                    RespawnTime   = entry.RespawnTime > 0 ? entry.RespawnTime : 30,
                     UpdatedAt = DateTime.UtcNow
                 });
             }
-            else
-            {
-                existing.SpawnJson = req.SpawnJson;
-                existing.DropJson  = req.DropJson;
-                existing.UpdatedAt = DateTime.UtcNow;
-            }
 
             await _db.SaveChangesAsync();
-
-            // Xóa cache để lần đọc tiếp theo lấy data mới từ DB
             _cache.Remove($"spawn_config_{mapId}");
 
-            return Ok(new { success = true, map_id = mapId });
+            return Ok(new { success = true, map_id = mapId, spawn_count = spawnEntries.Count });
         }
 
-        private static bool IsValidJson(string json)
+        private static bool TryParseSpawnEntries(string json, out List<SpawnConfigPersistEntry> spawnEntries)
         {
+            spawnEntries = new List<SpawnConfigPersistEntry>();
             if (string.IsNullOrWhiteSpace(json)) return false;
-            try { JsonSerializer.Deserialize<object>(json); return true; }
-            catch (JsonException) { return false; }
+            try
+            {
+                spawnEntries = JsonSerializer.Deserialize<List<SpawnConfigPersistEntry>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new List<SpawnConfigPersistEntry>();
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
+        private sealed class SpawnConfigPersistEntry
+        {
+            [JsonPropertyName("enemy_id")] public int EnemyId { get; set; }
+            [JsonPropertyName("cx")] public float Cx { get; set; }
+            [JsonPropertyName("cy")] public float Cy { get; set; }
+            [JsonPropertyName("is_boss")] public bool IsBoss { get; set; }
+            [JsonPropertyName("count")] public int Count { get; set; }
+            [JsonPropertyName("respawn_time")] public int RespawnTime { get; set; }
+            [JsonPropertyName("level")] public int Level { get; set; }
         }
     }
 
@@ -633,7 +770,7 @@ namespace GameServerApi.Controllers
     public class SpawnConfigUpsertRequest
     {
         [JsonPropertyName("spawn_json")] public string SpawnJson { get; set; } = "[]";
-        [JsonPropertyName("drop_json")]  public string DropJson  { get; set; } = "[]";
     }
 }
+
 

@@ -3,9 +3,7 @@ using System;
 namespace GameServerApi.Models
 {
     /// <summary>
-    /// Bang enemy - Thong tin day du quai vat va boss
-    /// (khang nguyen to, tang sat thuong, ky nang boss, giai doan boss)
-    /// Pattern tu LangLa: Mob.java + BossTpl.java
+    /// Bảng enemy — thông tin đầy đủ quái vật và boss.
     /// </summary>
     public class Enemy
     {
@@ -26,11 +24,10 @@ namespace GameServerApi.Models
         public string? ElementType { get; set; }
         public string? EnemyType { get; set; }
 
-        // Boss only
-        /// <summary>JSON ky nang boss: [{"skill_id":"FIRE_BREATH","damage_multiplier":2.5,"cooldown_sec":8,"aoe":false}]</summary>
+        /// <summary>JSON array skill của quái (áp dụng cả quái thường lẫn boss).</summary>
         public string? SkillsJson { get; set; }
 
-        // Kháng nguyên tố (%)
+        // ── Kháng nguyên tố (%) ──
         public int KhangHoa { get; set; } = 0;
         public int KhangThuy { get; set; } = 0;
         public int KhangTho { get; set; } = 0;
@@ -38,7 +35,7 @@ namespace GameServerApi.Models
         public int KhangKim { get; set; } = 0;
         public int KhangPhong { get; set; } = 0;
 
-        // Tăng sát thương theo nguyên tố (%)
+        // ── Tăng sát thương nguyên tố (%) ──
         public int TangDameHoa { get; set; } = 0;
         public int TangDameThuy { get; set; } = 0;
         public int TangDameTho { get; set; } = 0;
@@ -46,12 +43,12 @@ namespace GameServerApi.Models
         public int TangDameKim { get; set; } = 0;
         public int TangDamePhong { get; set; } = 0;
 
-        // Chỉ số phụ
+        // ── Chỉ số phụ ──
         public int HpRegenPerSec { get; set; } = 0;
         public int EvasionRate { get; set; } = 0;
         public int CounterRate { get; set; } = 0;
 
-        // Giai đoạn boss (chỉ dùng cho boss): JSON phases
+        /// <summary>JSON giai đoạn boss: [{"hp_pct_threshold":50,"action":"enrage",...}]</summary>
         public string? PhasesJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -1,11 +1,13 @@
 using System.Text;
 using GameServerApi.Auth;
 using GameServerApi.Data;
+using GameServerApi.Hubs;
 using GameServerApi.Middleware;
 using GameServerApi.Services;
 using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -21,6 +23,10 @@ builder.WebHost.UseUrls(urls);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
+// ── SignalR: real-time chat ───────────────────────────────────────────────────
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, GameUserIdProvider>();
 
 // ── CORS: cho phép Unity client gọi API từ bất kỳ origin ─────────────────────
 builder.Services.AddCors(options =>
@@ -104,6 +110,19 @@ builder.Services
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        // SignalR WebSocket: JWT không thể đặt trong header → dùng query param ?access_token=
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken)
+                    && (path.StartsWithSegments("/chathub") || path.StartsWithSegments("/partyhub")))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            }
+        };
     })
     .AddScheme<AuthenticationSchemeOptions, ZoneApiKeyAuthenticationHandler>(
         ZoneApiKeyAuthenticationHandler.SchemeName,
@@ -153,5 +172,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ── SignalR Chat Hub ──────────────────────────────────────────────────────────
+app.MapHub<GameServerApi.Hubs.ChatHub>("/chathub");
+app.MapHub<GameServerApi.Hubs.PartyHub>("/partyhub");
 
 app.Run();

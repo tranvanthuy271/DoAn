@@ -2,6 +2,7 @@ using GameServerApi.Data;
 using GameServerApi.Models;
 using GameServerApi.Models.DTOs;
 using GameServerApi.Models.Entities;
+using GameServerApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +13,12 @@ namespace GameServerApi.Controllers
     public class DungeonController : ControllerBase
     {
         private readonly GameDbContext _db;
+        private readonly ILogger<DungeonController> _logger;
 
-        public DungeonController(GameDbContext db)
+        public DungeonController(GameDbContext db, ILogger<DungeonController> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -73,10 +76,11 @@ namespace GameServerApi.Controllers
             if (d == null) return NotFound(new { message = "Dungeon không tồn tại." });
 
             // Lấy enemy spawns của map này
-            var spawns = await _db.EnemySpawns
-                .Include(e => e.Enemy)
-                .Where(e => e.MapId == d.MapId)
-                .ToListAsync();
+            var spawns = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+                _db,
+                d.MapId,
+                _logger,
+                HttpContext.RequestAborted);
 
             return Ok(new
             {
@@ -102,26 +106,28 @@ namespace GameServerApi.Controllers
                 // Vị trí spawn cầu thủ khi vào phó bản
                 player_spawn_points = d.Map?.SpawnPointsJson,
                 // Danh sách quái cùng map_id (dùng để enemy_spawner trên host init)
-                enemy_spawns = spawns.Select(e => new
+                enemy_spawns = spawns.Select(spawn => new
                 {
-                    spawn_id        = e.SpawnId,
-                    enemy_type_id   = e.EnemyTypeId,
-                    spawn_x         = e.SpawnX,
-                    spawn_y         = e.SpawnY,
-                    max_spawn_count = e.MaxSpawnCount,
-                    respawn_time    = e.RespawnTime,
-                    enemy = e.Enemy == null ? null : new
+                    spawn_id        = spawn.SpawnId,
+                    enemy_type_id   = spawn.EnemyTypeId,
+                    spawn_x         = spawn.SpawnX,
+                    spawn_y         = spawn.SpawnY,
+                    max_spawn_count = spawn.MaxSpawnCount,
+                    respawn_time    = spawn.RespawnTime,
+                    enemy = spawn.Enemy == null ? null : new
                     {
-                        enemy_id    = e.Enemy.EnemyId,
-                        enemy_name  = e.Enemy.EnemyName,
-                        level       = e.Enemy.Level,
-                        base_hp     = e.Enemy.BaseHp,
-                        base_damage = e.Enemy.BaseDamage,
-                        base_defense= e.Enemy.BaseDefense,
-                        exp_reward  = e.Enemy.ExpReward,
-                        gold_reward = e.Enemy.GoldReward,
-                        element_type= e.Enemy.ElementType,
-                        enemy_type  = e.Enemy.EnemyType
+                        enemy_id    = spawn.Enemy.EnemyId,
+                        enemy_name  = spawn.Enemy.EnemyName,
+                        level       = spawn.Enemy.Level,
+                        base_hp     = spawn.Enemy.BaseHp,
+                        base_damage = spawn.Enemy.BaseDamage,
+                        base_defense= spawn.Enemy.BaseDefense,
+                        exp_reward  = spawn.Enemy.ExpReward,
+                        gold_reward = spawn.Enemy.GoldReward,
+                        silver_reward = spawn.Enemy.SilverReward,
+                        drop_items_json = spawn.Enemy.DropItemsJson,
+                        element_type= spawn.Enemy.ElementType,
+                        enemy_type  = spawn.Enemy.EnemyType
                     }
                 })
             });
@@ -269,10 +275,11 @@ namespace GameServerApi.Controllers
         {
             var map = await _db.MapConfigs.FirstOrDefaultAsync(m => m.MapId == mapId);
 
-            var enemySpawns = await _db.EnemySpawns
-                .Include(e => e.Enemy)
-                .Where(e => e.MapId == mapId)
-                .ToListAsync();
+            var enemySpawns = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+                _db,
+                mapId,
+                _logger,
+                HttpContext.RequestAborted);
 
             return Ok(new
             {
@@ -281,23 +288,25 @@ namespace GameServerApi.Controllers
                 // Player spawn positions từ map_config.spawn_points_json
                 player_spawn_points_json = map?.SpawnPointsJson ?? "[]",
                 // Enemy spawn config từ enemy_spawns
-                enemy_spawns = enemySpawns.Select(e => new
+                enemy_spawns = enemySpawns.Select(spawn => new
                 {
-                    spawn_id        = e.SpawnId,
-                    enemy_type_id   = e.EnemyTypeId,
-                    spawn_x         = e.SpawnX,
-                    spawn_y         = e.SpawnY,
-                    max_spawn_count = e.MaxSpawnCount,
-                    respawn_time    = e.RespawnTime,
-                    enemy_name      = e.Enemy?.EnemyName ?? "",
-                    enemy_level     = e.Enemy?.Level ?? 1,
-                    base_hp         = e.Enemy?.BaseHp ?? 100,
-                    base_damage     = e.Enemy?.BaseDamage ?? 10,
-                    base_defense    = e.Enemy?.BaseDefense ?? 0,
-                    exp_reward      = e.Enemy?.ExpReward ?? 0,
-                    gold_reward     = e.Enemy?.GoldReward ?? 0,
-                    element_type    = e.Enemy?.ElementType ?? "",
-                    enemy_type      = e.Enemy?.EnemyType ?? ""
+                    spawn_id        = spawn.SpawnId,
+                    enemy_type_id   = spawn.EnemyTypeId,
+                    spawn_x         = spawn.SpawnX,
+                    spawn_y         = spawn.SpawnY,
+                    max_spawn_count = spawn.MaxSpawnCount,
+                    respawn_time    = spawn.RespawnTime,
+                    enemy_name      = spawn.Enemy?.EnemyName ?? "",
+                    enemy_level     = spawn.Level,
+                    base_hp         = spawn.OverrideHp > 0 ? spawn.OverrideHp : spawn.Enemy?.BaseHp ?? 100,
+                    base_damage     = spawn.Enemy?.BaseDamage ?? 10,
+                    base_defense    = spawn.Enemy?.BaseDefense ?? 0,
+                    exp_reward      = spawn.OverrideExp > 0 ? spawn.OverrideExp : spawn.Enemy?.ExpReward ?? 0,
+                    gold_reward     = spawn.Enemy?.GoldReward ?? 0,
+                    silver_reward   = spawn.Enemy?.SilverReward ?? 0,
+                    drop_items_json = spawn.Enemy?.DropItemsJson,
+                    element_type    = spawn.Enemy?.ElementType ?? "",
+                    enemy_type      = spawn.IsBoss ? "Boss" : spawn.Enemy?.EnemyType ?? ""
                 })
             });
         }
@@ -331,9 +340,9 @@ namespace GameServerApi.Controllers
                 exp_reward        = enemy.ExpReward,
                 gold_reward       = enemy.GoldReward,
                 silver_reward     = enemy.SilverReward,
+                drop_items_json   = enemy.DropItemsJson,
                 // Kỹ năng (raw JSON — BossAI deserialize phía client)
                 skills_json       = enemy.SkillsJson,
-                drop_items_json   = enemy.DropItemsJson,
                 // Spawn config
                 spawn_config = bossConfig == null ? null : new
                 {
@@ -344,36 +353,6 @@ namespace GameServerApi.Controllers
                     max_spawn_hour   = bossConfig.MaxSpawnHour,
                     respawn_minutes  = bossConfig.RespawnMinutes
                 }
-            });
-        }
-
-        /// <summary>
-        /// GET /api/dungeon/map/{mapId}/drops?enemyId={enemyId}
-        /// Lấy bảng drop rate riêng của enemy trong map này (map_enemy_drop).
-        /// EnemyItemDrop.cs gọi sau khi enemy chết để xác định drop.
-        /// </summary>
-        [HttpGet("map/{mapId:int}/drops")]
-        public async Task<IActionResult> GetMapDrops(int mapId, [FromQuery] int? enemyId)
-        {
-            var query = _db.MapEnemyDrops
-                .Where(d => d.MapId == mapId && d.IsActive);
-
-            if (enemyId.HasValue)
-                query = query.Where(d => d.EnemyId == enemyId.Value);
-
-            var drops = await query.ToListAsync();
-
-            return Ok(new
-            {
-                map_id = mapId,
-                drops  = drops.Select(d => new
-                {
-                    enemy_id    = d.EnemyId,
-                    item_id     = d.ItemId,
-                    drop_chance = d.DropChance,
-                    qty_min     = d.QtyMin,
-                    qty_max     = d.QtyMax
-                })
             });
         }
 
