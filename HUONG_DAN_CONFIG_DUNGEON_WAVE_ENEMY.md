@@ -251,3 +251,8 @@ Trả về JSON đầy đủ mà Unity client đọc khi vào dungeon:
 |---|---|
 | `GameServerApi/sql/040_dungeon_wave.sql` | Schema + seed dữ liệu ban đầu |
 | `GameServerApi/sql/041_fix_dungeon_wave_map110_spawn_ids.sql` | Fix enemy_id đúng cho map 110 (27 enemy + 1 boss) |
+> Luu y 2026-04-21:
+> Backend da duoc sua de chap nhan ca 2 dinh dang `spawn_json`: mang legacy `[...]` va object `{"spawns":[...]}`.
+> Khong hard-code `enemy_id` 11/12 theo vi du cu. Moi moi truong co the khac du lieu live.
+> Truoc khi config, hay verify bang `SELECT enemy_id, enemy_name, enemy_type FROM enemy WHERE enemy_id IN (...)`
+> hoac goi `GET /api/enemy/{id}` de chac chan ID normal/boss dung voi DB hien tai.

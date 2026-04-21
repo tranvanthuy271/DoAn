@@ -174,6 +174,16 @@ public class ZoneTransitionController : NetworkBehaviour
 
         Debug.Log($"[ZoneTransitionController] Dungeon entry | client={clientId} dungeonConfigId={dungeonConfigId} map={dungeonMapId} zone={room.ZoneId}");
 
+        WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
+        if (waveRuntime != null)
+        {
+            waveRuntime.BeginEncounter(dungeonConfigId, dungeonMapId, room.ZoneId);
+        }
+        else
+        {
+            Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
+        }
+
         // Thông báo client đã vào dungeon (trước khi transfer)
         NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(clientId));
 
@@ -236,6 +246,16 @@ public class ZoneTransitionController : NetworkBehaviour
         }
 
         Debug.Log($"[ZoneTransitionController] Party dungeon entry | leader={leaderId} map={dungeonMapId} zone={room.ZoneId} members={memberClientIds.Count}");
+
+        WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
+        if (waveRuntime != null)
+        {
+            waveRuntime.BeginEncounter(dungeonConfigId, dungeonMapId, room.ZoneId);
+        }
+        else
+        {
+            Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
+        }
 
         // Transfer leader trước
         NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(leaderId));
@@ -308,6 +328,8 @@ public class ZoneTransitionController : NetworkBehaviour
             return;
         }
 
+        Debug.Log($"[ZoneTransitionController] ExecuteTransferToRoom client={clientId} targetMap={targetRoom.MapId} targetZone={targetRoom.ZoneId} entryPointId={entryPointId} explicitPosition={(explicitPosition.HasValue ? explicitPosition.Value.ToString() : "null")}");
+
         // 3. Zone capacity → fallback to least loaded zone trên cùng map (giải quyết issue #5)
         if (targetRoom.IsFull)
         {
@@ -345,6 +367,7 @@ public class ZoneTransitionController : NetworkBehaviour
 
             // Di chuyển player vào physics scene của map mới
             MapSceneManager.Instance?.MoveToMapScene(session.NetworkObject.gameObject, targetRoom.MapId);
+            Debug.Log($"[ZoneTransitionController] Moved client {clientId} player object to {entry.x:F2},{entry.y:F2} in map {targetRoom.MapId}.");
         }
 
         // 8. Refresh NGO visibility (players, enemies, items trong zone cũ/mới)

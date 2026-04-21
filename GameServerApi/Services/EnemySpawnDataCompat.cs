@@ -42,16 +42,70 @@ internal static class EnemySpawnDataCompat
         public int Level { get; init; }
     }
 
-    public static async Task<IReadOnlyList<ResolvedEnemySpawn>> LoadResolvedSpawnsAsync(
+    public static Task<IReadOnlyList<ResolvedEnemySpawn>> LoadResolvedSpawnsAsync(
         GameDbContext db,
         int mapId,
         ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
+        return LoadResolvedSpawnsCoreAsync(
+            db,
+            mapId,
+            logger,
+            preferLegacyMapSpawnConfig: false,
+            cancellationToken);
+    }
+
+    public static Task<IReadOnlyList<ResolvedEnemySpawn>> LoadResolvedSpawnsPreferLegacyAsync(
+        GameDbContext db,
+        int mapId,
+        ILogger? logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        return LoadResolvedSpawnsCoreAsync(
+            db,
+            mapId,
+            logger,
+            preferLegacyMapSpawnConfig: true,
+            cancellationToken);
+    }
+
+    private static async Task<IReadOnlyList<ResolvedEnemySpawn>> LoadResolvedSpawnsCoreAsync(
+        GameDbContext db,
+        int mapId,
+        ILogger? logger,
+        bool preferLegacyMapSpawnConfig,
+        CancellationToken cancellationToken)
+    {
+        if (preferLegacyMapSpawnConfig)
+        {
+            IReadOnlyList<ResolvedEnemySpawn> legacySpawns = await LoadLegacySpawnsAsync(db, mapId, logger, cancellationToken);
+            if (legacySpawns.Count > 0)
+            {
+                logger?.LogInformation(
+                    "[EnemySpawnDataCompat] mapId={MapId} is using map_spawn_config as the preferred source.",
+                    mapId);
+                return legacySpawns;
+            }
+
+            logger?.LogInformation(
+                "[EnemySpawnDataCompat] mapId={MapId} has no valid map_spawn_config entries. Falling back to enemy_spawns.",
+                mapId);
+        }
+
+        return await LoadEnemySpawnsOrFallbackAsync(db, mapId, logger, cancellationToken);
+    }
+
+    private static async Task<IReadOnlyList<ResolvedEnemySpawn>> LoadEnemySpawnsOrFallbackAsync(
+        GameDbContext db,
+        int mapId,
+        ILogger? logger,
+        CancellationToken cancellationToken)
+    {
         if (!await TableExistsAsync(db, "enemy_spawns", cancellationToken))
         {
             logger?.LogInformation(
-                "[EnemySpawnDataCompat] Không có bảng enemy_spawns, fallback map_spawn_config cho mapId={MapId}.",
+                "[EnemySpawnDataCompat] enemy_spawns table missing, using map_spawn_config for mapId={MapId}.",
                 mapId);
             return await LoadLegacySpawnsAsync(db, mapId, logger, cancellationToken);
         }
@@ -69,14 +123,14 @@ internal static class EnemySpawnDataCompat
                 return NormalizeBossEnemyTypeMismatch(rows.Select(MapResolvedSpawn).ToArray(), mapId, logger);
 
             logger?.LogInformation(
-                "[EnemySpawnDataCompat] enemy_spawns không có dữ liệu cho mapId={MapId}, thử fallback map_spawn_config.",
+                "[EnemySpawnDataCompat] enemy_spawns has no rows for mapId={MapId}. Falling back to map_spawn_config.",
                 mapId);
         }
         catch (MySqlException ex) when (IsMissingTable(ex, "enemy_spawns"))
         {
             logger?.LogWarning(
                 ex,
-                "[EnemySpawnDataCompat] Thiếu bảng enemy_spawns, fallback sang map_spawn_config cho mapId={MapId}.",
+                "[EnemySpawnDataCompat] enemy_spawns table missing at runtime, using map_spawn_config for mapId={MapId}.",
                 mapId);
         }
 
@@ -111,9 +165,14 @@ internal static class EnemySpawnDataCompat
         if (string.IsNullOrWhiteSpace(spawnJson))
             return Array.Empty<ResolvedEnemySpawn>();
 
-        var legacyEntries = ParseLegacySpawns(spawnJson);
+        List<LegacySpawnEntry> legacyEntries = ParseLegacySpawns(spawnJson);
         if (legacyEntries.Count == 0)
+        {
+            logger?.LogWarning(
+                "[EnemySpawnDataCompat] map_spawn_config.map_id={MapId} has spawn_json but it could not be parsed. Supported formats: [...] or {{\"spawns\":[...]}} with cx/cy or x/y.",
+                mapId);
             return Array.Empty<ResolvedEnemySpawn>();
+        }
 
         int[] enemyIds = legacyEntries
             .Select(entry => entry.EnemyId)
@@ -149,7 +208,7 @@ internal static class EnemySpawnDataCompat
         }
 
         logger?.LogInformation(
-            "[EnemySpawnDataCompat] Đã nạp {Count} spawn legacy từ map_spawn_config cho mapId={MapId}.",
+            "[EnemySpawnDataCompat] Loaded {Count} legacy spawn entries from map_spawn_config for mapId={MapId}.",
             result.Count,
             mapId);
 
@@ -190,7 +249,7 @@ internal static class EnemySpawnDataCompat
         int correctedBossEnemyId = normalEnemyIds[0];
 
         logger?.LogWarning(
-            "[EnemySpawnDataCompat] Phát hiện mapId={MapId} có enemy_id boss/quái bị đảo. Tự động hoán đổi normalEnemyId={NormalEnemyId}, bossEnemyId={BossEnemyId}.",
+            "[EnemySpawnDataCompat] mapId={MapId} appears to have normal/boss enemy IDs swapped. Auto-correcting normalEnemyId={NormalEnemyId}, bossEnemyId={BossEnemyId}.",
             mapId,
             correctedNormalEnemyId,
             correctedBossEnemyId);
@@ -229,7 +288,7 @@ internal static class EnemySpawnDataCompat
         if (!await TableExistsAsync(db, "map_spawn_config", cancellationToken))
         {
             logger?.LogWarning(
-                "[EnemySpawnDataCompat] Thiếu cả bảng map_spawn_config khi nạp mapId={MapId}.",
+                "[EnemySpawnDataCompat] map_spawn_config table is missing while loading mapId={MapId}.",
                 mapId);
             return null;
         }
@@ -266,7 +325,7 @@ LIMIT 1";
         {
             logger?.LogWarning(
                 ex,
-                "[EnemySpawnDataCompat] Thiếu cả bảng map_spawn_config khi nạp mapId={MapId}.",
+                "[EnemySpawnDataCompat] map_spawn_config table is missing while loading mapId={MapId}.",
                 mapId);
             return null;
         }
@@ -331,27 +390,27 @@ LIMIT 1";
         try
         {
             using var document = JsonDocument.Parse(spawnJson);
-            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            if (!TryGetSpawnEntriesElement(document.RootElement, out JsonElement spawnEntries))
                 return new List<LegacySpawnEntry>();
 
             var result = new List<LegacySpawnEntry>();
-            foreach (JsonElement element in document.RootElement.EnumerateArray())
+            foreach (JsonElement element in spawnEntries.EnumerateArray())
             {
-                int enemyId = GetIntValueOrDefault(element, "enemy_id", 0);
+                int enemyId = GetIntValueByAliasesOrDefault(element, 0, "enemy_id");
                 if (enemyId <= 0)
                     continue;
 
                 result.Add(new LegacySpawnEntry
                 {
                     EnemyId = enemyId,
-                    Hp = GetIntValueOrDefault(element, "hp", 0),
-                    Exp = GetIntValueOrDefault(element, "exp", 0),
-                    Cx = GetFloatValueOrDefault(element, "cx", 0f),
-                    Cy = GetFloatValueOrDefault(element, "cy", 0f),
-                    IsBoss = GetBoolValueOrDefault(element, "is_boss", false),
-                    Count = GetIntValueOrDefault(element, "count", 1),
-                    RespawnTime = GetIntValueOrDefault(element, "respawn_time", 30),
-                    Level = GetIntValueOrDefault(element, "level", 1)
+                    Hp = GetIntValueByAliasesOrDefault(element, 0, "hp", "max_hp", "base_hp"),
+                    Exp = GetIntValueByAliasesOrDefault(element, 0, "exp", "exp_reward"),
+                    Cx = GetFloatValueByAliasesOrDefault(element, 0f, "cx", "x", "spawn_x"),
+                    Cy = GetFloatValueByAliasesOrDefault(element, 0f, "cy", "y", "spawn_y"),
+                    IsBoss = GetBoolValueByAliasesOrDefault(element, false, "is_boss", "isBoss"),
+                    Count = GetIntValueByAliasesOrDefault(element, 1, "count", "max_spawn_count"),
+                    RespawnTime = GetIntValueByAliasesOrDefault(element, 30, "respawn_time"),
+                    Level = GetIntValueByAliasesOrDefault(element, 1, "level")
                 });
             }
 
@@ -363,6 +422,35 @@ LIMIT 1";
         }
     }
 
+    private static bool TryGetSpawnEntriesElement(JsonElement rootElement, out JsonElement spawnEntries)
+    {
+        if (rootElement.ValueKind == JsonValueKind.Array)
+        {
+            spawnEntries = rootElement;
+            return true;
+        }
+
+        if (rootElement.ValueKind == JsonValueKind.Object)
+        {
+            if (TryGetPropertyValue(rootElement, "spawns", out JsonElement wrappedSpawns)
+                && wrappedSpawns.ValueKind == JsonValueKind.Array)
+            {
+                spawnEntries = wrappedSpawns;
+                return true;
+            }
+
+            if (TryGetPropertyValue(rootElement, "enemy_spawns", out JsonElement wrappedEnemySpawns)
+                && wrappedEnemySpawns.ValueKind == JsonValueKind.Array)
+            {
+                spawnEntries = wrappedEnemySpawns;
+                return true;
+            }
+        }
+
+        spawnEntries = default;
+        return false;
+    }
+
     private static bool IsMissingTable(MySqlException exception, string tableName)
     {
         return exception.Number == 1146
@@ -371,11 +459,8 @@ LIMIT 1";
 
     private static int GetIntValueOrDefault(JsonElement element, string propertyName, int defaultValue)
     {
-        if (element.ValueKind != JsonValueKind.Object
-            || !element.TryGetProperty(propertyName, out JsonElement property))
-        {
+        if (!TryGetPropertyValue(element, propertyName, out JsonElement property))
             return defaultValue;
-        }
 
         return property.ValueKind switch
         {
@@ -387,11 +472,8 @@ LIMIT 1";
 
     private static float GetFloatValueOrDefault(JsonElement element, string propertyName, float defaultValue)
     {
-        if (element.ValueKind != JsonValueKind.Object
-            || !element.TryGetProperty(propertyName, out JsonElement property))
-        {
+        if (!TryGetPropertyValue(element, propertyName, out JsonElement property))
             return defaultValue;
-        }
 
         return property.ValueKind switch
         {
@@ -403,11 +485,8 @@ LIMIT 1";
 
     private static bool GetBoolValueOrDefault(JsonElement element, string propertyName, bool defaultValue)
     {
-        if (element.ValueKind != JsonValueKind.Object
-            || !element.TryGetProperty(propertyName, out JsonElement property))
-        {
+        if (!TryGetPropertyValue(element, propertyName, out JsonElement property))
             return defaultValue;
-        }
 
         return property.ValueKind switch
         {
@@ -418,5 +497,58 @@ LIMIT 1";
             JsonValueKind.String when int.TryParse(property.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int stringNumberValue) => stringNumberValue != 0,
             _ => defaultValue
         };
+    }
+
+    private static int GetIntValueByAliasesOrDefault(JsonElement element, int defaultValue, params string[] propertyNames)
+    {
+        foreach (string propertyName in propertyNames)
+        {
+            int value = GetIntValueOrDefault(element, propertyName, int.MinValue);
+            if (value != int.MinValue)
+                return value;
+        }
+
+        return defaultValue;
+    }
+
+    private static float GetFloatValueByAliasesOrDefault(JsonElement element, float defaultValue, params string[] propertyNames)
+    {
+        foreach (string propertyName in propertyNames)
+        {
+            float value = GetFloatValueOrDefault(element, propertyName, float.NaN);
+            if (!float.IsNaN(value))
+                return value;
+        }
+
+        return defaultValue;
+    }
+
+    private static bool GetBoolValueByAliasesOrDefault(JsonElement element, bool defaultValue, params string[] propertyNames)
+    {
+        foreach (string propertyName in propertyNames)
+        {
+            if (TryGetPropertyValue(element, propertyName, out _))
+                return GetBoolValueOrDefault(element, propertyName, defaultValue);
+        }
+
+        return defaultValue;
+    }
+
+    private static bool TryGetPropertyValue(JsonElement element, string propertyName, out JsonElement property)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (JsonProperty candidate in element.EnumerateObject())
+            {
+                if (string.Equals(candidate.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    property = candidate.Value;
+                    return true;
+                }
+            }
+        }
+
+        property = default;
+        return false;
     }
 }

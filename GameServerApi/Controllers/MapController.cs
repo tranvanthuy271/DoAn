@@ -616,11 +616,8 @@ namespace GameServerApi.Controllers
 
         private static int GetIntValueOrDefault(JsonElement element, string propertyName, int defaultValue)
         {
-            if (element.ValueKind != JsonValueKind.Object
-                || !element.TryGetProperty(propertyName, out var property))
-            {
+            if (!TryGetPropertyValue(element, propertyName, out var property))
                 return defaultValue;
-            }
 
             return property.ValueKind switch
             {
@@ -630,13 +627,23 @@ namespace GameServerApi.Controllers
             };
         }
 
+        private static float GetFloatValueOrDefault(JsonElement element, string propertyName, float defaultValue)
+        {
+            if (!TryGetPropertyValue(element, propertyName, out var property))
+                return defaultValue;
+
+            return property.ValueKind switch
+            {
+                JsonValueKind.Number when property.TryGetSingle(out float numberValue) => numberValue,
+                JsonValueKind.String when float.TryParse(property.GetString(), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out float stringValue) => stringValue,
+                _ => defaultValue
+            };
+        }
+
         private static double GetDoubleValueOrDefault(JsonElement element, string propertyName, double defaultValue)
         {
-            if (element.ValueKind != JsonValueKind.Object
-                || !element.TryGetProperty(propertyName, out var property))
-            {
+            if (!TryGetPropertyValue(element, propertyName, out var property))
                 return defaultValue;
-            }
 
             return property.ValueKind switch
             {
@@ -675,6 +682,8 @@ namespace GameServerApi.Controllers
             if (existingEnemyCount != enemyIds.Length)
                 return BadRequest(new { message = "spawn_json chứa enemy_id không tồn tại trong bảng enemy." });
 
+            await using var transaction = await _db.Database.BeginTransactionAsync();
+
             var existingSpawns = await _db.EnemySpawns
                 .Where(spawn => spawn.MapId == mapId)
                 .ToListAsync();
@@ -700,21 +709,85 @@ namespace GameServerApi.Controllers
             }
 
             await _db.SaveChangesAsync();
+            await UpsertLegacyMapSpawnConfigAsync(mapId, spawnEntries);
+            await transaction.CommitAsync();
             _cache.Remove($"spawn_config_{mapId}");
 
             return Ok(new { success = true, map_id = mapId, spawn_count = spawnEntries.Count });
         }
 
+        private async Task UpsertLegacyMapSpawnConfigAsync(int mapId, IReadOnlyList<SpawnConfigPersistEntry> spawnEntries)
+        {
+            string canonicalSpawnJson = BuildLegacyMapSpawnJson(spawnEntries);
+
+            int updatedRows = await _db.Database.ExecuteSqlRawAsync(
+                "UPDATE map_spawn_config SET spawn_json = {0}, updated_at = UTC_TIMESTAMP() WHERE map_id = {1}",
+                canonicalSpawnJson,
+                mapId);
+
+            if (updatedRows > 0)
+                return;
+
+            await _db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO map_spawn_config (map_id, spawn_json, drop_json) VALUES ({0}, {1}, {2})",
+                mapId,
+                canonicalSpawnJson,
+                "[]");
+        }
+
+        private static string BuildLegacyMapSpawnJson(IReadOnlyList<SpawnConfigPersistEntry> spawnEntries)
+        {
+            var payload = new
+            {
+                spawns = spawnEntries.Select(entry => new
+                {
+                    enemy_id = entry.EnemyId,
+                    hp = Math.Max(0, entry.Hp),
+                    exp = Math.Max(0, entry.Exp),
+                    x = entry.Cx,
+                    y = entry.Cy,
+                    is_boss = entry.IsBoss,
+                    count = entry.Count > 0 ? entry.Count : 1,
+                    respawn_time = Math.Max(0, entry.RespawnTime),
+                    level = entry.Level > 0 ? entry.Level : 1
+                }).ToArray()
+            };
+
+            return JsonSerializer.Serialize(payload);
+        }
+
         private static bool TryParseSpawnEntries(string json, out List<SpawnConfigPersistEntry> spawnEntries)
         {
             spawnEntries = new List<SpawnConfigPersistEntry>();
-            if (string.IsNullOrWhiteSpace(json)) return false;
+            if (string.IsNullOrWhiteSpace(json))
+                return false;
+
             try
             {
-                spawnEntries = JsonSerializer.Deserialize<List<SpawnConfigPersistEntry>>(json, new JsonSerializerOptions
+                using var document = JsonDocument.Parse(json);
+                if (!TryGetSpawnEntriesElement(document.RootElement, out JsonElement entriesElement))
+                    return false;
+
+                foreach (JsonElement entryElement in entriesElement.EnumerateArray())
                 {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new List<SpawnConfigPersistEntry>();
+                    int enemyId = GetIntValueByAliasesOrDefault(entryElement, 0, "enemy_id");
+                    if (enemyId <= 0)
+                        continue;
+
+                    spawnEntries.Add(new SpawnConfigPersistEntry
+                    {
+                        EnemyId = enemyId,
+                        Hp = GetIntValueByAliasesOrDefault(entryElement, 0, "hp", "max_hp", "base_hp"),
+                        Exp = GetIntValueByAliasesOrDefault(entryElement, 0, "exp", "exp_reward"),
+                        Cx = GetFloatValueByAliasesOrDefault(entryElement, 0f, "cx", "x", "spawn_x"),
+                        Cy = GetFloatValueByAliasesOrDefault(entryElement, 0f, "cy", "y", "spawn_y"),
+                        IsBoss = GetBoolValueByAliasesOrDefault(entryElement, false, "is_boss", "isBoss"),
+                        Count = GetIntValueByAliasesOrDefault(entryElement, 1, "count", "max_spawn_count"),
+                        RespawnTime = GetIntValueByAliasesOrDefault(entryElement, 30, "respawn_time"),
+                        Level = GetIntValueByAliasesOrDefault(entryElement, 1, "level")
+                    });
+                }
+
                 return true;
             }
             catch (JsonException)
@@ -723,15 +796,115 @@ namespace GameServerApi.Controllers
             }
         }
 
+        private static bool TryGetSpawnEntriesElement(JsonElement rootElement, out JsonElement spawnEntriesElement)
+        {
+            if (rootElement.ValueKind == JsonValueKind.Array)
+            {
+                spawnEntriesElement = rootElement;
+                return true;
+            }
+
+            if (rootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (TryGetPropertyValue(rootElement, "spawns", out JsonElement wrappedSpawns)
+                    && wrappedSpawns.ValueKind == JsonValueKind.Array)
+                {
+                    spawnEntriesElement = wrappedSpawns;
+                    return true;
+                }
+
+                if (TryGetPropertyValue(rootElement, "enemy_spawns", out JsonElement wrappedEnemySpawns)
+                    && wrappedEnemySpawns.ValueKind == JsonValueKind.Array)
+                {
+                    spawnEntriesElement = wrappedEnemySpawns;
+                    return true;
+                }
+            }
+
+            spawnEntriesElement = default;
+            return false;
+        }
+
+        private static int GetIntValueByAliasesOrDefault(JsonElement element, int defaultValue, params string[] propertyNames)
+        {
+            foreach (string propertyName in propertyNames)
+            {
+                int value = GetIntValueOrDefault(element, propertyName, int.MinValue);
+                if (value != int.MinValue)
+                    return value;
+            }
+
+            return defaultValue;
+        }
+
+        private static float GetFloatValueByAliasesOrDefault(JsonElement element, float defaultValue, params string[] propertyNames)
+        {
+            foreach (string propertyName in propertyNames)
+            {
+                float value = GetFloatValueOrDefault(element, propertyName, float.NaN);
+                if (!float.IsNaN(value))
+                    return value;
+            }
+
+            return defaultValue;
+        }
+
+        private static bool GetBoolValueByAliasesOrDefault(JsonElement element, bool defaultValue, params string[] propertyNames)
+        {
+            foreach (string propertyName in propertyNames)
+            {
+                if (TryGetPropertyValue(element, propertyName, out _))
+                    return GetBoolValueOrDefault(element, propertyName, defaultValue);
+            }
+
+            return defaultValue;
+        }
+
+        private static bool GetBoolValueOrDefault(JsonElement element, string propertyName, bool defaultValue)
+        {
+            if (!TryGetPropertyValue(element, propertyName, out var property))
+                return defaultValue;
+
+            return property.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Number when property.TryGetInt32(out int numberValue) => numberValue != 0,
+                JsonValueKind.String when bool.TryParse(property.GetString(), out bool boolValue) => boolValue,
+                JsonValueKind.String when int.TryParse(property.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int stringNumberValue) => stringNumberValue != 0,
+                _ => defaultValue
+            };
+        }
+
+        private static bool TryGetPropertyValue(JsonElement element, string propertyName, out JsonElement property)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty candidate in element.EnumerateObject())
+                {
+                    if (string.Equals(candidate.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        property = candidate.Value;
+                        return true;
+                    }
+                }
+            }
+
+            property = default;
+            return false;
+        }
+
         private sealed class SpawnConfigPersistEntry
         {
-            [JsonPropertyName("enemy_id")] public int EnemyId { get; set; }
-            [JsonPropertyName("cx")] public float Cx { get; set; }
-            [JsonPropertyName("cy")] public float Cy { get; set; }
-            [JsonPropertyName("is_boss")] public bool IsBoss { get; set; }
-            [JsonPropertyName("count")] public int Count { get; set; }
-            [JsonPropertyName("respawn_time")] public int RespawnTime { get; set; }
-            [JsonPropertyName("level")] public int Level { get; set; }
+            public int EnemyId { get; set; }
+            public int Hp { get; set; }
+            public int Exp { get; set; }
+            public float Cx { get; set; }
+            public float Cy { get; set; }
+            public bool IsBoss { get; set; }
+            public int Count { get; set; }
+            public int RespawnTime { get; set; }
+            public int Level { get; set; }
         }
     }
 

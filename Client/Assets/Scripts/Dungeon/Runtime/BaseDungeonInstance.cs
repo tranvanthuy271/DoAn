@@ -11,13 +11,27 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
     [SerializeField] protected TMP_Text statusText;
 
     private Coroutine _localReturnCoroutine;
+    protected int ForcedMapId { get; private set; } = -1;
+    protected int ForcedZoneId { get; private set; } = 0;
+
+    protected void SetEncounterLocation(int mapId, int zoneId)
+    {
+        ForcedMapId = mapId;
+        ForcedZoneId = zoneId;
+    }
+
+    protected void ClearEncounterLocation()
+    {
+        ForcedMapId = -1;
+        ForcedZoneId = 0;
+    }
 
     protected NetworkObject SpawnConfiguredEnemy(DungeonEnemyUnitConfig config, float scale, bool isBoss)
     {
         if (!IsServer || config == null)
             return null;
 
-        Debug.Log($"[BaseDungeonInstance] SpawnConfiguredEnemy: enemyId={config.enemyId}, configMaxHp={config.maxHp}, scale={scale:F2}, isBoss={isBoss}");
+        Debug.Log($"[BaseDungeonInstance] SpawnConfiguredEnemy: scene={gameObject.scene.name}, enemyId={config.enemyId}, configMaxHp={config.maxHp}, scale={scale:F2}, isBoss={isBoss}, map={ResolveCurrentMapId()}, zone={ResolveCurrentZoneId()}");
 
         GameObject prefab = EnemyPrefabManager.Instance != null
             ? EnemyPrefabManager.Instance.GetEnemyPrefab(config.enemyId)
@@ -53,7 +67,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
             ?? enemyObject.AddComponent<DungeonEnemyRuntimeStats>();
         runtimeStats.Apply(config, scale, isBoss);
         runtimeStats.ApplyDrops(config.drops);
-        Debug.Log($"[BaseDungeonInstance] runtimeStats.MaxHp={runtimeStats.MaxHp} sau Apply() (isBoss={isBoss})");
+        Debug.Log($"[BaseDungeonInstance] runtimeStats.MaxHp={runtimeStats.MaxHp} sau Apply() (isBoss={isBoss}) scene={gameObject.scene.name} prefab={prefab.name}");
 
         // Pre-set maxHealth trên NetworkEnemyHealth TRƯỚC khi Spawn()
         var networkEnemyHealth = enemyObject.GetComponent<NetworkEnemyHealth>();
@@ -66,10 +80,11 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
             SetLayerRecursively(enemyObject, enemyLayerIndex);
 
         int currentMapId = ResolveCurrentMapId();
+        int currentZoneId = ResolveCurrentZoneId();
         if (currentMapId >= 0)
         {
             MapSceneManager.Instance?.MoveToMapScene(enemyObject, currentMapId);
-            ApplyMapVisibility(enemyObject, currentMapId);
+            ApplyMapVisibility(enemyObject, currentMapId, currentZoneId);
         }
         else
         {
@@ -89,10 +104,10 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
             SetLayerRecursively(go.transform.GetChild(i).gameObject, layer);
     }
 
-    private static void ApplyMapVisibility(GameObject enemyObj, int targetMapId)
+    private static void ApplyMapVisibility(GameObject enemyObj, int targetMapId, int targetZoneId)
     {
         var zoneTag = enemyObj.GetComponent<ZoneOwnerTag>() ?? enemyObj.AddComponent<ZoneOwnerTag>();
-        zoneTag.SetZone(targetMapId, 0);
+        zoneTag.SetZone(targetMapId, targetZoneId);
 
         var filter = enemyObj.GetComponent<NetworkVisibilityZoneFilter>() ?? enemyObj.AddComponent<NetworkVisibilityZoneFilter>();
         filter.InitializeForServer();
@@ -100,6 +115,9 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
 
     protected int ResolveCurrentMapId()
     {
+        if (ForcedMapId >= 0)
+            return ForcedMapId;
+
         string sceneName = gameObject.scene.IsValid() ? gameObject.scene.name : UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
         MapWorldConfig worldConfig = ZoneRoomRegistry.Instance?.Config;
@@ -125,8 +143,29 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         return -1;
     }
 
+    protected int ResolveCurrentZoneId()
+    {
+        if (ForcedMapId >= 0)
+            return ForcedZoneId;
+
+        var dungeonManager = FindAnyObjectByType<DungeonManager>();
+        if (dungeonManager != null && dungeonManager.ActiveDungeonMapId >= 0)
+            return dungeonManager.ActiveDungeonZoneId;
+
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentZoneId >= 0)
+            return ClientSceneController.Instance.CurrentZoneId;
+
+        return 0;
+    }
+
     protected void BroadcastStatus(string message)
     {
+        if (!IsSpawned)
+        {
+            Debug.Log($"[BaseDungeonInstance] Status: {message}");
+            return;
+        }
+
         SetStatusClientRpc(message ?? string.Empty);
     }
 
@@ -143,7 +182,10 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
     {
         int seconds = Mathf.Max(1, Mathf.CeilToInt(countdownSeconds));
         string prefix = completed ? "Hoàn thành! Trở về sau" : "Thất bại! Trở về sau";
-        BeginReturnCountdownClientRpc(prefix, seconds, returnMapId, string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+        if (IsSpawned)
+            BeginReturnCountdownClientRpc(prefix, seconds, returnMapId, string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+        else
+            Debug.Log($"[BaseDungeonInstance] Return flow requested without spawned runtime: {prefix} {seconds}s");
         yield return new WaitForSeconds(seconds);
     }
 

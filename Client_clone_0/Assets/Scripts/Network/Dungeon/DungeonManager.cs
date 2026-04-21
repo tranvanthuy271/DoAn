@@ -48,6 +48,7 @@ public class DungeonManager : MonoBehaviour
     public bool IsInDungeon        => _isInDungeon;
     public int  ActiveDungeonId    => _activeDungeonId;
     public int  ActiveDungeonMapId => _activeDungeonMapId;
+    public int  ActiveDungeonZoneId => _activeDungeonZoneId;
 
     public event Action<string> OnDungeonStatusMessage;
     public event Action         OnDungeonEntered;

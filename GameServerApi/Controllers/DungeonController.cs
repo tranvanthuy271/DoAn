@@ -353,7 +353,7 @@ namespace GameServerApi.Controllers
                 .SqlQuery<WaveRuntimeConfigProjection>($"SELECT max_waves, wave_time_seconds, enemy_scale_percent, boss_scale_percent, exp_gold_scale_percent, daily_entry_limit, entry_item_plus1_id, entry_item_plus2_id, milestone_reward_json FROM dungeon_wave_config WHERE dungeon_id = {dungeonId}")
                 .FirstOrDefaultAsync();
 
-            var resolvedSpawns = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+            var resolvedSpawns = await EnemySpawnDataCompat.LoadResolvedSpawnsPreferLegacyAsync(
                 _db,
                 dungeon.map_id,
                 _logger,

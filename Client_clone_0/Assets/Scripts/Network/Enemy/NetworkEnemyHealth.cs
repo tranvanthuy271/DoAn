@@ -158,7 +158,9 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} died! ExpReward={ExpReward} Attacker={_lastAttackerClientId}");
+        var runtimeOverride = GetComponent<EnemyStatOverride>();
+        var runtimeStats = GetComponent<DungeonEnemyRuntimeStats>();
+        Debug.Log($"[NEH] death netId={NetworkObjectId} name={gameObject.name} scene={(gameObject.scene.IsValid() ? gameObject.scene.name : "invalid")} boss={(runtimeOverride != null && runtimeOverride.IsBoss)} runtime={(runtimeStats != null && runtimeStats.HasRuntimeOverride)} atk={_lastAttackerClientId} exp={ExpReward}");
 
         if (IsServer)
         {
@@ -170,6 +172,16 @@ public class NetworkEnemyHealth : NetworkBehaviour
             catch (System.Exception ex)
             {
                 Debug.LogError($"[NetworkEnemyHealth] HandleDeathDrop failed: {ex.Message}");
+            }
+
+            var waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
+            if (waveRuntime != null)
+            {
+                Debug.Log($"[NEH] runtime=yes netId={NetworkObjectId} scene={gameObject.scene.name}");
+            }
+            else
+            {
+                Debug.Log($"[NEH] runtime=no netId={NetworkObjectId} scene={gameObject.scene.name}");
             }
         }
 
