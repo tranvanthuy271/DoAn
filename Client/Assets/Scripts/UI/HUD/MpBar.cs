@@ -27,6 +27,7 @@ public class MpBar : MonoBehaviour
     private NetworkPlayerDataSync dataSync;
     private float retryTimer = 0f;
     private const float RetryInterval = 0.3f;
+    private int _retryCount = 0;
 
     // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
@@ -72,11 +73,21 @@ public class MpBar : MonoBehaviour
     {
         // Tìm đúng NetworkPlayerDataSync của local player (IsOwner=true)
         // Dùng FindObjectsOfType để tránh lấy nhầm của player khác trong multiplayer
-        foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
+        var allSyncs = FindObjectsOfType<NetworkPlayerDataSync>();
+        foreach (var s in allSyncs)
         {
             if (s.IsSpawned && s.IsOwner) { dataSync = s; break; }
         }
-        if (dataSync == null) return;
+        if (dataSync == null)
+        {
+            _retryCount++;
+            if (_retryCount % 10 == 1)
+                Debug.LogWarning($"[MpBar] Chờ player spawn... retry #{_retryCount} | " +
+                                 $"totalFound={allSyncs.Length} " +
+                                 $"spawned={System.Array.FindAll(allSyncs, s => s.IsSpawned).Length} " +
+                                 $"owned={System.Array.FindAll(allSyncs, s => s.IsSpawned && s.IsOwner).Length}");
+            return;
+        }
 
         Debug.Log($"[MpBar] Bind local player '{dataSync.gameObject.name}' — MP: {dataSync.networkMp.Value}/{dataSync.networkMaxMp.Value}");
         dataSync.networkMp.OnValueChanged    += OnMpChanged;

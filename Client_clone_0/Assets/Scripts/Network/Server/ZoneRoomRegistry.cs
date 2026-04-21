@@ -22,6 +22,9 @@ public class ZoneRoomRegistry : MonoBehaviour
     // Fast reverse lookup: clientId → ZoneRoom hiện tại (giống LangLa client.zone)
     private readonly Dictionary<ulong, ZoneRoom> _clientRoom = new();
 
+    // Những custom room rỗng nhưng vẫn phải giữ lại để reconnect vào đúng instance cũ.
+    private readonly Dictionary<string, ZoneRoom> _preservedEmptyCustomRooms = new();
+
     // mapId → next negative zone id cho private/custom room
     private readonly Dictionary<int, int> _nextCustomZoneIdByMap = new();
 
@@ -49,6 +52,7 @@ public class ZoneRoomRegistry : MonoBehaviour
         Config = config;
         _rooms.Clear();
         _clientRoom.Clear();
+        _preservedEmptyCustomRooms.Clear();
         _nextCustomZoneIdByMap.Clear();
 
         foreach (var mapDef in config.maps)
@@ -85,6 +89,97 @@ public class ZoneRoomRegistry : MonoBehaviour
             zones.TryGetValue(zoneId, out var room))
             return room;
         return null;
+    }
+
+    public ZoneRoom EnsureRoomRegistered(ZoneRoom room)
+    {
+        if (room == null)
+            return null;
+
+        if (!_rooms.TryGetValue(room.MapId, out var zones))
+        {
+            zones = new Dictionary<int, ZoneRoom>();
+            _rooms[room.MapId] = zones;
+        }
+
+        if (!zones.ContainsKey(room.ZoneId))
+        {
+            zones[room.ZoneId] = room;
+            Debug.Log($"[ZoneRoomRegistry] Re-registered custom room {room.ZoneKey} for active wave session.");
+        }
+
+        if (room.IsCustom)
+            _preservedEmptyCustomRooms[room.ZoneKey] = room;
+
+        return zones[room.ZoneId];
+    }
+
+    public ZoneRoom EnsureCustomRoomRegistered(int mapId, int zoneId, string customRoomName = null, int? maxPlayersOverride = null)
+    {
+        ZoneRoom existingRoom = GetRoom(mapId, zoneId);
+        if (existingRoom != null)
+            return existingRoom;
+
+        string zoneKey = BuildZoneKey(mapId, zoneId);
+        if (_preservedEmptyCustomRooms.TryGetValue(zoneKey, out ZoneRoom preservedRoom) && preservedRoom != null)
+            return EnsureRoomRegistered(preservedRoom);
+
+        var mapDef = Config?.GetMap(mapId);
+        if (mapDef == null)
+        {
+            Debug.LogWarning($"[ZoneRoomRegistry] Không thể khôi phục custom room: map {mapId} không tồn tại.");
+            return null;
+        }
+
+        if (!mapDef.SupportsCustomZones)
+        {
+            Debug.LogWarning($"[ZoneRoomRegistry] Map {mapId} không hỗ trợ custom room để restore zone {zoneId}.");
+            return null;
+        }
+
+        if (!_rooms.TryGetValue(mapId, out var zones))
+        {
+            zones = new Dictionary<int, ZoneRoom>();
+            _rooms[mapId] = zones;
+        }
+
+        var room = new ZoneRoom(mapDef, mapDef.CreateCustomZone(Config, zoneId, customRoomName, maxPlayersOverride));
+        zones[zoneId] = room;
+        _preservedEmptyCustomRooms[zoneKey] = room;
+
+        if (!_nextCustomZoneIdByMap.TryGetValue(mapId, out int nextZoneId) || zoneId <= nextZoneId)
+            _nextCustomZoneIdByMap[mapId] = zoneId - 1;
+
+        Debug.Log($"[ZoneRoomRegistry] Recreated custom room {room.ZoneKey} from preserved wave session.");
+        return room;
+    }
+
+    public void MarkRoomPreserved(ZoneRoom room, string reason = null)
+    {
+        if (room == null || !room.IsCustom)
+            return;
+
+        EnsureRoomRegistered(room);
+        _preservedEmptyCustomRooms[room.ZoneKey] = room;
+
+        string suffix = string.IsNullOrWhiteSpace(reason) ? string.Empty : $" | reason={reason}";
+        Debug.Log($"[ZoneRoomRegistry] Preserving custom room {room.ZoneKey}{suffix}");
+    }
+
+    public void ReleasePreservedRoom(int mapId, int zoneId)
+    {
+        string zoneKey = BuildZoneKey(mapId, zoneId);
+        _preservedEmptyCustomRooms.Remove(zoneKey);
+
+        if (_rooms.TryGetValue(mapId, out var zones) &&
+            zones.TryGetValue(zoneId, out var room) &&
+            room != null &&
+            room.IsCustom &&
+            room.PlayerCount <= 0)
+        {
+            zones.Remove(zoneId);
+            Debug.Log($"[ZoneRoomRegistry] Released preserved empty custom room {zoneKey}");
+        }
     }
 
     public List<ZoneRoom> GetAllRoomsSnapshot()
@@ -237,11 +332,38 @@ public class ZoneRoomRegistry : MonoBehaviour
     private void CleanupRoomIfEmpty(ZoneRoom room)
     {
         if (room == null || !room.IsCustom || room.PlayerCount > 0)
+        {
+            Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] Skip: room={room?.ZoneKey ?? "null"} IsCustom={room?.IsCustom} PlayerCount={room?.PlayerCount}");
             return;
+        }
+
+        bool isPreserved     = _preservedEmptyCustomRooms.ContainsKey(room.ZoneKey);
+        bool hasActiveSession = WaveSessionManager.Instance != null && WaveSessionManager.Instance.HasActiveSessionRoom(room);
+
+        Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] room={room.ZoneKey} isEmpty=true " +
+                  $"isPreservedInDict={isPreserved} " +
+                  $"hasActiveSessionRoom={hasActiveSession} " +
+                  $"WaveSessionManager.Instance={(WaveSessionManager.Instance != null ? "OK" : "NULL!")}");
+
+        if (isPreserved || hasActiveSession)
+        {
+            MarkRoomPreserved(room, "active wave session");
+            Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] PRESERVED room {room.ZoneKey} → room giữ lại, reconnect sẽ thấy room này.");
+            Debug.Log($"[ZoneRoomRegistry] Preserve empty custom room {room.ZoneKey} vì vẫn còn active wave session.");
+            return;
+        }
+
+        _preservedEmptyCustomRooms.Remove(room.ZoneKey);
 
         if (_rooms.TryGetValue(room.MapId, out var zones) && zones.Remove(room.ZoneId))
+        {
+            Debug.LogWarning($"[RECONNECT-DEBUG][3-Cleanup] REMOVED room {room.ZoneKey} → reconnect vào room này sẽ THẤT BẠI, sẽ tạo zone mới!");
             Debug.Log($"[ZoneRoomRegistry] Removed empty custom room {room.ZoneKey}");
+        }
     }
+
+    private static string BuildZoneKey(int mapId, int zoneId)
+        => $"map{mapId}_zone{zoneId}";
 
     // ── Stats ─────────────────────────────────────────────────────────────────
 

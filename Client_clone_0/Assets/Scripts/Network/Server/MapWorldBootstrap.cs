@@ -184,6 +184,10 @@ public class MapWorldBootstrap : MonoBehaviour
                        ?? gameObject.AddComponent<MapSceneManager>();
         mapSceneMgr.Initialize(_config);
 
+        // 1c — WaveSessionManager phải luôn tồn tại để reconnect giữ được room + timer.
+        var waveSessionMgr = WaveSessionManager.GetOrCreateInstance(gameObject);
+        Debug.Log($"[MapWorldBootstrap] ✓ WaveSessionManager ready on '{waveSessionMgr.gameObject.name}'.");
+
         // 2 — Configure transport
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
         if (transport == null)

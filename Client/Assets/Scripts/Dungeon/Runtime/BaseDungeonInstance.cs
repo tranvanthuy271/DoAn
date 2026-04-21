@@ -160,13 +160,19 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
 
     protected void BroadcastStatus(string message)
     {
-        if (!IsSpawned)
+        Debug.Log($"[BaseDungeonInstance] Status: {message}");
+
+        if (!IsServer)
+            return;
+
+        ZoneTransitionController controller = FindAnyObjectByType<ZoneTransitionController>();
+        if (controller == null)
         {
-            Debug.Log($"[BaseDungeonInstance] Status: {message}");
+            Debug.LogWarning($"[BaseDungeonInstance] ZoneTransitionController not found. Cannot broadcast status '{message}'.");
             return;
         }
 
-        SetStatusClientRpc(message ?? string.Empty);
+        controller.BroadcastDungeonStatusToZone(ResolveCurrentMapId(), ResolveCurrentZoneId(), message ?? string.Empty);
     }
 
     protected IEnumerator GrantRewardsToAll(IReadOnlyList<DungeonRewardItemConfig> rewards)
@@ -181,11 +187,22 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
     protected IEnumerator BeginReturnFlow(bool completed, float countdownSeconds, int returnMapId, string returnSceneName)
     {
         int seconds = Mathf.Max(1, Mathf.CeilToInt(countdownSeconds));
-        string prefix = completed ? "Hoàn thành! Trở về sau" : "Thất bại! Trở về sau";
-        if (IsSpawned)
-            BeginReturnCountdownClientRpc(prefix, seconds, returnMapId, string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+        ZoneTransitionController controller = FindAnyObjectByType<ZoneTransitionController>();
+        if (controller != null)
+        {
+            controller.BeginDungeonReturnFlowToZone(
+                ResolveCurrentMapId(),
+                ResolveCurrentZoneId(),
+                completed,
+                seconds,
+                returnMapId,
+                string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+        }
         else
-            Debug.Log($"[BaseDungeonInstance] Return flow requested without spawned runtime: {prefix} {seconds}s");
+        {
+            Debug.LogWarning($"[BaseDungeonInstance] ZoneTransitionController not found. Cannot begin return flow.");
+        }
+
         yield return new WaitForSeconds(seconds);
     }
 

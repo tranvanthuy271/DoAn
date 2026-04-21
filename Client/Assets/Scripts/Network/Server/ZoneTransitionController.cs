@@ -42,6 +42,66 @@ public class ZoneTransitionController : NetworkBehaviour
             Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
     }
 
+    public void BroadcastDungeonStatusToZone(int mapId, int zoneId, string message)
+    {
+        if (!IsServer)
+            return;
+
+        ClientRpcParams rpcParams = BuildZoneClientRpcParams(mapId, zoneId, out int clientCount);
+        Debug.Log($"[ZoneTransitionController] BroadcastDungeonStatusToZone | map={mapId} zone={zoneId} clients={clientCount} message='{message}'");
+        if (clientCount <= 0)
+            return;
+
+        SyncDungeonStatusClientRpc(message ?? string.Empty, rpcParams);
+    }
+
+    public void BroadcastWaveStateToZone(int mapId, int zoneId, int currentRound, int maxRounds, int remainingSeconds)
+    {
+        if (!IsServer)
+            return;
+
+        ClientRpcParams rpcParams = BuildZoneClientRpcParams(mapId, zoneId, out int clientCount);
+        Debug.Log($"[ZoneTransitionController] BroadcastWaveStateToZone | map={mapId} zone={zoneId} clients={clientCount} round={currentRound}/{maxRounds} remaining={remainingSeconds}s");
+        if (clientCount <= 0)
+            return;
+
+        SyncWaveStateClientRpc(currentRound, maxRounds, remainingSeconds, rpcParams);
+    }
+
+    public void SyncWaveStateToClient(ulong clientId, int currentRound, int maxRounds, int remainingSeconds)
+    {
+        if (!IsServer)
+            return;
+
+        SyncWaveStateClientRpc(currentRound, maxRounds, remainingSeconds, BuildSingleClientRpcParams(clientId));
+    }
+
+    public void ShowGlobalNotificationToZone(int mapId, int zoneId, string title, string message, float autoHideSeconds = 0f, string confirmLabel = "Xác nhận")
+    {
+        if (!IsServer)
+            return;
+
+        ClientRpcParams rpcParams = BuildZoneClientRpcParams(mapId, zoneId, out int clientCount);
+        Debug.Log($"[ZoneTransitionController] ShowGlobalNotificationToZone | map={mapId} zone={zoneId} clients={clientCount} title='{title}'");
+        if (clientCount <= 0)
+            return;
+
+        ShowGlobalNotificationClientRpc(title ?? string.Empty, message ?? string.Empty, autoHideSeconds, confirmLabel ?? "Xác nhận", rpcParams);
+    }
+
+    public void BeginDungeonReturnFlowToZone(int mapId, int zoneId, bool completed, int countdownSeconds, int returnMapId, string returnSceneName)
+    {
+        if (!IsServer)
+            return;
+
+        ClientRpcParams rpcParams = BuildZoneClientRpcParams(mapId, zoneId, out int clientCount);
+        Debug.Log($"[ZoneTransitionController] BeginDungeonReturnFlowToZone | map={mapId} zone={zoneId} clients={clientCount} completed={completed} countdown={countdownSeconds} returnMap={returnMapId}");
+        if (clientCount <= 0)
+            return;
+
+        BeginDungeonReturnFlowClientRpc(completed, countdownSeconds, returnMapId, string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName, rpcParams);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Public API (gọi từ ZoneTransitionTrigger)
     // ─────────────────────────────────────────────────────────────────────────
@@ -157,6 +217,69 @@ public class ZoneTransitionController : NetworkBehaviour
         if (!CanProcessTransferRequest(clientId))
             return;
 
+        // ── Wave session management ─────────────────────────────────────────
+        var sessionMgrWave = ZonePlayerSessionManager.Instance;
+        var waveMgr        = WaveSessionManager.GetOrCreateInstance(gameObject);
+        string userId      = sessionMgrWave?.GetPlayerId(clientId);
+
+        // ── [RECONNECT-DEBUG] Bước 4: log khi client gọi RequestDungeonEntry ─
+        bool dbgHasWaveMgr    = waveMgr != null;
+        bool dbgHasUserId     = !string.IsNullOrEmpty(userId);
+        bool dbgHasActive     = dbgHasWaveMgr && dbgHasUserId && waveMgr.HasActiveSession(userId);
+        var  dbgExisting      = dbgHasActive ? waveMgr.GetSession(userId) : null;
+        Debug.Log($"[RECONNECT-DEBUG][4-EntryRpc] clientId={clientId} userId={userId ?? "null"} " +
+                  $"dungeonMapId={dungeonMapId} dungeonConfigId={dungeonConfigId} " +
+                  $"waveMgr={dbgHasWaveMgr} hasActiveSession={dbgHasActive} " +
+                  $"existingZoneRoom={(dbgExisting?.ZoneRoom != null ? dbgExisting.ZoneRoom.ZoneKey : "null")} " +
+                  $"existingMapId={dbgExisting?.MapId} existingZoneId={dbgExisting?.ZoneId} " +
+                  $"existingRound={dbgExisting?.CurrentRound} existingRemaining={dbgExisting?.RemainingSeconds}");
+        // ──────────────────────────────────────────────────────────────────────
+
+        // 1. Kiểm tra phiên đang hoạt động (reconnect restore)
+        if (!string.IsNullOrEmpty(userId) && waveMgr != null && waveMgr.HasActiveSession(userId))
+        {
+            var existing = waveMgr.GetSession(userId);
+            Debug.Log($"[ZoneTransitionController] Restore wave session userId={userId} dungeonId={existing.DungeonId} zone={existing.ZoneId} round={existing.CurrentRound} remaining={existing.RemainingSeconds}s");
+            ZoneRoom restoredRoom = ResolveRestorableWaveRoom(existing);
+            existing.ZoneRoom = restoredRoom;
+
+            Debug.Log($"[RECONNECT-DEBUG][4a-Restore] userId={userId} " +
+                      $"ResolveRestorableWaveRoom → {(restoredRoom != null ? restoredRoom.ZoneKey : "NULL → sẽ rơi vào fresh entry!")} " +
+                      $"ZoneRoom.IsCustom={restoredRoom?.IsCustom} " +
+                      $"registry.GetRoom({existing.MapId},{existing.ZoneId})={(ZoneRoomRegistry.Instance?.GetRoom(existing.MapId, existing.ZoneId)?.ZoneKey ?? "null")}");
+
+            if (restoredRoom != null)
+            {
+                Debug.Log($"[RECONNECT-DEBUG][4b-RestoreOK] userId={userId} restore thành công → transfer vào {restoredRoom.ZoneKey}");
+                NotifyDungeonEnteredClientRpc(existing.DungeonId, existing.MapId, existing.ZoneId, BuildSingleClientRpcParams(clientId));
+                ExecuteTransferToRoom(clientId, restoredRoom);
+                SyncWaveStateToClient(clientId, existing.CurrentRound, existing.MaxRounds, existing.RemainingSeconds);
+                return;
+            }
+            Debug.LogWarning($"[RECONNECT-DEBUG][4c-RestoreFail] userId={userId} restoredRoom=null → EndSession và fresh entry!");
+            Debug.LogWarning($"[ZoneTransitionController] Session userId={userId} có ZoneRoom null — bắt đầu fresh entry.");
+            waveMgr.EndSession(userId);
+        }
+        else if (dbgHasUserId && !dbgHasActive)
+        {
+            Debug.Log($"[RECONNECT-DEBUG][4d-NoActive] userId={userId} không có active wave session → sẽ vào fresh entry.");
+        }
+
+        // 2. Kiểm tra lượt hàng ngày
+        if (!string.IsNullOrEmpty(userId) && waveMgr != null && !waveMgr.CheckDailyLimit(userId, dungeonConfigId))
+        {
+            int used = waveMgr.GetDailyUsedCount(userId, dungeonConfigId);
+            int allowed = waveMgr.GetDailyAllowedCount(userId);
+            Debug.Log($"[ZoneTransitionController] Hết lượt hôm nay userId={userId} dungeonId={dungeonConfigId} usedToday={used}");
+            ShowGlobalNotificationClientRpc(
+                "Đã Hết Lượt Hôm Nay",
+                $"Bạn đã sử dụng hết lượt tham gia phó bản hôm nay ({used}/{allowed} lượt). Hãy quay lại sau 00:00 hoặc dùng Vé Phó Bản 409/410 để cộng thêm lượt.",
+                5f, "Xác nhận",
+                BuildSingleClientRpcParams(clientId));
+            return;
+        }
+        // ──────────────────────────────────────────────────────────────────────
+
         MapDefinition mapDef = _config?.GetMap(dungeonMapId);
         if (mapDef == null || mapDef.zoneTopology != MapZoneTopology.InstanceOnly)
         {
@@ -172,7 +295,21 @@ public class ZoneTransitionController : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"[ZoneTransitionController] Dungeon entry | client={clientId} dungeonConfigId={dungeonConfigId} map={dungeonMapId} zone={room.ZoneId}");
+        Debug.Log($"[ZoneTransitionController] Dungeon entry | client={clientId} userId={userId} dungeonConfigId={dungeonConfigId} map={dungeonMapId} zone={room.ZoneId}");
+
+        // ── Đăng ký phiên và tiêu thụ lượt ──────────────────────────────────
+        if (!string.IsNullOrEmpty(userId) && waveMgr != null)
+        {
+            waveMgr.BeginSession(userId, dungeonConfigId, dungeonMapId, room.ZoneId, room);
+            waveMgr.ConsumeEntry(userId, dungeonConfigId);
+            Debug.Log($"[ZoneTransitionController] Wave session started userId={userId} dungeonId={dungeonConfigId} zone={room.ZoneId} used={waveMgr.GetDailyUsedCount(userId, dungeonConfigId)} remaining={waveMgr.GetDailyRemainingCount(userId, dungeonConfigId)}");
+        }
+        // ──────────────────────────────────────────────────────────────────────
+
+        // Thông báo client đã vào dungeon (trước khi transfer)
+        NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(clientId));
+
+        ExecuteTransferToRoom(clientId, room);
 
         WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
         if (waveRuntime != null)
@@ -183,11 +320,6 @@ public class ZoneTransitionController : NetworkBehaviour
         {
             Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
         }
-
-        // Thông báo client đã vào dungeon (trước khi transfer)
-        NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(clientId));
-
-        ExecuteTransferToRoom(clientId, room);
     }
 
     /// <summary>
@@ -247,16 +379,6 @@ public class ZoneTransitionController : NetworkBehaviour
 
         Debug.Log($"[ZoneTransitionController] Party dungeon entry | leader={leaderId} map={dungeonMapId} zone={room.ZoneId} members={memberClientIds.Count}");
 
-        WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
-        if (waveRuntime != null)
-        {
-            waveRuntime.BeginEncounter(dungeonConfigId, dungeonMapId, room.ZoneId);
-        }
-        else
-        {
-            Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
-        }
-
         // Transfer leader trước
         NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(leaderId));
         ExecuteTransferToRoom(leaderId, room);
@@ -269,6 +391,16 @@ public class ZoneTransitionController : NetworkBehaviour
             _lastTransferTime[memberId] = Time.time;
             NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(memberId));
             ExecuteTransferToRoom(memberId, room);
+        }
+
+        WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
+        if (waveRuntime != null)
+        {
+            waveRuntime.BeginEncounter(dungeonConfigId, dungeonMapId, room.ZoneId);
+        }
+        else
+        {
+            Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
         }
     }
 
@@ -307,6 +439,11 @@ public class ZoneTransitionController : NetworkBehaviour
         }
 
         Debug.Log($"[ZoneTransitionController] Dungeon exit | client={clientId} → map{targetRoom.MapId}_zone{targetRoom.ZoneId}");
+
+        // Kết thúc wave session khi người chơi thoát chủ động
+        string exitUserId = ZonePlayerSessionManager.Instance?.GetPlayerId(clientId);
+        WaveSessionManager.Instance?.EndSession(exitUserId);
+        Debug.Log($"[ZoneTransitionController] Wave session ended on exit userId={exitUserId}");
 
         NotifyDungeonExitedClientRpc(BuildSingleClientRpcParams(clientId));
         ExecuteTransferToRoom(clientId, targetRoom);
@@ -404,6 +541,20 @@ public class ZoneTransitionController : NetworkBehaviour
         return true;
     }
 
+    private ZoneRoom ResolveRestorableWaveRoom(WaveSessionManager.PlayerWaveSession session)
+    {
+        if (session == null)
+            return null;
+
+        if (_registry == null)
+            return session.ZoneRoom;
+
+        if (session.ZoneRoom != null)
+            return _registry.EnsureRoomRegistered(session.ZoneRoom);
+
+        return _registry.EnsureCustomRoomRegistered(session.MapId, session.ZoneId);
+    }
+
     private ZoneRoom ResolvePortalTargetRoom(int targetMapId, int preferredZoneId)
     {
         if (_registry == null)
@@ -434,6 +585,37 @@ public class ZoneTransitionController : NetworkBehaviour
         Debug.Log("[ZoneTransitionController] NotifyDungeonExited");
         if (DungeonManager.Instance != null)
             DungeonManager.Instance.OnZoneDungeonExited();
+    }
+
+    [ClientRpc]
+    private void SyncDungeonStatusClientRpc(string message, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[ZoneTransitionController] SyncDungeonStatus | message='{message}'");
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.OnDungeonRuntimeStatusUpdated(message);
+    }
+
+    [ClientRpc]
+    private void SyncWaveStateClientRpc(int currentRound, int maxRounds, int remainingSeconds, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[ZoneTransitionController] SyncWaveState | round={currentRound}/{maxRounds} remaining={remainingSeconds}s");
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.OnWaveStateUpdated(currentRound, maxRounds, remainingSeconds);
+    }
+
+    [ClientRpc]
+    private void ShowGlobalNotificationClientRpc(string title, string message, float autoHideSeconds, string confirmLabel, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[ZoneTransitionController] ShowGlobalNotification | title='{title}'");
+        GlobalNotificationUI.Show(message, title, autoHideSeconds, confirmLabel);
+    }
+
+    [ClientRpc]
+    private void BeginDungeonReturnFlowClientRpc(bool completed, int countdownSeconds, int returnMapId, string returnSceneName, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[ZoneTransitionController] BeginDungeonReturnFlow | completed={completed} countdown={countdownSeconds} returnMap={returnMapId}");
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.StartCoroutine(LocalDungeonReturnFlowCoroutine(completed, countdownSeconds, returnMapId, returnSceneName));
     }
 
     [ClientRpc]
@@ -478,6 +660,43 @@ public class ZoneTransitionController : NetworkBehaviour
                 TargetClientIds = new[] { clientId }
             }
         };
+
+    private ClientRpcParams BuildZoneClientRpcParams(int mapId, int zoneId, out int clientCount)
+    {
+        clientCount = 0;
+        ulong[] targetClientIds = _registry?.GetRoom(mapId, zoneId)?.GetClientSnapshot();
+        if (targetClientIds == null || targetClientIds.Length == 0)
+            return default;
+
+        clientCount = targetClientIds.Length;
+        return new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = targetClientIds
+            }
+        };
+    }
+
+    private IEnumerator LocalDungeonReturnFlowCoroutine(bool completed, int countdownSeconds, int returnMapId, string returnSceneName)
+    {
+        int seconds = Mathf.Max(1, countdownSeconds);
+        string prefix = completed ? "Hoàn thành! Trở về sau" : "Thất bại! Trở về sau";
+
+        for (int remaining = seconds; remaining > 0; remaining--)
+        {
+            if (DungeonManager.Instance != null)
+                DungeonManager.Instance.OnDungeonRuntimeStatusUpdated($"{prefix}: {remaining}s");
+            yield return new WaitForSeconds(1f);
+        }
+
+        PlayerPrefs.SetInt("SelectedMapId", returnMapId);
+
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.ExitDungeon(returnMapId);
+        else
+            UnityEngine.SceneManagement.SceneManager.LoadScene(string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+    }
 
     private IEnumerator SavePositionFireAndForget(ulong clientId, ZoneRoom room, Vector2 pos)
     {

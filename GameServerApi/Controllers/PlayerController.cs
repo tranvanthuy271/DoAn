@@ -828,16 +828,34 @@ namespace GameServerApi.Controllers
 
                 const int BagItemType = 30;
                 const int BagExpandBy = 5;
+                const int WaveTicketItemType = 31;
+                const int WaveTicketPlusOneItemId = 409;
+                const int WaveTicketPlusTwoItemId = 410;
 
                 var info = player.GetInfoChar();
                 string effectMsg;
                 int hpRestore = 0, mpRestore = 0;
+                int waveEntryBonusAdded = 0;
                 var newBuffsAdded = new List<object>();
 
                 if (itemType == BagItemType)
                 {
                     info.BagSlots += BagExpandBy;
                     effectMsg = $"Mở rộng túi đồ thành công! Số ô túi: {info.BagSlots}";
+                }
+                else if (itemType == WaveTicketItemType)
+                {
+                    waveEntryBonusAdded = itemTemplateId switch
+                    {
+                        WaveTicketPlusOneItemId => 1,
+                        WaveTicketPlusTwoItemId => 2,
+                        _ => 0
+                    };
+
+                    if (waveEntryBonusAdded <= 0)
+                        return BadRequest($"Item vé phó bản '{itemName}' (templateId={itemTemplateId}) chưa được cấu hình số lượt cộng thêm.");
+
+                    effectMsg = $"Đã sử dụng {itemName}. Cộng thêm {waveEntryBonusAdded} lượt Phó Bản Sóng cho hôm nay.";
                 }
                 else if (itemType >= 21 && itemType <= 29)
                 {
@@ -1053,6 +1071,8 @@ namespace GameServerApi.Controllers
                 {
                     message    = effectMsg,
                     player_id  = targetPlayerId,
+                    item_template_id = itemTemplateId,
+                    wave_entry_bonus_added = waveEntryBonusAdded,
                     bag_slots  = info.BagSlots,
                     hp_restore = hpRestore,
                     mp_restore = mpRestore,

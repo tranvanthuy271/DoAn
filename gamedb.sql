@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th4 19, 2026 lúc 02:09 PM
+-- Thời gian đã tạo: Th4 21, 2026 lúc 11:59 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -71,6 +71,14 @@ CREATE TABLE `dungeon_config` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `dungeon_config`
+--
+
+INSERT INTO `dungeon_config` (`dungeon_id`, `dungeon_name`, `dungeon_type`, `map_id`, `scene_name`, `max_players`, `min_level_required`, `time_limit_seconds`, `description`, `boss_enemy_id`, `reward_json`, `thumbnail_icon_id`, `is_active`, `created_at`, `updated_at`) VALUES
+(6, 'Phó Bản Sóng', 'solo', 110, 'DungeonWaveScene', 1, 1, 0, '', NULL, '{}', '', 1, '2026-04-19 19:18:57', '2026-04-20 18:57:46'),
+(7, 'Phó Bản Tổ Đội', 'multi', 111, 'DungeonPartyScene', 4, 1, 0, '', NULL, '{}', '', 1, '2026-04-19 19:18:57', '2026-04-20 18:57:50');
+
 -- --------------------------------------------------------
 
 --
@@ -88,6 +96,68 @@ CREATE TABLE `dungeon_session` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `dungeon_wave_config`
+--
+
+CREATE TABLE `dungeon_wave_config` (
+  `dungeon_id` int(11) NOT NULL COMMENT 'FK → dungeon_config.dungeon_id',
+  `max_waves` int(11) NOT NULL DEFAULT 20 COMMENT 'Số vòng tối đa, mặc định 20',
+  `wave_time_seconds` int(11) NOT NULL DEFAULT 300 COMMENT 'Giây mỗi vòng, mặc định 5 phút',
+  `enemy_scale_percent` float NOT NULL DEFAULT 10 COMMENT '% tăng stat quái mỗi vòng (lũy thừa)',
+  `boss_scale_percent` float NOT NULL DEFAULT 15 COMMENT '% tăng stat boss mỗi vòng (lũy thừa, config riêng)',
+  `exp_gold_scale_percent` float NOT NULL DEFAULT 10 COMMENT '% tăng exp/gold drop mỗi vòng (lũy thừa)',
+  `daily_entry_limit` int(11) NOT NULL DEFAULT 1 COMMENT 'Lượt vào tối đa 1 ngày',
+  `entry_item_plus1_id` int(11) DEFAULT 409 COMMENT 'item_template_id cho vé +1 lần',
+  `entry_item_plus2_id` int(11) DEFAULT 410 COMMENT 'item_template_id cho vé +2 lần',
+  `milestone_reward_json` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON: [{wave,exp,gold,items:[{item_template_id,qty}]}]',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wave-specific config per dungeon; mirrors DungeonWaveConfig SO trong Unity';
+
+--
+-- Đang đổ dữ liệu cho bảng `dungeon_wave_config`
+--
+
+INSERT INTO `dungeon_wave_config` (`dungeon_id`, `max_waves`, `wave_time_seconds`, `enemy_scale_percent`, `boss_scale_percent`, `exp_gold_scale_percent`, `daily_entry_limit`, `entry_item_plus1_id`, `entry_item_plus2_id`, `milestone_reward_json`, `updated_at`) VALUES
+(6, 20, 300, 10, 15, 10, 1, 409, 410, '[\n  {\"wave\":5,  \"exp\":5000,  \"gold\":500,  \"items\":[]},\n  {\"wave\":10, \"exp\":15000, \"gold\":1500, \"items\":[]},\n  {\"wave\":15, \"exp\":30000, \"gold\":3000, \"items\":[]},\n  {\"wave\":20, \"exp\":50000, \"gold\":5000, \"items\":[{\"item_template_id\":31,\"qty\":1}]}\n]', '2026-04-21 03:01:22');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `dungeon_wave_entry`
+--
+
+CREATE TABLE `dungeon_wave_entry` (
+  `id` int(11) NOT NULL,
+  `character_id` int(11) NOT NULL COMMENT 'FK → characters.id (chơi bằng nhân vật)',
+  `dungeon_id` int(11) NOT NULL COMMENT 'FK → dungeon_config.dungeon_id',
+  `entry_date` date NOT NULL COMMENT 'Ngày theo giờ server (UTC). Reset tự nhiên sang ngày mới.',
+  `entries_used` int(11) NOT NULL DEFAULT 0 COMMENT 'Số lượt đã dùng hôm nay',
+  `entries_limit` int(11) NOT NULL DEFAULT 1 COMMENT 'Giới hạn hôm nay (base + bonus từ vé)',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Giới hạn lượt vào hàng ngày. entries_limit tăng khi dùng vé; reset sang ngày mới vì entry_date là key.';
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `dungeon_wave_session`
+--
+
+CREATE TABLE `dungeon_wave_session` (
+  `session_id` int(11) NOT NULL,
+  `character_id` int(11) NOT NULL COMMENT 'FK → characters.id',
+  `dungeon_id` int(11) NOT NULL COMMENT 'FK → dungeon_config.dungeon_id',
+  `current_wave` int(11) NOT NULL DEFAULT 1,
+  `current_phase` enum('enemy','boss') NOT NULL DEFAULT 'enemy' COMMENT 'enemy = đang xử lý quái thường; boss = boss đã spawn',
+  `session_started_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Thời điểm player bắt đầu phó bản (để tính tổng thời gian)',
+  `wave_started_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Thời điểm bắt đầu vòng hiện tại (để tính còn bao nhiêu giây)',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1=đang chơi, 0=đã kết thúc (hoàn thành/timeout/rời)',
+  `exit_reason` enum('completed','timeout','left','') NOT NULL DEFAULT '' COMMENT 'Lý do kết thúc; rỗng khi is_active=1',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Trạng thái wave session. Server dùng để reconnect và xử lý timeout khi player offline.';
 
 -- --------------------------------------------------------
 
@@ -148,8 +218,8 @@ INSERT INTO `enemy` (`enemy_id`, `enemy_name`, `enemy_description`, `level`, `ba
 (8, 'Fire Dragon', NULL, 15, 3000, 0, 60, 20, 2, 0.8, 800, 200, 500, NULL, 'Fire', 'Boss', '2026-03-29 01:00:54', '2026-03-29 01:00:54', '[\r\n   {\r\n     \"skill_id\"          : \"FIRE_BREATH\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 3.5,\r\n     \"element\"           : \"Fire\",\r\n     \"cooldown_sec\"      : 8.0,\r\n     \"range\"             : 5.0,\r\n     \"aoe\"               : true,\r\n     \"aoe_radius\"        : 4.0,\r\n     \"animation_trigger\" : \"skill_fireBreath\",\r\n     \"status_effect\"     : \"Burn\",\r\n     \"duration_sec\"      : 4.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   },\r\n   {\r\n     \"skill_id\"          : \"WING_SLAM\",\r\n     \"flat_damage\"       : 150,\r\n     \"damage_multiplier\" : 0.0,\r\n     \"element\"           : \"None\",\r\n     \"cooldown_sec\"      : 12.0,\r\n     \"range\"             : 3.0,\r\n     \"aoe\"               : true,\r\n     \"aoe_radius\"        : 3.0,\r\n     \"animation_trigger\" : \"skill_wingSlam\",\r\n     \"status_effect\"     : \"\",\r\n     \"duration_sec\"      : 0.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   },\r\n   {\r\n     \"skill_id\"          : \"SUMMON_ADD\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 0.0,\r\n     \"element\"           : \"None\",\r\n     \"cooldown_sec\"      : 30.0,\r\n     \"range\"             : 5.0,\r\n     \"aoe\"               : false,\r\n     \"aoe_radius\"        : 0.0,\r\n     \"animation_trigger\" : \"skill_dragonCall\",\r\n     \"status_effect\"     : \"\",\r\n     \"duration_sec\"      : 0.0,\r\n     \"spawn_enemy_id\"    : 5,\r\n     \"spawn_count\"       : 2\r\n   }\r\n ]', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (9, 'Ice Witch', NULL, 15, 2500, 0, 50, 15, 1.8, 0.9, 600, 150, 400, NULL, 'Water', 'Boss', '2026-03-29 01:00:54', '2026-03-29 01:00:54', '[\r\n   {\r\n     \"skill_id\"          : \"BLIZZARD\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 2.5,\r\n     \"element\"           : \"Water\",\r\n     \"cooldown_sec\"      : 15.0,\r\n     \"range\"             : 6.0,\r\n     \"aoe\"               : true,\r\n     \"aoe_radius\"        : 5.0,\r\n     \"animation_trigger\" : \"skill_blizzard\",\r\n     \"status_effect\"     : \"Freeze\",\r\n     \"duration_sec\"      : 3.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   },\r\n   {\r\n     \"skill_id\"          : \"ICE_LANCE\",\r\n     \"flat_damage\"       : 120,\r\n     \"damage_multiplier\" : 0.0,\r\n     \"element\"           : \"Water\",\r\n     \"cooldown_sec\"      : 5.0,\r\n     \"range\"             : 8.0,\r\n     \"aoe\"               : false,\r\n     \"aoe_radius\"        : 0.0,\r\n     \"animation_trigger\" : \"skill_iceLance\",\r\n     \"status_effect\"     : \"Slow\",\r\n     \"duration_sec\"      : 2.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   }\r\n ]', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
 (10, 'Final Dragon', NULL, 25, 8000, 0, 100, 30, 2, 0.7, 2000, 500, 1000, NULL, 'Fire', 'Boss', '2026-03-29 01:00:54', '2026-03-29 01:00:54', '[\r\n   {\r\n     \"skill_id\"          : \"MULTI_BREATH\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 4.0,\r\n     \"element\"           : \"Fire\",\r\n     \"cooldown_sec\"      : 10.0,\r\n     \"range\"             : 6.0,\r\n     \"aoe\"               : true,\r\n     \"aoe_radius\"        : 5.0,\r\n     \"animation_trigger\" : \"skill_multiBreath\",\r\n     \"status_effect\"     : \"Burn\",\r\n     \"duration_sec\"      : 4.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   },\r\n   {\r\n     \"skill_id\"          : \"WING_STORM\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 2.5,\r\n     \"element\"           : \"Wind\",\r\n     \"cooldown_sec\"      : 15.0,\r\n     \"range\"             : 4.0,\r\n     \"aoe\"               : true,\r\n     \"aoe_radius\"        : 6.0,\r\n     \"animation_trigger\" : \"skill_wingStorm\",\r\n     \"status_effect\"     : \"\",\r\n     \"duration_sec\"      : 0.0,\r\n     \"spawn_enemy_id\"    : 0,\r\n     \"spawn_count\"       : 0\r\n   },\r\n   {\r\n     \"skill_id\"          : \"SUMMON_ADD\",\r\n     \"flat_damage\"       : 0,\r\n     \"damage_multiplier\" : 0.0,\r\n     \"element\"           : \"None\",\r\n     \"cooldown_sec\"      : 40.0,\r\n     \"range\"             : 5.0,\r\n     \"aoe\"               : false,\r\n     \"aoe_radius\"        : 0.0,\r\n     \"animation_trigger\" : \"skill_dragonSummon\",\r\n     \"status_effect\"     : \"\",\r\n     \"duration_sec\"      : 0.0,\r\n     \"spawn_enemy_id\"    : 8,\r\n     \"spawn_count\"       : 1\r\n   }\r\n ]', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL),
-(11, 'Đế Băng', 'Hoàng đế băng hà cổ đại bị phong ấn', 15, 2200, 500, 120, 35, 2, 1.2, 900, 380, 1500, '[{\"item_id\":37,\"drop_chance\":0.5,\"qty_min\":1,\"qty_max\":2},{\"item_id\":207,\"drop_chance\":0.08,\"qty_min\":1,\"qty_max\":1},{\"item_id\":31,\"drop_chance\":0.05,\"qty_min\":1,\"qty_max\":1}]', 'Water', 'Boss', '2026-04-01 00:00:00', '2026-04-01 00:00:00', '[{\"skill_id\":\"ICE_STORM\",\"damage_multiplier\":2.0,\"element\":\"Water\",\"cooldown_sec\":10,\"range\":7,\"aoe\":true,\"animation_trigger\":\"skill_storm\"},{\"skill_id\":\"FREEZE\",\"damage_multiplier\":1.0,\"element\":\"Water\",\"cooldown_sec\":6,\"range\":4,\"status_effect\":\"frozen\",\"duration_sec\":3,\"animation_trigger\":\"skill_freeze\"},{\"skill_id\":\"BLIZZARD\",\"damage_multiplier\":1.8,\"element\":\"Water\",\"cooldown_sec\":15,\"range\":10,\"aoe\":true,\"animation_trigger\":\"skill_blizzard\"}]', 0, 75, 0, 0, 0, 0, 0, 45, 0, 0, 0, 0, 8, 20, 12, '[{\"hp_pct_threshold\":70,\"action\":\"enrage\",\"damage_multiplier\":1.3,\"speed_multiplier\":1.1,\"message\":\"Đế Băng thức tỉnh!\"},{\"hp_pct_threshold\":40,\"action\":\"encase\",\"message\":\"Đế Băng phong ấn cả chiến trường!\",\"aoe_freeze\":true},{\"hp_pct_threshold\":20,\"action\":\"berserk\",\"damage_multiplier\":2.2,\"speed_multiplier\":1.4,\"message\":\"Đế Băng huy động toàn lực!\"}]'),
-(12, 'Mộc Linh', 'Tinh linh rừng, ẩn trong bóng cây', 8, 150, 30, 16, 4, 1.8, 1, 35, 16, 65, '[{\"item_id\":27,\"drop_chance\":0.45,\"qty_min\":1,\"qty_max\":3},{\"item_id\":25,\"drop_chance\":0.08,\"qty_min\":1,\"qty_max\":1}]', 'Wood', 'Normal', '2026-04-01 00:00:00', '2026-04-01 00:00:00', NULL, 0, 0, 0, 50, 0, 0, 0, 0, 0, 20, 0, 0, 1, 10, 0, NULL),
+(11, 'Đế Băng', 'Hoàng đế băng hà cổ đại bị phong ấn', 15, 2200, 500, 120, 35, 2, 1.2, 900, 380, 1500, NULL, 'Water', 'Normal', '2026-04-01 00:00:00', '2026-04-21 13:10:10', '[{\"skill_id\":\"ICE_STORM\",\"damage_multiplier\":2.0,\"element\":\"Water\",\"cooldown_sec\":10,\"range\":7,\"aoe\":true,\"animation_trigger\":\"skill_storm\"},{\"skill_id\":\"FREEZE\",\"damage_multiplier\":1.0,\"element\":\"Water\",\"cooldown_sec\":6,\"range\":4,\"status_effect\":\"frozen\",\"duration_sec\":3,\"animation_trigger\":\"skill_freeze\"},{\"skill_id\":\"BLIZZARD\",\"damage_multiplier\":1.8,\"element\":\"Water\",\"cooldown_sec\":15,\"range\":10,\"aoe\":true,\"animation_trigger\":\"skill_blizzard\"}]', 0, 75, 0, 0, 0, 0, 0, 45, 0, 0, 0, 0, 8, 20, 12, '[{\"hp_pct_threshold\":70,\"action\":\"enrage\",\"damage_multiplier\":1.3,\"speed_multiplier\":1.1,\"message\":\"Đế Băng thức tỉnh!\"},{\"hp_pct_threshold\":40,\"action\":\"encase\",\"message\":\"Đế Băng phong ấn cả chiến trường!\",\"aoe_freeze\":true},{\"hp_pct_threshold\":20,\"action\":\"berserk\",\"damage_multiplier\":2.2,\"speed_multiplier\":1.4,\"message\":\"Đế Băng huy động toàn lực!\"}]'),
+(12, 'Mộc Linh', 'Tinh linh rừng, ẩn trong bóng cây', 8, 150, 30, 16, 4, 1.8, 1, 35, 16, 65, NULL, 'Wood', 'Boss', '2026-04-01 00:00:00', '2026-04-21 13:10:12', NULL, 0, 0, 0, 50, 0, 0, 0, 0, 0, 20, 0, 0, 1, 10, 0, NULL),
 (13, 'Cổ Thọ Mộc', 'Quái vật cây cổ thụ, rễ xuyên đất', 11, 450, 80, 45, 15, 1.5, 0.8, 130, 60, 240, '[{\"item_id\":27,\"drop_chance\":0.6,\"qty_min\":2,\"qty_max\":4},{\"item_id\":25,\"drop_chance\":0.12,\"qty_min\":1,\"qty_max\":1}]', 'Wood', 'Elite', '2026-04-01 00:00:00', '2026-04-01 00:00:00', NULL, 0, 0, 0, 60, 0, 0, 0, 0, 0, 30, 0, 0, 5, 8, 5, NULL),
 (14, 'Rừng Chúa', 'Thực thể rừng rậm bất tử ngàn năm', 13, 1800, 400, 100, 30, 1.8, 0.9, 750, 300, 1200, '[{\"item_id\":38,\"drop_chance\":0.5,\"qty_min\":1,\"qty_max\":2},{\"item_id\":222,\"drop_chance\":0.08,\"qty_min\":1,\"qty_max\":1},{\"item_id\":31,\"drop_chance\":0.05,\"qty_min\":1,\"qty_max\":1}]', 'Wood', 'Boss', '2026-04-01 00:00:00', '2026-04-01 00:00:00', '[{\"skill_id\":\"ROOT\",\"damage_multiplier\":1.2,\"element\":\"Wood\",\"cooldown_sec\":7,\"range\":5,\"status_effect\":\"rooted\",\"duration_sec\":2,\"animation_trigger\":\"skill_root\"},{\"skill_id\":\"THORN_WALL\",\"damage_multiplier\":1.8,\"element\":\"Wood\",\"cooldown_sec\":10,\"range\":8,\"aoe\":true,\"animation_trigger\":\"skill_thorn\"},{\"skill_id\":\"REGROW\",\"heal_pct\":10,\"cooldown_sec\":25,\"animation_trigger\":\"skill_regrow\"}]', 0, 0, 0, 70, 0, 0, 0, 0, 0, 40, 0, 0, 10, 12, 8, '[{\"hp_pct_threshold\":60,\"action\":\"enrage\",\"damage_multiplier\":1.3,\"message\":\"Rừng Chúa triệu gọi thiên nhiên!\"},{\"hp_pct_threshold\":30,\"action\":\"heal\",\"heal_pct\":15,\"message\":\"Rừng Chúa hồi phục từ đất!\"},{\"hp_pct_threshold\":15,\"action\":\"berserk\",\"damage_multiplier\":2.5,\"speed_multiplier\":1.5,\"message\":\"Rừng Chúa đốt cháy cơn thịnh nộ!\"}]'),
 (15, 'Hắc Quân Binh', 'Binh lính bóng tối trang bị đầy đủ', 15, 300, 60, 35, 20, 2, 1, 70, 30, 120, '[{\"item_id\":26,\"drop_chance\":0.3,\"qty_min\":1,\"qty_max\":2},{\"item_id\":11,\"drop_chance\":0.2,\"qty_min\":1,\"qty_max\":1}]', 'Metal', 'Normal', '2026-04-01 00:00:00', '2026-04-01 00:00:00', NULL, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0, 20, 0, 0, 5, 10, NULL),
@@ -698,7 +768,9 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 (226, 'Dao Phong Trung Cấp', 'Thương bạc, kêu vù vù khi vung theo gió', 'False', 2, 1, 6, 174, 10, 0, -1, 0, 0, 0),
 (227, 'Dao Phong Cao Cấp', 'Thương thép nhẹ như bấc, thuần khiết khí phong', 'False', 2, 1, 6, 175, 20, 0, -1, 0, 0, 0),
 (228, 'Dao Phong Thần', 'Thương chứa tinh nguyên của Thần Phong, xuyên gió', 'False', 2, 1, 6, 176, 35, 0, -1, 0, 0, 0),
-(229, 'Dao Phong Thượng Cấp', 'Thương tối cùng hệ Phong, điều khiển bão tố', 'False', 2, 1, 6, 177, 50, 0, -1, 0, 0, 0);
+(229, 'Dao Phong Thượng Cấp', 'Thương tối cùng hệ Phong, điều khiển bão tố', 'False', 2, 1, 6, 177, 50, 0, -1, 0, 0, 0),
+(409, 'Vé Phó Bản (+1 Lần)', 'Cho phép vào Phó Bản Sóng thêm 1 lần trong ngày', 'True', 2, 31, 0, 0, 1, 0, -1, 0, 0, 0),
+(410, 'Vé Phó Bản (+2 Lần)', 'Cho phép vào Phó Bản Sóng thêm 2 lần trong ngày', 'True', 2, 31, 0, 0, 1, 0, -1, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -738,7 +810,9 @@ INSERT INTO `map_config` (`map_id`, `map_name`, `scene_name`, `spawn_points_json
 (106, 'map07', 'Map07', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-06 10:58:57'),
 (107, 'map08', 'Map08', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-06 10:58:57'),
 (108, 'map09', 'Map09', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-06 10:58:57'),
-(109, 'map10', 'Map10', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-06 10:58:57');
+(109, 'map10', 'Map10', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-06 10:58:57'),
+(110, 'Vòng lặp vô tận', 'DungeonWaveScene', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-20 21:02:08'),
+(111, 'Địa Cung', 'DungeonPartyScene', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-20 21:02:08');
 
 -- --------------------------------------------------------
 
@@ -815,7 +889,7 @@ INSERT INTO `map_spawn_config` (`id`, `map_id`, `spawn_json`, `drop_json`, `upda
 (1, 0, '[\n  {\"enemy_id\":1,\"hp\":120,\"exp\":28045,\"cx\":41,\"cy\":0.74,\"is_boss\":false,\"count\":1,\"respawn_time\":5,\"level\":1},\n  {\"enemy_id\":1,\"hp\":120,\"exp\":28045,\"cx\":46,\"cy\":3.28,\"is_boss\":false,\"count\":1,\"respawn_time\":5,\"level\":2},\n  {\"enemy_id\":1,\"hp\":120,\"exp\":28045,\"cx\":40.4,\"cy\":4.31,\"is_boss\":false,\"count\":1,\"respawn_time\":5,\"level\":1},\n  {\"enemy_id\":1,\"hp\":120,\"exp\":28045,\"cx\":38.6,\"cy\":6.86,\"is_boss\":false,\"count\":1,\"respawn_time\":5,\"level\":1},\n  {\"enemy_id\":1,\"hp\":120,\"exp\":28045,\"cx\":50,\"cy\":6.89,\"is_boss\":false,\"count\":1,\"respawn_time\":5,\"level\":1}\n]', '[\n   {\"enemy_id\":1,\"items\":[\n     {\"item_id\":1,\"rate\":1,\"qty_min\":1,\"qty_max\":2},\n     {\"item_id\":1,\"rate\":0.05,\"qty_min\":1,\"qty_max\":1}\n   ]},\n   {\"enemy_id\":2,\"items\":[\n     {\"item_id\":22,\"rate\":0.20,\"qty_min\":1,\"qty_max\":1},\n     {\"item_id\":10,\"rate\":0.03,\"qty_min\":1,\"qty_max\":1}\n   ]},\n   {\"enemy_id\":4,\"items\":[\n     {\"item_id\":50,\"rate\":1.00,\"qty_min\":1,\"qty_max\":1},\n     {\"item_id\":10,\"rate\":0.50,\"qty_min\":1,\"qty_max\":2},\n     {\"item_id\":21,\"rate\":0.10,\"qty_min\":1,\"qty_max\":1}\n   ]}\n ]', '2026-04-05 09:53:12'),
 (2, 1, '[\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":-5.51,\"cy\":3.49,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":12.0,\"cy\":2.95,\"is_boss\":false,\"count\":4,\"respawn_time\":15,\"level\":5},\n     \n{\"enemy_id\":2,\"hp\":100,\"exp\":800,\"cx\":7.13,\"cy\":3.44,\"is_boss\":true,\"count\":1,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":2.41,\"cy\":0.54,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":12.59,\"cy\":3,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":11.9,\"cy\":0.54,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":18,\"cy\":0.54,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":2,\"hp\":100,\"exp\":15,\"cx\":20.7,\"cy\":3.49,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5}\n\n\n\n  ]', '[\n     {\"enemy_id\":2,\"items\":[\n       {\"item_id\":30,\"rate\":0.35,\"qty_min\":1,\"qty_max\":2},\n       {\"item_id\":21,\"rate\":0.05,\"qty_min\":1,\"qty_max\":1}\n     ]},\n     {\"enemy_id\":8,\"items\":[\n       {\"item_id\":28,\"rate\":0.40,\"qty_min\":1,\"qty_max\":2},\n       {\"item_id\":47,\"rate\":0.10,\"qty_min\":1,\"qty_max\":1}\n     ]}\n  ]', '2026-04-10 14:39:33'),
 (6, 100, '[\n{\"enemy_id\":3,\"hp\":100,\"exp\":15,\"cx\":-4.8,\"cy\":4.51,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":3,\"hp\":100,\"exp\":15,\"cx\":-4.8,\"cy\":7.63,\"is_boss\":false,\"count\":4,\"respawn_time\":15,\"level\":5},\n     \n{\"enemy_id\":3,\"hp\":100,\"exp\":800,\"cx\":-2.23,\"cy\":7.63,\"is_boss\":true,\"count\":1,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":3,\"hp\":100,\"exp\":15,\"cx\":0.93,\"cy\":7.63,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":3,\"hp\":100,\"exp\":15,\"cx\":-1.74,\"cy\":4.46,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":3,\"hp\":100,\"exp\":15,\"cx\":11.9,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":-5,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":0,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":5,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":9,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":13,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":15,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":17,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":19,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":22,\"cy\":-0.84,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n\n\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":22,\"cy\":2.19,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":17.57,\"cx\":22,\"cy\":2.19,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":9.97,\"cx\":22,\"cy\":2.19,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":5.39,\"cx\":22,\"cy\":9.06,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":10.1,\"cx\":22,\"cy\":9.06,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":17.64,\"cx\":22,\"cy\":8.52,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":22.49,\"cx\":22,\"cy\":8.52,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5},\n{\"enemy_id\":3,\"hp\":0,\"exp\":15,\"cx\":22,\"cy\":8.52,\"is_boss\":false,\"count\":3,\"respawn_time\":15,\"level\":5}\n\n\n\n\n\n  ]', '[\n     {\"enemy_id\":3,\"items\":[\n       {\"item_id\":26,\"rate\":0.40,\"qty_min\":1,\"qty_max\":3},\n       {\"item_id\":2,\"rate\":0.25,\"qty_min\":1,\"qty_max\":2}\n     ]},\n     {\"enemy_id\":7,\"items\":[\n       {\"item_id\":17,\"rate\":0.10,\"qty_min\":1,\"qty_max\":1}\n     ]},\n     {\"enemy_id\":9,\"items\":[\n       {\"item_id\":48,\"rate\":0.10,\"qty_min\":1,\"qty_max\":1}\n     ]}\n  ]', '2026-04-10 14:39:58'),
-(7, 101, '[]', '[\r\n     {\"enemy_id\":6,\"items\":[\r\n       {\"item_id\":19,\"rate\":0.15,\"qty_min\":1,\"qty_max\":1}\r\n     ]},\r\n     {\"enemy_id\":10,\"items\":[\r\n       {\"item_id\":28,\"rate\":0.80,\"qty_min\":2,\"qty_max\":5},\r\n       {\"item_id\":31,\"rate\":0.20,\"qty_min\":1,\"qty_max\":1}\r\n     ]}\r\n  ]', '2026-04-10 03:48:45');
+(7, 110, '[\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-4,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-1.5,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":1,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":3.5,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":6,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":8.5,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":11,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":13.5,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":16,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":18.5,\"cy\":-1.7,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-4.56,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-2.06,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":0.44,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":2.94,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":5.44,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":7.94,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":10.44,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":12.94,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":15.44,\"cy\":2.21,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-4.29,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":-1.79,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":0.71,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":3.21,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":5.71,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":8.21,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":10.71,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n{\"enemy_id\":11,\"hp\":1100,\"exp\":1000,\"cx\":13.21,\"cy\":5.88,\"is_boss\":false,\"count\":1,\"respawn_time\":0,\"level\":5},\n\n\n{\"enemy_id\":12,\"hp\":110000,\"exp\":100000,\"cx\":18.55,\"cy\":5.88,\"is_boss\":true,\"count\":1,\"respawn_time\":0,\"level\":10}\n\n]', '[\n     {\"enemy_id\":11,\"items\":[\n       {\"item_id\":19,\"rate\":0.15,\"qty_min\":1,\"qty_max\":1}\n     ]},\n     {\"enemy_id\":12,\"items\":[\n       {\"item_id\":28,\"rate\":0.80,\"qty_min\":2,\"qty_max\":5},\n       {\"item_id\":31,\"rate\":0.20,\"qty_min\":1,\"qty_max\":1}\n     ]}\n  ]', '2026-04-21 14:51:12');
 
 -- --------------------------------------------------------
 
@@ -848,7 +922,8 @@ INSERT INTO `npc_config` (`npc_id`, `npc_name`, `npc_type`, `map_id`, `pos_x`, `
 (8, 'Tiên Dược', 'shop', 0, 35.0086, -1.90751, 'greet', 'npc_merchant_4', 1),
 (12, 'Thuong Nhan Canh Dong', 'shop', 1, 3, -1, 'greet', 'npc_merchant_1', 1),
 (13, 'Tho Ren Canh Dong', 'blacksmith', 1, 9, 0.5, 'greet', 'npc_smith_1', 1),
-(14, 'Huong Dan Vien', 'quest', 1, 15, 0.5, 'quest_intro', 'npc_quest_1', 1);
+(14, 'Huong Dan Vien', 'quest', 1, 15, 0.5, 'quest_intro', 'npc_quest_1', 1),
+(15, 'Thủ môn Phó Bản', 'dungeon', 0, 40, -1.90751, NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -1110,9 +1185,9 @@ INSERT INTO `player_data` (`player_id`, `character_name`, `gender`, `info_char`,
 (5, '', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"map_id\":0,\"position_x\":0,\"position_y\":0}', '{}', '[]', '[]', '{}', '2026-03-10 17:05:46', '[]'),
 (11, 'thuy', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Water\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":29.57438,\"position_y\":-1.942338}', '{}', '[]', '[]', '{}', '2026-03-28 21:31:28', '[]'),
 (13, 'Tho', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Earth\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"position_x\":7.746673,\"position_y\":-1.157384}', '{}', '[]', '[]', '{}', '2026-03-27 01:16:44', '[]'),
-(16, 'Phong', 'Female', '{\"level\":100,\"experience\":0,\"gold\":0,\"silver\":499000,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Wind\",\"gene_tier\":5,\"gene_exp\":1000000,\"is_hybrid\":true,\"secondary_element\":\"Metal\",\"secondary_gene_tier\":5,\"secondary_gene_exp\":0,\"hybrid_element_a\":\"Wind\",\"hybrid_element_b\":\"Metal\",\"hybrid_bonus_targets\":\"Wood,Fire\",\"hybrid_immune_elements\":\"Fire,Earth\",\"hybrid_atk_bonus_pct\":0.5,\"hybrid_id\":13,\"hybrid_prefab_path\":\"Prefabs/Player/Hybrid/Hybrid_Metal_Wind\",\"hp\":2335,\"max_hp\":2335,\"mp\":566,\"max_mp\":566,\"attack\":760,\"defense\":200,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0}', '{\"weapon\":{\"itemTemplateId\":200,\"itemCode\":\"\",\"iconId\":\"168\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"itemType\":1,\"upgradeLevel\":4,\"strOptions\":\"1,10\"},\"helmet\":{\"itemTemplateId\":100,\"itemCode\":\"\",\"iconId\":\"118\",\"itemName\":\"M\\u0169 Da Nam\",\"itemType\":0,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":{\"itemTemplateId\":141,\"itemCode\":\"Nh\\u1EABn B\\u1EA1c\",\"iconId\":\"114\",\"itemName\":\"Nh\\u1EABn B\\u1EA1c\",\"itemType\":5,\"upgradeLevel\":8,\"strOptions\":\"\"}}', '[{\"slotIndex\":0,\"itemTemplateId\":52,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":1,\"itemTemplateId\":31,\"quantity\":10,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":2,\"itemTemplateId\":161,\"strOptions\":\"\",\"quantity\":3,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":171,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":4,\"itemTemplateId\":172,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":5,\"itemTemplateId\":162,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":6,\"itemTemplateId\":163,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":7,\"itemTemplateId\":173,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":8,\"itemTemplateId\":122,\"strOptions\":\"\",\"quantity\":3,\"upgradeLevel\":0},{\"slotIndex\":9,\"itemTemplateId\":123,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":10,\"itemTemplateId\":121,\"strOptions\":\"\",\"quantity\":2,\"upgradeLevel\":0},{\"slotIndex\":11,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":1,\"strOptions\":\"1,12\"},{\"slotIndex\":12,\"itemTemplateId\":11,\"strOptions\":\"\",\"quantity\":13,\"upgradeLevel\":0},{\"slotIndex\":13,\"itemTemplateId\":29,\"quantity\":33,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":14,\"itemTemplateId\":2,\"quantity\":43,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":15,\"itemTemplateId\":26,\"quantity\":130,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":16,\"itemTemplateId\":1,\"quantity\":2,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":17,\"itemTemplateId\":27,\"quantity\":7,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":19,\"itemTemplateId\":140,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"}]', '[{\"skill_id\":38,\"current_level\":1}]', '{}', '2026-04-18 19:55:35', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-09T22:35:33.920987Z\"},{\"effectType\":\"HpRestoreOverTime\",\"value\":200,\"iconId\":531,\"name\":\"H\\u1ED3i m\\u00E1u\",\"detail\":\"\\u002B200 HP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-09T22:35:35.8309893Z\"}]'),
+(16, 'Phong', 'Female', '{\"level\":100,\"experience\":0,\"gold\":0,\"silver\":489000,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Wind\",\"gene_tier\":5,\"gene_exp\":1000000,\"is_hybrid\":true,\"secondary_element\":\"Metal\",\"secondary_gene_tier\":5,\"secondary_gene_exp\":0,\"hybrid_element_a\":\"Wind\",\"hybrid_element_b\":\"Metal\",\"hybrid_bonus_targets\":\"Wood,Fire\",\"hybrid_immune_elements\":\"Fire,Earth\",\"hybrid_atk_bonus_pct\":0.5,\"hybrid_id\":13,\"hybrid_prefab_path\":\"Prefabs/Player/Hybrid/Hybrid_Metal_Wind\",\"hp\":2335,\"max_hp\":2335,\"mp\":566,\"max_mp\":566,\"attack\":760,\"defense\":200,\"bag_slots\":20,\"map_id\":110,\"zone_id\":-1,\"position_x\":0,\"position_y\":0}', '{\"weapon\":{\"itemTemplateId\":200,\"itemCode\":\"\",\"iconId\":\"168\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"itemType\":1,\"upgradeLevel\":4,\"strOptions\":\"1,10\"},\"helmet\":{\"itemTemplateId\":100,\"itemCode\":\"\",\"iconId\":\"118\",\"itemName\":\"M\\u0169 Da Nam\",\"itemType\":0,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":{\"itemTemplateId\":141,\"itemCode\":\"Nh\\u1EABn B\\u1EA1c\",\"iconId\":\"114\",\"itemName\":\"Nh\\u1EABn B\\u1EA1c\",\"itemType\":5,\"upgradeLevel\":8,\"strOptions\":\"\"}}', '[{\"slotIndex\":0,\"itemTemplateId\":52,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":1,\"itemTemplateId\":31,\"quantity\":11,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":2,\"itemTemplateId\":161,\"strOptions\":\"\",\"quantity\":3,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":171,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":4,\"itemTemplateId\":172,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":5,\"itemTemplateId\":162,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":6,\"itemTemplateId\":163,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":7,\"itemTemplateId\":173,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":8,\"itemTemplateId\":122,\"strOptions\":\"\",\"quantity\":3,\"upgradeLevel\":0},{\"slotIndex\":9,\"itemTemplateId\":123,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0},{\"slotIndex\":10,\"itemTemplateId\":121,\"strOptions\":\"\",\"quantity\":2,\"upgradeLevel\":0},{\"slotIndex\":11,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":1,\"strOptions\":\"1,12\"},{\"slotIndex\":12,\"itemTemplateId\":11,\"strOptions\":\"\",\"quantity\":13,\"upgradeLevel\":0},{\"slotIndex\":13,\"itemTemplateId\":29,\"quantity\":33,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":14,\"itemTemplateId\":2,\"quantity\":43,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":15,\"itemTemplateId\":26,\"quantity\":130,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":16,\"itemTemplateId\":1,\"quantity\":3,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":17,\"itemTemplateId\":27,\"quantity\":12,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":19,\"itemTemplateId\":140,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":18,\"itemTemplateId\":107,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0}]', '[{\"skill_id\":38,\"current_level\":1}]', '{}', '2026-04-21 09:32:21', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-09T22:35:33.920987Z\"},{\"effectType\":\"HpRestoreOverTime\",\"value\":200,\"iconId\":531,\"name\":\"H\\u1ED3i m\\u00E1u\",\"detail\":\"\\u002B200 HP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-09T22:35:35.8309893Z\"}]'),
 (17, 'kim', 'Male', '{\"level\":1,\"experience\":0,\"gold\":2000000000,\"silver\":699800500,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Metal\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":90,\"max_hp\":100,\"mp\":0,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0}', '{\"weapon\":{\"itemTemplateId\":200,\"itemCode\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"iconId\":\"168\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"itemType\":1,\"upgradeLevel\":0,\"strOptions\":\"1,10\"},\"helmet\":null,\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":null}', '[{\"slotIndex\":0,\"itemTemplateId\":161,\"itemCode\":\"\\u0110an C\\u01B0\\u1EDDng Sinh Nh\\u1ECF\",\"iconId\":\"388\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":1,\"itemTemplateId\":11,\"itemCode\":\"B\\u00ECnh HP Nh\\u1ECF\",\"iconId\":\"409\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":2,\"itemTemplateId\":122,\"itemCode\":\"Nh\\u00E2n S\\u00E2m Th\\u1EA7n Th\\u00E1nh\",\"iconId\":\"435\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":121,\"itemCode\":\"Nh\\u00E2n S\\u00E2m T\\u00E2m Linh\",\"iconId\":\"434\",\"quantity\":6,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":4,\"itemTemplateId\":14,\"itemCode\":\"B\\u00ECnh MP Nh\\u1ECF\",\"iconId\":\"236\",\"quantity\":1,\"isEquipped\":false,\"upgradeLevel\":0}]', '[]', '{}', '2026-04-18 14:33:05', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-17T13:40:18.9788225Z\"}]'),
-(18, 'Hoa', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0}', '{}', '[]', '[]', '{}', '2026-04-18 19:55:33', '[]');
+(18, 'Hoa', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0}', '{}', '[]', '[]', '{}', '2026-04-21 06:02:50', '[]');
 
 -- --------------------------------------------------------
 
@@ -1245,9 +1320,9 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `created_a
 (13, 'tho', 'tho@gmail.com', '123456', '2026-03-16 11:24:42', '2026-03-27 01:16:33'),
 (14, 'phong1', 'phong1@gmail.com', '123456', '2026-03-19 18:14:50', '2026-03-19 18:14:58'),
 (15, 'tho1', 'tho1@gmail.com', '123456', '2026-03-22 22:04:49', '2026-03-22 22:06:52'),
-(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-04-18 19:54:32'),
+(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-04-21 09:32:09'),
 (17, 'kim', 'kim@gmail.com', '$2a$12$G1hEIuasIWxnsJsYm4g.YexoQdX2lV5rucvhH04mRlGJ3Vd4KDkTy', '2026-04-01 19:29:09', '2026-04-18 14:27:47'),
-(18, 'hoa', '123456@gmail.com', '$2a$12$4yyKm9g2cka5cE.4SFlTceYwBq.Lb5EIMOjYB0Lc88sy.qdk3rLcy', '2026-04-17 13:38:03', '2026-04-18 19:54:41');
+(18, 'hoa', '123456@gmail.com', '$2a$12$4yyKm9g2cka5cE.4SFlTceYwBq.Lb5EIMOjYB0Lc88sy.qdk3rLcy', '2026-04-17 13:38:03', '2026-04-21 05:42:21');
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -1276,6 +1351,30 @@ ALTER TABLE `dungeon_session`
   ADD KEY `idx_session_dungeon_status` (`dungeon_config_id`,`status`),
   ADD KEY `idx_ds_status` (`status`),
   ADD KEY `idx_ds_created` (`created_at`);
+
+--
+-- Chỉ mục cho bảng `dungeon_wave_config`
+--
+ALTER TABLE `dungeon_wave_config`
+  ADD PRIMARY KEY (`dungeon_id`);
+
+--
+-- Chỉ mục cho bảng `dungeon_wave_entry`
+--
+ALTER TABLE `dungeon_wave_entry`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_player_dungeon_date` (`character_id`,`dungeon_id`,`entry_date`),
+  ADD KEY `idx_wentry_char` (`character_id`),
+  ADD KEY `idx_wentry_date` (`entry_date`);
+
+--
+-- Chỉ mục cho bảng `dungeon_wave_session`
+--
+ALTER TABLE `dungeon_wave_session`
+  ADD PRIMARY KEY (`session_id`),
+  ADD UNIQUE KEY `uq_active_session` (`character_id`,`dungeon_id`,`is_active`),
+  ADD KEY `idx_wsession_char` (`character_id`),
+  ADD KEY `idx_wsession_active` (`is_active`);
 
 --
 -- Chỉ mục cho bảng `enemy`
@@ -1466,12 +1565,24 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `dungeon_config`
 --
 ALTER TABLE `dungeon_config`
-  MODIFY `dungeon_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `dungeon_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `dungeon_session`
 --
 ALTER TABLE `dungeon_session`
+  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT cho bảng `dungeon_wave_entry`
+--
+ALTER TABLE `dungeon_wave_entry`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT cho bảng `dungeon_wave_session`
+--
+ALTER TABLE `dungeon_wave_session`
   MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1508,7 +1619,7 @@ ALTER TABLE `item_effect_template`
 -- AUTO_INCREMENT cho bảng `item_template`
 --
 ALTER TABLE `item_template`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=409;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=411;
 
 --
 -- AUTO_INCREMENT cho bảng `map_portal`
@@ -1526,7 +1637,7 @@ ALTER TABLE `map_spawn_config`
 -- AUTO_INCREMENT cho bảng `npc_config`
 --
 ALTER TABLE `npc_config`
-  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT cho bảng `npc_dialogue`

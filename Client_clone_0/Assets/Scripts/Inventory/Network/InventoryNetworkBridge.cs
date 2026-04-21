@@ -678,6 +678,8 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
+        ulong localClientId = NetworkManager.Singleton.LocalClientId;
+
         // Kiểm tra SpawnManager có sẵn sàng không
         if (NetworkManager.Singleton.SpawnManager == null)
         {
@@ -692,7 +694,7 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
         
-        Debug.Log($"[InventoryNetworkBridge] SpawnedObjectsList count: {NetworkManager.Singleton.SpawnManager.SpawnedObjectsList.Count}");
+        Debug.Log($"[InventoryNetworkBridge] SpawnedObjectsList count: {NetworkManager.Singleton.SpawnManager.SpawnedObjectsList.Count}, LocalClientId: {localClientId}");
 
         int objectsChecked = 0;
         int ownedObjectsFound = 0;
@@ -710,8 +712,12 @@ public class InventoryNetworkBridge : MonoBehaviour
             // Log tất cả objects để debug
             // Debug.Log($"[InventoryNetworkBridge] Object #{objectsChecked}: Name='{networkObject.name}', IsOwner={networkObject.IsOwner}, IsLocalPlayer={networkObject.IsLocalPlayer}, IsOwnedByServer={networkObject.IsOwnedByServer}");
 
-            // Kiểm tra tất cả objects owned by local client
-            if (networkObject.IsOwner)
+            bool isLocalOwnedObject = networkObject.IsOwner
+                                      || networkObject.IsLocalPlayer
+                                      || (networkObject.IsPlayerObject && networkObject.OwnerClientId == localClientId);
+
+            // Kiểm tra tất cả objects thuộc local client
+            if (isLocalOwnedObject)
             {
                 ownedObjectsFound++;
 
@@ -747,7 +753,7 @@ public class InventoryNetworkBridge : MonoBehaviour
                     networkInventory = inv;
                     Debug.Log($"[InventoryNetworkBridge] ✓✓✓ TÌM THẤY NetworkInventory của player: {networkObject.name}");
                     Debug.Log($"[InventoryNetworkBridge] → NetworkInventory GameObject: {networkObject.gameObject.name}");
-                    Debug.Log($"[InventoryNetworkBridge] → OwnerClientId: {networkObject.OwnerClientId}");
+                    Debug.Log($"[InventoryNetworkBridge] → OwnerClientId: {networkObject.OwnerClientId} (LocalClientId={localClientId})");
                     Debug.Log($"[InventoryNetworkBridge] → IsSpawned: {networkObject.IsSpawned}");
                     Debug.Log($"[InventoryNetworkBridge] → Component found at: {inv.GetType().FullName}");
                     return;

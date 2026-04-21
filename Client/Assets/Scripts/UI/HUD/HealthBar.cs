@@ -21,6 +21,7 @@ public class HealthBar : MonoBehaviour
     private NetworkPlayerDataSync dataSync;
     private float retryTimer = 0f;
     private const float RetryInterval = 0.3f;
+    private int _retryCount = 0;
 
     private void Start()
     {
@@ -63,11 +64,22 @@ public class HealthBar : MonoBehaviour
     {
         // Tìm đúng NetworkPlayerDataSync của local player (IsOwner=true)
         // Dùng FindObjectsOfType để tránh lấy nhầm của player khác trong multiplayer
-        foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())
+        var allSyncs = FindObjectsOfType<NetworkPlayerDataSync>();
+        foreach (var s in allSyncs)
         {
             if (s.IsSpawned && s.IsOwner) { dataSync = s; break; }
         }
-        if (dataSync == null) return;
+        if (dataSync == null)
+        {
+            _retryCount++;
+            // Log every ~3 s (10 retries × 0.3 s)
+            if (_retryCount % 10 == 1)
+                Debug.LogWarning($"[HealthBar] Chờ player spawn... retry #{_retryCount} | " +
+                                 $"totalFound={allSyncs.Length} " +
+                                 $"spawned={System.Array.FindAll(allSyncs, s => s.IsSpawned).Length} " +
+                                 $"owned={System.Array.FindAll(allSyncs, s => s.IsSpawned && s.IsOwner).Length}");
+            return;
+        }
 
         Debug.Log($"[HealthBar] Bind local player '{dataSync.gameObject.name}' — HP: {dataSync.networkHp.Value}/{dataSync.networkMaxHp.Value}");
         dataSync.networkHp.OnValueChanged    += OnHpChanged;

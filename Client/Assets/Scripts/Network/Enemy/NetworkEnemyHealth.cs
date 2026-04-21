@@ -183,6 +183,11 @@ public class NetworkEnemyHealth : NetworkBehaviour
             {
                 Debug.Log($"[NEH] runtime=no netId={NetworkObjectId} scene={gameObject.scene.name}");
             }
+
+            // OnDeathClientRpc chỉ chạy trên client, không chạy trên dedicated server.
+            // Fire OnDeath trên server để WaveDungeonRuntime.HandleEnemyDeath() được trigger.
+            // EnemyItemDrop.HandleDeathDrop() đã được gọi trực tiếp ở trên → hasDropped guard bảo vệ khỏi double-drop.
+            OnDeath?.Invoke();
         }
 
         // Notify clients — play Die animation trước khi xóa

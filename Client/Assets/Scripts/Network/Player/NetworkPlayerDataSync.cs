@@ -44,6 +44,16 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         base.OnNetworkSpawn();
 
+        Debug.Log($"[NetworkPlayerDataSync] OnNetworkSpawn {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
+
+        if (!IsServer && IsOwner)
+        {
+            Debug.Log($"[NetworkPlayerDataSync] *** CLIENT RECEIVED OWN PLAYER OBJECT *** " +
+                      $"netId={NetworkObjectId} owner={OwnerClientId} localClientId={NetworkManager.LocalClientId} " +
+                      $"HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} " +
+                      $"name={networkCharacterName.Value} element={networkElementType.Value}");
+        }
+
         if (IsServer)
         {
             // Server: Load player data từ ServerPlayerDataManager và set vào NetworkVariable
@@ -68,6 +78,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         // Apply data ngay lập tức
         ApplyPlayerData();
+        Debug.Log($"[NetworkPlayerDataSync] OnNetworkSpawn applied initial data {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
     }
 
     /// <summary>
@@ -156,7 +167,13 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     /// </summary>
     private void UpdateNetworkVariablesFromPlayerData(PlayerDataResponse playerData)
     {
-        if (playerData == null) return;
+        if (playerData == null)
+        {
+            Debug.LogWarning($"[NetworkPlayerDataSync] UpdateNetworkVariablesFromPlayerData ignored null data. {BuildNetworkIdentity()}");
+            return;
+        }
+
+        Debug.Log($"[NetworkPlayerDataSync] UpdateNetworkVariablesFromPlayerData {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()}");
 
         networkPlayerId.Value = playerData.player_id;
         networkElementType.Value = (FixedString32Bytes)(playerData.element_type ?? "Fire");
@@ -191,6 +208,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
     public override void OnNetworkDespawn()
     {
+        Debug.Log($"[NetworkPlayerDataSync] OnNetworkDespawn {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
+
         // Unsubscribe
         networkElementType.OnValueChanged -= OnElementTypeChanged;
         networkGender.OnValueChanged -= OnGenderChanged;
@@ -214,26 +233,32 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     private void LoadPlayerDataFromGameManager()
     {
         PlayerDataResponse playerData = null;
+        string dataSource = null;
 
         // Ưu tiên: Lấy từ ServerPlayerDataManager (server-side, cho tất cả clients)
         if (ServerPlayerDataManager.Instance != null && IsServer)
         {
             ulong clientId = OwnerClientId;
             playerData = ServerPlayerDataManager.Instance.GetPlayerDataForClient(clientId);
+            if (playerData != null)
+                dataSource = $"ServerPlayerDataManager(clientId={clientId})";
         }
 
         // Fallback: Lấy từ GameManager (cho local player hoặc host)
         if (playerData == null && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
         {
             playerData = GameManager.Instance.GetPlayerData();
-            // Debug.LogWarning("[NetworkPlayerDataSync] Using GameManager fallback for player data");
+            if (playerData != null)
+                dataSource = "GameManager fallback";
         }
 
         if (playerData == null)
         {
-            // Debug.LogWarning("[NetworkPlayerDataSync] No player data found! Using default values.");
+            Debug.LogWarning($"[NetworkPlayerDataSync] LoadPlayerDataFromGameManager: không tìm thấy player data. {BuildNetworkIdentity()}");
             return;
         }
+
+        Debug.Log($"[NetworkPlayerDataSync] LoadPlayerDataFromGameManager source={dataSource}: {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()}");
 
         // Set NetworkVariable (chỉ server mới có quyền write)
         networkPlayerId.Value = playerData.player_id;
@@ -271,9 +296,21 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     /// IPlayerDataReceiver — gọi bởi ZonePlayerSessionManager ngay sau khi spawn.
     /// Đẩy data từ API trực tiếp vào NetworkVariable mà không cần ServerPlayerDataManager.
     /// </summary>
-    public void OnPlayerDataLoaded(ZonePlayerSessionManager.PlayerDataResponse data, ulong clientId)
+    public void OnPlayerDataLoaded(PlayerDataResponse data, ulong clientId)
     {
-        if (!IsServer || data == null) return;
+        if (!IsServer)
+        {
+            Debug.LogWarning($"[NetworkPlayerDataSync] OnPlayerDataLoaded bị gọi ngoài server. {BuildNetworkIdentity()}");
+            return;
+        }
+
+        if (data == null)
+        {
+            Debug.LogWarning($"[NetworkPlayerDataSync] OnPlayerDataLoaded nhận data=null. {BuildNetworkIdentity()}");
+            return;
+        }
+
+        Debug.Log($"[NetworkPlayerDataSync] OnPlayerDataLoaded received for clientId={clientId}: {DescribeIncomingData(data)} | {BuildNetworkIdentity()}");
 
         networkPlayerId.Value      = data.player_id;
         networkElementType.Value   = (Unity.Collections.FixedString32Bytes)(data.element_type ?? "Fire");
@@ -334,6 +371,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         // TODO: Apply element_type và gender để thay đổi sprite/visual
         ApplyVisuals();
+
+        Debug.Log($"[NetworkPlayerDataSync] ApplyPlayerData complete. hasPlayerController={playerController != null}, hasStats={playerController?.stats != null}, hasPlayerHealth={playerHealth != null} | {BuildNetworkIdentity()} | state={BuildStateSnapshot()}");
     }
 
     /// <summary>
@@ -341,32 +380,52 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     /// </summary>
     private void ApplyVisuals()
     {
-        // TODO: Implement logic để thay đổi sprite/animator dựa trên element_type + gender
-        // Debug.Log($"[NetworkPlayerDataSync] Apply visuals: {networkElementType.Value} - {networkGender.Value}");
+        Debug.Log($"[NetworkPlayerDataSync] ApplyVisuals element={networkElementType.Value}, gender={networkGender.Value}, character={networkCharacterName.Value} | {BuildNetworkIdentity()}");
     }
 
     #region NetworkVariable Change Callbacks
 
     private void OnElementTypeChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
     {
-        // Debug.Log($"[NetworkPlayerDataSync] Element type changed: {oldValue} → {newValue}");
+        Debug.Log($"[NetworkPlayerDataSync] Element type changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
         ApplyVisuals();
     }
 
     private void OnGenderChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
     {
-        // Debug.Log($"[NetworkPlayerDataSync] Gender changed: {oldValue} → {newValue}");
+        Debug.Log($"[NetworkPlayerDataSync] Gender changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
         ApplyVisuals();
     }
 
     private void OnCharacterNameChanged(FixedString64Bytes oldValue, FixedString64Bytes newValue)
     {
-        // Debug.Log($"[NetworkPlayerDataSync] Character name changed: {oldValue} → {newValue}");
+        Debug.Log($"[NetworkPlayerDataSync] Character name changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
     }
 
     private void OnLevelChanged(int oldValue, int newValue)
     {
-        // Debug.Log($"[NetworkPlayerDataSync] Level changed: {oldValue} → {newValue}");
+        Debug.Log($"[NetworkPlayerDataSync] Level changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
+    }
+
+    private string BuildNetworkIdentity()
+    {
+        ulong localClientId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : ulong.MaxValue;
+        bool isLocalPlayer = NetworkObject != null && NetworkObject.IsLocalPlayer;
+        bool isPlayerObject = NetworkObject != null && NetworkObject.IsPlayerObject;
+        return $"obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, localClient={localClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}, isLocalPlayer={isLocalPlayer}, isPlayerObject={isPlayerObject}";
+    }
+
+    private string BuildStateSnapshot()
+    {
+        return $"playerId={networkPlayerId.Value}, name={networkCharacterName.Value}, element={networkElementType.Value}, gender={networkGender.Value}, level={networkLevel.Value}, hp={networkHp.Value}/{networkMaxHp.Value}, mp={networkMp.Value}/{networkMaxMp.Value}, atk={networkAttack.Value}, def={networkDefense.Value}, speed={networkMoveSpeed.Value}, geneTier={networkGeneTier.Value}";
+    }
+
+    private static string DescribeIncomingData(PlayerDataResponse data)
+    {
+        if (data == null)
+            return "(null PlayerDataResponse)";
+
+        return $"playerId={data.player_id}, name={data.character_name}, element={data.element_type}, gender={data.gender}, level={data.level}, hybrid={data.is_hybrid}, hybridPath={data.hybrid_prefab_path}, hp={data.GetHp()}/{data.GetMaxHp()}, mp={data.GetMp()}/{data.GetMaxMp()}, atk={data.GetAttack()}, def={data.GetDefense()}, move={data.GetMoveSpeed()}, map={data.map_id}, zone={data.zone_id}";
     }
 
     private void OnHpChanged(int oldValue, int newValue)

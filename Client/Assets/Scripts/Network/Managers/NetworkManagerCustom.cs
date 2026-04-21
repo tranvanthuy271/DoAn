@@ -360,6 +360,8 @@ public class NetworkManagerCustom : MonoBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        Debug.Log($"[NetworkManagerCustom] OnClientConnected snapshot: {BuildConnectionSnapshot(clientId)}");
+
         if (networkManager != null && networkManager.IsHost && clientId == networkManager.LocalClientId)
         {
             // Host: Load player data trực tiếp
@@ -416,6 +418,20 @@ public class NetworkManagerCustom : MonoBehaviour
             // Server-side: Remote client connected, auth sẽ đến qua Named Message
             Debug.Log($"[NetworkManagerCustom] Server-side: Remote client {clientId} connected, waiting for auth via Named Message...");
         }
+    }
+
+    private string BuildConnectionSnapshot(ulong callbackClientId)
+    {
+        if (networkManager == null)
+            return $"callbackClientId={callbackClientId}, networkManager=null";
+
+        var playerObject = networkManager.LocalClient?.PlayerObject;
+        string playerObjectSummary = playerObject != null
+            ? $"{playerObject.name}(netId={playerObject.NetworkObjectId}, owner={playerObject.OwnerClientId})"
+            : "null";
+        int spawnedCount = networkManager.SpawnManager?.SpawnedObjectsList?.Count ?? -1;
+
+        return $"callbackClientId={callbackClientId}, localClientId={networkManager.LocalClientId}, isServer={networkManager.IsServer}, isClient={networkManager.IsClient}, isHost={networkManager.IsHost}, spawnedCount={spawnedCount}, playerObject={playerObjectSummary}, useConnectionApprovalPayload={useConnectionApprovalPayload}";
     }
 
     private void OnClientDisconnected(ulong clientId)

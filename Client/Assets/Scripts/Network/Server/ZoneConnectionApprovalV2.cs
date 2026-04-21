@@ -108,7 +108,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         registry.AssignClientToRoom(clientId, room);
 
         // 7 — Lưu session (userId, username)
-        ZonePlayerSessionManager.Instance?.RegisterSession(clientId, result.UserId, result.Username,
+        ZonePlayerSessionManager.RegisterSessionOrQueue(clientId, result.UserId, result.Username,
             room.MapId, room.ZoneId, token);
 
         Debug.Log($"[ZoneConnectionApprovalV2] ✓ Client {clientId} ({result.Username}) " +

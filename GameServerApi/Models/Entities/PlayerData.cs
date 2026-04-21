@@ -69,6 +69,16 @@ namespace GameServerApi.Models
         [JsonPropertyName("zone_id")]    public int   ZoneId    { get; set; } = 0;
         [JsonPropertyName("position_x")] public float PositionX { get; set; } = 0f;
         [JsonPropertyName("position_y")] public float PositionY { get; set; } = 0f;
+
+        // ---- Wave Dungeon Daily Tracking ----
+        /// <summary>
+        /// Số lần đã tham gia phó bản wave trong ngày (UTC).
+        /// Reset tự động khi daily_wave_date khác ngày hôm nay.
+        /// Managed in-memory by WaveSessionManager; persisted here for reference only.
+        /// </summary>
+        [JsonPropertyName("daily_wave_entries")] public int    DailyWaveEntries { get; set; } = 0;
+        /// <summary>Ngày (UTC) ghi nhận daily_wave_entries, định dạng "yyyy-MM-dd".</summary>
+        [JsonPropertyName("daily_wave_date")]    public string DailyWaveDate    { get; set; } = "";
     }
 
     // ----------------------------------------------------------------

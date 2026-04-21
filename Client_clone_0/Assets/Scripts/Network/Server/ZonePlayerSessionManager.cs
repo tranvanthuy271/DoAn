@@ -22,6 +22,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 {
     public static ZonePlayerSessionManager Instance { get; private set; }
 
+    private static readonly Dictionary<ulong, ApprovedUserInfo> PendingApprovedUsers = new();
+    private static readonly object PendingLock = new();
+
     [Header("Config")]
     [SerializeField] private MapWorldConfig _config;
 
@@ -36,6 +39,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     private readonly Dictionary<ulong, ApprovedUserInfo> _approvedUsers = new();
     // clientId → PlayerSession (sau khi spawn xong)
     private readonly Dictionary<ulong, PlayerSession> _activeSessions = new();
+    // clientId đang load data/spawn để tránh chạy coroutine trùng.
+    private readonly HashSet<ulong> _spawningClients = new();
+    private bool _prefabConfigLogged;
     private readonly object _lock = new();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -44,18 +50,30 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            Debug.LogWarning($"[ZonePlayerSessionManager] Duplicate instance detected on '{gameObject.name}' (existing='{Instance.gameObject.name}') — destroying duplicate COMPONENT only.");
+            Destroy(this); // Destroy only this component, NOT the whole gameObject
             return;
         }
         Instance = this;
+
+        Debug.Log($"[ZonePlayerSessionManager] Awake: object={gameObject.name}, scene={gameObject.scene.name}, configAssigned={_config != null}, prefabEntries={_playerPrefabs?.Length ?? 0}");
     }
 
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;
 
+        RestorePendingApprovedUsers();
+
+        NetworkManager.Singleton.OnClientConnectedCallback    -= OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback   -= OnClientDisconnected;
         NetworkManager.Singleton.OnClientConnectedCallback    += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback   += OnClientDisconnected;
+
+        LogPlayerPrefabConfiguration();
+        Debug.Log($"[ZonePlayerSessionManager] OnNetworkSpawn: approved={_approvedUsers.Count}, active={_activeSessions.Count}");
+        TrySpawnPendingConnectedClients("OnNetworkSpawn");
+        StartCoroutine(DrainPendingLoop());
     }
 
     public override void OnNetworkDespawn()
@@ -63,12 +81,17 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         if (NetworkManager.Singleton == null) return;
         NetworkManager.Singleton.OnClientConnectedCallback    -= OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback   -= OnClientDisconnected;
+        Debug.LogWarning($"[ZonePlayerSessionManager] OnNetworkDespawn: object={gameObject.name}");
     }
 
-        public override void OnDestroy()
+    public override void OnDestroy()
     {
         base.OnDestroy();
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+        {
+            Instance = null;
+            Debug.LogWarning($"[ZonePlayerSessionManager] OnDestroy: Instance cleared (object={gameObject.name}).");
+        }
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -89,6 +112,32 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                 JwtToken = jwtToken ?? string.Empty
             };
         }
+
+        Debug.Log($"[ZonePlayerSessionManager] RegisterSession: clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}, isSpawned={IsSpawned}");
+        TrySpawnPendingConnectedClients("RegisterSession");
+    }
+
+    public static void RegisterSessionOrQueue(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null)
+    {
+        if (Instance != null)
+        {
+            Instance.RegisterSession(clientId, userId, username, mapId, zoneId, jwtToken);
+            return;
+        }
+
+        lock (PendingLock)
+        {
+            PendingApprovedUsers[clientId] = new ApprovedUserInfo
+            {
+                UserId = userId,
+                Username = username,
+                MapId = mapId,
+                ZoneId = zoneId,
+                JwtToken = jwtToken ?? string.Empty
+            };
+        }
+
+        Debug.LogWarning($"[ZonePlayerSessionManager] Instance chưa sẵn sàng tại approval. Queue session cho clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}.");
     }
 
     /// <summary>
@@ -134,34 +183,113 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        if (!IsServer)
+            return;
+
+        // Drain any sessions that were queued before this instance was ready
+        RestorePendingApprovedUsers();
+
+        lock (_lock)
+        {
+            if (_activeSessions.ContainsKey(clientId))
+            {
+                Debug.Log($"[ZonePlayerSessionManager] OnClientConnected skip: client {clientId} đã có active session.");
+                return;
+            }
+
+            if (!_spawningClients.Add(clientId))
+            {
+                Debug.Log($"[ZonePlayerSessionManager] OnClientConnected skip: client {clientId} đang spawn.");
+                return;
+            }
+        }
+
         if (!_approvedUsers.TryGetValue(clientId, out var userInfo))
         {
+            ClearSpawnInProgress(clientId);
             Debug.LogWarning($"[ZonePlayerSessionManager] Client {clientId} kết nối nhưng không có " +
                              "approved user info — kick.");
             NetworkManager.Singleton.DisconnectClient(clientId);
             return;
         }
 
-        StartCoroutine(LoadAndSpawnPlayer(clientId, userInfo));
+        Debug.Log($"[ZonePlayerSessionManager] OnClientConnected: bắt đầu load/spawn cho client {clientId}, userId={userInfo.UserId}, room=map{userInfo.MapId}_zone{userInfo.ZoneId}");
+        StartCoroutine(LoadAndSpawnPlayerTracked(clientId, userInfo));
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
         _approvedUsers.Remove(clientId);
+        ClearSpawnInProgress(clientId);
 
-        // Xóa client khỏi ZoneRoomRegistry — tránh phantom entries
-        ZoneRoomRegistry.Instance?.UnregisterClient(clientId);
+        PlayerSession session = null;
+        lock (_lock)
+            _activeSessions.TryGetValue(clientId, out session);
 
-        if (_activeSessions.TryGetValue(clientId, out var session))
+        // ── [RECONNECT-DEBUG] Bước 1: log trạng thái đầu vào ─────────────────
+        var waveMgrDbg    = WaveSessionManager.GetOrCreateInstance(gameObject);
+        var registryDbg   = ZoneRoomRegistry.Instance;
+        string userIdDbg  = session?.UserId ?? "(null session)";
+        bool hasWaveMgr   = waveMgrDbg != null;
+        bool hasRegistry  = registryDbg != null;
+        bool hasActiveWave = hasWaveMgr && waveMgrDbg.HasActiveSession(session?.UserId ?? string.Empty);
+        var clientRoomDbg  = registryDbg?.GetClientRoom(clientId);
+
+        Debug.Log($"[RECONNECT-DEBUG][1-Disconnect] clientId={clientId} userId={userIdDbg} " +
+                  $"hasSession={session != null} hasWaveMgr={hasWaveMgr} hasRegistry={hasRegistry} " +
+                  $"hasActiveWaveSession={hasActiveWave} " +
+                  $"clientRoom={clientRoomDbg?.ZoneKey ?? "null"} " +
+                  $"clientRoomIsCustom={clientRoomDbg?.IsCustom} " +
+                  $"clientRoomPlayerCount={clientRoomDbg?.PlayerCount}");
+        // ──────────────────────────────────────────────────────────────────────
+
+        // Bước 2: preserve wave session TRƯỚC khi unregister client khỏi registry
+        if (session != null)
+        {
+            if (hasWaveMgr)
+            {
+                Debug.Log($"[RECONNECT-DEBUG][2-PreserveWave] Gọi OnPlayerDisconnect userId={session.UserId}");
+                waveMgrDbg.OnPlayerDisconnect(session.UserId);
+            }
+            else
+            {
+                Debug.LogWarning($"[RECONNECT-DEBUG][2-PreserveWave] WaveSessionManager.Instance == null → KHÔNG preserve wave session! userId={session.UserId}");
+                // Fallback: nếu WaveSessionManager không sẵn sàng (null), cố gắng preserve direct room reference
+                if (registryDbg != null && clientRoomDbg != null && clientRoomDbg.IsCustom)
+                {
+                    registryDbg.MarkRoomPreserved(clientRoomDbg, $"disconnect-fallback userId={session.UserId}");
+                    Debug.Log($"[RECONNECT-DEBUG][2-PreserveFallback] MarkRoomPreserved fallback for {clientRoomDbg.ZoneKey} userId={session.UserId}");
+                }
+            }
+        }
+
+        // Bước 3: giờ mới xóa client khỏi room (CleanupRoomIfEmpty sẽ thấy preserved flag)
+        Debug.Log($"[RECONNECT-DEBUG][3-UnregisterClient] Gọi UnregisterClient clientId={clientId}");
+        registryDbg?.UnregisterClient(clientId);
+
+        if (session != null)
         {
             // Reset player về làng (map 0) khi disconnect — đúng yêu cầu "quay về làng khi out game"
             StartCoroutine(SavePlayerPosition(session));
-            _activeSessions.Remove(clientId);
+            lock (_lock)
+                _activeSessions.Remove(clientId);
             Debug.Log($"[ZonePlayerSessionManager] Client {clientId} (userId={session.UserId}) đã ngắt kết nối.");
         }
     }
 
     // ── Internal: Load & Spawn ────────────────────────────────────────────────
+
+    private IEnumerator LoadAndSpawnPlayerTracked(ulong clientId, ApprovedUserInfo userInfo)
+    {
+        try
+        {
+            yield return StartCoroutine(LoadAndSpawnPlayer(clientId, userInfo));
+        }
+        finally
+        {
+            ClearSpawnInProgress(clientId);
+        }
+    }
 
     private IEnumerator LoadAndSpawnPlayer(ulong clientId, ApprovedUserInfo userInfo)
     {
@@ -169,6 +297,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         string apiBase = _config != null ? _config.apiBaseUrl : ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase}/player/{userInfo.UserId}/data";
         string apiKey = _config != null ? _config.GetZoneApiKey() : "dev-zone-key";
+
+        Debug.Log($"[ZonePlayerSessionManager] LoadAndSpawnPlayer: clientId={clientId}, userId={userInfo.UserId}, username={userInfo.Username}, room=map{userInfo.MapId}_zone{userInfo.ZoneId}, url={url}");
 
         using var request = UnityWebRequest.Get(url);
         request.SetRequestHeader("X-Zone-Api-Key", apiKey);
@@ -198,11 +328,13 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             yield break;
         }
 
+        Debug.Log($"[ZonePlayerSessionManager] PlayerData raw response clientId={clientId}, length={request.downloadHandler.text?.Length ?? 0}: {TruncateForLog(request.downloadHandler.text, 1200)}");
+
         // 2 — Parse PlayerData (đơn giản — adapt theo PlayerDataResponse thực tế của dự án)
-        PlayerDataResponse playerData = null;
+        global::PlayerDataResponse playerData = null;
         try
         {
-            playerData = JsonUtility.FromJson<PlayerDataResponse>(request.downloadHandler.text);
+            playerData = JsonUtility.FromJson<global::PlayerDataResponse>(request.downloadHandler.text);
         }
         catch (Exception ex)
         {
@@ -217,6 +349,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             NetworkManager.Singleton.DisconnectClient(clientId);
             yield break;
         }
+
+        Debug.Log($"[ZonePlayerSessionManager] Parsed PlayerData clientId={clientId}: {DescribePlayerData(playerData)}");
 
         // 3 — Tính spawn position
         Vector3 spawnPos = GetEntryPoint(userInfo.MapId, userInfo.ZoneId, playerData);
@@ -234,6 +368,10 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
         GameObject playerGo = Instantiate(template, spawnPos, Quaternion.identity);
         var netObj = playerGo.GetComponent<NetworkObject>();
+        var visibilityFilter = playerGo.GetComponent<NetworkVisibilityZoneFilter>();
+
+        Debug.Log($"[ZonePlayerSessionManager] Instantiated player template for clientId={clientId}: template={DescribePrefab(template)}, scene={playerGo.scene.name}, hasNetworkObject={netObj != null}, hasController={playerGo.GetComponent<NetworkPlayerController>() != null}, hasDataSync={playerGo.GetComponent<NetworkPlayerDataSync>() != null}, hasInventory={playerGo.GetComponent<NetworkInventory>() != null}, hasVisibilityFilter={visibilityFilter != null}");
+
         if (netObj == null)
         {
             Debug.LogError("[ZonePlayerSessionManager] Player prefab thiếu NetworkObject component!");
@@ -241,14 +379,28 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             yield break;
         }
 
+        visibilityFilter?.InitializeForServer();
+
         // Di chuyển player vào physics scene của map khởi đầu — TRƯỚC SpawnWithOwnership
         MapSceneManager.Instance?.MoveToMapScene(playerGo, userInfo.MapId);
+        Debug.Log($"[ZonePlayerSessionManager] Player moved to scene before spawn: clientId={clientId}, scene={playerGo.scene.name}, mapId={userInfo.MapId}, position={playerGo.transform.position}");
 
         netObj.SpawnWithOwnership(clientId);
+        visibilityFilter?.RefreshVisibility();
+
+        Debug.Log($"[ZonePlayerSessionManager] SpawnWithOwnership complete: clientId={clientId}, netId={netObj.NetworkObjectId}, owner={netObj.OwnerClientId}, isSpawned={netObj.IsSpawned}, scene={playerGo.scene.name}, hasPlayerObject={netObj.IsPlayerObject}");
 
         // 5 — Init player với data
         var playerInit = playerGo.GetComponent<IPlayerDataReceiver>();
-        playerInit?.OnPlayerDataLoaded(playerData, clientId);
+        if (playerInit != null)
+        {
+            Debug.Log($"[ZonePlayerSessionManager] Calling IPlayerDataReceiver={playerInit.GetType().Name} for clientId={clientId}.");
+            playerInit.OnPlayerDataLoaded(playerData, clientId);
+        }
+        else
+        {
+            Debug.LogWarning($"[ZonePlayerSessionManager] Player prefab {template.name} không có IPlayerDataReceiver. Data sẽ không được đẩy trực tiếp sau spawn.");
+        }
 
         // 6 — Lưu session
         lock (_lock)
@@ -275,6 +427,130 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                   $"userId={userInfo.UserId} at {spawnPos}");
     }
 
+    private void LogPlayerPrefabConfiguration()
+    {
+        if (_prefabConfigLogged)
+            return;
+
+        _prefabConfigLogged = true;
+
+        int heEntries = 0;
+        int nuEntries = 0;
+        if (_playerPrefabs != null)
+        {
+            foreach (var entry in _playerPrefabs)
+            {
+                if (entry == null)
+                    continue;
+
+                if (string.Equals(entry.gender, "He", StringComparison.OrdinalIgnoreCase))
+                    heEntries++;
+                if (string.Equals(entry.gender, "Nu", StringComparison.OrdinalIgnoreCase))
+                    nuEntries++;
+            }
+        }
+
+        Debug.Log($"[ZonePlayerSessionManager] Prefab config dump: configAssigned={_config != null}, entries={_playerPrefabs?.Length ?? 0}, heEntries={heEntries}, nuEntries={nuEntries}, mappings={GetPlayerPrefabMappingsSummary()}");
+        if (nuEntries == 0)
+            Debug.LogWarning("[ZonePlayerSessionManager] Prefab config hiện không có mapping gender=Nu. Nếu DB trả gender=Nu thì resolver sẽ fallback bỏ qua gender hoặc dùng prefab mặc định.");
+    }
+
+    /// <summary>
+    /// Safety-net: drain PendingApprovedUsers every 0.5 s for the first 30 s after spawn.
+    /// Catches sessions that arrive after OnNetworkSpawn in edge-case timing.
+    /// </summary>
+    private IEnumerator DrainPendingLoop()
+    {
+        float elapsed = 0f;
+        while (elapsed < 30f && IsServer && IsSpawned)
+        {
+            yield return new WaitForSeconds(0.5f);
+            elapsed += 0.5f;
+            bool hasPending;
+            lock (PendingLock) { hasPending = PendingApprovedUsers.Count > 0; }
+            if (hasPending)
+            {
+                RestorePendingApprovedUsers();
+                TrySpawnPendingConnectedClients("DrainLoop");
+            }
+        }
+    }
+
+    private void RestorePendingApprovedUsers()
+    {
+        lock (PendingLock)
+        {
+            if (PendingApprovedUsers.Count == 0)
+                return;
+
+            lock (_lock)
+            {
+                foreach (var kvp in PendingApprovedUsers)
+                    _approvedUsers[kvp.Key] = kvp.Value;
+            }
+
+            Debug.Log($"[ZonePlayerSessionManager] Restored {PendingApprovedUsers.Count} queued approved session(s).");
+            PendingApprovedUsers.Clear();
+        }
+    }
+
+    private void TrySpawnPendingConnectedClients(string reason)
+    {
+        var networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer)
+            return;
+
+        List<ulong> clientsToSpawn = new();
+        List<string> blockedClients = new();
+        lock (_lock)
+        {
+            foreach (var clientId in _approvedUsers.Keys)
+            {
+                if (clientId == NetworkManager.ServerClientId)
+                {
+                    blockedClients.Add($"{clientId}:server-client");
+                    continue;
+                }
+                if (!networkManager.ConnectedClients.ContainsKey(clientId))
+                {
+                    blockedClients.Add($"{clientId}:not-connected-yet");
+                    continue;
+                }
+                if (_activeSessions.ContainsKey(clientId))
+                {
+                    blockedClients.Add($"{clientId}:already-active");
+                    continue;
+                }
+                if (_spawningClients.Contains(clientId))
+                {
+                    blockedClients.Add($"{clientId}:spawn-in-progress");
+                    continue;
+                }
+                clientsToSpawn.Add(clientId);
+            }
+
+            if (_approvedUsers.Count > 0)
+            {
+                string blockedSummary = blockedClients.Count > 0
+                    ? string.Join(", ", blockedClients)
+                    : "none";
+                Debug.Log($"[ZonePlayerSessionManager] TrySpawnPendingConnectedClients({reason}) | approved={_approvedUsers.Count} active={_activeSessions.Count} spawning={_spawningClients.Count} connected={networkManager.ConnectedClients.Count} runnable={clientsToSpawn.Count} blocked={blockedSummary}");
+            }
+        }
+
+        foreach (var clientId in clientsToSpawn)
+        {
+            Debug.Log($"[ZonePlayerSessionManager] Backfill spawn trigger ({reason}) cho client {clientId}.");
+            OnClientConnected(clientId);
+        }
+    }
+
+    private void ClearSpawnInProgress(ulong clientId)
+    {
+        lock (_lock)
+            _spawningClients.Remove(clientId);
+    }
+
     private IEnumerator RefreshVisibilityAfterClientReady(ulong clientId)
     {
         yield return null;
@@ -299,46 +575,137 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     ///   3. Khớp element + isHybrid (bỏ qua gender)
     ///   4. Fallback: prefab đầu tiên trong mảng không null
     /// </summary>
-    private GameObject ResolvePlayerPrefab(PlayerDataResponse data)
+    private GameObject ResolvePlayerPrefab(global::PlayerDataResponse data)
     {
+        Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab begin: {DescribePlayerData(data)}");
+        Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab mappings: {GetPlayerPrefabMappingsSummary()}");
+
         // Hybrid với Resources path từ DB
         if (data.is_hybrid && !string.IsNullOrEmpty(data.hybrid_prefab_path))
         {
+            Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab: trying Resources.Load('{data.hybrid_prefab_path}') for hybrid player.");
             var res = Resources.Load<GameObject>(data.hybrid_prefab_path);
-            if (res != null) return res;
+            if (res != null)
+            {
+                Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab: selected hybrid resource prefab {DescribePrefab(res)}.");
+                return res;
+            }
             Debug.LogWarning($"[ZonePlayerSessionManager] Resources.Load thất bại: {data.hybrid_prefab_path} — thử fallback prefab array.");
         }
 
         // Pass 1: khớp hoàn toàn element + gender + isHybrid
         foreach (var e in _playerPrefabs)
         {
+            if (e == null) continue;
             if (e.prefab == null) continue;
             if (e.isHybrid != data.is_hybrid) continue;
             if (!string.IsNullOrEmpty(e.elementType) &&
                 !string.Equals(e.elementType, data.element_type, StringComparison.OrdinalIgnoreCase)) continue;
             if (!string.IsNullOrEmpty(e.gender) &&
                 !string.Equals(e.gender, data.gender, StringComparison.OrdinalIgnoreCase)) continue;
+
+            Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab: exact match -> {DescribePrefabEntry(e)}");
             return e.prefab;
         }
+
+        var sameElementEntries = new StringBuilder();
+        bool hasSameElementEntries = false;
+        foreach (var e in _playerPrefabs)
+        {
+            if (e == null || e.prefab == null) continue;
+            if (e.isHybrid != data.is_hybrid) continue;
+            if (!string.IsNullOrEmpty(e.elementType) &&
+                !string.Equals(e.elementType, data.element_type, StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (hasSameElementEntries) sameElementEntries.Append(" | ");
+            sameElementEntries.Append(DescribePrefabEntry(e));
+            hasSameElementEntries = true;
+        }
+
+        if (hasSameElementEntries)
+            Debug.LogWarning($"[ZonePlayerSessionManager] ResolvePlayerPrefab: không có exact gender match cho element={data.element_type}, gender={data.gender}, hybrid={data.is_hybrid}. Same-element entries: {sameElementEntries}");
+        else
+            Debug.LogWarning($"[ZonePlayerSessionManager] ResolvePlayerPrefab: không có entry nào khớp element={data.element_type}, hybrid={data.is_hybrid}. Sẽ thử fallback rộng hơn.");
 
         // Pass 2: bỏ qua gender, khớp element + isHybrid
         foreach (var e in _playerPrefabs)
         {
+            if (e == null) continue;
             if (e.prefab == null) continue;
             if (e.isHybrid != data.is_hybrid) continue;
             if (!string.IsNullOrEmpty(e.elementType) &&
                 !string.Equals(e.elementType, data.element_type, StringComparison.OrdinalIgnoreCase)) continue;
+
+            Debug.LogWarning($"[ZonePlayerSessionManager] ResolvePlayerPrefab: fallback bỏ qua gender -> {DescribePrefabEntry(e)}");
             return e.prefab;
         }
 
         // Pass 3: fallback — prefab không null đầu tiên
         foreach (var e in _playerPrefabs)
-            if (e.prefab != null) return e.prefab;
+        {
+            if (e == null || e.prefab == null) continue;
+
+            Debug.LogWarning($"[ZonePlayerSessionManager] ResolvePlayerPrefab: fallback cuối cùng dùng prefab đầu tiên -> {DescribePrefabEntry(e)}");
+            return e.prefab;
+        }
+
+        Debug.LogError($"[ZonePlayerSessionManager] ResolvePlayerPrefab thất bại hoàn toàn. mappings={GetPlayerPrefabMappingsSummary()}");
 
         return null;
     }
 
-    private static Vector3 GetEntryPoint(int mapId, int zoneId, PlayerDataResponse data)
+    private string GetPlayerPrefabMappingsSummary()
+    {
+        if (_playerPrefabs == null || _playerPrefabs.Length == 0)
+            return "(empty)";
+
+        var builder = new StringBuilder();
+        for (int index = 0; index < _playerPrefabs.Length; index++)
+        {
+            if (index > 0)
+                builder.Append(" || ");
+
+            builder.Append('#').Append(index).Append(':').Append(DescribePrefabEntry(_playerPrefabs[index]));
+        }
+
+        return builder.ToString();
+    }
+
+    private static string DescribePlayerData(global::PlayerDataResponse data)
+    {
+        if (data == null)
+            return "(null PlayerDataResponse)";
+
+        return $"playerId={data.player_id}, name={data.character_name}, element={data.element_type}, gender={data.gender}, hybrid={data.is_hybrid}, hybridPath={data.hybrid_prefab_path}, map={data.map_id}, zone={data.zone_id}, pos=({data.position_x},{data.position_y}), hp={data.GetHp()}/{data.GetMaxHp()}, mp={data.GetMp()}/{data.GetMaxMp()}, atk={data.GetAttack()}, def={data.GetDefense()}, move={data.GetMoveSpeed()}";
+    }
+
+    private static string DescribePrefabEntry(PlayerPrefabEntry entry)
+    {
+        if (entry == null)
+            return "(null entry)";
+
+        string element = string.IsNullOrWhiteSpace(entry.elementType) ? "*" : entry.elementType;
+        string gender = string.IsNullOrWhiteSpace(entry.gender) ? "*" : entry.gender;
+        return $"element={element},gender={gender},hybrid={entry.isHybrid},prefab={DescribePrefab(entry.prefab)}";
+    }
+
+    private static string DescribePrefab(GameObject prefab)
+    {
+        if (prefab == null)
+            return "null";
+
+        return $"{prefab.name}(hasNetworkObject={prefab.GetComponent<NetworkObject>() != null})";
+    }
+
+    private static string TruncateForLog(string value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            return value ?? string.Empty;
+
+        return value.Substring(0, maxLength) + "...(truncated)";
+    }
+
+    private static Vector3 GetEntryPoint(int mapId, int zoneId, global::PlayerDataResponse data)
     {
         // Nếu vị trí trong DB hợp lệ, dùng vị trí đó (lưu trong info_char, trả về qua API)
         if (data.position_x != 0 || data.position_y != 0)
@@ -479,7 +846,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 /// </summary>
 public interface IPlayerDataReceiver
 {
-    void OnPlayerDataLoaded(ZonePlayerSessionManager.PlayerDataResponse data, ulong clientId);
+    void OnPlayerDataLoaded(global::PlayerDataResponse data, ulong clientId);
 }
 
 /// <summary>

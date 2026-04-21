@@ -44,21 +44,49 @@ public class DungeonManager : MonoBehaviour
     [SerializeField] private int  _activeDungeonId = -1;
     [SerializeField] private int  _activeDungeonMapId = -1;
     [SerializeField] private int  _activeDungeonZoneId;
+    [SerializeField] private int _currentWaveRound;
+    [SerializeField] private int _currentWaveMaxRounds;
+    [SerializeField] private int _currentWaveRemainingSeconds;
+    [SerializeField] private string _currentDungeonStatusMessage = string.Empty;
+
+    private float _waveCountdownEndRealtime;
+    private bool _waveCountdownActive;
 
     public bool IsInDungeon        => _isInDungeon;
     public int  ActiveDungeonId    => _activeDungeonId;
     public int  ActiveDungeonMapId => _activeDungeonMapId;
     public int  ActiveDungeonZoneId => _activeDungeonZoneId;
+    public int CurrentWaveRound => _currentWaveRound;
+    public int CurrentWaveMaxRounds => _currentWaveMaxRounds;
+    public int CurrentWaveRemainingSeconds => _currentWaveRemainingSeconds;
+    public string CurrentDungeonStatusMessage => _currentDungeonStatusMessage;
 
     public event Action<string> OnDungeonStatusMessage;
     public event Action         OnDungeonEntered;
     public event Action         OnDungeonExited;
+    public event Action<int, int, int> OnWaveStateChanged;
 
     private void Awake()
     {
         if (_instance != null && _instance != this) { Destroy(gameObject); return; }
         _instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void Update()
+    {
+        if (!_isInDungeon || !_waveCountdownActive)
+            return;
+
+        int localRemaining = Mathf.Max(0, Mathf.CeilToInt(_waveCountdownEndRealtime - Time.realtimeSinceStartup));
+        if (localRemaining == _currentWaveRemainingSeconds)
+            return;
+
+        _currentWaveRemainingSeconds = localRemaining;
+        if (_currentWaveRemainingSeconds <= 0)
+            _waveCountdownActive = false;
+
+        OnWaveStateChanged?.Invoke(_currentWaveRound, _currentWaveMaxRounds, _currentWaveRemainingSeconds);
     }
 
     // ========================================================================
@@ -138,6 +166,12 @@ public class DungeonManager : MonoBehaviour
         _activeDungeonId    = dungeonConfigId;
         _activeDungeonMapId = mapId;
         _activeDungeonZoneId = zoneId;
+        _currentWaveRound = 0;
+        _currentWaveMaxRounds = 0;
+        _currentWaveRemainingSeconds = 0;
+        _currentDungeonStatusMessage = string.Empty;
+        _waveCountdownEndRealtime = 0f;
+        _waveCountdownActive = false;
 
         Debug.Log($"[DungeonManager] Entered dungeon | configId={dungeonConfigId} map={mapId} zone={zoneId}", this);
         OnDungeonEntered?.Invoke();
@@ -151,10 +185,44 @@ public class DungeonManager : MonoBehaviour
         _activeDungeonId    = -1;
         _activeDungeonMapId = -1;
         _activeDungeonZoneId = 0;
+        _currentWaveRound = 0;
+        _currentWaveMaxRounds = 0;
+        _currentWaveRemainingSeconds = 0;
+        _currentDungeonStatusMessage = string.Empty;
+        _waveCountdownEndRealtime = 0f;
+        _waveCountdownActive = false;
 
         Debug.Log("[DungeonManager] Exited dungeon", this);
         OnDungeonExited?.Invoke();
         Notify("Đã rời phó bản!");
+    }
+
+    public void OnWaveStateUpdated(int currentRound, int maxRounds, int remainingSeconds)
+    {
+        _currentWaveRound = Mathf.Max(0, currentRound);
+        _currentWaveMaxRounds = Mathf.Max(0, maxRounds);
+        _currentWaveRemainingSeconds = Mathf.Max(0, remainingSeconds);
+
+        if (_currentWaveRemainingSeconds > 0)
+        {
+            _waveCountdownEndRealtime = Time.realtimeSinceStartup + _currentWaveRemainingSeconds;
+            _waveCountdownActive = true;
+        }
+        else
+        {
+            _waveCountdownEndRealtime = 0f;
+            _waveCountdownActive = false;
+        }
+
+        Debug.Log($"[DungeonManager] Wave state updated | round={_currentWaveRound}/{_currentWaveMaxRounds} remaining={_currentWaveRemainingSeconds}s", this);
+        OnWaveStateChanged?.Invoke(_currentWaveRound, _currentWaveMaxRounds, _currentWaveRemainingSeconds);
+    }
+
+    public void OnDungeonRuntimeStatusUpdated(string message)
+    {
+        _currentDungeonStatusMessage = message ?? string.Empty;
+        Debug.Log($"[DungeonManager] Runtime status updated | message='{_currentDungeonStatusMessage}'", this);
+        OnDungeonStatusMessage?.Invoke(_currentDungeonStatusMessage);
     }
 
     // ========================================================================

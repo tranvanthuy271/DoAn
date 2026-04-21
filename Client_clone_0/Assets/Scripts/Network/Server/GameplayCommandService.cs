@@ -55,11 +55,24 @@ public class GameplayCommandService : NetworkBehaviour
     public static event Action<string> OnDungeonListReceived;     // GetDungeonListServerRpc
     public static event Action<string> OnInventoryReceived;       // GetPlayerInventoryServerRpc
 
+    [Serializable]
+    private sealed class UseItemServerResponse
+    {
+        public int item_template_id;
+        public int wave_entry_bonus_added;
+        public string message;
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning($"[GameplayCommandService] Duplicate instance on '{gameObject.name}' (existing='{Instance.gameObject.name}') — destroying duplicate COMPONENT only.");
+            Destroy(this);
+            return;
+        }
         Instance = this;
     }
 
@@ -346,13 +359,44 @@ public class GameplayCommandService : NetworkBehaviour
         StartCoroutine(DoPost(
             $"{ApiBase}/player/{pid}/inventory/use-item",
             $"{{\"slotIndex\":{slotIndex}}}", jwt,
-            json => UseItemResultClientRpc(json, Target(cid)),
+            json =>
+            {
+                TryApplyWaveTicketBonus(cid, json);
+                UseItemResultClientRpc(json, Target(cid));
+            },
             err  => UseItemResultClientRpc(ErrorJson(err), Target(cid))
         ));
     }
 
     [ClientRpc] private void UseItemResultClientRpc(string json, ClientRpcParams p = default)
         => OnUseItemResult?.Invoke(json);
+
+    private void TryApplyWaveTicketBonus(ulong clientId, string json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Contains("\"error\""))
+            return;
+
+        UseItemServerResponse response;
+        try
+        {
+            response = JsonUtility.FromJson<UseItemServerResponse>(json);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[GameplayCmd] TryApplyWaveTicketBonus parse failed: {ex.Message}");
+            return;
+        }
+
+        if (response == null || response.wave_entry_bonus_added <= 0)
+            return;
+
+        string userId = ZonePlayerSessionManager.Instance?.GetPlayerId(clientId);
+        if (string.IsNullOrWhiteSpace(userId))
+            userId = ResolveClientUserId(clientId).ToString();
+
+        WaveSessionManager.Instance?.AddBonusEntries(userId, response.wave_entry_bonus_added);
+        Debug.Log($"[GameplayCmd] Applied wave ticket bonus client={clientId} userId={userId} itemTemplateId={response.item_template_id} add={response.wave_entry_bonus_added} msg='{response.message}'");
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // ACTIVE BUFFS

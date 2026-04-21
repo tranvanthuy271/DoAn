@@ -78,6 +78,11 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
 
         ulong ownerClientId = _netObj.OwnerClientId;
 
+        // Owner phải luôn thấy object do chính mình sở hữu, ngay cả khi room registry
+        // chưa kịp ổn định ở frame connect/transfer đầu tiên.
+        if (ownerClientId == clientId)
+            return true;
+
         // Server-owned objects (NPC, Enemy, Chest, etc.)
         // → dùng MAP-BASED visibility: tất cả player cùng map đều thấy, bất kể zone
         if (ownerClientId == NetworkManager.ServerClientId ||

@@ -222,7 +222,14 @@ public class CharacterPanelController : MonoBehaviour
     /// Chỉ ẩn phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
     /// Dùng bởi InformationPanelController khi bấm BtnTuiDo.
     /// </summary>
-    public void HideContent() => contentRoot.SetActive(false);
+    public void HideContent()
+    {
+        if (panelRoot != null && !panelRoot.activeSelf)
+            panelRoot.SetActive(true);
+
+        if (contentRoot != null)
+            contentRoot.SetActive(false);
+    }
 
     public bool IsVisible() => panelRoot != null && panelRoot.activeSelf;
 

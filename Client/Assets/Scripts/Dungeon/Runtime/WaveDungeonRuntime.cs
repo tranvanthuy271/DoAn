@@ -8,64 +8,174 @@ using UnityEngine.Events;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
+/// <summary>
+/// WaveDungeonRuntime — Quản lý logic wave (vòng) cho phó bản.
+///
+/// MULTI-ZONE ISOLATION (mỗi người chơi trong zone riêng của họ):
+///   BeginEncounter(dungeonId, mapId, zoneId) tạo ZoneEncounterState độc lập cho mỗi zone.
+///   Các zone KHÔNG ảnh hưởng nhau — timer, quái, boss chạy song song.
+///   Người chơi khác nhau ở zone khác nhau: không nhìn thấy nhau, không chia sẻ quái.
+///
+/// SESSION RECONNECT:
+///   WaveSessionManager.UpdateSessionStateByZone được gọi mỗi giây.
+///   Khi reconnect, ZoneTransitionController phục hồi người chơi về zone cũ.
+/// </summary>
 public class WaveDungeonRuntime : BaseDungeonInstance
 {
-    [Header("Config")]
+    [Header("Config (fallback nếu API không có)")]
     [SerializeField] private DungeonWaveConfig config;
     [SerializeField] private string apiBaseUrl = "";
 
-    [Header("Wave UI (tự tạo nếu để trống)")]
+    [Header("Wave UI (fallback — ưu tiên WaveHUD trên canvas riêng)")]
     [SerializeField] private TMP_Text roundText;
     [SerializeField] private TMP_Text timerText;
 
-    private readonly NetworkVariable<int> _currentRound = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    // NetworkVariables: cập nhật theo zone gần nhất để HUD fallback hoạt động.
+    // Client nhận snapshot khi vào/reconnect/chuyển vòng và tự đếm ngược cục bộ.
+    private readonly NetworkVariable<int> _currentRound     = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private readonly NetworkVariable<int> _remainingSeconds = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    private readonly NetworkVariable<int> _maxRounds = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private readonly NetworkVariable<int> _maxRounds        = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    private readonly List<NetworkObject> _aliveEnemies = new();
-    private NetworkObject _bossObject;
-    private Coroutine _roundTimerCoroutine;
-    private Coroutine _initializeRoutine;
-    private bool _bossSpawned;
-    private bool _encounterEnded;
-    private bool _runtimeInitialized;
-    private int _pendingDungeonId = -1;
-    private string _activeEncounterKey = string.Empty;
+    // Public accessors cho WaveHUD fallback
+    public int CurrentRound     => _currentRound.Value;
+    public int RemainingSeconds => _remainingSeconds.Value;
+    public int MaxRounds        => _maxRounds.Value > 0 ? _maxRounds.Value : (config != null ? config.maxRounds : 1);
+
+    // ─── Per-zone encounter state ─────────────────────────────────────────────
+    // Mỗi zone (ZoneRoom.ZoneId) có một ZoneEncounterState độc lập.
+    // BeginEncounter tạo entry mới; StopZoneEncounter dọn dẹp khi zone kết thúc.
+    private readonly Dictionary<int, ZoneEncounterState> _activeZones = new();
+
+    private sealed class ZoneEncounterState
+    {
+        public int    DungeonId;
+        public int    MapId;
+        public int    ZoneId;
+        public string EncounterKey;     // "dungeonId:mapId:zoneId" — dùng để idempotent check
+
+        public DungeonWaveConfig Config;
+
+        // Wave runtime
+        public int  CurrentRound;
+        public int  MaxRounds;
+        public int  RemainingSeconds;
+        public bool Ended;
+        public bool BossSpawned;
+
+        // Enemies của zone này
+        public readonly List<NetworkObject> AliveEnemies = new();
+        public NetworkObject                BossObject;
+
+        // Coroutine references để StopCoroutine đúng zone
+        public Coroutine TimerCoroutine;
+        public Coroutine InitCoroutine;
+    }
+
+    private void Awake()
+    {
+        var networkObject = GetComponent<NetworkObject>();
+        if (networkObject == null)
+            return;
+
+        // Dedicated server dùng runtime này như coordinator nội bộ.
+        // Client không load ServerScene, nên tuyệt đối không replicate in-scene object này xuống client.
+        networkObject.SpawnWithObservers = false;
+        MapSceneManager.ConfigureNetworkObjectForServerOnlyScene(networkObject);
+    }
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        Debug.Log($"[WaveDungeonRuntime] OnNetworkSpawn scene={gameObject.scene.name} isServer={IsServer} isClient={IsClient}");
 
-        Debug.Log($"[WaveDungeonRuntime] OnNetworkSpawn scene={gameObject.scene.name} isServer={IsServer} isClient={IsClient} hasConfig={(config != null)} pendingDungeonId={_pendingDungeonId} activeKey='{_activeEncounterKey}'");
-
-        // Auto-create HUD nếu chưa được gán trong Inspector
         if (IsClient)
             EnsureWaveHUD();
-
     }
 
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        if (!IsServer) return;
+
+        foreach (var kv in _activeZones)
+            StopZoneEncounter(kv.Value);
+        _activeZones.Clear();
+        Debug.Log("[WaveDungeonRuntime] OnNetworkDespawn — tất cả zone encounter đã dừng.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Public API (gọi từ ZoneTransitionController)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Khởi động encounter cho zone chỉ định.
+    /// KHÔNG reset zone khác đang chạy — mỗi zone hoạt động hoàn toàn độc lập.
+    /// </summary>
     public void BeginEncounter(int dungeonId, int mapId, int zoneId)
     {
         if (!IsServer || dungeonId <= 0 || mapId < 0)
-            return;
-
-        string encounterKey = $"{dungeonId}:{mapId}:{zoneId}";
-        if (_runtimeInitialized && string.Equals(_activeEncounterKey, encounterKey, StringComparison.Ordinal))
         {
-            Debug.Log($"[WaveDungeonRuntime] Encounter {encounterKey} already initialized.");
+            Debug.LogWarning($"[WaveDungeonRuntime] BeginEncounter bị chặn: IsServer={IsServer} dungeonId={dungeonId} mapId={mapId}");
             return;
         }
 
-        Debug.Log($"[WaveDungeonRuntime] BeginEncounter dungeonId={dungeonId} mapId={mapId} zoneId={zoneId} scene={gameObject.scene.name} isServer={IsServer} isClient={IsClient} runtimeInitialized={_runtimeInitialized} config={(config != null ? config.name : "null")}");
+        string encounterKey = $"{dungeonId}:{mapId}:{zoneId}";
 
-        ResetEncounterRuntime();
-        _pendingDungeonId = dungeonId;
-        _activeEncounterKey = encounterKey;
-        SetEncounterLocation(mapId, zoneId);
+        // Idempotent: nếu zone này đã chạy đúng encounter và chưa kết thúc → bỏ qua
+        if (_activeZones.TryGetValue(zoneId, out var existing) &&
+            string.Equals(existing.EncounterKey, encounterKey, StringComparison.Ordinal) &&
+            !existing.Ended)
+        {
+            Debug.Log($"[WaveDungeonRuntime] BeginEncounter zone={zoneId} encounter '{encounterKey}' đã chạy → idempotent skip.");
+            return;
+        }
 
-        if (_initializeRoutine != null)
-            StopCoroutine(_initializeRoutine);
-        _initializeRoutine = StartCoroutine(InitializeRuntimeConfigCoroutine());
+        // Nếu zone này có encounter cũ → dừng trước (không ảnh hưởng zone khác)
+        if (_activeZones.TryGetValue(zoneId, out var oldState))
+        {
+            Debug.Log($"[WaveDungeonRuntime] BeginEncounter zone={zoneId} — dừng encounter cũ '{oldState.EncounterKey}'.");
+            StopZoneEncounter(oldState);
+        }
+
+        var state = new ZoneEncounterState
+        {
+            DungeonId    = dungeonId,
+            MapId        = mapId,
+            ZoneId       = zoneId,
+            EncounterKey = encounterKey,
+        };
+        _activeZones[zoneId] = state;
+
+        Debug.Log($"[WaveDungeonRuntime] BeginEncounter zone={zoneId} dungeonId={dungeonId} mapId={mapId} " +
+                  $"activeZones={_activeZones.Count} scene={gameObject.scene.name}");
+
+        state.InitCoroutine = StartCoroutine(InitializeZoneConfigCoroutine(state));
+    }
+
+    /// <summary>Dừng và dọn dẹp một zone encounter (KHÔNG ảnh hưởng zone khác).</summary>
+    private void StopZoneEncounter(ZoneEncounterState state)
+    {
+        if (state == null) return;
+        if (state.TimerCoroutine != null) { StopCoroutine(state.TimerCoroutine); state.TimerCoroutine = null; }
+        if (state.InitCoroutine  != null) { StopCoroutine(state.InitCoroutine);  state.InitCoroutine  = null; }
+
+        foreach (var enemy in state.AliveEnemies)
+            DespawnNetworkObject(enemy);
+        state.AliveEnemies.Clear();
+
+        DespawnNetworkObject(state.BossObject);
+        state.BossObject = null;
+        state.Ended      = true;
+
+        WaveSessionManager.Instance?.EndSessionsByZone(state.ZoneId);
+        Debug.Log($"[WaveDungeonRuntime] StopZoneEncounter zone={state.ZoneId} key='{state.EncounterKey}'");
+    }
+
+    private static void DespawnNetworkObject(NetworkObject networkObject)
+    {
+        if (networkObject == null) return;
+        if (networkObject.IsSpawned) networkObject.Despawn(true);
+        else if (networkObject.gameObject != null) Destroy(networkObject.gameObject);
     }
 
     // -------------------------------------------------------
@@ -278,112 +388,52 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         return label.rectTransform.anchoredPosition.y;
     }
 
-    private void ResetEncounterRuntime()
+    // ─────────────────────────────────────────────────────────────────────────
+    // Config initialisation (per-zone)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private IEnumerator InitializeZoneConfigCoroutine(ZoneEncounterState state)
     {
-        if (_roundTimerCoroutine != null)
-        {
-            StopCoroutine(_roundTimerCoroutine);
-            _roundTimerCoroutine = null;
-        }
-
-        if (_initializeRoutine != null)
-        {
-            StopCoroutine(_initializeRoutine);
-            _initializeRoutine = null;
-        }
-
-        foreach (NetworkObject enemy in _aliveEnemies)
-            DespawnNetworkObject(enemy);
-
-        _aliveEnemies.Clear();
-        DespawnNetworkObject(_bossObject);
-        _bossObject = null;
-        _bossSpawned = false;
-        _encounterEnded = false;
-        _runtimeInitialized = false;
-        _currentRound.Value = 0;
-        _remainingSeconds.Value = 0;
-        _maxRounds.Value = 0;
-    }
-
-    private void MarkEncounterFinished()
-    {
-        _runtimeInitialized = false;
-        _pendingDungeonId = -1;
-        _activeEncounterKey = string.Empty;
-        ClearEncounterLocation();
-    }
-
-    private static void DespawnNetworkObject(NetworkObject networkObject)
-    {
-        if (networkObject == null)
-            return;
-
-        if (networkObject.IsSpawned)
-            networkObject.Despawn(true);
-        else if (networkObject.gameObject != null)
-            Destroy(networkObject.gameObject);
-    }
-
-    private void Update()
-    {
-        if (!IsClient)
-            return;
-
-        int maxRounds = _maxRounds.Value > 0
-            ? _maxRounds.Value
-            : Mathf.Max(1, config != null ? config.maxRounds : 1);
-
-        if (roundText != null)
-            roundText.text = $"Vòng {_currentRound.Value}/{maxRounds}";
-
-        if (timerText != null)
-        {
-            int seconds = Mathf.Max(0, _remainingSeconds.Value);
-            timerText.text = $"{seconds / 60:00}:{seconds % 60:00}";
-        }
-    }
-
-    private IEnumerator InitializeRuntimeConfigCoroutine()
-    {
-        _runtimeInitialized = true;
-
-        if (config != null)
-            config = Instantiate(config);
+        // Bản sao config riêng cho zone (không modify shared ScriptableObject)
+        DungeonWaveConfig baseCfg = config != null ? Instantiate(config) : null;
 
         bool loadedFromApi = false;
-        yield return StartCoroutine(LoadConfigFromApiCoroutine(success => loadedFromApi = success));
+        yield return StartCoroutine(LoadZoneConfigFromApiCoroutine(state, baseCfg, success => loadedFromApi = success));
 
         if (!loadedFromApi)
-        {
-            Debug.LogWarning($"[WaveDungeonRuntime] Không tải được wave config từ API. Fallback sang DungeonWaveConfig trong scene. scene={gameObject.scene.name} dungeonId={_pendingDungeonId} config={(config != null ? config.name : "null")}");
-        }
+            Debug.LogWarning($"[WaveDungeonRuntime] zone={state.ZoneId} — Không tải được config từ API. Fallback sang inspector config. dungeonId={state.DungeonId}");
 
-        if (config == null)
+        if (state.Config == null && baseCfg != null)
+            state.Config = baseCfg;
+
+        if (state.Config == null)
         {
-            Debug.LogError($"[WaveDungeonRuntime] Không có config khả dụng để khởi tạo wave dungeon. scene={gameObject.scene.name} dungeonId={_pendingDungeonId} activeKey='{_activeEncounterKey}'");
-            BroadcastStatus("[Lỗi] Không tải được cấu hình phó bản sóng.");
-            _initializeRoutine = null;
+            Debug.LogError($"[WaveDungeonRuntime] zone={state.ZoneId} — Không có config khả dụng. Encounter bị huỷ. dungeonId={state.DungeonId}");
+            BroadcastStatusToZone(state, "[Lỗi] Không tải được cấu hình phó bản sóng.");
+            _activeZones.Remove(state.ZoneId);
+            state.InitCoroutine = null;
             yield break;
         }
 
-        _maxRounds.Value = Mathf.Max(1, config.maxRounds);
-        StartRound(1);
-        _initializeRoutine = null;
+        state.MaxRounds = Mathf.Max(1, state.Config.maxRounds);
+        _maxRounds.Value = state.MaxRounds; // NetworkVariable HUD fallback
+        SyncWaveStateToZone(state, false);
+
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Config sẵn sàng. dungeonId={state.DungeonId} maxRounds={state.MaxRounds} " +
+                  $"enemySpawns={state.Config.enemySpawns?.Count ?? 0} bossId={state.Config.bossSpawn?.enemyId ?? -1}");
+
+        StartRoundForZone(state, 1);
+        state.InitCoroutine = null;
     }
 
-    private IEnumerator LoadConfigFromApiCoroutine(System.Action<bool> onCompleted)
+    private IEnumerator LoadZoneConfigFromApiCoroutine(ZoneEncounterState state, DungeonWaveConfig fallbackConfig, Action<bool> onCompleted)
     {
-        int dungeonId = ResolveDungeonId();
-        if (dungeonId <= 0)
-        {
-            onCompleted?.Invoke(false);
-            yield break;
-        }
+        int dungeonId = state.DungeonId;
+        if (dungeonId <= 0) { onCompleted?.Invoke(false); yield break; }
 
         string resolvedApiUrl = ServerAddressConfig.Instance.ResolveApiUrl(apiBaseUrl);
         string url = $"{resolvedApiUrl}/dungeon/wave/{dungeonId}/config";
-        Debug.Log($"[WaveDungeonRuntime] Loading runtime config from API: {url} (scene={gameObject.scene.name}, dungeonId={dungeonId}, forcedMapId={ForcedMapId}, forcedZoneId={ForcedZoneId})");
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Fetch config: {url}");
 
         using UnityWebRequest request = UnityWebRequest.Get(url);
         if (IsDedicatedWorldServer())
@@ -397,335 +447,355 @@ public class WaveDungeonRuntime : BaseDungeonInstance
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[WaveDungeonRuntime] Load runtime config failed: {request.error}; responseCode={request.responseCode}; text={request.downloadHandler?.text}");
+            Debug.LogWarning($"[WaveDungeonRuntime] zone={state.ZoneId} — API lỗi: {request.error} code={request.responseCode} body={request.downloadHandler?.text}");
             onCompleted?.Invoke(false);
             yield break;
         }
 
-        Debug.Log($"[WaveDungeonRuntime] Runtime config JSON: {request.downloadHandler.text}");
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Config JSON: {request.downloadHandler.text}");
         DungeonWaveRuntimeResponse response = JsonUtility.FromJson<DungeonWaveRuntimeResponse>(request.downloadHandler.text);
         if (response == null)
         {
-            Debug.LogWarning($"[WaveDungeonRuntime] API trả về JSON wave config không parse được. scene={gameObject.scene.name}");
+            Debug.LogWarning($"[WaveDungeonRuntime] zone={state.ZoneId} — Parse JSON thất bại.");
             onCompleted?.Invoke(false);
             yield break;
         }
 
-        ApplyRuntimeResponse(response, dungeonId);
+        ApplyRuntimeResponseToZone(state, response, dungeonId, fallbackConfig);
         onCompleted?.Invoke(true);
     }
 
-    private void ApplyRuntimeResponse(DungeonWaveRuntimeResponse response, int dungeonId)
+    private void ApplyRuntimeResponseToZone(ZoneEncounterState state, DungeonWaveRuntimeResponse response, int dungeonId, DungeonWaveConfig fallback)
     {
-        if (config == null)
-        {
-            config = ScriptableObject.CreateInstance<DungeonWaveConfig>();
-            config.returnSceneName = "GameScene";
-            config.returnMapId = 0;
-            config.returnCountdownSeconds = 5f;
-        }
+        var cfg = fallback != null ? Instantiate(fallback) : ScriptableObject.CreateInstance<DungeonWaveConfig>();
+        cfg.dungeonId = dungeonId;
 
-        config.dungeonId = dungeonId;
-        if (response.map_id > 0 && ForcedMapId < 0)
-            SetEncounterLocation(response.map_id, 0);
-        config.roundTimeSeconds = Mathf.Max(1f, response.wave_time_seconds);
-        config.maxRounds = Mathf.Max(1, response.max_waves);
-        config.roundScalingPercent = Mathf.Max(0f, response.enemy_scale_percent);
-        config.bossScalePercent = Mathf.Max(0f, response.boss_scale_percent);
-        config.expGoldScalePercent = Mathf.Max(0f, response.exp_gold_scale_percent);
-        config.dailyEntryLimit = Mathf.Max(1, response.daily_entry_limit);
-        config.entryItemIdPlusOne = response.entry_item_plus1_id;
-        config.entryItemIdPlusTwo = response.entry_item_plus2_id;
+        if (response.map_id > 0)
+            state.MapId = response.map_id;
 
-        config.enemySpawns = new List<DungeonEnemyUnitConfig>();
+        cfg.roundTimeSeconds      = Mathf.Max(1f,  response.wave_time_seconds);
+        cfg.maxRounds             = Mathf.Max(1,   response.max_waves);
+        cfg.roundScalingPercent   = Mathf.Max(0f,  response.enemy_scale_percent);
+        cfg.bossScalePercent      = Mathf.Max(0f,  response.boss_scale_percent);
+        cfg.expGoldScalePercent   = Mathf.Max(0f,  response.exp_gold_scale_percent);
+        cfg.dailyEntryLimit       = Mathf.Max(1,   response.daily_entry_limit);
+        cfg.entryItemIdPlusOne    = response.entry_item_plus1_id;
+        cfg.entryItemIdPlusTwo = response.entry_item_plus2_id;
+
+        // The API response DTO does not include explicit return_* fields or completion_rewards.
+        // Preserve return settings from the fallback config. Optionally override the
+        // return scene with the response's `scene_name` if provided (this is the
+        // dungeon scene name in the DTO and may be useful as a fallback).
+        if (!string.IsNullOrWhiteSpace(response.scene_name))
+            cfg.returnSceneName = response.scene_name;
+
+        // Ensure completionRewards list exists (use fallback values if any).
+        if (cfg.completionRewards == null)
+            cfg.completionRewards = new List<DungeonRewardItemConfig>();
+
+        cfg.enemySpawns = new List<DungeonEnemyUnitConfig>();
         if (response.enemy_spawns != null)
-        {
             foreach (var spawn in response.enemy_spawns)
-                config.enemySpawns.Add(ConvertSpawn(spawn));
-        }
+                cfg.enemySpawns.Add(ConvertSpawn(spawn));
 
-        config.bossSpawn = response.boss_spawn != null ? ConvertSpawn(response.boss_spawn) : null;
-        config.milestoneRewards = ConvertMilestones(response.milestone_rewards);
+        cfg.bossSpawn       = response.boss_spawn != null ? ConvertSpawn(response.boss_spawn) : null;
+        cfg.milestoneRewards = ConvertMilestones(response.milestone_rewards);
 
-        Debug.Log($"[WaveDungeonRuntime] Loaded runtime config from DB: scene={gameObject.scene.name}, dungeonId={dungeonId}, mapId={config.returnMapId}, normalSpawns={config.enemySpawns.Count}, bossEnemyId={config.bossSpawn?.enemyId ?? -1}, maxRounds={config.maxRounds}, milestoneCount={config.milestoneRewards?.Count ?? 0}");
+        state.Config = cfg;
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} ApplyRuntimeResponseToZone dungeonId={dungeonId} mapId={state.MapId} " +
+                  $"maxRounds={cfg.maxRounds} enemySpawns={cfg.enemySpawns.Count} bossId={cfg.bossSpawn?.enemyId ?? -1} milestones={cfg.milestoneRewards?.Count ?? 0}");
     }
 
-    private static DungeonEnemyUnitConfig ConvertSpawn(DungeonWaveEnemySpawnDto spawn)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Wave round logic (per-zone)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void StartRoundForZone(ZoneEncounterState state, int round)
     {
-        return new DungeonEnemyUnitConfig
-        {
-            enemyId = spawn.enemy_id,
-            displayName = spawn.enemy_name ?? string.Empty,
-            spawnPosition = new Vector3(spawn.spawn_x, spawn.spawn_y, 0f),
-            maxHp = Mathf.Max(1, spawn.max_hp),
-            maxMp = Mathf.Max(0, spawn.max_mp),
-            attack = Mathf.Max(1, spawn.base_damage),
-            defense = Mathf.Max(0, spawn.base_defense),
-            expReward = Mathf.Max(0, spawn.exp_reward),
-            level = Mathf.Max(1, spawn.level),
-            respawnTime = Mathf.Max(0, spawn.respawn_time),
-            moveSpeed = Mathf.Max(0.1f, spawn.move_speed),
-            canFly = spawn.can_fly,
-            drops = spawn.drops != null ? new List<DropItemEntry>(spawn.drops) : new List<DropItemEntry>()
-        };
-    }
+        state.CurrentRound    = round;
+        state.RemainingSeconds = Mathf.Max(1, Mathf.CeilToInt(state.Config.roundTimeSeconds));
+        state.AliveEnemies.Clear();
+        state.BossObject  = null;
+        state.BossSpawned = false;
+        state.Ended       = false;
 
-    private static List<DungeonMilestoneReward> ConvertMilestones(DungeonWaveMilestoneRewardDto[] milestones)
-    {
-        var result = new List<DungeonMilestoneReward>();
-        if (milestones == null)
-            return result;
+        // Update NetworkVariable HUD fallback (sẽ bị ghi đè bởi zone kế tiếp nếu có)
+        _currentRound.Value     = round;
+        _remainingSeconds.Value = state.RemainingSeconds;
+        _maxRounds.Value        = state.MaxRounds;
 
-        foreach (var milestone in milestones)
-        {
-                var reward = new DungeonMilestoneReward
-                {
-                    atWave = Mathf.Max(1, milestone.wave),
-                    bonusExp = milestone.bonus_exp < 0 ? 0L : milestone.bonus_exp,
-                    bonusGold = milestone.bonus_gold < 0 ? 0L : milestone.bonus_gold,
-                    items = new List<DungeonRewardItemConfig>()
-                };
+        SyncWaveStateToZone(state, true);
 
-            if (milestone.items != null)
+        float scale       = 1f + Mathf.Max(0, round - 1) * (state.Config.roundScalingPercent / 100f);
+        float rewardScale = Mathf.Pow(1f + state.Config.expGoldScalePercent / 100f, Mathf.Max(0, round - 1));
+
+        Debug.Log($"[WaveDungeonRuntime] StartRoundForZone zone={state.ZoneId} round={round} scale={scale:F2} rewardScale={rewardScale:F2} " +
+                  $"enemyCount={state.Config.enemySpawns?.Count ?? 0} bossId={state.Config.bossSpawn?.enemyId ?? -1}");
+
+        if (state.Config.enemySpawns != null)
+            foreach (var ec in state.Config.enemySpawns)
             {
-                foreach (var item in milestone.items)
-                {
-                    if (item.item_template_id <= 0)
-                        continue;
-
-                    reward.items.Add(new DungeonRewardItemConfig
-                    {
-                        itemTemplateId = item.item_template_id,
-                        quantity = Mathf.Max(1, item.quantity),
-                        upgradeLevel = Mathf.Max(0, item.upgrade_level),
-                        strOptions = item.str_options ?? string.Empty
-                    });
-                }
+                var scaled = ScaleReward(ec, rewardScale);
+                NetworkObject enemy = SpawnEnemyForZone(state, scaled, scale, false);
+                RegisterEnemyForZone(state, enemy, false);
             }
 
-            result.Add(reward);
-        }
+        int spawned = state.AliveEnemies.Count;
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} round={round} spawned={spawned}");
 
-        return result;
-    }
-
-    private int ResolveDungeonId()
-    {
-        if (_pendingDungeonId > 0)
-            return _pendingDungeonId;
-
-        if (config != null && config.dungeonId > 0)
-            return config.dungeonId;
-
-        var dungeonManager = FindAnyObjectByType<DungeonManager>();
-        if (dungeonManager != null && dungeonManager.ActiveDungeonId > 0)
-            return dungeonManager.ActiveDungeonId;
-
-        return -1;
-    }
-
-    private static bool IsDedicatedWorldServer()
-        => FindAnyObjectByType<MapWorldBootstrap>() != null;
-
-    private void StartRound(int round)
-    {
-        _currentRound.Value = round;
-        _remainingSeconds.Value = Mathf.Max(1, Mathf.CeilToInt(config.roundTimeSeconds));
-        _aliveEnemies.Clear();
-        _bossObject = null;
-        _bossSpawned = false;
-        _encounterEnded = false;
-
-        // Quái thường scale theo roundScalingPercent (lũy thừa)
-        float scale = 1f + Mathf.Max(0, round - 1) * (config.roundScalingPercent / 100f);
-        // EXP/Gold scale riêng để tránh mất cân bằng ở vòng cao
-        float rewardScale = Mathf.Pow(1f + config.expGoldScalePercent / 100f, Mathf.Max(0, round - 1));
-
-        Debug.Log($"[WaveDungeonRuntime] StartRound({round}): scene={gameObject.scene.name}, enemySpawns.Count={config.enemySpawns?.Count ?? 0}, bossSpawn.enemyId={config.bossSpawn?.enemyId}, scale={scale:F2}, rewardScale={rewardScale:F2}, maxRounds={config.maxRounds}");
-
-        foreach (var enemyConfig in config.enemySpawns)
+        if (spawned == 0)
         {
-            // Scale exp reward theo vòng trước khi spawn
-            var scaledConfig = ScaleReward(enemyConfig, rewardScale);
-            NetworkObject enemy = SpawnConfiguredEnemy(scaledConfig, scale, false);
-            RegisterEnemy(enemy, false);
-        }
-
-        int spawnedCount = _aliveEnemies.Count;
-        Debug.Log($"[WaveDungeonRuntime] StartRound({round}): {spawnedCount} enemy đã được đăng ký vào _aliveEnemies.");
-
-        if (spawnedCount == 0)
-        {
-            Debug.LogError($"[WaveDungeonRuntime] CẢNH BÁO: Vòng {round} không spawn được enemy nào! " +
-                "Nguyên nhân có thể: (1) config.enemySpawns rỗng trong DungeonWaveConfig SO, " +
-                "(2) enemyId không hợp lệ trong EnemyPrefabManager, " +
-                "(3) config.maxHp = 0 (enemy chết ngay). " +
-                "Boss sẽ KHÔNG spawn cho đến khi ít nhất 1 enemy được giết. Timer đang chạy.");
-            BroadcastStatus($"[Lỗi] Vòng {round}: Không thể spawn quái — kiểm tra DungeonWaveConfig SO.");
+            Debug.LogError($"[WaveDungeonRuntime] zone={state.ZoneId} round={round} — Không spawn được quái! Kiểm tra config.");
+            BroadcastStatusToZone(state, $"[Lỗi] Vòng {round}: Không thể spawn quái.");
         }
         else
         {
-            BroadcastStatus($"Vòng {round}: tiêu diệt toàn bộ quái vật.");
+            BroadcastStatusToZone(state, $"Vòng {round}: Tiêu diệt toàn bộ quái vật!");
         }
 
-        if (_roundTimerCoroutine != null)
-            StopCoroutine(_roundTimerCoroutine);
-        _roundTimerCoroutine = StartCoroutine(RoundTimerCoroutine());
+        if (state.TimerCoroutine != null) StopCoroutine(state.TimerCoroutine);
+        state.TimerCoroutine = StartCoroutine(RoundTimerCoroutineForZone(state));
     }
 
-    private IEnumerator RoundTimerCoroutine()
+    private IEnumerator RoundTimerCoroutineForZone(ZoneEncounterState state)
     {
-        while (!_encounterEnded && _remainingSeconds.Value > 0)
+        while (!state.Ended && state.RemainingSeconds > 0)
         {
             yield return new WaitForSeconds(1f);
-            _remainingSeconds.Value = Mathf.Max(0, _remainingSeconds.Value - 1);
+            if (state.Ended) yield break;
+            state.RemainingSeconds = Mathf.Max(0, state.RemainingSeconds - 1);
+            _remainingSeconds.Value = state.RemainingSeconds; // HUD fallback
+            SyncWaveStateToZone(state, false);
         }
 
-        if (_encounterEnded)
-            yield break;
-
-        _encounterEnded = true;
-        BroadcastStatus("Hết thời gian phó bản.");
-        yield return BeginReturnFlow(false, config.returnCountdownSeconds, config.returnMapId, config.returnSceneName);
+        if (!state.Ended)
+        {
+            Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Hết thời gian vòng {state.CurrentRound}. Kết thúc phó bản.");
+            state.Ended = true;
+            ShowTimeUpToZone(state);
+            yield return new WaitForSeconds(3f);
+            yield return BeginReturnFlowForZone(state, false, state.Config.returnCountdownSeconds, state.Config.returnMapId, state.Config.returnSceneName);
+            FinalizeZone(state);
+        }
     }
 
-    private void RegisterEnemy(NetworkObject networkObject, bool isBoss)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Enemy registration and death handling (per-zone, using closure)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void RegisterEnemyForZone(ZoneEncounterState state, NetworkObject networkObject, bool isBoss)
     {
-        if (networkObject == null)
-            return;
+        if (networkObject == null) return;
 
-        if (!isBoss)
-            _aliveEnemies.Add(networkObject);
-        else
-            _bossObject = networkObject;
+        if (!isBoss) state.AliveEnemies.Add(networkObject);
+        else         state.BossObject = networkObject;
 
-        Debug.Log($"[WaveDungeonRuntime] RegisterEnemy: netId={(networkObject != null ? networkObject.NetworkObjectId : 0)} name={networkObject.name} isBoss={isBoss} aliveCount={_aliveEnemies.Count} bossSpawned={_bossSpawned} scene={gameObject.scene.name}");
+        Debug.Log($"[WaveDungeonRuntime] RegisterEnemyForZone zone={state.ZoneId} netId={networkObject.NetworkObjectId} name={networkObject.name} isBoss={isBoss} aliveCount={state.AliveEnemies.Count}");
 
         UnityAction handler = null;
-        if (networkObject.TryGetComponent<NetworkEnemyHealth>(out var networkEnemyHealth))
+        if (networkObject.TryGetComponent<NetworkEnemyHealth>(out var neh))
         {
             handler = () =>
             {
-                if (!IsServer)
-                    return;
-                Debug.Log($"[WaveDungeonRuntime] OnDeath event from NetworkEnemyHealth: name={networkObject.name} netId={networkObject.NetworkObjectId} isBoss={isBoss}");
-                networkEnemyHealth.OnDeath.RemoveListener(handler);
-                HandleEnemyDeath(networkObject, isBoss);
+                if (!IsServer) return;
+                neh.OnDeath.RemoveListener(handler);
+                HandleEnemyDeathForZone(state, networkObject, isBoss);
             };
-            networkEnemyHealth.OnDeath.AddListener(handler);
+            neh.OnDeath.AddListener(handler);
             return;
         }
 
-        if (networkObject.TryGetComponent<EnemyHealth>(out var enemyHealth))
+        if (networkObject.TryGetComponent<EnemyHealth>(out var eh))
         {
             handler = () =>
             {
-                if (!IsServer)
-                    return;
-                Debug.Log($"[WaveDungeonRuntime] OnDeath event from EnemyHealth: name={networkObject.name} netId={networkObject.NetworkObjectId} isBoss={isBoss}");
-                enemyHealth.OnDeath.RemoveListener(handler);
-                HandleEnemyDeath(networkObject, isBoss);
+                if (!IsServer) return;
+                eh.OnDeath.RemoveListener(handler);
+                HandleEnemyDeathForZone(state, networkObject, isBoss);
             };
-            enemyHealth.OnDeath.AddListener(handler);
+            eh.OnDeath.AddListener(handler);
         }
         else
         {
-            Debug.LogWarning($"[WaveDungeonRuntime] RegisterEnemy: no health component found on {networkObject.name} netId={networkObject.NetworkObjectId}");
+            Debug.LogWarning($"[WaveDungeonRuntime] zone={state.ZoneId} — {networkObject.name} không có health component.");
         }
     }
 
-    private void HandleEnemyDeath(NetworkObject networkObject, bool isBoss)
+    private void HandleEnemyDeathForZone(ZoneEncounterState state, NetworkObject networkObject, bool isBoss)
     {
-        Debug.Log($"[WaveDungeonRuntime] HandleEnemyDeath: name={networkObject?.name ?? "null"} netId={(networkObject != null ? networkObject.NetworkObjectId : 0)} isBoss={isBoss}, aliveEnemies={_aliveEnemies.Count}, bossSpawned={_bossSpawned}, encounterEnded={_encounterEnded}, scene={gameObject.scene.name}");
+        if (state.Ended) return;
 
-        if (_encounterEnded)
-            return;
+        Debug.Log($"[WaveDungeonRuntime] HandleEnemyDeath zone={state.ZoneId} name={networkObject?.name ?? "null"} isBoss={isBoss} alive={state.AliveEnemies.Count}");
 
         if (!isBoss)
         {
-            if (networkObject != null)
-                _aliveEnemies.Remove(networkObject);
-
-            Debug.Log($"[WDR] kill nonboss alive={_aliveEnemies.Count} bossSpawned={_bossSpawned} round={_currentRound.Value} scene={gameObject.scene.name}");
-            if (_aliveEnemies.Count == 0 && !_bossSpawned)
-            {
-                Debug.Log($"[WDR] spawn boss round={_currentRound.Value} scene={gameObject.scene.name}");
-                SpawnBoss();
-            }
+            if (networkObject != null) state.AliveEnemies.Remove(networkObject);
+            if (state.AliveEnemies.Count == 0 && !state.BossSpawned)
+                SpawnBossForZone(state);
             return;
         }
 
-        Debug.Log($"[WaveDungeonRuntime] Boss vòng {_currentRound.Value} đã bị tiêu diệt.");
-        StartCoroutine(HandleBossDefeatedCoroutine());
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Boss vòng {state.CurrentRound} bị tiêu diệt.");
+        StartCoroutine(HandleBossDefeatedCoroutineForZone(state));
     }
 
-    private void SpawnBoss()
+    private void SpawnBossForZone(ZoneEncounterState state)
     {
-        _bossSpawned = true;
-        if (config.bossSpawn == null)
+        state.BossSpawned = true;
+        if (state.Config.bossSpawn == null)
         {
-            Debug.LogError($"[WaveDungeonRuntime] SpawnBoss: config.bossSpawn là null! Kiểm tra DungeonWaveConfig SO. scene={gameObject.scene.name} round={_currentRound.Value}");
-            // Không có boss config — xử lý như round hoàn thành ngay
-            StartCoroutine(HandleBossDefeatedCoroutine());
+            Debug.LogError($"[WaveDungeonRuntime] zone={state.ZoneId} — bossSpawn null! Xử lý như round hoàn thành.");
+            StartCoroutine(HandleBossDefeatedCoroutineForZone(state));
             return;
         }
-        // Boss dùng bossScalePercent riêng (config độc lập với quái thường)
-        float bossScale = 1f + Mathf.Max(0, _currentRound.Value - 1) * (config.bossScalePercent / 100f);
-        Debug.Log($"[WDR] boss spawn start enemyId={config.bossSpawn.enemyId} round={_currentRound.Value} map={ResolveCurrentMapId()} zone={ResolveCurrentZoneId()} scene={gameObject.scene.name}");
-        NetworkObject boss = SpawnConfiguredEnemy(config.bossSpawn, bossScale, true);
+        float bossScale = 1f + Mathf.Max(0, state.CurrentRound - 1) * (state.Config.bossScalePercent / 100f);
+        NetworkObject boss = SpawnEnemyForZone(state, state.Config.bossSpawn, bossScale, true);
         if (boss == null)
         {
-            Debug.LogError($"[WDR] boss spawn FAIL null enemyId={config.bossSpawn.enemyId} round={_currentRound.Value} scene={gameObject.scene.name}");
-            StartCoroutine(HandleBossDefeatedCoroutine());
+            Debug.LogError($"[WaveDungeonRuntime] zone={state.ZoneId} — SpawnBoss FAIL null enemyId={state.Config.bossSpawn.enemyId}");
+            StartCoroutine(HandleBossDefeatedCoroutineForZone(state));
             return;
         }
-        Debug.Log($"[WDR] boss spawned netId={boss.NetworkObjectId} name={boss.name} scene={gameObject.scene.name}");
-        RegisterEnemy(boss, true);
-        BroadcastStatus($"Boss vòng {_currentRound.Value} đã xuất hiện.");
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} — Boss spawned netId={boss.NetworkObjectId}");
+        RegisterEnemyForZone(state, boss, true);
+        BroadcastStatusToZone(state, $"Boss vòng {state.CurrentRound} đã xuất hiện!");
     }
 
-    private IEnumerator HandleBossDefeatedCoroutine()
+    private IEnumerator HandleBossDefeatedCoroutineForZone(ZoneEncounterState state)
     {
-        if (_encounterEnded)
-            yield break;
+        if (state.Ended) yield break;
+        state.Ended = true;
+        if (state.TimerCoroutine != null) { StopCoroutine(state.TimerCoroutine); state.TimerCoroutine = null; }
 
-        _encounterEnded = true;
-        if (_roundTimerCoroutine != null)
-            StopCoroutine(_roundTimerCoroutine);
+        int completedWave = state.CurrentRound;
+        yield return GrantMilestoneRewardIfAnyForZone(state, completedWave);
 
-        int completedWave = _currentRound.Value;
-        Debug.Log($"[WaveDungeonRuntime] HandleBossDefeatedCoroutine start: completedWave={completedWave}, maxRounds={config.maxRounds}, scene={gameObject.scene.name}");
-
-        // Milestone reward tại vòng 5 / 10 / 15 / 20
-        yield return GrantMilestoneRewardIfAny(completedWave);
-
-        if (completedWave >= Mathf.Max(1, config.maxRounds))
+        if (completedWave >= Mathf.Max(1, state.MaxRounds))
         {
-            Debug.Log($"[WaveDungeonRuntime] Dungeon complete at wave {completedWave}. Grant completion rewards.");
-            BroadcastStatus("Đã hoàn thành toàn bộ phó bản. Đang phát thưởng.");
-            yield return GrantRewardsToAll(config.completionRewards);
-            yield return BeginReturnFlow(true, config.returnCountdownSeconds, config.returnMapId, config.returnSceneName);
+            BroadcastStatusToZone(state, "Hoàn thành phó bản! Đang phát thưởng...");
+            yield return GrantRewardsToZone(state, state.Config.completionRewards);
+            yield return BeginReturnFlowForZone(state, true, state.Config.returnCountdownSeconds, state.Config.returnMapId, state.Config.returnSceneName);
+            FinalizeZone(state);
             yield break;
         }
 
-        BroadcastStatus($"Hoàn thành vòng {completedWave}. Chuẩn bị vòng tiếp theo.");
+        ShowWaveCompleteToZone(state, completedWave, completedWave + 1);
         yield return new WaitForSeconds(3f);
-        Debug.Log($"[WaveDungeonRuntime] Advancing to next wave: {completedWave + 1}");
-        StartRound(completedWave + 1);
+
+        if (_activeZones.ContainsKey(state.ZoneId))
+        {
+            state.Ended = false;
+            StartRoundForZone(state, completedWave + 1);
+        }
     }
 
-    // -------------------------------------------------------
-    //  Helpers
-    // -------------------------------------------------------
+    private void FinalizeZone(ZoneEncounterState state)
+    {
+        _activeZones.Remove(state.ZoneId);
+        WaveSessionManager.Instance?.EndSessionsByZone(state.ZoneId);
+        Debug.Log($"[WaveDungeonRuntime] FinalizeZone zone={state.ZoneId} — activeZones còn={_activeZones.Count}");
+    }
 
-    /// <summary>
-    /// Tạo bản sao config với expReward đã nhân rewardScale.
-    /// Không sửa config gốc trong SO.
-    /// </summary>
+    // ─────────────────────────────────────────────────────────────────────────
+    // Enemy spawning (set zone context before calling BaseDungeonInstance)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private NetworkObject SpawnEnemyForZone(ZoneEncounterState state, DungeonEnemyUnitConfig enemyConfig, float scale, bool isBoss)
+    {
+        SetEncounterLocation(state.MapId, state.ZoneId);
+        return SpawnConfiguredEnemy(enemyConfig, scale, isBoss);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Reward (per-zone only)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private IEnumerator GrantRewardsToZone(ZoneEncounterState state, IReadOnlyList<DungeonRewardItemConfig> rewards)
+    {
+        if (rewards == null || rewards.Count == 0 || NetworkManager.Singleton == null) yield break;
+
+        ZoneRoom zoneRoom = ZoneRoomRegistry.Instance?.GetRoom(state.MapId, state.ZoneId);
+        if (zoneRoom != null)
+        {
+            ulong[] clients = zoneRoom.GetClientSnapshot();
+            Debug.Log($"[WaveDungeonRuntime] GrantRewardsToZone zone={state.ZoneId} clients={clients?.Length ?? 0} items={rewards.Count}");
+            if (clients != null)
+                foreach (ulong clientId in clients)
+                    yield return DungeonRewardGrantService.GrantRewardsToClient(clientId, rewards);
+        }
+        else
+        {
+            Debug.LogWarning($"[WaveDungeonRuntime] GrantRewardsToZone zone={state.ZoneId} — ZoneRoom null, fallback GrantRewardsToAll.");
+            yield return GrantRewardsToAll(rewards);
+        }
+    }
+
+    private IEnumerator GrantMilestoneRewardIfAnyForZone(ZoneEncounterState state, int completedWave)
+    {
+        if (state.Config.milestoneRewards == null || state.Config.milestoneRewards.Count == 0) yield break;
+        foreach (var ms in state.Config.milestoneRewards)
+        {
+            if (ms.atWave != completedWave) continue;
+            BroadcastStatusToZone(state, $"Milestone vòng {completedWave}! Phát thưởng...");
+            if (ms.items != null && ms.items.Count > 0)
+                yield return GrantRewardsToZone(state, ms.items);
+            break;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // State sync & zone-targeted notifications
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void SyncWaveStateToZone(ZoneEncounterState state, bool broadcastToZone)
+    {
+        if (!IsServer) return;
+        WaveSessionManager.Instance?.UpdateSessionStateByZone(state.ZoneId, state.CurrentRound, state.MaxRounds, state.RemainingSeconds);
+        if (!broadcastToZone)
+            return;
+
+        FindAnyObjectByType<ZoneTransitionController>()
+            ?.BroadcastWaveStateToZone(state.MapId, state.ZoneId, state.CurrentRound, state.MaxRounds, state.RemainingSeconds);
+    }
+
+    private void BroadcastStatusToZone(ZoneEncounterState state, string message)
+    {
+        Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} Status: {message}");
+        if (!IsServer) return;
+        FindAnyObjectByType<ZoneTransitionController>()
+            ?.BroadcastDungeonStatusToZone(state.MapId, state.ZoneId, message ?? string.Empty);
+    }
+
+    private void ShowTimeUpToZone(ZoneEncounterState state)
+    {
+        FindAnyObjectByType<ZoneTransitionController>()
+            ?.ShowGlobalNotificationToZone(state.MapId, state.ZoneId,
+                "Hết Thời Gian", "Bạn đã hết thời gian! Đang đưa về bản đồ chính...", 4f, "Xác nhận");
+    }
+
+    private void ShowWaveCompleteToZone(ZoneEncounterState state, int completedWave, int nextWave)
+    {
+        FindAnyObjectByType<ZoneTransitionController>()
+            ?.ShowGlobalNotificationToZone(state.MapId, state.ZoneId,
+                "Vòng Hoàn Thành", $"Hoàn thành vòng {completedWave}! Chuẩn bị vòng {nextWave}...", 2.5f, "OK");
+    }
+
+    private IEnumerator BeginReturnFlowForZone(ZoneEncounterState state, bool completed, float countdownSeconds, int returnMapId, string returnSceneName)
+    {
+        int secs = Mathf.Max(1, Mathf.CeilToInt(countdownSeconds));
+        FindAnyObjectByType<ZoneTransitionController>()
+            ?.BeginDungeonReturnFlowToZone(state.MapId, state.ZoneId, completed, secs, returnMapId,
+                string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName);
+        yield return new WaitForSeconds(secs);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Static helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     private static DungeonEnemyUnitConfig ScaleReward(DungeonEnemyUnitConfig original, float rewardScale)
     {
-        if (Mathf.Approximately(rewardScale, 1f))
-            return original;
+        if (Mathf.Approximately(rewardScale, 1f)) return original;
         return new DungeonEnemyUnitConfig
         {
             enemyId       = original.enemyId,
@@ -744,23 +814,56 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         };
     }
 
-    /// <summary>
-    /// Grant milestone reward nếu vòng vừa clear khớp với atWave trong config.
-    /// </summary>
-    private System.Collections.IEnumerator GrantMilestoneRewardIfAny(int completedWave)
+    private static DungeonEnemyUnitConfig ConvertSpawn(DungeonWaveEnemySpawnDto spawn)
     {
-        if (config.milestoneRewards == null || config.milestoneRewards.Count == 0)
-            yield break;
-
-        foreach (var milestone in config.milestoneRewards)
+        return new DungeonEnemyUnitConfig
         {
-            if (milestone.atWave != completedWave)
-                continue;
-
-            BroadcastStatus($"Milestone vòng {completedWave}! Đang phát thưởng.");
-            if (milestone.items != null && milestone.items.Count > 0)
-                yield return GrantRewardsToAll(milestone.items);
-            break;
-        }
+            enemyId       = spawn.enemy_id,
+            displayName   = spawn.enemy_name ?? string.Empty,
+            spawnPosition = new Vector3(spawn.spawn_x, spawn.spawn_y, 0f),
+            maxHp         = Mathf.Max(1,    spawn.max_hp),
+            maxMp         = Mathf.Max(0,    spawn.max_mp),
+            attack        = Mathf.Max(1,    spawn.base_damage),
+            defense       = Mathf.Max(0,    spawn.base_defense),
+            expReward     = Mathf.Max(0,    spawn.exp_reward),
+            level         = Mathf.Max(1,    spawn.level),
+            respawnTime   = Mathf.Max(0,    spawn.respawn_time),
+            moveSpeed     = Mathf.Max(0.1f, spawn.move_speed),
+            canFly        = spawn.can_fly,
+            drops         = spawn.drops != null ? new List<DropItemEntry>(spawn.drops) : new List<DropItemEntry>()
+        };
     }
+
+    private static List<DungeonMilestoneReward> ConvertMilestones(DungeonWaveMilestoneRewardDto[] milestones)
+    {
+        var result = new List<DungeonMilestoneReward>();
+        if (milestones == null) return result;
+        foreach (var ms in milestones)
+        {
+            var reward = new DungeonMilestoneReward
+            {
+                atWave    = Mathf.Max(1, ms.wave),
+                bonusExp  = ms.bonus_exp  < 0 ? 0L : ms.bonus_exp,
+                bonusGold = ms.bonus_gold < 0 ? 0L : ms.bonus_gold,
+                items     = new List<DungeonRewardItemConfig>()
+            };
+            if (ms.items != null)
+                foreach (var item in ms.items)
+                {
+                    if (item.item_template_id <= 0) continue;
+                    reward.items.Add(new DungeonRewardItemConfig
+                    {
+                        itemTemplateId = item.item_template_id,
+                        quantity       = Mathf.Max(1, item.quantity),
+                        upgradeLevel   = Mathf.Max(0, item.upgrade_level),
+                        strOptions     = item.str_options ?? string.Empty
+                    });
+                }
+            result.Add(reward);
+        }
+        return result;
+    }
+
+    private static bool IsDedicatedWorldServer()
+        => FindAnyObjectByType<MapWorldBootstrap>() != null;
 }

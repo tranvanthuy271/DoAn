@@ -43,6 +43,11 @@ public class NetworkPlayerController : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
+        ulong localClientId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : ulong.MaxValue;
+        bool isLocalPlayer = NetworkObject != null && NetworkObject.IsLocalPlayer;
+        bool isPlayerObject = NetworkObject != null && NetworkObject.IsPlayerObject;
+        Debug.Log($"[NetworkPlayerController] OnNetworkSpawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, localClient={localClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}, isLocalPlayer={isLocalPlayer}, isPlayerObject={isPlayerObject}");
+
         DisableConflictingNetworkTransform();
 
         // Subscribe to networkScaleX changes để sync flip direction
@@ -94,6 +99,7 @@ public class NetworkPlayerController : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        Debug.Log($"[NetworkPlayerController] OnNetworkDespawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}");
         networkScaleX.OnValueChanged -= OnScaleXChanged;
         base.OnNetworkDespawn();
     }

@@ -29,6 +29,7 @@ public class ItemUseHandler : MonoBehaviour
     /// <summary>type 21-29 → item tiêu thụ (phục hồi HP/MP, v.v.).</summary>
     public const int ItemTypeConsumableMin = 21;
     public const int ItemTypeConsumableMax = 29;
+    public const int ItemTypeWaveTicket = 31;
     /// <summary>type 0-5 → trang bị.</summary>
     public const int ItemTypeEquipMax   = 5;
 
@@ -148,6 +149,11 @@ public class ItemUseHandler : MonoBehaviour
             // Mở rộng túi
             DoUseBagItem(slot);
         }
+        else if (itemType == ItemTypeWaveTicket)
+        {
+            // Vé phó bản sóng 409/410
+            DoUseConsumableItem(slot);
+        }
         else if (itemType >= ItemTypeConsumableMin && itemType <= ItemTypeConsumableMax)
         {
             // Item tiêu thụ
@@ -257,6 +263,15 @@ public class ItemUseHandler : MonoBehaviour
         }
 
         Debug.Log($"[ItemUseHandler] ✅ UseItem OK: {response.message}");
+
+        if (response.wave_entry_bonus_added > 0)
+        {
+            GlobalNotificationUI.Show(
+                $"Bạn nhận thêm {response.wave_entry_bonus_added} lượt Phó Bản Sóng cho hôm nay.",
+                "Vé Phó Bản",
+                3.5f,
+                "OK");
+        }
 
         if (response.hp_restore > 0 || response.mp_restore > 0)
             inventoryBridge?.RequestSyncHpMp(response.current_hp, response.current_mp);
@@ -567,6 +582,8 @@ public class ItemUseHandler : MonoBehaviour
 public class UseItemResult
 {
     public string message;
+    public int item_template_id;
+    public int wave_entry_bonus_added;
     public int hp_restore;
     public int mp_restore;
     public int current_hp;

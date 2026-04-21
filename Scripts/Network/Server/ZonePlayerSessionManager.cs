@@ -181,10 +181,10 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
 
         // 2 — Parse PlayerData (đơn giản — adapt theo PlayerDataResponse thực tế của dự án)
-        PlayerDataResponse playerData = null;
+        global::PlayerDataResponse playerData = null;
         try
         {
-            playerData = JsonUtility.FromJson<PlayerDataResponse>(request.downloadHandler.text);
+            playerData = JsonUtility.FromJson<global::PlayerDataResponse>(request.downloadHandler.text);
         }
         catch (Exception ex)
         {
@@ -243,7 +243,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                   $"userId={userInfo.UserId} at {spawnPos}");
     }
 
-    private static Vector3 GetEntryPoint(int mapId, int zoneId, PlayerDataResponse data)
+    private static Vector3 GetEntryPoint(int mapId, int zoneId, global::PlayerDataResponse data)
     {
         // Nếu vị trí trong DB hợp lệ, dùng vị trí đó (lưu trong info_char, trả về qua API)
         if (data.position_x != 0 || data.position_y != 0)
@@ -340,5 +340,5 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 /// </summary>
 public interface IPlayerDataReceiver
 {
-    void OnPlayerDataLoaded(ZonePlayerSessionManager.PlayerDataResponse data, ulong clientId);
+    void OnPlayerDataLoaded(global::PlayerDataResponse data, ulong clientId);
 }

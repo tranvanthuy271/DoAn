@@ -128,6 +128,54 @@ public class PlayerDataResponse
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
     public int bag_slots;                  // Sá»‘ Ã´ tÃºi Ä‘á»“ hiá»‡n táº¡i (máº·c Ä‘á»‹nh 20)
+
+    // Helper accessors used by shared server/client code
+    public int GetMaxHp()
+    {
+        if (final_stats != null && final_stats.max_hp > 0) return final_stats.max_hp;
+        if (base_stats != null && base_stats.max_hp > 0) return base_stats.max_hp;
+        return 0;
+    }
+
+    public int GetMaxMp()
+    {
+        if (final_stats != null && final_stats.max_mp > 0) return final_stats.max_mp;
+        if (base_stats != null && base_stats.max_mp > 0) return base_stats.max_mp;
+        return 0;
+    }
+
+    public int GetHp()
+    {
+        if (final_stats != null && final_stats.hp > 0) return final_stats.hp;
+        if (base_stats != null) return base_stats.hp;
+        return 0;
+    }
+
+    public int GetMp()
+    {
+        if (final_stats != null && final_stats.mp > 0) return final_stats.mp;
+        if (base_stats != null) return base_stats.mp;
+        return 0;
+    }
+
+    public int GetAttack()
+    {
+        if (final_stats != null) return final_stats.attack;
+        if (base_stats != null) return base_stats.attack;
+        return 10;
+    }
+
+    public int GetDefense()
+    {
+        if (final_stats != null) return final_stats.defense;
+        return 0;
+    }
+
+    public float GetMoveSpeed()
+    {
+        if (final_stats != null && final_stats.move_speed > 0f) return final_stats.move_speed;
+        return 5f;
+    }
 }
 
 [System.Serializable]
