@@ -38,6 +38,12 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     private bool isHostMode = false;
     private bool isWaitingToConnect = false;
 
+    private static bool HasActiveClientSession()
+    {
+        var nm = NetworkManager.Singleton;
+        return nm != null && nm.IsListening && nm.IsClient && !nm.ShutdownInProgress;
+    }
+
     private void Start()
     {
         // Debug.Log("[GameSceneNetworkInitializer] Initializing GameScene...");
@@ -70,7 +76,11 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         networkManager.serverIP = serverIP;
         networkManager.serverPort = serverPort;
 
-        // Kiểm tra xem có cần tự động start client không
+        // Đăng ký callback xử lý mất kết nối / kết nối thất bại
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnNetworkClientDisconnected;
+
+        // Tự động start client sau khi có player data
         CheckAutoStartClient();
     }
 
@@ -189,20 +199,29 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     }
 
     /// <summary>
-    /// Kiểm tra và load player data (KHÔNG tự động start client)
+    /// Load player data nếu chưa có, rồi tự động StartClient không cần bấm nút.
     /// </summary>
     private void CheckAutoStartClient()
     {
-        // Kiểm tra xem đã có player data chưa (từ Login hoặc SelectElement)
+        if (HasActiveClientSession())
+        {
+            playerDataLoaded = GameManager.Instance != null && GameManager.Instance.HasPlayerData();
+            LoginLoadingManager.HideLoadingStatic();
+            GameErrorNotifier.MarkClientConnected();
+            Debug.Log("[GameSceneNetworkInitializer] Active client session detected. Skip auto StartClient when re-entering GameScene/mapId=0.");
+            return;
+        }
+
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
         {
-            // Debug.Log("[GameSceneNetworkInitializer] Player data already loaded from previous scene.");
-            // Debug.Log("[GameSceneNetworkInitializer] User can now click 'Start Client' button to connect.");
             playerDataLoaded = true;
+            // Auto-start client ngay lập tức
+            StartClientMode();
         }
         else
         {
-            // Load player data từ API nếu chưa có (nhưng KHÔNG tự động start client)
+            // Đánh dấu để khi LoadPlayerDataFromAPI hoàn thành sẽ tự connect
+            isWaitingToConnect = true;
             LoadPlayerDataFromAPI();
         }
     }
@@ -301,6 +320,14 @@ public class GameSceneNetworkInitializer : MonoBehaviour
             return;
         }
 
+        if (HasActiveClientSession())
+        {
+            LoginLoadingManager.HideLoadingStatic();
+            GameErrorNotifier.MarkClientConnected();
+            Debug.Log("[GameSceneNetworkInitializer] Client is already connected. Skip StartClientMode().");
+            return;
+        }
+
         // Kiểm tra có player data chưa
         if (!playerDataLoaded)
         {
@@ -328,6 +355,14 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     /// </summary>
     private void StartClientConnection()
     {
+        if (HasActiveClientSession())
+        {
+            LoginLoadingManager.HideLoadingStatic();
+            GameErrorNotifier.MarkClientConnected();
+            Debug.Log("[GameSceneNetworkInitializer] Client session is already active. Skip StartClientConnection().");
+            return;
+        }
+
         Debug.Log($"[GameSceneNetworkInitializer] Starting CLIENT mode, connecting to {serverIP}:{serverPort}...");
         Debug.Log("[GameSceneNetworkInitializer] Auth sẽ đi trong ConnectionData payload (JWT + mapId + zoneId).");
 
@@ -346,6 +381,14 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         
         // Đợi thêm 0.5s để đảm bảo tất cả prefabs đã được đăng ký
         yield return new WaitForSeconds(0.5f);
+
+        if (HasActiveClientSession())
+        {
+            LoginLoadingManager.HideLoadingStatic();
+            GameErrorNotifier.MarkClientConnected();
+            Debug.Log("[GameSceneNetworkInitializer] Client connected during delay. Abort duplicate StartClient.");
+            yield break;
+        }
         
         Debug.Log("[GameSceneNetworkInitializer] ✓ Prefabs should be registered now, starting client connection...");
         StartClientConnection();
@@ -617,6 +660,46 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnNetworkClientDisconnected;
         }
     }
+
+    // ── Connection error panel ────────────────────────────────────────────
+
+    private bool _connectionErrorShown; // guard: only show once per session
+
+    /// <summary>
+    /// Callback khi client bị ngắt kết nối hoặc socket thất bại.
+    ///
+    /// NGO fires callback với:
+    ///  - clientId = LocalClientId   → khách nhận disconnect sau khi đã kết nối
+    ///  - clientId = 0               → socket fail trước khi được cấp id
+    ///  - clientId = ulong.MaxValue  → client không bao giờ connect được (connection refused / timeout)
+    /// Khi IsHost = true → callback nhận ID của các client khác — bỏ qua.
+    /// </summary>
+    private void OnNetworkClientDisconnected(ulong clientId)
+    {
+        if (_connectionErrorShown) return;
+
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        // Nếu đang làm host → callback này thuộc về một client khác — không hiện panel
+        if (isHostMode || nm.IsHost) return;
+
+        _connectionErrorShown = true;
+
+        string reason = "Không thể kết nối đến máy chủ game.\n"
+                      + "Đường truyền Internet có vấn đề hoặc máy chủ đang bảo trì.";
+        ShowConnectionErrorPanel(reason);
+    }
+
+    private void ShowConnectionErrorPanel(string message)
+    {
+        GameErrorNotifier.Show(message, onDismiss: () =>
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Login");
+        });
+    }
 }
+

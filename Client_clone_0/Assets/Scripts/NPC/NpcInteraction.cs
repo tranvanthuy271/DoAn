@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Unity.Collections;
 using UnityEngine;
@@ -18,6 +19,9 @@ using Unity.Netcode;
 /// </summary>
 public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 {
+    private const string LogPrefix = "[NpcInteraction]";
+    private const int ApiRequestTimeoutSeconds = 8;
+
     private NpcData _npcData;   // chỉ server có — set bởi NpcServerManager.InitOnServer()
 
     // NetworkVariable sync tên NPC từ server → tất cả client
@@ -28,6 +32,15 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             NetworkVariableWritePermission.Server);
 
     private NpcNameLabel _nameLabel;
+
+    // ── Selection (chọn NPC lần 1 → hiện info, lần 2 → mở menu) ─────────────
+    [Tooltip("Child GameObject mũi tên chỉ thị, mặc định ẩn. Nếu để trống sẽ tự tìm theo tên 'SelectionIndicator'.")]
+    [SerializeField] private GameObject selectionIndicator;
+
+    private static NpcInteraction _currentSelected;
+
+    private static readonly string[] _randomElements =
+        { "Fire", "Water", "Earth", "Metal", "Wood", "Wind" };
 
     private const float MAX_DIST = 3.5f;    // khoảng cách tối đa tương tác (units)
     private const float LENIENCY = 1.5f;    // hệ số khoan nhượng bù lag mạng
@@ -51,6 +64,23 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         // Nếu giá trị đã có sẵn (client join muộn) thì set ngay
         if (!_networkNpcName.Value.IsEmpty)
             _nameLabel.SetName(_networkNpcName.Value.ToString());
+
+        // Tự động tìm SelectionIndicator nếu chưa gán trong Inspector
+        if (selectionIndicator == null)
+            selectionIndicator = transform.Find("SelectionIndicator")?.gameObject;
+        if (selectionIndicator != null)
+            selectionIndicator.SetActive(false);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        // Dọn selection state khi NPC despawn (chuyển map, v.v.)
+        if (_currentSelected == this)
+        {
+            DeselectThis();
+            _currentSelected = null;
+        }
+        base.OnNetworkDespawn();
     }
 
     // ── CLIENT — Click / Tap ──────────────────────────────────
@@ -59,12 +89,23 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         if (!IsClient) return;
 
-        // Không cho tương tác khi panel NPC đang mở (tránh click xuyên qua UI)
-        var ui = NpcMenuUI.GetOrFind();
-        if (ui != null && ui.IsOpen) return;
+        Debug.Log($"{LogPrefix} Click | {DescribeNpcForLog()} state={DescribeClientState()}", this);
 
-        // Pre-check khoảng cách ở client để UX mượt (không authoritative)
-        // Thử nhiều cách tìm player object — nếu không tìm thấy vẫn cho phép gửi RPC (server validate)
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
+        {
+            Debug.Log($"{LogPrefix} Click ignored because gameplay input is blocked by UI.", this);
+            return;
+        }
+
+        // Nếu menu NPC đang mở → không xử lý click (tránh click xuyên UI)
+        var ui = NpcMenuUI.GetOrFind();
+        if (ui != null && ui.IsOpen)
+        {
+            Debug.Log($"{LogPrefix} Click ignored because NpcMenuUI is already open.", this);
+            return;
+        }
+
+        // Pre-check khoảng cách ở client
         NetworkObject localObj = NetworkManager.Singleton?.SpawnManager?.GetLocalPlayerObject();
         if (localObj == null)
             localObj = NetworkManager.Singleton?.LocalClient?.PlayerObject;
@@ -74,18 +115,96 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             float dist = Vector2.Distance(transform.position, localObj.transform.position);
             if (dist > MAX_DIST)
             {
-                Debug.Log($"[NpcInteraction] Quá xa ({dist:F1}u). Lại gần NPC hơn!");
+                Debug.Log($"{LogPrefix} Quá xa ({dist:F1}u). Lại gần NPC hơn!", this);
                 return;
             }
         }
-        // else: không tìm được PlayerObject client-side → bỏ qua check khoảng cách client, để server validate
 
+        // Click lần 1 (NPC chưa được chọn): hiển thị thông tin + mũi tên
+        if (_currentSelected != this)
+        {
+            Debug.Log($"{LogPrefix} First click -> select NPC | {DescribeNpcForLog()}", this);
+            SelectThis();
+            return;
+        }
+
+        // Click lần 2 (NPC đã được chọn): mở menu / tương tác như cũ
+        Debug.Log($"{LogPrefix} Second click -> InteractServerRpc | {DescribeNpcForLog()}", this);
         InteractServerRpc(NetworkObjectId);
     }
 
     private void OnMouseDown()   // fallback khi chưa có Physics2DRaycaster
     {
+        // Không xử lý nếu con trỏ đang ở trên UI (ví dụ: ChatPanel đang mở phủ lên)
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            return;
         OnPointerClick(null);
+    }
+
+    // ── SELECTION — Chọn NPC (click 1) / bỏ chọn ────────────────────────────
+
+    /// <summary>Chọn NPC này: hiển thị mũi tên, info panel và đặt làm target auto-move.</summary>
+    private void SelectThis()
+    {
+        // Bỏ chọn enemy đang được chọn
+        EnemyClickHandler.DeselectCurrent();
+
+        // Bỏ chọn NPC cũ
+        if (_currentSelected != null && _currentSelected != this)
+            _currentSelected.DeselectThis();
+
+        _currentSelected = this;
+
+        if (selectionIndicator != null)
+            selectionIndicator.SetActive(true);
+
+        TargetSelector.SetTarget(transform);
+
+        EnemyInfoPanel.Instance?.Show(BuildNpcStats());
+        Debug.Log($"{LogPrefix} Selected | {DescribeNpcForLog()}", this);
+    }
+
+    /// <summary>Bỏ chọn NPC này: ẩn mũi tên, ẩn info panel.</summary>
+    private void DeselectThis()
+    {
+        if (selectionIndicator != null)
+            selectionIndicator.SetActive(false);
+
+        TargetSelector.ClearTarget(transform);
+
+        EnemyInfoPanel.Instance?.Hide();
+        Debug.Log($"{LogPrefix} Deselected | {DescribeNpcForLog()}", this);
+    }
+
+    /// <summary>Bỏ chọn NPC hiện tại (gọi từ EnemyClickHandler khi enemy được chọn).</summary>
+    public static void DeselectCurrent()
+    {
+        if (_currentSelected != null)
+        {
+            _currentSelected.DeselectThis();
+            _currentSelected = null;
+        }
+    }
+
+    /// <summary>Xây thông số NPC để hiển thị trên EnemyInfoPanel.</summary>
+    private EnemyStats BuildNpcStats()
+    {
+        string npcName = (!_networkNpcName.Value.IsEmpty)
+            ? _networkNpcName.Value.ToString()
+            : gameObject.name.Replace("(Clone)", "").Trim();
+
+        string element = _randomElements[UnityEngine.Random.Range(0, _randomElements.Length)];
+
+        return new EnemyStats
+        {
+            enemyName   = npcName,
+            currentHp   = 100,
+            maxHp       = 100,
+            elementType = element,
+            level       = 1,
+            expReward   = 0
+        };
     }
 
     // ── INTERACT — Server validate + fetch dialogue ───────────
@@ -94,6 +213,8 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private void InteractServerRpc(ulong npcNetworkId, ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
+
+        Debug.Log($"{LogPrefix} InteractServerRpc | sender={clientId} npcNetId={npcNetworkId} worldPos={transform.position}", this);
 
         if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var client)) return;
 
@@ -108,7 +229,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             float dist = Vector2.Distance(transform.position, playerObj.transform.position);
             if (dist > MAX_DIST * LENIENCY)
             {
-                Debug.LogWarning($"[NpcInteraction] Client {clientId} quá xa ({dist:F1}u). Từ chối.");
+                Debug.LogWarning($"{LogPrefix} Client {clientId} quá xa ({dist:F1}u). Từ chối.", this);
                 return;
             }
         }
@@ -119,7 +240,13 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         if (NpcServerManager.Instance != null && NpcServerManager.Instance.TryGetNpcData(npcNetworkId, out var cached))
             data = cached;
 
-        if (data == null) return;
+        if (data == null)
+        {
+            Debug.LogWarning($"{LogPrefix} Không resolve được NpcData cho npcNetId={npcNetworkId}.", this);
+            return;
+        }
+
+        Debug.Log($"{LogPrefix} Interact validated | sender={clientId} npcId={data.npc_id} type='{data.npc_type}' name='{data.npc_name}'", this);
 
         StartCoroutine(FetchDialogueAndSend(data, clientId));
     }
@@ -128,23 +255,40 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
+        data.dialogue_text = ResolveFallbackDialogueText(data);
+
+        if (userId <= 0)
+        {
+            Debug.LogWarning($"{LogPrefix} Skip dialogue fetch | client={clientId} npcId={data.npc_id} because resolved playerId is invalid.", this);
+            Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={data.npc_id} type='{data.npc_type}'", this);
+            OpenMenuClientRpc(JsonUtility.ToJson(data), TargetClient(clientId));
+            yield break;
+        }
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
-        string body    = JsonUtility.ToJson(new InteractPayload { npc_id = data.npc_id, player_id = userId });
+        string body    = JsonUtility.ToJson(new InteractPayload { npcId = data.npc_id, playerId = userId });
+
+        Debug.Log($"{LogPrefix} FetchDialogue start | client={clientId} npcId={data.npc_id} playerId={userId} url={apiBase}/api/npc/interact", this);
 
         using var req = PostJson($"{apiBase}/api/npc/interact", body);
         if (!string.IsNullOrEmpty(jwtToken))
             req.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
         yield return req.SendWebRequest();
 
-        data.dialogue_text = "Xin chào, ta có thể giúp gì cho ngươi?";
         if (req.result == UnityWebRequest.Result.Success)
         {
-            var resp = JsonUtility.FromJson<InteractResponse>(req.downloadHandler.text);
-            if (!string.IsNullOrEmpty(resp?.dialogue_text))
-                data.dialogue_text = resp.dialogue_text;
+            string dialogueText = ExtractDialogueText(req.downloadHandler.text);
+            if (!string.IsNullOrWhiteSpace(dialogueText))
+                data.dialogue_text = dialogueText;
+
+            Debug.Log($"{LogPrefix} FetchDialogue success | client={clientId} npcId={data.npc_id} dialogue='{data.dialogue_text}'", this);
+        }
+        else
+        {
+            Debug.LogWarning($"{LogPrefix} FetchDialogue failed | client={clientId} npcId={data.npc_id} error={req.error} response={req.downloadHandler?.text}", this);
         }
 
+        Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={data.npc_id} type='{data.npc_type}'", this);
         OpenMenuClientRpc(JsonUtility.ToJson(data), TargetClient(clientId));
     }
 
@@ -152,7 +296,40 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private void OpenMenuClientRpc(string npcDataJson, ClientRpcParams clientRpcParams = default)
     {
         var data = JsonUtility.FromJson<NpcData>(npcDataJson);
-        NpcMenuUI.GetOrFind()?.Open(data, this);
+        var menu = NpcMenuUI.GetOrFind();
+        Debug.Log($"{LogPrefix} OpenMenuClientRpc received | {DescribeNpcForLog(data)} menuFound={menu != null} state={DescribeClientState()}", this);
+        menu?.Open(data, this);
+    }
+
+    private string DescribeNpcForLog()
+    {
+        string npcName = !_networkNpcName.Value.IsEmpty
+            ? _networkNpcName.Value.ToString()
+            : _npcData?.npc_name ?? gameObject.name.Replace("(Clone)", string.Empty).Trim();
+
+        string npcType = _npcData?.npc_type ?? "unknown";
+        int npcId = _npcData != null ? _npcData.npc_id : -1;
+        return $"npcId={npcId} name='{npcName}' type='{npcType}' netId={NetworkObjectId}";
+    }
+
+    private static string DescribeNpcForLog(NpcData npc)
+    {
+        if (npc == null)
+        {
+            return "npc=null";
+        }
+
+        return $"npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}'";
+    }
+
+    private static string DescribeClientState()
+    {
+        ClientSceneController controller = ClientSceneController.Instance;
+        controller?.EnsureZoneStateFromRuntimeData();
+        int mapId = controller?.CurrentMapId ?? -1;
+        int zoneId = controller?.CurrentZoneId ?? -1;
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return $"scene={sceneName} map={mapId} zone={zoneId}";
     }
 
     // ── LOAD SHOP — Server fetch shop items + gửi về client ──
@@ -309,17 +486,44 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         return PlayerPrefs.GetString("JWT_TOKEN", "");
     }
 
+    private static string ResolveFallbackDialogueText(NpcData data)
+    {
+        if (!string.IsNullOrWhiteSpace(data?.dialogue_text))
+            return data.dialogue_text;
+
+        if (string.Equals(data?.npc_type, "dungeon", StringComparison.OrdinalIgnoreCase))
+            return "Xin chào, ta có thể đưa ngươi vào các vùng nguy hiểm.";
+
+        return "Xin chào, ta có thể giúp gì cho ngươi?";
+    }
+
+    private static string ExtractDialogueText(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return string.Empty;
+
+        var resp = JsonUtility.FromJson<InteractResponse>(json);
+        if (!string.IsNullOrWhiteSpace(resp?.dialogue_text))
+            return resp.dialogue_text;
+
+        return !string.IsNullOrWhiteSpace(resp?.dialogue?.text)
+            ? resp.dialogue.text
+            : string.Empty;
+    }
+
     private static UnityWebRequest PostJson(string url, string json)
     {
         var req = new UnityWebRequest(url, "POST");
         req.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = ApiRequestTimeoutSeconds;
         req.SetRequestHeader("Content-Type", "application/json");
         return req;
     }
 
-    [System.Serializable] private class InteractPayload  { public int npc_id, player_id; }
-    [System.Serializable] private class InteractResponse { public string dialogue_text; }
+    [System.Serializable] private class InteractPayload  { public int npcId, playerId; }
+    [System.Serializable] private class InteractResponse { public string dialogue_text; public InteractDialogue dialogue; }
+    [System.Serializable] private class InteractDialogue { public string text; }
     [System.Serializable] private class BuyPayload       { public int npcId, shopItemId, quantity; }
     [System.Serializable] private class BuyResponse      { public bool success; public string message; public int playerGold; }
 }

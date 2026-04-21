@@ -24,6 +24,7 @@ public class ElementImage : MonoBehaviour
     public enum ApplyMode { ApplySprite, ApplyColor, ApplyBoth }
 
     [SerializeField] private ElementIconConfig elementIconConfig;
+    [SerializeField] private ElementIconConfig.SpriteKind spriteKind = ElementIconConfig.SpriteKind.Icon;
     [SerializeField] private ApplyMode applyMode = ApplyMode.ApplySprite;
 
     [Tooltip("Bật nếu muốn set elementId thủ công thay vì đọc từ local player")]
@@ -76,22 +77,31 @@ public class ElementImage : MonoBehaviour
 
     private void Apply(int elementId)
     {
-        if (elementIconConfig == null)
+        var resolvedConfig = ResolveConfig();
+        if (resolvedConfig == null)
         {
-            Debug.LogWarning("[ElementImage] Chưa gán ElementIconConfig!", this);
             return;
         }
 
         if (applyMode is ApplyMode.ApplySprite or ApplyMode.ApplyBoth)
         {
-            var sprite = elementIconConfig.GetIcon(elementId);
-            if (sprite != null) _image.sprite = sprite;
+            var sprite = resolvedConfig.GetSpriteOrLog(elementId, spriteKind, this, nameof(ElementImage));
+            if (sprite != null)
+                _image.sprite = sprite;
         }
 
         if (applyMode is ApplyMode.ApplyColor or ApplyMode.ApplyBoth)
         {
-            _image.color = elementIconConfig.GetColor(elementId);
+            _image.color = resolvedConfig.GetColor(elementId);
         }
+    }
+
+    private ElementIconConfig ResolveConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(ElementImage));
+
+        return elementIconConfig;
     }
 
     private System.Collections.IEnumerator WaitAndRefresh()

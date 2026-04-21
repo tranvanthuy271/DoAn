@@ -1,6 +1,8 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using UnityEngine.Networking;
 
 /// <summary>
 /// InventoryNetworkBridge - Bridge giữa NetworkInventory (Netcode) và InventoryUI (DTO)
@@ -12,6 +14,8 @@ using Unity.Netcode;
 /// </summary>
 public class InventoryNetworkBridge : MonoBehaviour
 {
+    public static InventoryNetworkBridge Instance { get; private set; }
+
     [Header("References")]
     [Tooltip("NetworkInventory của player (tự động tìm local player nếu để trống)")]
     [SerializeField] private NetworkInventory networkInventory;
@@ -40,6 +44,37 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// <summary>true = cache cũ hoặc chưa có, cần fetch lại khi mở túi.</summary>
     private bool _isCacheDirty = true;
 
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] Duplicate bridge detected, destroying scene-local copy.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        RefreshUiReferences();
+    }
+
+    public static InventoryNetworkBridge GetExisting(bool includeInactive = true)
+    {
+        if (Instance != null)
+            return Instance;
+
+        return FindObjectOfType<InventoryNetworkBridge>(includeInactive);
+    }
+
+    private void RefreshUiReferences()
+    {
+        if (inventoryUI == null)
+            inventoryUI = FindObjectOfType<InventoryUI>(true);
+
+        if (equipmentPanelUI == null)
+            equipmentPanelUI = FindObjectOfType<EquipmentPanelUI>(true);
+    }
+
     /// <summary>
     /// Sắp xếp inventory (gom item về phía trước) theo đường đúng:
     /// - Client → gửi ServerRpc lên host → host sort DB → host fetch fresh → gửi ClientRpc về client.
@@ -58,24 +93,14 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        // Host / offline: sort trực tiếp rồi refresh UI
-        int playerId = GetCurrentPlayerId();
-        if (playerId == 0 || APIClient.Instance == null)
+        // Host / offline: delegate to NetworkInventory direct sort (server-side API)
+        if (networkInventory != null && networkInventory.IsSpawned)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestSortAndRefresh: playerId=0 hoặc APIClient null.");
+            networkInventory.RequestSortInventoryServerRpc();
             return;
         }
 
-        Debug.Log($"[InventoryNetworkBridge] 🔀 Host: sort inventory cho player={playerId}...");
-        APIClient.Instance.SortInventory(
-            playerId,
-            _ =>
-            {
-                Debug.Log("[InventoryNetworkBridge] ✅ Sort thành công, đang fetch lại...");
-                FetchInventoryDirectFromAPI();
-            },
-            err => Debug.LogError($"[InventoryNetworkBridge] ❌ Sort thất bại: {err}")
-        );
+        Debug.LogWarning("[InventoryNetworkBridge] RequestSortAndRefresh: no networkInventory available.");
     }
 
     /// <summary>
@@ -86,6 +111,8 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// </summary>
     public void RefreshInventoryFromDB()
     {
+        RefreshUiReferences();
+
         // Cache hit: dữ liệu còn mới, không cần gọi mạng
         if (_cachedInventoryItems != null && !_isCacheDirty)
         {
@@ -96,6 +123,14 @@ public class InventoryNetworkBridge : MonoBehaviour
 
         Debug.Log("[InventoryNetworkBridge] ========== RefreshInventoryFromDB() GỌI! ==========");
 
+        // ✅ FIX: Sau khi chuyển scene (additive), networkInventory có thể bị mất reference.
+        // Thử tìm lại trước khi quyết định đường đi.
+        if (networkInventory == null || !networkInventory.IsSpawned)
+        {
+            Debug.Log("[InventoryNetworkBridge] networkInventory null hoặc chưa spawn, thử tìm lại...");
+            FindPlayerInventory();
+        }
+
         // Đường host-RPC: client thuần gửi yêu cầu lên host, host lấy DB rồi trả về
         if (networkInventory != null && networkInventory.IsSpawned &&
             NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
@@ -105,8 +140,26 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        // Đường API trực tiếp: host-self hoặc chưa kết nối mạng
-        FetchInventoryDirectFromAPI();
+        // Hybrid: host-self hoặc offline → dùng GameplayCommandService
+        if (GameplayCommandService.Instance != null)
+        {
+            void HandleInvFallback(string json)
+            {
+                GameplayCommandService.OnInventoryReceived -= HandleInvFallback;
+                var data = JsonUtility.FromJson<PlayerDataResponse>(json);
+                if (data?.inventory != null)
+                    UpdateUIFromDBInventory(data.inventory);
+                else
+                    ManualSyncInventoryUI();
+            }
+            GameplayCommandService.OnInventoryReceived -= HandleInvFallback;
+            GameplayCommandService.OnInventoryReceived += HandleInvFallback;
+            GameplayCommandService.Instance.GetPlayerInventoryServerRpc();
+        }
+        else
+        {
+            FetchInventoryDirectFromAPI();
+        }
     }
 
     /// <summary>
@@ -192,25 +245,59 @@ public class InventoryNetworkBridge : MonoBehaviour
 
         Debug.Log($"[InventoryNetworkBridge] Đang fetch inventory từ DB cho player {playerId}...");
 
-        if (APIClient.Instance != null)
+        if (GameplayCommandService.Instance != null)
         {
-            APIClient.Instance.GetPlayerInventory(
-                playerId,
-                (inventoryItems) =>
+            void HandleInvFetch(string json)
+            {
+                GameplayCommandService.OnInventoryReceived -= HandleInvFetch;
+                var data = JsonUtility.FromJson<PlayerDataResponse>(json);
+                if (data?.inventory != null)
                 {
-                    Debug.Log($"[InventoryNetworkBridge] ✅ Fetch thành công {inventoryItems.Length} items từ DB!");
-                    UpdateUIFromDBInventory(inventoryItems);
-                },
-                (error) =>
+                    Debug.Log($"[InventoryNetworkBridge] ✅ Fetch thành công {data.inventory.Length} items từ DB!");
+                    UpdateUIFromDBInventory(data.inventory);
+                }
+                else
                 {
-                    Debug.LogError($"[InventoryNetworkBridge] ❌ Lỗi khi fetch inventory từ DB: {error}");
+                    Debug.LogWarning("[InventoryNetworkBridge] Inventory data null từ server.");
                     ManualSyncInventoryUI();
                 }
-            );
+            }
+            GameplayCommandService.OnInventoryReceived -= HandleInvFetch;
+            GameplayCommandService.OnInventoryReceived += HandleInvFetch;
+            GameplayCommandService.Instance.GetPlayerInventoryServerRpc();
         }
         else
         {
-            Debug.LogWarning("[InventoryNetworkBridge] APIClient.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] GameplayCommandService.Instance is null! Dùng REST trực tiếp với JWT...");
+            StartCoroutine(FetchInventoryJwtDirect(playerId));
+        }
+    }
+
+    private IEnumerator FetchInventoryJwtDirect(int playerId)
+    {
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/data";
+        Debug.Log($"[InventoryNetworkBridge] FetchInventoryJwtDirect: GET {url}");
+        using var req = UnityWebRequest.Get(url);
+        AuthHelper.AddAuthHeader(req);
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var data = JsonUtility.FromJson<PlayerDataResponse>(req.downloadHandler.text);
+            if (data?.inventory != null)
+            {
+                Debug.Log($"[InventoryNetworkBridge] ✅ FetchInventoryJwtDirect: Nhận {data.inventory.Length} items");
+                UpdateUIFromDBInventory(data.inventory);
+            }
+            else
+            {
+                Debug.LogWarning("[InventoryNetworkBridge] FetchInventoryJwtDirect: inventory null trong response");
+                ManualSyncInventoryUI();
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[InventoryNetworkBridge] FetchInventoryJwtDirect thất bại: {req.error}");
             ManualSyncInventoryUI();
         }
     }
@@ -220,9 +307,13 @@ public class InventoryNetworkBridge : MonoBehaviour
     /// </summary>
     private void UpdateUIFromDBInventory(InventoryItem[] dbItems)
     {
+        // Lazy-find: inventoryUI có thể chưa được gán nếu Start() chạy trước khi InventoryUI tồn tại
+        if (inventoryUI == null)
+            inventoryUI = FindObjectOfType<InventoryUI>(true);
+
         if (inventoryUI == null)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] inventoryUI is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] inventoryUI is null! Không thể hiển thị túi đồ.");
             return;
         }
 
@@ -348,23 +439,47 @@ public class InventoryNetworkBridge : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    /// <summary>
+    /// Khi scene mới được load (additive hoặc single), reset reference để tìm lại.
+    /// Đảm bảo inventory hoạt động trên mọi map, không chỉ GameScene.
+    /// </summary>
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        Debug.Log($"[InventoryNetworkBridge] Scene loaded: {scene.name} (mode={mode}), invalidate cache + re-find references.");
+        _isCacheDirty = true;
+
+        if (networkInventory != null)
+            networkInventory.OnInventoryChanged.RemoveListener(OnInventoryChanged);
+
+        inventoryUI = null;
+        equipmentPanelUI = null;
+        RefreshUiReferences();
+
+        // Re-find NetworkInventory (player NetworkObject đã được move sang scene mới)
+        networkInventory = null;
+
+        StartCoroutine(RebindAfterSceneLoad());
+    }
+
     private void Start()
     {
         Debug.Log("==================== [InventoryNetworkBridge] START() ĐƯỢC GỌI! ====================");
-        
-        // Tìm InventoryUI nếu chưa gán — includeInactive=true vì panel thường bị ẩn khi Start()
+
+        RefreshUiReferences();
         if (inventoryUI == null)
-        {
-            inventoryUI = FindObjectOfType<InventoryUI>(true);
-            if (inventoryUI == null)
-            {
-                Debug.LogWarning("[InventoryNetworkBridge] Không tìm thấy InventoryUI trong scene!");
-            }
-            else
-            {
-                Debug.Log($"[InventoryNetworkBridge] ✓ Tìm thấy InventoryUI: {inventoryUI.name}");
-            }
-        }
+            Debug.LogWarning("[InventoryNetworkBridge] Không tìm thấy InventoryUI trong scene!");
+        else
+            Debug.Log($"[InventoryNetworkBridge] ✓ Tìm thấy InventoryUI: {inventoryUI.name}");
 
         // Kiểm tra NetworkManager
         if (NetworkManager.Singleton == null)
@@ -464,9 +579,9 @@ public class InventoryNetworkBridge : MonoBehaviour
                     Debug.Log($"[InventoryNetworkBridge] → Đang subscribe to inventory events...");
                     SubscribeToInventoryEvents();
                     Debug.Log($"[InventoryNetworkBridge] ✓ Subscribe thành công!");
-                    
-                    // ✅ Tự động load equipment từ DB khi vào game
-                    Debug.Log("[InventoryNetworkBridge] 🔄 Auto-load equipment từ DB khi vào game...");
+
+                    Debug.Log("[InventoryNetworkBridge] 🔄 Auto-load inventory + equipment từ DB khi vào game/chuyển map...");
+                    RefreshInventoryFromDB();
                     RefreshEquipmentFromDB();
                     
                     yield break;
@@ -498,7 +613,8 @@ public class InventoryNetworkBridge : MonoBehaviour
             Debug.Log($"[InventoryNetworkBridge] ===== SUBSCRIBING TO INVENTORY EVENTS =====");
             Debug.Log($"[InventoryNetworkBridge] NetworkInventory: {networkInventory.gameObject.name}");
             Debug.Log($"[InventoryNetworkBridge] IsServer={networkInventory.IsServer}, IsClient={networkInventory.IsClient}, IsOwner={networkInventory.IsOwner}");
-            
+
+            networkInventory.OnInventoryChanged.RemoveListener(OnInventoryChanged);
             networkInventory.OnInventoryChanged.AddListener(OnInventoryChanged);
             
             // Refresh ngay lần đầu
@@ -515,6 +631,9 @@ public class InventoryNetworkBridge : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this)
+            Instance = null;
+
         // Unsubscribe heal tick
         ActiveBuffManager.OnHealTick -= ApplyHealTick;
 
@@ -959,35 +1078,40 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        if (APIClient.Instance == null)
+        if (GameplayCommandService.Instance == null)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestEquipItem: APIClient.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] RequestEquipItem: GameplayCommandService.Instance is null!");
             return;
         }
 
-        Debug.Log($"[InventoryNetworkBridge] ⚔️ Đang gửi equip request lên server: playerId={playerId}, slot={inventorySlotIndex}, item={itemCode}");
+        Debug.Log($"[InventoryNetworkBridge] ⚔️ Đang gửi equip request lên server: slot={inventorySlotIndex}, item={itemCode}");
 
-        APIClient.Instance.EquipItem(
-            playerId,
-            inventorySlotIndex,
-            (response) =>
+        void HandleEquipResult(string json)
+        {
+            GameplayCommandService.OnEquipResult -= HandleEquipResult;
+            if (json.Contains("\"error\""))
             {
-                Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công! Response: {response}");
-                // Server đã update cả inventory + equipment trong DB
-                // Refresh cả inventory và equipment UI từ DB
-                InvalidateInventoryCache();
-                RefreshInventoryFromDB();
-                RefreshEquipmentFromDB();
-                // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng
-                APIClient.Instance.LoadPlayerData(playerId,
-                    data => GameManager.Instance?.SetPlayerData(data),
-                    _ => { });
-            },
-            (error) =>
-            {
-                Debug.LogError($"[InventoryNetworkBridge] ❌ Equip thất bại: {error}");
+                Debug.LogError($"[InventoryNetworkBridge] ❌ Equip thất bại: {json}");
+                return;
             }
-        );
+            Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công!");
+            InvalidateInventoryCache();
+            RefreshInventoryFromDB();
+            RefreshEquipmentFromDB();
+            // Refresh final_stats
+            void HandlePlayerData(string pdJson)
+            {
+                GameplayCommandService.OnPlayerDataReceived -= HandlePlayerData;
+                var data = JsonUtility.FromJson<PlayerDataResponse>(pdJson);
+                if (data != null) GameManager.Instance?.SetPlayerData(data);
+            }
+            GameplayCommandService.OnPlayerDataReceived -= HandlePlayerData;
+            GameplayCommandService.OnPlayerDataReceived += HandlePlayerData;
+            GameplayCommandService.Instance.RequestPlayerDataServerRpc();
+        }
+        GameplayCommandService.OnEquipResult -= HandleEquipResult;
+        GameplayCommandService.OnEquipResult += HandleEquipResult;
+        GameplayCommandService.Instance.EquipItemServerRpc(inventorySlotIndex);
     }
 
     /// <summary>
@@ -1016,31 +1140,38 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        if (APIClient.Instance == null)
+        if (GameplayCommandService.Instance == null)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestUnequipItem: APIClient.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] RequestUnequipItem: GameplayCommandService.Instance is null!");
             return;
         }
 
-        APIClient.Instance.UnequipItem(
-            playerId,
-            slotName,
-            (response) =>
+        void HandleUnequipResult(string json)
+        {
+            GameplayCommandService.OnUnequipResult -= HandleUnequipResult;
+            if (json.Contains("\"error\""))
             {
-                Debug.Log($"[InventoryNetworkBridge] ✅ Unequip thành công!");
-                InvalidateInventoryCache();
-                RefreshInventoryFromDB();
-                RefreshEquipmentFromDB();
-                // Refresh final_stats trong GameManager để StatsTabUI hiển thị đúng
-                APIClient.Instance.LoadPlayerData(playerId,
-                    data => GameManager.Instance?.SetPlayerData(data),
-                    _ => { });
-            },
-            (error) =>
-            {
-                Debug.LogError($"[InventoryNetworkBridge] ❌ Unequip thất bại: {error}");
+                Debug.LogError($"[InventoryNetworkBridge] ❌ Unequip thất bại: {json}");
+                return;
             }
-        );
+            Debug.Log($"[InventoryNetworkBridge] ✅ Unequip thành công!");
+            InvalidateInventoryCache();
+            RefreshInventoryFromDB();
+            RefreshEquipmentFromDB();
+            // Refresh final_stats
+            void HandlePlayerData(string pdJson)
+            {
+                GameplayCommandService.OnPlayerDataReceived -= HandlePlayerData;
+                var data = JsonUtility.FromJson<PlayerDataResponse>(pdJson);
+                if (data != null) GameManager.Instance?.SetPlayerData(data);
+            }
+            GameplayCommandService.OnPlayerDataReceived -= HandlePlayerData;
+            GameplayCommandService.OnPlayerDataReceived += HandlePlayerData;
+            GameplayCommandService.Instance.RequestPlayerDataServerRpc();
+        }
+        GameplayCommandService.OnUnequipResult -= HandleUnequipResult;
+        GameplayCommandService.OnUnequipResult += HandleUnequipResult;
+        GameplayCommandService.Instance.UnequipItemServerRpc(slotName);
     }
 
     /// <summary>
@@ -1051,6 +1182,8 @@ public class InventoryNetworkBridge : MonoBehaviour
     {
         Debug.Log("[InventoryNetworkBridge] 🔄 RefreshEquipmentFromDB()");
 
+        RefreshUiReferences();
+
         int playerId = GetCurrentPlayerId();
         if (playerId == 0)
         {
@@ -1058,32 +1191,53 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        if (APIClient.Instance == null)
+        if (GameplayCommandService.Instance == null)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RefreshEquipmentFromDB: APIClient.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] RefreshEquipmentFromDB: GameplayCommandService.Instance is null!");
             return;
         }
 
         // Tìm EquipmentPanelUI nếu chưa có
         if (equipmentPanelUI == null)
         {
-            equipmentPanelUI = FindObjectOfType<EquipmentPanelUI>();
+            equipmentPanelUI = FindObjectOfType<EquipmentPanelUI>(true);
         }
 
-        APIClient.Instance.GetPlayerEquipment(
-            playerId,
-            (equipment) =>
+        void HandleEquipment(string json)
+        {
+            GameplayCommandService.OnEquipmentReceived -= HandleEquipment;
+            var equipment = EquipmentPayloadParser.Parse(json);
+            if (equipment != null)
             {
                 Debug.Log($"[InventoryNetworkBridge] ✅ Equipment loaded from DB");
                 if (equipmentPanelUI != null)
-                {
                     equipmentPanelUI.SetEquipmentData(equipment);
-                }
-            },
-            (error) =>
-            {
-                Debug.LogError($"[InventoryNetworkBridge] ❌ Failed to load equipment: {error}");
             }
-        );
+            else
+            {
+                Debug.LogError($"[InventoryNetworkBridge] ❌ Failed to parse equipment JSON");
+            }
+        }
+        GameplayCommandService.OnEquipmentReceived -= HandleEquipment;
+        GameplayCommandService.OnEquipmentReceived += HandleEquipment;
+        GameplayCommandService.Instance.GetPlayerEquipmentServerRpc();
+    }
+
+    private IEnumerator RebindAfterSceneLoad()
+    {
+        yield return null;
+        RefreshUiReferences();
+
+        FindPlayerInventory();
+        if (networkInventory != null)
+        {
+            SubscribeToInventoryEvents();
+            RefreshInventoryFromDB();
+            RefreshEquipmentFromDB();
+            yield break;
+        }
+
+        if (autoFindPlayerInventory)
+            StartCoroutine(FindPlayerInventoryDelayed());
     }
 }

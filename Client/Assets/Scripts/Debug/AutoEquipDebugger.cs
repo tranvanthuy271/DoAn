@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,12 +120,10 @@ public class AutoEquipDebugger : MonoBehaviour
         }
 
         bool done = false;
-        APIClient.Instance.AddItemsToInventory(
-            playerId,
-            stones.ToArray(),
-            (_)   => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm {stones.Count} loại đá vào túi!"); done = true; },
+        yield return StartCoroutine(AddItemsToInventoryDirect(playerId, stones.ToArray(),
+            _ => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm {stones.Count} loại đá vào túi!"); done = true; },
             (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm đá thất bại: {err}"); done = true; }
-        );
+        ));
         yield return new WaitUntil(() => done);
 
         // Refresh UI
@@ -180,12 +178,10 @@ public class AutoEquipDebugger : MonoBehaviour
         };
 
         bool done = false;
-        APIClient.Instance.AddItemsToInventory(
-            playerId,
-            stones,
-            (_)   => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm 4 loại Linh Thạch x{geneStoneCount} vào túi!"); done = true; },
+        yield return StartCoroutine(AddItemsToInventoryDirect(playerId, stones,
+            (_) => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm 4 loại Linh Thạch x{geneStoneCount} vào túi!"); done = true; },
             (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm Linh Thạch thất bại: {err}"); done = true; }
-        );
+        ));
         yield return new WaitUntil(() => done);
 
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
@@ -262,22 +258,19 @@ public class AutoEquipDebugger : MonoBehaviour
 
         // ── 4. Xóa inventory cũ trước ────────────────────────────────────
         bool clearDone = false;
-        APIClient.Instance.ClearInventory(
-            playerId,
+        yield return StartCoroutine(ClearInventoryDirect(playerId,
             () => { clearDone = true; },
             (err) => { Debug.LogWarning($"[AutoEquipDebugger] Clear inventory warning: {err}"); clearDone = true; }
-        );
+        ));
         yield return new WaitUntil(() => clearDone);
         Debug.Log("[AutoEquipDebugger] Đã clear inventory cũ!");
 
         // ── 5. Gọi API thêm vào inventory ────────────────────────────────
         bool addDone = false, addSuccess = false;
-        APIClient.Instance.AddItemsToInventory(
-            playerId,
-            toAdd.ToArray(),
-            (_)   => { addSuccess = true; addDone = true; },
+        yield return StartCoroutine(AddItemsToInventoryDirect(playerId, toAdd.ToArray(),
+            (_) => { addSuccess = true; addDone = true; },
             (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm item thất bại: {err}"); addDone = true; }
-        );
+        ));
         yield return new WaitUntil(() => addDone);
         if (!addSuccess) { isBusy = false; yield break; }
         Debug.Log($"[AutoEquipDebugger] Đã thêm {toAdd.Count} item vào túi đồ!");
@@ -329,5 +322,42 @@ public class AutoEquipDebugger : MonoBehaviour
             Debug.LogWarning("[AutoEquipDebugger] playerId = 0! GameManager, ServerPlayerDataManager, và PlayerPrefs đều không có dữ liệu.");
 
         return playerId;
+    }
+
+    private IEnumerator AddItemsToInventoryDirect(int playerId, APIClient.AddInventoryItemRequest[] items,
+        System.Action<string> onSuccess, System.Action<string> onError)
+    {
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+        string url = $"{baseUrl}/player/{playerId}/inventory/add-items";
+        var wrapper = new APIClient.AddInventoryItemsRequest { items = items };
+        string body = JsonUtility.ToJson(wrapper);
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+        using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
+        req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+        if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
+        yield return req.SendWebRequest();
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            onSuccess?.Invoke(req.downloadHandler.text);
+        else
+            onError?.Invoke(req.error);
+    }
+
+    private IEnumerator ClearInventoryDirect(int playerId,
+        System.Action onSuccess, System.Action<string> onError)
+    {
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+        string url = $"{baseUrl}/player/{playerId}/inventory/clear";
+        using var req = UnityEngine.Networking.UnityWebRequest.Delete(url);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+        if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
+        yield return req.SendWebRequest();
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            onSuccess?.Invoke();
+        else
+            onError?.Invoke(req.error);
     }
 }

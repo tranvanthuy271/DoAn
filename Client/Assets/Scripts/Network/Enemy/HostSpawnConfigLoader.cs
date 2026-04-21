@@ -31,8 +31,8 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     public string apiBaseURL = "";
 
     [Header("Map")]
-    [Tooltip("Map ID cần load config. Để 0 sẽ tự lấy từ MapManager.Instance.")]
-    public int mapId = 0;
+    [Tooltip("Map ID cần load config. Để -1 sẽ tự lấy từ MapManager.Instance.")]
+    public int mapId = -1;
 
     [Header("References")]
     [Tooltip("EnemyPrefabManager để lấy prefab theo enemy_id")]
@@ -59,10 +59,6 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     //  Private state
     // ─────────────────────────────────────────────────────────────────────
 
-    // Drop lookup: enemy_id → danh sách DropItemEntry đã validate
-    private Dictionary<int, List<DropItemEntry>> _dropLookup
-        = new Dictionary<int, List<DropItemEntry>>();
-
     // Skills lookup: enemy_id → EnemySkillsEntry đã validate
     private Dictionary<int, EnemySkillsEntry> _skillLookup
         = new Dictionary<int, EnemySkillsEntry>();
@@ -82,8 +78,8 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         if (_started) return;
         _started = true;
         apiBaseURL = ServerAddressConfig.Instance.ResolveApiUrl(apiBaseURL);
-        // Lấy mapId từ MapManager nếu chưa set
-        if (mapId == 0 && MapManager.Instance != null)
+        // Lấy mapId từ MapManager nếu đang ở chế độ auto-detect
+        if (mapId < 0 && MapManager.Instance != null)
             mapId = MapManager.Instance.GetMapId();
 
         StartCoroutine(LoadAndApplyConfig());
@@ -95,6 +91,16 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
     private IEnumerator LoadAndApplyConfig()
     {
+        // WaveDungeonRuntime manages all enemy spawning in wave dungeons.
+        // Spawning from map_spawn_config would duplicate enemies and immediately
+        // place the boss (is_boss=true entry) before the wave clears regular enemies.
+        if (FindObjectsOfType<WaveDungeonRuntime>(includeInactive: true).Length > 0
+            || FindObjectsOfType<PartyDungeonRuntime>(includeInactive: true).Length > 0)
+        {
+            Debug.Log("[HostSpawnConfigLoader] Dungeon runtime detected (includeInactive) — skipping spawn config because runtime manages all spawning.");
+            yield break;
+        }
+
         string url = $"{apiBaseURL}/map/{mapId}/spawn-config";
         Debug.Log($"[HostSpawnConfigLoader] Fetching spawn config: {url}");
 
@@ -133,10 +139,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             yield break;
         }
 
-        // Validate + build drop lookup trước khi spawn bất kỳ enemy nào
-        BuildDropLookup(response.drops);
-
-        // Build skill lookup (từ enemy_skills trong response)
+        // Build skill lookup (bao gồm cả drops và reward từ enemy_skills)
         BuildSkillLookup(response.enemy_skills);
 
         // Spawn tất cả enemies
@@ -192,15 +195,13 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     /// <summary>Áp dụng giá trị mặc định nếu field bằng 0 / âm.</summary>
     private void ApplySpawnEntryDefaults(SpawnEntry e)
     {
-        if (e.count <= 0)      e.count        = 1;
+        if (e.count <= 0)        e.count        = 1;
         if (e.respawn_time <= 0) e.respawn_time = 30;
-        if (e.exp < 0)         e.exp          = 0;
-        // hp=0 → EnemyStatOverride sẽ fallback về prefab default
     }
 
     /// <summary>
     /// Validate + build dictionary {enemy_id → EnemySkillsEntry} từ EnemySkillsEntry[].
-    /// Bỏ qua entry thiếu skills hoặc skills rỗng.
+    /// EnemySkillsEntry cũng chứa base_hp, exp_reward, drops — dùng cho spawn và drop setup.
     /// </summary>
     private void BuildSkillLookup(EnemySkillsEntry[] enemySkills)
     {
@@ -210,54 +211,10 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         foreach (var entry in enemySkills)
         {
             if (entry.enemy_id <= 0) continue;
-            if (entry.skills == null || entry.skills.Length == 0) continue;
             _skillLookup[entry.enemy_id] = entry;
         }
 
-        Debug.Log($"[HostSpawnConfigLoader] Skill lookup built: {_skillLookup.Count} enemy types có skills.");
-    }
-
-    /// <summary>
-    /// Validate + build dictionary {enemy_id → List&lt;DropItemEntry&gt;} từ DropEntry[].
-    /// Clamp rate về [0,1], đảm bảo qty_min ≤ qty_max.
-    /// </summary>
-    private void BuildDropLookup(DropEntry[] drops)
-    {
-        _dropLookup.Clear();
-        if (drops == null) return;
-
-        foreach (var dropEntry in drops)
-        {
-            if (dropEntry.enemy_id <= 0 || dropEntry.items == null) continue;
-
-            var validatedItems = new List<DropItemEntry>();
-            foreach (var item in dropEntry.items)
-            {
-                if (item.item_id <= 0)
-                {
-                    Debug.LogWarning($"[HostSpawnConfigLoader] Drop rule enemy_id={dropEntry.enemy_id}: item_id={item.item_id} không hợp lệ → bỏ qua item này.");
-                    continue;
-                }
-
-                // Clamp rate
-                if (item.rate < 0f || item.rate > 1f)
-                {
-                    Debug.LogWarning($"[HostSpawnConfigLoader] Drop rule enemy_id={dropEntry.enemy_id}, item_id={item.item_id}: rate={item.rate} ngoài [0,1] → clamp.");
-                    item.rate = Mathf.Clamp01(item.rate);
-                }
-
-                // Fix qty range
-                if (item.qty_min < 1) item.qty_min = 1;
-                if (item.qty_max < item.qty_min) item.qty_max = item.qty_min;
-
-                validatedItems.Add(item);
-            }
-
-            if (validatedItems.Count > 0)
-                _dropLookup[dropEntry.enemy_id] = validatedItems;
-        }
-
-        Debug.Log($"[HostSpawnConfigLoader] Drop lookup built: {_dropLookup.Count} enemy types có drop rules.");
+        Debug.Log($"[HostSpawnConfigLoader] Skill/reward lookup built: {_skillLookup.Count} enemy types.");
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -274,15 +231,14 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         }
 
         GameObject prefab = enemyPrefabManager.GetEnemyPrefab(entry.enemy_id);
-        if (prefab == null) return; // đã validate, không nên xảy ra
+        if (prefab == null) return;
 
-        _dropLookup.TryGetValue(entry.enemy_id, out var drops);
         _skillLookup.TryGetValue(entry.enemy_id, out var skillsEntry);
 
         for (int i = 0; i < entry.count; i++)
         {
             Vector3 pos = CalculateSpawnPosition(entry.cx, entry.cy, i, entry.count);
-            SpawnSingleEnemy(prefab, pos, entry, drops, skillsEntry);
+            SpawnSingleEnemy(prefab, pos, entry, skillsEntry);
         }
     }
 
@@ -303,7 +259,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
     /// <summary>Instantiate, Spawn qua Network, áp dụng override stats + drops + skills.</summary>
     private void SpawnSingleEnemy(GameObject prefab, Vector3 pos, SpawnEntry entry,
-        List<DropItemEntry> drops, EnemySkillsEntry skillsEntry)
+        EnemySkillsEntry skillsEntry)
     {
         GameObject enemyObj = Instantiate(prefab, pos, Quaternion.identity);
 
@@ -315,37 +271,60 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             return;
         }
 
+        // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
+        // Đảm bảo enemy ở đúng physics world, tránh cross-map collision
+        MapSceneManager.Instance?.MoveToMapScene(enemyObj, mapId);
+
+        // Map-based visibility: enemy chỉ visible cho player cùng map
+        ApplyMapVisibility(enemyObj, mapId);
         netObj.Spawn();
+        StartCoroutine(DelayedRefreshVisibility(enemyObj));
 
         // Gắn hoặc lấy EnemyStatOverride rồi apply
         EnemyStatOverride statOverride = enemyObj.GetComponent<EnemyStatOverride>();
         if (statOverride == null)
             statOverride = enemyObj.AddComponent<EnemyStatOverride>();
 
+        // ✅ FIX: Ưu tiên override_hp/override_exp từ SpawnEntry (map_spawn_config legacy)
+        // rồi mới dùng base_hp/exp_reward từ enemy_skills (bảng enemy).
+        int baseHp    = entry.override_hp  > 0 ? entry.override_hp  : (skillsEntry != null ? skillsEntry.base_hp    : 0);
+        int expReward = entry.override_exp > 0 ? entry.override_exp : (skillsEntry != null ? skillsEntry.exp_reward : 0);
         statOverride.Apply(
-            entry.hp,
-            entry.exp,
+            baseHp,
+            expReward,
             entry.is_boss,
             entry.respawn_time,
             entry.level,
             skillsEntry != null ? skillsEntry.enemy_name : ""
         );
 
-        // Set drop rules
-        if (drops != null && drops.Count > 0)
+        // Set drop rules từ enemy_skills (reward_json đã parse sẵn trên server)
+        if (skillsEntry != null && skillsEntry.drops != null && skillsEntry.drops.Length > 0)
         {
             EnemyItemDrop itemDrop = enemyObj.GetComponent<EnemyItemDrop>();
             if (itemDrop != null)
-                itemDrop.SetDropsFromConfig(drops);
+            {
+                var dropList = new List<DropItemEntry>(skillsEntry.drops);
+                // Clamp/fix values
+                foreach (var d in dropList)
+                {
+                    d.rate    = Mathf.Clamp01(d.rate);
+                    if (d.qty_min < 1) d.qty_min = 1;
+                    if (d.qty_max < d.qty_min) d.qty_max = d.qty_min;
+                }
+                itemDrop.SetDropsFromConfig(dropList);
+            }
             else
+            {
                 Debug.LogWarning($"[HostSpawnConfigLoader] enemy_id={entry.enemy_id}: EnemyItemDrop component không tồn tại trên prefab!");
+            }
         }
         else
         {
-            Debug.Log($"[HostSpawnConfigLoader] enemy_id={entry.enemy_id}: không có drop rules trong config → enemy này sẽ không drop item.");
+            Debug.Log($"[HostSpawnConfigLoader] enemy_id={entry.enemy_id}: không có drop rules trong reward_json.");
         }
 
-        // Set skills — áp dụng cho cả EnemyAI thường lẫn BossAI
+        // Set skills
         if (skillsEntry != null && skillsEntry.skills != null && skillsEntry.skills.Length > 0)
         {
             EnemySkillSet skillSet = enemyObj.GetComponent<EnemySkillSet>();
@@ -354,12 +333,39 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             skillSet.SetSkillsFromConfig(skillsEntry);
         }
 
+        // Ghi đè EnemyAI.damage từ base_damage của DB
+        if (skillsEntry != null && skillsEntry.base_damage > 0)
+        {
+            EnemyAI enemyAI = enemyObj.GetComponent<EnemyAI>();
+            if (enemyAI != null)
+                enemyAI.damage = skillsEntry.base_damage;
+        }
+
         _totalSpawned++;
     }
 
     // ─────────────────────────────────────────────────────────────────────
     //  Fallback
     // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gắn map-based visibility: enemy visible cho TẤT CẢ player cùng map.
+    /// </summary>
+    private static void ApplyMapVisibility(GameObject enemyObj, int targetMapId)
+    {
+        var zoneTag = enemyObj.GetComponent<ZoneOwnerTag>() ?? enemyObj.AddComponent<ZoneOwnerTag>();
+        zoneTag.SetZone(targetMapId, 0);
+
+        var filter = enemyObj.GetComponent<NetworkVisibilityZoneFilter>() ?? enemyObj.AddComponent<NetworkVisibilityZoneFilter>();
+        filter.InitializeForServer();
+    }
+
+    private IEnumerator DelayedRefreshVisibility(GameObject obj)
+    {
+        yield return null; // chờ 1 frame
+        if (obj != null)
+            obj.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
+    }
 
     private void TryFallback()
     {

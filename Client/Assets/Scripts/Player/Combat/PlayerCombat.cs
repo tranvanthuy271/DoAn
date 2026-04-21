@@ -85,6 +85,9 @@ public class PlayerCombat : MonoBehaviour
             }
         }
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
+            return;
+
         // Attack input — phím N dùng cho debug/fallback.
         // Khi PlayerSkillManager có NormalAttack slot, Z / LMB sẽ gọi TriggerAttack() thay thế.
         if (Input.GetKeyDown(KeyCode.N))
@@ -160,7 +163,7 @@ public class PlayerCombat : MonoBehaviour
         }
 
         // Detect enemies in range
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
+        Collider2D[] hitEnemies = MapPhysicsQuery2D.OverlapCircleAll(gameObject, attackPoint.position, attackRange, enemyLayers.value);
         Debug.Log($"[PlayerCombat] Detected {hitEnemies.Length} enemies in range.");
         foreach (var e in hitEnemies)
         {
@@ -200,7 +203,7 @@ public class PlayerCombat : MonoBehaviour
 
         // PvP: quét thêm player khác trong tầm (không dùng enemyLayers — Player layer thường không ở đó)
         NetworkObject selfNetObj = GetComponent<NetworkObject>();
-        Collider2D[] pvpHits = Physics2D.OverlapCircleAll(attackPoint.position, attackRange);
+        Collider2D[] pvpHits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, attackPoint.position, attackRange);
         foreach (Collider2D hit in pvpHits)
         {
             if (hit.gameObject == gameObject) continue;

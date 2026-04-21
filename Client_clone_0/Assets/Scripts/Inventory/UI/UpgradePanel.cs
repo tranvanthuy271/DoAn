@@ -615,22 +615,49 @@ public class UpgradePanel : MonoBehaviour
 
     private IEnumerator LoadOptionTemplates()
     {
+        if (GameplayCommandService.Instance == null) { _optionCache = new List<OptionTemplateDto>(); yield break; }
+
         bool done = false;
-        APIClient.Instance.GetOptionTemplates(
-            onSuccess: arr => { _optionCache = new List<OptionTemplateDto>(arr); done = true; },
-            onError:   _   => { _optionCache = new List<OptionTemplateDto>(); done = true; }
-        );
+        GameplayCommandService.OnOptionTemplatesReceived -= HandleOptionTemplates;
+        GameplayCommandService.OnOptionTemplatesReceived += HandleOptionTemplates;
+        GameplayCommandService.Instance.GetOptionTemplatesServerRpc();
+
+        void HandleOptionTemplates(string json)
+        {
+            GameplayCommandService.OnOptionTemplatesReceived -= HandleOptionTemplates;
+            if (!json.Contains("\"error\""))
+            {
+                var wrapper = JsonUtility.FromJson<OptionTemplateListWrapper>(json);
+                _optionCache = wrapper?.options != null ? new List<OptionTemplateDto>(wrapper.options) : new List<OptionTemplateDto>();
+            }
+            else _optionCache = new List<OptionTemplateDto>();
+            done = true;
+        }
+
         yield return new WaitUntil(() => done);
     }
 
     private IEnumerator LoadUpgradeConfig(int targetLevel, System.Action<bool> onDone)
     {
+        if (GameplayCommandService.Instance == null) { onDone?.Invoke(false); yield break; }
+
         bool done = false, success = false;
-        APIClient.Instance.GetUpgradeConfig(
-            itemId: _equippedItem.id, targetLevel: targetLevel,
-            onSuccess: cfg => { _config = cfg; success = true; done = true; },
-            onError:   _   => { _config = null; done = true; }
-        );
+        GameplayCommandService.OnUpgradeConfigReceived -= HandleUpgradeConfig;
+        GameplayCommandService.OnUpgradeConfigReceived += HandleUpgradeConfig;
+        GameplayCommandService.Instance.GetUpgradeConfigServerRpc(_equippedItem.id, targetLevel);
+
+        void HandleUpgradeConfig(string json)
+        {
+            GameplayCommandService.OnUpgradeConfigReceived -= HandleUpgradeConfig;
+            if (!json.Contains("\"error\""))
+            {
+                _config = JsonUtility.FromJson<UpgradeConfigDto>(json);
+                success = _config != null;
+            }
+            else _config = null;
+            done = true;
+        }
+
         yield return new WaitUntil(() => done);
         onDone?.Invoke(success);
     }
@@ -768,11 +795,31 @@ public class UpgradePanel : MonoBehaviour
             clientRatePercent = clientPercent
         };
 
-        APIClient.Instance.UpgradeEquipment(
-            request,
-            onSuccess: HandleUpgradeResponse,
-            onError:   err => { upgradeButton.interactable = true; SetStatus($"Lỗi: {err}", Color.red); }
-        );
+        if (GameplayCommandService.Instance == null)
+        {
+            upgradeButton.interactable = true;
+            SetStatus("Lỗi: Server chưa sẵn sàng.", Color.red);
+            return;
+        }
+
+        GameplayCommandService.OnEquipmentUpgraded -= HandleUpgradeResult;
+        GameplayCommandService.OnEquipmentUpgraded += HandleUpgradeResult;
+        GameplayCommandService.Instance.UpgradeEquipmentServerRpc(JsonUtility.ToJson(request));
+
+        void HandleUpgradeResult(string resultJson)
+        {
+            GameplayCommandService.OnEquipmentUpgraded -= HandleUpgradeResult;
+            if (resultJson.Contains("\"error\""))
+            {
+                upgradeButton.interactable = true;
+                SetStatus($"Lỗi: {resultJson}", Color.red);
+            }
+            else
+            {
+                var resp = JsonUtility.FromJson<UpgradeResponseDto>(resultJson);
+                if (resp != null) HandleUpgradeResponse(resp);
+            }
+        }
     }
 
     private void HandleUpgradeResponse(UpgradeResponseDto resp)
@@ -900,7 +947,7 @@ public class UpgradePanel : MonoBehaviour
         }
 
         if (orderedSlots.Count > stoneSlots.Length)
-            Debug.LogWarning($"[UpgradePanel] StoneGrid dang co {orderedSlots.Count} slot. Runtime se chi dung 16 slot dau tien va an phan du.");
+            Debug.Log($"[UpgradePanel] StoneGrid có {orderedSlots.Count} slot, sử dụng {stoneSlots.Length} slot đầu tiên.");
     }
 
     private Transform FindStoneGridTransform()

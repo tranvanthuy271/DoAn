@@ -37,6 +37,9 @@ public class CharacterPanelController : MonoBehaviour
 
     private int playerId  = -1;
     private int activeTab = 0; // 0=Stats, 1=Equipment, 2=Skill, 3=Potential
+    private bool _isExternalProfileView;
+    private PlayerProfileDto _externalProfile;
+    private string _externalProfileFallbackName;
 
     // ───────────────────────────────────────────────
     #region Unity lifecycle
@@ -102,6 +105,58 @@ public class CharacterPanelController : MonoBehaviour
         contentPotential?.SetPlayerId(id);
     }
 
+    public void ShowFriendProfile(PlayerProfileDto profile, string fallbackUsername = null)
+    {
+        if (profile == null)
+        {
+            Debug.LogWarning("[CharacterPanelController] ShowFriendProfile called with null profile.");
+            return;
+        }
+
+        _isExternalProfileView = true;
+        _externalProfile = profile;
+        _externalProfileFallbackName = fallbackUsername;
+
+        string displayName = ResolveExternalProfileName(profile, fallbackUsername);
+        Debug.Log($"[CharacterPanelController] ShowFriendProfile displayName='{displayName}' playerId={profile.player_id} userId={profile.user_id}");
+
+        contentStats?.ShowFriendProfile(profile, displayName);
+        contentEquipment?.GetComponent<EquipmentPanelUI>()?.ShowFriendEquipment(profile.equipment, displayName);
+        contentSkill?.ShowFriendSkills(profile.skills, displayName);
+        contentPotential?.ShowFriendPotential(profile.potential_stats, displayName);
+
+        if (panelRoot == null)
+        {
+            Debug.LogError("[CharacterPanelController] ShowFriendProfile failed because panelRoot is null.");
+            return;
+        }
+
+        panelRoot.SetActive(true);
+        if (contentRoot != null)
+            contentRoot.SetActive(true);
+
+        panelRoot.transform.SetAsLastSibling();
+        activeTab = 0;
+        SwitchTab(activeTab);
+    }
+
+    public void ExitExternalProfileView()
+    {
+        if (!_isExternalProfileView && _externalProfile == null)
+            return;
+
+        Debug.Log("[CharacterPanelController] ExitExternalProfileView()");
+
+        _isExternalProfileView = false;
+        _externalProfile = null;
+        _externalProfileFallbackName = null;
+
+        contentStats?.ClearFriendProfile();
+        contentEquipment?.GetComponent<EquipmentPanelUI>()?.ClearFriendEquipmentView();
+        contentSkill?.ClearFriendSkills();
+        contentPotential?.ClearFriendPotential();
+    }
+
     public void Toggle()
     {
         if (panelRoot.activeSelf) Hide();
@@ -111,6 +166,8 @@ public class CharacterPanelController : MonoBehaviour
     /// <summary>Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
     public void Show()
     {
+        ExitExternalProfileView();
+
         if (panelRoot == null)
         {
             Debug.LogError("[CharacterPanelController] Show() bị gọi nhưng panelRoot là NULL! Kiểm tra Inspector.");
@@ -119,6 +176,7 @@ public class CharacterPanelController : MonoBehaviour
         
         Debug.Log($"[CharacterPanelController] Show() - Active panelRoot: {panelRoot.name}");
         panelRoot.SetActive(true);
+        panelRoot.transform.SetAsLastSibling();
         
         if (contentRoot != null)
         {
@@ -130,7 +188,13 @@ public class CharacterPanelController : MonoBehaviour
     }
 
     /// <summary>Tắt toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
-    public void Hide() => panelRoot.SetActive(false);
+    public void Hide()
+    {
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
+
+        ExitExternalProfileView();
+    }
 
     /// <summary>
     /// Hiện panel nhân vật và chuyển thẳng vào tab Trang Bị (index 1).
@@ -186,10 +250,29 @@ public class CharacterPanelController : MonoBehaviour
         SetTabColor(btnSkill,     sk);
         SetTabColor(btnPotential, pt);
 
+        if (_isExternalProfileView && _externalProfile != null)
+        {
+            string displayName = ResolveExternalProfileName(_externalProfile, _externalProfileFallbackName);
+
+            if (st) contentStats?.ShowFriendProfile(_externalProfile, displayName);
+            if (eq) contentEquipment?.GetComponent<EquipmentPanelUI>()?.ShowFriendEquipment(_externalProfile.equipment, displayName);
+            if (sk) contentSkill?.ShowFriendSkills(_externalProfile.skills, displayName);
+            if (pt) contentPotential?.ShowFriendPotential(_externalProfile.potential_stats, displayName);
+            return;
+        }
+
         if (st)                  contentStats?.Load();
         if (eq)                  contentEquipment?.GetComponent<EquipmentPanelUI>()?.RefreshFromBridge();
         if (sk && playerId > 0)  contentSkill?.Load();
         if (pt && playerId > 0)  contentPotential?.Load();
+    }
+
+    private static string ResolveExternalProfileName(PlayerProfileDto profile, string fallbackUsername)
+    {
+        if (profile != null && !string.IsNullOrWhiteSpace(profile.character_name))
+            return profile.character_name;
+
+        return string.IsNullOrWhiteSpace(fallbackUsername) ? "Bạn bè" : fallbackUsername;
     }
 
     private void SetTabColor(Button btn, bool active)

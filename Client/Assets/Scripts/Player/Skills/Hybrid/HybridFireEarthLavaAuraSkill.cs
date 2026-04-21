@@ -93,7 +93,8 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
             Vector2 center = transform.position;
 
             // 1. Gây sát thương cho quái vật
-            Collider2D[] enemyHits = Physics2D.OverlapCircleAll(center, auraRadius, enemyLayer);
+            Collider2D[] enemyHits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, center, auraRadius, enemyLayer.value);
+            Debug.Log($"[HybridFireEarthLavaAuraSkill] Aura tick enemyHits={enemyHits.Length} center={center} radius={auraRadius}");
             foreach (var col in enemyHits)
             {
                 // Ưu tiên NetworkEnemyHealth (multiplayer)
@@ -112,7 +113,7 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
             }
 
             // 2. Áp hiệu ứng chặn hồi HP lên tất cả player trong vùng
-            Collider2D[] playerHits = Physics2D.OverlapCircleAll(center, auraRadius, playerLayer);
+            Collider2D[] playerHits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, center, auraRadius, playerLayer.value);
             foreach (var col in playerHits)
             {
                 // PlayerHealth (local heal block — visual/offline)

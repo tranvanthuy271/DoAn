@@ -147,3 +147,18 @@ public class EquipmentResponse
     public string message;
     public PlayerEquipmentDto equipment;
 }
+
+public static class EquipmentPayloadParser
+{
+    public static PlayerEquipmentDto Parse(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        var wrapped = UnityEngine.JsonUtility.FromJson<EquipmentResponse>(json);
+        if (wrapped != null && (wrapped.equipment != null || json.Contains("\"equipment\"")))
+            return wrapped.equipment ?? new PlayerEquipmentDto();
+
+        return UnityEngine.JsonUtility.FromJson<PlayerEquipmentDto>(json);
+    }
+}

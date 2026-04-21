@@ -14,7 +14,8 @@ using System.Collections.Generic;
 ///  1. HostSpawnConfigLoader gọi SetSkillsFromConfig(EnemySkillsEntry)
 ///  2. EnemyAI.Update() gọi TryGetReadySkill() mỗi khi vào combat range
 ///  3. Nếu có skill ready → EnemyAI gọi MarkSkillUsed(skill_id) + thực thi skill
-///  4. Sau cooldown_sec → skill lại ready
+///  4. Damage luôn lấy từ EnemyAI.damage (được set từ DB base_damage), không từ skill
+///  5. Sau cooldown_sec → skill lại ready
 /// </summary>
 public class EnemySkillSet : MonoBehaviour
 {
@@ -22,10 +23,7 @@ public class EnemySkillSet : MonoBehaviour
     //  Public read-only data
     // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>Sát thương cơ bản của enemy này (dùng khi skill chỉ có damage_multiplier).</summary>
-    public int BaseDamage { get; private set; }
-
-    /// <summary>Nguyên tố của enemy (Fire/Water/None/…).</summary>
+    /// <summary>Nguyên tố của enemy (Fire/Water/None/…). Dùng để hiển thị UI.</summary>
     public string ElementType { get; private set; } = "None";
 
     /// <summary>Danh sách skill đã được load và validate. Readonly sau SetSkillsFromConfig().</summary>
@@ -58,7 +56,6 @@ public class EnemySkillSet : MonoBehaviour
 
         if (entry == null) return;
 
-        BaseDamage  = entry.base_damage > 0 ? entry.base_damage : 1;
         ElementType = string.IsNullOrEmpty(entry.element_type) ? "None" : entry.element_type;
 
         if (entry.skills == null || entry.skills.Length == 0) return;
@@ -67,18 +64,19 @@ public class EnemySkillSet : MonoBehaviour
         {
             if (!ValidateSkill(skill)) continue;
 
-            // Đảm bảo có ít nhất một nguồn damage
-            if (skill.flat_damage <= 0 && skill.damage_multiplier <= 0f)
-                skill.damage_multiplier = 1.0f;
-
             if (skill.cooldown_sec <= 0f) skill.cooldown_sec = 5f;
             if (skill.range <= 0f)        skill.range        = 4f;
             if (skill.aoe && skill.aoe_radius <= 0f) skill.aoe_radius = 3f;
+            if (!string.IsNullOrWhiteSpace(skill.projectile_prefab_key))
+            {
+                if (skill.projectile_speed <= 0f)    skill.projectile_speed    = 8f;
+                if (skill.projectile_lifetime <= 0f) skill.projectile_lifetime = 3f;
+            }
 
             _skills.Add(skill);
         }
 
-        Debug.Log($"[EnemySkillSet] {gameObject.name}: {_skills.Count} skill(s) loaded. BaseDamage={BaseDamage}, Element={ElementType}");
+        Debug.Log($"[EnemySkillSet] {gameObject.name}: {_skills.Count} skill(s) loaded. Element={ElementType}");
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -121,17 +119,7 @@ public class EnemySkillSet : MonoBehaviour
     }
 
     /// <summary>
-    /// Tính sát thương thực tế của skill.
-    /// Ưu tiên flat_damage; fallback về base_damage × damage_multiplier.
-    /// </summary>
-    public int CalculateDamage(SkillEntry skill)
-    {
-        if (skill.flat_damage > 0) return skill.flat_damage;
-        return Mathf.Max(1, Mathf.RoundToInt(BaseDamage * skill.damage_multiplier));
-    }
-
-    /// <summary>
-    /// Trả về tất cả skills của loại skill_id nhất định (thường chỉ 1).
+    /// Trả về skill theo skill_id.
     /// </summary>
     public SkillEntry GetSkillById(string skillId)
     {

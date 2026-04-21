@@ -9,7 +9,7 @@ public class NpcData
 {
     public int    npc_id;
     public string npc_name;
-    public string npc_type;       // "shop" | "blacksmith" | "quest" | "exchange" | "event"
+    public string npc_type;       // "shop" | "blacksmith" | "quest" | "exchange" | "event" | "dungeon"
     public float  pos_x;
     public float  pos_y;
     public string dialogue_key;   // (tuỳ chọn) key để lookup bảng dialogue

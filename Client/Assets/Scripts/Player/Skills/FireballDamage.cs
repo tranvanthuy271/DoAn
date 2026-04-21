@@ -29,7 +29,22 @@ public class FireballDamage : MonoBehaviour
 
     /// <summary>Set owner NetworkObjectId Ä'á»ƒ projectile khÃ´ng tá»± gÃ¢y damage cho chÃ­nh ngÆ°á»i bán.</summary>
     public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
-
+    /// <summary>
+    /// Lấy MapId của player sở hữu projectile này qua ZoneRoomRegistry.
+    /// Trả về -999 nếu không tra được (registry chưa sẵn sàng).
+    /// </summary>
+    private int GetOwnerMapId()
+    {
+        if (ownerNetworkObjectId == 0) return -999;
+        var nm = Unity.Netcode.NetworkManager.Singleton;
+        if (nm == null) return -999;
+        if (!nm.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
+            return -999;
+        var registry = ZoneRoomRegistry.Instance;
+        if (registry == null) return -999;
+        var room = registry.GetClientRoom(ownerNetObj.OwnerClientId);
+        return room?.MapId ?? -999;
+    }
     private void Start()
     {
         // Äáº£m báº£o collider lÃ  trigger
@@ -64,6 +79,14 @@ public class FireballDamage : MonoBehaviour
 
         if (networkEnemyHealth != null)
         {
+            // Kiểm tra cùng map — không được damage enemy ở map khác
+            var enemyZoneTag = networkEnemyHealth.GetComponent<ZoneOwnerTag>();
+            int ownerMap = GetOwnerMapId();
+            if (enemyZoneTag != null && ownerMap != -999 && ownerMap != enemyZoneTag.MapId)
+            {
+                Debug.LogWarning($"[FireballDamage] Bỏ qua cross-map: owner map={ownerMap}, enemy map={enemyZoneTag.MapId}");
+                return;
+            }
             networkEnemyHealth.TakeDamage(finalDamage);
             hasHit = true;
             Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network)");

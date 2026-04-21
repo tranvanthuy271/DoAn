@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e80675feccce77243aa98d5b0121eb69, type: 3}
+  m_Name: MapWorldConfig
+  m_EditorClassIdentifier: 
+  listenAddress: 0.0.0.0
+  port: 7777
+  apiBaseUrl: http://localhost:5000/api
+  publicIp: 127.0.0.1
+  enableDtlsEncryption: 0
+  jwtSecretDevOnly: THIS_IS_A_DEVELOPMENT_SECRET_KEY_CHANGE_IN_PRODUCTION
+  zoneApiKeyDevOnly: dev-zone-key
+  heartbeatInterval: 30
+  sharedMapDefaultZoneCount: 15
+  sharedMapMaxPlayers: 50
+  instanceMapMaxPlayers: 8
+  fallbackMapId: 0
+  fallbackZoneId: 0
+  loadMapsFromApiOnBoot: 1
+  runtimeMapBootstrapPath: /map/runtime-bootstrap
+  maps:
+  - mapId: 0
+    mapName: Lang_KhoiDau
+    sceneName: GameScene
+    zoneTopology: 0
+    allowCustomZones: 0
+    publicZoneCountOverride: 0
+    publicZoneMaxPlayersOverride: 0
+    customZoneMaxPlayersOverride: 0
+    allowPlayerZoneSwitch: 1
+    entryPoints:
+    - {x: 0, y: 0}
+    - {x: 5, y: 0}
+  - mapId: 1
+    mapName: CanhDong_Lua
+    sceneName: Map1
+    zoneTopology: 0
+    allowCustomZones: 0
+    publicZoneCountOverride: 0
+    publicZoneMaxPlayersOverride: 0
+    customZoneMaxPlayersOverride: 0
+    allowPlayerZoneSwitch: 1
+    entryPoints:
+    - {x: 2, y: 1}
+  - mapId: 1
+    mapName: CanhDong_Lua
+    sceneName: Map1
+    zoneTopology: 0
+    allowCustomZones: 0
+    publicZoneCountOverride: 0
+    publicZoneMaxPlayersOverride: 0
+    customZoneMaxPlayersOverride: 0
+    allowPlayerZoneSwitch: 1
+    entryPoints:
+    - {x: 2, y: 1}

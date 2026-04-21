@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// EnemyClickHandler — Xử lý click chọn enemy trên client.
@@ -58,6 +59,21 @@ public class EnemyClickHandler : MonoBehaviour
     /// <summary>Chọn enemy này, bỏ chọn enemy trước đó.</summary>
     public void Select()
     {
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
+        {
+            Debug.Log("[EnemyClickHandler] Select ignored because gameplay input is blocked by UI.");
+            return;
+        }
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            Debug.Log("[EnemyClickHandler] Select ignored because pointer is over UI.");
+            return;
+        }
+
+        // Bỏ chọn NPC đang được chọn (nếu có)
+        NpcInteraction.DeselectCurrent();
+
         // Bỏ chọn enemy cũ
         if (_currentSelected != null && _currentSelected != this)
             _currentSelected.Deselect();
@@ -67,6 +83,9 @@ public class EnemyClickHandler : MonoBehaviour
         if (selectionIndicator != null)
             selectionIndicator.SetActive(true);
 
+        // Đặt làm mục tiêu cho hệ thống auto-move
+        TargetSelector.SetTarget(transform);
+
         EnemyInfoPanel.Instance?.Show(BuildStats());
     }
 
@@ -75,6 +94,19 @@ public class EnemyClickHandler : MonoBehaviour
     {
         if (selectionIndicator != null)
             selectionIndicator.SetActive(false);
+
+        TargetSelector.ClearTarget(transform);
+    }
+
+    /// <summary>Bỏ chọn enemy đang được chọn (gọi từ NpcInteraction khi NPC được chọn).</summary>
+    public static void DeselectCurrent()
+    {
+        if (_currentSelected != null)
+        {
+            _currentSelected.Deselect();
+            EnemyInfoPanel.Instance?.Hide();
+            _currentSelected = null;
+        }
     }
 
     /// <summary>
@@ -122,6 +154,7 @@ public class EnemyClickHandler : MonoBehaviour
         {
             _currentSelected = null;
             EnemyInfoPanel.Instance?.Hide();
+            TargetSelector.ClearTarget(transform);
         }
     }
 }

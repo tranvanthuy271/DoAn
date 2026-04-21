@@ -1,38 +1,45 @@
 -- ============================================================
 -- Migration: 030_dungeon_npc.sql
--- Thêm NPC dungeon và dữ liệu phó bản vào DB
+-- Thêm NPC dungeon và dữ liệu phó bản theo schema hiện tại
 -- ============================================================
 
 SET NAMES utf8mb4;
 
--- Thêm NPC dungeon (npc_type = 'dungeon') nếu chưa có
-INSERT IGNORE INTO npc_config (npc_id, npc_name, npc_type, map_id, pos_x, pos_y, dialogue_key, icon_id, is_active)
-VALUES
-  (100, N'Sứ Giả Phó Bản',   'dungeon', 0, 50.0, 10.0, 'npc_dungeon_greet', 0, 1),
-  (101, N'Người Gác Hầm Ngục', 'dungeon', 1, 30.0, 15.0, 'npc_dungeon_greet', 0, 1);
+-- Thêm NPC dungeon (npc_type = 'dungeon') cho map chính nếu chưa có.
+INSERT INTO npc_config (npc_name, npc_type, map_id, pos_x, pos_y, dialogue_key, icon_id, is_active)
+SELECT N'Thủ môn Phó Bản', 'dungeon', 0, 50.0, 10.0, 'npc_dungeon_greet', '', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM npc_config WHERE npc_type = 'dungeon' AND map_id = 0
+);
 
--- Thêm cấu hình phó bản nếu chưa có
--- dungeon_type: 0 = wave/boss thường, 1 = party dungeon
-INSERT IGNORE INTO dungeon_config
-  (dungeon_id, dungeon_name, dungeon_type, map_id, max_players, min_level, max_level,
-   wave_count, boss_id, reward_exp, reward_gold, is_active)
-VALUES
-  (1, N'Phó Bản Lẻ - Hang Quỷ',    0, 10, 1, 1,  30, 5, 101, 800,  200, 1),
-  (2, N'Phó Bản Đội - Tháp Rồng',  1, 11, 4, 15, 40, 8, 102, 2000, 600, 1),
-  (3, N'Phó Bản Đội - Ngục Băng',  1, 12, 4, 20, 50, 6, 103, 2500, 800, 1);
+INSERT INTO npc_config (npc_name, npc_type, map_id, pos_x, pos_y, dialogue_key, icon_id, is_active)
+SELECT N'Thủ môn Phó Bản Tổ Đội', 'dungeon', 1, 30.0, 15.0, 'npc_dungeon_greet', '', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM npc_config WHERE npc_type = 'dungeon' AND map_id = 1
+);
 
--- Ghi chú: nếu bảng dungeon_config chưa tồn tại, tạo trước:
--- CREATE TABLE IF NOT EXISTS dungeon_config (
---   dungeon_id    INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
---   dungeon_name  VARCHAR(100)  NOT NULL,
---   dungeon_type  TINYINT       NOT NULL DEFAULT 0 COMMENT '0=solo,1=party',
---   map_id        INT           NOT NULL DEFAULT 0,
---   max_players   INT           NOT NULL DEFAULT 1,
---   min_level     INT           NOT NULL DEFAULT 1,
---   max_level     INT           NOT NULL DEFAULT 999,
---   wave_count    INT           NOT NULL DEFAULT 1,
---   boss_id       INT           NOT NULL DEFAULT 0,
---   reward_exp    INT           NOT NULL DEFAULT 0,
---   reward_gold   INT           NOT NULL DEFAULT 0,
---   is_active     TINYINT(1)    NOT NULL DEFAULT 1
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Seed / cập nhật 2 phó bản mặc định dùng bởi UI danh sách phó bản.
+-- map_id 100 -> DungeonWaveScene
+-- map_id 101 -> DungeonPartyScene
+INSERT INTO dungeon_config
+  (dungeon_id, dungeon_name, dungeon_type, map_id, scene_name, max_players,
+   min_level_required, time_limit_seconds, description, boss_enemy_id,
+   reward_json, thumbnail_icon_id, is_active)
+VALUES
+  (6, N'Phó Bản Sóng', 'solo', 100, 'DungeonWaveScene', 1,
+   1, 0, '', NULL, JSON_OBJECT(), '', 1),
+  (7, N'Phó Bản Tổ Đội', 'multi', 101, 'DungeonPartyScene', 4,
+   1, 0, '', NULL, JSON_OBJECT(), '', 1)
+ON DUPLICATE KEY UPDATE
+  dungeon_name = VALUES(dungeon_name),
+  dungeon_type = VALUES(dungeon_type),
+  map_id = VALUES(map_id),
+  scene_name = VALUES(scene_name),
+  max_players = VALUES(max_players),
+  min_level_required = VALUES(min_level_required),
+  time_limit_seconds = VALUES(time_limit_seconds),
+  description = VALUES(description),
+  boss_enemy_id = VALUES(boss_enemy_id),
+  reward_json = VALUES(reward_json),
+  thumbnail_icon_id = VALUES(thumbnail_icon_id),
+  is_active = VALUES(is_active);

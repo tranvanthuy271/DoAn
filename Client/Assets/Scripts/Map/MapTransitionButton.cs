@@ -20,8 +20,8 @@ public class MapTransitionButton : MonoBehaviour
     [Tooltip("true = nút bên phải (đi tới), false = nút bên trái (quay lại)")]
     [SerializeField] private bool isRightButton = true;
 
-    [Tooltip("Map ID của scene hiện tại (tự lấy từ MapManager nếu để 0)")]
-    [SerializeField] private int currentMapId = 0;
+    [Tooltip("Map ID của scene hiện tại. Để -1 sẽ tự lấy từ MapManager.")]
+    [SerializeField] private int currentMapId = -1;
 
     [Tooltip("Zone đích ưu tiên trong map mới. 0 = zone public mặc định đầu tiên")]
     [SerializeField] private int preferredZoneId = 0;
@@ -40,7 +40,7 @@ public class MapTransitionButton : MonoBehaviour
     {
         apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
 
-        if (currentMapId == 0 && MapManager.Instance != null)
+        if (currentMapId < 0 && MapManager.Instance != null)
             currentMapId = MapManager.Instance.GetMapId();
 
         if (buttonLabel != null)

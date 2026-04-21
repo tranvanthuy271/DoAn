@@ -120,3 +120,9 @@ public struct EquippedOptionDisplay
         return result;
     }
 }
+
+[Serializable]
+public class OptionTemplateListWrapper
+{
+    public OptionTemplateDto[] options;
+}

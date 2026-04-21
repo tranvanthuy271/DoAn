@@ -36,7 +36,24 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            PromotePersistentChildren();
             Destroy(gameObject);
+        }
+    }
+
+    private void PromotePersistentChildren()
+    {
+        for (int index = transform.childCount - 1; index >= 0; index--)
+        {
+            var child = transform.GetChild(index);
+            if (child == null) continue;
+
+            bool shouldPromote = child.GetComponent<ChatManager>() != null
+                              || child.GetComponent<FriendManager>() != null
+                              || child.GetComponent<PartyManager>() != null;
+
+            if (shouldPromote)
+                child.SetParent(null, true);
         }
     }
 
@@ -107,6 +124,12 @@ public class GameManager : MonoBehaviour
     public bool HasPlayerData()
     {
         return currentPlayerData != null;
+    }
+
+    public void ClearPlayerData()
+    {
+        currentPlayerData = null;
+        player = null;
     }
 
     #endregion

@@ -42,15 +42,18 @@ public class PlayerPickup : MonoBehaviour
     {
         if (networkObject == null || NetworkManager.Singleton == null) return;
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(
+        Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(
+            gameObject,
             transform.position,
             pickupRange,
             itemLayer
         );
 
+        Debug.Log($"[PlayerPickup] TryPickupAround found {hits.Length} colliders quanh player {networkObject.NetworkObjectId}");
+
         foreach (Collider2D hit in hits)
         {
-            ItemPickup item = hit.GetComponent<ItemPickup>();
+            ItemPickup item = hit.GetComponent<ItemPickup>() ?? hit.GetComponentInParent<ItemPickup>();
             if (item != null)
             {
                 // Gửi request nhặt item cho server thông qua ItemPickup

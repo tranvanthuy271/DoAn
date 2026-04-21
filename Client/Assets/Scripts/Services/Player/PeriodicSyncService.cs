@@ -113,22 +113,9 @@ public class PeriodicSyncService : NetworkBehaviour
         int hp, int mp, int maxHp, int maxMp, int level, string jwtOverride,
         System.Action onSuccess = null, System.Action<string> onError = null)
     {
-        if (APIClient.Instance == null)
-        {
-            onError?.Invoke("APIClient.Instance is null");
-            return;
-        }
-
-        string jsonData =
-            $"{{\"map_id\":{mapId},\"position_x\":{posX},\"position_y\":{posY},\"hp\":{hp},\"max_hp\":{maxHp},\"mp\":{mp},\"max_mp\":{maxMp},\"level\":{level}}}";
-
-        APIClient.Instance.UpdatePlayerData(
-            playerId,
-            jsonData,
-            onSuccess: () => { onSuccess?.Invoke(); },
-            onError: (error) => { onError?.Invoke(error); },
-            jwtOverride: jwtOverride
-        );
+        // Hybrid architecture: server saves player position on disconnect via
+        // ZonePlayerSessionManager. Client-side REST checkpoints are no longer used.
+        onSuccess?.Invoke();
     }
 
     /// <summary>
@@ -140,7 +127,7 @@ public class PeriodicSyncService : NetworkBehaviour
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
         {
             var playerData = GameManager.Instance.GetPlayerData();
-            if (playerData != null && playerData.map_id > 0)
+            if (playerData != null && playerData.map_id >= 0)
             {
                 return playerData.map_id;
             }
@@ -148,14 +135,14 @@ public class PeriodicSyncService : NetworkBehaviour
 
         // Fallback: Lấy từ MapManager (nếu có)
         MapManager mapManager = FindObjectOfType<MapManager>();
-        if (mapManager != null)
-        {
-            // Giả sử MapManager có property currentMapId
-            // return mapManager.currentMapId;
-        }
+        if (mapManager != null && mapManager.GetMapId() >= 0)
+            return mapManager.GetMapId();
 
-        // Default: Map 1
-        return 1;
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentMapId >= 0)
+            return ClientSceneController.Instance.CurrentMapId;
+
+        // Default: map khởi đầu
+        return 0;
     }
 
     /// <summary>

@@ -28,13 +28,21 @@ public class MapWorldConfig : ScriptableObject
     [Tooltip("IP public mà client dùng để kết nối")]
     public string publicIp = "127.0.0.1";
 
-    /// <summary>Auto-fill from ServerAddressConfig if still defaults.</summary>
+    /// <summary>
+    /// Đồng bộ runtime endpoints từ ServerAddressConfig.
+    /// CLI args trong MapWorldBootstrap vẫn có thể override lại sau bước này.
+    /// </summary>
     public void ResolveFromGlobalConfig()
     {
         var cfg = ServerAddressConfig.Instance;
-        apiBaseUrl = cfg.ResolveApiUrl(apiBaseUrl);
-        if (publicIp == "127.0.0.1" || string.IsNullOrWhiteSpace(publicIp))
+
+        apiBaseUrl = cfg.ApiUrl;
+
+        if (!string.IsNullOrWhiteSpace(cfg.gameServerIp))
             publicIp = cfg.gameServerIp;
+
+        if (cfg.gameServerPort > 0)
+            port = cfg.gameServerPort;
     }
 
     [Header("Security")]
@@ -66,6 +74,13 @@ public class MapWorldConfig : ScriptableObject
 
     [Tooltip("Zone fallback trong map fallback.")]
     public int fallbackZoneId = 0;
+
+    [Header("Runtime Map Bootstrap")]
+    [Tooltip("Nếu bật, Dedicated Server sẽ nạp danh sách map từ GameServerApi lúc boot thay vì chỉ dùng asset tĩnh.")]
+    public bool loadMapsFromApiOnBoot = true;
+
+    [Tooltip("Path tương đối sau apiBaseUrl để lấy runtime map definitions.")]
+    public string runtimeMapBootstrapPath = "/map/runtime-bootstrap";
 
     [Header("Maps & Zone Policy")]
     [Tooltip("Danh sách toàn bộ map. Map thường tự sinh zone mặc định khi server start; map phó bản chỉ tạo zone riêng khi cần.")]
@@ -100,6 +115,72 @@ public class MapWorldConfig : ScriptableObject
 
     public int GetInstanceZoneMaxPlayersOrDefault() =>
         instanceMapMaxPlayers > 0 ? instanceMapMaxPlayers : DefaultInstanceZoneMaxPlayers;
+
+    public bool ApplyRuntimeMapBootstrap(RuntimeMapBootstrapResponse response)
+    {
+        if (response?.maps == null || response.maps.Length == 0)
+            return false;
+
+        MapDefinition[] currentMaps = maps;
+        var runtimeMaps = new MapDefinition[response.maps.Length];
+
+        for (int i = 0; i < response.maps.Length; i++)
+        {
+            var src = response.maps[i];
+            MapDefinition fallback = FindMap(currentMaps, src.map_id);
+
+            runtimeMaps[i] = new MapDefinition
+            {
+                mapId = src.map_id,
+                mapName = string.IsNullOrWhiteSpace(src.map_name)
+                    ? fallback?.mapName ?? $"map{src.map_id}"
+                    : src.map_name,
+                sceneName = string.IsNullOrWhiteSpace(src.scene_name)
+                    ? fallback?.sceneName ?? ""
+                    : src.scene_name,
+                zoneTopology = src.zone_topology == (int)MapZoneTopology.InstanceOnly
+                    ? MapZoneTopology.InstanceOnly
+                    : MapZoneTopology.SharedPublic,
+                allowCustomZones = src.allow_custom_zones,
+                publicZoneCountOverride = Mathf.Max(0, src.public_zone_count_override),
+                publicZoneMaxPlayersOverride = Mathf.Max(0, src.public_zone_max_players_override),
+                customZoneMaxPlayersOverride = Mathf.Max(0, src.custom_zone_max_players_override),
+                allowPlayerZoneSwitch = src.allow_player_zone_switch,
+                entryPoints = ConvertEntryPoints(src.entry_points, fallback?.entryPoints)
+            };
+        }
+
+        maps = runtimeMaps;
+        return true;
+    }
+
+    private static MapDefinition FindMap(MapDefinition[] sourceMaps, int mapId)
+    {
+        if (sourceMaps == null) return null;
+
+        foreach (var map in sourceMaps)
+        {
+            if (map != null && map.mapId == mapId)
+                return map;
+        }
+
+        return null;
+    }
+
+    private static Vector2[] ConvertEntryPoints(RuntimeMapEntryPoint[] points, Vector2[] fallback)
+    {
+        if (points != null && points.Length > 0)
+        {
+            var entryPoints = new Vector2[points.Length];
+            for (int i = 0; i < points.Length; i++)
+                entryPoints[i] = new Vector2(points[i].x, points[i].y);
+            return entryPoints;
+        }
+
+        return fallback != null && fallback.Length > 0
+            ? fallback
+            : new[] { Vector2.zero };
+    }
 
     /// <summary>Tìm MapDefinition theo mapId.</summary>
     public MapDefinition GetMap(int mapId)
@@ -258,4 +339,32 @@ public class ZoneDefinition
 
     /// <summary>Key dùng để nhận diện zone duy nhất, giống roomId trong LangLa.</summary>
     public string GetZoneKey(int mapId) => $"map{mapId}_zone{zoneId}";
+}
+
+[Serializable]
+public class RuntimeMapBootstrapResponse
+{
+    public RuntimeMapBootstrapEntry[] maps = Array.Empty<RuntimeMapBootstrapEntry>();
+}
+
+[Serializable]
+public class RuntimeMapBootstrapEntry
+{
+    public int map_id;
+    public string map_name = "";
+    public string scene_name = "";
+    public int zone_topology;
+    public bool allow_custom_zones;
+    public int public_zone_count_override;
+    public int public_zone_max_players_override;
+    public int custom_zone_max_players_override;
+    public bool allow_player_zone_switch = true;
+    public RuntimeMapEntryPoint[] entry_points = Array.Empty<RuntimeMapEntryPoint>();
+}
+
+[Serializable]
+public class RuntimeMapEntryPoint
+{
+    public float x;
+    public float y;
 }

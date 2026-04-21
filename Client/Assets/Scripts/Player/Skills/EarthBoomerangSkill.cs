@@ -136,6 +136,11 @@ public class EarthBoomerangSkill : NetworkBehaviour
 
             NetworkObject netObj = boomerang.GetComponent<NetworkObject>();
             if (netObj == null) netObj = boomerang.AddComponent<NetworkObject>();
+
+            // Di chuyển vào physics scene của map player — TRƯỚC Spawn()
+            var _boomRoom = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId);
+            MapSceneManager.Instance?.MoveToMapScene(boomerang, _boomRoom?.MapId ?? -999);
+
             netObj.Spawn();
 
             // NetworkTransform đồng bộ vị trí sang client,

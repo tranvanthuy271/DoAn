@@ -280,6 +280,27 @@ public class MobPatrolAI : MonoBehaviour
         float dist = Vector2.Distance(transform.position, _player.position);
         if (dist > attackRange * 1.5f) yield break;
 
+        // Kiểm tra cùng map — không phản đòn player ở map khác
+        int myMapId = GetComponent<ZoneOwnerTag>()?.MapId ?? -999;
+        if (myMapId != -999)
+        {
+            var registry = ZoneRoomRegistry.Instance;
+            var netObj = _player.GetComponent<Unity.Netcode.NetworkObject>();
+            if (registry != null && netObj != null)
+            {
+                var room = registry.GetClientRoom(netObj.OwnerClientId);
+                if (room != null && room.MapId != myMapId) yield break;
+            }
+        }
+
+        var nph = _player.GetComponent<NetworkPlayerHealth>();
+        if (nph != null)
+        {
+            int counterDmg = Mathf.Max(1, Mathf.RoundToInt(baseDamage * 0.6f));
+            nph.TakeDamage(counterDmg);
+            Debug.Log($"[MobAI] Counter! {counterDmg} dmg");
+            yield break;
+        }
         var ph = _player.GetComponent<PlayerHealth>();
         if (ph != null)
         {
@@ -342,8 +363,22 @@ public class MobPatrolAI : MonoBehaviour
     private void FindNearestPlayer()
     {
         float nearest = float.MaxValue;
+        int myMapId = GetComponent<ZoneOwnerTag>()?.MapId ?? -999;
+        var registry = ZoneRoomRegistry.Instance;
+
         foreach (var go in GameObject.FindGameObjectsWithTag("Player"))
         {
+            // Lọc cùng map — bỏ qua player ở map khác
+            if (registry != null && myMapId != -999)
+            {
+                var netObj = go.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null)
+                {
+                    var room = registry.GetClientRoom(netObj.OwnerClientId);
+                    if (room == null || room.MapId != myMapId) continue;
+                }
+            }
+
             float d = Vector2.Distance(transform.position, go.transform.position);
             if (d < nearest) { nearest = d; _player = go.transform; }
         }

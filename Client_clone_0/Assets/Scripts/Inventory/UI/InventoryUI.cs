@@ -114,11 +114,16 @@ public class InventoryUI : MonoBehaviour
 
         if (slotUIs == null || slotUIs.Length == 0) InitSlots();
 
-        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        var bridge = InventoryNetworkBridge.GetExisting(true);
         if (bridge != null)
         {
+            Debug.Log("[InventoryUI] ShowInventory: Tìm thấy bridge, gọi RefreshInventoryFromDB()...");
             bridge.RefreshInventoryFromDB();
             bridge.RefreshEquipmentFromDB();
+        }
+        else
+        {
+            Debug.LogWarning("[InventoryUI] ShowInventory: KHÔNG tìm thấy InventoryNetworkBridge trong scene!");
         }
         RefreshAllSlots();
     }
@@ -159,7 +164,7 @@ public class InventoryUI : MonoBehaviour
             Debug.Log($"[InventoryUI] ToggleInventory: Đang refresh {slotUIs?.Length ?? 0} slots...");
             
             // ✅ REFRESH INVENTORY FROM DB KHI MỞ UI
-            var bridge = FindObjectOfType<InventoryNetworkBridge>();
+            var bridge = InventoryNetworkBridge.GetExisting(true);
             if (bridge != null)
             {
                 Debug.Log("[InventoryUI] ✓ Tìm thấy InventoryNetworkBridge, gọi RefreshInventoryFromDB() + RefreshEquipmentFromDB()...");

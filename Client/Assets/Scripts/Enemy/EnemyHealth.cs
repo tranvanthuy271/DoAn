@@ -20,6 +20,10 @@ public class EnemyHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        var runtimeStats = GetComponent<DungeonEnemyRuntimeStats>();
+        if (runtimeStats != null && runtimeStats.HasRuntimeOverride)
+            damage = runtimeStats.ResolveIncomingDamage(damage);
+
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
 

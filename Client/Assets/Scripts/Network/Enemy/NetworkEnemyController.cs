@@ -5,6 +5,9 @@ using Unity.Netcode.Components;
 [RequireComponent(typeof(NetworkObject), typeof(Rigidbody2D), typeof(NetworkTransform))]
 public class NetworkEnemyController : NetworkBehaviour
 {
+    private const string AttackBoolParameter = "isAttacking";
+    private const string LegacyAttackTriggerParameter = "Attack";
+
     [Header("Components")]
     private EnemyAI enemyAI;
     private Rigidbody2D rb;
@@ -47,6 +50,11 @@ public class NetworkEnemyController : NetworkBehaviour
             // client cũng phải tắt vì Awake chạy trên mọi instance)
             rb.gravityScale = 0f;
         }
+
+        // Enemy không đẩy nhau (di chuyển xuyên qua nhau như đặc trưng RPG 2D)
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+            Physics2D.IgnoreLayerCollision(enemyLayer, enemyLayer, true);
     }
 
 
@@ -109,22 +117,30 @@ public class NetworkEnemyController : NetworkBehaviour
     [ServerRpc]
     public void TriggerAttackServerRpc()
     {
-        TriggerAttackClientRpc();
+        SetAttackAnimationStateClientRpc(true);
+    }
+
+    public void SetAttackAnimationState(bool isAttacking)
+    {
+        if (IsServer)
+        {
+            SetAttackAnimationStateClientRpc(isAttacking);
+            return;
+        }
+
+        SetAttackAnimationStateServerRpc(isAttacking);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetAttackAnimationStateServerRpc(bool isAttacking)
+    {
+        SetAttackAnimationStateClientRpc(isAttacking);
     }
 
     [ClientRpc]
-    private void TriggerAttackClientRpc()
+    private void SetAttackAnimationStateClientRpc(bool isAttacking)
     {
-        // Trigger attack animation trên TẤT CẢ clients (bao gồm cả server)
-        if (animator != null)
-        {
-            animator.SetBool("isAttacking", true);
-            Debug.Log($"[NetworkEnemyController] Attack animation triggered on client for {gameObject.name}");
-        }
-        
-        // Reset animation state sau một khoảng thời gian ngắn
-        // (Animation sẽ tự động reset khi kết thúc, nhưng đảm bảo reset sau 0.5s)
-        Invoke(nameof(ResetAttackAnimation), 0.5f);
+        ApplyAttackAnimationState(isAttacking);
     }
     
     /// <summary>
@@ -132,10 +148,44 @@ public class NetworkEnemyController : NetworkBehaviour
     /// </summary>
     private void ResetAttackAnimation()
     {
-        if (animator != null)
+        ApplyAttackAnimationState(false);
+    }
+
+    private void ApplyAttackAnimationState(bool isAttacking)
+    {
+        if (animator == null)
+            return;
+
+        CancelInvoke(nameof(ResetAttackAnimation));
+
+        if (HasAnimatorParameter(AttackBoolParameter, AnimatorControllerParameterType.Bool))
         {
-            animator.SetBool("isAttacking", false);
+            animator.SetBool(AttackBoolParameter, isAttacking);
         }
+        else if (isAttacking && HasAnimatorParameter(LegacyAttackTriggerParameter, AnimatorControllerParameterType.Trigger))
+        {
+            animator.SetTrigger(LegacyAttackTriggerParameter);
+        }
+
+        if (isAttacking)
+        {
+            Debug.Log($"[NetworkEnemyController] Attack animation triggered on client for {gameObject.name}");
+            Invoke(nameof(ResetAttackAnimation), 0.5f);
+        }
+    }
+
+    private bool HasAnimatorParameter(string parameterName, AnimatorControllerParameterType parameterType)
+    {
+        if (animator == null || string.IsNullOrWhiteSpace(parameterName))
+            return false;
+
+        foreach (var parameter in animator.parameters)
+        {
+            if (parameter.name == parameterName && parameter.type == parameterType)
+                return true;
+        }
+
+        return false;
     }
     
     /// <summary>
@@ -144,7 +194,7 @@ public class NetworkEnemyController : NetworkBehaviour
     [ClientRpc]
     public void ResetAttackAnimationClientRpc()
     {
-        ResetAttackAnimation();
+        ApplyAttackAnimationState(false);
     }
 
 }

@@ -31,6 +31,8 @@ public class EquipRowUI : MonoBehaviour
         _slotKey  = null;
         _item     = null;
         _onUpgraded = onUpgraded;
+
+        btnUpgrade?.onClick.RemoveAllListeners();
         RefreshUI(slotLabel, itemName, upgradeLevel, canUpgrade: false);
     }
 
@@ -71,7 +73,10 @@ public class EquipRowUI : MonoBehaviour
         }
 
         if (btnUpgrade != null)
+        {
+            btnUpgrade.gameObject.SetActive(canUpgrade);
             btnUpgrade.interactable = canUpgrade;
+        }
     }
 
     private void OnClickUpgrade()
@@ -79,24 +84,46 @@ public class EquipRowUI : MonoBehaviour
         if (_item == null || string.IsNullOrEmpty(_slotKey)) return;
         if (btnUpgrade != null) btnUpgrade.interactable = false;
 
-        // Fetch inventory then open UpgradePanel
-        if (APIClient.Instance != null)
+        // Get inventory from local InventoryNetworkBridge cache
+        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        if (bridge != null)
         {
-            APIClient.Instance.GetPlayerInventory(
-                _playerId,
-                onSuccess: inv =>
-                {
-                    // Convert InventoryItem[] â†’ InventorySlotDto[]
-                    var slots = ConvertInventory(inv);
-                    OpenUpgradePanel(slots);
-                },
-                onError: _ => OpenUpgradePanel(new InventorySlotDto[0])
-            );
+            var slots = bridge.CurrentInventory ?? new InventorySlotDto[0];
+            OpenUpgradePanel(slots);
+        }
+        else if (GameplayCommandService.Instance != null)
+        {
+            StartCoroutine(FetchInventoryThenOpen());
         }
         else
         {
             OpenUpgradePanel(new InventorySlotDto[0]);
         }
+    }
+
+    private System.Collections.IEnumerator FetchInventoryThenOpen()
+    {
+        bool done = false;
+        InventorySlotDto[] slots = new InventorySlotDto[0];
+
+        GameplayCommandService.OnInventoryReceived -= HandleInv;
+        GameplayCommandService.OnInventoryReceived += HandleInv;
+        GameplayCommandService.Instance.GetPlayerInventoryServerRpc();
+
+        void HandleInv(string json)
+        {
+            GameplayCommandService.OnInventoryReceived -= HandleInv;
+            if (!json.Contains("\"error\""))
+            {
+                var data = JsonUtility.FromJson<PlayerDataResponse>(json);
+                if (data?.inventory != null)
+                    slots = ConvertInventory(data.inventory);
+            }
+            done = true;
+        }
+
+        yield return new UnityEngine.WaitUntil(() => done);
+        OpenUpgradePanel(slots);
     }
 
     private void OpenUpgradePanel(InventorySlotDto[] inventory)

@@ -4,6 +4,7 @@ using System.Text;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityEngine.Networking;
 
 /// <summary>
 /// Entry point duy nhất của toàn bộ game server.
@@ -79,16 +80,109 @@ public class MapWorldBootstrap : MonoBehaviour
             setter(arg[prefix.Length..]);
     }
 
+    private string GetRuntimeMapBootstrapUrl()
+    {
+        string path = string.IsNullOrWhiteSpace(_config.runtimeMapBootstrapPath)
+            ? "/map/runtime-bootstrap"
+            : _config.runtimeMapBootstrapPath.Trim();
+
+        if (!path.StartsWith("/", StringComparison.Ordinal))
+            path = "/" + path;
+
+        return $"{_apiBaseUrl.TrimEnd('/')}{path}";
+    }
+
+    private IEnumerator LoadRuntimeMapsFromApiIfEnabled()
+    {
+        if (_config == null || !_config.loadMapsFromApiOnBoot)
+            yield break;
+
+        if (string.IsNullOrWhiteSpace(_apiBaseUrl))
+        {
+            Debug.LogWarning("[MapWorldBootstrap] apiBaseUrl rỗng. Bỏ qua runtime map bootstrap.");
+            yield break;
+        }
+
+        string url = GetRuntimeMapBootstrapUrl();
+        for (int attempt = 1; attempt <= _maxApiRetries; attempt++)
+        {
+            using var req = UnityWebRequest.Get(url);
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("X-Zone-Api-Key", _config.GetZoneApiKey());
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                RuntimeMapBootstrapResponse response = null;
+                try
+                {
+                    response = JsonUtility.FromJson<RuntimeMapBootstrapResponse>(req.downloadHandler.text);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[MapWorldBootstrap] Không parse được runtime map bootstrap JSON: {ex.Message}");
+                    break;
+                }
+
+                if (_config.ApplyRuntimeMapBootstrap(response))
+                {
+                    Debug.Log($"[MapWorldBootstrap] ✓ Loaded {_config.maps.Length} maps from API runtime bootstrap.");
+                    yield break;
+                }
+
+                Debug.LogWarning("[MapWorldBootstrap] Runtime map bootstrap trả về 0 map hợp lệ. Giữ nguyên asset config.");
+                yield break;
+            }
+
+            string error = string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.error
+                : req.downloadHandler.text;
+            Debug.LogWarning($"[MapWorldBootstrap] Runtime map bootstrap thất bại ({attempt}/{_maxApiRetries}): {error}");
+
+            if (attempt < _maxApiRetries)
+                yield return new WaitForSeconds(_apiRetryDelay);
+        }
+
+        Debug.LogWarning($"[MapWorldBootstrap] Dùng fallback MapWorldConfig asset với {_config.maps.Length} maps.");
+    }
+
+    private void LogSceneAvailabilityWarnings()
+    {
+        foreach (var mapDef in _config.maps)
+        {
+            if (string.IsNullOrWhiteSpace(mapDef.sceneName))
+            {
+                Debug.LogWarning($"[MapWorldBootstrap] Map {mapDef.mapId} ({mapDef.mapName}) chưa có sceneName.");
+                continue;
+            }
+
+            if (!Application.CanStreamedLevelBeLoaded(mapDef.sceneName))
+            {
+                Debug.LogWarning($"[MapWorldBootstrap] Scene '{mapDef.sceneName}' của map {mapDef.mapId} chưa có trong Build Settings hoặc chưa tồn tại. Client teleport vào map này sẽ fail.");
+            }
+        }
+    }
+
     // ── Start server routine ──────────────────────────────────────────────────
 
     private IEnumerator StartServerRoutine()
     {
         yield return null; // 1 frame buffer
 
+        // 0 — Nạp map runtime từ API/DB trước khi tạo ZoneRoomRegistry
+        yield return StartCoroutine(LoadRuntimeMapsFromApiIfEnabled());
+        LogSceneAvailabilityWarnings();
+
         // 1 — Initialize ZoneRoomRegistry (like LangLa Map.init())
         var registry = GetComponent<ZoneRoomRegistry>()
                     ?? gameObject.AddComponent<ZoneRoomRegistry>();
         registry.Initialize(_config);
+
+        // 1b — Tạo per-map Physics2D scenes (isolation cross-map collision)
+        //      PHẢI chạy trước bất kỳ enemy/NPC/player nào được spawn.
+        var mapSceneMgr = GetComponent<MapSceneManager>()
+                       ?? gameObject.AddComponent<MapSceneManager>();
+        mapSceneMgr.Initialize(_config);
 
         // 2 — Configure transport
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
@@ -130,6 +224,12 @@ public class MapWorldBootstrap : MonoBehaviour
         // 6 — Spawn NetworkManagers (ZoneTransitionController + ZonePlayerSessionManager)
         if (_networkManagersPrefab != null)
         {
+            if (_networkManagersPrefab.GetComponent<GameplayCommandService>() == null)
+            {
+                Debug.LogError("[MapWorldBootstrap] NetworkManagers prefab thiếu GameplayCommandService. " +
+                               "Luồng item/skill/inventory ServerRpc sẽ không hoạt động đúng.");
+            }
+
             var go = Instantiate(_networkManagersPrefab);
             go.GetComponent<Unity.Netcode.NetworkObject>()?.Spawn();
             Debug.Log("[MapWorldBootstrap] ✓ NetworkManagers spawned.");

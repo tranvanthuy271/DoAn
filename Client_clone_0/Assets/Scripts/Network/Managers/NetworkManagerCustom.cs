@@ -81,6 +81,14 @@ public class NetworkManagerCustom : MonoBehaviour
             return;
         }
 
+        if (networkManager.IsListening && !networkManager.ShutdownInProgress)
+        {
+            Debug.LogWarning($"[NetworkManagerCustom] ConnectToServer() skipped because NetworkManager is already listening. IsClient={networkManager.IsClient}, IsServer={networkManager.IsServer}, IsHost={networkManager.IsHost}");
+            GameErrorNotifier.MarkClientConnected();
+            LoginLoadingManager.HideLoadingStatic();
+            return;
+        }
+
         // CRITICAL: Đảm bảo callbacks đã subscribe TRƯỚC khi StartClient
         EnsureCallbacksSubscribed();
 
@@ -109,6 +117,8 @@ public class NetworkManagerCustom : MonoBehaviour
         transport.ConnectionData.Port = effectivePort;
         networkManager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(payload);
 
+        GameErrorNotifier.WatchClientConnection();
+
         serverIP = effectiveIp;
         serverPort = effectivePort;
 
@@ -124,11 +134,13 @@ public class NetworkManagerCustom : MonoBehaviour
             else
             {
                 Debug.LogError("[NetworkManagerCustom] ✗ StartClient() returned false! Check NetworkManager config.");
+                GameErrorNotifier.Show(GameErrorNotifier.ErrorType.CannotConnect);
             }
         }
         catch (System.Exception ex)
         {
             Debug.LogError($"[NetworkManagerCustom] ✗ Exception in StartClient: {ex.Message}\n{ex.StackTrace}");
+            GameErrorNotifier.Show(GameErrorNotifier.ErrorType.CannotConnect);
         }
     }
 
@@ -389,6 +401,8 @@ public class NetworkManagerCustom : MonoBehaviour
         {
             if (useConnectionApprovalPayload)
             {
+                GameErrorNotifier.MarkClientConnected();
+                LoginLoadingManager.HideLoadingStatic();
                 Debug.Log($"[NetworkManagerCustom] Client-side: approved via ConnectionData payload for clientId {clientId}. Skipping legacy Named Message auth.");
                 return;
             }
@@ -408,7 +422,10 @@ public class NetworkManagerCustom : MonoBehaviour
     {
         if (networkManager != null && !networkManager.IsServer)
         {
-            Debug.LogWarning($"[NetworkManagerCustom] Client disconnected! clientId={clientId}. Có thể host chưa chạy hoặc bị reject.");
+            string disconnectReason = string.IsNullOrWhiteSpace(networkManager.DisconnectReason)
+                ? "<empty>"
+                : networkManager.DisconnectReason;
+            Debug.LogWarning($"[NetworkManagerCustom] Client disconnected! clientId={clientId}. DisconnectReason={disconnectReason}. Có thể host chưa chạy hoặc bị reject.");
         }
         else if (networkManager != null && networkManager.IsServer)
         {

@@ -578,7 +578,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         if (expPct + phucPct > 0f)
             expAmount = Mathf.RoundToInt(expAmount * (1f + expPct + phucPct));
 
-        string baseUrl = APIClient.Instance != null ? APIClient.Instance.baseURL : ServerAddressConfig.Instance.ApiUrl;
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
         string url = $"{baseUrl}/player/{playerId}/gain-exp";
         byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount}}}");
 
@@ -629,5 +629,23 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         // Refresh stats UI nếu đang mở
         if (IsOwner)
             FindObjectOfType<StatsTabUI>()?.Load();
+    }
+
+    // ── Proximity Chat Bubble ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gọi từ owner khi gửi tin lân cận.
+    /// Broadcast bubble lên tất cả client (mọi người thấy bubble trên đầu nhân vật này).
+    /// </summary>
+    [ServerRpc(RequireOwnership = true)]
+    public void ShowProximityBubbleServerRpc(FixedString128Bytes senderName, FixedString512Bytes message)
+    {
+        ShowProximityBubbleClientRpc(senderName, message);
+    }
+
+    [ClientRpc]
+    private void ShowProximityBubbleClientRpc(FixedString128Bytes senderName, FixedString512Bytes message)
+    {
+        GetComponentInChildren<ProximityChatBubble>()?.ShowMessage(senderName.ToString(), message.ToString());
     }
 }

@@ -31,28 +31,7 @@ public class InventoryToggleButton : MonoBehaviour
 
     private void Start()
     {
-        // Tự động tìm trong scene nếu chưa được gán trong Inspector
-        if (informationPanel == null)
-        {
-            informationPanel = FindObjectOfType<InformationPanelController>();
-            if (informationPanel != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found InformationPanelController: {informationPanel.gameObject.name}");
-        }
-
-        if (informationPanel == null && characterPanel == null)
-        {
-            characterPanel = FindObjectOfType<CharacterPanelController>();
-            if (characterPanel != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
-        }
-
-        if (informationPanel == null && inventoryUI == null)
-        {
-            inventoryUI = FindObjectOfType<InventoryUI>();
-            if (inventoryUI != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found InventoryUI: {inventoryUI.gameObject.name}");
-        }
-
+        ResolveControllers();
         if (informationPanel == null && characterPanel == null && inventoryUI == null)
             Debug.LogError("[InventoryToggleButton] Không tìm thấy InformationPanelController, CharacterPanelController hay InventoryUI trong scene! Hãy gán thủ công trong Inspector.");
     }
@@ -65,6 +44,7 @@ public class InventoryToggleButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
+        ResolveControllers();
         Debug.Log("[InventoryToggleButton] Button clicked!");
         
         // Ưu tiên dùng InformationPanelController để hiển thị đồng bộ cả frame + inventory
@@ -88,30 +68,47 @@ public class InventoryToggleButton : MonoBehaviour
         }
 
         Debug.LogWarning("[InventoryToggleButton] Không tìm thấy InformationPanelController, dùng fallback");
-        
-        // Fallback: nếu không có InformationPanelController
-        // Hiển thị CharacterPanel frame + mở InventoryUI
-        if (characterPanel != null)
-        {
-            Debug.Log("[InventoryToggleButton] Show CharacterPanel");
-            if (!characterPanel.IsVisible())
-            {
-                characterPanel.Show();
-            }
-            // Chuyển sang tab Equipment (index 1) để giống tab Túi Đồ
-            characterPanel.GetType().GetMethod("SwitchTab", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                ?.Invoke(characterPanel, new object[] { 1 });
-        }
 
-        if (inventoryUI != null)
+        bool inventoryVisible = inventoryUI != null && inventoryUI.gameObject.activeSelf;
+        if (inventoryVisible)
         {
-            Debug.Log("[InventoryToggleButton] Show InventoryUI");
+            Debug.Log("[InventoryToggleButton] Đang hiển thị Túi Đồ → đóng fallback panels");
+            inventoryUI.HideInventory();
+            characterPanel?.Hide();
+        }
+        else if (inventoryUI != null)
+        {
+            Debug.Log("[InventoryToggleButton] Show InventoryUI only");
+            characterPanel?.Hide();
             inventoryUI.ShowInventory();
         }
         else
         {
             Debug.LogError("[InventoryToggleButton] Chưa gán InformationPanelController, CharacterPanelController hoặc InventoryUI trong Inspector!");
+        }
+    }
+
+    private void ResolveControllers()
+    {
+        if (characterPanel == null)
+        {
+            characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
+            if (characterPanel != null)
+                Debug.Log($"[InventoryToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
+        }
+
+        if (inventoryUI == null)
+        {
+            inventoryUI = FindObjectOfType<InventoryUI>(includeInactive: true);
+            if (inventoryUI != null)
+                Debug.Log($"[InventoryToggleButton] Auto-found InventoryUI: {inventoryUI.gameObject.name}");
+        }
+
+        if (informationPanel == null)
+        {
+            informationPanel = InformationPanelController.GetOrCreate(characterPanel, inventoryUI);
+            if (informationPanel != null)
+                Debug.Log($"[InventoryToggleButton] Auto-found/created InformationPanelController: {informationPanel.gameObject.name}");
         }
     }
 }

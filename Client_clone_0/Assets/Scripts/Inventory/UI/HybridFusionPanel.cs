@@ -64,8 +64,8 @@ public class HybridFusionPanel : MonoBehaviour
     [SerializeField] private GameObject loadingOverlay;
     [SerializeField] private GameObject successEffect;   // Particle/animation play khi thành công
 
-    [Header("Element Sprites (Fire/Water/Earth/Metal/Wood/Wind)")]
-    [SerializeField] private Sprite[] elementSprites;
+    [Header("Shared Element Visuals")]
+    [SerializeField] private ElementIconConfig elementIconConfig;
 
     // ── Runtime ──────────────────────────────────────────────────
     private HybridConfigDto _config;
@@ -90,10 +90,68 @@ public class HybridFusionPanel : MonoBehaviour
 
     public void Open()
     {
+        // Bật root canvas nếu đang bị tắt (prefab root có thể bị SetActive(false) hoặc scale=0)
+        var root = transform.root.gameObject;
+        if (root.transform.localScale == Vector3.zero)
+            root.transform.localScale = Vector3.one;
+        if (!root.activeSelf) root.SetActive(true);
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         if (successEffect != null) successEffect.SetActive(false);
+
+        // ─── Xoá các giá trị Inspector mặc định, prefill từ player data ngay lập tức ───
+        ClearAndPrefill();
+
         SetStatus("", Color.white);
         StartCoroutine(LoadHybridConfig());
+    }
+
+    /// <summary>
+    /// Xoá tất cả text cứng từ Inspector và điền ngay tên hệ chính/phụ từ GameManager
+    /// trước khi API trả về. Tránh hiển thị dữ liệu ví dụ (ví dụ "Hỏa Tier 5") của prefab.
+    /// </summary>
+    private void ClearAndPrefill()
+    {
+        // Reset tên hybrid
+        if (hybridNameText != null) hybridNameText.text = "...";
+        if (hybridDescText != null) hybridDescText.text = "";
+
+        // Reset stat
+        if (statHpText  != null) statHpText.text  = "";
+        if (statMpText  != null) statMpText.text  = "";
+        if (statAtkText != null) statAtkText.text = "";
+        if (statDefText != null) statDefText.text = "";
+
+        // Reset immunity/bonus
+        if (immuneElementsText != null) immuneElementsText.text = "";
+        if (bonusTargetsText   != null) bonusTargetsText.text   = "";
+
+        // Reset cost
+        if (goldCostText  != null) goldCostText.text  = "";
+        if (itemCostText  != null) itemCostText.text  = "";
+        if (itemCountText != null) itemCountText.text = "";
+
+        // Prefill từ player data thực sự (ngay cả trước khi API xong)
+        var pd = GameManager.Instance?.GetPlayerData();
+        if (pd == null) return;
+
+        string elemA = pd.element_type ?? "";
+        string elemB = string.IsNullOrEmpty(pd.secondary_element)
+            ? ElementHelper.GetFixedSecondary(elemA) ?? ""
+            : pd.secondary_element;
+
+        int idA = ElementHelper.ToId(elemA);
+        int idB = ElementHelper.ToId(elemB);
+
+        ApplyElementIcon(elementAIcon, idA, "element A prefill");
+        ApplyElementIcon(elementBIcon, idB, "element B prefill");
+
+        if (elementANameText != null)
+            elementANameText.text = $"{ElementHelper.ToVietnamese(elemA)} Tier {pd.gene_tier}";
+        if (elementBNameText != null)
+        {
+            int secTier = pd.secondary_gene_tier > 0 ? pd.secondary_gene_tier : 0;
+            elementBNameText.text = $"{ElementHelper.ToVietnamese(elemB)} Tier {secTier}";
+        }
     }
 
     // ── Load ─────────────────────────────────────────────────────
@@ -113,27 +171,21 @@ public class HybridFusionPanel : MonoBehaviour
 
         string url = $"{APIClient.BASE_URL}/api/gene/hybrid/config?playerId={_playerData.player_id}";
         using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+        ApplyAuthHeader(req);
         yield return req.SendWebRequest();
 
         SetLoading(false);
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            SetStatus($"Chưa đủ điều kiện: {req.downloadHandler.text}", Color.red);
+            SetStatus(BuildRequestError(req), Color.red);
             yield break;
         }
 
         _config = JsonUtility.FromJson<HybridConfigDto>(req.downloadHandler.text);
         RefreshUI();
         fuseButton.interactable = _config?.canFuse ?? false;
-
-        if (_config != null && !_config.canFuse)
-        {
-            if (!_config.itemSufficient)
-                SetStatus($"Thiếu {_config.fusionItemName}: cần {_config.fusionItemCount}, có {_config.availableItems}.", Color.red);
-            else if (!_config.goldSufficient)
-                SetStatus($"Thiếu Vàng: cần {_config.fusionGoldCost:N0}, có {_config.playerGold:N0}.", Color.red);
-        }
+        UpdateRequirementStatus();
     }
 
     private void RefreshUI()
@@ -147,12 +199,10 @@ public class HybridFusionPanel : MonoBehaviour
         // Icons hệ
         int idA = ElementHelper.ToId(_config.elementA);
         int idB = ElementHelper.ToId(_config.elementB);
-        if (elementAIcon != null && elementSprites != null && idA >= 0 && idA < elementSprites.Length)
-            elementAIcon.sprite = elementSprites[idA];
-        if (elementBIcon != null && elementSprites != null && idB >= 0 && idB < elementSprites.Length)
-            elementBIcon.sprite = elementSprites[idB];
-        if (elementANameText != null) elementANameText.text = ElementHelper.ToVietnamese(_config.elementA);
-        if (elementBNameText != null) elementBNameText.text = ElementHelper.ToVietnamese(_config.elementB);
+        ApplyElementIcon(elementAIcon, idA, "element A config");
+        ApplyElementIcon(elementBIcon, idB, "element B config");
+        if (elementANameText != null) elementANameText.text = $"{ElementHelper.ToVietnamese(_config.elementA)} Tier {_config.elementATier}";
+        if (elementBNameText != null) elementBNameText.text = $"{ElementHelper.ToVietnamese(_config.elementB)} Tier {_config.elementBTier}";
 
         // Stat bonus (riêng từng dòng)
         if (statHpText  != null) statHpText.text  = $"+{_config.statBonus?.hp} HP";
@@ -168,6 +218,11 @@ public class HybridFusionPanel : MonoBehaviour
 
         // Cost
         if (goldCostText  != null) goldCostText.text  = $"{_config.fusionGoldCost:N0} Vàng";
+        if (itemIcon != null && _config.fusionItemIcon > 0)
+        {
+            var iconSprite = Resources.Load<Sprite>($"ItemIcons/{_config.fusionItemIcon}");
+            if (iconSprite != null) itemIcon.sprite = iconSprite;
+        }
         if (itemCostText  != null) itemCostText.text  = $"x{_config.fusionItemCount} {_config.fusionItemName}";
         if (itemCountText != null)
         {
@@ -199,13 +254,14 @@ public class HybridFusionPanel : MonoBehaviour
         req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
         req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
+        ApplyAuthHeader(req);
         yield return req.SendWebRequest();
 
         SetLoading(false);
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            SetStatus($"Fusion thất bại: {req.downloadHandler.text}", Color.red);
+            SetStatus(BuildRequestError(req), Color.red);
             fuseButton.interactable = true;
             yield break;
         }
@@ -241,6 +297,34 @@ public class HybridFusionPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    private void ApplyElementIcon(Image targetImage, int elementId, string logContext)
+    {
+        if (targetImage == null)
+            return;
+
+        var config = ResolveElementIconConfig();
+        if (config == null)
+            return;
+
+        var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(HybridFusionPanel));
+        if (sprite == null)
+        {
+            Debug.LogWarning($"[HybridFusionPanel] Không apply được icon cho {logContext}.", this);
+            return;
+        }
+
+        targetImage.sprite = sprite;
+        targetImage.color = Color.white;
+    }
+
+    private ElementIconConfig ResolveElementIconConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(HybridFusionPanel));
+
+        return elementIconConfig;
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
 
     private string FriendlyElements(string csv)
@@ -251,6 +335,60 @@ public class HybridFusionPanel : MonoBehaviour
         foreach (var p in parts)
             names.Add(ElementHelper.ToVietnamese(p.Trim()));
         return string.Join(", ", names);
+    }
+
+    private void UpdateRequirementStatus()
+    {
+        if (_config == null)
+        {
+            return;
+        }
+
+        if (_config.canFuse)
+        {
+            SetStatus("Đủ điều kiện Hybrid Fusion.", Color.green);
+            return;
+        }
+
+        var messages = new System.Collections.Generic.List<string>();
+        if (!_config.itemSufficient)
+            messages.Add($"Thiếu {_config.fusionItemName}: cần {_config.fusionItemCount}, có {_config.availableItems}.");
+        if (!_config.goldSufficient)
+            messages.Add($"Thiếu Vàng: cần {_config.fusionGoldCost:N0}, có {_config.playerGold:N0}.");
+
+        SetStatus(messages.Count > 0 ? string.Join(" | ", messages) : "Chưa đủ điều kiện Hybrid Fusion.", Color.red);
+    }
+
+    private static void ApplyAuthHeader(UnityEngine.Networking.UnityWebRequest req)
+    {
+        string token = APIClient.Instance != null
+            ? APIClient.Instance.GetToken()
+            : PlayerPrefs.GetString("JWT_TOKEN", "");
+
+        if (!string.IsNullOrEmpty(token))
+            req.SetRequestHeader("Authorization", $"Bearer {token}");
+    }
+
+    private static string BuildRequestError(UnityEngine.Networking.UnityWebRequest req)
+    {
+        string errMsg = req.downloadHandler?.text ?? "";
+        try
+        {
+            var errObj = JsonUtility.FromJson<ErrorResponse>(errMsg);
+            if (!string.IsNullOrEmpty(errObj?.message))
+                errMsg = errObj.message;
+        }
+        catch { }
+
+        if (!string.IsNullOrWhiteSpace(errMsg))
+            return errMsg;
+
+        return req.responseCode switch
+        {
+            401 => "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+            403 => "Không có quyền thực hiện thao tác này.",
+            _   => $"Yêu cầu thất bại (HTTP {req.responseCode})."
+        };
     }
 
     private void SetStatus(string msg, Color color)
@@ -268,6 +406,7 @@ public class HybridFusionPanel : MonoBehaviour
     // ── DTOs ─────────────────────────────────────────────────────
 
     [System.Serializable] private class FuseRequest { public int playerId; public int itemCount; }
+    [System.Serializable] private class ErrorResponse { public string message; }
 
     [System.Serializable]
     private class FuseResponse
@@ -295,11 +434,14 @@ public class HybridFusionPanel : MonoBehaviour
         public string   hybridDescription;
         public string   elementA;
         public string   elementB;
+        public int      elementATier;
+        public int      elementBTier;
         public string[] bonusTargets;
         public string[] immuneElements;
         public float    atkBonusPercent;
         public int      fusionGoldCost;
         public string   fusionItemName;
+        public int      fusionItemIcon;
         public int      fusionItemCount;
         public int      availableItems;
         public bool     itemSufficient;

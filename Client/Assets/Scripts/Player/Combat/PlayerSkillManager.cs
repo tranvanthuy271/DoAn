@@ -67,6 +67,11 @@ public class PlayerSkillManager : NetworkBehaviour
     // ── Dash skill (auto-detected) ──────────────────────────────────────────
     private PlayerDash playerDashComponent;
     private SkillData dashSkillData;
+    // ── Auto-move toward selected target ─────────────────────────────────────
+    private Transform _autoMoveTarget;
+    private bool _autoMoving;
+    private const float AUTO_MOVE_ATTACK_RANGE = 1.5f; // dừng và đánh khi cách target ≤ khoảng này
+
     // ── Normal Attack skill (auto-detected via PlayerCombat) ─────────────────
     private PlayerCombat playerCombatComponent;
     private SkillData normalAttackSkillData;
@@ -348,6 +353,12 @@ public class PlayerSkillManager : NetworkBehaviour
     
     private void HandleSkillInput()
     {
+        // Xử lý auto-move mỗi frame (phải chạy trước xử lý key input)
+        HandleAutoMove();
+
+        // Không xử lý skill input khi đang gõ trong ô chat
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         bool mainSkillUsed = false;
         foreach (var kvp in skillByKey)
         {
@@ -356,23 +367,87 @@ public class PlayerSkillManager : NetworkBehaviour
 
             if (Input.GetKeyDown(key) && skill.CanUse() && !skill.IsUsing())
             {
+                CancelAutoMoveInternal(); // hủy auto-move khi dùng skill khác
                 UseSkill(skill);
                 mainSkillUsed = true;
             }
         }
 
-        // Xử lý NormalAttack bằng chuột trái hoặc phím Z
-        // Bỏ qua nếu: skill khác vừa được dùng cùng frame | chuột đang trên UI | đang dùng
+        // Xử lý NormalAttack bằng phím Z hoặc Enter
+        // (LMB không còn tự động kích hoạt đánh thường nữa)
         if (!mainSkillUsed
             && normalAttackSkillData != null
             && normalAttackSkillData.CanUse() && !normalAttackSkillData.IsUsing())
         {
-            bool lmbPressed = Input.GetMouseButtonDown(0)
-                              && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject());
-            bool zPressed = Input.GetKeyDown(KeyCode.Z);
-            if (lmbPressed || zPressed)
-                UseSkill(normalAttackSkillData);
+            bool zPressed     = Input.GetKeyDown(KeyCode.Z);
+            bool enterPressed = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+            if (zPressed || enterPressed)
+                TryAttackOrAutoMove();
         }
+    }
+
+    /// <summary>
+    /// Nếu có mục tiêu được chọn và còn xa → bắt đầu auto-move.
+    /// Nếu trong tầm → đánh ngay.
+    /// </summary>
+    private void TryAttackOrAutoMove()
+    {
+        if (TargetSelector.HasTarget)
+        {
+            float dist = Vector2.Distance(transform.position, TargetSelector.CurrentTarget.position);
+            if (dist > AUTO_MOVE_ATTACK_RANGE)
+            {
+                _autoMoveTarget = TargetSelector.CurrentTarget;
+                _autoMoving     = true;
+                return; // chờ đến gần rồi tự đánh
+            }
+        }
+        UseSkill(normalAttackSkillData);
+    }
+
+    /// <summary>Xử lý auto-move mỗi frame: inject hướng di chuyển vào InputManager cho đến khi đến nơi.</summary>
+    private void HandleAutoMove()
+    {
+        if (!_autoMoving) return;
+
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
+        {
+            CancelAutoMoveInternal();
+            return;
+        }
+
+        // Hủy nếu Escape hoặc input thủ công
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            CancelAutoMoveInternal();
+            return;
+        }
+
+        if (_autoMoveTarget == null || !_autoMoveTarget.gameObject.activeInHierarchy)
+        {
+            CancelAutoMoveInternal();
+            return;
+        }
+
+        float dist = Vector2.Distance(transform.position, _autoMoveTarget.position);
+        if (dist <= AUTO_MOVE_ATTACK_RANGE)
+        {
+            // Đến nơi → dừng, đánh
+            CancelAutoMoveInternal();
+            if (normalAttackSkillData != null && normalAttackSkillData.CanUse() && !normalAttackSkillData.IsUsing())
+                UseSkill(normalAttackSkillData);
+            return;
+        }
+
+        float dir = _autoMoveTarget.position.x > transform.position.x ? 1f : -1f;
+        InputManager.Instance?.SetAutoMoveInput(dir);
+    }
+
+    private void CancelAutoMoveInternal()
+    {
+        _autoMoving     = false;
+        _autoMoveTarget = null;
+        InputManager.Instance?.CancelAutoMove();
     }
     
     private void UseSkill(SkillData skill)
@@ -741,7 +816,7 @@ public class PlayerSkillManager : NetworkBehaviour
         Debug.Log($"[PlayerSkillManager] ApplyMeleeDamage | center={center} range={range} dmg={dmg}");
 
         // Không lọc LayerMask ở đây vì collider của enemy có thể nằm ở bất kỳ layer nào
-        Collider2D[] hits = Physics2D.OverlapCircleAll(center, range);
+        Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, center, range);
         System.Collections.Generic.HashSet<int> damaged = new System.Collections.Generic.HashSet<int>();
         foreach (var hit in hits)
         {
@@ -1016,11 +1091,24 @@ public class PlayerSkillManager : NetworkBehaviour
             projectileNetworkObject = projectile.AddComponent<NetworkObject>();
             Debug.LogWarning($"[PlayerSkillManager] Projectile '{skill.skillName}' không có NetworkObject, đã tự động thêm vào. Nên thêm NetworkObject vào Prefab!");
         }
+
+        int projectileMapId = ResolveProjectileMapId();
+        if (projectileMapId >= 0)
+        {
+            MapSceneManager.Instance?.MoveToMapScene(projectile, projectileMapId);
+            ApplyProjectileMapVisibility(projectile, projectileMapId);
+            Debug.Log($"[PlayerSkillManager] SpawnProjectile '{skill.skillName}' -> mapId={projectileMapId}, pos={spawnPosition}, facingRight={facingRight}");
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerSkillManager] Không resolve được mapId cho projectile '{skill.skillName}'. Projectile sẽ dùng physics scene mặc định.");
+        }
         
         // Spawn projectile trên network (chỉ server mới spawn được)
         if (IsServer)
         {
             projectileNetworkObject.Spawn();
+            projectile.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
 
             // Gán owner để projectile không tự gây damage cho người bắn
             ulong ownerId = NetworkObjectId;
@@ -1153,6 +1241,36 @@ public class PlayerSkillManager : NetworkBehaviour
             scale.y,
             scale.z
         );
+    }
+
+    private int ResolveProjectileMapId()
+    {
+        int registryMapId = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId)?.MapId ?? -1;
+        if (registryMapId >= 0)
+            return registryMapId;
+
+        if (DungeonManager.Instance != null && DungeonManager.Instance.ActiveDungeonMapId >= 0)
+            return DungeonManager.Instance.ActiveDungeonMapId;
+
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentMapId >= 0)
+            return ClientSceneController.Instance.CurrentMapId;
+
+        if (MapManager.Instance != null && MapManager.Instance.GetMapId() >= 0)
+            return MapManager.Instance.GetMapId();
+
+        return -1;
+    }
+
+    private static void ApplyProjectileMapVisibility(GameObject projectile, int mapId)
+    {
+        if (projectile == null || mapId < 0)
+            return;
+
+        var zoneTag = projectile.GetComponent<ZoneOwnerTag>() ?? projectile.AddComponent<ZoneOwnerTag>();
+        zoneTag.SetZone(mapId, 0);
+
+        var filter = projectile.GetComponent<NetworkVisibilityZoneFilter>() ?? projectile.AddComponent<NetworkVisibilityZoneFilter>();
+        filter.InitializeForServer();
     }
     
     private IEnumerator TriggerProjectileAnimationDelayed(Animator animator, string triggerName)
@@ -1329,10 +1447,17 @@ public class PlayerSkillManager : NetworkBehaviour
         if (index < 0 || index >= skills.Count) return;
 
         SkillData skill = skills[index];
-        if (skill != null && skill.CanUse() && !skill.IsUsing())
+        if (skill == null || !skill.CanUse() || skill.IsUsing()) return;
+
+        // Nếu bấm nút đánh thường → dùng TryAttackOrAutoMove để hỗ trợ auto-move
+        if (skill.skillType == SkillType.NormalAttack)
         {
-            UseSkill(skill);
+            TryAttackOrAutoMove();
+            return;
         }
+
+        CancelAutoMoveInternal(); // skill khác hủy auto-move
+        UseSkill(skill);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

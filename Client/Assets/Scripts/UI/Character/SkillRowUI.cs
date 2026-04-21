@@ -31,6 +31,7 @@ public class SkillRowUI : MonoBehaviour
     private PlayerSkillInfo _info;
     private int             _playerId;
     private Action          _onUpgraded;        // callback để SkillTabUI refresh
+    private bool            _isReadOnlyView;
 
     // ───────────────────────────────────────────────────────
     private void Awake()
@@ -59,11 +60,12 @@ public class SkillRowUI : MonoBehaviour
     /// <param name="info">Thông tin skill trả từ server</param>
     /// <param name="playerId">ID của player</param>
     /// <param name="onUpgraded">Callback sau khi nâng cấp thành công</param>
-    public void SetData(PlayerSkillInfo info, int playerId, Action onUpgraded)
+    public void SetData(PlayerSkillInfo info, int playerId, Action onUpgraded, bool readOnly = false)
     {
         _info       = info;
         _playerId   = playerId;
         _onUpgraded = onUpgraded;
+        _isReadOnlyView = readOnly;
 
         RefreshUI();
 
@@ -76,6 +78,13 @@ public class SkillRowUI : MonoBehaviour
         }
 
         btnUpgrade.onClick.RemoveAllListeners();
+        if (_isReadOnlyView)
+        {
+            btnUpgrade.gameObject.SetActive(false);
+            Debug.Log($"[SkillRowUI][SetData] '{info.skill_name}' in read-only mode.");
+            return;
+        }
+
         // Log thẳng trên sự kiện onClick – cái này kích hoạt TRƯỚC OnClickUpgrade
         btnUpgrade.onClick.AddListener(() =>
             Debug.Log($"[BtnUpgrade] ===== CLICK NHẬN ĐƯỢC ===== skill='{_info?.skill_name}' interactable={btnUpgrade.interactable}")
@@ -108,7 +117,11 @@ public class SkillRowUI : MonoBehaviour
         bool maxed = _info.current_level >= _info.max_level;
         if (txtRequire != null)
         {
-            if (maxed)
+            if (_isReadOnlyView)
+            {
+                txtRequire.text = "<color=#8FD3FF>Chế độ xem hồ sơ bạn bè</color>";
+            }
+            else if (maxed)
             {
                 txtRequire.text = "<color=#FFD700>Đã đạt tối đa</color>";
             }
@@ -132,11 +145,16 @@ public class SkillRowUI : MonoBehaviour
         }
 
         if (txtDesc != null)
-            txtDesc.text = maxed ? "(Max)" : _info.next_level_desc;
+            txtDesc.text = _isReadOnlyView
+                ? (string.IsNullOrWhiteSpace(_info.description) ? "Không có mô tả." : _info.description)
+                : (maxed ? "(Max)" : _info.next_level_desc);
 
         // Nút "+" chỉ active khi có thể nâng
         if (btnUpgrade != null)
-            btnUpgrade.interactable = _info.can_upgrade && !maxed;
+        {
+            btnUpgrade.gameObject.SetActive(!_isReadOnlyView);
+            btnUpgrade.interactable = !_isReadOnlyView && _info.can_upgrade && !maxed;
+        }
 
         // Icon skill (ưu tiên icon_id từ server, fallback sang skill_code)
         if (iconImage != null)
@@ -154,49 +172,50 @@ public class SkillRowUI : MonoBehaviour
 
     private void OnClickUpgrade()
     {
-        Debug.Log($"[SkillRowUI][OnClick] CALLED – skill='{_info?.skill_name}' playerId={_playerId} can_upgrade={_info?.can_upgrade} cur={_info?.current_level}/{_info?.max_level} APIClient={(APIClient.Instance != null ? "OK" : "NULL!")}");
+        if (_isReadOnlyView)
+        {
+            Debug.LogWarning($"[SkillRowUI] Ignored upgrade click in read-only mode for skill='{_info?.skill_name}'.");
+            return;
+        }
 
-        if (_info == null)              { Debug.LogError("[SkillRowUI] _info NULL"); return; }
-        if (APIClient.Instance == null) { Debug.LogError("[SkillRowUI] APIClient.Instance NULL"); return; }
-        if (!_info.can_upgrade)         { Debug.LogWarning("[SkillRowUI] can_upgrade=false"); return; }
-        if (_info.current_level >= _info.max_level) { Debug.LogWarning("[SkillRowUI] Đã max level"); return; }
+        Debug.Log($"[SkillRowUI][OnClick] CALLED – skill='{_info?.skill_name}' can_upgrade={_info?.can_upgrade}");
 
-        Debug.Log($"[SkillRowUI] Gọi UpgradeSkill playerId={_playerId} skillId={_info.skill_id}");
+        if (_info == null)                                  { Debug.LogError("[SkillRowUI] _info NULL"); return; }
+        if (GameplayCommandService.Instance == null)        { Debug.LogError("[SkillRowUI] GameplayCommandService NULL"); return; }
+        if (!_info.can_upgrade)                             { Debug.LogWarning("[SkillRowUI] can_upgrade=false"); return; }
+        if (_info.current_level >= _info.max_level)         { Debug.LogWarning("[SkillRowUI] Đã max level"); return; }
 
-        // Tắt nút trong lúc chờ
         if (btnUpgrade != null) btnUpgrade.interactable = false;
 
-        APIClient.Instance.UpgradeSkill(
-            _playerId,
-            _info.skill_id,
-            onSuccess: _ =>
-            {
-                int newLevel = _info.current_level + 1;
-                Debug.Log($"[SkillRowUI] Đã nâng {_info.skill_name} lên Lv.{newLevel}");
+        GameplayCommandService.OnSkillUpgraded -= HandleSkillUpgraded;
+        GameplayCommandService.OnSkillUpgraded += HandleSkillUpgraded;
+        GameplayCommandService.Instance.UpgradeSkillServerRpc(_info.skill_id);
+    }
 
-                // Cập nhật local GameManager.PlayerData.skills
-                var pd = GameManager.Instance?.GetPlayerData();
-                if (pd?.skills != null)
-                {
-                    foreach (var s in pd.skills)
-                    {
-                        if (s.skill_id == _info.skill_id)
-                        {
-                            s.level = newLevel;
-                            break;
-                        }
-                    }
-                }
+    private void HandleSkillUpgraded(string json)
+    {
+        GameplayCommandService.OnSkillUpgraded -= HandleSkillUpgraded;
 
-                _onUpgraded?.Invoke();   // SkillTabUI sẽ reload toàn bộ list từ server
-            },
-            onError: err =>
+        if (json.Contains("\"error\""))
+        {
+            Debug.LogError($"[SkillRowUI] Lỗi nâng skill: {json}");
+            if (btnUpgrade != null) btnUpgrade.interactable = _info?.can_upgrade ?? false;
+            return;
+        }
+
+        int newLevel = (_info?.current_level ?? 0) + 1;
+        Debug.Log($"[SkillRowUI] Đã nâng {_info?.skill_name} lên Lv.{newLevel}");
+
+        var pd = GameManager.Instance?.GetPlayerData();
+        if (pd?.skills != null)
+        {
+            foreach (var s in pd.skills)
             {
-                Debug.LogError($"[SkillRowUI] Lỗi nâng skill: {err}");
-                // Bật lại nút nếu lỗi
-                if (btnUpgrade != null) btnUpgrade.interactable = _info.can_upgrade;
+                if (s.skill_id == _info?.skill_id) { s.level = newLevel; break; }
             }
-        );
+        }
+
+        _onUpgraded?.Invoke();
     }
 
     #endregion

@@ -77,10 +77,16 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
     {
         // Xác định hướng ngang (±1). Nếu direction.x = 0 thì mặc định bắn sang phải
         float dirX = direction.x >= 0f ? 1f : -1f;
+        int projectileMapId = ResolveProjectileMapId();
 
         // Tính vị trí Y bắt đầu để các viên đạn được căn giữa theo Y player
         float totalSpan = ySpacing * (bulletCount - 1);
         float startY    = -totalSpan * 0.5f;
+
+        if (projectileMapId < 0)
+        {
+            Debug.LogWarning($"[{nameof(HybridMetalWindBarrageSkill)}] Không resolve được mapId cho barrage bullet. Projectile sẽ dùng physics scene mặc định.");
+        }
 
         for (int i = 0; i < bulletCount; i++)
         {
@@ -96,9 +102,18 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
             //   dirX < 0 → xoay 180° theo trục Y để lật ngang
             bullet.transform.rotation = Quaternion.Euler(0f, dirX < 0f ? 180f : 0f, 0f);
 
+            if (projectileMapId >= 0)
+            {
+                MapSceneManager.Instance?.MoveToMapScene(bullet, projectileMapId);
+                ApplyProjectileMapVisibility(bullet, projectileMapId);
+            }
+
             var netObj = bullet.GetComponent<NetworkObject>();
             if (netObj != null)
+            {
                 netObj.Spawn();
+                bullet.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
+            }
 
             // Gán vận tốc trên server (physics chạy server-side)
             var rb = bullet.GetComponent<Rigidbody2D>();
@@ -126,5 +141,35 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
             if (i < bulletCount - 1)
                 yield return new WaitForSeconds(fireDelay);
         }
+    }
+
+    private int ResolveProjectileMapId()
+    {
+        int registryMapId = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId)?.MapId ?? -1;
+        if (registryMapId >= 0)
+            return registryMapId;
+
+        if (DungeonManager.Instance != null && DungeonManager.Instance.ActiveDungeonMapId >= 0)
+            return DungeonManager.Instance.ActiveDungeonMapId;
+
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentMapId >= 0)
+            return ClientSceneController.Instance.CurrentMapId;
+
+        if (MapManager.Instance != null && MapManager.Instance.GetMapId() >= 0)
+            return MapManager.Instance.GetMapId();
+
+        return -1;
+    }
+
+    private static void ApplyProjectileMapVisibility(GameObject projectile, int mapId)
+    {
+        if (projectile == null || mapId < 0)
+            return;
+
+        ZoneOwnerTag zoneTag = projectile.GetComponent<ZoneOwnerTag>() ?? projectile.AddComponent<ZoneOwnerTag>();
+        zoneTag.SetZone(mapId, 0);
+
+        NetworkVisibilityZoneFilter filter = projectile.GetComponent<NetworkVisibilityZoneFilter>() ?? projectile.AddComponent<NetworkVisibilityZoneFilter>();
+        filter.InitializeForServer();
     }
 }

@@ -61,8 +61,8 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
     [SerializeField] private TMP_Text   statusText;
     [SerializeField] private GameObject loadingOverlay;
 
-    [Header("Element Sprites (Fire/Water/Earth/Metal/Wood/Wind)")]
-    [SerializeField] private Sprite[] elementSprites;
+    [Header("Shared Element Visuals")]
+    [SerializeField] private ElementIconConfig elementIconConfig;
 
     // ── Runtime ──────────────────────────────────────────────────
     private GeneMultiConfigDto _config;
@@ -145,6 +145,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         string url       = $"{APIClient.BASE_URL}/api/gene/multi/config?elementType={secondary}&tier={tier}";
 
         using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+        AuthHelper.AddAuthHeader(req);
         yield return req.SendWebRequest();
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
@@ -167,8 +168,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
             tierDisplayText.text = $"Hệ Phụ {secondaryViet} — Tier {_config.tierFrom} → {_config.tierTo}";
 
         int elemId = ElementHelper.ToId(_playerData.secondary_element);
-        if (secondaryElemIcon != null && elementSprites != null && elemId >= 0 && elemId < elementSprites.Length)
-            secondaryElemIcon.sprite = elementSprites[elemId];
+        ApplyElementIcon(secondaryElemIcon, elemId, "secondary element");
 
         int   exp     = _playerData.secondary_gene_exp;
         int   expReq  = _config.geneExpRequired;
@@ -213,6 +213,34 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
             successRateText.text = $"Tỉ lệ: {rate * 100f:F0}%";
     }
 
+    private void ApplyElementIcon(Image targetImage, int elementId, string logContext)
+    {
+        if (targetImage == null)
+            return;
+
+        var config = ResolveElementIconConfig();
+        if (config == null)
+            return;
+
+        var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(SecondaryGeneUpgradePanel));
+        if (sprite == null)
+        {
+            Debug.LogWarning($"[SecondaryGeneUpgradePanel] Không apply được icon cho {logContext}.", this);
+            return;
+        }
+
+        targetImage.sprite = sprite;
+        targetImage.color = Color.white;
+    }
+
+    private ElementIconConfig ResolveElementIconConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(SecondaryGeneUpgradePanel));
+
+        return elementIconConfig;
+    }
+
     // ── Upgrade ──────────────────────────────────────────────────
 
     private void OnUpgradeClicked()
@@ -236,6 +264,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
         req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
         yield return req.SendWebRequest();
 
         SetLoading(false);

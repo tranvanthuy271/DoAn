@@ -24,21 +24,15 @@ public class MapSpawnConfigResponse
     public SpawnEntry[] spawns;
 
     /// <summary>
-    /// Quy tắc drop item theo enemy_id — mỗi phần tử = 1 loại quái.
-    /// Tách riêng khỏi spawns để tránh lặp dữ liệu.
-    /// </summary>
-    public DropEntry[] drops;
-
-    /// <summary>
-    /// Skills của từng loại quái — mỗi phần tử = 1 enemy_id với danh sách skill.
-    /// Dữ liệu đến từ cột skills_json trong bảng enemy.
-    /// Host dùng để set EnemySkillSet ngay sau khi spawn enemy.
+    /// Skills + reward của từng loại quái — mỗi phần tử = 1 enemy_id.
+    /// Dữ liệu đến từ cột skills_json và reward_json trong bảng enemy.
+    /// Host dùng để set EnemySkillSet, EnemyItemDrop và HP ngay sau khi spawn.
     /// </summary>
     public EnemySkillsEntry[] enemy_skills;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Spawn entry — 1 điểm spawn
+//  Spawn entry — 1 điểm spawn (chỉ chứa vị trí + tham số spawn)
 // ─────────────────────────────────────────────────────────────────────────────
 
 [Serializable]
@@ -46,15 +40,6 @@ public class SpawnEntry
 {
     /// <summary>ID loại quái — map sang EnemyPrefabManager.GetEnemyPrefab(enemy_id).</summary>
     public int enemy_id;
-
-    /// <summary>
-    /// HP ghi đè (overwrite) của quái tại vị trí này.
-    /// = 0 → HostSpawnConfigLoader tự fallback về base_hp trong prefab/enemy table.
-    /// </summary>
-    public int hp;
-
-    /// <summary>EXP thưởng khi giết quái này. = 0 → fallback về exp_reward mặc định.</summary>
-    public int exp;
 
     /// <summary>Tọa độ X (world space Unity) — vị trí spawn trên map.</summary>
     public float cx;
@@ -76,22 +61,14 @@ public class SpawnEntry
     /// <summary>Giây chờ trước khi enemy hồi sinh tại vị trí này. Mặc định 30.</summary>
     public int respawn_time = 30;
 
-    /// <summary>Level của enemy. Hiển thị trong EnemyInfoPanel. Mặc định 1.</summary>
+    /// <summary>Level hiển thị của enemy tại điểm spawn này.</summary>
     public int level = 1;
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Drop entry — tỉ lệ rơi cho 1 loại quái
-// ─────────────────────────────────────────────────────────────────────────────
+    /// <summary>HP ghi đè từ map_spawn_config (legacy). 0 = dùng base_hp trong enemy_skills.</summary>
+    public int override_hp;
 
-[Serializable]
-public class DropEntry
-{
-    /// <summary>ID loại quái — match với SpawnEntry.enemy_id.</summary>
-    public int enemy_id;
-
-    /// <summary>Danh sách item có thể rơi khi quái này chết.</summary>
-    public DropItemEntry[] items;
+    /// <summary>EXP ghi đè từ map_spawn_config (legacy). 0 = dùng exp_reward trong enemy_skills.</summary>
+    public int override_exp;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,7 +84,6 @@ public class DropItemEntry
     /// <summary>
     /// Tỉ lệ rơi theo hệ 0.0–1.0.
     /// Ví dụ: 0.25 = 25%, 1.0 = 100%.
-    /// HostSpawnConfigLoader clamp về [0, 1] nếu ngoài range.
     /// </summary>
     public float rate;
 
@@ -119,7 +95,7 @@ public class DropItemEntry
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Enemy skills entry — skill set của 1 loại quái
+//  Enemy skills entry — thông tin đầy đủ của 1 loại quái
 // ─────────────────────────────────────────────────────────────────────────────
 
 [Serializable]
@@ -131,11 +107,26 @@ public class EnemySkillsEntry
     /// <summary>Tên quái được load từ DB (dùng để hiển thị trong EnemyInfoPanel).</summary>
     public string enemy_name = "";
 
-    /// <summary>Sát thương cơ bản của quái — dùng để tính damage_flat khi chỉ có damage_multiplier.</summary>
+    /// <summary>HP tối đa cơ bản — dùng để InitHealth ngay sau khi spawn.</summary>
+    public int base_hp;
+
+    /// <summary>Sát thương cơ bản — tính damage_flat khi chỉ có damage_multiplier.</summary>
     public int base_damage;
 
     /// <summary>Nguyên tố của quái (Fire/Water/Earth/Metal/Wood/Wind/None).</summary>
     public string element_type = "None";
+
+    /// <summary>EXP thưởng khi giết (từ reward_json.exp).</summary>
+    public int exp_reward;
+
+    /// <summary>Vàng thưởng khi giết (từ reward_json.gold).</summary>
+    public int gold_reward;
+
+    /// <summary>Bạc thưởng khi giết (từ reward_json.silver).</summary>
+    public int silver_reward;
+
+    /// <summary>Danh sách drop item (từ reward_json.drops, đã chuẩn hóa rate 0–1).</summary>
+    public DropItemEntry[] drops;
 
     /// <summary>Danh sách skill của quái này.</summary>
     public SkillEntry[] skills;
@@ -154,19 +145,6 @@ public class SkillEntry
     /// </summary>
     public string skill_id = "";
 
-    /// <summary>
-    /// Sát thương tuyệt đối của skill này (đơn vị điểm HP).
-    /// Nếu > 0: dùng trực tiếp giá trị này.
-    /// Nếu = 0: tính từ base_damage × damage_multiplier.
-    /// </summary>
-    public int flat_damage = 0;
-
-    /// <summary>
-    /// Hệ số nhân lên base_damage của enemy. Chỉ dùng khi flat_damage = 0.
-    /// Ví dụ: 2.5 = gây 2.5× base_damage.
-    /// </summary>
-    public float damage_multiplier = 1.0f;
-
     /// <summary>Nguyên tố của skill — có thể khác element_type của quái.</summary>
     public string element = "None";
 
@@ -181,6 +159,24 @@ public class SkillEntry
 
     /// <summary>Bán kính AoE (Unity units). Chỉ dùng khi aoe = true.</summary>
     public float aoe_radius = 3f;
+
+    /// <summary>
+    /// Key của projectile prefab trong EnemyAI.projectilePrefabs.
+    /// Rỗng = skill gây damage trực tiếp / melee / AoE, không spawn đạn.
+    /// </summary>
+    public string projectile_prefab_key = "";
+
+    /// <summary>Tốc độ bay của projectile (units/second).</summary>
+    public float projectile_speed = 8f;
+
+    /// <summary>Thời gian tồn tại tối đa của projectile trước khi tự hủy.</summary>
+    public float projectile_lifetime = 3f;
+
+    /// <summary>Offset spawn theo trục X, luôn tính về phía trước mặt enemy.</summary>
+    public float projectile_spawn_offset_x = 0.6f;
+
+    /// <summary>Offset spawn theo trục Y so với vị trí bắn.</summary>
+    public float projectile_spawn_offset_y = 0.25f;
 
     /// <summary>Tên Animator trigger để play animation khi cast. Rỗng = không có animation riêng.</summary>
     public string animation_trigger = "";

@@ -170,16 +170,8 @@ public class ZoneTransitionController : NetworkBehaviour
     /// </summary>
     private void RefreshVisibilityForClient(ulong movedClientId)
     {
-        foreach (var netObj in FindObjectsByType<NetworkObject>(FindObjectsSortMode.None))
-        {
-            if (!netObj.IsSpawned) continue;
-            var filter = netObj.GetComponent<NetworkVisibilityZoneFilter>();
-            if (filter != null)
-            {
-                netObj.NetworkShow(movedClientId);  // NGO sẽ re-evaluate CheckObjectVisibility
-                // NetworkHide/NetworkShow triggers OnNetworkObjectVisibilityChanged
-            }
-        }
+        foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
+            filter.RefreshVisibility();
     }
 
     private static ClientRpcParams BuildSingleClientRpcParams(ulong clientId) =>

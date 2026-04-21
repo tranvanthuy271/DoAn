@@ -44,6 +44,10 @@ namespace GameServerApi.Data
         // ── Chat & Social ─────────────────────────────────────────────────────
         public DbSet<GameServerApi.Models.Entities.FriendRelation> FriendRelations => Set<GameServerApi.Models.Entities.FriendRelation>();
 
+        // ── Dungeon Wave (entry limit + session reconnect) ────────────────────
+        public DbSet<GameServerApi.Models.Entities.DungeonWaveEntry>   DungeonWaveEntries   => Set<GameServerApi.Models.Entities.DungeonWaveEntry>();
+        public DbSet<GameServerApi.Models.Entities.DungeonWaveSession> DungeonWaveSessions  => Set<GameServerApi.Models.Entities.DungeonWaveSession>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -536,6 +540,40 @@ namespace GameServerApi.Data
                 entity.Property(e => e.Detail).HasColumnName("detail");
                 entity.Property(e => e.SortOrder).HasColumnName("sort_order");
                 entity.HasIndex(e => e.ItemTemplateId);
+            });
+
+            // ── Dungeon Wave Entry (giới hạn lượt vào hàng ngày) ──────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.DungeonWaveEntry>(entity =>
+            {
+                entity.ToTable("dungeon_wave_entry");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("character_id");
+                entity.Property(e => e.DungeonId).HasColumnName("dungeon_id");
+                entity.Property(e => e.EntryDate).HasColumnName("entry_date");
+                entity.Property(e => e.EntriesUsed).HasColumnName("entries_used");
+                entity.Property(e => e.EntriesLimit).HasColumnName("entries_limit");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.HasIndex(e => new { e.PlayerId, e.DungeonId, e.EntryDate }).IsUnique()
+                      .HasDatabaseName("uq_player_dungeon_date");
+            });
+
+            // ── Dungeon Wave Session (reconnect / timeout state) ──────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.DungeonWaveSession>(entity =>
+            {
+                entity.ToTable("dungeon_wave_session");
+                entity.HasKey(e => e.SessionId);
+                entity.Property(e => e.SessionId).HasColumnName("session_id").ValueGeneratedOnAdd();
+                entity.Property(e => e.PlayerId).HasColumnName("character_id");
+                entity.Property(e => e.DungeonId).HasColumnName("dungeon_id");
+                entity.Property(e => e.CurrentWave).HasColumnName("current_wave");
+                entity.Property(e => e.CurrentPhase).HasColumnName("current_phase").HasMaxLength(10);
+                entity.Property(e => e.SessionStartedAt).HasColumnName("session_started_at");
+                entity.Property(e => e.WaveStartedAt).HasColumnName("wave_started_at");
+                entity.Property(e => e.IsActive).HasColumnName("is_active");
+                entity.Property(e => e.ExitReason).HasColumnName("exit_reason").HasMaxLength(20);
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.HasIndex(e => e.PlayerId);
             });
         }
     }

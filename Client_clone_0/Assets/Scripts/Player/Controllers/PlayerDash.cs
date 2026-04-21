@@ -252,6 +252,8 @@ public class PlayerDash : NetworkBehaviour
             return;
         }
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         if (Input.GetKeyDown(dashKey) && canDash && !isDashing)
         {
             Dash();
@@ -570,10 +572,11 @@ public class PlayerDash : NetworkBehaviour
         if (!enableDashDamage || !isDashing || hasDamagedThisDash) return;
 
         // Tìm tất cả enemy trong phạm vi
-        Collider2D[] enemies = Physics2D.OverlapCircleAll(
+        Collider2D[] enemies = MapPhysicsQuery2D.OverlapCircleAll(
+            gameObject,
             transform.position,
             dashHitRange,
-            enemyLayer
+            enemyLayer.value
         );
 
         foreach (Collider2D enemyCollider in enemies)

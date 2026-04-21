@@ -62,8 +62,8 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
     [SerializeField] private Button     confirmButton;
     [SerializeField] private Button     closeButton;
 
-    [Header("Element Sprites")]
-    [SerializeField] private Sprite[] elementSprites;  // length 6, theo ElementHelper.EnglishKeys
+    [Header("Shared Element Visuals")]
+    [SerializeField] private ElementIconConfig elementIconConfig;
 
     // ── Runtime ──────────────────────────────────────────────────
     private string _fixedSecondary;
@@ -89,6 +89,9 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
 
     public void Open()
     {
+        // Bật cả canvas cha nếu đang bị tắt (HideOtherBlacksmithFlows dùng root.SetActive(false))
+        var root = transform.root.gameObject;
+        if (!root.activeSelf) root.SetActive(true);
         gameObject.SetActive(true);
         confirmButton.interactable = false;
         SetStatus("", Color.white);
@@ -113,17 +116,15 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         int primaryIdx   = ElementHelper.ToId(_playerData.element_type);
         int secondaryIdx = ElementHelper.ToId(_fixedSecondary);
 
-        if (primaryIcon   != null && elementSprites != null && primaryIdx   >= 0 && primaryIdx   < elementSprites.Length)
-            primaryIcon.sprite   = elementSprites[primaryIdx];
-        if (secondaryIcon != null && elementSprites != null && secondaryIdx >= 0 && secondaryIdx < elementSprites.Length)
-            secondaryIcon.sprite = elementSprites[secondaryIdx];
+        ApplyElementIcon(primaryIcon, primaryIdx, "primary element");
+        ApplyElementIcon(secondaryIcon, secondaryIdx, "secondary element");
 
         if (primaryNameText   != null)
             primaryNameText.text   = $"Hệ chính\n{ElementHelper.ToVietnamese(_playerData.element_type)} Tier {_playerData.gene_tier}";
         if (secondaryNameText != null)
             secondaryNameText.text = $"Hệ phụ\n{ElementHelper.ToVietnamese(_fixedSecondary)}";
         if (warningText != null)
-            warningText.text = "⚠ Hệ phụ được xác định theo cặp hybrid cố định. Xác nhận KHÔNG THỂ hoàn tác!";
+            warningText.text = "[!] Hệ phụ được xác định theo cặp hybrid cố định. Xác nhận KHÔNG THỂ hoàn tác!";
 
         StartCoroutine(LoadHybridPreview());
     }
@@ -174,6 +175,34 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         if (immuneText       != null) immuneText.text       = $"Miễn nhiễm: {FriendlyElements(cfg.immuneElements)}";
     }
 
+    private void ApplyElementIcon(Image targetImage, int elementId, string logContext)
+    {
+        if (targetImage == null)
+            return;
+
+        var config = ResolveElementIconConfig();
+        if (config == null)
+            return;
+
+        var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(SecondaryGeneSelectPanel));
+        if (sprite == null)
+        {
+            Debug.LogWarning($"[SecondaryGeneSelectPanel] Không apply được icon cho {logContext}.", this);
+            return;
+        }
+
+        targetImage.sprite = sprite;
+        targetImage.color = Color.white;
+    }
+
+    private ElementIconConfig ResolveElementIconConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(SecondaryGeneSelectPanel));
+
+        return elementIconConfig;
+    }
+
     // ── Confirm ──────────────────────────────────────────────────
 
     private void OnConfirmClicked()
@@ -198,6 +227,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
         req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
         yield return req.SendWebRequest();
 
         SetLoading(false);

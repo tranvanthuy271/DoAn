@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Linq;
@@ -191,32 +191,8 @@ public class ItemTemplateManager : MonoBehaviour
             return;
         }
 
-        if (APIClient.Instance == null)
-        {
-            Debug.LogError("[ItemTemplateManager] ❌ APIClient.Instance is null! Không thể load item templates.");
-            Debug.LogError("[ItemTemplateManager] 💡 Kiểm tra xem có GameObject 'APIClient' trong scene không!");
-            isLoading = false;
-            return;
-        }
-
-        isLoading = true;
-        Debug.Log("[ItemTemplateManager] 🌐 Bắt đầu gọi API để load item templates...");
-
-        APIClient.Instance.GetItemTemplates(
-            (templates) =>
-            {
-                // Success callback
-                OnItemTemplatesLoaded(templates);
-                isLoading = false;
-                isLoaded = true;
-            },
-            (error) =>
-            {
-                // Error callback
-                Debug.LogError($"[ItemTemplateManager] ❌ Lỗi khi load item templates: {error}");
-                isLoading = false;
-            }
-        );
+        // Hybrid: dùng UnityWebRequest trực tiếp để tránh phụ thuộc gameplay APIClient.
+        StartCoroutine(LoadItemTemplatesDirect());
     }
 
     /// <summary>

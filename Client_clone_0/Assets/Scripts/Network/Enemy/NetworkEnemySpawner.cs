@@ -26,9 +26,21 @@ public class NetworkEnemySpawner : NetworkBehaviour
     private bool hasStartedLoading = false;
     private readonly HashSet<int> loadedMapIds = new HashSet<int>();
     private readonly HashSet<string> _spawnedEnemyKeys = new HashSet<string>();
-    private readonly Dictionary<int, Dictionary<int, List<DropItemEntry>>> _mapDropLookup = new Dictionary<int, Dictionary<int, List<DropItemEntry>>>();
     private Dictionary<int, GameObject> spawnedEnemies = new Dictionary<int, GameObject>(); // spawn_id -> GameObject
     private Dictionary<int, float> lastRespawnTime = new Dictionary<int, float>(); // spawn_id -> last respawn time
+
+    private void Awake()
+    {
+        if (!spawnOnServerOnly)
+            return;
+
+        var networkObject = GetComponent<NetworkObject>();
+        if (networkObject == null)
+            return;
+
+        networkObject.SpawnWithObservers = false;
+        MapSceneManager.ConfigureNetworkObjectForServerOnlyScene(networkObject);
+    }
 
     private void Start()
     {
@@ -58,6 +70,16 @@ public class NetworkEnemySpawner : NetworkBehaviour
     private void TryStartLoading()
     {
         if (!IsServer || hasStartedLoading) return;
+
+        // WaveDungeonRuntime quản lý toàn bộ việc spawn trong phó bản sóng.
+        // Nếu để NetworkEnemySpawner chạy song song, boss từ enemy_spawns sẽ
+        // xuất hiện ngay lập tức, bỏ qua flow clear quái → boss.
+        if (FindObjectOfType<WaveDungeonRuntime>() != null)
+        {
+            Debug.Log("[NetworkEnemySpawner] WaveDungeonRuntime detected — skipping (runtime manages spawning).");
+            return;
+        }
+
         hasStartedLoading = true;
         StartCoroutine(LoadAndSpawnEnemies());
     }
@@ -83,7 +105,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         if (mapId >= 0)
         {
             int resolvedMapId = ResolveSingleMapId(mapId);
-            if (yielded.Add(resolvedMapId))
+            if (yielded.Add(resolvedMapId) && ShouldAutoSpawnForMap(resolvedMapId))
                 yield return resolvedMapId;
             yield break;
         }
@@ -93,6 +115,12 @@ public class NetworkEnemySpawner : NetworkBehaviour
         {
             foreach (var mapDef in config.maps)
             {
+                if (mapDef == null)
+                    continue;
+
+                if (!ShouldAutoSpawnForMap(mapDef.mapId))
+                    continue;
+
                 if (yielded.Add(mapDef.mapId))
                     yield return mapDef.mapId;
             }
@@ -115,11 +143,25 @@ public class NetworkEnemySpawner : NetworkBehaviour
         return configuredMapId;
     }
 
+    private bool ShouldAutoSpawnForMap(int targetMapId)
+    {
+        MapWorldConfig config = ZoneRoomRegistry.Instance?.Config;
+        MapDefinition mapDef = config != null ? config.GetMap(targetMapId) : null;
+        if (mapDef != null && mapDef.zoneTopology == MapZoneTopology.InstanceOnly)
+        {
+            Debug.Log($"[NetworkEnemySpawner] Skip auto-spawn for map {targetMapId} because it is InstanceOnly.");
+            return false;
+        }
+
+        return true;
+    }
+
     private IEnumerator LoadAndSpawnEnemiesForMap(int targetMapId)
     {
-        Debug.Log($"[NetworkEnemySpawner] Loading enemy spawns for map {targetMapId}...");
+        if (!ShouldAutoSpawnForMap(targetMapId))
+            yield break;
 
-        yield return StartCoroutine(LoadMapDropConfig(targetMapId));
+        Debug.Log($"[NetworkEnemySpawner] Loading enemy spawns for map {targetMapId}...");
 
         string url = $"{apiBaseURL}/enemyspawn/{targetMapId}/spawns";
         
@@ -166,80 +208,6 @@ public class NetworkEnemySpawner : NetworkBehaviour
         }
     }
 
-    private IEnumerator LoadMapDropConfig(int targetMapId)
-    {
-        string url = $"{apiBaseURL}/map/{targetMapId}/spawn-config";
-
-        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Get(url))
-        {
-            if (IsDedicatedWorldServer())
-            {
-                string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey();
-                if (!string.IsNullOrWhiteSpace(apiKey))
-                    www.SetRequestHeader("X-Zone-Api-Key", apiKey);
-            }
-
-            yield return www.SendWebRequest();
-
-            if (www.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-            {
-                _mapDropLookup.Remove(targetMapId);
-                Debug.LogWarning($"[NetworkEnemySpawner] Không load được map_spawn_config cho map {targetMapId}: {www.error}. Sẽ fallback về enemy.drop_items_json.");
-                yield break;
-            }
-
-            try
-            {
-                var response = JsonUtility.FromJson<MapSpawnConfigResponse>(www.downloadHandler.text);
-                var lookup = BuildDropLookup(response?.drops);
-                _mapDropLookup[targetMapId] = lookup;
-                Debug.Log($"[NetworkEnemySpawner] Map {targetMapId}: loaded {lookup.Count} enemy drop configs từ map_spawn_config.");
-            }
-            catch (Exception ex)
-            {
-                _mapDropLookup.Remove(targetMapId);
-                Debug.LogWarning($"[NetworkEnemySpawner] Parse map_spawn_config thất bại cho map {targetMapId}: {ex.Message}. Sẽ fallback về enemy.drop_items_json.");
-            }
-        }
-    }
-
-    private static Dictionary<int, List<DropItemEntry>> BuildDropLookup(DropEntry[] drops)
-    {
-        var lookup = new Dictionary<int, List<DropItemEntry>>();
-        if (drops == null)
-            return lookup;
-
-        foreach (var dropEntry in drops)
-        {
-            if (dropEntry.enemy_id <= 0 || dropEntry.items == null || dropEntry.items.Length == 0)
-                continue;
-
-            var validatedItems = new List<DropItemEntry>();
-            foreach (var item in dropEntry.items)
-            {
-                if (item.item_id <= 0)
-                    continue;
-
-                int minQty = Mathf.Max(1, item.qty_min);
-                int maxQty = Mathf.Max(minQty, item.qty_max);
-                float clampedRate = Mathf.Clamp01(item.rate);
-
-                validatedItems.Add(new DropItemEntry
-                {
-                    item_id = item.item_id,
-                    rate = clampedRate,
-                    qty_min = minQty,
-                    qty_max = maxQty
-                });
-            }
-
-            if (validatedItems.Count > 0)
-                lookup[dropEntry.enemy_id] = validatedItems;
-        }
-
-        return lookup;
-    }
-
     /// <summary>
     /// Spawn enemy tại một spawn point
     /// </summary>
@@ -259,7 +227,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         }
 
         Vector3 spawnPosition = new Vector3(spawnData.spawn_x, spawnData.spawn_y, 0f);
-        
+
         for (int i = 0; i < spawnData.max_spawn_count; i++)
         {
             string spawnKey = $"map{targetMapId}_spawn{spawnData.spawn_id}_i{i}";
@@ -279,6 +247,9 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 if (rb != null)
                     rb.gravityScale = 0f;
 
+                // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
+                MapSceneManager.Instance?.MoveToMapScene(enemyObj, targetMapId);
+
                 // Map-based visibility: visible cho TẤT CẢ player cùng map
                 ApplyMapVisibility(enemyObj, targetMapId);
                 networkObj.Spawn();
@@ -286,7 +257,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
                 ApplyEnemyOverrides(enemyObj, spawnData, targetMapId);
 
-                Debug.Log($"[NetworkEnemySpawner] Spawned '{spawnData.enemy?.enemy_name ?? "Unknown"}' at ({spawnData.spawn_x}, {spawnData.spawn_y}) map={targetMapId}");
+                Debug.Log($"[NetworkEnemySpawner] Spawned '{spawnData.enemy?.enemy_name ?? "Unknown"}' at ({spawnData.spawn_x}, {spawnData.spawn_y}) [copy {i+1}/{spawnData.max_spawn_count}] map={targetMapId}");
             }
             else
             {
@@ -349,68 +320,32 @@ public class NetworkEnemySpawner : NetworkBehaviour
         var itemDrop = enemyObj.GetComponent<EnemyItemDrop>();
         int resolvedEnemyId = spawnData.enemy?.enemy_id > 0 ? spawnData.enemy.enemy_id : spawnData.enemy_type_id;
 
-        if (itemDrop != null
-            && _mapDropLookup.TryGetValue(targetMapId, out var mapDrops)
-            && mapDrops.TryGetValue(resolvedEnemyId, out var configuredDrops)
-            && configuredDrops.Count > 0)
+        if (itemDrop != null && spawnData.enemy?.drops != null && spawnData.enemy.drops.Length > 0)
         {
-            itemDrop.SetDropsFromConfig(configuredDrops);
-            Debug.Log($"[NetworkEnemySpawner] map={targetMapId} enemy_id={resolvedEnemyId}: dùng {configuredDrops.Count} drop rules từ map_spawn_config.");
-            return;
-        }
-
-        // Apply drop rules từ drop_items_json của enemy (fallback spawner)
-        string dropJson = spawnData.enemy?.drop_items_json;
-        if (itemDrop != null && !string.IsNullOrEmpty(dropJson))
-        {
-            var drops = ParseDropItemsJson(dropJson);
-            if (drops != null && drops.Count > 0)
+            var configuredDrops = new List<DropItemEntry>();
+            foreach (var drop in spawnData.enemy.drops)
             {
-                itemDrop.SetDropsFromConfig(drops);
-                Debug.Log($"[NetworkEnemySpawner] map={targetMapId} enemy_id={resolvedEnemyId}: fallback drop rules từ enemy.drop_items_json.");
-            }
-        }
-    }
+                if (drop.item_id <= 0)
+                    continue;
 
-    /// <summary>
-    /// Parse enemy.drop_items_json (format: [{item_id, drop_chance, qty_min, qty_max}])
-    /// thành List&lt;DropItemEntry&gt; để dùng với EnemyItemDrop.SetDropsFromConfig.
-    /// </summary>
-    private static List<DropItemEntry> ParseDropItemsJson(string json)
-    {
-        var result = new List<DropItemEntry>();
-        if (string.IsNullOrWhiteSpace(json)) return result;
-        try
-        {
-            // JsonUtility không hỗ trợ array trực tiếp — dùng wrapper
-            var wrapper = JsonUtility.FromJson<DropJsonWrapper>("{\"items\":" + json + "}");
-            if (wrapper?.items == null) return result;
-            foreach (var item in wrapper.items)
-            {
-                if (item.item_id <= 0) continue;
-                result.Add(new DropItemEntry
+                int qtyMin = Mathf.Max(1, drop.qty_min);
+                int qtyMax = Mathf.Max(qtyMin, drop.qty_max);
+
+                configuredDrops.Add(new DropItemEntry
                 {
-                    item_id = item.item_id,
-                    rate    = item.drop_chance,   // 0–1 (API format)
-                    qty_min = Mathf.Max(1, item.qty_min),
-                    qty_max = Mathf.Max(1, item.qty_max)
+                    item_id = drop.item_id,
+                    rate = Mathf.Clamp01(drop.rate),
+                    qty_min = qtyMin,
+                    qty_max = qtyMax
                 });
             }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[NetworkEnemySpawner] ParseDropItemsJson thất bại: {ex.Message}");
-        }
-        return result;
-    }
 
-    [System.Serializable] private class DropJsonWrapper { public DropItemsEntry[] items; }
-    [System.Serializable] private class DropItemsEntry
-    {
-        public int   item_id;
-        public float drop_chance;
-        public int   qty_min;
-        public int   qty_max;
+            if (configuredDrops.Count > 0)
+            {
+                itemDrop.SetDropsFromConfig(configuredDrops);
+                Debug.Log($"[NetworkEnemySpawner] map={targetMapId} enemy_id={resolvedEnemyId}: dùng {configuredDrops.Count} drop rules từ reward_json.");
+            }
+        }
     }
 
     /// <summary>
@@ -467,8 +402,9 @@ public class NetworkEnemySpawner : NetworkBehaviour
         public float attack_speed;
         public int exp_reward;
         public int gold_reward;
+        public int silver_reward;
+        public DropItemEntry[] drops;
         public string element_type;
         public string enemy_type;
-        public string drop_items_json;   // JSON drop rules từ enemy.drop_items_json trong DB
     }
 }

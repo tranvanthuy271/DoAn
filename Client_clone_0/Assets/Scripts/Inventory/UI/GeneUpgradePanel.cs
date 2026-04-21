@@ -76,17 +76,13 @@ public class GeneUpgradePanel : MonoBehaviour
     [SerializeField] private TMP_Text  statusText;        // thông báo kết quả
     [SerializeField] private GameObject loadingOverlay;   // che UI khi đang gọi API
 
-    // ── Element Icons (kéo vào Inspector theo thứ tự: Fire, Water, Earth, Metal, Wood)
-    [Header("Element Icon Sprites (Fire/Water/Earth/Metal/Wood)")]
-    [SerializeField] private Sprite fireSprite;
-    [SerializeField] private Sprite waterSprite;
-    [SerializeField] private Sprite earthSprite;
-    [SerializeField] private Sprite metalSprite;
-    [SerializeField] private Sprite woodSprite;
+    [Header("Shared Element Visuals")]
+    [SerializeField] private ElementIconConfig elementIconConfig;
 
     // ── Runtime data ──────────────────────────────────────────────────────
     private GeneConfigDto _config;
     private PlayerDataResponse _playerData;
+    private bool _isSecondary;   // true = đang nâng tier hệ phụ
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     private void Awake()
@@ -114,9 +110,21 @@ public class GeneUpgradePanel : MonoBehaviour
     /// <summary>Mở panel nâng cấp gene. Gọi từ bất kỳ Button/script nào.</summary>
     public void Open()
     {
-        // Phải SetActive=true TRƯỚC khi StartCoroutine, vì Coroutine không chạy trên inactive GO.
-        if (!gameObject.activeSelf)
-            gameObject.SetActive(true);
+        _isSecondary = false;
+        // Bật cả canvas cha nếu đang bị tắt (HideOtherBlacksmithFlows dùng root.SetActive(false))
+        var root = transform.root.gameObject;
+        if (!root.activeSelf) root.SetActive(true);
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
+        StartCoroutine(LoadAndRefresh());
+    }
+
+    /// <summary>Mở panel nâng cấp gene HỆ PHỤ (dùng chung panel, gọi API secondary).</summary>
+    public void OpenForSecondary()
+    {
+        _isSecondary = true;
+        var root = transform.root.gameObject;
+        if (!root.activeSelf) root.SetActive(true);
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
         StartCoroutine(LoadAndRefresh());
     }
 
@@ -131,6 +139,12 @@ public class GeneUpgradePanel : MonoBehaviour
     {
         SetLoading(true);
         SetStatus("", Color.white);
+
+        if (_isSecondary)
+        {
+            yield return StartCoroutine(LoadAndRefreshSecondary());
+            yield break;
+        }
 
         // 1. Lấy player data mới nhất từ server
         yield return StartCoroutine(RefreshPlayerData());
@@ -181,59 +195,57 @@ public class GeneUpgradePanel : MonoBehaviour
 
     private IEnumerator RefreshPlayerData()
     {
-        // Lấy playerId: ưu tiên GameManager → ServerPlayerDataManager → PlayerPrefs
-        int playerId = 0;
-        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
-            playerId = GameManager.Instance.GetPlayerData().player_id;
-
-        if (playerId == 0 && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
-        {
-            var spdm = ServerPlayerDataManager.Instance;
-            if (spdm != null)
-            {
-                var pd = spdm.GetPlayerDataForClient(NetworkManager.Singleton.LocalClientId);
-                if (pd != null) playerId = pd.player_id;
-            }
-        }
-
-        if (playerId == 0)
-            playerId = PlayerPrefs.GetInt("USER_ID", 0);
-
-        if (playerId <= 0 || APIClient.Instance == null) yield break;
+        if (GameplayCommandService.Instance == null) yield break;
 
         bool done = false;
-        APIClient.Instance.LoadPlayerData(
-            playerId,
-            onSuccess: data => { GameManager.Instance.SetPlayerData(data); done = true; },
-            onError:   _    => done = true
-        );
+        GameplayCommandService.OnPlayerDataReceived -= HandleRefreshPlayerData;
+        GameplayCommandService.OnPlayerDataReceived += HandleRefreshPlayerData;
+        GameplayCommandService.Instance.RequestPlayerDataServerRpc();
+
+        void HandleRefreshPlayerData(string json)
+        {
+            GameplayCommandService.OnPlayerDataReceived -= HandleRefreshPlayerData;
+            if (!json.Contains("\"error\""))
+            {
+                var data = JsonUtility.FromJson<PlayerDataResponse>(json);
+                if (data != null) GameManager.Instance.SetPlayerData(data);
+            }
+            done = true;
+        }
+
         yield return new WaitUntil(() => done);
     }
 
     private IEnumerator LoadGeneConfig(System.Action<bool> onDone)
     {
+        if (GameplayCommandService.Instance == null) { onDone?.Invoke(false); yield break; }
+
         bool done    = false;
         bool success = false;
 
         Debug.Log($"[GeneUpgradePanel] GetGeneConfig → elementType={_playerData.element_type} tier={_playerData.gene_tier}");
 
-        APIClient.Instance.GetGeneConfig(
-            elementType: _playerData.element_type,
-            tier:        _playerData.gene_tier,
-            onSuccess: cfg  =>
+        GameplayCommandService.OnGeneConfigReceived -= HandleGeneConfig;
+        GameplayCommandService.OnGeneConfigReceived += HandleGeneConfig;
+        GameplayCommandService.Instance.GetGeneConfigServerRpc(_playerData.element_type, _playerData.gene_tier);
+
+        void HandleGeneConfig(string json)
+        {
+            GameplayCommandService.OnGeneConfigReceived -= HandleGeneConfig;
+            if (json.Contains("\"error\""))
             {
-                _config = cfg;
-                done = true; success = true;
-                Debug.Log($"[GeneUpgradePanel] Config loaded — " +
-                          $"tier {cfg.tierFrom}→{cfg.tierTo} | " +
-                          $"geneExpRequired={cfg.geneExpRequired} | " +
-                          $"goldCost={cfg.goldCost} | " +
-                          $"itemId={cfg.itemId} itemName='{cfg.itemName}' | " +
-                          $"itemsMin={cfg.itemsMin} itemsNeeded={cfg.itemsNeeded} | " +
-                          $"baseSuccessRate={cfg.baseSuccessRate}");
-            },
-            onError:   err  => { Debug.LogError($"[GeneUpgradePanel] GetGeneConfig error: {err}"); done = true; }
-        );
+                Debug.LogError($"[GeneUpgradePanel] GetGeneConfig error: {json}");
+            }
+            else
+            {
+                _config = JsonUtility.FromJson<GeneConfigDto>(json);
+                success = _config != null;
+                if (success)
+                    Debug.Log($"[GeneUpgradePanel] Config loaded — tier {_config.tierFrom}→{_config.tierTo} | geneExpRequired={_config.geneExpRequired}");
+            }
+            done = true;
+        }
+
         yield return new WaitUntil(() => done);
         onDone?.Invoke(success);
     }
@@ -319,16 +331,29 @@ public class GeneUpgradePanel : MonoBehaviour
     private void SetElementIcon(string elementType)
     {
         if (elementIcon == null) return;
-        Sprite sprite = elementType switch
+
+        var config = ResolveElementIconConfig();
+        if (config == null)
+            return;
+
+        int elementId = ElementHelper.ToId(elementType);
+        var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(GeneUpgradePanel));
+        if (sprite == null)
         {
-            "Fire"  => fireSprite,
-            "Water" => waterSprite,
-            "Earth" => earthSprite,
-            "Metal" => metalSprite,
-            "Wood"  => woodSprite,
-            _       => null
-        };
-        if (sprite != null) elementIcon.sprite = sprite;
+            Debug.LogWarning($"[GeneUpgradePanel] Thiếu icon cho hệ '{elementType}'.", this);
+            return;
+        }
+
+        elementIcon.sprite = sprite;
+        elementIcon.color = Color.white;
+    }
+
+    private ElementIconConfig ResolveElementIconConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(GeneUpgradePanel));
+
+        return elementIconConfig;
     }
 
     private void RefreshSkillsList()
@@ -380,7 +405,10 @@ public class GeneUpgradePanel : MonoBehaviour
     private void OnUpgradeClicked()
     {
         int itemCount = Mathf.RoundToInt(itemCountSlider.value);
-        StartCoroutine(DoUpgrade(itemCount));
+        if (_isSecondary)
+            StartCoroutine(DoUpgradeSecondary(itemCount));
+        else
+            StartCoroutine(DoUpgrade(itemCount));
     }
 
     private IEnumerator DoUpgrade(int itemCount)
@@ -398,11 +426,28 @@ public class GeneUpgradePanel : MonoBehaviour
         GeneUpgradeResponse response = null;
         string errorMsg = null;
 
-        APIClient.Instance.UpgradeGene(
-            request,
-            onSuccess: res => { response = res; done = true; },
-            onError:   err => { errorMsg = err; done = true; }
-        );
+        if (GameplayCommandService.Instance == null)
+        {
+            SetStatus("Lỗi: Server chưa sẵn sàng.", Color.red);
+            upgradeButton.interactable = true;
+            SetLoading(false);
+            yield break;
+        }
+
+        GameplayCommandService.OnGeneUpgraded -= HandleGeneUpgraded;
+        GameplayCommandService.OnGeneUpgraded += HandleGeneUpgraded;
+        GameplayCommandService.Instance.UpgradeGeneServerRpc(JsonUtility.ToJson(request));
+
+        void HandleGeneUpgraded(string resultJson)
+        {
+            GameplayCommandService.OnGeneUpgraded -= HandleGeneUpgraded;
+            if (resultJson.Contains("\"error\""))
+                errorMsg = resultJson;
+            else
+                response = JsonUtility.FromJson<GeneUpgradeResponse>(resultJson);
+            done = true;
+        }
+
         yield return new WaitUntil(() => done);
 
         if (errorMsg != null)
@@ -486,6 +531,179 @@ public class GeneUpgradePanel : MonoBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    // ══════════════════════════════════════════════════════════════
+    //  CHẾ ĐỘ HỆ PHỤ — dùng REST trực tiếp thay vì GameplayCommandService
+    // ══════════════════════════════════════════════════════════════
+
+    private IEnumerator LoadAndRefreshSecondary()
+    {
+        _playerData = GameManager.Instance?.GetPlayerData();
+        if (_playerData == null)
+        {
+            SetStatus("Không tải được dữ liệu nhân vật.", Color.red);
+            SetLoading(false);
+            yield break;
+        }
+
+        if (string.IsNullOrEmpty(_playerData.secondary_element))
+        {
+            SetStatus("Chưa chọn hệ phụ. Hãy chọn hệ thứ 2 trước.", Color.yellow);
+            upgradeButton.interactable = false;
+            SetLoading(false);
+            yield break;
+        }
+
+        if (_playerData.secondary_gene_tier >= 5)
+        {
+            SetStatus("Hệ phụ đã đạt Tier 5 tối đa!", Color.yellow);
+            upgradeButton.interactable = false;
+            tierDisplayText.text = $"{ElementHelper.ToVietnamese(_playerData.secondary_element)} Tier 5 (MAX)";
+            UpdateExpBar(_playerData.secondary_gene_exp, 0);
+            SetLoading(false);
+            yield break;
+        }
+
+        // Load config từ REST
+        string url = $"{APIClient.BASE_URL}/api/gene/multi/config" +
+                     $"?elementType={_playerData.secondary_element}&tier={_playerData.secondary_gene_tier}";
+        using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+        AuthHelper.AddAuthHeader(req);
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            SetStatus($"Không tải được config hệ phụ: {req.downloadHandler.text}", Color.red);
+            SetLoading(false);
+            yield break;
+        }
+
+        _config = JsonUtility.FromJson<GeneConfigDto>(req.downloadHandler.text);
+        if (_config == null)
+        {
+            SetStatus("Dữ liệu config hệ phụ không hợp lệ.", Color.red);
+            SetLoading(false);
+            yield break;
+        }
+
+        RefreshUISecondary();
+        SetLoading(false);
+    }
+
+    private void RefreshUISecondary()
+    {
+        string secondaryViet = ElementHelper.ToVietnamese(_playerData.secondary_element);
+        tierDisplayText.text = $"Hệ Phụ {secondaryViet} — Tier {_config.tierFrom} → {_config.tierTo}";
+
+        SetElementIcon(_playerData.secondary_element);
+        UpdateExpBar(_playerData.secondary_gene_exp, _config.geneExpRequired);
+
+        goldCostText.text = $"Bạn Cần: {_config.goldCost:N0} vàng";
+        if (goldPlayerText != null)
+            goldPlayerText.text = $"Bạn có: {_playerData.gold:N0} vàng";
+
+        itemCostText.text = $"x{_config.itemsMin} {_config.itemName}";
+        if (itemIcon != null)
+        {
+            var sprite = Resources.Load<Sprite>($"ItemIcons/{_config.itemIcon}");
+            if (sprite != null) itemIcon.sprite = sprite;
+        }
+
+        itemCountSlider.minValue     = _config.itemsMin;
+        itemCountSlider.maxValue     = _config.itemsNeeded;
+        itemCountSlider.wholeNumbers = true;
+        itemCountSlider.value        = _config.itemsMin;
+        OnItemCountChanged(_config.itemsMin);
+
+        if (_config.statBonus != null)
+        {
+            statHpText.text  = $"+{_config.statBonus.hp / 2} HP (×0.5 hệ phụ)";
+            statMpText.text  = $"+{_config.statBonus.mp / 2} MP";
+            statAtkText.text = $"+{_config.statBonus.attack / 2} ATK";
+            statDefText.text = $"+{_config.statBonus.defense / 2} DEF";
+        }
+
+        bool enoughExp  = _playerData.secondary_gene_exp >= _config.geneExpRequired;
+        bool enoughGold = _playerData.gold >= _config.goldCost;
+        upgradeButton.interactable = enoughExp && enoughGold;
+
+        if (!enoughExp)
+            SetStatus($"Cần {_config.geneExpRequired:N0} Gene Exp hệ phụ (đang có: {_playerData.secondary_gene_exp:N0})", Color.yellow);
+        else if (!enoughGold)
+            SetStatus($"Không đủ vàng (cần {_config.goldCost:N0})", Color.yellow);
+        else
+            SetStatus("", Color.white);
+    }
+
+    private IEnumerator DoUpgradeSecondary(int itemCount)
+    {
+        SetLoading(true);
+        upgradeButton.interactable = false;
+
+        string body = JsonUtility.ToJson(new SecondaryUpgradeReq
+        {
+            playerId  = _playerData.player_id,
+            itemCount = itemCount,
+        });
+
+        using var req = new UnityEngine.Networking.UnityWebRequest(
+            $"{APIClient.BASE_URL}/api/gene/secondary/upgrade", "POST");
+        req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(
+            System.Text.Encoding.UTF8.GetBytes(body));
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+        yield return req.SendWebRequest();
+
+        SetLoading(false);
+
+        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            SetStatus($"Lỗi: {req.downloadHandler.text}", Color.red);
+            upgradeButton.interactable = true;
+            yield break;
+        }
+
+        var resp = JsonUtility.FromJson<SecondaryUpgradeResp>(req.downloadHandler.text);
+        if (resp == null)
+        {
+            SetStatus("Response không hợp lệ.", Color.red);
+            upgradeButton.interactable = true;
+            yield break;
+        }
+
+        _playerData.gold               = resp.gold;
+        _playerData.secondary_gene_tier = resp.newSecondaryTier;
+        _playerData.secondary_gene_exp  = resp.newSecondaryExp;
+        GameManager.Instance?.SetPlayerData(_playerData);
+        FindObjectOfType<StatsTabUI>()?.Load();
+
+        if (resp.success)
+        {
+            SetStatus($"✨ Thành công! Hệ Phụ Tier {resp.newSecondaryTier}", Color.green);
+            if (resp.newSecondaryTier >= 5)
+            {
+                upgradeButton.interactable = false;
+                tierDisplayText.text = $"{ElementHelper.ToVietnamese(_playerData.secondary_element)} Tier 5 (MAX)";
+                UpdateExpBar(0, 0);
+                yield break;
+            }
+            yield return new WaitForSeconds(0.5f);
+            yield return StartCoroutine(LoadAndRefreshSecondary());
+        }
+        else
+        {
+            SetStatus("Thất bại. Gene Exp hệ phụ đã reset về 0.", Color.red);
+            upgradeButton.interactable = true;
+            if (_config != null) UpdateExpBar(0, _config.geneExpRequired);
+        }
+    }
+
+    [System.Serializable]
+    private class SecondaryUpgradeReq  { public int playerId; public int itemCount; }
+    [System.Serializable]
+    private class SecondaryUpgradeResp { public bool success; public int newSecondaryTier; public int newSecondaryExp; public int gold; public string message; }
+
 
     /// <summary>Tìm NetworkPlayerDataSync của local player (IsOwner=true)</summary>
     private static NetworkPlayerDataSync FindLocalDataSync()

@@ -64,6 +64,7 @@ public class BossAI : MonoBehaviour
 
     // Skill cooldown tracking  [skill_id → lastCastTime]
     private readonly Dictionary<string, float> _skillLastCast = new();
+    private int _runtimeBaseDamageOverride = -1;
 
     private enum BossState { Idle, Chase, Skill, Dead }
     private BossState _state = BossState.Idle;
@@ -84,6 +85,15 @@ public class BossAI : MonoBehaviour
     {
         StartCoroutine(LoadConfigFromServer());
         FindNearestPlayer();
+    }
+
+    public void ApplyRuntimeOverride(int baseDamage, float runtimeChaseSpeed)
+    {
+        if (baseDamage > 0)
+            _runtimeBaseDamageOverride = baseDamage;
+
+        if (runtimeChaseSpeed > 0f)
+            chaseSpeed = runtimeChaseSpeed;
     }
 
     // ══════════════════════════════════════════════
@@ -231,6 +241,11 @@ public class BossAI : MonoBehaviour
             var add = Instantiate(addSpawnPrefab, (Vector2)transform.position + offset, Quaternion.identity);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             {
+                // Di chuyển add vào cùng physics scene của boss — TRƯỚC Spawn()
+                var bossZoneTag = GetComponent<ZoneOwnerTag>();
+                if (bossZoneTag != null)
+                    MapSceneManager.Instance?.MoveToMapScene(add, bossZoneTag.MapId);
+
                 var netObj = add.GetComponent<NetworkObject>();
                 netObj?.Spawn();
             }
@@ -290,8 +305,13 @@ public class BossAI : MonoBehaviour
         Vector2 dir = (playerTarget.position - transform.position).normalized;
         var obj = Instantiate(skillBreathPrefab, transform.position, Quaternion.identity);
 
+        // Di chuyển projectile vào cùng physics scene của boss
+        var breathZoneTag = GetComponent<ZoneOwnerTag>();
+        if (breathZoneTag != null)
+            MapSceneManager.Instance?.MoveToMapScene(obj, breathZoneTag.MapId);
+
         // Tính damage
-        int baseDmg = _config != null ? _config.base_damage : 30;
+        int baseDmg = ResolveBaseDamage();
         int dmg     = Mathf.RoundToInt(baseDmg * skill.damage_multiplier * _damageMultiplier);
 
         var proj = obj.GetComponent<EnemyProjectile>();
@@ -310,11 +330,17 @@ public class BossAI : MonoBehaviour
         if (skillNovaPrefab == null) return;
 
         var obj = Instantiate(skillNovaPrefab, transform.position, Quaternion.identity);
-        int baseDmg = _config != null ? _config.base_damage : 30;
+
+        // Di chuyển nova vào cùng physics scene của boss
+        var novaZoneTag = GetComponent<ZoneOwnerTag>();
+        if (novaZoneTag != null)
+            MapSceneManager.Instance?.MoveToMapScene(obj, novaZoneTag.MapId);
+
+        int baseDmg = ResolveBaseDamage();
         int dmg     = Mathf.RoundToInt(baseDmg * skill.damage_multiplier * _damageMultiplier);
 
         // Tìm tất cả player trong range và gây damage
-        var colliders = Physics2D.OverlapCircleAll(transform.position, skill.range);
+        var colliders = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, skill.range);
         foreach (var col in colliders)
         {
             if (!col.CompareTag("Player")) continue;
@@ -383,8 +409,22 @@ public class BossAI : MonoBehaviour
     private void FindNearestPlayer()
     {
         float nearest = float.MaxValue;
+        int myMapId = GetComponent<ZoneOwnerTag>()?.MapId ?? -999;
+        var registry = ZoneRoomRegistry.Instance;
+
         foreach (var go in GameObject.FindGameObjectsWithTag("Player"))
         {
+            // Lọc cùng map — bỏ qua player ở map khác
+            if (registry != null && myMapId != -999)
+            {
+                var netObj = go.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null)
+                {
+                    var room = registry.GetClientRoom(netObj.OwnerClientId);
+                    if (room == null || room.MapId != myMapId) continue;
+                }
+            }
+
             float d = Vector2.Distance(transform.position, go.transform.position);
             if (d < nearest) { nearest = d; playerTarget = go.transform; }
         }
@@ -421,6 +461,14 @@ public class BossAI : MonoBehaviour
         _state = BossState.Dead;
         if (_rb) _rb.velocity = Vector2.zero;
         if (_anim) _anim.SetTrigger("die");
+    }
+
+    private int ResolveBaseDamage()
+    {
+        if (_runtimeBaseDamageOverride > 0)
+            return _runtimeBaseDamageOverride;
+
+        return _config != null ? _config.base_damage : 30;
     }
 
     // ══════════════════════════════════════════════

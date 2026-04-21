@@ -111,20 +111,20 @@ public class InventorySlotUI : MonoBehaviour
         {
             if (slot != null && slot.quantity == 0)
             {
-                Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} trống (quantity = 0)");
+                //Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} trống (quantity = 0)");
             }
             Clear();
             return;
         }
 
-        Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - itemCode={slot.itemCode}, iconId={slot.iconId}, qty={slot.quantity}");
+      //  Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - itemCode={slot.itemCode}, iconId={slot.iconId}, qty={slot.quantity}");
 
         // Set icon theo iconId (trùng tên sprite trong Resources/ItemIcons hoặc key Addressables)
         if (iconImage != null)
         {
             if (IconDatabase.Instance == null)
             {
-                Debug.LogWarning($"[InventorySlotUI] SetSlot: IconDatabase.Instance is null! Không thể load icon cho slot {slotIndex}");
+              //  Debug.LogWarning($"[InventorySlotUI] SetSlot: IconDatabase.Instance is null! Không thể load icon cho slot {slotIndex}");
                 iconImage.enabled = false;
                 iconImage.sprite = null;
             }
@@ -149,19 +149,19 @@ public class InventorySlotUI : MonoBehaviour
                 if (icon != null)
                 {
                     UIRuntimeAssetHelper.SetSpriteWithNativeFit(iconImage, icon, GetMaxIconSize());
-                    Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - Đã load icon thành công: {resolvedIconId}");
+                   // Debug.Log($"[InventorySlotUI] SetSlot: Slot {slotIndex} - Đã load icon thành công: {resolvedIconId}");
                 }
                 else
                 {
                     iconImage.enabled = false;
                     iconImage.sprite = null;
-                    Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - KHÔNG tìm thấy icon với iconId='{resolvedIconId}' trong IconDatabase!");
+                  //  Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - KHÔNG tìm thấy icon với iconId='{resolvedIconId}' trong IconDatabase!");
                 }
             }
         }
         else
         {
-            Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - iconImage is null! Chưa gán trong Inspector.");
+          //  Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - iconImage is null! Chưa gán trong Inspector.");
         }
 
         if (quantityText != null)
@@ -171,7 +171,7 @@ public class InventorySlotUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - quantityText is null! Chưa gán trong Inspector.");
+          //  Debug.LogWarning($"[InventorySlotUI] SetSlot: Slot {slotIndex} - quantityText is null! Chưa gán trong Inspector.");
         }
 
         if (equippedMark != null)
@@ -240,7 +240,7 @@ public class InventorySlotUI : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[InventorySlotUI] Clicked slot {slotIndex} - itemCode={currentData.itemCode}, qty={currentData.quantity}");
+      //  Debug.Log($"[InventorySlotUI] Clicked slot {slotIndex} - itemCode={currentData.itemCode}, qty={currentData.quantity}");
 
         // Fire event để InventoryUI mở panel chi tiết
         OnSlotClicked?.Invoke(currentData);

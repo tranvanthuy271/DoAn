@@ -159,6 +159,8 @@ public class PlayerSkill2 : NetworkBehaviour
             return;
         }
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         if (Input.GetKeyDown(skill2Key) && canUseSkill2 && !isUsingSkill2)
         {
             UseSkill2();

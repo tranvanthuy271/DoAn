@@ -70,74 +70,32 @@ public class LoginController : MonoBehaviour
                     // Debug.LogError("CRITICAL: USER_ID vẫn = 0 sau khi lưu! Kiểm tra lại.");
                 }
 
-                // Load player data
-                LoadPlayerData(userId);
+                // Show loading overlay → loads player data → auto-transitions to GameScene
+                ShowLoadingPanel(userId);
             },
             onError: (error) =>
             {
-                // Debug.LogError($"Login failed: {error}");
-                ShowError($"Đăng nhập thất bại: {error}");
+                // Hiện ErrorNotifyPanel thay vì chỉ text đỏ
                 loginButton.interactable = true;
+                LoginLoadingManager.ShowErrorStatic(error, onDismiss: () =>
+                {
+                    loginButton.interactable = true;
+                });
             }
         );
     }
 
-    private void LoadPlayerData(int userId)
+    /// <summary>
+    /// Find or create LoginLoadingManager and start the loading flow.
+    /// </summary>
+    private void ShowLoadingPanel(int userId)
     {
-        apiClient.LoadPlayerData(
-            userId,
-            onSuccess: (playerData) =>
-            {
-                // Debug.Log($"[LoginController] Player data loaded! Level: {playerData.level}, Map: {playerData.map_id}");
-                
-                // Đảm bảo GameManager tồn tại trước khi set data
-                if (GameManager.Instance == null)
-                {
-                    GameObject gameManagerObj = new GameObject("GameManager");
-                    gameManagerObj.AddComponent<GameManager>();
-                }
-                
-                // Lưu player data vào GameManager
-                if (GameManager.Instance != null)
-                {
-                    GameManager.Instance.SetPlayerData(playerData);
-                    // Debug.Log("[LoginController] Player data saved to GameManager.");
-                }
-                else
-                {
-                    // Debug.LogError("[LoginController] GameManager.Instance is still null after creation!");
-                }
-                
-                // Chuyển sang GameScene (đã có player data)
-                // Debug.Log("[LoginController] Player data found. Loading scene 'GameScene'...");
-                SceneManager.LoadScene("GameScene");
-            },
-            onError: (error) =>
-            {
-                // Debug.LogError($"[LoginController] Load player data failed: {error}");
-                
-                // Nếu chưa có player_data (404), chuyển sang scene chọn hệ để tạo nhân vật
-                if (error.Contains("404") || error.Contains("Not Found") || error.Contains("not found") || error.Contains("Player không tồn tại"))
-                {
-                    // Debug.Log("[LoginController] Chưa có player_data, chuyển sang scene SelectElement để tạo nhân vật");
-                    // Đảm bảo USER_ID đã được lưu trước khi chuyển scene
-                    int savedUserId = PlayerPrefs.GetInt("USER_ID", 0);
-                    if (savedUserId == 0)
-                    {
-                        // Debug.LogWarning("[LoginController] USER_ID chưa được lưu, lưu lại từ userId parameter");
-                        PlayerPrefs.SetInt("USER_ID", userId);
-                        PlayerPrefs.Save();
-                    }
-                    // Debug.Log($"[LoginController] Chuyển sang SelectElement với USER_ID: {PlayerPrefs.GetInt("USER_ID", 0)}");
-                    SceneManager.LoadScene("SelectElement");
-                }
-                else
-                {
-                    ShowError($"Không thể tải dữ liệu: {error}");
-                    loginButton.interactable = true;
-                }
-            }
-        );
+        if (LoginLoadingManager.Instance == null)
+        {
+            var go = new GameObject("[LoginLoadingManager]");
+            go.AddComponent<LoginLoadingManager>();
+        }
+        LoginLoadingManager.Instance.BeginLoading(userId);
     }
 
     private void OnRegisterClicked()
@@ -151,3 +109,4 @@ public class LoginController : MonoBehaviour
         errorText.color = Color.red;
     }
 }
+

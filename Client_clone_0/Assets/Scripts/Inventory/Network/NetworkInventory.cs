@@ -121,26 +121,7 @@ public class NetworkInventory : NetworkBehaviour
         }
 
         ulong capturedClientId = senderClientId;
-        if (APIClient.Instance != null)
-        {
-            APIClient.Instance.GetPlayerInventory(
-                playerId,
-                (items) =>
-                {
-                    string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
-                    Debug.Log($"[NetworkInventory] Host trả dữ liệu inventory ({items.Length} items) về clientId={capturedClientId}");
-                    var clientParams = new ClientRpcParams
-                    {
-                        Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
-                    };
-                    SendInventoryDataClientRpc(json, clientParams);
-                },
-                (error) => Debug.LogError($"[NetworkInventory] Lỗi fetch inventory cho clientId={capturedClientId}: {error}")
-            );
-            return;
-        }
-
-        Debug.Log("[NetworkInventory] RequestInventoryDataServerRpc: APIClient null, dùng direct API fetch.");
+        Debug.Log("[NetworkInventory] RequestInventoryDataServerRpc: fetch inventory trực tiếp từ DB.");
         StartCoroutine(PushInventoryDataToClientDirect(playerId, capturedClientId));
     }
 
@@ -165,37 +146,7 @@ public class NetworkInventory : NetworkBehaviour
         }
 
         ulong capturedClientId = senderClientId;
-        if (APIClient.Instance == null)
-        {
-            Debug.Log("[NetworkInventory] RequestSortInventoryServerRpc: APIClient null, dùng direct API sort.");
-            StartCoroutine(SortInventoryDirect(playerId, capturedClientId));
-            return;
-        }
-
-        // Bước 1: sort trên DB
-        APIClient.Instance.SortInventory(
-            playerId,
-            _ =>
-            {
-                Debug.Log($"[NetworkInventory] Sort thành công cho playerId={playerId}, đang fetch dữ liệu mới...");
-                // Bước 2: fetch lại inventory mới nhất sau khi sort
-                APIClient.Instance.GetPlayerInventory(
-                    playerId,
-                    items =>
-                    {
-                        string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = items });
-                        var clientParams = new ClientRpcParams
-                        {
-                            Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedClientId } }
-                        };
-                        Debug.Log($"[NetworkInventory] Gửi inventory đã sort ({items.Length} items) về clientId={capturedClientId}");
-                        SendInventoryDataClientRpc(json, clientParams);
-                    },
-                    err => Debug.LogError($"[NetworkInventory] Fetch sau sort thất bại cho clientId={capturedClientId}: {err}")
-                );
-            },
-            err => Debug.LogError($"[NetworkInventory] Sort thất bại cho clientId={capturedClientId}: {err}")
-        );
+        StartCoroutine(SortInventoryDirect(playerId, capturedClientId));
     }
 
     /// <summary>
@@ -868,56 +819,14 @@ public class NetworkInventory : NetworkBehaviour
         // Lấy JWT của đúng client (không dùng JWT của HOST khi sync cho CLIENT)
         string clientJwt = ResolveClientJwt(OwnerClientId);
 
-        // Gọi API
-        if (APIClient.Instance != null)
+        if (string.IsNullOrEmpty(clientJwt))
         {
-            int capturedPlayerId = playerId;
-            ulong capturedOwnerId = OwnerClientId;
-
-            APIClient.Instance.AddItemsToInventory(
-                playerId,
-                items,
-                (response) =>
-                {
-                    Debug.Log($"[NetworkInventory] ✅ Đã sync inventory với DB thành công! Response: {response}");
-
-                    // ✅ Push inventory mới nhất từ DB về đúng client để update UI
-                    APIClient.Instance.GetPlayerInventory(
-                        capturedPlayerId,
-                        (freshItems) =>
-                        {
-                            string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = freshItems });
-                            var clientParams = new ClientRpcParams
-                            {
-                                Send = new ClientRpcSendParams { TargetClientIds = new[] { capturedOwnerId } }
-                            };
-                            SendInventoryDataClientRpc(json, clientParams);
-                            Debug.Log($"[NetworkInventory] 📡 Đã push {freshItems.Length} items về client {capturedOwnerId} sau khi lưu DB");
-                        },
-                        (fetchError) =>
-                        {
-                            Debug.LogError($"[NetworkInventory] ❌ Lỗi fetch inventory sau sync DB: {fetchError}");
-                        }
-                    );
-                },
-                (error) =>
-                {
-                    Debug.LogError($"[NetworkInventory] ❌ Lỗi khi sync inventory với DB: {error}");
-                },
-                jwtOverride: clientJwt
-            );
+            Debug.LogWarning("[NetworkInventory] APIClient.Instance is null và không có JWT client! Không thể sync với DB.");
+            return;
         }
-        else
-        {
-            if (string.IsNullOrEmpty(clientJwt))
-            {
-                Debug.LogWarning("[NetworkInventory] APIClient.Instance is null và không có JWT client! Không thể sync với DB.");
-                return;
-            }
 
-            Debug.Log("[NetworkInventory] APIClient null (dedicated server) → sync inventory qua UnityWebRequest trực tiếp.");
-            StartCoroutine(SyncInventoryToApiDirect(playerId, items, clientJwt, OwnerClientId));
-        }
+        Debug.Log("[NetworkInventory] sync inventory qua UnityWebRequest trực tiếp.");
+        StartCoroutine(SyncInventoryToApiDirect(playerId, items, clientJwt, OwnerClientId));
     }
 
     /// <summary>
@@ -941,35 +850,8 @@ public class NetworkInventory : NetworkBehaviour
 
         Debug.Log($"[NetworkInventory] Đang load inventory từ DB cho player {playerId} (OwnerClientId={OwnerClientId})...");
 
-        // Gọi API để load player data
-        if (APIClient.Instance != null)
-        {
-            APIClient.Instance.LoadPlayerData(
-                playerId,
-                (response) =>
-                {
-                    if (response.inventory != null && response.inventory.Length > 0)
-                    {
-                        Debug.Log($"[NetworkInventory] ✅ Load thành công {response.inventory.Length} items từ DB!");
-                        PopulateInventoryFromDB(response.inventory);
-                    }
-                    else
-                    {
-                        Debug.Log("[NetworkInventory] Inventory trong DB trống (player mới).");
-                    }
-                },
-                (error) =>
-                {
-                    Debug.LogError($"[NetworkInventory] ❌ Lỗi khi load inventory từ DB: {error}");
-                }
-            );
-        }
-        else
-        {
-            // Dedicated server không có APIClient → gọi API trực tiếp
-            Debug.Log("[NetworkInventory] APIClient null (dedicated server) → dùng UnityWebRequest trực tiếp.");
-            StartCoroutine(LoadInventoryFromApiDirect(playerId));
-        }
+        // Dedicated server: gọi API trực tiếp bằng ZoneApiKey
+        StartCoroutine(LoadInventoryFromApiDirect(playerId));
     }
 
     private int ResolveInventoryApiPlayerId(ulong clientId)

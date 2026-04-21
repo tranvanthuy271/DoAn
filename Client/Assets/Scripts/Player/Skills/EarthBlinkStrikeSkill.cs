@@ -143,6 +143,11 @@ public class EarthBlinkStrikeSkill : NetworkBehaviour
 
             NetworkObject netObj = proj.GetComponent<NetworkObject>();
             if (netObj == null) netObj = proj.AddComponent<NetworkObject>();
+
+            // Di chuyển vào physics scene của map player — TRƯỚC Spawn()
+            var _blinkRoom = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId);
+            MapSceneManager.Instance?.MoveToMapScene(proj, _blinkRoom?.MapId ?? -999);
+
             netObj.Spawn();
 
             // NetworkTransform đồng bộ vị trí sang client,

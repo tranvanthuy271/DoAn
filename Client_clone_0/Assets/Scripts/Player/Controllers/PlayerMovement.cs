@@ -56,12 +56,15 @@ public class PlayerMovement : MonoBehaviour
     private bool canFly = true;
     private float flightCooldown = 0f;
 
+    private NetworkPlayerController _networkPlayerController;
+
     private void Awake()
     {
         controller = GetComponent<PlayerController>();
         rb = GetComponent<Rigidbody2D>();
         playerAnimator = GetComponent<PlayerAnimator>();
         networkObject = GetComponent<NetworkObject>();
+        _networkPlayerController = GetComponent<NetworkPlayerController>();
     }
 
     private void Start()
@@ -185,17 +188,21 @@ public class PlayerMovement : MonoBehaviour
 
     public void HandleMovement()
     {
-        // QUAN TRỌNG: Khi có network, movement được xử lý bởi ServerRpc trong NetworkPlayerController
-        // Chỉ xử lý movement local nếu không có network (standalone mode)
-        if (networkObject != null && NetworkManager.Singleton != null)
+        // Khi có network VÀ có NetworkPlayerController, movement của owner được xử lý bởi
+        // NetworkPlayerController.MoveServerRpc() — không xử lý ở đây để tránh conflict.
+        // Nhưng nếu KHÔNG có NetworkPlayerController (Fusion prefab F_Phong, F_Kim...),
+        // owner vẫn phải tự xử lý movement local ở đây.
+        if (networkObject != null && NetworkManager.Singleton != null && _networkPlayerController != null)
         {
-            // Có network: 
-            // - Owner: Movement được xử lý bởi NetworkPlayerController.MoveServerRpc()
-            // - Non-owner: Để NetworkTransform tự sync
+            // Có NetworkPlayerController: movement của owner dùng ServerRpc, non-owner dùng NetworkTransform
             return;
         }
-        
-        // Nếu không có network (standalone), xử lý movement local
+
+        // Không phải owner → NetworkTransform xử lý vị trí, không chạy physics local
+        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
+        {
+            return;
+        }
 
         PlayerStats stats = controller.stats;
         if (stats == null) return;

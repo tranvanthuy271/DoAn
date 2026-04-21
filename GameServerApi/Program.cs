@@ -137,7 +137,58 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<GameDbContext>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
         dbContext.Database.EnsureCreated();
+
+        // Normalize legacy NULL string data so older rows do not crash EF string materialization.
+        var repairStatements = new (string Label, string Sql)[]
+        {
+            ("dungeon_config.description", "UPDATE dungeon_config SET description = '' WHERE description IS NULL"),
+            ("dungeon_config.scene_name", "UPDATE dungeon_config SET scene_name = '' WHERE scene_name IS NULL"),
+            ("dungeon_config.reward_json", "UPDATE dungeon_config SET reward_json = '{{}}' WHERE reward_json IS NULL OR reward_json = ''"),
+            ("dungeon_config.thumbnail_icon_id", "UPDATE dungeon_config SET thumbnail_icon_id = '' WHERE thumbnail_icon_id IS NULL"),
+            ("map_config.map_name", "UPDATE map_config SET map_name = CONCAT('Map ', map_id) WHERE map_name IS NULL OR map_name = ''"),
+            ("map_config.scene_name", "UPDATE map_config SET scene_name = '' WHERE scene_name IS NULL"),
+            ("map_config.spawn_points_json", "UPDATE map_config SET spawn_points_json = '[]' WHERE spawn_points_json IS NULL OR spawn_points_json = ''"),
+            // Đồng bộ map_config.scene_name cho dungeon maps: lấy scene_name đúng từ dungeon_config
+            ("map_config↔dungeon_config scene sync",
+             "UPDATE map_config mc INNER JOIN dungeon_config dc ON mc.map_id = dc.map_id AND dc.is_active = 1 " +
+             "SET mc.scene_name = dc.scene_name " +
+             "WHERE CAST(mc.scene_name AS CHAR) COLLATE utf8mb4_general_ci != CAST(dc.scene_name AS CHAR) COLLATE utf8mb4_general_ci " +
+             "AND dc.scene_name != ''")
+        };
+
+        foreach (var repair in repairStatements)
+        {
+            int affected = dbContext.Database.ExecuteSqlRaw(repair.Sql);
+            if (affected > 0)
+            {
+                logger.LogWarning("Startup data repair normalized {Count} row(s) in {Label}.", affected, repair.Label);
+            }
+        }
+
+        bool hasActiveDungeons = dbContext.DungeonConfigs.AsNoTracking().Any(d => d.IsActive);
+        if (!hasActiveDungeons)
+        {
+            bool hasRequiredDungeonMaps = dbContext.MapConfigs.AsNoTracking()
+                .Count(m => m.MapId == 110 || m.MapId == 111) == 2;
+
+            if (hasRequiredDungeonMaps)
+            {
+                int seeded = dbContext.Database.ExecuteSqlRaw(
+                    "INSERT INTO dungeon_config " +
+                    "(dungeon_id, dungeon_name, dungeon_type, map_id, scene_name, max_players, min_level_required, time_limit_seconds, description, boss_enemy_id, reward_json, thumbnail_icon_id, is_active) VALUES " +
+                    "(6, 'Phó Bản Sóng', 'solo', 110, 'DungeonWaveScene', 1, 1, 0, '', NULL, '{{}}', '', 1), " +
+                    "(7, 'Phó Bản Tổ Đội', 'multi', 111, 'DungeonPartyScene', 4, 1, 0, '', NULL, '{{}}', '', 1)");
+
+                logger.LogWarning("Startup dungeon seed inserted {Count} default row(s).", seeded);
+            }
+            else
+            {
+                logger.LogWarning("Skipped default dungeon seed because map_id 110 and 111 were not both present in map_config.");
+            }
+        }
+
         Console.WriteLine("✓ Database đã được kiểm tra/tạo thành công.");
     }
     catch (Exception ex)

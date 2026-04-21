@@ -26,6 +26,14 @@ public class PlayerController : MonoBehaviour
         playerAnimator = GetComponent<PlayerAnimator>();
         rb = GetComponent<Rigidbody2D>();
         networkObject = GetComponent<NetworkObject>();
+
+        // Tạo runtime clone của ScriptableObject để mỗi player instance có stats riêng.
+        // Tránh shared mutation giữa nhiều player trên server, và tránh ghi đè asset file
+        // trong Editor khi play mode sửa moveSpeed/maxHealth/baseDamage.
+        if (stats != null)
+        {
+            stats = Instantiate(stats);
+        }
     }
 
     private void Start()
@@ -89,6 +97,11 @@ public class PlayerController : MonoBehaviour
 
         // Chỉ owner mới xử lý input / toggle
         if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
+        {
+            return;
+        }
+
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
         {
             return;
         }

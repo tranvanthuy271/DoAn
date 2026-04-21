@@ -1,0 +1,113 @@
+using System.Collections;
+using System.Collections.Generic;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.Events;
+
+public class PartyDungeonRuntime : BaseDungeonInstance
+{
+    [Header("Config")]
+    [SerializeField] private PartyDungeonConfig config;
+
+    private readonly List<NetworkObject> _aliveEnemies = new();
+    private NetworkObject _bossObject;
+    private bool _bossSpawned;
+    private bool _completed;
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (!IsServer || config == null)
+            return;
+
+        SpawnEnemies();
+    }
+
+    private void SpawnEnemies()
+    {
+        _aliveEnemies.Clear();
+        _bossObject = null;
+        _bossSpawned = false;
+        _completed = false;
+
+        foreach (var enemyConfig in config.enemySpawns)
+        {
+            NetworkObject enemy = SpawnConfiguredEnemy(enemyConfig, 1f, false);
+            RegisterEnemy(enemy, false);
+        }
+
+        BroadcastStatus("Tiêu diệt toàn bộ quái vật để gọi Boss.");
+    }
+
+    private void RegisterEnemy(NetworkObject networkObject, bool isBoss)
+    {
+        if (networkObject == null)
+            return;
+
+        if (!isBoss)
+            _aliveEnemies.Add(networkObject);
+        else
+            _bossObject = networkObject;
+
+        UnityAction handler = null;
+        if (networkObject.TryGetComponent<NetworkEnemyHealth>(out var networkEnemyHealth))
+        {
+            handler = () =>
+            {
+                if (!IsServer)
+                    return;
+                networkEnemyHealth.OnDeath.RemoveListener(handler);
+                HandleEnemyDeath(networkObject, isBoss);
+            };
+            networkEnemyHealth.OnDeath.AddListener(handler);
+            return;
+        }
+
+        if (networkObject.TryGetComponent<EnemyHealth>(out var enemyHealth))
+        {
+            handler = () =>
+            {
+                if (!IsServer)
+                    return;
+                enemyHealth.OnDeath.RemoveListener(handler);
+                HandleEnemyDeath(networkObject, isBoss);
+            };
+            enemyHealth.OnDeath.AddListener(handler);
+        }
+    }
+
+    private void HandleEnemyDeath(NetworkObject networkObject, bool isBoss)
+    {
+        if (_completed)
+            return;
+
+        if (!isBoss)
+        {
+            _aliveEnemies.Remove(networkObject);
+            if (_aliveEnemies.Count == 0 && !_bossSpawned)
+                SpawnBoss();
+            return;
+        }
+
+        StartCoroutine(CompleteDungeonCoroutine());
+    }
+
+    private void SpawnBoss()
+    {
+        _bossSpawned = true;
+        NetworkObject boss = SpawnConfiguredEnemy(config.bossSpawn, 1f, true);
+        RegisterEnemy(boss, true);
+        BroadcastStatus("Boss đã xuất hiện.");
+    }
+
+    private IEnumerator CompleteDungeonCoroutine()
+    {
+        if (_completed)
+            yield break;
+
+        _completed = true;
+        BroadcastStatus("Hoàn thành phó bản. Đang phát thưởng.");
+        yield return GrantRewardsToAll(config.completionRewards);
+        yield return BeginReturnFlow(true, config.returnCountdownSeconds, config.returnMapId, config.returnSceneName);
+    }
+}

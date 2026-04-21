@@ -120,12 +120,32 @@ public class DungeonListUI : MonoBehaviour
         ClearList();
         Debug.Log("[DungeonListUI] Bắt đầu tải danh sách phó bản...");
 
-        bool done       = false;
+        if (GameplayCommandService.Instance == null)
+        {
+            ShowStatus("Lỗi: Server chưa sẵn sàng.");
+            SetLoading(false);
+            yield break;
+        }
+
+        bool done = false;
         DungeonConfigData[] dungeons = null;
 
-        APIClient.Instance.GetDungeonList(
-            list => { dungeons = list; done = true; },
-            err  => { ShowStatus($"Lỗi tải danh sách: {err}"); done = true; });
+        GameplayCommandService.OnDungeonListReceived -= HandleDungeonList;
+        GameplayCommandService.OnDungeonListReceived += HandleDungeonList;
+        GameplayCommandService.Instance.GetDungeonListServerRpc();
+
+        void HandleDungeonList(string json)
+        {
+            GameplayCommandService.OnDungeonListReceived -= HandleDungeonList;
+            if (!json.Contains("\"error\""))
+            {
+                var resp = JsonUtility.FromJson<DungeonListResponse>(json);
+                dungeons = resp?.dungeons;
+            }
+            else
+                ShowStatus($"Lỗi tải danh sách: {json}");
+            done = true;
+        }
 
         yield return new WaitUntil(() => done);
         SetLoading(false);
@@ -144,9 +164,6 @@ public class DungeonListUI : MonoBehaviour
         _cachedDungeons = dungeons;
         ShowStatus("");
 
-        // Tải session đang active của các phó bản multi (parallel)
-        yield return StartCoroutine(LoadMultiSessions(dungeons));
-
         // Render
         foreach (var config in dungeons)
         {
@@ -156,29 +173,6 @@ public class DungeonListUI : MonoBehaviour
             Debug.Log($"[DungeonListUI] Render item #{config.dungeon_id} '{config.dungeon_name}' prefab={go != null} item={item != null} session={session != null}");
             item?.Setup(config, _playerLevel, session);
         }
-    }
-
-    private IEnumerator LoadMultiSessions(DungeonConfigData[] dungeons)
-    {
-        _sessionCache.Clear();
-        int pending = 0;
-
-        foreach (var d in dungeons)
-        {
-            if (d.dungeon_type != "multi") continue;
-            int id = d.dungeon_id;
-            pending++;
-            APIClient.Instance.GetDungeonSession(id,
-                s =>
-                {
-                    if (s != null) _sessionCache[id] = s;
-                    pending--;
-                },
-                _ => pending--);
-        }
-
-        // Đợi tất cả request song song hoàn tất
-        yield return new WaitUntil(() => pending <= 0);
     }
 
     private void ClearList()

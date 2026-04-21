@@ -149,9 +149,12 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     {
         _approvedUsers.Remove(clientId);
 
+        // Xóa client khỏi ZoneRoomRegistry — tránh phantom entries
+        ZoneRoomRegistry.Instance?.UnregisterClient(clientId);
+
         if (_activeSessions.TryGetValue(clientId, out var session))
         {
-            // Save vị trí cuối trước khi xóa session
+            // Reset player về làng (map 0) khi disconnect — đúng yêu cầu "quay về làng khi out game"
             StartCoroutine(SavePlayerPosition(session));
             _activeSessions.Remove(clientId);
             Debug.Log($"[ZonePlayerSessionManager] Client {clientId} (userId={session.UserId}) đã ngắt kết nối.");
@@ -238,6 +241,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             yield break;
         }
 
+        // Di chuyển player vào physics scene của map khởi đầu — TRƯỚC SpawnWithOwnership
+        MapSceneManager.Instance?.MoveToMapScene(playerGo, userInfo.MapId);
+
         netObj.SpawnWithOwnership(clientId);
 
         // 5 — Init player với data
@@ -263,8 +269,26 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
             filter.RefreshVisibility();
 
+        StartCoroutine(RefreshVisibilityAfterClientReady(clientId));
+
         Debug.Log($"[ZonePlayerSessionManager] ✓ Spawned player clientId={clientId} " +
                   $"userId={userInfo.UserId} at {spawnPos}");
+    }
+
+    private IEnumerator RefreshVisibilityAfterClientReady(ulong clientId)
+    {
+        yield return null;
+        yield return null;
+
+        var networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer)
+            yield break;
+
+        if (!networkManager.ConnectedClients.ContainsKey(clientId))
+            yield break;
+
+        foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
+            filter.RefreshVisibility();
     }
 
     /// <summary>
@@ -333,14 +357,19 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
     private IEnumerator SavePlayerPosition(PlayerSession session)
     {
-        if (session.NetworkObject == null) yield break;
+        if (session == null || string.IsNullOrWhiteSpace(session.UserId))
+            yield break;
 
-        Vector3 pos = session.NetworkObject.transform.position;
+        // ✅ Luôn reset player về làng (map 0) khi disconnect.
+        // Lý do: client đã load GameScene (mapId=0) khi login lại,
+        // nếu server lưu mapId cũ (vd: 3) → lần sau login API trả map_id=3
+        // → client gửi mapId=3 trong payload → server gán room map3
+        // → enemy map3 visible cho client đang ở GameScene (map0) → BUG.
         string apiBase = _config != null ? _config.apiBaseUrl : ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase}/player/{session.UserId}/position";
-        // Body theo PUT /api/player/{id}/position (PlayerController thực tế)
-        string body = $"{{\"map_id\":{session.MapId},\"zone_id\":{session.ZoneId}," +
-                      $"\"position_x\":{pos.x:F2},\"position_y\":{pos.y:F2}}}";
+        string body = "{\"reset_to_start_map\":true}";
+
+        Debug.Log($"[ZonePlayerSessionManager] Reset player to start map on disconnect: user={session.UserId} (was map={session.MapId})");
 
         using var req = new UnityWebRequest(url, "PUT")
         {
@@ -354,7 +383,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
-            Debug.LogWarning($"[ZonePlayerSessionManager] Save position thất bại user={session.UserId}: {req.error}");
+            Debug.LogWarning($"[ZonePlayerSessionManager] Reset start map thất bại user={session.UserId}: {req.error}");
     }
 
     // ── Inner types ───────────────────────────────────────────────────────────

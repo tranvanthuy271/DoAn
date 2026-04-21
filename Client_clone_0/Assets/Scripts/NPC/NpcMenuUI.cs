@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using System;
 
 /// <summary>
 /// NPC shop UI panel -- pure UI layer, no direct API calls.
@@ -16,6 +17,8 @@ using System.Collections;
 /// </summary>
 public class NpcMenuUI : MonoBehaviour
 {
+    private const string LogPrefix = "[NpcMenuUI]";
+
     public static NpcMenuUI Instance { get; private set; }
 
     // ── Main panel ──────────────────────────────────────────────────────
@@ -123,6 +126,12 @@ public class NpcMenuUI : MonoBehaviour
     /// <summary>Called by NpcInteraction.OpenMenuClientRpc.</summary>
     public void Open(NpcData npc, NpcInteraction interaction)
     {
+        if (npc == null)
+        {
+            Debug.LogWarning($"{LogPrefix} Open called with null npc.", this);
+            return;
+        }
+
         EnsureInitialized();   // hides mainPanel on first call; safe to call on inactive objects
         _currentInteraction = interaction;
         npcNameText.text  = npc.npc_name;
@@ -130,23 +139,51 @@ public class NpcMenuUI : MonoBehaviour
             ? npc.dialogue_text
             : "Xin chao, ta co the giup gi cho nguoi?";
 
-        // Blacksmith NPC: chỉ mở BlacksmithTabPanel — KHÔNG kích hoạt root NpcMenuUI
-        if (npc.npc_type == "blacksmith")
+        Debug.Log(
+            $"{LogPrefix} Open | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' interactionFound={interaction != null}",
+            this);
+
+        BlacksmithFunctionMenuPanel.Instance?.Close();
+
+        // Dungeon NPC: mở panel phó bản riêng — KHÔNG kích hoạt root NpcMenuUI
+        if (string.Equals(npc.npc_type, "dungeon", StringComparison.OrdinalIgnoreCase))
         {
-            if (BlacksmithTabPanel.Instance != null)
+            var dungeonMenu = DungeonNpcMenuUI.GetOrCreate();
+            if (dungeonMenu != null)
             {
-                BlacksmithTabPanel.Instance.Open(0);  // mặc định tab Cường Hóa
+                Debug.Log($"{LogPrefix} Route -> DungeonNpcMenuUI for npcId={npc.npc_id}.", this);
+                dungeonMenu.Open(npc);
             }
-            else if (UpgradePanel.Instance != null)
+            else
+                Debug.LogWarning($"{LogPrefix} Không tìm thấy DungeonNpcMenuUI trong scene!", this);
+            return;
+        }
+
+        // Blacksmith NPC: mở menu chức năng riêng — KHÔNG kích hoạt root NpcMenuUI
+        if (string.Equals(npc.npc_type, "blacksmith", StringComparison.OrdinalIgnoreCase))
+        {
+            BlacksmithFunctionMenuPanel menu = BlacksmithFunctionMenuPanel.GetOrCreate();
+            if (menu != null)
             {
-                // Fallback nếu chưa có BlacksmithTabPanel trong scene
-                var bridge = FindObjectOfType<InventoryNetworkBridge>();
-                var inv = bridge != null ? bridge.CurrentInventory : null;
-                UpgradePanel.Instance.OpenEmpty(inv);
+                menu.Open();
+            }
+            else if (BlacksmithTabPanel.Instance != null)
+            {
+                BlacksmithTabPanel.Instance.Open(0);
             }
             else
             {
-                Debug.LogWarning("[NpcMenuUI] BlacksmithTabPanel.Instance và UpgradePanel.Instance đều chưa có trong scene!");
+                var upgradePanel = FindObjectOfType<UpgradePanel>(true);
+                if (upgradePanel != null)
+                {
+                    var bridge = FindObjectOfType<InventoryNetworkBridge>();
+                    var inv = bridge != null ? bridge.CurrentInventory : null;
+                    upgradePanel.OpenEmpty(inv);
+                }
+                else
+                {
+                    Debug.LogWarning("[NpcMenuUI] Không tìm thấy menu thợ rèn hoặc panel fallback trong scene!");
+                }
             }
             return; // không mở NPC menu thông thường
         }
@@ -160,9 +197,11 @@ public class NpcMenuUI : MonoBehaviour
 
     public void Close()
     {
+        Debug.Log($"{LogPrefix} Close root NPC menu.", this);
         mainPanel.SetActive(false);
         if (shopPanel) shopPanel.SetActive(false);
         if (bagPanel)  bagPanel.SetActive(false);
+        BlacksmithFunctionMenuPanel.Instance?.Close();
         HideItemDetailPanelIfOpen();
         _currentInteraction = null;
     }

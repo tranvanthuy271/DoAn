@@ -123,8 +123,8 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         var prefabsList = networkManager.NetworkConfig?.Prefabs;
         return networkManager.NetworkConfig != null
             && networkManager.NetworkConfig.ForceSamePrefabs
-            && prefabsList?.Prefabs != null
-            && prefabsList.Prefabs.Count > 0;
+            && prefabsList?.NetworkPrefabsLists != null
+            && prefabsList.NetworkPrefabsLists.Count > 0;
     }
 
     private static bool IsPrefabRegistered(NetworkManager networkManager, GameObject prefab)
@@ -363,25 +363,27 @@ public class NetworkPrefabRegistrar : MonoBehaviour
     /// </summary>
     private void RegisterNpcPrefabs(NetworkManager networkManager, ref int registeredCount, HashSet<string> missingSharedPrefabs, bool validationOnly)
     {
+        var npcPrefabs = new HashSet<GameObject>();
+
         var npcMgr = FindObjectOfType<NpcServerManager>(true);
-        if (npcMgr == null) return;
+        if (npcMgr != null)
+        {
+            npcMgr.CollectConfiguredPrefabs(npcPrefabs);
+        }
+        else
+        {
+            NpcPrefabConfig.Resolve(null, this, nameof(NetworkPrefabRegistrar))?.AppendAllPrefabs(npcPrefabs);
+        }
 
-        // Lấy mảng npcPrefabs qua reflection (private field)
-        var field = typeof(NpcServerManager).GetField("npcPrefabs",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field == null) return;
-
-        var prefabs = field.GetValue(npcMgr) as GameObject[];
-        if (prefabs == null) return;
-
-        foreach (var prefab in prefabs)
+        foreach (GameObject prefab in npcPrefabs)
         {
             if (prefab != null)
             {
                 RegisterPrefab(prefab, networkManager, ref registeredCount, missingSharedPrefabs, validationOnly);
             }
         }
-        if (!validationOnly)
-            Debug.Log($"[NetworkPrefabRegistrar] ✓ Đăng ký {prefabs.Length} NPC prefab(s)");
+
+        if (!validationOnly && npcPrefabs.Count > 0)
+            Debug.Log($"[NetworkPrefabRegistrar] ✓ Đăng ký {npcPrefabs.Count} NPC prefab(s)");
     }
 }

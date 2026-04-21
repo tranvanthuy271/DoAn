@@ -120,8 +120,9 @@ public class EarthAttackBuffSkill : NetworkBehaviour
     {
         TriggerAuraAnimationClientRpc();
 
-        // Tìm tất cả player trong bán kính và áp dụng buff
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, buffRadius);
+        // Tìm tất cả player trong cùng physics scene của map hiện tại và áp dụng buff
+        Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, buffRadius);
+        Debug.Log($"[EarthAttackBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
         foreach (var hit in hits)
         {
             if (!hit.CompareTag("Player")) continue;

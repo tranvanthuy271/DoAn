@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
@@ -21,6 +22,11 @@ public class InputManager : MonoBehaviour
     [Header("Input Settings")]
     public bool inputEnabled = true;
 
+    private readonly HashSet<string> _gameplayBlockSources = new HashSet<string>();
+
+    public bool IsGameplayInputBlocked => !inputEnabled || _gameplayBlockSources.Count > 0;
+    public bool IsGameplayInputAllowed => !IsGameplayInputBlocked;
+
     // Mobile virtual input (set by MobileLeftButton / MobileRightButton / MobileJumpButton)
     private float _mobileHorizontal;
     private float _mobileVertical;
@@ -28,6 +34,9 @@ public class InputManager : MonoBehaviour
     private bool _mobileJumpHeld;
     private bool _mobileAttackPressed; // one-frame flag
     private bool _mobileFallThroughPressed; // one-frame flag (nút rơi xuống platform)
+
+    // Auto-move injection (set bởi PlayerSkillManager khi auto-move đến mục tiêu)
+    private float _autoMoveHorizontal;
 
     private void Awake()
     {
@@ -75,52 +84,96 @@ public class InputManager : MonoBehaviour
         _mobileFallThroughPressed = true;
     }
 
+    /// <summary>Inject hướng di chuyển tự động (PlayerSkillManager gọi khi auto-move đến target).</summary>
+    public void SetAutoMoveInput(float horizontal)
+    {
+        _autoMoveHorizontal = horizontal;
+    }
+
+    /// <summary>Hủy auto-move injection.</summary>
+    public void CancelAutoMove()
+    {
+        _autoMoveHorizontal = 0f;
+    }
+
     // ── Input queries (keyboard OR mobile) ──────────────────────────────────
 
     public float GetHorizontalInput()
     {
-        if (!inputEnabled) return 0f;
+        if (IsGameplayInputBlocked) return 0f;
         float keyboard = Input.GetAxisRaw("Horizontal");
-        return Mathf.Abs(keyboard) > 0.01f ? keyboard : _mobileHorizontal;
+        if (Mathf.Abs(keyboard) > 0.01f)
+        {
+            _autoMoveHorizontal = 0f; // input thủ công hủy auto-move
+            return keyboard;
+        }
+        if (Mathf.Abs(_mobileHorizontal) > 0.01f)
+        {
+            _autoMoveHorizontal = 0f;
+            return _mobileHorizontal;
+        }
+        return _autoMoveHorizontal;
     }
 
     public float GetVerticalInput()
     {
-        if (!inputEnabled) return 0f;
+        if (IsGameplayInputBlocked) return 0f;
         float keyboard = Input.GetAxisRaw("Vertical");
         return Mathf.Abs(keyboard) > 0.01f ? keyboard : _mobileVertical;
     }
 
     public bool GetJumpPressed()
     {
-        if (!inputEnabled) return false;
+        if (IsGameplayInputBlocked) return false;
         return Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)
             || Input.GetKeyDown(KeyCode.Space) || _mobileJumpPressed;
     }
 
     public bool GetJumpHeld()
     {
-        if (!inputEnabled) return false;
+        if (IsGameplayInputBlocked) return false;
         return Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)
             || Input.GetKey(KeyCode.Space) || _mobileJumpHeld;
     }
 
     public bool GetAttackPressed()
     {
-        if (!inputEnabled) return false;
+        if (IsGameplayInputBlocked) return false;
         return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(0) || _mobileAttackPressed;
     }
 
     /// <summary>Trả về true trong ĐÚNG 1 frame khi người chơi nhấn S/DownArrow hoặc nút ↓ mobile.</summary>
     public bool GetFallThroughPressed()
     {
-        if (!inputEnabled) return false;
+        if (IsGameplayInputBlocked) return false;
         return Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow) || _mobileFallThroughPressed;
+    }
+
+    public void SetGameplayInputBlocked(string source, bool blocked)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            source = "Unknown";
+
+        bool changed = blocked
+            ? _gameplayBlockSources.Add(source)
+            : _gameplayBlockSources.Remove(source);
+
+        if (!changed) return;
+
+        Debug.Log($"[InputManager] Gameplay input {(blocked ? "blocked" : "unblocked")} by '{source}'. activeBlocks={_gameplayBlockSources.Count} inputEnabled={inputEnabled}");
     }
 
     public void EnableInput(bool enable)
     {
         inputEnabled = enable;
+    }
+
+    /// <summary>
+    /// Backwards-compatible wrapper for older callers named SetInputEnabled.
+    /// </summary>
+    public void SetInputEnabled(bool enable)
+    {
+        EnableInput(enable);
     }
 }
 

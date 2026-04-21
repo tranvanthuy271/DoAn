@@ -142,10 +142,26 @@ public class EnemyItemDrop : MonoBehaviour
         // Spawn network object TRƯỚC, sau đó mới set data
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
         {
+            // Kế thừa zone tag từ enemy → item chỉ visible cho player cùng map
+            var enemyZoneTag = GetComponent<ZoneOwnerTag>();
+            if (enemyZoneTag != null)
+            {
+                MapSceneManager.Instance?.MoveToMapScene(itemObj, enemyZoneTag.MapId);
+
+                var itemZoneTag = itemObj.GetComponent<ZoneOwnerTag>() ?? itemObj.AddComponent<ZoneOwnerTag>();
+                itemZoneTag.SetZone(enemyZoneTag.MapId, enemyZoneTag.ZoneId);
+
+                var filter = itemObj.GetComponent<NetworkVisibilityZoneFilter>() ?? itemObj.AddComponent<NetworkVisibilityZoneFilter>();
+                filter.InitializeForServer();
+
+                Debug.Log($"[EnemyItemDrop] Move dropped item item_id={itemId} vào mapId={enemyZoneTag.MapId}, zoneId={enemyZoneTag.ZoneId}");
+            }
+
             NetworkObject networkObject = itemObj.GetComponent<NetworkObject>();
             if (networkObject != null)
             {
                 networkObject.Spawn();
+                itemObj.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
             }
         }
 

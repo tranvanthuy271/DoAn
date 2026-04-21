@@ -92,7 +92,7 @@ Game hành động 2D multiplayer, xây dựng theo chủ đề **Ngũ Hành** (
 | `equipment_upgrade_configs` | Config nâng cấp trang bị theo bậc |
 | `gene_upgrade_configs` | Config nâng cấp gene theo tier và element |
 | `gene_tier_stat_configs` | Chỉ số stat tăng theo tier gene (đọc từ DB) |
-| `dungeon_configs` | Cấu hình phó bản (solo/multi, level yêu cầu) |
+| `dungeon_config` | Cấu hình phó bản (solo/multi, level yêu cầu) |
 | `dungeon_sessions` | Phiên phó bản đang diễn ra |
 | `gene_multi_configs` | Config multi-gene (2 gene kết hợp) |
 | `gene_hybrid_configs` | Config hybrid gene (gene lai cao cấp) |
@@ -314,7 +314,7 @@ POST /api/gene/hybrid                           → tạo hybrid gene
 
 ### 8.1 Config
 
-Bảng `dungeon_configs` quản lý:
+Bảng `dungeon_config` quản lý:
 - `dungeon_type`: `"solo"` hoặc `"multi"`
 - `min_level_required`: level tối thiểu để vào
 - `max_players`: số người tối đa

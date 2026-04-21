@@ -66,7 +66,7 @@ internal static class EnemySpawnDataCompat
                 .ToListAsync(cancellationToken);
 
             if (rows.Count > 0)
-                return rows.Select(MapResolvedSpawn).ToArray();
+                return NormalizeBossEnemyTypeMismatch(rows.Select(MapResolvedSpawn).ToArray(), mapId, logger);
 
             logger?.LogInformation(
                 "[EnemySpawnDataCompat] enemy_spawns không có dữ liệu cho mapId={MapId}, thử fallback map_spawn_config.",
@@ -92,7 +92,7 @@ internal static class EnemySpawnDataCompat
             SpawnX = row.SpawnX,
             SpawnY = row.SpawnY,
             MaxSpawnCount = row.MaxSpawnCount > 0 ? row.MaxSpawnCount : 1,
-            RespawnTime = row.RespawnTime > 0 ? row.RespawnTime : 30,
+            RespawnTime = Math.Max(0, row.RespawnTime),
             OverrideHp = 0,
             OverrideExp = 0,
             IsBoss = string.Equals(row.Enemy?.EnemyType, "Boss", StringComparison.OrdinalIgnoreCase),
@@ -139,10 +139,10 @@ internal static class EnemySpawnDataCompat
                 SpawnX = entry.Cx,
                 SpawnY = entry.Cy,
                 MaxSpawnCount = entry.Count > 0 ? entry.Count : 1,
-                RespawnTime = entry.RespawnTime > 0 ? entry.RespawnTime : 30,
+                RespawnTime = Math.Max(0, entry.RespawnTime),
                 OverrideHp = Math.Max(0, entry.Hp),
                 OverrideExp = Math.Max(0, entry.Exp),
-                IsBoss = entry.IsBoss || string.Equals(enemy?.EnemyType, "Boss", StringComparison.OrdinalIgnoreCase),
+                IsBoss = entry.IsBoss,
                 Level = entry.Level > 0 ? entry.Level : enemy?.Level ?? 1,
                 Enemy = enemy
             });
@@ -153,7 +153,71 @@ internal static class EnemySpawnDataCompat
             result.Count,
             mapId);
 
-        return result;
+        return NormalizeBossEnemyTypeMismatch(result, mapId, logger);
+    }
+
+    private static IReadOnlyList<ResolvedEnemySpawn> NormalizeBossEnemyTypeMismatch(
+        IReadOnlyList<ResolvedEnemySpawn> spawns,
+        int mapId,
+        ILogger? logger)
+    {
+        if (spawns.Count == 0)
+            return spawns;
+
+        var bossSpawns = spawns.Where(spawn => spawn.IsBoss).ToArray();
+        var normalSpawns = spawns.Where(spawn => !spawn.IsBoss).ToArray();
+
+        if (bossSpawns.Length == 0 || normalSpawns.Length == 0)
+            return spawns;
+
+        bool normalsUseBossTemplate = normalSpawns.All(spawn =>
+            string.Equals(spawn.Enemy?.EnemyType, "Boss", StringComparison.OrdinalIgnoreCase));
+        bool bossUsesNormalTemplate = bossSpawns.All(spawn =>
+            !string.Equals(spawn.Enemy?.EnemyType, "Boss", StringComparison.OrdinalIgnoreCase));
+
+        if (!normalsUseBossTemplate || !bossUsesNormalTemplate)
+            return spawns;
+
+        int[] normalEnemyIds = normalSpawns.Select(spawn => spawn.EnemyTypeId).Distinct().ToArray();
+        int[] bossEnemyIds = bossSpawns.Select(spawn => spawn.EnemyTypeId).Distinct().ToArray();
+
+        if (normalEnemyIds.Length != 1 || bossEnemyIds.Length != 1 || normalEnemyIds[0] == bossEnemyIds[0])
+            return spawns;
+
+        Enemy? correctedNormalEnemy = bossSpawns[0].Enemy;
+        Enemy? correctedBossEnemy = normalSpawns[0].Enemy;
+        int correctedNormalEnemyId = bossEnemyIds[0];
+        int correctedBossEnemyId = normalEnemyIds[0];
+
+        logger?.LogWarning(
+            "[EnemySpawnDataCompat] Phát hiện mapId={MapId} có enemy_id boss/quái bị đảo. Tự động hoán đổi normalEnemyId={NormalEnemyId}, bossEnemyId={BossEnemyId}.",
+            mapId,
+            correctedNormalEnemyId,
+            correctedBossEnemyId);
+
+        return spawns
+            .Select(spawn => spawn.IsBoss
+                ? CloneResolvedSpawn(spawn, correctedBossEnemyId, correctedBossEnemy)
+                : CloneResolvedSpawn(spawn, correctedNormalEnemyId, correctedNormalEnemy))
+            .ToArray();
+    }
+
+    private static ResolvedEnemySpawn CloneResolvedSpawn(ResolvedEnemySpawn spawn, int enemyTypeId, Enemy? enemy)
+    {
+        return new ResolvedEnemySpawn
+        {
+            SpawnId = spawn.SpawnId,
+            EnemyTypeId = enemyTypeId,
+            SpawnX = spawn.SpawnX,
+            SpawnY = spawn.SpawnY,
+            MaxSpawnCount = spawn.MaxSpawnCount,
+            RespawnTime = spawn.RespawnTime,
+            OverrideHp = spawn.OverrideHp,
+            OverrideExp = spawn.OverrideExp,
+            IsBoss = spawn.IsBoss,
+            Level = spawn.Level,
+            Enemy = enemy
+        };
     }
 
     private static async Task<string?> LoadLegacySpawnJsonAsync(

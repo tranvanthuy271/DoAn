@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace GameServerApi.Controllers
 {
@@ -45,21 +46,31 @@ namespace GameServerApi.Controllers
         //  Trả về dialogue node đầu tiên và action của NPC
         // ══════════════════════════════════════════════════════════════
         [HttpPost("interact")]
-        public async Task<IActionResult> Interact([FromBody] System.Text.Json.JsonElement body)
+        public async Task<IActionResult> Interact([FromBody] JsonElement body)
         {
-            if (!body.TryGetProperty("playerId", out var pidProp) ||
-                !body.TryGetProperty("npcId",    out var nidProp))
+            if (!TryGetIntProperty(body, "playerId", "player_id", out int requestedPlayerId) ||
+                !TryGetIntProperty(body, "npcId", "npc_id", out int npcId))
                 return BadRequest("Thiếu playerId hoặc npcId.");
 
-            int playerId = pidProp.GetInt32();
-            int npcId    = nidProp.GetInt32();
+            if (requestedPlayerId <= 0 || npcId <= 0)
+                return BadRequest("playerId hoặc npcId không hợp lệ.");
 
-            var npc = await _db.NpcConfigs.FindAsync(npcId);
-            if (npc == null || !npc.IsActive)
+            int playerId = requestedPlayerId;
+            string? playerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                                 ?? User.FindFirstValue("sub");
+            if (int.TryParse(playerIdClaim, out int tokenPlayerId) && tokenPlayerId > 0)
+                playerId = tokenPlayerId;
+
+            var npc = await _db.NpcConfigs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.NpcId == npcId && n.IsActive);
+            if (npc == null)
                 return NotFound("NPC không tồn tại hoặc đã bị vô hiệu hóa.");
 
-            var player = await _db.PlayerData.FindAsync(playerId);
-            if (player == null)
+            bool playerExists = await _db.PlayerData
+                .AsNoTracking()
+                .AnyAsync(p => p.PlayerId == playerId);
+            if (!playerExists)
                 return NotFound("Player không tồn tại.");
 
             // Lấy dialogue node khởi đầu
@@ -67,18 +78,22 @@ namespace GameServerApi.Controllers
             if (!string.IsNullOrEmpty(npc.DialogueKey))
             {
                 dialogue = await _db.NpcDialogues
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(d => d.NpcId == npcId && d.DialogueKey == npc.DialogueKey);
             }
+
+            string dialogueText = dialogue?.TextVi ?? string.Empty;
 
             return Ok(new
             {
                 npcId    = npc.NpcId,
                 npcName  = npc.NpcName,
                 npcType  = npc.NpcType,
+                dialogue_text = dialogueText,
                 dialogue = dialogue == null ? null : new
                 {
                     key        = dialogue.DialogueKey,
-                    text       = dialogue.TextVi,
+                    text       = dialogueText,
                     nextKey    = dialogue.NextKey,
                     actionType = dialogue.ActionType,
                 },
@@ -291,6 +306,33 @@ namespace GameServerApi.Controllers
         }
 
         // ── Helpers ──────────────────────────────────────────────────
+        private static bool TryGetIntProperty(JsonElement body, string primaryName, string alternateName, out int value)
+        {
+            if (TryReadInt(body, primaryName, out value))
+                return true;
+
+            if (!string.IsNullOrWhiteSpace(alternateName) && TryReadInt(body, alternateName, out value))
+                return true;
+
+            value = 0;
+            return false;
+        }
+
+        private static bool TryReadInt(JsonElement body, string propertyName, out int value)
+        {
+            if (body.TryGetProperty(propertyName, out JsonElement prop))
+            {
+                if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out value))
+                    return true;
+
+                if (prop.ValueKind == JsonValueKind.String && int.TryParse(prop.GetString(), out value))
+                    return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
         private static List<Dictionary<string, object>> ParseJsonList(string? json)
         {
             if (string.IsNullOrEmpty(json) || json == "[]" || json == "{}")

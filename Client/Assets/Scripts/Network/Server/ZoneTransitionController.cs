@@ -139,6 +139,160 @@ public class ZoneTransitionController : NetworkBehaviour
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // ServerRpc — Dungeon entry/exit (zone-based, không disconnect)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Client yêu cầu vào phó bản solo.
+    /// Server tạo custom room trên dungeon map rồi transfer client vào.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestDungeonEntryServerRpc(
+        int dungeonMapId,
+        int dungeonConfigId,
+        ServerRpcParams rpc = default)
+    {
+        ulong clientId = rpc.Receive.SenderClientId;
+
+        if (!CanProcessTransferRequest(clientId))
+            return;
+
+        MapDefinition mapDef = _config?.GetMap(dungeonMapId);
+        if (mapDef == null || mapDef.zoneTopology != MapZoneTopology.InstanceOnly)
+        {
+            Debug.LogWarning($"[ZoneTransitionController] Dungeon map {dungeonMapId} không hợp lệ hoặc không phải InstanceOnly.");
+            SendTransferFailedClientRpc("DUNGEON_MAP_INVALID", BuildSingleClientRpcParams(clientId));
+            return;
+        }
+
+        var room = _registry.CreateCustomRoom(dungeonMapId);
+        if (room == null)
+        {
+            SendTransferFailedClientRpc("DUNGEON_ROOM_CREATE_FAILED", BuildSingleClientRpcParams(clientId));
+            return;
+        }
+
+        Debug.Log($"[ZoneTransitionController] Dungeon entry | client={clientId} dungeonConfigId={dungeonConfigId} map={dungeonMapId} zone={room.ZoneId}");
+
+        // Thông báo client đã vào dungeon (trước khi transfer)
+        NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(clientId));
+
+        ExecuteTransferToRoom(clientId, room);
+    }
+
+    /// <summary>
+    /// Party leader yêu cầu cả tổ đội vào phó bản.
+    /// Server tạo 1 custom room, tra userId → clientId rồi transfer tất cả vào cùng room.
+    /// partyMemberUserIdsCsv: chuỗi userId ngăn cách bởi dấu phẩy, ví dụ "16,17,18"
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestPartyDungeonEntryServerRpc(
+        int dungeonMapId,
+        int dungeonConfigId,
+        string partyMemberUserIdsCsv,
+        ServerRpcParams rpc = default)
+    {
+        ulong leaderId = rpc.Receive.SenderClientId;
+
+        if (!CanProcessTransferRequest(leaderId))
+            return;
+
+        MapDefinition mapDef = _config?.GetMap(dungeonMapId);
+        if (mapDef == null || mapDef.zoneTopology != MapZoneTopology.InstanceOnly)
+        {
+            SendTransferFailedClientRpc("DUNGEON_MAP_INVALID", BuildSingleClientRpcParams(leaderId));
+            return;
+        }
+
+        // Resolve userIds → clientIds
+        var memberClientIds = new List<ulong>();
+        var sessionMgr = ZonePlayerSessionManager.Instance;
+        if (sessionMgr != null && !string.IsNullOrEmpty(partyMemberUserIdsCsv))
+        {
+            foreach (string uid in partyMemberUserIdsCsv.Split(','))
+            {
+                string trimmed = uid.Trim();
+                if (string.IsNullOrEmpty(trimmed)) continue;
+
+                foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+                {
+                    string clientUserId = sessionMgr.GetPlayerId(client.ClientId);
+                    if (string.Equals(clientUserId, trimmed, System.StringComparison.Ordinal))
+                    {
+                        memberClientIds.Add(client.ClientId);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Tạo 1 room duy nhất cho cả party
+        int maxPlayers = System.Math.Max(memberClientIds.Count + 1, 4);
+        var room = _registry.CreateCustomRoom(dungeonMapId, null, maxPlayers);
+        if (room == null)
+        {
+            SendTransferFailedClientRpc("DUNGEON_ROOM_CREATE_FAILED", BuildSingleClientRpcParams(leaderId));
+            return;
+        }
+
+        Debug.Log($"[ZoneTransitionController] Party dungeon entry | leader={leaderId} map={dungeonMapId} zone={room.ZoneId} members={memberClientIds.Count}");
+
+        // Transfer leader trước
+        NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(leaderId));
+        ExecuteTransferToRoom(leaderId, room);
+
+        // Transfer từng member
+        foreach (ulong memberId in memberClientIds)
+        {
+            if (memberId == leaderId) continue;
+
+            _lastTransferTime[memberId] = Time.time;
+            NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(memberId));
+            ExecuteTransferToRoom(memberId, room);
+        }
+    }
+
+    /// <summary>
+    /// Client yêu cầu rời phó bản, quay về overworld map.
+    /// Server transfer client về map mặc định (map 0) hoặc map lưu trước đó.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestDungeonExitServerRpc(
+        int returnMapId,
+        ServerRpcParams rpc = default)
+    {
+        ulong clientId = rpc.Receive.SenderClientId;
+
+        if (!CanProcessTransferRequest(clientId))
+            return;
+
+        // Tìm zone ít người nhất trên map trả về
+        int safeReturnMapId = returnMapId > 0 ? returnMapId : 0;
+        ZoneRoom targetRoom = _registry.FindLeastLoadedZone(safeReturnMapId);
+        if (targetRoom == null)
+        {
+            // Fallback về map 0
+            targetRoom = _registry.FindLeastLoadedZone(0);
+        }
+        if (targetRoom == null)
+        {
+            targetRoom = _registry.GetFallbackRoom();
+        }
+
+        if (targetRoom == null)
+        {
+            Debug.LogError($"[ZoneTransitionController] Không tìm được room nào để return! client={clientId}");
+            SendTransferFailedClientRpc("NO_RETURN_ROOM", BuildSingleClientRpcParams(clientId));
+            return;
+        }
+
+        Debug.Log($"[ZoneTransitionController] Dungeon exit | client={clientId} → map{targetRoom.MapId}_zone{targetRoom.ZoneId}");
+
+        NotifyDungeonExitedClientRpc(BuildSingleClientRpcParams(clientId));
+        ExecuteTransferToRoom(clientId, targetRoom);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Core transfer logic (server-side only)
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -186,7 +340,12 @@ public class ZoneTransitionController : NetworkBehaviour
         // 7b. Di chuyển player NetworkObject server-side đến vị trí mới
         var session = ZonePlayerSessionManager.Instance?.GetSession(clientId);
         if (session?.NetworkObject != null)
+        {
             session.NetworkObject.transform.position = new Vector3(entry.x, entry.y, 0);
+
+            // Di chuyển player vào physics scene của map mới
+            MapSceneManager.Instance?.MoveToMapScene(session.NetworkObject.gameObject, targetRoom.MapId);
+        }
 
         // 8. Refresh NGO visibility (players, enemies, items trong zone cũ/mới)
         RefreshVisibilityForClient(clientId);
@@ -237,6 +396,22 @@ public class ZoneTransitionController : NetworkBehaviour
     // ─────────────────────────────────────────────────────────────────────────
     // ClientRpc — gửi đến đúng 1 client (NO broadcast)
     // ─────────────────────────────────────────────────────────────────────────
+
+    [ClientRpc]
+    private void NotifyDungeonEnteredClientRpc(int dungeonConfigId, int mapId, int zoneId, ClientRpcParams rpcParams = default)
+    {
+        Debug.Log($"[ZoneTransitionController] NotifyDungeonEntered | dungeonConfigId={dungeonConfigId} map={mapId} zone={zoneId}");
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.OnZoneDungeonEntered(dungeonConfigId, mapId, zoneId);
+    }
+
+    [ClientRpc]
+    private void NotifyDungeonExitedClientRpc(ClientRpcParams rpcParams = default)
+    {
+        Debug.Log("[ZoneTransitionController] NotifyDungeonExited");
+        if (DungeonManager.Instance != null)
+            DungeonManager.Instance.OnZoneDungeonExited();
+    }
 
     [ClientRpc]
     private void TeleportToZoneClientRpc(

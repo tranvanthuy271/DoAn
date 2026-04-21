@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,22 +31,51 @@ public class InformationPanelController : MonoBehaviour
 
     private enum TopTab { ThongTin, TuiDo }
     private TopTab _activeTab = TopTab.ThongTin;
+    private readonly List<Button> autoCloseButtons = new List<Button>();
+
+    public static InformationPanelController GetOrCreate(
+        CharacterPanelController runtimeCharacterPanel = null,
+        InventoryUI runtimeInventoryUI = null)
+    {
+        InformationPanelController controller = FindObjectOfType<InformationPanelController>(includeInactive: true);
+        if (controller == null)
+        {
+            GameObject host = runtimeCharacterPanel != null
+                ? runtimeCharacterPanel.gameObject
+                : runtimeInventoryUI != null
+                    ? runtimeInventoryUI.gameObject
+                    : null;
+
+            if (host == null)
+                return null;
+
+            controller = host.GetComponent<InformationPanelController>();
+            if (controller == null)
+                controller = host.AddComponent<InformationPanelController>();
+        }
+
+        controller.SetRuntimeReferences(runtimeCharacterPanel, runtimeInventoryUI);
+        return controller;
+    }
 
     // ─────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
     {
-        btnThongTin?.onClick.AddListener(OnClickThongTin);
-        btnTuiDo   ?.onClick.AddListener(OnClickTuiDo);
-        btnCloseAll?.onClick.AddListener(HideAll);
+        ResolveReferences();
+        RegisterButtonListeners();
+    }
+
+    private void OnEnable()
+    {
+        ResolveReferences();
+        RegisterButtonListeners();
     }
 
     private void OnDestroy()
     {
-        btnThongTin?.onClick.RemoveListener(OnClickThongTin);
-        btnTuiDo   ?.onClick.RemoveListener(OnClickTuiDo);
-        btnCloseAll?.onClick.RemoveListener(HideAll);
+        UnregisterButtonListeners();
     }
 
     #endregion
@@ -67,25 +97,32 @@ public class InformationPanelController : MonoBehaviour
     /// <summary>Mở túi đồ (tab Túi Đồ). Cũng ẩn thông tin nếu đang mở.</summary>
     public void ShowTuiDo() => SwitchTo(TopTab.TuiDo);
 
+    public void SetRuntimeReferences(
+        CharacterPanelController runtimeCharacterPanel,
+        InventoryUI runtimeInventoryUI)
+    {
+        if (characterPanel == null && runtimeCharacterPanel != null)
+            characterPanel = runtimeCharacterPanel;
+
+        if (inventoryUI == null && runtimeInventoryUI != null)
+            inventoryUI = runtimeInventoryUI;
+
+        ResolveReferences();
+        RegisterButtonListeners();
+    }
+
     /// <summary>
     /// Mở toàn bộ panel và về tab Thông Tin.
     /// Dùng cho CharacterPanelToggleButton khi cần mở panel.
     /// </summary>
     public void ShowPanel()
     {
+        ResolveReferences();
         Debug.Log("[InformationPanelController] ShowPanel() được gọi");
-        
-        // Đảm bảo CharacterPanel luôn hiện trước (để BtnThongTin/BtnTuiDo hiện ra)
-        if (characterPanel != null)
-        {
-            Debug.Log("[InformationPanelController] Gọi characterPanel.Show()...");
-            characterPanel.Show();
-        }
-        else
-        {
+
+        if (characterPanel == null)
             Debug.LogError("[InformationPanelController] characterPanel là NULL! Kiểm tra Inspector.");
-        }
-        
+
         SwitchTo(TopTab.ThongTin);
     }
 
@@ -95,6 +132,7 @@ public class InformationPanelController : MonoBehaviour
     /// </summary>
     public void HideAll()
     {
+        ResolveReferences();
         inventoryUI?.HideInventory();
         characterPanel?.Hide();
         // Reset state để lần mở sau mặc định vào tab Thông Tin
@@ -104,9 +142,15 @@ public class InformationPanelController : MonoBehaviour
     }
 
     /// <summary>Trả về true nếu bất kỳ panel nào đang hiện.</summary>
-    public bool IsAnyPanelVisible =>
-        (characterPanel != null && characterPanel.IsVisible()) ||
-        (inventoryUI    != null && inventoryUI.gameObject.activeSelf);
+    public bool IsAnyPanelVisible
+    {
+        get
+        {
+            ResolveReferences();
+            return (characterPanel != null && characterPanel.IsVisible())
+                || (inventoryUI != null && inventoryUI.gameObject.activeSelf);
+        }
+    }
 
     /// <summary>Tab nào đang hiển thị?</summary>
     public bool IsShowingInventory => _activeTab == TopTab.TuiDo;
@@ -118,25 +162,21 @@ public class InformationPanelController : MonoBehaviour
 
     private void SwitchTo(TopTab tab)
     {
+        ResolveReferences();
         _activeTab = tab;
 
         bool thongTin = tab == TopTab.ThongTin;
         bool tuiDo    = tab == TopTab.TuiDo;
 
-        // Đảm bảo CharacterPanel.panelRoot hiện (giữ BtnThongTin/BtnTuiDo hiện)
-        if (characterPanel != null)
+        if (thongTin)
         {
-            if (!characterPanel.IsVisible()) characterPanel.Show();
-
-            if (thongTin) characterPanel.ShowContent();
-            else          characterPanel.HideContent();
+            characterPanel?.ShowContent();
+            inventoryUI?.HideInventory();
         }
-
-        // InventoryUI: luôn ẩn khi sang ThongTin, luôn mở khi sang TuiDo
-        if (inventoryUI != null)
+        else if (tuiDo)
         {
-            if (tuiDo) inventoryUI.ShowInventory();
-            else       inventoryUI.HideInventory();
+            characterPanel?.HideContent();
+            inventoryUI?.ShowInventory();
         }
 
         // Màu nút
@@ -149,6 +189,138 @@ public class InformationPanelController : MonoBehaviour
         if (btn == null) return;
         var img = btn.GetComponent<Image>();
         if (img != null) img.color = active ? colorActive : colorInactive;
+    }
+
+    private void ResolveReferences()
+    {
+        if (characterPanel == null)
+        {
+            characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
+            if (characterPanel != null)
+                Debug.Log($"[InformationPanelController] Auto-resolved CharacterPanelController: {characterPanel.gameObject.name}");
+        }
+
+        if (inventoryUI == null)
+        {
+            inventoryUI = FindObjectOfType<InventoryUI>(includeInactive: true);
+            if (inventoryUI != null)
+                Debug.Log($"[InformationPanelController] Auto-resolved InventoryUI: {inventoryUI.gameObject.name}");
+        }
+
+        if (btnThongTin == null)
+            btnThongTin = FindButtonByName("BtnThongTin");
+
+        if (btnTuiDo == null)
+            btnTuiDo = FindButtonByName("BtnTuiDo");
+
+        if (btnCloseAll == null)
+        {
+            btnCloseAll = FindButtonInHierarchy(characterPanel != null ? characterPanel.transform : null, "BtnClose")
+                       ?? FindButtonInHierarchy(inventoryUI != null ? inventoryUI.transform : null, "BtnClose");
+        }
+    }
+
+    private void RegisterButtonListeners()
+    {
+        ResolveReferences();
+
+        btnThongTin?.onClick.RemoveListener(OnClickThongTin);
+        btnThongTin?.onClick.AddListener(OnClickThongTin);
+
+        btnTuiDo?.onClick.RemoveListener(OnClickTuiDo);
+        btnTuiDo?.onClick.AddListener(OnClickTuiDo);
+
+        RebindCloseButtons();
+    }
+
+    private void UnregisterButtonListeners()
+    {
+        btnThongTin?.onClick.RemoveListener(OnClickThongTin);
+        btnTuiDo?.onClick.RemoveListener(OnClickTuiDo);
+
+        for (int i = 0; i < autoCloseButtons.Count; i++)
+        {
+            Button closeButton = autoCloseButtons[i];
+            if (closeButton != null)
+                closeButton.onClick.RemoveListener(HideAll);
+        }
+
+        autoCloseButtons.Clear();
+    }
+
+    private void RebindCloseButtons()
+    {
+        for (int i = 0; i < autoCloseButtons.Count; i++)
+        {
+            Button closeButton = autoCloseButtons[i];
+            if (closeButton != null)
+                closeButton.onClick.RemoveListener(HideAll);
+        }
+
+        autoCloseButtons.Clear();
+
+        AddAutoCloseButton(btnCloseAll);
+        AddCloseButtonsFromRoot(characterPanel != null ? characterPanel.transform : null);
+        AddCloseButtonsFromRoot(inventoryUI != null ? inventoryUI.transform : null);
+    }
+
+    private void AddCloseButtonsFromRoot(Transform root)
+    {
+        if (root == null)
+            return;
+
+        Button[] buttons = root.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            if (button != null && button.name == "BtnClose")
+                AddAutoCloseButton(button);
+        }
+    }
+
+    private void AddAutoCloseButton(Button button)
+    {
+        if (button == null || autoCloseButtons.Contains(button))
+            return;
+
+        button.onClick.RemoveListener(HideAll);
+        button.onClick.AddListener(HideAll);
+        autoCloseButtons.Add(button);
+    }
+
+    private Button FindButtonByName(string buttonName)
+    {
+        Button button = FindButtonInHierarchy(characterPanel != null ? characterPanel.transform : null, buttonName);
+        if (button != null)
+            return button;
+
+        button = FindButtonInHierarchy(inventoryUI != null ? inventoryUI.transform : null, buttonName);
+        if (button != null)
+            return button;
+
+        Button[] buttons = FindObjectsOfType<Button>(includeInactive: true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i] != null && buttons[i].name == buttonName)
+                return buttons[i];
+        }
+
+        return null;
+    }
+
+    private static Button FindButtonInHierarchy(Transform root, string buttonName)
+    {
+        if (root == null)
+            return null;
+
+        Button[] buttons = root.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i] != null && buttons[i].name == buttonName)
+                return buttons[i];
+        }
+
+        return null;
     }
 
     #endregion

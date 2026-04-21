@@ -42,6 +42,13 @@ public class NetworkEnemyHealth : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
+        // Đảm bảo enemy luôn ở layer "Enemy" trên MỌI client.
+        // Layer không tự sync qua NGO — cần set lại khi object được spawn về phía client.
+        // Physics2D.OverlapCircleAll dùng layer của chính collider, không phải parent.
+        int enemyLayerIdx = LayerMask.NameToLayer("Enemy");
+        if (enemyLayerIdx >= 0)
+            SetLayerRecursively(gameObject, enemyLayerIdx);
+
         // Subscribe to networkCurrentHealth changes
         networkCurrentHealth.OnValueChanged += OnHealthValueChanged;
         networkMaxHealth.OnValueChanged += OnMaxHealthValueChanged;
@@ -49,6 +56,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
         // Chỉ server mới set giá trị ban đầu
         if (IsServer)
         {
+            // maxHealth đã được PreInitMaxHp() set đúng trước Spawn() (nếu đến từ WaveDungeon)
+            Debug.Log($"[NetworkEnemyHealth] OnNetworkSpawn: IsServer=true, maxHealth={maxHealth} (object={gameObject.name})");
             networkMaxHealth.Value = maxHealth;
             networkCurrentHealth.Value = maxHealth;
         }
@@ -59,6 +68,13 @@ public class NetworkEnemyHealth : NetworkBehaviour
         // Client: đảm bảo EnemyClickHandler tồn tại để click chọn enemy hoạt động
         if (IsClient && GetComponent<EnemyClickHandler>() == null)
             gameObject.AddComponent<EnemyClickHandler>();
+    }
+
+    private static void SetLayerRecursively(GameObject go, int layer)
+    {
+        go.layer = layer;
+        for (int i = 0; i < go.transform.childCount; i++)
+            SetLayerRecursively(go.transform.GetChild(i).gameObject, layer);
     }
 
     public override void OnNetworkDespawn()
@@ -102,6 +118,10 @@ public class NetworkEnemyHealth : NetworkBehaviour
     private void TakeDamageInternal(int damage, ulong attackerClientId)
     {
         if (networkCurrentHealth.Value <= 0 || isDead) return;
+
+        var runtimeStats = GetComponent<DungeonEnemyRuntimeStats>();
+        if (runtimeStats != null && runtimeStats.HasRuntimeOverride)
+            damage = runtimeStats.ResolveIncomingDamage(damage);
 
         if (attackerClientId != ulong.MaxValue)
             _lastAttackerClientId = attackerClientId;
@@ -234,6 +254,17 @@ public class NetworkEnemyHealth : NetworkBehaviour
     public float GetHealthPercent() => maxHealth > 0
         ? (float)networkCurrentHealth.Value / maxHealth
         : 0f;
+
+    /// <summary>
+    /// Đặt maxHealth TRƯỚC khi gọi NetworkObject.Spawn() để OnNetworkSpawn dùng giá trị đúng.
+    /// Không có IsServer guard — được gọi trên server trước khi NetworkObject được register với NGO.
+    /// </summary>
+    public void PreInitMaxHp(int hp)
+    {
+        if (hp <= 0) return;
+        maxHealth = hp;
+        Debug.Log($"[NetworkEnemyHealth] PreInitMaxHp({hp}) trên {gameObject.name}");
+    }
 
     /// <summary>
     /// Khởi tạo HP từ database (gọi bởi NetworkEnemySpawner sau networkObj.Spawn()).

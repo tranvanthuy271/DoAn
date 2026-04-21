@@ -109,18 +109,13 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
 
         // Gửi lên API
-        if (APIClient.Instance != null)
+        if (true) // Hybrid: always use direct coroutine
         {
             // Tạo JSON từ combinedChanges
             string jsonData = CreateJsonFromChanges(combinedChanges);
 
-            // Gọi API update (cần implement UpdatePlayerData method trong APIClient)
+            // Gọi API update
             StartCoroutine(UpdatePlayerDataCoroutine(playerId, jsonData));
-        }
-        else
-        {
-            // Debug.LogError("[PlayerDataSaveService] APIClient.Instance is null! Cannot save.");
-            isSaving = false;
         }
     }
 
@@ -200,19 +195,17 @@ public class PlayerDataSaveService : NetworkBehaviour
     /// </summary>
     private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData)
     {
-        string url = $"{APIClient.Instance.baseURL}/player/{playerId}/data";
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+        string url = $"{baseUrl}/player/{playerId}/data";
         
         using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Put(url, jsonData))
         {
             www.SetRequestHeader("Content-Type", "application/json");
             
-            if (APIClient.Instance != null)
+            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+            if (!string.IsNullOrEmpty(token))
             {
-                string token = APIClient.Instance.GetToken();
-                if (!string.IsNullOrEmpty(token))
-                {
-                    www.SetRequestHeader("Authorization", $"Bearer {token}");
-                }
+                www.SetRequestHeader("Authorization", $"Bearer {token}");
             }
 
             yield return www.SendWebRequest();

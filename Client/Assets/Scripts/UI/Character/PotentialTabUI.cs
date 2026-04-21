@@ -48,6 +48,9 @@ public class PotentialTabUI : MonoBehaviour
     private int _originalAvailablePoints;
     private int _pendingAvailablePoints;
     private int _loadGen                 = 0; // tăng mỗi lần Load() để bỏ qua response cũ
+    private bool _isExternalProfileView;
+    private PotentialStatInfo[] _externalStats;
+    private string _externalCharacterName;
 
     private readonly List<PotentialStatRowUI> _allRows = new List<PotentialStatRowUI>();
 
@@ -69,40 +72,75 @@ public class PotentialTabUI : MonoBehaviour
 
     public void SetPlayerId(int id) => _playerId = id;
 
+    public void ShowFriendPotential(PotentialStatInfo[] stats, string characterName)
+    {
+        _isExternalProfileView = true;
+        _externalStats = stats;
+        _externalCharacterName = characterName;
+        Debug.Log($"[PotentialTabUI] ShowFriendPotential characterName='{characterName}' stats={stats?.Length ?? 0}");
+        Load();
+    }
+
+    public void ClearFriendPotential()
+    {
+        if (!_isExternalProfileView && _externalStats == null)
+            return;
+
+        Debug.Log("[PotentialTabUI] ClearFriendPotential()");
+        _isExternalProfileView = false;
+        _externalStats = null;
+        _externalCharacterName = null;
+        SetActionButtonsVisible(true);
+    }
+
     /// <summary>Load dữ liệu tiềm năng từ server và render toàn bộ các dòng.</summary>
     public void Load()
     {
+        if (_isExternalProfileView)
+        {
+            RenderFriendPotential();
+            return;
+        }
+
         if (_playerId <= 0)            { SetStatus("Chưa có playerId."); return; }
-        if (APIClient.Instance == null){ SetStatus("APIClient không tồn tại."); return; }
+        if (GameplayCommandService.Instance == null) { SetStatus("Server chưa sẵn sàng."); return; }
 
         SetStatus("Đang tải tiềm năng...");
         ClearAllRows();
+        SetActionButtonsVisible(true);
         SetActionButtonsEnabled(false);
 
         int requestGen = ++_loadGen; // snapshot thế hệ hiện tại
 
-        APIClient.Instance.GetPlayerPotential(
-            _playerId,
-            onSuccess: response =>
-            {
-                if (requestGen != _loadGen) return; // response cũ, bỏ qua
-                if (response == null) { SetStatus("Lỗi: phản hồi null."); return; }
+        GameplayCommandService.OnPotentialReceived -= HandlePotentialReceived;
+        GameplayCommandService.OnPotentialReceived += HandlePotentialReceived;
+        GameplayCommandService.Instance.GetPlayerPotentialServerRpc();
+    }
 
-                _originalAvailablePoints = response.potential_points_available;
-                _pendingAvailablePoints  = _originalAvailablePoints;
+    private void HandlePotentialReceived(string json)
+    {
+        GameplayCommandService.OnPotentialReceived -= HandlePotentialReceived;
+        PlayerPotentialResponse response = null;
+        try
+        {
+            if (json.Contains("\"error\"")) { SetStatus($"Lỗi: {json}"); SetActionButtonsEnabled(true); return; }
+            response = JsonUtility.FromJson<PlayerPotentialResponse>(json);
+        }
+        catch (System.Exception ex) { SetStatus($"Lỗi: {ex.Message}"); return; }
 
-                BuildAllRows(response);
-                UpdatePointsLabel();
-                SetStatus("");
-                SetActionButtonsEnabled(true);
-            },
-            onError: err =>
-            {
-                if (requestGen != _loadGen) return;
-                Debug.LogError($"[PotentialTabUI] Load error: {err}");
-                SetStatus($"Lỗi: {err}");
-            }
-        );
+        if (response == null) { SetStatus("Lỗi: phản hồi null."); return; }
+        // Gọi lại Load nội bộ để populate (tái dùng code cũ)
+        InternalPopulate(response);
+    }
+
+    private void InternalPopulate(PlayerPotentialResponse response)
+    {
+        _originalAvailablePoints = response.potential_points_available;
+        _pendingAvailablePoints  = _originalAvailablePoints;
+        BuildAllRows(response);
+        UpdatePointsLabel();
+        SetStatus("");
+        SetActionButtonsEnabled(true);
     }
 
     #endregion
@@ -124,9 +162,9 @@ public class PotentialTabUI : MonoBehaviour
     /// <summary>Cộng: gom tất cả delta, gửi server validate → DB → reload UI.</summary>
     private void OnClickCong()
     {
-        if (APIClient.Instance == null) return;
+        if (GameplayCommandService.Instance == null) return;
 
-        var allocations = new List<PotentialAllocationEntry>();
+        var allocations = new System.Collections.Generic.List<PotentialAllocationEntry>();
         foreach (var row in _allRows)
         {
             if (row.PendingDelta > 0)
@@ -141,17 +179,23 @@ public class PotentialTabUI : MonoBehaviour
 
         SetActionButtonsEnabled(false);
 
-        APIClient.Instance.AllocatePotentialStats(
-            _playerId,
-            allocations,
-            onSuccess: _ => Load(),
-            onError: err =>
-            {
-                Debug.LogError($"[PotentialTabUI] Cộng tiềm năng lỗi: {err}");
-                SetStatus($"Lỗi: {err}");
-                SetActionButtonsEnabled(true);
-            }
-        );
+        string json = JsonUtility.ToJson(new PotentialAllocationRequest { allocations = allocations.ToArray() });
+        GameplayCommandService.OnPotentialAllocated -= HandlePotentialAllocated;
+        GameplayCommandService.OnPotentialAllocated += HandlePotentialAllocated;
+        GameplayCommandService.Instance.AllocatePotentialStatsServerRpc(json);
+    }
+
+    private void HandlePotentialAllocated(string json)
+    {
+        GameplayCommandService.OnPotentialAllocated -= HandlePotentialAllocated;
+        if (json.Contains("\"error\""))
+        {
+            Debug.LogError($"[PotentialTabUI] Cộng tiềm năng lỗi: {json}");
+            SetStatus($"Lỗi: {json}");
+            SetActionButtonsEnabled(true);
+            return;
+        }
+        Load();
     }
 
     #endregion
@@ -214,6 +258,12 @@ public class PotentialTabUI : MonoBehaviour
         if (btnCong != null) btnCong.interactable = enabled;
     }
 
+    private void SetActionButtonsVisible(bool visible)
+    {
+        if (btnHuy != null) btnHuy.gameObject.SetActive(visible);
+        if (btnCong != null) btnCong.gameObject.SetActive(visible);
+    }
+
     private void ClearAllRows()
     {
         foreach (var row in _allRows)
@@ -231,6 +281,38 @@ public class PotentialTabUI : MonoBehaviour
         {
             txtStatus.text    = msg;
             txtStatus.enabled = !string.IsNullOrEmpty(msg);
+        }
+    }
+
+    private void RenderFriendPotential()
+    {
+        ClearAllRows();
+        SetActionButtonsVisible(false);
+        SetActionButtonsEnabled(false);
+        SetStatus("");
+
+        if (txtPotentialPoints != null)
+            txtPotentialPoints.text = string.IsNullOrWhiteSpace(_externalCharacterName)
+                ? "Tiềm năng"
+                : $"Tiềm năng của {_externalCharacterName}";
+
+        if (_externalStats == null || _externalStats.Length == 0)
+        {
+            SetStatus("Người chơi này chưa có dữ liệu tiềm năng.");
+            return;
+        }
+
+        if (potentialRowPrefab == null || statListContainer == null)
+        {
+            Debug.LogError("[PotentialTabUI] potentialRowPrefab hoặc statListContainer == NULL khi render friend profile!");
+            return;
+        }
+
+        foreach (var stat in _externalStats)
+        {
+            var row = Instantiate(potentialRowPrefab, statListContainer);
+            row.SetReadOnlyData(stat);
+            _allRows.Add(row);
         }
     }
 

@@ -74,10 +74,12 @@ public class SkillRuntimeLoader : NetworkBehaviour
             yield break;
         }
 
-        // Đợi player data load xong từ API/GameManager (race condition khi client mới spawn)
-        // Timeout 10 giây để tránh chờ mãi nếu data không bao giờ có
+        // Đợi player data hoặc auth token xuất hiện để gameplay service có context.
+        // Loader hiện dùng GameplayCommandService.GetPlayerSkillsServerRpc(), không còn phụ thuộc cứng vào PLAYER_ID.
         waited = 0f;
-        while (GetPlayerId() <= 0 && waited < 10f)
+        while (GameManager.Instance?.currentPlayerData == null
+            && string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""))
+            && waited < 10f)
         {
             yield return new WaitForSeconds(0.5f);
             waited += 0.5f;
@@ -87,40 +89,49 @@ public class SkillRuntimeLoader : NetworkBehaviour
         string gmData = GameManager.Instance?.currentPlayerData != null
             ? GameManager.Instance.currentPlayerData.player_id.ToString() : "null";
         int ppId = PlayerPrefs.GetInt("PLAYER_ID", 0);
-        Debug.Log($"[SkillRuntimeLoader] WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | APIClient={APIClient.Instance != null}");
-        if (playerId <= 0)
+        bool hasJwtToken = !string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""));
+        Debug.Log($"[SkillRuntimeLoader] WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | hasJwt={hasJwtToken} | APIClient={APIClient.Instance != null}");
+        if (!hasJwtToken && GameManager.Instance?.currentPlayerData == null)
         {
-            Debug.LogWarning($"[SkillRuntimeLoader] playerId={playerId} <= 0! Skill stats sẽ KHÔNG load từ DB. Kiểm tra: login trước khi spawn, GameManager.currentPlayerData, PlayerPrefs[PLAYER_ID].");
+            Debug.LogWarning("[SkillRuntimeLoader] Thiếu cả JWT_TOKEN lẫn GameManager.currentPlayerData. Skill stats sẽ KHÔNG load từ runtime service.");
             yield break;
         }
 
-        yield return StartCoroutine(LoadWithRetry(playerId));
+        yield return StartCoroutine(LoadWithRetry());
     }
 
-    private IEnumerator LoadWithRetry(int playerId)
+    private IEnumerator LoadWithRetry()
     {
         int attempts = 0;
         while (!loaded && attempts < maxRetries)
         {
             attempts++;
+            if (GameplayCommandService.Instance == null)
+            {
+                yield return new WaitForSeconds(retryDelay);
+                continue;
+            }
+
             bool done = false;
             bool success = false;
 
-            APIClient.Instance.GetPlayerSkills(playerId,
-                response =>
-                {
-                    ApplySkillStats(response);
-                    success = true;
-                    done = true;
-                },
-                err =>
-                {
-                    Debug.LogWarning($"[SkillRuntimeLoader] Lần {attempts}: GetPlayerSkills lỗi — {err}");
-                    done = true;
-                }
-            );
+            GameplayCommandService.OnSkillsReceived -= HandleSkills;
+            GameplayCommandService.OnSkillsReceived += HandleSkills;
+            GameplayCommandService.Instance.GetPlayerSkillsServerRpc();
 
-            // Đợi callback hoàn thành (tối đa 5 giây/lần)
+            void HandleSkills(string json)
+            {
+                GameplayCommandService.OnSkillsReceived -= HandleSkills;
+                if (!json.Contains("\"error\""))
+                {
+                    var response = JsonUtility.FromJson<PlayerSkillsResponse>(json);
+                    if (response != null) { ApplySkillStats(response); success = true; }
+                }
+                else
+                    Debug.LogWarning($"[SkillRuntimeLoader] Lần {attempts}: GetPlayerSkills lỗi — {json}");
+                done = true;
+            }
+
             float t = 0f;
             while (!done && t < 5f) { yield return null; t += Time.deltaTime; }
 

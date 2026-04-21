@@ -29,7 +29,7 @@ public class GeneItemDebugAdder : MonoBehaviour
     [Tooltip("Tier gene dùng để lấy config (thường là 1)")]
     [SerializeField] private int geneTier = 1;
 
-    private static readonly string[] ElementTypes = { "Fire", "Water", "Earth", "Metal", "Wood" };
+    private static readonly string[] ElementTypes = { "Fire", "Water", "Earth", "Metal", "Wood", "Wind" };
 
     private bool _isBusy;
 
@@ -65,9 +65,9 @@ public class GeneItemDebugAdder : MonoBehaviour
             yield break;
         }
 
-        if (APIClient.Instance == null)
+        if (APIClient.Instance == null && ServerAddressConfig.Instance == null)
         {
-            Debug.LogWarning("[GeneItemDebugAdder] APIClient chưa sẵn sàng!");
+            Debug.LogWarning("[GeneItemDebugAdder] ServerAddressConfig chưa sẵn sàng!");
             _isBusy = false;
             yield break;
         }
@@ -75,22 +75,26 @@ public class GeneItemDebugAdder : MonoBehaviour
         // Fetch gene config cho từng hệ và thêm item
         var addedItems = new List<APIClient.AddInventoryItemRequest>();
 
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+
         foreach (var elementType in ElementTypes)
         {
-            bool done = false;
             GeneConfigDto cfg = null;
 
-            APIClient.Instance.GetGeneConfig(
-                elementType: elementType,
-                tier:        geneTier,
-                onSuccess: c  => { cfg = c; done = true; },
-                onError:   err => {
-                    Debug.LogWarning($"[GeneItemDebugAdder] Không lấy được config hệ {elementType}: {err}");
-                    done = true;
-                }
-            );
-
-            yield return new WaitUntil(() => done);
+            // Direct HTTP call instead of APIClient.GetGeneConfig
+            IEnumerator fetchConfig()
+            {
+                string url = $"{baseUrl}/gene/config?elementType={elementType}&tier={geneTier}";
+                using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+                string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+                if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
+                yield return req.SendWebRequest();
+                if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                    cfg = JsonUtility.FromJson<GeneConfigDto>(req.downloadHandler.text);
+                else
+                    Debug.LogWarning($"[GeneItemDebugAdder] Không lấy được config hệ {elementType}: {req.error}");
+            }
+            yield return StartCoroutine(fetchConfig());
 
             if (cfg == null || cfg.itemId <= 0)
             {
@@ -118,7 +122,7 @@ public class GeneItemDebugAdder : MonoBehaviour
             Debug.Log($"[GeneItemDebugAdder] ✓ Đã thêm x{amountPerElement} {cfg.itemName} (id={cfg.itemId}) — hệ {elementType}");
         }
 
-        Debug.Log($"[GeneItemDebugAdder] ✅ Đã thêm {addedItems.Count}/5 loại item đột biến vào túi!");
+        Debug.Log($"[GeneItemDebugAdder] ✅ Đã thêm {addedItems.Count}/6 loại item đột biến vào túi!");
 
         if (addedItems.Count > 0)
         {
@@ -144,23 +148,30 @@ public class GeneItemDebugAdder : MonoBehaviour
             yield break;
         }
 
-        if (APIClient.Instance == null) yield break;
+        string baseUrl2 = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+        string url2 = $"{baseUrl2}/player/{playerId}/inventory/add-items";
+        var wrapper = new APIClient.AddInventoryItemsRequest { items = items.ToArray() };
+        string body = JsonUtility.ToJson(wrapper);
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
 
-        bool done = false;
-        APIClient.Instance.AddItemsToInventory(
-            playerId,
-            items.ToArray(),
-            _ => {
+        bool done2 = false;
+        IEnumerator doSync()
+        {
+            using var req = new UnityEngine.Networking.UnityWebRequest(url2, "POST");
+            req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
+            req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
+            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+            if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
+            yield return req.SendWebRequest();
+            if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
                 Debug.Log($"[GeneItemDebugAdder] ✅ Đã sync {items.Count} item gene vào DB!");
-                done = true;
-            },
-            err => {
-                Debug.LogError($"[GeneItemDebugAdder] ❌ Lỗi sync DB: {err}");
-                done = true;
-            }
-        );
-
-        yield return new WaitUntil(() => done);
+            else
+                Debug.LogError($"[GeneItemDebugAdder] ❌ Lỗi sync DB: {req.error}");
+            done2 = true;
+        }
+        yield return StartCoroutine(doSync());
+        yield return new WaitUntil(() => done2);
     }
 
     private GameObject GetLocalPlayerObject()

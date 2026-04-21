@@ -23,4 +23,19 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/ServerScene.unity
     guid: 0ab17fa419454e24a960654eed297263
+  - enabled: 1
+    path: Assets/Scenes/Map01.unity
+    guid: a28ac20ced94e4a4c97355923a6db219
+  - enabled: 1
+    path: Assets/Scenes/Map02.unity
+    guid: fd71dcf5375de8d4da349b4c8a3dd55d
+  - enabled: 1
+    path: Assets/Scenes/Map03.unity
+    guid: 204f54fcd5df28c4bbe5e21e93b8cfba
+  - enabled: 1
+    path: Assets/Scenes/DungeonPartyScene.unity
+    guid: e79fbcf33ee6cb44398125cbf1521615
+  - enabled: 1
+    path: Assets/Scenes/DungeonWaveScene.unity
+    guid: 8ed63080374351640a48a2d7e85776a3
   m_configObjects: {}

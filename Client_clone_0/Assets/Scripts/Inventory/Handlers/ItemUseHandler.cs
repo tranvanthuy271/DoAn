@@ -169,109 +169,128 @@ public class ItemUseHandler : MonoBehaviour
         inventoryBridge?.RequestEquipItem(slot.slotIndex, slot.itemCode);
     }
 
-    /// <summary>Sử dụng item tiêu thụ (type 21-29): gọi API → áp dụng HP/MP qua NGO → cập nhật buff HUD.</summary>
+    /// <summary>Sử dụng item tiêu thụ (type 21-29): gọi GameplayCommandService → áp dụng HP/MP qua NGO → cập nhật buff HUD.</summary>
     private void DoUseConsumableItem(InventorySlotDto slot)
     {
         Debug.Log($"[ItemUseHandler] 🍶 Sử dụng consumable: slot={slot.slotIndex}");
-        int playerId = GetCurrentPlayerId();
-        if (playerId == 0 || APIClient.Instance == null) return;
-
-        if (TryGetCurrentVitals(out int currentHp, out int maxHp, out int currentMp, out int maxMp))
+        if (!CanUseGameplayCommandService())
         {
-            string vitalsJson =
-                $"{{\"hp\":{currentHp},\"max_hp\":{maxHp},\"mp\":{currentMp},\"max_mp\":{maxMp}}}";
-
-            APIClient.Instance.UpdatePlayerData(
-                playerId,
-                vitalsJson,
-                onSuccess: () => SendUseConsumableRequest(slot, playerId),
-                onError: error =>
-                {
-                    Debug.LogWarning($"[ItemUseHandler] Sync vitals trước khi dùng item thất bại: {error}. Tiếp tục use-item.");
-                    SendUseConsumableRequest(slot, playerId);
-                }
-            );
+            Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
+                           "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
             return;
         }
 
-        SendUseConsumableRequest(slot, playerId);
+        SendUseConsumableRequest(slot);
     }
 
-    private void SendUseConsumableRequest(InventorySlotDto slot, int playerId)
+    private void SendUseConsumableRequest(InventorySlotDto slot)
     {
-        int templateId = slot.itemTemplateId;
-
-        APIClient.Instance.UseInventoryItem(
-            playerId, slot.slotIndex,
-            response =>
-            {
-                Debug.Log($"[ItemUseHandler] ✅ UseItem OK: {response.message}");
-
-                // Hồi HP/MP: dùng giá trị authoritative từ REST API để sync ngược lên NGO
-                // (thay thế ApplyStatEffect cũ để tránh lấy value từ ScriptableObject sai)
-                if (response.hp_restore > 0 || response.mp_restore > 0)
-                    inventoryBridge?.RequestSyncHpMp(response.current_hp, response.current_mp);
-
-                // Cập nhật gene_exp của player nếu có GeneExpAdd
-                if (response.gene_exp > 0)
-                {
-                    var pd = GameManager.Instance?.GetPlayerData();
-                    if (pd != null)
-                    {
-                        pd.gene_exp = response.gene_exp;
-                        GameManager.Instance.SetPlayerData(pd);
-                    }
-                }
-
-                // Cập nhật buff HUD với danh sách buff mới từ server
-                if (response.active_buffs != null && response.active_buffs.Length > 0)
-                {
-                    ActiveBuffManager.Instance?.OnBuffsReceived(response.active_buffs);
-                    inventoryBridge?.RequestSyncBuffBonuses(); // sync % bonus lên NGO
-                }
-                else if (response.new_buffs != null && response.new_buffs.Length > 0)
-                {
-                    ActiveBuffManager.Instance?.OnBuffsAdded(response.new_buffs);
-                    inventoryBridge?.RequestSyncBuffBonuses();
-                }
-
-                // Chỉ reload stats khi LẦN NÀY có thêm buff mới ảnh hưởng max HP/MP
-                // (kiểm tra new_buffs thay vì active_buffs để tránh reload sai khi buff cũ còn active)
-                if (response.new_buffs != null && response.new_buffs.Length > 0)
-                {
-                    bool hasNewStatBuff = System.Array.Exists(response.new_buffs,
-                        b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
-                    if (hasNewStatBuff)
-                        ReloadPlayerStats();
-                }
-
-                // Chốt lại HUD theo dữ liệu authoritative từ server.
-                ActiveBuffManager.Instance?.LoadFromServer();
-
-                RefreshInventory();
-            },
-            error => Debug.LogError($"[ItemUseHandler] ❌ UseItem thất bại: {error}")
-        );
+        void HandleUseResult(string json)
+        {
+            GameplayCommandService.OnUseItemResult -= HandleUseResult;
+            HandleUseItemResponse(json, isBagItem: false);
+        }
+        GameplayCommandService.OnUseItemResult -= HandleUseResult;
+        GameplayCommandService.OnUseItemResult += HandleUseResult;
+        GameplayCommandService.Instance.UseInventoryItemServerRpc(slot.slotIndex);
     }
 
-    /// <summary>Sử dụng item mở rộng túi (type 30): gọi API use-item + cập nhật bag count.</summary>
+    /// <summary>Sử dụng item mở rộng túi (type 30): gọi GameplayCommandService use-item + cập nhật bag count.</summary>
     private void DoUseBagItem(InventorySlotDto slot)
     {
         Debug.Log($"[ItemUseHandler] 🎒 Mở rộng túi đồ: slot={slot.slotIndex}");
-        int playerId = GetCurrentPlayerId();
-        if (playerId == 0 || APIClient.Instance == null) return;
+        if (!CanUseGameplayCommandService())
+        {
+            Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
+                           "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
+            return;
+        }
 
-        APIClient.Instance.UseInventoryItem(
-            playerId, slot.slotIndex,
-            response =>
+        void HandleBagResult(string json)
+        {
+            GameplayCommandService.OnUseItemResult -= HandleBagResult;
+            HandleUseItemResponse(json, isBagItem: true);
+        }
+        GameplayCommandService.OnUseItemResult -= HandleBagResult;
+        GameplayCommandService.OnUseItemResult += HandleBagResult;
+        GameplayCommandService.Instance.UseInventoryItemServerRpc(slot.slotIndex);
+    }
+
+    private bool CanUseGameplayCommandService()
+    {
+        return GameplayCommandService.Instance != null && GameplayCommandService.Instance.IsSpawned;
+    }
+
+    private void HandleUseItemResponse(string json, bool isBagItem)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            Debug.LogError("[ItemUseHandler] ❌ UseItem trả về JSON rỗng.");
+            return;
+        }
+
+        if (json.Contains("\"error\""))
+        {
+            Debug.LogError(isBagItem
+                ? $"[ItemUseHandler] ❌ Mở túi thất bại: {json}"
+                : $"[ItemUseHandler] ❌ UseItem thất bại: {json}");
+            return;
+        }
+
+        var response = JsonUtility.FromJson<UseItemResult>(json);
+        if (response == null)
+        {
+            Debug.LogError($"[ItemUseHandler] Parse UseItemResult null. Raw={json}");
+            return;
+        }
+
+        if (isBagItem)
+        {
+            Debug.Log($"[ItemUseHandler] ✅ Mở túi OK: {response.message} | bag_slots={response.bag_slots}");
+            if (response.bag_slots > 0)
             {
-                Debug.Log($"[ItemUseHandler] ✅ Mở túi OK: {response.message} | bag_slots={response.bag_slots}");
                 currentBagSlots = response.bag_slots;
                 UpdateBagSlotCountText();
-                RefreshInventory();
-            },
-            error => Debug.LogError($"[ItemUseHandler] ❌ Mở túi thất bại: {error}")
-        );
+            }
+            RefreshInventory();
+            return;
+        }
+
+        Debug.Log($"[ItemUseHandler] ✅ UseItem OK: {response.message}");
+
+        if (response.hp_restore > 0 || response.mp_restore > 0)
+            inventoryBridge?.RequestSyncHpMp(response.current_hp, response.current_mp);
+
+        if (response.gene_exp > 0)
+        {
+            var pd = GameManager.Instance?.GetPlayerData();
+            if (pd != null)
+            {
+                pd.gene_exp = response.gene_exp;
+                GameManager.Instance.SetPlayerData(pd);
+            }
+        }
+
+        if (response.active_buffs != null && response.active_buffs.Length > 0)
+        {
+            ActiveBuffManager.Instance?.OnBuffsReceived(response.active_buffs);
+            inventoryBridge?.RequestSyncBuffBonuses();
+        }
+        else if (response.new_buffs != null && response.new_buffs.Length > 0)
+        {
+            ActiveBuffManager.Instance?.OnBuffsAdded(response.new_buffs);
+            inventoryBridge?.RequestSyncBuffBonuses();
+        }
+
+        if (response.new_buffs != null && response.new_buffs.Length > 0)
+        {
+            bool hasNewStatBuff = System.Array.Exists(response.new_buffs,
+                b => b.effectType == "HpBuff" || b.effectType == "MpBuff");
+            if (hasNewStatBuff) ReloadPlayerStats();
+        }
+
+        ActiveBuffManager.Instance?.LoadFromServer();
+        RefreshInventory();
     }
 
     private bool TryUseItemInBlacksmith(InventorySlotDto slot)
@@ -452,20 +471,23 @@ public class ItemUseHandler : MonoBehaviour
         inventoryBridge?.RefreshInventoryFromDB();
     }
 
-    /// <summary>Reload toàn bộ player data từ REST API bao gồm final_stats (có HpBuff/MpBuff).</summary>
+    /// <summary>Reload toàn bộ player data qua GameplayCommandService bao gồm final_stats (có HpBuff/MpBuff).</summary>
     private void ReloadPlayerStats()
     {
-        int playerId = GetCurrentPlayerId();
-        if (playerId <= 0 || APIClient.Instance == null) return;
-        APIClient.Instance.LoadPlayerData(playerId,
-            data =>
-            {
-                GameManager.Instance?.SetPlayerData(data);
-                // Sync maxHp/maxMp lên NGO nếu có InventoryNetworkBridge
-                if (data?.final_stats != null && inventoryBridge != null)
-                    inventoryBridge.RequestUpdatePlayerStats(data.final_stats.max_hp, data.final_stats.max_mp);
-            },
-            _ => { });
+        if (!CanUseGameplayCommandService()) return;
+
+        void HandleStats(string json)
+        {
+            GameplayCommandService.OnPlayerDataReceived -= HandleStats;
+            var data = JsonUtility.FromJson<PlayerDataResponse>(json);
+            if (data == null) return;
+            GameManager.Instance?.SetPlayerData(data);
+            if (data.final_stats != null && inventoryBridge != null)
+                inventoryBridge.RequestUpdatePlayerStats(data.final_stats.max_hp, data.final_stats.max_mp);
+        }
+        GameplayCommandService.OnPlayerDataReceived -= HandleStats;
+        GameplayCommandService.OnPlayerDataReceived += HandleStats;
+        GameplayCommandService.Instance.RequestPlayerDataServerRpc();
     }
 
     /// <summary>Gọi từ bên ngoài (ví dụ NpcMenuUI sau khi mua item) để refresh túi đồ.</summary>
@@ -539,4 +561,18 @@ public class ItemUseHandler : MonoBehaviour
         if (value >= 1_000)     return (value / 1_000f).ToString("0.#")     + "K";
         return value.ToString();
     }
+}
+
+[System.Serializable]
+public class UseItemResult
+{
+    public string message;
+    public int hp_restore;
+    public int mp_restore;
+    public int current_hp;
+    public int current_mp;
+    public int gene_exp;
+    public int bag_slots;
+    public ActiveBuffDto[] active_buffs;
+    public ActiveBuffDto[] new_buffs;
 }

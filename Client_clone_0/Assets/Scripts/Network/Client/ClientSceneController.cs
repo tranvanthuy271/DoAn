@@ -39,6 +39,17 @@ public class ClientSceneController : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsureZoneStateFromRuntimeData();
+    }
+
+    private void OnEnable()
+    {
+        GameManager.OnPlayerDataSet += HandlePlayerDataSet;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.OnPlayerDataSet -= HandlePlayerDataSet;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -57,7 +68,87 @@ public class ClientSceneController : MonoBehaviour
             Debug.LogWarning("[ClientSceneController] Đang trong quá trình chuyển zone, bỏ qua yêu cầu mới.");
             return;
         }
+
+        Debug.Log($"[ClientSceneController] HandleZoneTeleport | fromScene={SceneManager.GetActiveScene().name} toScene={sceneName} target=({x:F2}, {y:F2}) map={mapId} zone={zoneId}", this);
         StartCoroutine(LoadSceneAndReposition(sceneName, new Vector3(x, y, 0), mapId, zoneId));
+    }
+
+    public bool EnsureZoneStateFromRuntimeData()
+    {
+        int fallbackMapId = CurrentMapId >= 0 ? CurrentMapId : ResolveFallbackMapId();
+        int fallbackZoneId = CurrentZoneId >= 0 ? CurrentZoneId : ResolveFallbackZoneId();
+
+        if (fallbackMapId < 0 && fallbackZoneId < 0)
+            return false;
+
+        int oldMapId = CurrentMapId;
+        int oldZoneId = CurrentZoneId;
+        SetCurrentZoneState(fallbackMapId, fallbackZoneId);
+        return oldMapId != CurrentMapId || oldZoneId != CurrentZoneId;
+    }
+
+    public void SetCurrentZoneState(int mapId, int zoneId)
+    {
+        int oldMapId = CurrentMapId;
+        int oldZoneId = CurrentZoneId;
+
+        if (mapId >= 0)
+            CurrentMapId = mapId;
+
+        if (zoneId >= 0)
+            CurrentZoneId = zoneId;
+
+        if (oldMapId != CurrentMapId || oldZoneId != CurrentZoneId)
+        {
+            Debug.Log($"[ClientSceneController] SetCurrentZoneState | map {oldMapId} -> {CurrentMapId}, zone {oldZoneId} -> {CurrentZoneId}", this);
+        }
+    }
+
+    public void ResetZoneState()
+    {
+        Debug.Log($"[ClientSceneController] ResetZoneState | map={CurrentMapId} zone={CurrentZoneId}", this);
+        CurrentMapId = -1;
+        CurrentZoneId = -1;
+        _isTransitioning = false;
+        HideLoadingScreen();
+    }
+
+    private void HandlePlayerDataSet(PlayerDataResponse data)
+    {
+        if (data == null)
+            return;
+
+        int zoneId = data.zone_id >= 0 ? data.zone_id : ResolveFallbackZoneId();
+        SetCurrentZoneState(data.map_id, zoneId);
+    }
+
+    private static int ResolveFallbackMapId()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            var playerData = GameManager.Instance.GetPlayerData();
+            if (playerData != null && playerData.map_id >= 0)
+                return playerData.map_id;
+        }
+
+        if (MapManager.Instance != null && MapManager.Instance.GetMapId() >= 0)
+            return MapManager.Instance.GetMapId();
+
+        int selectedMapId = PlayerPrefs.GetInt("SelectedMapId", -1);
+        return selectedMapId >= 0 ? selectedMapId : -1;
+    }
+
+    private static int ResolveFallbackZoneId()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            var playerData = GameManager.Instance.GetPlayerData();
+            if (playerData != null && playerData.zone_id >= 0)
+                return playerData.zone_id;
+        }
+
+        int savedZoneId = PlayerPrefs.GetInt("PLAYER_ZONE_ID", -1);
+        return savedZoneId >= 0 ? savedZoneId : -1;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -82,6 +173,10 @@ public class ClientSceneController : MonoBehaviour
         //     không bị Unity destroy. Sau đó move + unload.
         if (!string.IsNullOrEmpty(sceneName) && oldSceneName != sceneName)
         {
+            // Tắt tạm EventSystem hiện tại để scene mới không bật trùng EventSystem
+            // trong lúc additive load.
+            SetAllEventSystemsEnabled(false);
+
             Debug.Log($"[ClientSceneController] Loading scene (additive): {sceneName}");
             var loadOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             while (!loadOp.isDone)
@@ -91,6 +186,7 @@ public class ClientSceneController : MonoBehaviour
             if (!newScene.IsValid())
             {
                 Debug.LogError($"[ClientSceneController] Scene '{sceneName}' không hợp lệ sau khi load!");
+                EnablePreferredEventSystem();
                 HideLoadingScreen();
                 _isTransitioning = false;
                 yield break;
@@ -98,12 +194,14 @@ public class ClientSceneController : MonoBehaviour
 
             // 3a — Di chuyển tất cả root NetworkObjects từ scene cũ sang scene mới
             //       để chúng sống sót khi unload scene cũ.
-            //       Đồng thời protect Canvas/EventSystem chưa được GameUIPersist bảo vệ.
+            //       Nếu không move, Unity sẽ destroy scene-local clone của NGO trên client
+            //       khi UnloadSceneAsync(oldScene), gây lỗi Invalid Destroy / MissingReference.
             int moved = 0;
             foreach (var rootObj in oldScene.GetRootGameObjects())
             {
                 if (rootObj == null) continue;
-                if (rootObj.GetComponent<NetworkObject>() != null)
+                var netObj = rootObj.GetComponent<NetworkObject>();
+                if (netObj != null)
                 {
                     SceneManager.MoveGameObjectToScene(rootObj, newScene);
                     moved++;
@@ -121,21 +219,28 @@ public class ClientSceneController : MonoBehaviour
             }
             Debug.Log($"[ClientSceneController] Moved {moved} NetworkObject(s) → {sceneName}");
 
-            // 3b — Đặt scene mới làm active
+            // 3b — Protect canvas/event system roots của scene mới.
+            // Nếu quay lại GameScene, bước này sẽ gắn GameUIPersist lên canvas mới
+            // và tự hủy duplicate nếu đã có canvas persistent cùng tên.
+            ProtectSceneUiRoots(newScene);
+
+            // 3c — Đặt scene mới làm active
             SceneManager.SetActiveScene(newScene);
             CleanupDuplicateEventSystems();
+            EnablePreferredEventSystem();
 
             // Camera persistent phải refresh bounds theo active scene mới,
             // không dùng scene cũ vừa unload.
             CameraFollow.Instance?.RefreshMaxMapBounds();
 
-            // 3c — Unload scene cũ (NetworkObjects đã chuyển sang scene mới, an toàn)
+            // 3d — Unload scene cũ (NetworkObjects đã chuyển sang scene mới, an toàn)
             var unloadOp = SceneManager.UnloadSceneAsync(oldScene);
             if (unloadOp != null)
                 while (!unloadOp.isDone)
                     yield return null;
 
             CleanupDuplicateEventSystems();
+            EnablePreferredEventSystem();
         }
 
         // 4 — Cập nhật trạng thái zone
@@ -261,6 +366,25 @@ public class ClientSceneController : MonoBehaviour
         rootObj.AddComponent<GameUIPersist>();
     }
 
+    private static void ProtectSceneUiRoots(Scene scene)
+    {
+        if (!scene.IsValid())
+            return;
+
+        foreach (var rootObj in scene.GetRootGameObjects())
+        {
+            if (rootObj == null)
+                continue;
+
+            bool isCanvas = rootObj.GetComponent<Canvas>() != null;
+            bool isEventSystem = rootObj.GetComponent<EventSystem>() != null;
+            bool hasPersist = rootObj.GetComponent<GameUIPersist>() != null;
+
+            if ((isCanvas || isEventSystem) && !hasPersist)
+                ProtectLegacyUiRoot(rootObj);
+        }
+    }
+
     private static void CleanupDuplicateEventSystems()
     {
         EventSystem[] eventSystems = FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
@@ -277,6 +401,33 @@ public class ClientSceneController : MonoBehaviour
 
             Debug.LogWarning($"[ClientSceneController] Destroying duplicate EventSystem '{eventSystem.gameObject.name}' after scene transition.");
             Destroy(eventSystem.gameObject);
+        }
+    }
+
+    private static void SetAllEventSystemsEnabled(bool enabled)
+    {
+        foreach (EventSystem eventSystem in FindObjectsByType<EventSystem>(FindObjectsSortMode.None))
+        {
+            if (eventSystem == null)
+                continue;
+
+            eventSystem.enabled = enabled;
+        }
+    }
+
+    private static void EnablePreferredEventSystem()
+    {
+        EventSystem[] eventSystems = FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+        if (eventSystems == null || eventSystems.Length == 0)
+            return;
+
+        EventSystem preferred = FindPreferredEventSystem() ?? eventSystems[0];
+        foreach (EventSystem eventSystem in eventSystems)
+        {
+            if (eventSystem == null)
+                continue;
+
+            eventSystem.enabled = eventSystem == preferred;
         }
     }
 

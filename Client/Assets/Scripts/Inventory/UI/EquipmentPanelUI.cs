@@ -48,6 +48,10 @@ public class EquipmentPanelUI : MonoBehaviour
     [Tooltip("Nút hủy tháo")]
     [SerializeField] private Button cancelUnequipButton;
 
+    [Header("Character Preview")]
+    [Tooltip("Component hiển thị prefab nhân vật ở giữa panel (tuỳ chọn)")]
+    [SerializeField] private EquipmentCharacterPreview characterPreview;
+
     [Header("Title")]
     [Tooltip("Text tiêu đề panel")]
     [SerializeField] private TMP_Text titleText;
@@ -57,6 +61,8 @@ public class EquipmentPanelUI : MonoBehaviour
 
     // Current equipment data
     private PlayerEquipmentDto currentEquipment;
+    private bool _isExternalProfileView;
+    private string _externalCharacterName;
 
     // Slot đang chờ unequip
     private EquipmentSlotType? pendingUnequipSlot;
@@ -220,12 +226,41 @@ public class EquipmentPanelUI : MonoBehaviour
         RefreshAllSlots();
     }
 
+    public void ShowFriendEquipment(PlayerEquipmentDto equipment, string characterName)
+    {
+        _isExternalProfileView = true;
+        _externalCharacterName = characterName;
+        currentEquipment = equipment;
+
+        if (titleText != null)
+            titleText.text = string.IsNullOrWhiteSpace(characterName) ? "Trang Bị" : $"Trang Bị - {characterName}";
+
+        Debug.Log($"[EquipmentPanelUI] ShowFriendEquipment characterName='{characterName}' hasEquipment={equipment != null}");
+        HideUnequipConfirm();
+        RefreshAllSlots();
+    }
+
+    public void ClearFriendEquipmentView()
+    {
+        if (!_isExternalProfileView && string.IsNullOrEmpty(_externalCharacterName))
+            return;
+
+        Debug.Log("[EquipmentPanelUI] ClearFriendEquipmentView()");
+        _isExternalProfileView = false;
+        _externalCharacterName = null;
+
+        if (titleText != null)
+            titleText.text = "Trang Bị";
+
+        HideUnequipConfirm();
+    }
+
     /// <summary>
     /// Refresh UI từ InventoryNetworkBridge
     /// </summary>
     public void RefreshFromBridge()
     {
-        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        var bridge = InventoryNetworkBridge.GetExisting(true);
         if (bridge != null)
         {
             bridge.RefreshEquipmentFromDB();
@@ -259,6 +294,11 @@ public class EquipmentPanelUI : MonoBehaviour
             if (currentEquipment != null)
             {
                 EquipmentItemDto item = currentEquipment.GetSlot(slotType);
+                // Debug: trace từng slot để phát hiện Accessory không nhận data
+                if (item != null && item.itemTemplateId > 0)
+                    Debug.Log($"[EquipmentPanelUI] → Slot {slotType}: {item.itemName} lv={item.upgradeLevel} iconId={item.iconId}");
+                else
+                    Debug.Log($"[EquipmentPanelUI] → Slot {slotType}: TRỐNG");
                 slotUI.SetItem(item);
             }
             else
@@ -275,6 +315,12 @@ public class EquipmentPanelUI : MonoBehaviour
     /// </summary>
     private void OnEquipmentSlotClicked(EquipmentSlotType slotType, EquipmentItemDto item)
     {
+        if (_isExternalProfileView)
+        {
+            Debug.Log($"[EquipmentPanelUI] Ignore slot click in read-only friend view. slot={slotType}");
+            return;
+        }
+
         Debug.Log($"[EquipmentPanelUI] Click slot {slotType}, item={item?.itemName ?? "trống"}");
 
         if (item == null || item.itemTemplateId <= 0)
@@ -337,7 +383,7 @@ public class EquipmentPanelUI : MonoBehaviour
             OnUnequipRequested?.Invoke(slot);
 
             // Gọi bridge để xử lý
-            var bridge = FindObjectOfType<InventoryNetworkBridge>();
+            var bridge = InventoryNetworkBridge.GetExisting(true);
             if (bridge != null)
             {
                 bridge.RequestUnequipItem(slot);

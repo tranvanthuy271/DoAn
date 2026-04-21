@@ -281,6 +281,11 @@ public class WaterPillarSkill : NetworkBehaviour
             // Đảm bảo có NetworkObject
             NetworkObject netObj = pillar.GetComponent<NetworkObject>();
             if (netObj == null) netObj = pillar.AddComponent<NetworkObject>();
+
+            // Di chuyển vào physics scene của map player — TRƯỚC Spawn()
+            var _pillarRoom = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId);
+            MapSceneManager.Instance?.MoveToMapScene(pillar, _pillarRoom?.MapId ?? -999);
+
             netObj.Spawn();
 
             // Chờ 1 frame để client nhận spawn message, rồi gửi velocity + animation RPC

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System;
 using UnityEngine.Networking;
 
 /// <summary>
@@ -10,9 +11,11 @@ using UnityEngine.Networking;
 /// </summary>
 public class MapManager : MonoBehaviour
 {
+    private const int UnknownMapId = -1;
+
     [Header("Map Configuration")]
-    [Tooltip("Map ID fallback nếu API không trả về (0 = Main map, 1, 2, 3...)")]
-    public int mapId = 0;
+    [Tooltip("Map ID fallback nếu không resolve được từ runtime/API. -1 = chưa biết, 0 = Main map, 1, 2, 3...")]
+    public int mapId = UnknownMapId;
 
     [Tooltip("Tên map fallback")]
     public string mapName = "Main Map";
@@ -37,6 +40,7 @@ public class MapManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            SeedKnownMapId();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else if (instance != this)
@@ -54,13 +58,85 @@ public class MapManager : MonoBehaviour
     private void Start()
     {
         apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
-        // Load map info cho scene khởi đầu
-        StartCoroutine(FetchMapConfigByScene(SceneManager.GetActiveScene().name));
+        StartCoroutine(ResolveMapConfig(SceneManager.GetActiveScene().name));
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        StartCoroutine(FetchMapConfigByScene(scene.name));
+        SeedKnownMapId();
+        StartCoroutine(ResolveMapConfig(scene.name));
+    }
+
+    private void SeedKnownMapId()
+    {
+        if (TryResolveKnownMapId(out int knownMapId))
+            mapId = knownMapId;
+    }
+
+    private bool TryResolveKnownMapId(out int knownMapId)
+    {
+        if (ClientSceneController.Instance != null && ClientSceneController.Instance.CurrentMapId >= 0)
+        {
+            knownMapId = ClientSceneController.Instance.CurrentMapId;
+            return true;
+        }
+
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            var playerData = GameManager.Instance.GetPlayerData();
+            if (playerData != null && playerData.map_id >= 0)
+            {
+                knownMapId = playerData.map_id;
+                return true;
+            }
+        }
+
+        int selectedMapId = PlayerPrefs.GetInt("SelectedMapId", UnknownMapId);
+        if (selectedMapId >= 0)
+        {
+            knownMapId = selectedMapId;
+            return true;
+        }
+
+        knownMapId = UnknownMapId;
+        return false;
+    }
+
+    private IEnumerator ResolveMapConfig(string sceneName)
+    {
+        if (TryResolveKnownMapId(out int knownMapId))
+        {
+            bool loadedById = false;
+            yield return StartCoroutine(FetchMapConfigById(knownMapId, success => loadedById = success));
+            if (loadedById)
+                yield break;
+
+            Debug.LogWarning($"[MapManager] Không load được mapId={knownMapId} từ runtime state, fallback sang by-scene cho '{sceneName}'.");
+        }
+
+        yield return StartCoroutine(FetchMapConfigByScene(sceneName));
+    }
+
+    private IEnumerator FetchMapConfigById(int targetMapId, Action<bool> onCompleted)
+    {
+        string url = $"{apiBase}/api/map/{targetMapId}/config";
+        using var req = UnityWebRequest.Get(url);
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var resp = JsonUtility.FromJson<MapConfigResponse>(req.downloadHandler.text);
+            mapId = resp.map_id;
+            if (!string.IsNullOrWhiteSpace(resp.map_name))
+                mapName = resp.map_name;
+
+            Debug.Log($"[MapManager] Map loaded via mapId: {mapName} (id={mapId})");
+            onCompleted?.Invoke(true);
+            yield break;
+        }
+
+        Debug.LogWarning($"[MapManager] API thất bại cho mapId={targetMapId}, sẽ thử resolve theo scene. Error: {req.error}");
+        onCompleted?.Invoke(false);
     }
 
     private IEnumerator FetchMapConfigByScene(string sceneName)
@@ -87,6 +163,12 @@ public class MapManager : MonoBehaviour
 
     public int    GetMapId()   => mapId;
     public string GetMapName() => mapName;
+
+    public void ResetRuntimeState()
+    {
+        mapId = UnknownMapId;
+        mapName = "Main Map";
+    }
 
     [System.Serializable]
     private class MapConfigResponse

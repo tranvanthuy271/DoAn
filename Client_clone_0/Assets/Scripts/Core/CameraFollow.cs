@@ -159,7 +159,8 @@ public class CameraFollow : MonoBehaviour
 
         if (!found)
         {
-            Debug.LogWarning($"[CameraFollow] Không tìm thấy Collider2D nào trên layer '{layerUsed}' trong scene '{boundsScene.name}'.");
+            if (ShouldWarnMissingBounds(boundsScene.name))
+                Debug.LogWarning($"[CameraFollow] Không tìm thấy Collider2D nào trên layer '{layerUsed}' trong scene '{boundsScene.name}'.");
             return;
         }
 
@@ -208,6 +209,13 @@ public class CameraFollow : MonoBehaviour
         }
 
         Debug.Log($"[CameraFollow] Map bounds ({layerUsed}, scene={boundsScene.name}): min={minBounds}, max={maxBounds}");
+    }
+
+    private static bool ShouldWarnMissingBounds(string sceneName)
+    {
+        return sceneName != "Login"
+            && sceneName != "Register"
+            && sceneName != "SelectElement";
     }
 
     // ---------------------------------------------------------------------------

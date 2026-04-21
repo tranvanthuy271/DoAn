@@ -31,6 +31,7 @@ public class PotentialStatRowUI : MonoBehaviour
     private int               _pendingDelta;          // điểm đã cộng/trừ (chưa gửi server)
     private Func<int>         _getAvailablePoints;    // hỏi parent số điểm còn
     private Action<int>       _onPointsChanged;       // báo parent: âm = dùng, dương = trả
+    private bool              _isReadOnlyView;
 
     // ── Public API ─────────────────────────────────────────
     public string StatName    => _info?.stat_name;
@@ -45,6 +46,7 @@ public class PotentialStatRowUI : MonoBehaviour
         _getAvailablePoints = getAvailablePoints;
         _onPointsChanged    = onPointsChanged;
         _pendingDelta       = 0;
+        _isReadOnlyView     = false;
 
         RefreshUI();
 
@@ -55,6 +57,21 @@ public class PotentialStatRowUI : MonoBehaviour
         btnMinus?.onClick.AddListener(OnClickMinus);
         btnPlus?.onClick.AddListener(OnClickPlus);
         btnMax?.onClick.AddListener(OnClickMax);
+    }
+
+    public void SetReadOnlyData(PotentialStatInfo info)
+    {
+        _info = info;
+        _getAvailablePoints = null;
+        _onPointsChanged = null;
+        _pendingDelta = 0;
+        _isReadOnlyView = true;
+
+        btnMinus?.onClick.RemoveAllListeners();
+        btnPlus?.onClick.RemoveAllListeners();
+        btnMax?.onClick.RemoveAllListeners();
+
+        RefreshUI();
     }
 
     /// <summary>Hủy mọi thay đổi pending về 0, cập nhật UI.</summary>
@@ -79,17 +96,33 @@ public class PotentialStatRowUI : MonoBehaviour
         if (txtPoints != null)
             txtPoints.text = (_info.current_points + _pendingDelta).ToString();
 
+        SetButtonsVisible(!_isReadOnlyView);
         UpdateButtonStates();
     }
 
     private void UpdateButtonStates()
     {
+        if (_isReadOnlyView)
+        {
+            if (btnPlus != null) btnPlus.interactable = false;
+            if (btnMax != null) btnMax.interactable = false;
+            if (btnMinus != null) btnMinus.interactable = false;
+            return;
+        }
+
         int available = _getAvailablePoints?.Invoke() ?? 0;
 
         if (btnPlus  != null) btnPlus.interactable  = available > 0;
         if (btnMax   != null) btnMax.interactable   = available > 0;
         // Chỉ cho giảm những điểm đã cộng trong phiên này
         if (btnMinus != null) btnMinus.interactable = _pendingDelta > 0;
+    }
+
+    private void SetButtonsVisible(bool visible)
+    {
+        if (btnMinus != null) btnMinus.gameObject.SetActive(visible);
+        if (btnPlus != null) btnPlus.gameObject.SetActive(visible);
+        if (btnMax != null) btnMax.gameObject.SetActive(visible);
     }
 
     private void OnClickPlus()

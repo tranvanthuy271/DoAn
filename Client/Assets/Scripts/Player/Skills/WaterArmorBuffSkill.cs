@@ -212,9 +212,11 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         // 1. Phát animation cho tất cả client
         TriggerBuffAnimationClientRpc(facingRight);
 
-        // 2. Server: tìm tất cả PlayerHealth trong bán kính (layer 8 = Player)
+        // 2. Server: tìm tất cả PlayerHealth trong cùng physics scene của map hiện tại
         int playerLayer = 1 << 8;
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, buffRadius, playerLayer);
+        Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, buffRadius, playerLayer);
+
+        Debug.Log($"[WaterArmorBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
 
         var buffedIds = new HashSet<ulong>();
 

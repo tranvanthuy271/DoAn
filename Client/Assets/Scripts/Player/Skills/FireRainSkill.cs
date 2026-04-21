@@ -192,6 +192,10 @@ public class FireRainSkill : NetworkBehaviour
 
                 NetworkObject netObj = fireball.GetComponent<NetworkObject>();
                 if (netObj == null) netObj = fireball.AddComponent<NetworkObject>();
+
+                // Di chuyển vào physics scene của map player — TRƯỚC Spawn()
+                var _fireRoom = ZoneRoomRegistry.Instance?.GetClientRoom(OwnerClientId);
+                MapSceneManager.Instance?.MoveToMapScene(fireball, _fireRoom?.MapId ?? -999);
                 netObj.Spawn();
 
                 if (fireballLifetime > 0f)

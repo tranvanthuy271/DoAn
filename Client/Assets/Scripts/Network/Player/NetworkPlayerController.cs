@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkPlayerController : NetworkBehaviour
@@ -9,6 +10,10 @@ public class NetworkPlayerController : NetworkBehaviour
     private PlayerController controller;
     private Rigidbody2D rb;
     private Animator animator;
+    private NetworkTransform networkTransform;
+
+    // Lưu prefab Y scale gốc để không bị reset thành 1 khi flip/sync
+    private float _prefabScaleY = 1f;
 
     [Header("Network Movement")]
     // Dùng để detect GetKeyDown trong Update rồi consume trong FixedUpdate
@@ -19,7 +24,9 @@ public class NetworkPlayerController : NetworkBehaviour
     // NetworkVariable để sync flip direction (localScale.x) cho non-owner clients
     private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // NetworkVariable để sync position khi không có NetworkTransform component
+    // NetworkVariable sync position cho non-owner clients.
+    // Player prefab vẫn có NetworkTransform trong asset, nhưng component đó bị tắt ở runtime
+    // để tránh xung đột authority với luồng custom movement của controller này.
     private NetworkVariable<Vector3> syncPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private void Awake()
@@ -28,17 +35,21 @@ public class NetworkPlayerController : NetworkBehaviour
         controller = GetComponent<PlayerController>();
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        networkTransform = GetComponent<NetworkTransform>();
+        _prefabScaleY = Mathf.Abs(transform.localScale.y); // cache trước khi bị ghi đè
     }
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
+        DisableConflictingNetworkTransform();
+
         // Subscribe to networkScaleX changes để sync flip direction
         networkScaleX.OnValueChanged += OnScaleXChanged;
 
-        // Khởi tạo scale theo giá trị hiện tại của NetworkVariable
-        transform.localScale = new Vector3(networkScaleX.Value, 1, 1);
+        // Khởi tạo scale theo giá trị hiện tại của NetworkVariable (giữ Y scale gốc từ prefab)
+        transform.localScale = new Vector3(networkScaleX.Value, _prefabScaleY, 1);
 
         // Đảm bảo controller được enable (PlayerController đã có check IsOwner)
         if (controller != null && !controller.enabled)
@@ -87,13 +98,24 @@ public class NetworkPlayerController : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    private void DisableConflictingNetworkTransform()
+    {
+        if (networkTransform == null || !networkTransform.enabled)
+            return;
+
+        // Player movement của project này đã dùng custom owner-prediction + ServerRpc +
+        // syncPosition. Giữ thêm NetworkTransform mặc định sẽ tạo double-authority và dễ
+        // gây snap-back khi owner di chuyển.
+        networkTransform.enabled = false;
+    }
+
     private void OnScaleXChanged(float oldValue, float newValue)
     {
         // Chỉ non-owner mới cập nhật từ NetworkVariable.
         // Owner tự điều khiển flip qua client-side prediction trong FixedUpdate
         // để tránh stale server update ghi đè lên local prediction.
         if (!IsOwner)
-            transform.localScale = new Vector3(newValue, transform.localScale.y, transform.localScale.z);
+            transform.localScale = new Vector3(newValue, _prefabScaleY, transform.localScale.z);
     }
 
     private void Update()
@@ -113,6 +135,7 @@ public class NetworkPlayerController : NetworkBehaviour
     }
 
     private bool _moveDiagLogged = false;
+    private float _diagTimer = 0f;
 
     private void FixedUpdate()
     {
@@ -137,11 +160,14 @@ public class NetworkPlayerController : NetworkBehaviour
         bool jump = pendingJump;
         pendingJump = false; // consume flag
 
-        // === MOVEMENT DIAGNOSTICS (only log once) ===
-        if (!_moveDiagLogged)
+        // === MOVEMENT DIAGNOSTICS — log chi tiết MỖI 2 giây để debug tại sao không di chuyển ===
+        _diagTimer += Time.fixedDeltaTime;
+        if (!_moveDiagLogged || _diagTimer >= 2f)
         {
             _moveDiagLogged = true;
-            Debug.Log($"[NetworkPlayerController] DIAG | controller={controller != null} | controller.stats={controller?.stats != null} | movement={movement != null} | rb={rb != null} | IsOwner={IsOwner} | IsServer={IsServer}");
+            _diagTimer = 0f;
+            bool statsOk = controller?.stats != null;
+           // Debug.Log($"[NPC-DIAG] owner={IsOwner} server={IsServer} | ctrl={controller != null} stats={statsOk} moveSpeed={controller?.stats?.moveSpeed ?? -1f} | mv={movement != null} rb={rb != null} simulated={rb?.simulated} bodyType={rb?.bodyType} | input={horizontalInput:F2} inputEnabled={im?.inputEnabled} | pos={transform.position} vel={rb?.velocity} | scene={gameObject.scene.name}");
         }
 
         // === CLIENT-SIDE PREDICTION ===
@@ -160,11 +186,11 @@ public class NetworkPlayerController : NetworkBehaviour
             // Horizontal
             rb.velocity = new Vector2(horizontalInput * stats.moveSpeed, rb.velocity.y);
 
-            // Instant flip cục bộ (không chờ server roundtrip)
+            // Instant flip cục bộ (giữ prefab Y scale, không chờ server roundtrip)
             if (horizontalInput > 0.01f)
-                transform.localScale = new Vector3(1f, 1f, 1f);
+                transform.localScale = new Vector3(1f, _prefabScaleY, 1f);
             else if (horizontalInput < -0.01f)
-                transform.localScale = new Vector3(-1f, 1f, 1f);
+                transform.localScale = new Vector3(-1f, _prefabScaleY, 1f);
 
             // Vertical
             if (controller.godMode)
@@ -196,6 +222,10 @@ public class NetworkPlayerController : NetworkBehaviour
             var playerAnimator = movement.GetComponent<PlayerAnimator>();
             playerAnimator?.UpdateAnimation(rb.velocity.x, rb.velocity.y, isGrounded, movement.IsFlying());
         }
+        else if (!_moveDiagLogged)
+        {
+            //Debug.LogError($"[NPC-DIAG] *** MOVEMENT BLOCKED *** ctrl={controller != null} stats={controller?.stats != null} mv={movement != null} rb={rb != null}");
+        }
 
         // Gửi input + position thực tế (từ client có ground) lên server
         MoveServerRpc(horizontalInput, jump, down,
@@ -219,7 +249,7 @@ public class NetworkPlayerController : NetworkBehaviour
         {
             float targetX = networkScaleX.Value;
             if (!Mathf.Approximately(transform.localScale.x, targetX))
-                transform.localScale = new Vector3(targetX, transform.localScale.y, transform.localScale.z);
+                transform.localScale = new Vector3(targetX, _prefabScaleY, transform.localScale.z);
         }
 
         // Update animation trên owner (non-owner client dùng UpdateAnimationClientRpc)

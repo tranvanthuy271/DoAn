@@ -132,13 +132,23 @@ public class ActiveBuffManager : MonoBehaviour
     /// </summary>
     public void LoadFromServer()
     {
-        if (APIClient.Instance == null) return;
-        int playerId = GetPlayerId();
-        if (playerId == 0) return;
+        if (GameplayCommandService.Instance == null) return;
 
-        APIClient.Instance.GetActiveBuffs(playerId,
-            buffs => OnBuffsReceived(buffs),
-            err  => Debug.LogWarning($"[ActiveBuffManager] Không load được buff: {err}"));
+        GameplayCommandService.OnActiveBuffsReceived -= HandleBuffsReceived;
+        GameplayCommandService.OnActiveBuffsReceived += HandleBuffsReceived;
+        GameplayCommandService.Instance.GetActiveBuffsServerRpc();
+
+        void HandleBuffsReceived(string json)
+        {
+            GameplayCommandService.OnActiveBuffsReceived -= HandleBuffsReceived;
+            if (!json.Contains("\"error\""))
+            {
+                var wrapper = JsonUtility.FromJson<ActiveBuffsResponse>(json);
+                if (wrapper?.active_buffs != null) OnBuffsReceived(wrapper.active_buffs);
+            }
+            else
+                Debug.LogWarning($"[ActiveBuffManager] Không load được buff: {json}");
+        }
     }
 
     // ── Internal ──────────────────────────────────────────────────────────

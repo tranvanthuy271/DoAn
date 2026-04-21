@@ -53,6 +53,8 @@ public class StatsTabUI : MonoBehaviour
     private int   _playerId = -1;
     private int   _maxHp;
     private int   _maxMp;
+    private PlayerProfileDto _friendProfile;
+    private string _friendDisplayName;
 
     private PlayerHealth        _localHealth;
     private NetworkPlayerHealth _networkHealth;
@@ -74,8 +76,33 @@ public class StatsTabUI : MonoBehaviour
 
     public void SetPlayerId(int id) => _playerId = id;
 
+    public void ShowFriendProfile(PlayerProfileDto profile, string displayName = null)
+    {
+        _friendProfile = profile;
+        _friendDisplayName = displayName;
+        Debug.Log($"[StatsTabUI] ShowFriendProfile displayName='{displayName}' hasProfile={profile != null}");
+        Load();
+    }
+
+    public void ClearFriendProfile()
+    {
+        if (_friendProfile == null)
+            return;
+
+        Debug.Log("[StatsTabUI] ClearFriendProfile()");
+        _friendProfile = null;
+        _friendDisplayName = null;
+        UnsubscribeHealth();
+    }
+
     public void Load()
     {
+        if (_friendProfile != null)
+        {
+            RenderFriendProfile(_friendProfile);
+            return;
+        }
+
         var pd = GameManager.Instance?.GetPlayerData();
         if (pd == null) { SetStatus("Không có dữ liệu nhân vật."); return; }
 
@@ -135,10 +162,22 @@ public class StatsTabUI : MonoBehaviour
 
         if (eq == null)
         {
-            // Try to fetch from API using the full equipment DTO
-            if (_playerId > 0 && APIClient.Instance != null)
+            // Try to fetch from NGO command layer
+            if (GameplayCommandService.Instance != null)
             {
-                APIClient.Instance.GetPlayerEquipment(_playerId, onSuccess: PopulateEquipFromDto);
+                GameplayCommandService.OnEquipmentReceived -= HandleEquipmentForSection;
+                GameplayCommandService.OnEquipmentReceived += HandleEquipmentForSection;
+                GameplayCommandService.Instance.GetPlayerEquipmentServerRpc();
+
+                void HandleEquipmentForSection(string json)
+                {
+                    GameplayCommandService.OnEquipmentReceived -= HandleEquipmentForSection;
+                    if (!json.Contains("\"error\""))
+                    {
+                        var dto = EquipmentPayloadParser.Parse(json);
+                        if (dto != null) PopulateEquipFromDto(dto);
+                    }
+                }
             }
             return;
         }
@@ -160,11 +199,28 @@ public class StatsTabUI : MonoBehaviour
         }
 
         // Also try to get full data (including upgrade levels)
-        if (_playerId > 0 && APIClient.Instance != null)
-            APIClient.Instance.GetPlayerEquipment(_playerId, onSuccess: PopulateEquipFromDto);
+        if (GameplayCommandService.Instance != null)
+        {
+            GameplayCommandService.OnEquipmentReceived -= HandleEquipmentFull;
+            GameplayCommandService.OnEquipmentReceived += HandleEquipmentFull;
+            GameplayCommandService.Instance.GetPlayerEquipmentServerRpc();
+
+            void HandleEquipmentFull(string json)
+            {
+                GameplayCommandService.OnEquipmentReceived -= HandleEquipmentFull;
+                if (_friendProfile != null)
+                    return;
+
+                if (!json.Contains("\"error\""))
+                {
+                    var dto = EquipmentPayloadParser.Parse(json);
+                    if (dto != null) PopulateEquipFromDto(dto);
+                }
+            }
+        }
     }
 
-    private void PopulateEquipFromDto(PlayerEquipmentDto dto)
+    private void PopulateEquipFromDto(PlayerEquipmentDto dto, bool allowUpgrade = true)
     {
         if (dto == null) return;
         ClearEquipRows();
@@ -186,9 +242,62 @@ public class StatsTabUI : MonoBehaviour
             var row = Instantiate(equipRowPrefab, equipListContainer);
             string name  = s.item?.itemName ?? s.item?.itemCode ?? "";
             int    level = s.item?.upgradeLevel ?? 0;
-            row.SetData(s.label, name, level, _playerId, s.key, s.item, onUpgraded: Load);
+            if (allowUpgrade && s.item != null)
+                row.SetData(s.label, name, level, _playerId, s.key, s.item, onUpgraded: Load);
+            else
+                row.SetData(s.label, name, level, 0, onUpgraded: null);
             _equipRows.Add(row);
         }
+    }
+
+    private void RenderFriendProfile(PlayerProfileDto profile)
+    {
+        UnsubscribeHealth();
+
+        if (profile == null)
+        {
+            SetStatus("Không có dữ liệu hồ sơ bạn bè.");
+            return;
+        }
+
+        string displayName = string.IsNullOrWhiteSpace(profile.character_name)
+            ? _friendDisplayName
+            : profile.character_name;
+
+        if (txtCharacterName != null)
+            txtCharacterName.text = string.IsNullOrWhiteSpace(displayName) ? "Bạn bè" : displayName;
+
+        if (txtLevel != null)
+            txtLevel.text = $"Lv. {profile.level}";
+
+        if (txtElement != null)
+        {
+            string stars = profile.gene_tier > 0
+                ? $"  {new string('★', profile.gene_tier)}{new string('☆', Mathf.Max(0, 5 - profile.gene_tier))}  (Gene Tier {profile.gene_tier})"
+                : string.Empty;
+            string hybrid = profile.is_hybrid ? " (Hybrid)" : string.Empty;
+            txtElement.text = $"Hệ {profile.element_type}{hybrid}{stars}";
+        }
+
+        _maxHp = Mathf.Max(1, profile.final_stats?.max_hp ?? 1);
+        _maxMp = Mathf.Max(1, profile.final_stats?.max_mp ?? 1);
+
+        int hp = profile.final_stats != null ? Mathf.Clamp(profile.final_stats.hp, 0, _maxHp) : _maxHp;
+        int mp = profile.final_stats != null ? Mathf.Clamp(profile.final_stats.mp, 0, _maxMp) : _maxMp;
+
+        if (txtAttack != null)
+            txtAttack.text = profile.final_stats != null ? $"ATK: {profile.final_stats.attack}" : "ATK: ?";
+
+        if (txtMoveSpeed != null)
+            txtMoveSpeed.text = profile.final_stats != null ? $"Tốc: {profile.final_stats.move_speed:F1}" : "Tốc: ?";
+
+        if (txtGold != null)
+            txtGold.text = profile.gold > 0 ? $"Vàng: {profile.gold:N0}" : "Vàng: ?";
+
+        UpdateHpBar(hp, _maxHp);
+        UpdateMpBar(mp, _maxMp);
+        PopulateEquipFromDto(profile.equipment, allowUpgrade: false);
+        SetStatus($"Đang xem hồ sơ: {txtCharacterName?.text}");
     }
 
     private void ClearEquipRows()

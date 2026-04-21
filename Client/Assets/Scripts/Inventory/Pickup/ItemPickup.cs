@@ -203,7 +203,7 @@ public class ItemPickup : NetworkBehaviour
     {
         if (!other.CompareTag("Player")) return;
 
-        var netObj = other.GetComponent<NetworkObject>();
+        var netObj = other.GetComponentInParent<NetworkObject>();
         if (netObj == null) return;
 
         // Chỉ hiển thị indicator trên client của player local
@@ -219,6 +219,8 @@ public class ItemPickup : NetworkBehaviour
 
         var inv = netObj.GetComponent<NetworkInventory>();
         if (inv == null) return;
+
+        Debug.Log($"[ItemPickup] Auto-pickup trigger by player={netObj.NetworkObjectId} item_id={networkItemId.Value} canPickup={canPickup.Value}");
 
         ExecutePickup(netObj);
     }
@@ -243,7 +245,8 @@ public class ItemPickup : NetworkBehaviour
     private void CheckPlayerInRange()
     {
         // Tìm tất cả collider trong bán kính, rồi lọc theo tag \"Player\"
-        Collider2D[] players = Physics2D.OverlapCircleAll(
+        Collider2D[] players = MapPhysicsQuery2D.OverlapCircleAll(
+            gameObject,
             transform.position,
             pickupRange
         );
@@ -252,7 +255,7 @@ public class ItemPickup : NetworkBehaviour
         {
             if (playerCollider.CompareTag("Player"))
             {
-                NetworkObject playerNetObj = playerCollider.GetComponent<NetworkObject>();
+                NetworkObject playerNetObj = playerCollider.GetComponentInParent<NetworkObject>();
                 if (playerNetObj != null)
                 {
                     TryPickupItemServerRpc(playerNetObj.NetworkObjectId);

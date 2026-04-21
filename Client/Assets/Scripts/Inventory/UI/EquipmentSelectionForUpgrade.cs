@@ -74,8 +74,22 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
         // --- Phần 1: Trang bị đang mặc (load async từ API để có đủ strOptions + upgradeLevel) ---
         int playerId = GameManager.Instance?.currentPlayerData?.player_id ?? 0;
         if (headerEquipped) headerEquipped.SetActive(false);
-        if (playerId > 0 && APIClient.Instance != null)
-            APIClient.Instance.GetPlayerEquipment(playerId, OnEquipmentLoaded);
+        if (GameplayCommandService.Instance != null)
+        {
+            GameplayCommandService.OnEquipmentReceived -= HandleEquipLoaded;
+            GameplayCommandService.OnEquipmentReceived += HandleEquipLoaded;
+            GameplayCommandService.Instance.GetPlayerEquipmentServerRpc();
+
+            void HandleEquipLoaded(string json)
+            {
+                GameplayCommandService.OnEquipmentReceived -= HandleEquipLoaded;
+                if (!json.Contains("\"error\""))
+                {
+                    var dto = EquipmentPayloadParser.Parse(json);
+                    if (dto != null) OnEquipmentLoaded(dto);
+                }
+            }
+        }
 
         // --- Phần 2: Trang bị trong túi ---
         var invUI = FindObjectOfType<InventoryUI>(true);

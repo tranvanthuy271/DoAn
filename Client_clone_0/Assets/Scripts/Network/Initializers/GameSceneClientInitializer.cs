@@ -20,6 +20,7 @@ public class GameSceneClientInitializer : MonoBehaviour
 
     private bool playerDataLoaded = false;
     private bool isInitializing = false;
+    private bool isConnectQueued = false;
 
     private void Awake()
     {
@@ -43,9 +44,8 @@ public class GameSceneClientInitializer : MonoBehaviour
         {
             // Debug.Log("[GameSceneClientInitializer] Player data already loaded from previous scene.");
             playerDataLoaded = true;
-            
-            // Connect đến host
-            ConnectToHost();
+
+            QueueConnectToHost(GameManager.Instance.GetPlayerData());
         }
         else
         {
@@ -127,8 +127,7 @@ public class GameSceneClientInitializer : MonoBehaviour
                     // Debug.LogError("[GameSceneClientInitializer] GameManager.Instance is null! Cannot save player data.");
                 }
 
-                // Connect đến host sau khi load player data
-                ConnectToHost();
+                QueueConnectToHost(playerData);
 
                 isInitializing = false;
             },
@@ -152,6 +151,45 @@ public class GameSceneClientInitializer : MonoBehaviour
                 isInitializing = false;
             }
         );
+    }
+
+    private void QueueConnectToHost(PlayerDataResponse playerData)
+    {
+        if (isConnectQueued)
+            return;
+
+        if (playerData != null && ClientSceneController.Instance != null)
+        {
+            // API PlayerDataResponse on client build does not include `zone_id` field.
+            // Read zone from PlayerPrefs as the canonical client-side stored zone (fallback 0).
+            int zoneId = PlayerPrefs.GetInt("PLAYER_ZONE_ID", 0);
+            ClientSceneController.Instance.SetCurrentZoneState(playerData.map_id, zoneId);
+        }
+
+        if (NetworkManager.Singleton != null &&
+            (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+        {
+            return;
+        }
+
+        isConnectQueued = true;
+        StartCoroutine(ConnectToHostAfterDelay());
+    }
+
+    private System.Collections.IEnumerator ConnectToHostAfterDelay()
+    {
+        yield return null;
+        yield return new WaitForSeconds(0.5f);
+
+        if (NetworkManager.Singleton != null &&
+            (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+        {
+            isConnectQueued = false;
+            yield break;
+        }
+
+        ConnectToHost();
+        isConnectQueued = false;
     }
 
     /// <summary>

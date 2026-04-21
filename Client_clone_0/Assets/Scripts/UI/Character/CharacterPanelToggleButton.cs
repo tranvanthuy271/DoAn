@@ -29,21 +29,7 @@ public class CharacterPanelToggleButton : MonoBehaviour
 
     private void Start()
     {
-        // Tự động tìm trong scene nếu chưa được gán trong Inspector
-        if (informationPanel == null)
-        {
-            informationPanel = FindObjectOfType<InformationPanelController>();
-            if (informationPanel != null)
-                Debug.Log($"[CharacterPanelToggleButton] Auto-found InformationPanelController: {informationPanel.gameObject.name}");
-        }
-
-        if (informationPanel == null && characterPanel == null)
-        {
-            characterPanel = FindObjectOfType<CharacterPanelController>();
-            if (characterPanel != null)
-                Debug.Log($"[CharacterPanelToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
-        }
-
+        ResolveControllers();
         if (informationPanel == null && characterPanel == null)
             Debug.LogError("[CharacterPanelToggleButton] Không tìm thấy InformationPanelController hay CharacterPanelController trong scene! Hãy gán thủ công trong Inspector.");
     }
@@ -56,14 +42,15 @@ public class CharacterPanelToggleButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
+        ResolveControllers();
         Debug.Log("[CharacterPanelToggleButton] Button clicked!");
         
         // Ưu tiên dùng InformationPanelController để đồng bộ state cả 2 tab
         if (informationPanel != null)
         {
             Debug.Log("[CharacterPanelToggleButton] Sử dụng InformationPanelController");
-            
-            if (informationPanel.IsAnyPanelVisible)
+
+            if (informationPanel.IsAnyPanelVisible && !informationPanel.IsShowingInventory)
             {
                 Debug.Log("[CharacterPanelToggleButton] Panel đang hiện → đóng");
                 informationPanel.HideAll();
@@ -87,6 +74,23 @@ public class CharacterPanelToggleButton : MonoBehaviour
         else
         {
             Debug.LogError("[CharacterPanelToggleButton] Chưa gán InformationPanelController hoặc CharacterPanelController.");
+        }
+    }
+
+    private void ResolveControllers()
+    {
+        if (characterPanel == null)
+        {
+            characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
+            if (characterPanel != null)
+                Debug.Log($"[CharacterPanelToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
+        }
+
+        if (informationPanel == null)
+        {
+            informationPanel = InformationPanelController.GetOrCreate(characterPanel, null);
+            if (informationPanel != null)
+                Debug.Log($"[CharacterPanelToggleButton] Auto-found/created InformationPanelController: {informationPanel.gameObject.name}");
         }
     }
 }

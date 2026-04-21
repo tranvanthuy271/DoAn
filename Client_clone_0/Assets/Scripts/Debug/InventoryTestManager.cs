@@ -236,25 +236,22 @@ public class InventoryTestManager : MonoBehaviour
         }
 
         // Gọi API để sync
-        if (APIClient.Instance != null)
-        {
-            APIClient.Instance.AddItemsToInventory(
-                playerId,
-                itemRequests.ToArray(),
-                (response) =>
-                {
-                    Debug.Log($"[InventoryTestManager] ✅ Đã sync {itemRequests.Count} items với DB thành công!");
-                },
-                (error) =>
-                {
-                    Debug.LogError($"[InventoryTestManager] ❌ Lỗi khi sync DB: {error}");
-                }
-            );
-        }
+        string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
+        string url = $"{baseUrl}/player/{playerId}/inventory/add-items";
+        var wrapper = new APIClient.AddInventoryItemsRequest { items = itemRequests.ToArray() };
+        string body = JsonUtility.ToJson(wrapper);
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+        using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
+        req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
+        req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+        if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
+        yield return req.SendWebRequest();
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            Debug.Log($"[InventoryTestManager] \u2705 \u0110\u00e3 sync {itemRequests.Count} items v\u1edbi DB th\u00e0nh c\u00f4ng!");
         else
-        {
-            Debug.LogWarning("[InventoryTestManager] APIClient.Instance is null!");
-        }
+            Debug.LogError($"[InventoryTestManager] \u274c L\u1ed7i khi sync DB: {req.error}");
     }
 
     /// <summary>

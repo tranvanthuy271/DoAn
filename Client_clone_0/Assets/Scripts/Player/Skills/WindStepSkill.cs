@@ -10,7 +10,7 @@ using System.Collections;
 ///   2. Trigger animation "Skill3" trên SkillEffect_Phong (server → NetworkAnimator tự sync)
 ///   3. Chờ animationDuration giây
 ///   4. Hiện lại SpriteRenderer player (ClientRpc)
-///   5. Dịch chuyển player đến vị trí đích (NetworkTransform tự sync vị trí)
+///   5. Dịch chuyển player đến vị trí đích qua custom ClientRpc visual sync
 ///
 /// Cách gắn vào player:
 ///   - Gắn component này vào cùng GameObject với PlayerSkillManager
@@ -53,6 +53,7 @@ public class WindStepSkill : NetworkBehaviour
     private bool canUse = true;
     private bool isUsing;
     private PlayerAnimator playerAnimator;
+    private Coroutine dashVisualCoroutine;
 
     /// <summary>PlayerSkillManager và SkillSlotUI dùng cái này để kiểm tra trước khi trigger.</summary>
     public bool CanUseNow => canUse && !isUsing;
@@ -162,7 +163,17 @@ public class WindStepSkill : NetworkBehaviour
         isUsing = false;
     }
 
-    /// <summary>Xóa sprite trên SkillEffect object trên tất cả client.</summary>
+    [ClientRpc]
+    private void PlayDashMovementClientRpc(Vector3 targetPos, float duration)
+    {
+        if (IsServer)
+            return;
+
+        if (dashVisualCoroutine != null)
+            StopCoroutine(dashVisualCoroutine);
+
+        dashVisualCoroutine = StartCoroutine(PlayDashMovementVisual(targetPos, duration));
+    }
     [ClientRpc]
     private void ClearSkillEffectSpriteClientRpc()
     {
@@ -236,9 +247,12 @@ public class WindStepSkill : NetworkBehaviour
         // 4. Hiện lại sprite player
         SetPlayerSpriteVisibleClientRpc(true);
 
-        // 5. Di chuyển player đến vị trí đích (smooth lerp)
-        //    NetworkTransform tự đồng bộ vị trí cho tất cả client
+        // 5. Di chuyển player đến vị trí đích.
+        //    Server vẫn cập nhật vị trí authoritative cho gameplay, còn client replica
+        //    tự lerp qua ClientRpc để không phụ thuộc vào NetworkTransform.
         Vector3 startPos = transform.position;
+        PlayDashMovementClientRpc(targetPos, dashDuration);
+
         float elapsed = 0f;
         while (elapsed < dashDuration && dashDuration > 0f)
         {
@@ -277,5 +291,28 @@ public class WindStepSkill : NetworkBehaviour
         }
 
         return to;
+    }
+
+    private IEnumerator PlayDashMovementVisual(Vector3 targetPos, float duration)
+    {
+        Vector3 startPos = transform.position;
+
+        if (duration <= 0f)
+        {
+            transform.position = targetPos;
+            dashVisualCoroutine = null;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            transform.position = Vector3.Lerp(startPos, targetPos, Mathf.Clamp01(elapsed / duration));
+            yield return null;
+        }
+
+        transform.position = targetPos;
+        dashVisualCoroutine = null;
     }
 }

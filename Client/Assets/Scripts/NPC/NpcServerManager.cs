@@ -24,13 +24,19 @@ using Unity.Netcode;
 /// </summary>
 public class NpcServerManager : MonoBehaviour
 {
+    private const string LogPrefix = "[NpcServerManager]";
+
     public static NpcServerManager Instance { get; private set; }
 
     [Header("API")]
     [SerializeField] private string apiBase = "";
 
-    [Tooltip("MapId của scene này. Để 0 → tự lấy từ MapManager (có thể race condition nếu MapManager chưa fetch xong).")]
-    [SerializeField] private int mapId = 0;
+    [Tooltip("MapId của scene này. Để -1 → auto-detect qua registry/MapManager.")]
+    [SerializeField] private int mapId = -1;
+
+    [Header("NPC Prefab Config")]
+    [Tooltip("Ưu tiên ScriptableObject. Nếu bỏ trống sẽ tự load Resources/ScriptableObjects/NpcPrefabConfig.")]
+    [SerializeField] private NpcPrefabConfig npcPrefabConfig;
 
     [Header("NPC Prefabs theo type — shop=0, blacksmith=1, quest=2, exchange=3, event=4")]
     [Tooltip("Element 0=shop, 1=blacksmith, 2=quest, 3=exchange, 4=event")]
@@ -42,6 +48,7 @@ public class NpcServerManager : MonoBehaviour
     /// <summary>Server-side cache: NetworkObjectId → NpcData (dùng để validate trong NpcInteraction).</summary>
     private readonly Dictionary<ulong, NpcData> _npcCache = new();
     private readonly HashSet<string> _spawnedNpcKeys = new();
+    private NpcPrefabConfig _resolvedPrefabConfig;
     private bool _hasSpawned;
 
     public string ApiBase => apiBase;
@@ -53,6 +60,11 @@ public class NpcServerManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         apiBase = ServerAddressConfig.Instance.ResolveApiRoot(apiBase);
+        _resolvedPrefabConfig = NpcPrefabConfig.Resolve(npcPrefabConfig, this, nameof(NpcServerManager));
+        if (_resolvedPrefabConfig != null)
+        {
+            Debug.Log($"{LogPrefix} Using ScriptableObject prefab config '{_resolvedPrefabConfig.name}'.", this);
+        }
     }
 
     private void Start()
@@ -107,9 +119,8 @@ public class NpcServerManager : MonoBehaviour
 
         if (mapId >= 0)
         {
-            int resolvedMapId = ResolveSingleMapId(mapId);
-            if (yielded.Add(resolvedMapId))
-                yield return resolvedMapId;
+            if (yielded.Add(mapId))
+                yield return mapId;
             yield break;
         }
 
@@ -127,22 +138,15 @@ public class NpcServerManager : MonoBehaviour
         if (MapManager.Instance != null)
         {
             int currentMapId = MapManager.Instance.GetMapId();
-            if (yielded.Add(currentMapId))
+            if (currentMapId >= 0 && yielded.Add(currentMapId))
                 yield return currentMapId;
         }
-    }
-
-    private int ResolveSingleMapId(int configuredMapId)
-    {
-        if (configuredMapId == 0 && MapManager.Instance != null && !IsDedicatedWorldServer())
-            return MapManager.Instance.GetMapId();
-
-        return configuredMapId;
     }
 
     private IEnumerator LoadAndSpawnNpcsForMap(int targetMapId)
     {
         string url = $"{apiBase}/api/npc/list?mapId={targetMapId}";
+        Debug.Log($"{LogPrefix} Load NPC list | map={targetMapId} url={url} dedicated={IsDedicatedWorldServer()}", this);
         using var req = UnityWebRequest.Get(url);
         if (IsDedicatedWorldServer())
         {
@@ -176,9 +180,11 @@ public class NpcServerManager : MonoBehaviour
 
         if (resp?.npcs == null)
         {
-            Debug.LogWarning($"[NpcServerManager] Không có NPC nào cho mapId={targetMapId}.");
+            Debug.LogWarning($"{LogPrefix} Không có NPC nào cho mapId={targetMapId}.", this);
             yield break;
         }
+
+        Debug.Log($"{LogPrefix} API returned {resp.npcs.Length} NPC(s) for map={targetMapId}.", this);
 
         // Spawn MỖI NPC đúng 1 lần cho cả map — KHÔNG nhân bản theo zone.
         // Visibility sẽ filter theo MAP (tất cả player cùng map thấy NPC, bất kể zone nào).
@@ -187,14 +193,14 @@ public class NpcServerManager : MonoBehaviour
             var prefab = GetPrefab(npc);
             if (prefab == null)
             {
-                Debug.LogWarning($"[NpcServerManager] Không tìm được prefab cho npc_type='{npc.npc_type}'. Bỏ qua '{npc.npc_name}'.");
+                Debug.LogWarning($"{LogPrefix} Không tìm được prefab | npcId={npc.npc_id} type='{npc.npc_type}' name='{npc.npc_name}'.", this);
                 continue;
             }
 
             SpawnNpcInstance(prefab, npc, targetMapId);
         }
 
-        Debug.Log($"[NpcServerManager] Đã spawn {resp.npcs.Length} NPC(s) trên mapId={targetMapId}.");
+        Debug.Log($"{LogPrefix} Đã spawn {resp.npcs.Length} NPC(s) trên mapId={targetMapId}.", this);
     }
 
     private void SpawnNpcInstance(GameObject prefab, NpcData npc, int targetMapId)
@@ -220,6 +226,9 @@ public class NpcServerManager : MonoBehaviour
             rb.simulated = false;
         }
 
+        // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
+        MapSceneManager.Instance?.MoveToMapScene(obj, targetMapId);
+
         // Gắn map-based visibility (visible cho TẤT CẢ player cùng map, bất kể zone)
         ApplyMapVisibility(obj, targetMapId);
 
@@ -232,7 +241,9 @@ public class NpcServerManager : MonoBehaviour
 
         _npcCache[netObj.NetworkObjectId] = npc;
 
-        Debug.Log($"[NpcServerManager] Spawned '{npc.npc_name}' ({npc.npc_type}) tại ({npc.pos_x}, {npc.pos_y}) map={targetMapId}");
+        Debug.Log(
+            $"{LogPrefix} Spawned | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' prefab='{prefab.name}' map={targetMapId} pos=({npc.pos_x:F2}, {npc.pos_y:F2}) netId={netObj.NetworkObjectId}",
+            this);
     }
 
     /// <summary>
@@ -259,6 +270,46 @@ public class NpcServerManager : MonoBehaviour
         => FindAnyObjectByType<MapWorldBootstrap>() != null;
 
     private GameObject GetPrefab(NpcData npc)
+    {
+        _resolvedPrefabConfig = NpcPrefabConfig.Resolve(npcPrefabConfig, this, nameof(NpcServerManager));
+        GameObject configPrefab = _resolvedPrefabConfig?.ResolvePrefab(npc);
+        if (configPrefab != null)
+        {
+            return configPrefab;
+        }
+
+        return GetLegacyPrefab(npc);
+    }
+
+    public void CollectConfiguredPrefabs(HashSet<GameObject> results)
+    {
+        _resolvedPrefabConfig = NpcPrefabConfig.Resolve(npcPrefabConfig, this, nameof(NpcServerManager));
+        _resolvedPrefabConfig?.AppendAllPrefabs(results);
+
+        if (npcPrefabs != null)
+        {
+            foreach (GameObject prefab in npcPrefabs)
+            {
+                if (prefab != null)
+                {
+                    results.Add(prefab);
+                }
+            }
+        }
+
+        if (npcPrefabsById != null)
+        {
+            foreach (NpcIdPrefabEntry entry in npcPrefabsById)
+            {
+                if (entry.prefab != null)
+                {
+                    results.Add(entry.prefab);
+                }
+            }
+        }
+    }
+
+    private GameObject GetLegacyPrefab(NpcData npc)
     {
         // Ưu tiên map theo npc_id trước
         if (npcPrefabsById != null)

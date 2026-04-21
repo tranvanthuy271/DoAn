@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
+using Unity.Netcode;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class MainMenuController : MonoBehaviour
 
     private NetworkManagerCustom networkManager;
     private APIClient apiClient;
+    private bool isLoggingOut;
 
     void Start()
     {
@@ -102,17 +104,60 @@ public class MainMenuController : MonoBehaviour
 
     private void OnLogoutClicked()
     {
-        // Clear token
-        if (apiClient != null)
+        if (isLoggingOut)
+            return;
+
+        isLoggingOut = true;
+        logoutButton.interactable = false;
+
+        int playerId = GameManager.Instance?.GetPlayerData()?.player_id ?? PlayerPrefs.GetInt("USER_ID", 0);
+        playerInfoText.text = "Đang đăng xuất...";
+
+        if (apiClient != null && playerId > 0 && !string.IsNullOrEmpty(apiClient.GetToken()))
         {
-            apiClient.ClearToken();
+            apiClient.ResetPlayerToStartMap(
+                playerId,
+                onSuccess: CompleteLogout,
+                onError: _ => CompleteLogout());
+            return;
         }
+
+        CompleteLogout();
+    }
+
+    private void CompleteLogout()
+    {
+        DisconnectNetwork();
+        ResetLocalSessionState();
+
+        if (apiClient != null)
+            apiClient.ClearToken();
 
         PlayerPrefs.DeleteKey("JWT_TOKEN");
         PlayerPrefs.DeleteKey("USER_ID");
         PlayerPrefs.DeleteKey("USERNAME");
+        PlayerPrefs.DeleteKey("PLAYER_ZONE_ID");
+        PlayerPrefs.DeleteKey("SelectedMapId");
+        PlayerPrefs.DeleteKey("CONNECT_TO_SERVER");
+        PlayerPrefs.Save();
 
-        // Chuyển về Login Scene
+        Time.timeScale = 1f;
         SceneManager.LoadScene("Login");
+    }
+
+    private void DisconnectNetwork()
+    {
+        if (networkManager != null)
+            networkManager.Disconnect();
+
+        if (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+            NetworkManager.Singleton.Shutdown();
+    }
+
+    private static void ResetLocalSessionState()
+    {
+        GameManager.Instance?.ClearPlayerData();
+        ClientSceneController.Instance?.ResetZoneState();
+        MapManager.Instance?.ResetRuntimeState();
     }
 }

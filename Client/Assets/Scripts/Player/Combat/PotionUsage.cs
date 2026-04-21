@@ -54,6 +54,9 @@ public class PotionUsage : NetworkBehaviour
         if (hpCooldownTimer > 0f) hpCooldownTimer -= Time.deltaTime;
         if (mpCooldownTimer > 0f) mpCooldownTimer -= Time.deltaTime;
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
+            return;
+
         if (Input.GetKeyDown(hpPotionKey) && hpCooldownTimer <= 0f)
             UseHpPotion();
 

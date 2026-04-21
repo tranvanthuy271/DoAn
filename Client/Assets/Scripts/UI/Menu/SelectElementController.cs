@@ -9,14 +9,14 @@ public class CharacterButtonData
     public Button button;
     /// <summary>0=Kim, 1=Mộc, 2=Thủy, 3=Hỏa, 4=Thổ, 5=Phong — giới tính tự động lấy từ ElementHelper</summary>
     public int elementId;
-    public Sprite previewSprite;
+    public Sprite previewSprite; // legacy fallback nếu chưa cấu hình ElementIconConfig
 }
 
 public class SelectElementController : MonoBehaviour
 {
     [Header("Character Buttons (6 hệ, mỗi hệ 1 button – gender config riêng)")]
     public CharacterButtonData[] characterButtons = new CharacterButtonData[6];
-    // Thứ tự: [0]Kim, [1]Mộc, [2]Thủy, [3]Hỏa, [4]Thổ, [5]Phong
+    // Gán đúng elementId cho từng preview trong Inspector; thứ tự mảng có thể theo layout scene.
     
     [Header("UI References")]
     public TMP_InputField characterNameInput;
@@ -28,11 +28,15 @@ public class SelectElementController : MonoBehaviour
     
     [Header("Character Preview")]
     public Image previewImage; // Image component để hiển thị preview (thay vì spawn prefab)
+
+    [Header("Shared Element Visuals")]
+    [SerializeField] private ElementIconConfig elementIconConfig;
     
     private APIClient apiClient;
     private int userId;
     private int selectedElementId = -1;  // -1 = chưa chọn
     private int selectedButtonIndex = -1;
+    private bool _isCreateFormVisible;
 
     void Start()
     {
@@ -65,6 +69,9 @@ public class SelectElementController : MonoBehaviour
         if (backButton != null) backButton.onClick.AddListener(OnBackButtonClicked);
         if (goButton != null) goButton.gameObject.SetActive(false); // Ẩn nút GO
         if (confirmButton != null) confirmButton.onClick.AddListener(OnConfirmButtonClicked);
+
+        SetCreateFormVisible(false);
+        ClearStatusMessage();
         
         UpdateGoButtonState();
         UpdateInstructionText();
@@ -140,14 +147,34 @@ public class SelectElementController : MonoBehaviour
     {
         if (previewImage == null)
         {
-            // Debug.LogWarning("PreviewImage is null! Please assign an Image component in Inspector.");
+            Debug.LogWarning("[SelectElementController] PreviewImage chưa được gán trong Inspector.", this);
             return;
         }
         
         // Lấy sprite trực tiếp từ CharacterButtonData
         if (buttonIndex >= 0 && buttonIndex < characterButtons.Length)
         {
-            Sprite sprite = characterButtons[buttonIndex].previewSprite;
+            Sprite sprite = null;
+            var config = ResolveElementIconConfig();
+            if (config != null)
+            {
+                sprite = config.GetSpriteOrLog(
+                    characterButtons[buttonIndex].elementId,
+                    ElementIconConfig.SpriteKind.Avatar,
+                    this,
+                    nameof(SelectElementController));
+            }
+
+            if (sprite == null)
+            {
+                sprite = characterButtons[buttonIndex].previewSprite;
+                if (sprite != null)
+                {
+                    Debug.LogWarning(
+                        $"[SelectElementController] Đang fallback sang previewSprite cũ cho hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)}.",
+                        this);
+                }
+            }
             
             // Set sprite vào preview Image
             if (sprite != null)
@@ -161,18 +188,28 @@ public class SelectElementController : MonoBehaviour
             }
             else
             {
-                // Debug.LogWarning($"Preview sprite is null for button index {buttonIndex}. Please assign a sprite in the Character Buttons array.");
+                Debug.LogWarning(
+                    $"[SelectElementController] Thiếu avatar preview cho button index {buttonIndex} / hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)}.",
+                    this);
                 previewImage.sprite = null;
                 previewImage.enabled = false;
             }
         }
+    }
+
+    private ElementIconConfig ResolveElementIconConfig()
+    {
+        if (elementIconConfig == null)
+            elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(SelectElementController));
+
+        return elementIconConfig;
     }
     
     private void UpdateGoButtonState()
     {
         bool canConfirm = selectedButtonIndex >= 0 && ElementHelper.IsValid(selectedElementId);
 
-        if (characterNameInput != null && characterNameInput.gameObject.activeInHierarchy)
+        if (_isCreateFormVisible && characterNameInput != null)
         {
             canConfirm &= (!string.IsNullOrWhiteSpace(characterNameInput.text) && characterNameInput.text.Length >= 3);
         }
@@ -191,12 +228,19 @@ public class SelectElementController : MonoBehaviour
         {
             instructionText.text = "Chọn nhân vật của bạn";
         }
+        else if (!_isCreateFormVisible)
+        {
+            string elementVN     = ElementHelper.ToVietnamese(selectedElementId);
+            string gender        = ElementHelper.GetGender(selectedElementId);
+            string genderDisplay = gender == "Male" ? "Nam" : "Nữ";
+            instructionText.text = $"Hệ: {elementVN} | Giới tính: {genderDisplay} | Bấm Tạo mới để nhập tên";
+        }
         else
         {
             string elementVN     = ElementHelper.ToVietnamese(selectedElementId);
             string gender        = ElementHelper.GetGender(selectedElementId);
             string genderDisplay = gender == "Male" ? "Nam" : "Nữ";
-            instructionText.text = $"Hệ: {elementVN} | Giới tính: {genderDisplay}";
+            instructionText.text = $"Hệ: {elementVN} | Giới tính: {genderDisplay} | Nhập tên rồi bấm Xác nhận";
         }
     }
     
@@ -208,6 +252,21 @@ public class SelectElementController : MonoBehaviour
 
     public void OnConfirmButtonClicked()
     {
+        if (!_isCreateFormVisible)
+        {
+            if (selectedButtonIndex < 0 || !ElementHelper.IsValid(selectedElementId))
+            {
+                ShowError("Vui lòng chọn hệ trước!");
+                return;
+            }
+
+            SetCreateFormVisible(true, true);
+            ClearStatusMessage();
+            UpdateGoButtonState();
+            UpdateInstructionText();
+            return;
+        }
+
         // Kiểm tra apiClient
         if (apiClient == null)
         {
@@ -251,6 +310,7 @@ public class SelectElementController : MonoBehaviour
         if (errorText != null)
         {
             errorText.text = $"Đang tạo nhân vật hệ {elementVN}...";
+            errorText.enabled = true;
         }
 
         apiClient.CreatePlayer(
@@ -293,6 +353,7 @@ public class SelectElementController : MonoBehaviour
                 {
                     errorText.text = $"Tạo nhân vật thành công! Đang vào game...";
                     errorText.color = Color.green;
+                    errorText.enabled = true;
                 }
 
                 // Chuyển sang GameScene
@@ -347,7 +408,52 @@ public class SelectElementController : MonoBehaviour
 
     private void ShowError(string message)
     {
+        if (errorText == null)
+            return;
+
         errorText.text = message;
         errorText.color = Color.red;
+        errorText.enabled = !string.IsNullOrWhiteSpace(message);
+    }
+
+    private void ClearStatusMessage()
+    {
+        if (errorText == null)
+            return;
+
+        errorText.text = string.Empty;
+        errorText.enabled = false;
+    }
+
+    private void SetCreateFormVisible(bool visible, bool focusInput = false)
+    {
+        _isCreateFormVisible = visible;
+
+        if (characterNameInput != null)
+        {
+            if (!visible)
+                characterNameInput.text = string.Empty;
+
+            characterNameInput.gameObject.SetActive(visible);
+            characterNameInput.interactable = visible;
+
+            if (visible && focusInput)
+            {
+                characterNameInput.Select();
+                characterNameInput.ActivateInputField();
+            }
+        }
+
+        UpdateConfirmButtonLabel(visible ? "Xác nhận" : "Tạo mới");
+    }
+
+    private void UpdateConfirmButtonLabel(string label)
+    {
+        if (confirmButton == null)
+            return;
+
+        var tmp = confirmButton.GetComponentInChildren<TMP_Text>(true);
+        if (tmp != null)
+            tmp.text = label;
     }
 }
