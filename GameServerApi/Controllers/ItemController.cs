@@ -180,8 +180,16 @@ namespace GameServerApi.Controllers
                 else
                 {
                     // Tìm slotIndex trống (max + 1)
-                    int nextSlot = inventory.Count == 0 ? 0
-                        : inventory.Max(s => s.ContainsKey("slotIndex") ? Convert.ToInt32(s["slotIndex"]) : 0) + 1;
+                    int maxBagSlots = info.BagSlots > 0 ? info.BagSlots : 20;
+                    var usedSlots = new HashSet<int>(
+                        inventory
+                            .Where(s => s.ContainsKey("slotIndex"))
+                            .Select(s => Convert.ToInt32(s["slotIndex"])));
+                    int nextSlot = 0;
+                    while (nextSlot < maxBagSlots && usedSlots.Contains(nextSlot)) nextSlot++;
+
+                    if (nextSlot >= maxBagSlots)
+                        return BadRequest(new { error = "Túi đồ đã đầy." });
 
                     inventory.Add(new Dictionary<string, object>
                     {

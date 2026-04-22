@@ -276,8 +276,12 @@ namespace GameServerApi.Controllers
                         .Where(s => s.ContainsKey("slotIndex"))
                         .Select(s => Convert.ToInt32(s["slotIndex"]))
                 );
+                int maxBagSlots = info.BagSlots > 0 ? info.BagSlots : 20;
                 int nextSlot = 0;
-                while (usedSlots.Contains(nextSlot)) nextSlot++;
+                while (nextSlot < maxBagSlots && usedSlots.Contains(nextSlot)) nextSlot++;
+
+                if (nextSlot >= maxBagSlots)
+                    return BadRequest("Túi đồ đã đầy.");
 
                 inventory.Add(new Dictionary<string, object>
                 {

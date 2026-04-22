@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
 using System.Security.Claims;
+using System.Text.Json;
+using GameServerApi.Data;
 using GameServerApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GameServerApi.Hubs
 {
@@ -15,10 +18,12 @@ namespace GameServerApi.Hubs
     public class ChatHub : Hub
     {
         private readonly ILogger<ChatHub> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public ChatHub(ILogger<ChatHub> logger)
+        public ChatHub(ILogger<ChatHub> logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         // connectionId → user info (cho private msg routing)
@@ -59,6 +64,10 @@ namespace GameServerApi.Hubs
         public async Task SendWorldMessage(string message)
         {
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
+
+            // Kiểm tra lệnh chat trước khi broadcast (item, v.v.)
+            if (await TryHandleChatCommandAsync(message)) return;
+
             var session = GetSession();
             var msg = BuildMessage(session, "world", message);
             _logger.LogInformation("[ChatHub] World: fromUserId={UserId} fromName={Username} message={Message}",
@@ -68,10 +77,14 @@ namespace GameServerApi.Hubs
 
         // ── Proximity (Lân cận) ──────────────────────────────────────────────
 
-        /// <summary>Gửi tin nhắn lân cận đến cùng map/zone.</summary>
+        /// <summary>Gửi tin nhắn lân cận đến cùng map/zone. Hỗ trợ lệnh đặc biệt: "item &lt;id&gt; &lt;sốLượng&gt;".</summary>
         public async Task SendProximityMessage(string mapId, string message)
         {
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
+
+            // Kiểm tra lệnh chat trước khi broadcast
+            if (await TryHandleChatCommandAsync(message)) return;
+
             var session = GetSession();
             var msg = BuildMessage(session, "proximity", message);
             await Clients.Group($"map_{mapId}").SendAsync("ReceiveProximityMessage", msg);
@@ -172,10 +185,20 @@ namespace GameServerApi.Hubs
             return new ChatUserSession { UserId = GetUserId(), Username = GetUsername() };
         }
 
-        private string GetUserId()   => Context.UserIdentifier ?? "0";
-        private string GetUsername() => Context.User?.FindFirstValue("unique_name")
-                                     ?? Context.User?.FindFirstValue(ClaimTypes.Name)
-                                     ?? "Unknown";
+        private string GetUserId()
+        {
+            return Context.UserIdentifier
+                ?? Context.User?.FindFirstValue("user_id")
+                ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? "0";
+        }
+
+        private string GetUsername()
+        {
+            return Context.User?.FindFirstValue("unique_name")
+                ?? Context.User?.FindFirstValue(ClaimTypes.Name)
+                ?? GetUserId();
+        }
 
         private static ChatMessagePayload BuildMessage(
             ChatUserSession session, string channel, string message, string? targetId = null)
@@ -189,6 +212,184 @@ namespace GameServerApi.Hubs
                 message    = message,
                 timestamp  = DateTime.UtcNow.ToString("HH:mm")
             };
+        }
+
+        private static ChatMessagePayload BuildSystemMessage(string text) => new ChatMessagePayload
+        {
+            senderId   = "0",
+            senderName = "Hệ thống",
+            channel    = "system",
+            targetId   = "",
+            message    = text,
+            timestamp  = DateTime.UtcNow.ToString("HH:mm")
+        };
+
+        // ── Chat Commands ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Xử lý lệnh chat đặc biệt. Hiện hỗ trợ:
+        ///   item &lt;itemId&gt; &lt;sốLượng&gt;  — thêm item vào túi người gõ lệnh.
+        /// Trả về true nếu là lệnh (dù lỗi), false nếu là tin thường.
+        /// </summary>
+        private async Task<bool> TryHandleChatCommandAsync(string message)
+        {
+            var trimmed = message.Trim();
+
+            // Chỉ xử lý lệnh bắt đầu bằng "item "
+            if (!trimmed.StartsWith("item ", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            _logger.LogInformation("[Chat Command] Start TryHandleChatCommandAsync. Message: '{Message}'", trimmed);
+
+            var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            // "item <itemId> <quantity>"
+            if (parts.Length < 3)
+            {
+                _logger.LogWarning("[Chat Command] Invalid syntax, args count: {Count}", parts.Length);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Cú pháp: item <itemId> <sốLượng>  ví dụ: item 61 1"));
+                return true;
+            }
+
+            if (!int.TryParse(parts[1], out int itemTemplateId) || itemTemplateId <= 0)
+            {
+                _logger.LogWarning("[Chat Command] Invalid item ID: {ItemId}", parts[1]);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("itemId không hợp lệ."));
+                return true;
+            }
+
+            if (!int.TryParse(parts[2], out int quantity) || quantity <= 0 || quantity > 9999)
+            {
+                _logger.LogWarning("[Chat Command] Invalid quantity: {Quantity}", parts[2]);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Số lượng không hợp lệ (1–9999)."));
+                return true;
+            }
+
+            string rawUserId = GetUserId();
+            _logger.LogInformation("[Chat Command] Parsed. userId: '{UserId}', itemId: {ItemId}, qty: {Qty}", rawUserId, itemTemplateId, quantity);
+
+            if (!int.TryParse(rawUserId, out int playerId) || playerId <= 0)
+            {
+                _logger.LogError("[Chat Command] Cannot parse playerId <= 0 from '{RawUserId}'", rawUserId);
+                return false;
+            }
+
+            _logger.LogInformation("[Chat Command] Database lookup for playerId: {PlayerId}", playerId);
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+
+            var player = await db.PlayerData.FindAsync(playerId);
+            if (player == null)
+            {
+                _logger.LogWarning("[Chat Command] Player not found: {PlayerId}", playerId);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Không tìm thấy tài khoản."));
+                return true;
+            }
+
+            var itemTemplate = await db.ItemTemplates.FindAsync(itemTemplateId);
+            if (itemTemplate == null)
+            {
+                _logger.LogWarning("[Chat Command] Item template not found: {TemplateId}", itemTemplateId);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage($"Item ID {itemTemplateId} không tồn tại."));
+                return true;
+            }
+
+            // Đọc bag_slots
+            var infoChar = player.GetInfoChar();
+            int maxSlots = infoChar?.BagSlots > 0 ? infoChar.BagSlots : 20;
+            _logger.LogInformation("[Chat Command] Player loaded. maxSlots: {MaxSlots}", maxSlots);
+
+            // Parse inventory
+            var inventory = new List<Dictionary<string, object>>();
+            if (!string.IsNullOrEmpty(player.InventoryJson) && player.InventoryJson != "[]")
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(player.InventoryJson);
+                    if (parsed != null)
+                        foreach (var item in parsed)
+                        {
+                            var d = new Dictionary<string, object>();
+                            foreach (var kv in item)
+                                d[kv.Key] = kv.Value.ValueKind switch
+                                {
+                                    JsonValueKind.Number => kv.Value.TryGetInt32(out var v) ? (object)v : kv.Value.GetDouble(),
+                                    JsonValueKind.String => kv.Value.GetString() ?? "",
+                                    JsonValueKind.True   => true,
+                                    JsonValueKind.False  => false,
+                                    _                    => kv.Value.ToString()
+                                };
+                            inventory.Add(d);
+                        }
+                    _logger.LogInformation("[Chat Command] Loaded {Count} items from InventoryJson.", inventory.Count);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("[Chat Command] Error parsing inventory playerId={PlayerId}: {Err}", playerId, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("[Chat Command] Inventory is empty (or whitespace).");
+            }
+
+            bool isStackable = string.Equals(itemTemplate.IsXepChong, "True", StringComparison.OrdinalIgnoreCase);
+            _logger.LogInformation("[Chat Command] Item isStackable: {IsStackable}", isStackable);
+
+            // Gộp vào slot đã có nếu stackable
+            if (isStackable)
+            {
+                var existing = inventory.FirstOrDefault(s =>
+                    s.ContainsKey("itemTemplateId") && Convert.ToInt32(s["itemTemplateId"]) == itemTemplateId);
+                if (existing != null)
+                {
+                    existing["quantity"] = Convert.ToInt32(existing["quantity"]) + quantity;
+                    player.InventoryJson = JsonSerializer.Serialize(inventory);
+                    player.UpdatedAt     = DateTime.UtcNow;
+                    await db.SaveChangesAsync();
+                    _logger.LogInformation("[Chat Command] AddItem(stack): added {Qty} to existing stack. New Total: {TotalQty}", quantity, existing["quantity"]);
+                    await Clients.Caller.SendAsync("ReceiveSystemMessage",
+                        BuildSystemMessage($"Đã thêm {quantity}x {itemTemplate.Name} vào túi đồ."));
+                    return true;
+                }
+            }
+
+            // Tìm slot trống
+            int emptySlot = -1;
+            for (int i = 0; i < maxSlots; i++)
+            {
+                if (!inventory.Any(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == i))
+                {
+                    emptySlot = i;
+                    break;
+                }
+            }
+
+            if (emptySlot == -1)
+            {
+                _logger.LogWarning("[Chat Command] Inventory is full. Iterated {MaxSlots} slots and couldn't find an empty one.", maxSlots);
+                await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Túi đồ đầy, không thêm được."));
+                return true;
+            }
+
+            inventory.Add(new Dictionary<string, object>
+            {
+                ["slotIndex"]      = emptySlot,
+                ["itemTemplateId"] = itemTemplateId,
+                ["quantity"]       = quantity,
+                ["upgradeLevel"]   = 0,
+                ["strOptions"]     = ""
+            });
+
+            player.InventoryJson = JsonSerializer.Serialize(inventory);
+            player.UpdatedAt     = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            _logger.LogInformation("[Chat Command] AddItem(new slot): playerId={P} itemId={I} qty={Q} slot={S}",
+                playerId, itemTemplateId, quantity, emptySlot);
+            await Clients.Caller.SendAsync("ReceiveSystemMessage",
+                BuildSystemMessage($"Đã thêm {quantity}x {itemTemplate.Name} vào túi đồ."));
+            return true;
         }
     }
 

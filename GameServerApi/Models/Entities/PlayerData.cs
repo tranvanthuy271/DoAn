@@ -19,6 +19,19 @@ namespace GameServerApi.Models
         [JsonPropertyName("expireAt")]    public DateTime? ExpireAt { get; set; }
     }
 
+    public class BagEquippedItemInfo
+    {
+        [JsonPropertyName("quick_slot_index")] public int QuickSlotIndex { get; set; }
+        [JsonPropertyName("item_template_id")] public int ItemTemplateId { get; set; }
+        [JsonPropertyName("item_code")]        public string ItemCode { get; set; } = string.Empty;
+        [JsonPropertyName("item_name")]        public string ItemName { get; set; } = string.Empty;
+        [JsonPropertyName("icon_id")]          public int IconId { get; set; }
+        [JsonPropertyName("upgrade_level")]    public int UpgradeLevel { get; set; }
+        [JsonPropertyName("str_options")]      public string StrOptions { get; set; } = string.Empty;
+        [JsonPropertyName("slot_bonus")]       public int SlotBonus { get; set; } = 5;
+        [JsonPropertyName("is_locked")]        public bool IsLocked { get; set; }
+    }
+
 
     // ----------------------------------------------------------------
     // InfoChar : tất cả chỉ số & trạng thái nhân vật được pack vào 1 cột JSON.
@@ -62,7 +75,8 @@ namespace GameServerApi.Models
         [JsonPropertyName("defense")] public int Defense { get; set; } = 0;
 
         // ---- Bag ----
-        [JsonPropertyName("bag_slots")] public int BagSlots { get; set; } = 20;
+        [JsonPropertyName("bag_slots")]          public int BagSlots { get; set; } = 20;
+        [JsonPropertyName("bag_equipped_items")] public List<BagEquippedItemInfo> BagEquippedItems { get; set; } = new();
 
         // ---- Position ----
         [JsonPropertyName("map_id")]     public int   MapId     { get; set; } = 0;

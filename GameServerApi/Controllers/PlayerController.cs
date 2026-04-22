@@ -18,6 +18,9 @@ namespace GameServerApi.Controllers
         private const int StartZoneId = 0;
         private const float StartPositionX = 0f;
         private const float StartPositionY = 0f;
+        private const int DefaultBagSlots = 20;
+        private const int BagExpandBy = 5;
+        private const int MaxEquippedBagQuickSlots = 3;
 
         private readonly GameDbContext _db;
         private readonly ILogger<PlayerController> _logger;
@@ -281,6 +284,7 @@ namespace GameServerApi.Controllers
                 gender = player.Gender,
                 character_name = player.CharacterName,
                 bag_slots = info.BagSlots,
+                bag_equipped_items = BuildBagEquippedItemsResponse(info.BagEquippedItems),
                 // ── Hybrid Gene fields ──────────────────────────────
                 secondary_element      = info.SecondaryElement,
                 secondary_gene_tier    = info.SecondaryGeneTier,
@@ -524,6 +528,8 @@ namespace GameServerApi.Controllers
                 }
 
                 // Parse inventory hiện tại
+                int maxSlots = ResolveBagSlotLimit(player.GetInfoChar());
+
                 var inventory = new List<Dictionary<string, object>>();
                 if (!string.IsNullOrEmpty(player.InventoryJson) && player.InventoryJson != "[]")
                 {
@@ -552,7 +558,7 @@ namespace GameServerApi.Controllers
                 // NORMALIZE: Gán slotIndex cho các item cũ không có slotIndex
                 // (tránh tình trạng format cũ + mới trộn lẫn gây lỗi load)
                 {
-                    int maxSlotsNorm = 20;
+                    int maxSlotsNorm = maxSlots;
                     int autoSlot = 0;
                     foreach (var item in inventory)
                     {
@@ -589,7 +595,6 @@ namespace GameServerApi.Controllers
                     return BadRequest("Danh sách items trống.");
                 }
 
-                int maxSlots = 20; // Số slot tối đa
                 int addedCount = 0;
 
                 foreach (var itemToAdd in itemsToAdd)
@@ -826,8 +831,7 @@ namespace GameServerApi.Controllers
                 int itemType       = itemTemplate?.Type ?? -1;
                 string itemName    = itemTemplate?.Name ?? $"Item {itemTemplateId}";
 
-                const int BagItemType = 30;
-                const int BagExpandBy = 5;
+                const int BagItemType = 32;         // type 32 = túi mở rộng; type 30 = vật liệu (KHÔNG mở túi)
                 const int WaveTicketItemType = 31;
                 const int WaveTicketPlusOneItemId = 409;
                 const int WaveTicketPlusTwoItemId = 410;
@@ -840,7 +844,29 @@ namespace GameServerApi.Controllers
 
                 if (itemType == BagItemType)
                 {
-                    info.BagSlots += BagExpandBy;
+                    info.BagEquippedItems ??= new List<BagEquippedItemInfo>();
+
+                    int quickSlotIndex = FindFirstAvailableBagQuickSlotIndex(info.BagEquippedItems, MaxEquippedBagQuickSlots);
+                    if (quickSlotIndex < 0)
+                        return BadRequest($"Chỉ có thể gắn tối đa {MaxEquippedBagQuickSlots} item mở rộng túi.");
+
+                    info.BagSlots = ResolveBagSlotLimit(info) + BagExpandBy;
+                    info.BagEquippedItems.Add(new BagEquippedItemInfo
+                    {
+                        QuickSlotIndex = quickSlotIndex,
+                        ItemTemplateId = itemTemplateId,
+                        ItemCode = targetRaw.TryGetValue("itemCode", out var bagCodeProp) ? bagCodeProp.GetString() ?? "" : "",
+                        ItemName = itemName,
+                        IconId = itemTemplate?.IdIcon ?? 0,
+                        UpgradeLevel = targetRaw.TryGetValue("upgradeLevel", out var bagLvlProp) && bagLvlProp.TryGetInt32(out int bagUpgradeLevel)
+                            ? bagUpgradeLevel
+                            : 0,
+                        StrOptions = targetRaw.TryGetValue("strOptions", out var bagOptProp)
+                            ? bagOptProp.GetString() ?? ""
+                            : "",
+                        SlotBonus = BagExpandBy,
+                        IsLocked = targetRaw.TryGetValue("isLocked", out var bagLockProp) && bagLockProp.ValueKind == JsonValueKind.True
+                    });
                     effectMsg = $"Mở rộng túi đồ thành công! Số ô túi: {info.BagSlots}";
                 }
                 else if (itemType == WaveTicketItemType)
@@ -1074,6 +1100,7 @@ namespace GameServerApi.Controllers
                     item_template_id = itemTemplateId,
                     wave_entry_bonus_added = waveEntryBonusAdded,
                     bag_slots  = info.BagSlots,
+                    bag_equipped_items = BuildBagEquippedItemsResponse(info.BagEquippedItems),
                     hp_restore = hpRestore,
                     mp_restore = mpRestore,
                     current_hp = info.Hp,
@@ -1088,6 +1115,74 @@ namespace GameServerApi.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi khi sử dụng item: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// POST /api/player/{playerId}/bag/unequip
+        /// Body: { "quickSlotIndex": 0 }
+        /// Tháo item mở rộng túi đang gắn ở quick slot, trả lại vào inventory
+        /// và giảm số ô túi tương ứng.
+        /// </summary>
+        [HttpPost("{playerId}/bag/unequip")]
+        public async Task<IActionResult> UnequipBagItem(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                if (userIdClaim == null) return Unauthorized();
+                int targetPlayerId = int.Parse(userIdClaim.Value);
+
+                if (!body.TryGetProperty("quickSlotIndex", out var slotProp))
+                    return BadRequest("Thiếu field 'quickSlotIndex'.");
+
+                int quickSlotIndex = slotProp.GetInt32();
+
+                var player = await _db.PlayerData.FindAsync(targetPlayerId);
+                if (player == null)
+                    return NotFound($"Player với ID {targetPlayerId} không tồn tại.");
+
+                var info = player.GetInfoChar();
+                info.BagEquippedItems ??= new List<BagEquippedItemInfo>();
+
+                var equippedBag = info.BagEquippedItems.FirstOrDefault(item => item.QuickSlotIndex == quickSlotIndex);
+                if (equippedBag == null)
+                    return BadRequest($"Không tìm thấy item túi đang gắn ở quick slot {quickSlotIndex}.");
+
+                var inventory = ParseMutableInventory(player.InventoryJson);
+                var itemTemplate = equippedBag.ItemTemplateId > 0
+                    ? await _db.ItemTemplates.FindAsync(equippedBag.ItemTemplateId)
+                    : null;
+
+                int slotBonus = equippedBag.SlotBonus > 0 ? equippedBag.SlotBonus : BagExpandBy;
+                int newBagSlots = Math.Max(DefaultBagSlots, ResolveBagSlotLimit(info) - slotBonus);
+
+                if (!TryStoreBagItemBackToInventory(inventory, equippedBag, itemTemplate, newBagSlots, out var updatedInventory))
+                {
+                    return BadRequest($"Không đủ chỗ trống để tháo {equippedBag.ItemName}. Hãy dọn bớt đồ trong túi trước.");
+                }
+
+                info.BagSlots = newBagSlots;
+                info.BagEquippedItems.Remove(equippedBag);
+
+                player.SetInfoChar(info);
+                player.InventoryJson = JsonSerializer.Serialize(updatedInventory);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = $"Đã tháo {equippedBag.ItemName} khỏi túi mở rộng.",
+                    player_id = targetPlayerId,
+                    bag_slots = info.BagSlots,
+                    bag_equipped_items = BuildBagEquippedItemsResponse(info.BagEquippedItems),
+                    inventory = updatedInventory,
+                    updated_at = player.UpdatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi tháo item túi: {ex.Message}");
             }
         }
 
@@ -1227,7 +1322,7 @@ namespace GameServerApi.Controllers
                     {
                         // Tìm slot trống trong inventory để đưa item cũ vào
                         int emptySlot = -1;
-                        int maxSlots = 20;
+                        int maxSlots = ResolveBagSlotLimit(player.GetInfoChar());
                         for (int i = 0; i < maxSlots; i++)
                         {
                             var existingSlot = inventory.FirstOrDefault(s =>
@@ -1412,7 +1507,7 @@ namespace GameServerApi.Controllers
 
                 // Tìm slot trống trong inventory
                 int emptySlot = -1;
-                int maxSlots = 20;
+                int maxSlots = ResolveBagSlotLimit(player.GetInfoChar());
                 for (int i = 0; i < maxSlots; i++)
                 {
                     var existingSlot = inventory.FirstOrDefault(s =>
@@ -1623,6 +1718,141 @@ namespace GameServerApi.Controllers
         /// </summary>
         private static string GetDefaultStrOptions(int itemTemplateId) =>
             UpgradeController.DefaultStrOptions.TryGetValue(itemTemplateId, out var val) ? val : "";
+
+        private static int ResolveBagSlotLimit(InfoChar? info)
+        {
+            // Giới hạn tối đa = DefaultBagSlots + MaxEquippedBagQuickSlots × BagExpandBy = 20 + 3×5 = 35
+            int maxPossible = DefaultBagSlots + MaxEquippedBagQuickSlots * BagExpandBy;
+            int actual = info?.BagSlots > 0 ? info.BagSlots : DefaultBagSlots;
+            return Math.Min(actual, maxPossible);
+        }
+
+        private static int FindFirstAvailableBagQuickSlotIndex(List<BagEquippedItemInfo>? bagItems, int maxQuickSlots)
+        {
+            for (int i = 0; i < maxQuickSlots; i++)
+            {
+                if (bagItems == null || bagItems.All(item => item.QuickSlotIndex != i))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static object[] BuildBagEquippedItemsResponse(List<BagEquippedItemInfo>? bagItems)
+        {
+            if (bagItems == null || bagItems.Count == 0)
+                return Array.Empty<object>();
+
+            return bagItems
+                .OrderBy(item => item.QuickSlotIndex)
+                .Select(item => (object)new
+                {
+                    quick_slot_index = item.QuickSlotIndex,
+                    item_template_id = item.ItemTemplateId,
+                    item_code = item.ItemCode,
+                    item_name = item.ItemName,
+                    icon_id = item.IconId > 0 ? item.IconId.ToString() : "",
+                    upgrade_level = item.UpgradeLevel,
+                    str_options = item.StrOptions ?? "",
+                    slot_bonus = item.SlotBonus > 0 ? item.SlotBonus : BagExpandBy,
+                    is_locked = item.IsLocked
+                })
+                .ToArray();
+        }
+
+        private static List<Dictionary<string, object>> ParseMutableInventory(string inventoryJson)
+        {
+            var inventory = new List<Dictionary<string, object>>();
+            if (string.IsNullOrEmpty(inventoryJson) || inventoryJson == "[]")
+                return inventory;
+
+            var existingInventory = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(inventoryJson);
+            if (existingInventory == null)
+                return inventory;
+
+            foreach (var item in existingInventory)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var kvp in item)
+                {
+                    dict[kvp.Key] = kvp.Value.ValueKind switch
+                    {
+                        JsonValueKind.Number => kvp.Value.TryGetInt32(out var intVal) ? intVal : kvp.Value.GetDouble(),
+                        JsonValueKind.String => kvp.Value.GetString() ?? "",
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        _ => kvp.Value.ToString()
+                    };
+                }
+                inventory.Add(dict);
+            }
+
+            return inventory;
+        }
+
+        private static bool TryStoreBagItemBackToInventory(
+            List<Dictionary<string, object>> inventory,
+            BagEquippedItemInfo bagItem,
+            ItemTemplate? itemTemplate,
+            int maxSlots,
+            out List<Dictionary<string, object>> updatedInventory)
+        {
+            updatedInventory = CompactInventorySlots(inventory);
+
+            bool isStackable = itemTemplate != null &&
+                string.Equals(itemTemplate.IsXepChong, "True", StringComparison.OrdinalIgnoreCase) &&
+                bagItem.UpgradeLevel <= 0 &&
+                string.IsNullOrEmpty(bagItem.StrOptions);
+
+            if (isStackable)
+            {
+                var existingSlot = updatedInventory.FirstOrDefault(slot =>
+                    slot.TryGetValue("itemTemplateId", out var rawTemplateId) &&
+                    Convert.ToInt32(rawTemplateId) == bagItem.ItemTemplateId &&
+                    (!slot.TryGetValue("upgradeLevel", out var rawUpgradeLevel) || Convert.ToInt32(rawUpgradeLevel) == 0) &&
+                    (!slot.TryGetValue("strOptions", out var rawStrOptions) || string.IsNullOrEmpty(rawStrOptions?.ToString())));
+
+                if (existingSlot != null)
+                {
+                    int currentQuantity = existingSlot.TryGetValue("quantity", out var rawQuantity)
+                        ? Convert.ToInt32(rawQuantity)
+                        : 0;
+                    existingSlot["quantity"] = currentQuantity + 1;
+                    return true;
+                }
+            }
+
+            if (updatedInventory.Count >= maxSlots)
+                return false;
+
+            updatedInventory.Add(new Dictionary<string, object>
+            {
+                ["slotIndex"] = updatedInventory.Count,
+                ["itemTemplateId"] = bagItem.ItemTemplateId,
+                ["quantity"] = 1,
+                ["upgradeLevel"] = bagItem.UpgradeLevel,
+                ["strOptions"] = bagItem.StrOptions ?? "",
+                ["isLocked"] = bagItem.IsLocked
+            });
+
+            return true;
+        }
+
+        private static List<Dictionary<string, object>> CompactInventorySlots(List<Dictionary<string, object>> inventory)
+        {
+            var compacted = inventory
+                .Where(slot => slot.TryGetValue("quantity", out var rawQuantity) && Convert.ToInt32(rawQuantity) > 0)
+                .OrderBy(slot => slot.TryGetValue("slotIndex", out var rawSlotIndex) ? Convert.ToInt32(rawSlotIndex) : int.MaxValue)
+                .Select(slot => new Dictionary<string, object>(slot))
+                .ToList();
+
+            for (int i = 0; i < compacted.Count; i++)
+            {
+                compacted[i]["slotIndex"] = i;
+            }
+
+            return compacted;
+        }
 
         // ================================================================
         //  SKILL ENDPOINTS

@@ -34,6 +34,8 @@ namespace GameServerApi.Controllers
             if (player == null)
                 return NotFound($"Player {targetPlayerId} không tồn tại.");
 
+            int maxSlots = player.GetInfoChar().BagSlots > 0 ? player.GetInfoChar().BagSlots : 20;
+
             var inventory = new List<Dictionary<string, object>>();
             if (!string.IsNullOrEmpty(player.InventoryJson) && player.InventoryJson != "[]")
             {
@@ -95,7 +97,7 @@ namespace GameServerApi.Controllers
                     }
                 }
 
-                int emptySlotIndex = FindFirstEmptySlot(inventory, 20);
+                int emptySlotIndex = FindFirstEmptySlot(inventory, maxSlots);
                 if (emptySlotIndex < 0)
                     continue;
 
