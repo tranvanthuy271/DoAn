@@ -68,6 +68,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
         // Pause game with ESC
         if (Input.GetKeyDown(KeyCode.Escape))
         {

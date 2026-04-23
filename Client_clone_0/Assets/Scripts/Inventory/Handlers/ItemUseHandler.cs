@@ -22,8 +22,8 @@ public class ItemUseHandler : MonoBehaviour
     public static ItemUseHandler Instance { get; private set; }
 
     // ── Loại item ──────────────────────────────────────────────────────────
-    /// <summary>type = 30 trong item_template → item mở rộng túi đồ (+5 ô).</summary>
-    public const int ItemTypeBag        = 30;
+    /// <summary>type = 32 trong item_template → item mở rộng túi đồ (+5 ô). KHÔNG phải type 30 (vật liệu).</summary>
+    public const int ItemTypeBag        = 32;
     /// <summary>Số ô mở rộng mỗi lần dùng item túi.</summary>
     public const int BagExpandAmount    = 5;
     /// <summary>type 21-29 → item tiêu thụ (phục hồi HP/MP, v.v.).</summary>
@@ -61,6 +61,12 @@ public class ItemUseHandler : MonoBehaviour
     [Tooltip("Sprite hiển thị khi slot nhanh trống")]
     [SerializeField] private Sprite emptySlotSprite;
 
+    [Tooltip("Sprite mặc định hiển thị trên quick slot khi túi mở rộng không có icon riêng (idIcon = 0). Gán 1 sprite 'bag' bất kỳ từ atlas vào đây.")]
+    [SerializeField] private Sprite defaultBagIcon;
+
+    [Tooltip("Prefab BagQuickActionPanel dùng khi click vào BagQuickSlot trên HUD.")]
+    [SerializeField] private BagQuickActionPanel bagQuickActionPanelPrefab;
+
     [Header("UI Elements")]
     [Tooltip("Image/GameObject hiển thị khi item đang khóa")]
     [SerializeField] private Sprite lockIcon;
@@ -74,7 +80,9 @@ public class ItemUseHandler : MonoBehaviour
     private int currentSilver;
 
     /// <summary>Slot data của các item túi tìm thấy trong inventory (tối đa 3).</summary>
-    private readonly List<InventorySlotDto> _bagItemSlots = new List<InventorySlotDto>(3);
+    private readonly Dictionary<int, BagEquippedItemData> _equippedBagItemsByQuickSlot = new Dictionary<int, BagEquippedItemData>(3);
+    private readonly List<Button> _bagQuickSlotButtons = new List<Button>(3);
+    private BagQuickActionPanel _bagQuickActionPanel;
 
     // ── Unity Lifecycle ────────────────────────────────────────────────────
     private void Awake()
@@ -98,6 +106,7 @@ public class ItemUseHandler : MonoBehaviour
         if (sortButton != null)
             sortButton.onClick.AddListener(RequestSortInventory);
 
+        SetupBagQuickSlotButtons();
         RefreshStatBar();
     }
 
@@ -106,7 +115,116 @@ public class ItemUseHandler : MonoBehaviour
         if (sortButton != null)
             sortButton.onClick.RemoveListener(RequestSortInventory);
 
+        foreach (var button in _bagQuickSlotButtons)
+        {
+            if (button != null)
+                button.onClick.RemoveAllListeners();
+        }
+
         if (Instance == this) Instance = null;
+    }
+
+    private void SetupBagQuickSlotButtons()
+    {
+        _bagQuickSlotButtons.Clear();
+
+        int quickSlotCount = bagQuickSlotIcons?.Length ?? 0;
+        for (int i = 0; i < quickSlotCount; i++)
+        {
+            Image icon = bagQuickSlotIcons[i];
+            if (icon == null)
+            {
+                _bagQuickSlotButtons.Add(null);
+                continue;
+            }
+
+            GameObject buttonRoot = icon.transform.parent != null ? icon.transform.parent.gameObject : icon.gameObject;
+            Button button = buttonRoot.GetComponent<Button>();
+            if (button == null)
+                button = buttonRoot.AddComponent<Button>();
+
+            button.targetGraphic = icon;
+            button.transition = Selectable.Transition.ColorTint;
+            button.onClick.RemoveAllListeners();
+
+            int quickSlotIndex = i;
+            button.onClick.AddListener(() => OnBagQuickSlotClicked(quickSlotIndex));
+            _bagQuickSlotButtons.Add(button);
+        }
+    }
+
+    private void OnBagQuickSlotClicked(int quickSlotIndex)
+    {
+        Debug.Log($"[ItemUseHandler] BagSlot clicked: quickSlotIndex={quickSlotIndex}");
+        Debug.Log($"[ItemUseHandler] _equippedBagItems count={_equippedBagItemsByQuickSlot.Count}");
+
+        if (!_equippedBagItemsByQuickSlot.TryGetValue(quickSlotIndex, out var bagItem) || bagItem == null)
+        {
+            Debug.LogWarning($"[ItemUseHandler] Không tiìm thấy bagItem tại slot {quickSlotIndex} — bỏ qua.");
+            return;
+        }
+
+        var actionPanel = GetOrCreateBagQuickActionPanel();
+        if (actionPanel == null)
+        {
+            Debug.LogError("[ItemUseHandler] actionPanel null!");
+            return;
+        }
+
+        Debug.Log($"[ItemUseHandler] actionPanel='{actionPanel.gameObject.name}' active={actionPanel.gameObject.activeInHierarchy}");
+
+        // Lấy RectTransform của slot vừa click để định vị panel
+        RectTransform slotRect = null;
+        if (quickSlotIndex < _bagQuickSlotButtons.Count && _bagQuickSlotButtons[quickSlotIndex] != null)
+            slotRect = _bagQuickSlotButtons[quickSlotIndex].transform as RectTransform;
+
+        string itemName = BuildBagItemDisplayName(bagItem);
+        Debug.Log($"[ItemUseHandler] Gọi Show(): itemName='{itemName}' slotRect={slotRect?.name}");
+        actionPanel.Show(
+            itemName,
+            () => RequestUnequipBagQuickSlot(quickSlotIndex),
+            () => inventoryUI?.ShowItemDetail(ConvertBagItemToSlotDto(bagItem), showUseButton: false),
+            (Vector2)Input.mousePosition);
+    }
+
+    private BagQuickActionPanel GetOrCreateBagQuickActionPanel()
+    {
+        // Dùng instance đã tạo trước
+        if (_bagQuickActionPanel != null)
+            return _bagQuickActionPanel;
+
+        // Instantiate từ prefab dưới root Canvas (luôn active)
+        if (bagQuickActionPanelPrefab != null)
+        {
+            Transform canvasRoot = ResolveCanvasParent();
+            _bagQuickActionPanel = Instantiate(bagQuickActionPanelPrefab, canvasRoot);
+            Debug.Log($"[ItemUseHandler] Instantiated BagQuickActionPanel prefab dưới '{canvasRoot.name}'");
+            return _bagQuickActionPanel;
+        }
+
+        // Fallback runtime
+        Debug.LogWarning("[ItemUseHandler] Chưa gán Prefab — dùng Create() runtime.");
+        _bagQuickActionPanel = BagQuickActionPanel.Create(ResolveCanvasParent());
+        return _bagQuickActionPanel;
+    }
+
+    private Transform ResolveCanvasParent()
+    {
+        // Chia sẻ parent với ItemDetailPanel nếu có
+        Transform panelParent = inventoryUI != null && inventoryUI.GetSharedItemDetailPanel() != null
+            ? inventoryUI.GetSharedItemDetailPanel().transform.parent
+            : null;
+
+        if (panelParent != null) return panelParent;
+
+        Canvas bestCanvas = null;
+        int bestOrder = int.MinValue;
+        foreach (var canvas in FindObjectsOfType<Canvas>(true))
+        {
+            if (!canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace) continue;
+            if (canvas.sortingOrder > bestOrder) { bestOrder = canvas.sortingOrder; bestCanvas = canvas; }
+        }
+        return bestCanvas != null ? bestCanvas.transform : transform.root;
     }
 
     // ── Public API: gọi từ ItemDetailPanel ────────────────────────────────
@@ -258,6 +376,19 @@ public class ItemUseHandler : MonoBehaviour
                 currentBagSlots = response.bag_slots;
                 UpdateBagSlotCountText();
             }
+
+            if (response.bag_equipped_items != null)
+                UpdateBagQuickSlots(response.bag_equipped_items);
+
+            var playerData = GameManager.Instance?.GetPlayerData();
+            if (playerData != null)
+            {
+                playerData.bag_slots = response.bag_slots > 0 ? response.bag_slots : playerData.bag_slots;
+                if (response.bag_equipped_items != null)
+                    playerData.bag_equipped_items = response.bag_equipped_items;
+                GameManager.Instance.SetPlayerData(playerData);
+            }
+
             RefreshInventory();
             return;
         }
@@ -377,14 +508,14 @@ public class ItemUseHandler : MonoBehaviour
     /// Gọi khi inventory được refresh để cập nhật Quick Slots và stat bar.
     /// InventoryNetworkBridge gọi hàm này sau mỗi lần fetch từ DB thành công.
     /// </summary>
-    public void OnInventoryRefreshed(InventorySlotDto[] slots, int bagSlots, int gold, int silver)
+    public void OnInventoryRefreshed(InventorySlotDto[] slots, int bagSlots, int gold, int silver, BagEquippedItemData[] bagEquippedItems = null)
     {
         currentBagSlots = bagSlots;
         currentGold     = gold;
         currentSilver   = silver;
 
         UpdateStatBar();
-        UpdateBagQuickSlots(slots);
+        UpdateBagQuickSlots(bagEquippedItems);
     }
 
     /// <summary>Cập nhật thanh vàng/bạc/ô túi từ GameManager (có thể gọi riêng lẻ).</summary>
@@ -396,6 +527,7 @@ public class ItemUseHandler : MonoBehaviour
             currentGold    = data.gold;
             currentSilver  = data.silver;
             currentBagSlots = data.bag_slots > 0 ? data.bag_slots : 20;
+            UpdateBagQuickSlots(data.bag_equipped_items);
         }
         UpdateStatBar();
     }
@@ -420,63 +552,110 @@ public class ItemUseHandler : MonoBehaviour
     /// Duyệt qua inventory, tìm tối đa 3 item túi đồ (type=30)
     /// và hiển thị icon + số lượng vào 3 quick-slot.
     /// </summary>
-    private void UpdateBagQuickSlots(InventorySlotDto[] slots)
+    private void UpdateBagQuickSlots(BagEquippedItemData[] bagItems)
     {
-        _bagItemSlots.Clear();
-
-        if (slots != null)
+        _equippedBagItemsByQuickSlot.Clear();
+        if (bagItems != null)
         {
-            foreach (var slot in slots)
+            foreach (var bagItem in bagItems)
             {
-                if (slot == null || slot.quantity <= 0) continue;
-
-                ItemTemplateDto tpl = null;
-                if (ItemTemplateManager.Instance != null)
-                {
-                    if (slot.itemTemplateId > 0)
-                        tpl = ItemTemplateManager.Instance.GetItemTemplate(slot.itemTemplateId);
-                    if (tpl == null && !string.IsNullOrEmpty(slot.itemCode))
-                        tpl = ItemTemplateManager.Instance.GetItemTemplateByCode(slot.itemCode);
-                }
-
-                if (tpl != null && tpl.type == ItemTypeBag)
-                {
-                    _bagItemSlots.Add(slot);
-                    if (_bagItemSlots.Count >= 3) break;
-                }
+                if (bagItem == null) continue;
+                _equippedBagItemsByQuickSlot[bagItem.quick_slot_index] = bagItem;
             }
         }
 
-        // Áp vào 3 quick-slot UI
         int len = bagQuickSlotIcons?.Length ?? 0;
         for (int i = 0; i < len; i++)
         {
-            if (i < _bagItemSlots.Count)
+            if (_equippedBagItemsByQuickSlot.TryGetValue(i, out var bagItem) && bagItem != null)
             {
-                var s = _bagItemSlots[i];
                 if (bagQuickSlotIcons[i] != null)
                 {
-                    Sprite icon = IconDatabase.Instance != null ? IconDatabase.Instance.GetIcon(s.iconId) : null;
-                    bagQuickSlotIcons[i].sprite  = icon ?? emptySlotSprite;
+                    string iconId = !string.IsNullOrEmpty(bagItem.icon_id) && bagItem.icon_id != "0"
+                        ? bagItem.icon_id
+                        : ResolveBagItemIconId(bagItem.item_template_id);
+                    Sprite icon = IconDatabase.Instance != null ? IconDatabase.Instance.GetIcon(iconId) : null;
+                    bagQuickSlotIcons[i].sprite = icon ?? emptySlotSprite;
                     bagQuickSlotIcons[i].enabled = true;
                 }
+
                 if (bagQuickSlotCounts != null && i < bagQuickSlotCounts.Length && bagQuickSlotCounts[i] != null)
-                    bagQuickSlotCounts[i].text = s.quantity > 1 ? s.quantity.ToString() : "";
+                    bagQuickSlotCounts[i].text = $"+{bagItem.upgrade_level}";
             }
             else
             {
                 if (bagQuickSlotIcons[i] != null)
                 {
-                    bagQuickSlotIcons[i].sprite  = emptySlotSprite;
+                    bagQuickSlotIcons[i].sprite = emptySlotSprite;
                     bagQuickSlotIcons[i].enabled = emptySlotSprite != null;
                 }
+
                 if (bagQuickSlotCounts != null && i < bagQuickSlotCounts.Length && bagQuickSlotCounts[i] != null)
                     bagQuickSlotCounts[i].text = "";
             }
+
+            if (i < _bagQuickSlotButtons.Count && _bagQuickSlotButtons[i] != null)
+                _bagQuickSlotButtons[i].interactable = _equippedBagItemsByQuickSlot.ContainsKey(i);
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    private void RequestUnequipBagQuickSlot(int quickSlotIndex)
+    {
+        inventoryBridge?.RequestUnequipBagItem(quickSlotIndex, json =>
+        {
+            if (!string.IsNullOrEmpty(json) && json.Contains("\"error\""))
+            {
+                GlobalNotificationUI.Show(
+                    "Khong the thao tui mo rong. Hay kiem tra lai cho trong trong tui.",
+                    "Tui Do",
+                    3f,
+                    "OK");
+            }
+        });
+    }
+
+    private static string ResolveBagItemIconId(int itemTemplateId)
+    {
+        if (itemTemplateId <= 0)
+            return null;
+
+        ItemTemplateDto template = ItemTemplateManager.Instance?.GetItemTemplate(itemTemplateId);
+        return template != null && template.idIcon > 0 ? template.idIcon.ToString() : null;
+    }
+
+    private static string BuildBagItemDisplayName(BagEquippedItemData bagItem)
+    {
+        if (bagItem == null)
+            return "Tui mo rong";
+
+        string baseName = !string.IsNullOrEmpty(bagItem.item_name)
+            ? bagItem.item_name
+            : ItemTemplateManager.Instance?.GetItemTemplate(bagItem.item_template_id)?.name ?? "Tui mo rong";
+
+        return $"{baseName} +{bagItem.upgrade_level}";
+    }
+
+    private static InventorySlotDto ConvertBagItemToSlotDto(BagEquippedItemData bagItem)
+    {
+        if (bagItem == null)
+            return null;
+
+        return new InventorySlotDto
+        {
+            slotIndex = bagItem.quick_slot_index,
+            itemTemplateId = bagItem.item_template_id,
+            itemCode = bagItem.item_code,
+            iconId = !string.IsNullOrEmpty(bagItem.icon_id) && bagItem.icon_id != "0"
+                ? bagItem.icon_id
+                : ResolveBagItemIconId(bagItem.item_template_id),
+            quantity = 1,
+            isLocked = bagItem.is_locked,
+            upgradeLevel = bagItem.upgrade_level,
+            strOptions = bagItem.str_options
+        };
+    }
 
     private void RefreshInventory()
     {
@@ -590,6 +769,7 @@ public class UseItemResult
     public int current_mp;
     public int gene_exp;
     public int bag_slots;
+    public BagEquippedItemData[] bag_equipped_items;
     public ActiveBuffDto[] active_buffs;
     public ActiveBuffDto[] new_buffs;
 }

@@ -165,7 +165,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: 21300000, guid: 71ad7f2ee63f7814c92c5dab82fbc5ba, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ae36262908dea4a4fb3d79da97658abc, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -239,7 +239,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 2.92, y: 2.04}
+    oldSize: {x: 1.48, y: 1.52}
     newSize: {x: 2.19, y: 1.77}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -277,6 +277,7 @@ MonoBehaviour:
   projectileFallThroughDuration: 0.35
   projectileFallThroughDrop: 0.12
   projectileAimOvershoot: 0.45
+  randomizeInitialPatrolDirection: 1
 --- !u!114 &7804350174933886395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,7 +290,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 4148406295
+  GlobalObjectIdHash: 28772199
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -389,7 +390,7 @@ Animator:
   m_GameObject: {fileID: 4006840501700251420}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 22100000, guid: d769a57e47fa0e44ea2af943eb6fee0c, type: 2}
+  m_Controller: {fileID: 22100000, guid: 07c7c47da5b41a14b898aa1f70b2e6b8, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

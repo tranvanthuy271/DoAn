@@ -35,6 +35,8 @@ public class FusionCoreDebugAdder : MonoBehaviour
 
     private void Update()
     {
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         if (Input.GetKeyDown(hotkey) && !_isBusy)
             OnAddClicked();
     }

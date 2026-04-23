@@ -795,6 +795,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int    gene_exp;
         public bool   is_hybrid;
         public string hybrid_prefab_path;
+        public int    bag_slots;
+        public BagEquippedItemData[] bag_equipped_items;
 
         // Nested sub-objects — JsonUtility hỗ trợ [Serializable] class
         public FinalStatsDto final_stats;

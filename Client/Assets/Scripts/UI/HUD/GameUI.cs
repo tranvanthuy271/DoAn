@@ -42,6 +42,7 @@ public class GameUI : MonoBehaviour
     private void HandleHotbarToggle()
     {
         if (skillHotbarPanel == null) return;
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
         if (Input.GetKeyDown(KeyCode.T))
         {
             skillHotbarPanel.SetActive(!skillHotbarPanel.activeSelf);

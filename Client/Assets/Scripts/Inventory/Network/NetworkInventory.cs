@@ -98,6 +98,10 @@ public class NetworkInventory : NetworkBehaviour
     public class InventoryJsonWrapper
     {
         public InventoryItem[] items;
+        public int bag_slots;
+        public int gold;
+        public int silver;
+        public BagEquippedItemData[] bag_equipped_items;
     }
 
     /// <summary>
@@ -973,11 +977,18 @@ public class NetworkInventory : NetworkBehaviour
 
     private IEnumerator PushInventoryDataToClientDirect(int playerId, ulong targetClientId)
     {
-        yield return FetchInventoryFromApiDirect(
+        yield return FetchPlayerDataFromApiDirect(
             playerId,
             freshItems =>
             {
-                string json = JsonUtility.ToJson(new InventoryJsonWrapper { items = freshItems });
+                string json = JsonUtility.ToJson(new InventoryJsonWrapper
+                {
+                    items = freshItems?.inventory ?? System.Array.Empty<InventoryItem>(),
+                    bag_slots = freshItems?.bag_slots ?? 20,
+                    gold = freshItems?.gold ?? 0,
+                    silver = freshItems?.silver ?? 0,
+                    bag_equipped_items = freshItems?.bag_equipped_items ?? System.Array.Empty<BagEquippedItemData>()
+                });
                 var clientParams = new ClientRpcParams
                 {
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientId } }
@@ -989,7 +1000,7 @@ public class NetworkInventory : NetworkBehaviour
         );
     }
 
-    private IEnumerator FetchInventoryFromApiDirect(int playerId, System.Action<InventoryItem[]> onSuccess, System.Action<string> onError = null)
+    private IEnumerator FetchPlayerDataFromApiDirect(int playerId, System.Action<PlayerDataResponse> onSuccess, System.Action<string> onError = null)
     {
         string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string apiKey  = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
@@ -1011,12 +1022,20 @@ public class NetworkInventory : NetworkBehaviour
         try
         {
             var response = JsonUtility.FromJson<PlayerDataResponse>(req.downloadHandler.text);
-            onSuccess?.Invoke(response?.inventory ?? System.Array.Empty<InventoryItem>());
+            onSuccess?.Invoke(response);
         }
         catch (System.Exception ex)
         {
             onError?.Invoke($"Parse player data failed: {ex.Message}");
         }
+    }
+
+    private IEnumerator FetchInventoryFromApiDirect(int playerId, System.Action<InventoryItem[]> onSuccess, System.Action<string> onError = null)
+    {
+        yield return FetchPlayerDataFromApiDirect(
+            playerId,
+            response => onSuccess?.Invoke(response?.inventory ?? System.Array.Empty<InventoryItem>()),
+            onError);
     }
 
     /// <summary>

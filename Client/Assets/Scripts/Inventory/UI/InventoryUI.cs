@@ -21,7 +21,7 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private InventorySlotUI slotPrefab;
 
     [Header("Item Detail")]
-    [Tooltip("Prefab của ItemDetailPanel (sẽ được định vƱ dưới parent khi cần)")]
+    [Tooltip("Prefab của ItemDetailPanel (sẽ được định vị dưới parent khi cần)")]
     [SerializeField] private ItemDetailPanel itemDetailPanelPrefab;
 
     [Tooltip("Parent để instantiate ItemDetailPanel vào (nên là root Canvas). Để trống sẽ dùng transform.root.")]
@@ -31,15 +31,49 @@ public class InventoryUI : MonoBehaviour
     private ItemDetailPanel _itemDetailPanelInstance;
 
     [Header("Settings")]
-    [Tooltip("Số slot tối đa trong UI (nên >= số slot server gửi về)")]
-    [SerializeField] private int maxSlotCount = 20;
+    [Tooltip("Kích thước POOL slot UI. Đặt bằng tổng slot tối đa có thể đạt được: 20 (base) + số túi mở rộng × 5.\nVí dụ 3 túi × 5 = 15 → đặt 35. Số slot HIỂN THỊ thực sự do bag_slots của player quyết định (gọi SetVisibleSlotCount).")]
+    [SerializeField] private int maxSlotCount = 35;
 
     private InventorySlotUI[] slotUIs;
     private InventorySlotDto[] currentSlots;
     private readonly Dictionary<int, int> _reservedQuantities = new Dictionary<int, int>();
+    private int currentVisibleSlotCount = 20;
 
     /// <summary>Snapshot túi đồ hiện tại (dùng cho UpgradePanel)</summary>
     public InventorySlotDto[] CurrentSlots => currentSlots;
+    public int GetConfiguredMaxSlotCount() => maxSlotCount > 0 ? maxSlotCount : 20;
+
+    public void SetVisibleSlotCount(int slotCount)
+    {
+        currentVisibleSlotCount = Mathf.Clamp(slotCount > 0 ? slotCount : 20, 0, GetConfiguredMaxSlotCount());
+
+        if (slotUIs == null)
+            return;
+
+        for (int i = 0; i < slotUIs.Length; i++)
+        {
+            if (slotUIs[i] != null)
+                slotUIs[i].gameObject.SetActive(i < currentVisibleSlotCount);
+        }
+    }
+
+    /// <summary>
+    /// Đọc bag_slots từ GameManager và gọi SetVisibleSlotCount.
+    /// Gọi mỗi khi mở túi đồ để đồng bộ với dữ liệu player hiện tại.
+    /// </summary>
+    public void SyncVisibleSlotCountFromPlayerData()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            int bagSlots = GameManager.Instance.GetPlayerData().bag_slots;
+            if (bagSlots > 0)
+            {
+                SetVisibleSlotCount(bagSlots);
+                return;
+            }
+        }
+        SetVisibleSlotCount(currentVisibleSlotCount > 0 ? currentVisibleSlotCount : 20);
+    }
 
     private void Awake()
     {
@@ -57,8 +91,12 @@ public class InventoryUI : MonoBehaviour
 
     private void Start()
     {
-        // Khởi tạo các ô slot UI khi bắt đầu
-        InitSlots();
+        // Chỉ khởi tạo nếu chưa được khởi tạo bởi bridge (NetworkBridge có thể đã gọi InitSlots trước khi gameobject active)
+        if (slotUIs == null || slotUIs.Length == 0)
+        {
+            InitSlots();
+            SetVisibleSlotCount(ResolveInitialVisibleSlotCount());
+        }
     }
 
     /// <summary>
@@ -104,6 +142,9 @@ public class InventoryUI : MonoBehaviour
         }
 
         Debug.Log($"[InventoryUI] InitSlots: Đã tạo thành công {maxSlotCount} slots!");
+
+        // Ẩn ngay các slot vượt quá currentVisibleSlotCount để không lộ pool khi inventory mở
+        SetVisibleSlotCount(currentVisibleSlotCount);
     }
 
     /// <summary>Mở inventory và refresh data từ server.</summary>
@@ -160,7 +201,10 @@ public class InventoryUI : MonoBehaviour
                 Debug.LogWarning("[InventoryUI] ToggleInventory: slotUIs chưa init, gọi InitSlots() ngay bây giờ...");
                 InitSlots();
             }
-            
+
+            // Đồng bộ số slot hiển thị từ player data ngay khi mở túi
+            SyncVisibleSlotCountFromPlayerData();
+
             Debug.Log($"[InventoryUI] ToggleInventory: Đang refresh {slotUIs?.Length ?? 0} slots...");
             
             // ✅ REFRESH INVENTORY FROM DB KHI MỞ UI
@@ -232,6 +276,8 @@ public class InventoryUI : MonoBehaviour
         Debug.Log($"[InventoryUI] RefreshAllSlots: Bắt đầu refresh {slotUIs.Length} slots...");
         Debug.Log($"[InventoryUI] RefreshAllSlots: currentSlots = {(currentSlots == null ? "null" : $"{currentSlots.Length} items")}");
 
+        SetVisibleSlotCount(currentVisibleSlotCount);
+
         int slotsWithItems = 0;
         for (int i = 0; i < slotUIs.Length; i++)
         {
@@ -283,6 +329,18 @@ public class InventoryUI : MonoBehaviour
             }
         }
         RefreshAllSlots();
+    }
+
+    private int ResolveInitialVisibleSlotCount()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+        {
+            int bagSlots = GameManager.Instance.GetPlayerData().bag_slots;
+            if (bagSlots > 0)
+                return bagSlots;
+        }
+
+        return 20;
     }
 
     private static InventorySlotDto CloneSlot(InventorySlotDto slot)
@@ -378,7 +436,7 @@ public class InventoryUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Callback khi người chơi nhấn vào 1 slot có item
+    /// Callback khi người chơi nhấn vào 1 slot có item — mở ItemDetailPanel.
     /// </summary>
     private void OnSlotItemClicked(InventorySlotDto slotData)
     {
@@ -483,5 +541,6 @@ public class InventoryUI : MonoBehaviour
         if (_itemDetailPanelInstance != null)
             Destroy(_itemDetailPanelInstance.gameObject);
     }
+
 }
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,6 +52,8 @@ public class AutoEquipDebugger : MonoBehaviour
 
     private void Update()
     {
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         if (Input.GetKeyDown(triggerKey) && !isBusy)
             StartCoroutine(AddAndEquipAll());
 

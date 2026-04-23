@@ -59,6 +59,8 @@ public class InventoryTestManager : MonoBehaviour
             return;
         }
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
+
         // Kiểm tra phím Q được nhấn
         if (Input.GetKeyDown(testKey))
         {

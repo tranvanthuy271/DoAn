@@ -42,6 +42,7 @@ public class GameplayCommandService : NetworkBehaviour
     public static event Action<string> OnEquipmentReceived;       // GetPlayerEquipmentServerRpc
     public static event Action<string> OnEquipResult;             // EquipItemServerRpc
     public static event Action<string> OnUnequipResult;           // UnequipItemServerRpc
+    public static event Action<string> OnBagUnequipResult;        // UnequipBagItemServerRpc
 
     public static event Action<string> OnGeneConfigReceived;      // GetGeneConfigServerRpc
     public static event Action<string> OnGeneUpgraded;            // UpgradeGeneServerRpc
@@ -240,6 +241,21 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void UnequipBagItemServerRpc(int quickSlotIndex, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        ulong cid = rpcParams.Receive.SenderClientId;
+        int pid = ResolveClientUserId(cid);
+        string jwt = ResolveClientJwt(cid);
+        StartCoroutine(DoPost(
+            $"{ApiBase}/player/{pid}/bag/unequip",
+            $"{{\"quickSlotIndex\":{quickSlotIndex}}}", jwt,
+            json => UnequipBagResultClientRpc(json, Target(cid)),
+            err  => UnequipBagResultClientRpc(ErrorJson(err), Target(cid))
+        ));
+    }
+
     [ClientRpc] private void SendEquipmentClientRpc(string json, ClientRpcParams p = default)
         => OnEquipmentReceived?.Invoke(json);
 
@@ -248,6 +264,9 @@ public class GameplayCommandService : NetworkBehaviour
 
     [ClientRpc] private void UnequipResultClientRpc(string json, ClientRpcParams p = default)
         => OnUnequipResult?.Invoke(json);
+
+    [ClientRpc] private void UnequipBagResultClientRpc(string json, ClientRpcParams p = default)
+        => OnBagUnequipResult?.Invoke(json);
 
     // ─────────────────────────────────────────────────────────────────────────
     // GENE UPGRADE

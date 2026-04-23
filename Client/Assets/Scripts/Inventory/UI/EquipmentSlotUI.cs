@@ -44,9 +44,9 @@ public class EquipmentSlotUI : MonoBehaviour
     [Tooltip("Image background slot (con của slot này)")]
     [SerializeField] private Image bgImage;
 
-    // Animation components (tự tạo/quản lý runtime)
-    private UIImageTierAnimation _borderAnim;
-    private UIImageTierAnimation _bgAnim;
+    // Animator components cho hiệu ứng viền + bg theo tier (tự tạo runtime)
+    private Animator _borderAnim;
+    private Animator _bgAnim;
     private int _currentTierLevel = -1;
 
     [Header("Icon Layout")]
@@ -137,9 +137,9 @@ public class EquipmentSlotUI : MonoBehaviour
             bgImage.enabled = false;
             bgImage.sprite  = null;
         }
-        // Dừng animator nếu đang chạy
-        if (_borderAnim != null) _borderAnim.enabled = false;
-        if (_bgAnim    != null) _bgAnim.enabled    = false;
+        // Dừng animator viền + bg khi slot trống
+        if (_borderAnim != null) { _borderAnim.runtimeAnimatorController = null; _borderAnim.enabled = false; }
+        if (_bgAnim     != null) { _bgAnim.runtimeAnimatorController = null;     _bgAnim.enabled    = false; }
     }
 
     /// <summary>
@@ -281,57 +281,90 @@ public class EquipmentSlotUI : MonoBehaviour
         // --- Border ---
         if (borderImage != null)
         {
-            bool hasBorderSprite = tier.borderSprite != null;
-            if (hasBorderSprite)
+            bool hasBorderAnim   = tier.borderAnimator != null;
+            bool hasBorderSprite = tier.borderSprite   != null;
+
+            if (hasBorderAnim || hasBorderSprite)
             {
-                borderImage.sprite  = tier.borderSprite;
-                // Nếu color alpha quá thấp hoặc quá tối → dùng white để sprite hiện đúng
-                borderImage.color   = (tier.borderColor.a < 0.01f || tier.borderColor == Color.black)
+                borderImage.color = (tier.borderColor.a < 0.01f || tier.borderColor == Color.black)
                     ? Color.white
                     : tier.borderColor;
                 borderImage.enabled = true;
-                EnableTierAnimation(borderImage.gameObject, ref _borderAnim);
+
+                // Pre-set sprite để tránh 1-frame trống trước khi Animator chạy
+                if (hasBorderSprite)
+                    borderImage.sprite = tier.borderSprite;
+
+                EnableTierAnimator(borderImage.gameObject, ref _borderAnim, tier.borderAnimator);
             }
             else
             {
-                // Không có sprite → ẩn hoàn toàn, không hiện trắng
                 borderImage.enabled = false;
                 borderImage.sprite  = null;
-                if (_borderAnim != null) _borderAnim.enabled = false;
+                DisableTierAnimator(ref _borderAnim);
             }
         }
 
         // --- Background ---
         if (bgImage != null)
         {
-            bool hasBgSprite = tier.bgSprite != null;
-            if (hasBgSprite)
+            bool hasBgAnim   = tier.bgAnimator != null;
+            bool hasBgSprite = tier.bgSprite   != null;
+
+            if (hasBgAnim || hasBgSprite)
             {
-                bgImage.sprite  = tier.bgSprite;
-                bgImage.color   = (tier.bgColor.a < 0.01f || tier.bgColor == Color.black)
+                bgImage.color = (tier.bgColor.a < 0.01f || tier.bgColor == Color.black)
                     ? Color.white
                     : tier.bgColor;
                 bgImage.enabled = true;
-                EnableTierAnimation(bgImage.gameObject, ref _bgAnim);
+
+                if (hasBgSprite)
+                    bgImage.sprite = tier.bgSprite;
+
+                EnableTierAnimator(bgImage.gameObject, ref _bgAnim, tier.bgAnimator);
             }
             else
             {
                 bgImage.enabled = false;
                 bgImage.sprite  = null;
-                if (_bgAnim != null) _bgAnim.enabled = false;
+                DisableTierAnimator(ref _bgAnim);
             }
         }
     }
 
-    private void EnableTierAnimation(GameObject target, ref UIImageTierAnimation anim)
+    private void EnableTierAnimator(GameObject target, ref Animator anim, RuntimeAnimatorController controller)
     {
         if (anim == null)
         {
-            anim = target.GetComponent<UIImageTierAnimation>();
+            anim = target.GetComponent<Animator>();
             if (anim == null)
-                anim = target.AddComponent<UIImageTierAnimation>();
+                anim = target.AddComponent<Animator>();
         }
-        anim.enabled = true;
+
+        if (controller != null)
+        {
+            anim.runtimeAnimatorController = controller;
+            anim.enabled = true;
+            anim.Play(0, -1, 0f); // reset animation về frame đầu
+        }
+        else
+        {
+            // Không có controller → hiển thị sprite tĩnh, tắt Animator
+            if (anim != null)
+            {
+                anim.runtimeAnimatorController = null;
+                anim.enabled = false;
+            }
+        }
+    }
+
+    private void DisableTierAnimator(ref Animator anim)
+    {
+        if (anim != null)
+        {
+            anim.runtimeAnimatorController = null;
+            anim.enabled = false;
+        }
     }
 
     /// <summary>
@@ -357,7 +390,8 @@ public class EquipmentSlotUI : MonoBehaviour
                 Debug.Log($"  Tier sẽ dùng  : minLevel={tier.minLevel}, " +
                           $"border={(tier.borderSprite != null ? tier.borderSprite.name : "NULL")}, " +
                           $"bg={(tier.bgSprite != null ? tier.bgSprite.name : "NULL")}, " +
-                          $"borderAnim={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}");
+                          $"borderAnim={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}, " +
+                          $"bgAnim={(tier.bgAnimator != null ? tier.bgAnimator.name : "NULL")}");
             }
             else
             {

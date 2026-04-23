@@ -128,6 +128,8 @@ public class PlayerDataResponse
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
     public int bag_slots;                  // Sá»‘ Ã´ tÃºi Ä‘á»“ hiá»‡n táº¡i (máº·c Ä‘á»‹nh 20)
+    public BagEquippedItemData[] bag_equipped_items;
+    public int Length => inventory?.Length ?? 0;
 
     // Helper accessors used by shared server/client code
     public int GetMaxHp()
@@ -243,6 +245,20 @@ public class InventoryItem
     public bool isLocked;      // item instance bá»‹ khÃ³a
     public int upgradeLevel;   // báº­c nÃ¢ng cáº¥p
     public string strOptions;  // stat options
+}
+
+[System.Serializable]
+public class BagEquippedItemData
+{
+    public int quick_slot_index;
+    public int item_template_id;
+    public string item_code;
+    public string item_name;
+    public string icon_id;
+    public int upgrade_level;
+    public string str_options;
+    public int slot_bonus;
+    public bool is_locked;
 }
 
 [System.Serializable]

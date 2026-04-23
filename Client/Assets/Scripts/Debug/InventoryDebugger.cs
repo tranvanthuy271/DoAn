@@ -20,6 +20,7 @@ public class InventoryDebugger : MonoBehaviour
 
     private void Update()
     {
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
         if (Input.GetKeyDown(KeyCode.I) && inventory != null)
         {
             Debug.Log("===== INVENTORY =====");

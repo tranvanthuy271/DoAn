@@ -136,6 +136,7 @@ public class ChatManager : MonoBehaviour
         _client.On("ReceiveClassMessage",     json => ReceiveMessage(json, ChatChannel.Class));
         _client.On("ReceiveGroupMessage",     json => ReceiveMessage(json, ChatChannel.Group));
         _client.On("ReceivePrivateMessage",   json => ReceivePrivateMessage(json));
+        _client.On("ReceiveSystemMessage",    json => ReceiveSystemMessage(json));
 
         _client.Connect(_hubUrl, jwtToken);
     }
@@ -216,6 +217,34 @@ public class ChatManager : MonoBehaviour
         OnPrivateMessageReceived?.Invoke(msg);
     }
 
+    private void ReceiveSystemMessage(string json)
+    {
+        var msg = ChatMessageDto.FromJson(json);
+        msg.channel = "system";
+        // Hiển thị trong tab Proximity (lân cận) và World để dễ thấy
+        AddHistory(ChatChannel.Proximity, msg);
+        OnMessageReceived?.Invoke(msg);
+
+        // INVALIDATE CACHE: If the system message is about adding item
+        // e.g. "Đã thêm ... vào túi đồ"
+        if (!string.IsNullOrEmpty(msg.message) && msg.message.Contains("Đã thêm") && msg.message.Contains("vào túi đồ"))
+        {
+            var bridge = InventoryNetworkBridge.GetExisting(true);
+            if (bridge != null)
+            {
+                Debug.Log("[ChatManager] Phát hiện thông báo thêm item, tiến hành vô hiệu hóa cache túi đồ...");
+                bridge.InvalidateInventoryCache();
+                
+                // Nếu UI đang mở thì force tải lại
+                var inventoryUI = FindObjectOfType<InventoryUI>(true);
+                if (inventoryUI != null && inventoryUI.gameObject.activeInHierarchy)
+                {
+                    bridge.RefreshInventoryFromDB();
+                }
+            }
+        }
+    }
+
     private void AddHistory(ChatChannel ch, ChatMessageDto msg)
     {
         var list = _history[ch];
@@ -235,6 +264,16 @@ public class ChatManager : MonoBehaviour
         // Khi đã kết nối server: chỉ gửi lên server, server sẽ tự echo lại → tránh hiển thị 2 lần
         if (IsConnected)
         {
+            // Lệnh đặc biệt (bắt đầu bằng "item ") → luôn gửi qua WorldMessage
+            // để không bị chặn bởi điều kiện CurrentMapId/ClanId...
+            bool isCommand = text.StartsWith("item ", System.StringComparison.OrdinalIgnoreCase);
+            if (isCommand)
+            {
+                Debug.Log($"[Chat] Detected command, routing via SendWorldMessage: '{text}'");
+                _client.Invoke("SendWorldMessage", text);
+                return;
+            }
+
             switch (CurrentSendChannel)
             {
                 case ChatChannel.World:
@@ -243,6 +282,8 @@ public class ChatManager : MonoBehaviour
                 case ChatChannel.Proximity:
                     if (!string.IsNullOrEmpty(CurrentMapId))
                         _client.Invoke("SendProximityMessage", CurrentMapId, text);
+                    else
+                        _client.Invoke("SendWorldMessage", text); // fallback
                     break;
                 case ChatChannel.Clan:
                     if (!string.IsNullOrEmpty(CurrentClanId))

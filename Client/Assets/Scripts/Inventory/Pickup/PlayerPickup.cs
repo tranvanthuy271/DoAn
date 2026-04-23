@@ -29,6 +29,7 @@ public class PlayerPickup : MonoBehaviour
             return;
         }
 
+        if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
         if (Input.GetKeyDown(KeyCode.P))
         {
             TryPickupAround();

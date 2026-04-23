@@ -58,14 +58,14 @@ public class EnemyPrefabManager : MonoBehaviour
             {
                 if (enemyPrefabDict.ContainsKey(enemyData.enemyId))
                 {
-                    Debug.LogWarning($"[EnemyPrefabManager] Duplicate Enemy ID: {enemyData.enemyId}. Overwriting previous entry.");
+                    //Debug.LogWarning($"[EnemyPrefabManager] Duplicate Enemy ID: {enemyData.enemyId}. Overwriting previous entry.");
                 }
                 enemyPrefabDict[enemyData.enemyId] = enemyData.enemyPrefab;
-                Debug.Log($"[EnemyPrefabManager] Registered Enemy ID {enemyData.enemyId}: {enemyData.enemyName ?? enemyData.enemyPrefab.name}");
+              //  Debug.Log($"[EnemyPrefabManager] Registered Enemy ID {enemyData.enemyId}: {enemyData.enemyName ?? enemyData.enemyPrefab.name}");
             }
             else
             {
-                Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyData.enemyId} has null prefab!");
+              //  Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyData.enemyId} has null prefab!");
             }
         }
     }
@@ -85,11 +85,11 @@ public class EnemyPrefabManager : MonoBehaviour
             if (enemyData.enemyPrefab == null)
                 continue;
 
-            Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found. Falling back to prefab '{enemyData.enemyPrefab.name}' from Enemy ID {enemyData.enemyId}.");
+           // Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found. Falling back to prefab '{enemyData.enemyPrefab.name}' from Enemy ID {enemyData.enemyId}.");
             return enemyData.enemyPrefab;
         }
 
-        Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found! Returning null.");
+      //  Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found! Returning null.");
         return null;
     }
 
