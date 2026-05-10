@@ -47,6 +47,9 @@ public class BagQuickActionPanel : MonoBehaviour
         if (overlayButton != null)
             overlayButton.onClick.AddListener(Hide);
 
+        if (dialogRect != null)
+            UIDraggablePanel.Ensure(dialogRect.gameObject);
+
         gameObject.SetActive(false);
     }
 
@@ -92,6 +95,8 @@ public class BagQuickActionPanel : MonoBehaviour
             Canvas.ForceUpdateCanvases();
             if (screenPos.HasValue)
                 PositionAtScreenPoint(screenPos.Value);
+
+            UIDraggablePanel.ClampToRootCanvas(DialogRect);
         }
     }
 
@@ -209,6 +214,7 @@ public class BagQuickActionPanel : MonoBehaviour
         GameObject dialog = new GameObject("Dialog",
             typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         dialog.transform.SetParent(transform, false);
+        UIDraggablePanel.Ensure(dialog);
         _dialogRectRuntime = dialog.GetComponent<RectTransform>();
         _dialogRectRuntime.anchorMin = new Vector2(0.5f, 0.5f);
         _dialogRectRuntime.anchorMax = new Vector2(0.5f, 0.5f);

@@ -94,6 +94,10 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         networkObject.Spawn();
         Debug.Log($"[BaseDungeonInstance] Enemy spawned: NetworkObjectId={networkObject.NetworkObjectId}, layer={LayerMask.LayerToName(enemyObject.layer)}, HP={runtimeStats.MaxHp}");
 
+        // Sync tên, hệ, level cho tất cả client (NetworkVariable — replicated kể cả late joiner).
+        if (networkEnemyHealth != null)
+            networkEnemyHealth.SetEnemyInfo(config.displayName, config.elementType, config.level);
+
         return networkObject;
     }
 

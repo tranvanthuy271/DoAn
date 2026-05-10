@@ -269,6 +269,20 @@ public class NetworkEnemySpawner : NetworkBehaviour
             return;
         }
 
+        bool watchBoss25 = spawnData.enemy_type_id == 25
+            || (spawnData.enemy != null && spawnData.enemy.enemy_id == 25)
+            || spawnData.is_boss
+            || enemyPrefab.GetComponent<BossAI>() != null
+            || enemyPrefab.name.Contains("Enemy 25");
+        if (watchBoss25)
+        {
+            BossAI prefabBossAI = enemyPrefab.GetComponent<BossAI>();
+            EnemyAI prefabEnemyAI = enemyPrefab.GetComponent<EnemyAI>();
+            Debug.LogWarning(
+                $"[BOSS25][NetworkEnemySpawner] Resolve prefab spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)} enemyName='{(spawnData.enemy != null ? spawnData.enemy.enemy_name : "")}' prefab={enemyPrefab.name} spawnData.is_boss={spawnData.is_boss} enemy_type='{(spawnData.enemy != null ? spawnData.enemy.enemy_type : "")}' prefabHasBossAI={(prefabBossAI != null)} prefabBossEnabled={(prefabBossAI != null && prefabBossAI.enabled)} prefabEnemyAIEnabled={(prefabEnemyAI != null && prefabEnemyAI.enabled)} map={targetMapId}",
+                this);
+        }
+
         Vector3 spawnPosition = new Vector3(spawnData.spawn_x, spawnData.spawn_y, 0f);
 
         for (int i = 0; i < spawnData.max_spawn_count; i++)
@@ -281,6 +295,15 @@ public class NetworkEnemySpawner : NetworkBehaviour
             }
 
             GameObject enemyObj = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+            if (watchBoss25)
+            {
+                BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
+                EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
+                Debug.LogWarning(
+                    $"[BOSS25][NetworkEnemySpawner] Instantiate spawn_id={spawnData.spawn_id} instance={enemyObj.name} pos={spawnPosition} hasBossAI={(instanceBossAI != null)} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
+                    enemyObj);
+            }
+
             NetworkObject networkObj = enemyObj.GetComponent<NetworkObject>();
             
             if (networkObj != null)
@@ -299,6 +322,15 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 StartCoroutine(DelayedRefreshVisibility(enemyObj));
 
                 ApplyEnemyOverrides(enemyObj, spawnData, targetMapId);
+
+                if (watchBoss25)
+                {
+                    BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
+                    EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
+                    Debug.LogWarning(
+                        $"[BOSS25][NetworkEnemySpawner] After overrides spawn_id={spawnData.spawn_id} netSpawned={networkObj.IsSpawned} scene={enemyObj.scene.name} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
+                        enemyObj);
+                }
 
                 Debug.Log($"[NetworkEnemySpawner] Spawned '{spawnData.enemy?.enemy_name ?? "Unknown"}' at ({spawnData.spawn_x}, {spawnData.spawn_y}) [copy {i+1}/{spawnData.max_spawn_count}] map={targetMapId}");
             }
@@ -346,12 +378,22 @@ public class NetworkEnemySpawner : NetworkBehaviour
         bool isBoss = spawnData.is_boss;
         if (!isBoss && spawnData.enemy != null)
             isBoss = string.Equals(spawnData.enemy.enemy_type, "Boss", StringComparison.OrdinalIgnoreCase);
+        bool forceBossMode = spawnData.enemy_type_id == 25
+            || (spawnData.enemy != null && spawnData.enemy.enemy_id == 25)
+            || enemyObj.GetComponent<BossAI>() != null;
+        if (forceBossMode && !isBoss)
+        {
+            Debug.LogWarning(
+                $"[BOSS25][NetworkEnemySpawner] Force boss mode spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)}",
+                enemyObj);
+            isBoss = true;
+        }
 
         int resolvedLevel = spawnData.level > 0
             ? spawnData.level
             : spawnData.enemy?.level ?? 1;
 
-        var statOverride = enemyObj.GetComponent<EnemyStatOverride>() ?? enemyObj.AddComponent<EnemyStatOverride>();
+                var statOverride = enemyObj.GetComponent<EnemyStatOverride>() ?? enemyObj.AddComponent<EnemyStatOverride>();
         statOverride.Apply(
             resolvedHp,
             resolvedExp,
@@ -359,6 +401,33 @@ public class NetworkEnemySpawner : NetworkBehaviour
             spawnData.respawn_time,
             resolvedLevel,
             spawnData.enemy?.enemy_name ?? string.Empty);
+
+                // Gán element_type vào EnemySkillSet (server-only, cho AI/Host đọc)
+                var skillSet = enemyObj.GetComponent<EnemySkillSet>();
+                if (skillSet == null)
+                    skillSet = enemyObj.AddComponent<EnemySkillSet>();
+                if (spawnData.enemy != null && !string.IsNullOrEmpty(spawnData.enemy.element_type))
+                {
+                    var entry = new EnemySkillsEntry { element_type = spawnData.enemy.element_type };
+                    skillSet.SetSkillsFromConfig(entry);
+                }
+
+                // Sync tên, hệ, level cho TẤT CẢ client qua NetworkEnemyHealth ClientRpc
+                var netHealth = enemyObj.GetComponent<NetworkEnemyHealth>();
+                if (netHealth != null)
+                {
+                    netHealth.SetEnemyInfo(
+                        spawnData.enemy?.enemy_name ?? enemyObj.name,
+                        spawnData.enemy?.element_type ?? "None",
+                        resolvedLevel);
+                }
+
+        if (spawnData.enemy != null && spawnData.enemy.base_damage > 0)
+        {
+            var bossAI = enemyObj.GetComponent<BossAI>();
+            if (bossAI != null)
+                bossAI.ApplyRuntimeOverride(spawnData.enemy.base_damage, spawnData.enemy.move_speed);
+        }
 
         var itemDrop = enemyObj.GetComponent<EnemyItemDrop>();
         int resolvedEnemyId = spawnData.enemy?.enemy_id > 0 ? spawnData.enemy.enemy_id : spawnData.enemy_type_id;

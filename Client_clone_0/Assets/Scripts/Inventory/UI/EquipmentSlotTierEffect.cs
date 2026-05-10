@@ -57,7 +57,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
         {
             borderImage.sprite = tier.borderSprite;
             borderImage.color = tier.borderColor;
-            borderImage.enabled = tier.borderSprite != null;
+            borderImage.enabled = tier.borderSprite != null || tier.borderAnimator != null;
             ApplyAnimator(borderImage.gameObject, ref borderAnimator, tier.borderAnimator);
         }
 
@@ -66,7 +66,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
         {
             bgImage.sprite = tier.bgSprite;
             bgImage.color = tier.bgColor;
-            bgImage.enabled = tier.bgSprite != null;
+            bgImage.enabled = tier.bgSprite != null || tier.bgAnimator != null;
             ApplyAnimator(bgImage.gameObject, ref bgAnimator, tier.bgAnimator);
         }
     }
@@ -83,7 +83,6 @@ public class EquipmentSlotTierEffect : MonoBehaviour
     {
         if (controller == null)
         {
-            // Xóa animator nếu không cần
             if (anim != null)
             {
                 anim.runtimeAnimatorController = null;
@@ -92,16 +91,28 @@ public class EquipmentSlotTierEffect : MonoBehaviour
             return;
         }
 
-        // Tạo Animator nếu chưa có
-        if (anim == null)
+        if (target == null)
+            return;
+
+        if (!target.activeSelf)
+            target.SetActive(true);
+
+        if (anim == null || anim.gameObject != target)
         {
             anim = target.GetComponent<Animator>();
             if (anim == null)
                 anim = target.AddComponent<Animator>();
         }
 
-        anim.enabled = true;
+        anim.enabled = false;
         anim.runtimeAnimatorController = controller;
-        anim.Play(0, -1, 0f); // reset animation từ đầu
+        anim.updateMode = AnimatorUpdateMode.UnscaledTime;
+        anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        anim.enabled = true;
+        if (target.activeInHierarchy)
+        {
+            anim.Rebind();
+            anim.Update(0f);
+        }
     }
 }

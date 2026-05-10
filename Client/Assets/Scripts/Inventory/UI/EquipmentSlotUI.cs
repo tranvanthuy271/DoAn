@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -47,7 +48,11 @@ public class EquipmentSlotUI : MonoBehaviour
     // Animator components cho hiệu ứng viền + bg theo tier (tự tạo runtime)
     private Animator _borderAnim;
     private Animator _bgAnim;
+    private SpriteRenderer _borderSR;
+    private SpriteRenderer _bgSR;
     private int _currentTierLevel = -1;
+    private bool _tierAppliedWhileActive;
+    private bool _tierNeedsActiveRestart;
 
     [Header("Icon Layout")]
     [Tooltip("Padding để icon không chạm viền slot.")]
@@ -69,10 +74,47 @@ public class EquipmentSlotUI : MonoBehaviour
     private void Awake()
     {
         CacheIconBounds();
+        NormalizeTierImageReferences();
+        ApplyTierLayerOrder();
         ApplyTheme();
 
         // Gán label theo slot type
         UpdateSlotLabel();
+    }
+
+    private void OnEnable()
+    {
+        StartCoroutine(DelayedReplayTierEffect());
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+    }
+
+    private IEnumerator DelayedReplayTierEffect()
+    {
+        // Wait 1 frame so the Canvas hierarchy is fully initialized
+        // and Animator.Rebind() can properly resolve Image.sprite bindings.
+        yield return null;
+        ReplayTierEffectWhenActive();
+    }
+
+    private void Update()
+    {
+        if (_tierNeedsActiveRestart && gameObject.activeInHierarchy)
+        {
+            _tierNeedsActiveRestart = false;
+            StartCoroutine(DelayedReplayTierEffect());
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (_borderSR != null && borderImage != null && _borderSR.sprite != null)
+            borderImage.sprite = _borderSR.sprite;
+        if (_bgSR != null && bgImage != null && _bgSR.sprite != null)
+            bgImage.sprite = _bgSR.sprite;
     }
 
     /// <summary>
@@ -82,6 +124,8 @@ public class EquipmentSlotUI : MonoBehaviour
     {
         slotType = type;
         CacheIconBounds();
+        NormalizeTierImageReferences();
+        ApplyTierLayerOrder();
         ApplyTheme();
         UpdateSlotLabel();
         Clear();
@@ -105,6 +149,8 @@ public class EquipmentSlotUI : MonoBehaviour
     {
         currentItem = null;
         _currentTierLevel = -1; // Invalidate cache
+        _tierAppliedWhileActive = false;
+        _tierNeedsActiveRestart = false;
 
         if (iconImage != null)
         {
@@ -127,19 +173,13 @@ public class EquipmentSlotUI : MonoBehaviour
             upgradeButton.gameObject.SetActive(false);
 
         // Ẩn viền + bg khi slot trống (không gọi ApplyTierEffect để tránh hiện trắng)
-        if (borderImage != null)
-        {
-            borderImage.enabled = false;
-            borderImage.sprite  = null;
-        }
-        if (bgImage != null)
-        {
-            bgImage.enabled = false;
-            bgImage.sprite  = null;
-        }
+        HideTierImage(borderImage);
+        HideTierImage(bgImage);
         // Dừng animator viền + bg khi slot trống
         if (_borderAnim != null) { _borderAnim.runtimeAnimatorController = null; _borderAnim.enabled = false; }
         if (_bgAnim     != null) { _bgAnim.runtimeAnimatorController = null;     _bgAnim.enabled    = false; }
+        _borderSR = null;
+        _bgSR = null;
     }
 
     /// <summary>
@@ -148,9 +188,6 @@ public class EquipmentSlotUI : MonoBehaviour
     public void SetItem(EquipmentItemDto item)
     {
         currentItem = item;
-
-        // Invalidate cache để đảm bảo tier luôn re-apply khi SetItem được gọi
-        _currentTierLevel = -1;
 
         if (item == null || item.itemTemplateId <= 0)
         {
@@ -247,9 +284,14 @@ public class EquipmentSlotUI : MonoBehaviour
 
     private void ApplyTierEffect(int level)
     {
+        NormalizeTierImageReferences();
+        ApplyTierLayerOrder();
+
         // --- Guard: thiếu config ---
         if (tierConfig == null)
         {
+            HideTierImage(borderImage);
+            HideTierImage(bgImage);
             Debug.LogWarning($"[TierEffect] {name} ({slotType}): tierConfig chưa gán trong Inspector!");
             return;
         }
@@ -262,21 +304,27 @@ public class EquipmentSlotUI : MonoBehaviour
 
         if (borderImage == null && bgImage == null) return;
 
-        // Cache — bỏ qua nếu cùng level VÀ đã từng apply thành công
-        if (level == _currentTierLevel && _currentTierLevel >= 0) return;
+        // Cache chỉ hợp lệ khi tier đã được bind lúc slot active trong hierarchy.
+        // Nếu controller được gán khi parent còn inactive, Animator cần rebind lại khi panel hiện.
+        if (level == _currentTierLevel && _currentTierLevel >= 0 && _tierAppliedWhileActive && !_tierNeedsActiveRestart)
+            return;
         _currentTierLevel = level;
 
         var tier = tierConfig.GetTier(level);
         if (tier == null) tier = tierConfig.defaultTier;
         if (tier == null)
         {
+            HideTierImage(borderImage);
+            HideTierImage(bgImage);
             Debug.LogWarning($"[TierEffect] {name} ({slotType}): không tìm thấy tier cho level={level} và defaultTier cũng null!");
             return;
         }
 
         Debug.Log($"[TierEffect] {name} ({slotType}): level={level} → tier.minLevel={tier.minLevel}, " +
                   $"borderSprite={(tier.borderSprite != null ? tier.borderSprite.name : "NULL")}, " +
-                  $"bgSprite={(tier.bgSprite != null ? tier.bgSprite.name : "NULL")}");
+                  $"bgSprite={(tier.bgSprite != null ? tier.bgSprite.name : "NULL")}, " +
+                  $"borderAnimator={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}, " +
+                  $"bgAnimator={(tier.bgAnimator != null ? tier.bgAnimator.name : "NULL")}");
 
         // --- Border ---
         if (borderImage != null)
@@ -286,9 +334,7 @@ public class EquipmentSlotUI : MonoBehaviour
 
             if (hasBorderAnim || hasBorderSprite)
             {
-                borderImage.color = (tier.borderColor.a < 0.01f || tier.borderColor == Color.black)
-                    ? Color.white
-                    : tier.borderColor;
+                borderImage.color = ResolveVisibleTierColor(tier.borderColor);
                 borderImage.enabled = true;
 
                 // Pre-set sprite để tránh 1-frame trống trước khi Animator chạy
@@ -299,8 +345,7 @@ public class EquipmentSlotUI : MonoBehaviour
             }
             else
             {
-                borderImage.enabled = false;
-                borderImage.sprite  = null;
+                HideTierImage(borderImage);
                 DisableTierAnimator(ref _borderAnim);
             }
         }
@@ -313,9 +358,7 @@ public class EquipmentSlotUI : MonoBehaviour
 
             if (hasBgAnim || hasBgSprite)
             {
-                bgImage.color = (tier.bgColor.a < 0.01f || tier.bgColor == Color.black)
-                    ? Color.white
-                    : tier.bgColor;
+                bgImage.color = ResolveVisibleTierColor(tier.bgColor);
                 bgImage.enabled = true;
 
                 if (hasBgSprite)
@@ -325,16 +368,98 @@ public class EquipmentSlotUI : MonoBehaviour
             }
             else
             {
-                bgImage.enabled = false;
-                bgImage.sprite  = null;
+                HideTierImage(bgImage);
                 DisableTierAnimator(ref _bgAnim);
             }
         }
+
+        bool hasTierAnimator = tier.borderAnimator != null || tier.bgAnimator != null;
+        _tierAppliedWhileActive = !hasTierAnimator || AreTierAnimatorTargetsActive(tier);
+        _tierNeedsActiveRestart = hasTierAnimator && !_tierAppliedWhileActive;
+
+        if (_tierNeedsActiveRestart)
+        {
+            Debug.Log($"[TierEffect] {name} ({slotType}): đã gán Animator khi slot chưa activeInHierarchy; sẽ re-apply khi panel active.");
+        }
+    }
+
+    private static Color ResolveVisibleTierColor(Color configuredColor)
+    {
+        return (configuredColor.a < 0.01f || configuredColor == Color.black)
+            ? Color.white
+            : configuredColor;
+    }
+
+    private static void HideTierImage(Image image)
+    {
+        if (image == null) return;
+
+        image.enabled = false;
+        image.sprite = null;
+        image.color = WithAlpha(image.color, 0f);
+    }
+
+    private static Color WithAlpha(Color color, float alpha)
+    {
+        color.a = alpha;
+        return color;
+    }
+
+    private void ReplayTierEffectWhenActive()
+    {
+        if (currentItem == null || currentItem.itemTemplateId <= 0)
+            return;
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        _currentTierLevel = -1;
+        _tierAppliedWhileActive = false;
+        _tierNeedsActiveRestart = false;
+        ApplyTierEffect(currentItem.upgradeLevel);
+    }
+
+    public void ReplayPendingTierEffectIfActive()
+    {
+        if (!_tierNeedsActiveRestart)
+            return;
+
+        ReplayTierEffectWhenActive();
+    }
+
+    private bool AreTierAnimatorTargetsActive(EquipmentTierConfig.TierEntry tier)
+    {
+        if (tier == null)
+            return false;
+
+        bool borderReady = tier.borderAnimator == null ||
+                           (borderImage != null && borderImage.gameObject.activeInHierarchy);
+        bool bgReady = tier.bgAnimator == null ||
+                       (bgImage != null && bgImage.gameObject.activeInHierarchy);
+
+        return gameObject.activeInHierarchy && borderReady && bgReady;
     }
 
     private void EnableTierAnimator(GameObject target, ref Animator anim, RuntimeAnimatorController controller)
     {
-        if (anim == null)
+        if (target == null)
+            return;
+
+        EnsureActiveInHierarchy(target);
+
+        // Animation clips target SpriteRenderer (classID 212).
+        // UI objects only have Image, so add a hidden SpriteRenderer for Animator binding.
+        // LateUpdate syncs SpriteRenderer.sprite → Image.sprite each frame.
+        var sr = target.GetComponent<SpriteRenderer>();
+        if (sr == null)
+            sr = target.AddComponent<SpriteRenderer>();
+        sr.enabled = false;
+
+        if (target == (borderImage != null ? borderImage.gameObject : null))
+            _borderSR = sr;
+        else if (target == (bgImage != null ? bgImage.gameObject : null))
+            _bgSR = sr;
+
+        if (anim == null || anim.gameObject != target)
         {
             anim = target.GetComponent<Animator>();
             if (anim == null)
@@ -343,19 +468,49 @@ public class EquipmentSlotUI : MonoBehaviour
 
         if (controller != null)
         {
+            anim.enabled = false;
             anim.runtimeAnimatorController = controller;
+            anim.updateMode = AnimatorUpdateMode.UnscaledTime;
+            anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             anim.enabled = true;
-            anim.Play(0, -1, 0f); // reset animation về frame đầu
+
+            if (target.activeInHierarchy)
+            {
+                anim.Rebind();
+                anim.Update(0f);
+            }
+
+            Debug.Log($"[TierEffect] {name} ({slotType}): Animator target={target.name}, " +
+                      $"controller={controller.name}, clips={controller.animationClips?.Length ?? 0}, " +
+                      $"activeSelf={target.activeSelf}, activeInHierarchy={target.activeInHierarchy}, enabled={anim.enabled}");
         }
         else
         {
-            // Không có controller → hiển thị sprite tĩnh, tắt Animator
             if (anim != null)
             {
                 anim.runtimeAnimatorController = null;
                 anim.enabled = false;
             }
         }
+    }
+
+    private void EnsureActiveInHierarchy(GameObject target)
+    {
+        if (target == null || target.activeInHierarchy) return;
+
+        var stack = new System.Collections.Generic.Stack<Transform>();
+        Transform t = target.transform;
+        while (t != null && t != this.transform)
+        {
+            if (!t.gameObject.activeSelf)
+                stack.Push(t);
+            t = t.parent;
+        }
+        while (stack.Count > 0)
+            stack.Pop().gameObject.SetActive(true);
+
+        if (!target.activeSelf)
+            target.SetActive(true);
     }
 
     private void DisableTierAnimator(ref Animator anim)
@@ -365,6 +520,110 @@ public class EquipmentSlotUI : MonoBehaviour
             anim.runtimeAnimatorController = null;
             anim.enabled = false;
         }
+    }
+
+    private void ApplyTierLayerOrder()
+    {
+        if (bgImage != null)
+            bgImage.transform.SetAsFirstSibling();
+
+        if (iconImage != null)
+            iconImage.transform.SetAsLastSibling();
+
+        if (borderImage != null)
+            borderImage.transform.SetAsLastSibling();
+
+        if (slotLabelText != null)
+            slotLabelText.transform.SetAsLastSibling();
+
+        if (itemNameText != null)
+            itemNameText.transform.SetAsLastSibling();
+
+        if (upgradeButton != null)
+            upgradeButton.transform.SetAsLastSibling();
+    }
+
+    private void NormalizeTierImageReferences()
+    {
+        if (borderImage != null && bgImage != null)
+        {
+            bool borderLooksLikeBg = ImageNameMatches(borderImage, "BG", "Background");
+            bool bgLooksLikeBorder = ImageNameMatches(bgImage, "Vien", "Border", "Frame");
+
+            if (borderLooksLikeBg && bgLooksLikeBorder)
+            {
+                Image tmp = borderImage;
+                borderImage = bgImage;
+                bgImage = tmp;
+                Debug.LogWarning($"[TierEffect] {name} ({slotType}): borderImage/bgImage đang gán ngược, đã tự swap theo tên BG/Vien.");
+            }
+        }
+
+        if (borderImage == null)
+        {
+            Image foundBorder = FindTierImageByName("Vien", "Border", "Frame");
+            if (foundBorder != null)
+                borderImage = foundBorder;
+        }
+
+        if (bgImage == null)
+        {
+            Image foundBg = FindTierImageByName("BG", "Background");
+            if (foundBg != null)
+                bgImage = foundBg;
+        }
+
+        if (borderImage != null && bgImage != null && borderImage == bgImage)
+        {
+            Image foundBorder = FindTierImageByName("Vien", "Border", "Frame");
+            Image foundBg = FindTierImageByName("BG", "Background");
+
+            if (foundBorder != null)
+                borderImage = foundBorder;
+            if (foundBg != null && foundBg != borderImage)
+                bgImage = foundBg;
+        }
+    }
+
+    private Image FindTierImageByName(params string[] names)
+    {
+        Image[] images = GetComponentsInChildren<Image>(true);
+        foreach (Image image in images)
+        {
+            if (image == null || image == iconImage || image == placeholderImage)
+                continue;
+
+            foreach (string nameToken in names)
+            {
+                if (string.Equals(image.gameObject.name, nameToken, StringComparison.OrdinalIgnoreCase))
+                    return image;
+            }
+        }
+
+        foreach (Image image in images)
+        {
+            if (image == null || image == iconImage || image == placeholderImage)
+                continue;
+
+            if (ImageNameMatches(image, names))
+                return image;
+        }
+
+        return null;
+    }
+
+    private static bool ImageNameMatches(Image image, params string[] names)
+    {
+        if (image == null) return false;
+
+        string objectName = image.gameObject.name;
+        foreach (string nameToken in names)
+        {
+            if (objectName.IndexOf(nameToken, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -377,6 +636,8 @@ public class EquipmentSlotUI : MonoBehaviour
         Debug.Log($"  tierConfig    : {(tierConfig != null ? tierConfig.name : "NULL ← chưa gán!")}");
         Debug.Log($"  borderImage   : {(borderImage != null ? borderImage.name : "NULL ← chưa gán!")}");
         Debug.Log($"  bgImage       : {(bgImage != null ? bgImage.name : "NULL ← chưa gán!")}");
+        Debug.Log($"  borderAnimator: {DescribeAnimator(borderImage, _borderAnim)}");
+        Debug.Log($"  bgAnimator    : {DescribeAnimator(bgImage, _bgAnim)}");
         Debug.Log($"  currentItem   : {(currentItem != null ? $"{currentItem.itemName} level={currentItem.upgradeLevel}" : "null (trống)")}");
         Debug.Log($"  _currentTierLevel: {_currentTierLevel}");
 
@@ -399,6 +660,27 @@ public class EquipmentSlotUI : MonoBehaviour
             }
         }
         Debug.Log($"------------------------------------------");
+    }
+
+    private static string DescribeAnimator(Image image, Animator cachedAnimator)
+    {
+        if (image == null)
+            return "no image";
+
+        Animator actualAnimator = image.GetComponent<Animator>();
+        Animator animator = cachedAnimator != null ? cachedAnimator : actualAnimator;
+        if (animator == null)
+            return "no Animator component";
+
+        string controllerName = animator.runtimeAnimatorController != null
+            ? animator.runtimeAnimatorController.name
+            : "NULL controller";
+
+        int clipCount = animator.runtimeAnimatorController != null && animator.runtimeAnimatorController.animationClips != null
+            ? animator.runtimeAnimatorController.animationClips.Length
+            : 0;
+
+        return $"component={(actualAnimator != null ? "yes" : "no")}, enabled={animator.enabled}, controller={controllerName}, clips={clipCount}";
     }
 
     private void ApplyTheme()

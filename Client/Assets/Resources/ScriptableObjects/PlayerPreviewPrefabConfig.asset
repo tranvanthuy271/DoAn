@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c789e1406b4d8c24d880dbe9f3b2f4ea, type: 3}
+  m_Name: PlayerPreviewPrefabConfig
+  m_EditorClassIdentifier: 
+  entries:
+  - elementType: Fire
+    gender: Female
+    prefab: {fileID: 8479569071951265586, guid: 648217e7452ceb9489abf42181e52f90, type: 3}
+  - elementType: Metal
+    gender: Male
+    prefab: {fileID: 2093030462349691606, guid: 9436db06863aca84da30f665874f4586, type: 3}
+  - elementType: Wood
+    gender: Female
+    prefab: {fileID: 8537112853871840549, guid: d3d69a88b184c404f823b3270e4676f7, type: 3}
+  - elementType: Water
+    gender: Female
+    prefab: {fileID: 6340084123535375091, guid: 05c6c343b1a6334499b0afe5a8db9218, type: 3}
+  - elementType: Earth
+    gender: Male
+    prefab: {fileID: 2438885394459664199, guid: d89dc45c28ed3ba4aaf48752209089e4, type: 3}
+  - elementType: Wind
+    gender: Male
+    prefab: {fileID: 1497464214385531803, guid: dd93a9d7c4061974c870117ac97c5dd0, type: 3}
+  hybridPrefabMap: {fileID: 0}
+  fallbackPrefab: {fileID: 6687994777118489187, guid: 65ed249b88156044e8654c5a842eaa5b, type: 3}

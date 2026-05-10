@@ -29,6 +29,7 @@ public class GlobalNotificationUI : MonoBehaviour
     [SerializeField] private TMP_Text   btnOkLabel;   // text trên nút (mặc định "Xác nhận")
 
     private Coroutine _autoHideCoroutine;
+    private bool _hasBeenShown;
 
     // ── Unity lifecycle ───────────────────────────────────────
 
@@ -38,6 +39,7 @@ public class GlobalNotificationUI : MonoBehaviour
         Instance = this;
         EnsureCanvasSetup();
         BuildUiIfNeeded();
+        UIDraggablePanel.Ensure(gameObject);
         EnsureReferences();
         BindListeners();
         if (panel) panel.SetActive(false);
@@ -55,7 +57,11 @@ public class GlobalNotificationUI : MonoBehaviour
     {
         EnsureReferences();
         BindListeners();
-        if (panel) panel.SetActive(false);
+
+        // Nếu Show() đã được gọi ngay sau khi Instantiate prefab/runtime instance,
+        // Start() không được ẩn panel thêm lần nữa.
+        if (!_hasBeenShown && panel)
+            panel.SetActive(false);
     }
 
     // ── Static API ────────────────────────────────────────────
@@ -123,6 +129,7 @@ public class GlobalNotificationUI : MonoBehaviour
 
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         if (panel) panel.SetActive(true);
+        _hasBeenShown = true;
 
         if (titleText)   titleText.text   = title   ?? "Nhắc nhở";
         if (messageText) messageText.text = message ?? string.Empty;

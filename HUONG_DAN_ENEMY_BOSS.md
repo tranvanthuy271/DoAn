@@ -519,6 +519,40 @@ VALUES ([map], [enemy_id], [x], [y], [range], [count], [seconds]);
 5. Nếu là Boss: thêm `BossAI`, điền `bossId`
 6. Sửa resistances (khangHoa...) theo DB
 
+### Checklist nhanh khi duplicate prefab Enemy để làm Boss
+
+Luồng hiện tại của project là:
+
+`DB enemy.skills_json / enemy.phases_json`
+→ `GET /api/dungeon/boss/{bossId}/config`
+→ `BossAI`
+
+Nghĩa là boss **không tự dùng được** chỉ bằng cách duplicate prefab enemy rồi đổi sprite. Prefab boss cần check đủ các mục sau:
+
+1. Prefab phải có `BossAI`.
+2. `BossAI.bossId` phải đúng với `enemy.enemy_id` trong DB.
+3. Spawn config của map phải có `is_boss = true` để `EnemyStatOverride` tắt `EnemyAI` và bật `BossAI`.
+4. Dòng enemy trong DB phải có `enemy_type = 'Boss'`. Nếu không, endpoint `/api/dungeon/boss/{bossId}/config` sẽ trả `404`.
+5. Nếu boss dùng 2 skill mới trong `skills_json`:
+   - Skill `aoe = false` sẽ dùng prefab ở field `BossAI.skillBreathPrefab`
+   - Skill `aoe = true` sẽ dùng prefab ở field `BossAI.skillNovaPrefab`
+6. Nếu phase có action `summon`, phải gán thêm `BossAI.addSpawnPrefab`.
+7. Animator của boss phải có các trigger trùng với `animation_trigger` trong JSON, tối thiểu nên có:
+   - `attack`
+   - `die`
+   - các trigger skill như `skill_slash`, `skill_pulse`
+   - nếu dùng phase: `enrage`, `heal`, `berserk`
+8. Thêm prefab boss mới vào `EnemyPrefabManager` ở scene đang spawn enemy.
+
+### Lưu ý quan trọng về 2 skill mới
+
+- Boss hiện tại chỉ có 2 slot effect trực tiếp trong prefab:
+  - `skillBreathPrefab` cho toàn bộ skill đánh thẳng / projectile / single-target
+  - `skillNovaPrefab` cho toàn bộ skill AoE
+- Nếu cả 2 skill mới đều là skill thẳng nhưng muốn **2 hiệu ứng prefab khác nhau**, code hiện tại **chưa hỗ trợ tách prefab theo từng skill_id**.
+- `SUMMON_ADD` không tự cast trong vòng lặp skill. Boss chỉ summon qua `phases_json` với action `summon`.
+- `status_effect` đang được parse từ JSON nhưng `BossAI` hiện tại chưa có logic áp hiệu ứng trạng thái lên player.
+
 ### Bước 4: (Tùy chọn) Thêm drop override
 
 ```sql

@@ -19,6 +19,9 @@ public class InventorySlotUI : MonoBehaviour
     [Tooltip("Image/GameObject hiển thị khi item bị khóa (isLocked = true)")]
     [SerializeField] private GameObject lockMark;
 
+    [Tooltip("Image nền tối (90% kích thước) – bật khi slot có item, tắt khi trống. Gán 'ItemBg' child từ prefab.")]
+    [SerializeField] private Image itemBgImage;
+
     [Header("Icon Layout")]
     [Tooltip("Padding để icon không chạm viền slot.")]
     [SerializeField] private Vector2 iconPadding = new Vector2(20f, 20f);
@@ -94,6 +97,9 @@ public class InventorySlotUI : MonoBehaviour
         {
             lockMark.SetActive(false);
         }
+
+        if (itemBgImage != null)
+            itemBgImage.enabled = false;
 
         // Reset select mode
         SetSelectMode(false, false, null);
@@ -183,6 +189,9 @@ public class InventorySlotUI : MonoBehaviour
         {
             lockMark.SetActive(slot.isLocked);
         }
+
+        if (itemBgImage != null)
+            itemBgImage.enabled = true;
     }
 
     /// <summary>

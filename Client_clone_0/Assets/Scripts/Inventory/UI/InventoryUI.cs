@@ -38,6 +38,7 @@ public class InventoryUI : MonoBehaviour
     private InventorySlotDto[] currentSlots;
     private readonly Dictionary<int, int> _reservedQuantities = new Dictionary<int, int>();
     private int currentVisibleSlotCount = 20;
+    private bool _openingInventoryRoot;
 
     /// <summary>Snapshot túi đồ hiện tại (dùng cho UpgradePanel)</summary>
     public InventorySlotDto[] CurrentSlots => currentSlots;
@@ -77,13 +78,10 @@ public class InventoryUI : MonoBehaviour
 
     private void Awake()
     {
-        if (inventoryRoot == null)
-        {
-            inventoryRoot = gameObject;
-        }
+        ResolveInventoryRoot();
 
         // Đảm bảo ban đầu Inventory đóng
-        if (inventoryRoot != null)
+        if (inventoryRoot != null && !_openingInventoryRoot)
         {
             inventoryRoot.SetActive(false);
         }
@@ -150,8 +148,9 @@ public class InventoryUI : MonoBehaviour
     /// <summary>Mở inventory và refresh data từ server.</summary>
     public void ShowInventory()
     {
+        ResolveInventoryRoot();
         if (inventoryRoot == null) return;
-        inventoryRoot.SetActive(true);
+        SetInventoryRootActive(true);
 
         if (slotUIs == null || slotUIs.Length == 0) InitSlots();
 
@@ -172,8 +171,9 @@ public class InventoryUI : MonoBehaviour
     /// <summary>Đóng inventory và ẩn panel chi tiết.</summary>
     public void HideInventory()
     {
+        ResolveInventoryRoot();
         if (inventoryRoot == null) return;
-        inventoryRoot.SetActive(false);
+        SetInventoryRootActive(false);
         HideItemDetail();
     }
 
@@ -182,6 +182,7 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     public void ToggleInventory()
     {
+        ResolveInventoryRoot();
         if (inventoryRoot == null)
         {
             Debug.LogWarning("[InventoryUI] ToggleInventory: inventoryRoot is null!");
@@ -189,7 +190,7 @@ public class InventoryUI : MonoBehaviour
         }
 
         bool isActive = !inventoryRoot.activeSelf;
-        inventoryRoot.SetActive(isActive);
+        SetInventoryRootActive(isActive);
         
         Debug.Log($"[InventoryUI] ToggleInventory: Panel {(isActive ? "MỞ" : "ĐÓNG")}");
 
@@ -343,6 +344,29 @@ public class InventoryUI : MonoBehaviour
         return 20;
     }
 
+    private void ResolveInventoryRoot()
+    {
+        if (inventoryRoot == null)
+            inventoryRoot = gameObject;
+    }
+
+    private void SetInventoryRootActive(bool active)
+    {
+        ResolveInventoryRoot();
+        if (inventoryRoot == null) return;
+
+        if (!active)
+        {
+            inventoryRoot.SetActive(false);
+            return;
+        }
+
+        bool previousOpeningState = _openingInventoryRoot;
+        _openingInventoryRoot = true;
+        inventoryRoot.SetActive(true);
+        _openingInventoryRoot = previousOpeningState;
+    }
+
     private static InventorySlotDto CloneSlot(InventorySlotDto slot)
     {
         if (slot == null) return null;
@@ -440,6 +464,20 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     private void OnSlotItemClicked(InventorySlotDto slotData)
     {
+        // Chế độ nâng cấp Thợ Rèn: item trang bị (category 1 / type 0–5) → hiện nút "Nâng cấp"
+        if (_blacksmithUpgradeMode && slotData != null && slotData.quantity > 0)
+        {
+            var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(slotData.id);
+            if (tmpl != null && tmpl.category == 1)
+            {
+                var capturedSlot     = slotData;
+                var capturedCallback = _blacksmithUpgradeCallback;
+                ShowItemDetail(slotData, showUseButton: true,
+                    buttonTextOverride: "Nâng cấp",
+                    primaryButtonAction: () => capturedCallback?.Invoke(capturedSlot));
+                return;
+            }
+        }
         ShowItemDetail(slotData);
     }
 
@@ -458,6 +496,23 @@ public class InventoryUI : MonoBehaviour
     private bool _inSelectMode    = false;
     private int  _selectFilterId  = 0;    // lọc theo item_template.id (0 = không filter)
     private int  _selectFilterType= 0;    // lọc theo item type (0 = không filter)
+
+    // ═══════════════════════════════════════════════════════
+    // BLACKSMITH UPGRADE MODE  (nâng cấp trang bị từ túi)
+    // ═══════════════════════════════════════════════════════
+
+    private bool _blacksmithUpgradeMode = false;
+    private System.Action<InventorySlotDto> _blacksmithUpgradeCallback;
+
+    /// <summary>
+    /// Bật / tắt chế độ Thợ Rèn: khi bật, nhấn vào item trang bị (type 0–5)
+    /// sẽ hiện nút "Nâng cấp" thay vì "Sử dụng" / "Trang bị".
+    /// </summary>
+    public void SetBlacksmithUpgradeMode(bool active, System.Action<InventorySlotDto> upgradeCallback = null)
+    {
+        _blacksmithUpgradeMode    = active;
+        _blacksmithUpgradeCallback = active ? upgradeCallback : null;
+    }
     private System.Action<InventorySlotDto> _selectCallback;
 
     /// <summary>

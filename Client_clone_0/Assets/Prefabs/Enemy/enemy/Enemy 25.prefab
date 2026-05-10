@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 738799670766126041}
-  - component: {fileID: 4592071148254550190}
+  - component: {fileID: 1664376815850156577}
   m_Layer: 7
   m_Name: HitBox
   m_TagString: Enemy
@@ -32,8 +32,8 @@ Transform:
   m_Children: []
   m_Father: {fileID: 739894715055440527}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &4592071148254550190
-BoxCollider2D:
+--- !u!70 &1664376815850156577
+CapsuleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -64,19 +64,40 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
+  m_Offset: {x: 0.85, y: 0.15}
+  m_Size: {x: 2, y: 1.1}
+  m_Direction: 1
+--- !u!1 &767689870092265532
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5403336465424308505}
+  m_Layer: 7
+  m_Name: spawnpoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5403336465424308505
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 767689870092265532}
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
-  m_EdgeRadius: 0
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.85, y: 0.15, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 739894715055440527}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4006840501700251420
 GameObject:
   m_ObjectHideFlags: 0
@@ -89,16 +110,17 @@ GameObject:
   - component: {fileID: 5775250764348387279}
   - component: {fileID: 6531117014115814238}
   - component: {fileID: 4513862987004880448}
-  - component: {fileID: 4853145847028940770}
   - component: {fileID: 7804350174933886395}
-  - component: {fileID: 2733398750811536931}
   - component: {fileID: 3436768562411560280}
+  - component: {fileID: 4965009391021130831}
+  - component: {fileID: 6609937226400778080}
   - component: {fileID: 3575548799258533928}
+  - component: {fileID: 2733398750811536931}
   - component: {fileID: 5048159133175404825}
   - component: {fileID: 680814825976844875}
-  - component: {fileID: 6609937226400778080}
   - component: {fileID: 9054956945427330979}
   - component: {fileID: 2678882230517900661}
+  - component: {fileID: 6249163141820683108}
   m_Layer: 7
   m_Name: Enemy 25
   m_TagString: Enemy
@@ -122,6 +144,7 @@ Transform:
   - {fileID: 3697663372575935216}
   - {fileID: 1297420463758535664}
   - {fileID: 738799670766126041}
+  - {fileID: 5403336465424308505}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5775250764348387279
@@ -165,9 +188,9 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: 21300000, guid: 71ad7f2ee63f7814c92c5dab82fbc5ba, type: 3}
+  m_Sprite: {fileID: 21300000, guid: fcef27a8e0fcefb49ab32b00899c92c1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 2.19, y: 1.77}
@@ -232,52 +255,22 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.044885278, y: 0.0074808896}
+  m_Offset: {x: -0.044885278, y: 0.0130159855}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 2.92, y: 2.04}
+    oldSize: {x: 0.92, y: 1.72}
     newSize: {x: 2.19, y: 1.77}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.90900517, y: 0.7641199}
+  m_Size: {x: 0.90900517, y: 1.7272518}
   m_EdgeRadius: 0
---- !u!114 &4853145847028940770
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4006840501700251420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d121a387e147a545ba62efcb0ef8f69, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 2
-  leftPoint: {fileID: 0}
-  rightPoint: {fileID: 0}
-  detectionRange: 1
-  meleeAttackRange: 1.2
-  attackCooldown: 2
-  damage: 10
-  hitbox: {fileID: 4592071148254550190}
-  projectileSpawnPoint: {fileID: 0}
-  projectilePrefabs: []
-  canFly: 0
-  projectileKeepDistance: 1.6
-  projectileVerticalMoveSpeed: 2
-  projectileGroundSearchDistance: 14
-  projectileFallThroughDuration: 0.35
-  projectileFallThroughDrop: 0.12
-  projectileAimOvershoot: 0.45
-  randomizeInitialPatrolDirection: 1
 --- !u!114 &7804350174933886395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -290,7 +283,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2340347124
+  GlobalObjectIdHash: 2743121268
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -301,18 +294,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &2733398750811536931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4006840501700251420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba4f42c650e56f04b92a947ac2b7fcaa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &3436768562411560280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -344,6 +325,58 @@ MonoBehaviour:
   InLocalSpace: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &4965009391021130831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4006840501700251420}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d121a387e147a545ba62efcb0ef8f69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 2
+  leftPoint: {fileID: 0}
+  rightPoint: {fileID: 0}
+  detectionRange: 5
+  meleeAttackRange: 1.2
+  attackCooldown: 1
+  damage: 2
+  hitbox: {fileID: 0}
+  projectileSpawnPoint: {fileID: 0}
+  projectilePrefabs: []
+  canFly: 0
+  projectileKeepDistance: 1.6
+  projectileVerticalMoveSpeed: 2
+  projectileGroundSearchDistance: 14
+  projectileFallThroughDuration: 0.35
+  projectileFallThroughDrop: 0.12
+  projectileAimOvershoot: 0.45
+  randomizeInitialPatrolDirection: 1
+--- !u!114 &6609937226400778080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4006840501700251420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1feeac8dd5520b409e1a3ca35c938ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 10
+  OnHealthChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &3575548799258533928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,6 +399,18 @@ MonoBehaviour:
   OnTakeDamage:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2733398750811536931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4006840501700251420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba4f42c650e56f04b92a947ac2b7fcaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &5048159133175404825
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -401,28 +446,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &6609937226400778080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4006840501700251420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1feeac8dd5520b409e1a3ca35c938ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 10
-  OnHealthChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  OnDeath:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTakeDamage:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &9054956945427330979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -452,6 +475,92 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   selectionIndicator: {fileID: 8794141035940201468}
+--- !u!114 &6249163141820683108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4006840501700251420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b88ca99a56f1eff4bb6e691200189e1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bossId: 13
+  playerTarget: {fileID: 0}
+  detectionRange: 220
+  meleeAttackRange: 1.6
+  chaseSpeed: 2.5
+  basicAttackCooldown: 1.2
+  meleeHitbox: {fileID: 1664376815850156577}
+  useInspectorSkillsOnly: 1
+  localSkills:
+  - skillId: 
+    skillType: 0
+    visualPrefab: {fileID: 8818713081938641145, guid: 36fd582d071ef4845931d85f598ef5ca, type: 3}
+    spawnPoint: {fileID: 5403336465424308505}
+    range: 1.6
+    minDistance: 0
+    cooldown: 2
+    castDelay: 0.15
+    recoveryTime: 0.35
+    damageMultiplier: 1
+    animationParameter: isAttacking
+    spawnOffsetX: 0.2
+    spawnOffsetY: 0
+    projectileSpeed: 0
+    projectileLifetime: 0
+    effectLifetime: 0.8
+    hitRadius: 0.55
+    retreatAfterUse: 1
+  useGroundPhysics: 1
+  canJump: 1
+  jumpForce: 12
+  maxJumps: 2
+  verticalTargetThreshold: 0.85
+  preferredRetreatDistance: 6.5
+  retreatDuration: 1.7
+  retreatSpeedMultiplier: 2
+  retreatJumpChance: 0.9
+  retreatJumpCooldown: 0.6
+  snapToGroundOnStart: 1
+  spawnGroundSnapDistance: 30
+  spawnGroundOffset: 0.02
+  groundCheckRadius: 0.18
+  groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  groundSearchDistance: 60
+  fallThroughDuration: 0.5
+  fallThroughDrop: 0.18
+  projectileAimOvershoot: 0.45
+  alwaysRetreatAfterMelee: 1
+  retreatEvasionInterval: 0.25
+  retreatFallThroughChance: 0.7
+  approachJumpChance: 1
+  reengageDelayAfterRetreat: 0.15
+  postAttackRetreatSpeedMultiplier: 2
+  postAttackRetreatMinDuration: 2.4
+  restrictGroundTraversalToChaseOrPostAttack: 1
+  groundTraversalCooldownMin: 2
+  groundTraversalCooldownMax: 3
+  groundTraversalBlockerMask:
+    serializedVersion: 2
+    m_Bits: 1024
+  evadeIncomingPlayerThreats: 1
+  threatScanRadius: 6.5
+  threatEvadeDuration: 0.9
+  threatDirectionRefreshInterval: 0.12
+  threatLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  debugLogs: 1
+  debugLogInterval: 0.35
+  skillBreathPrefab: {fileID: 0}
+  skillNovaPrefab: {fileID: 0}
+  addSpawnPrefab: {fileID: 0}
+  phaseAnnounceText: {fileID: 0}
 --- !u!1 &8794141035940201468
 GameObject:
   m_ObjectHideFlags: 0
@@ -478,7 +587,7 @@ Transform:
   m_GameObject: {fileID: 8794141035940201468}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.423, y: 0.856, z: 0}
+  m_LocalPosition: {x: -0.030000016, y: 1.181, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -626,11 +735,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3692364370889792424, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.413
+      value: -0.02
       objectReference: {fileID: 0}
     - target: {fileID: 3692364370889792424, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.726
+      value: 1.051
       objectReference: {fileID: 0}
     - target: {fileID: 3692364370889792424, guid: 0deb343b13872ee47b58021d5d81d525, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

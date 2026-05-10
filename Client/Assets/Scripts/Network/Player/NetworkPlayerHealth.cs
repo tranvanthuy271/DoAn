@@ -157,8 +157,15 @@ public class NetworkPlayerHealth : NetworkBehaviour
     /// </summary>
     private void OnHealthValueChanged(int oldValue, int newValue)
     {
+        // Use networkMaxHp from NetworkPlayerDataSync when available — it is a proper NetworkVariable
+        // synced from server and is always correct. The local maxHealth field can be stale on clients.
+        var dataSync = GetComponent<NetworkPlayerDataSync>();
+        int effectiveMaxHp = (dataSync != null && dataSync.networkMaxHp.Value > 0)
+                             ? dataSync.networkMaxHp.Value
+                             : maxHealth;
+
         // Invoke event để update UI
-        OnHealthChanged?.Invoke(newValue, maxHealth);
+        OnHealthChanged?.Invoke(newValue, effectiveMaxHp);
 
         // Check death
         if (newValue <= 0 && oldValue > 0)

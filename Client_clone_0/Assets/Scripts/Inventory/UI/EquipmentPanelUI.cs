@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
@@ -67,6 +68,10 @@ public class EquipmentPanelUI : MonoBehaviour
     // Slot đang chờ unequip
     private EquipmentSlotType? pendingUnequipSlot;
 
+    // Upgrade select mode
+    private bool _upgradeSelectMode;
+    private Action<EquipmentItemDto, EquipmentSlotType> _upgradeSelectCallback;
+
     /// <summary>
     /// Event khi người dùng muốn tháo trang bị
     /// </summary>
@@ -104,10 +109,25 @@ public class EquipmentPanelUI : MonoBehaviour
 
     private void Start()
     {
-        InitSlots();
+        // Chỉ init nếu chưa được init bởi emergency path trong RefreshAllSlots().
+        // Không gọi InitSlots() lại vì nó sẽ Clear() các slot đang có dữ liệu/animation,
+        // phá vỡ animation tier effect đã được setup trong OnEnable().
+        if (slotUIs.Count == 0)
+            InitSlots();
         // Không tự ẩn panelRoot ở đây – việc hiển thị/ẩn do CharacterPanelController quản lý
         // thông qua contentEquipment.SetActive(). Nếu tự SetActive(false) thì dù parent
         // được bật lại, child này vẫn giữ activeSelf=false và không hiện lên.
+    }
+
+    private void OnEnable()
+    {
+        StartCoroutine(ReplayPendingTierEffectsNextFrame());
+    }
+
+    private IEnumerator ReplayPendingTierEffectsNextFrame()
+    {
+        yield return null;
+        ReplayPendingTierEffectsIfActive();
     }
 
     /// <summary>
@@ -218,6 +238,30 @@ public class EquipmentPanelUI : MonoBehaviour
     }
 
     /// <summary>
+    /// Vào chế độ chọn trang bị để nâng cấp.
+    /// Callback nhận (item, slotType) khi người chơi click vào slot có item.
+    /// </summary>
+    public void EnterUpgradeSelectMode(Action<EquipmentItemDto, EquipmentSlotType> callback)
+    {
+        _upgradeSelectMode     = true;
+        _upgradeSelectCallback = callback;
+        HideUnequipConfirm();
+        if (titleText != null) titleText.text = "Chọn Trang Bị Để Nâng Cấp";
+        RefreshFromBridge();
+    }
+
+    /// <summary>
+    /// Thoát chế độ chọn trang bị để nâng cấp, trở về hành vi bình thường.
+    /// </summary>
+    public void ExitUpgradeSelectMode()
+    {
+        _upgradeSelectMode     = false;
+        _upgradeSelectCallback = null;
+        HideUnequipConfirm();
+        if (titleText != null) titleText.text = "Trang Bị";
+    }
+
+    /// <summary>
     /// Cập nhật toàn bộ UI từ PlayerEquipmentDto
     /// </summary>
     public void SetEquipmentData(PlayerEquipmentDto equipment)
@@ -308,6 +352,19 @@ public class EquipmentPanelUI : MonoBehaviour
         }
 
         Debug.Log($"[EquipmentPanelUI] Đã refresh {slotUIs.Count} slots");
+        ReplayPendingTierEffectsIfActive();
+    }
+
+    private void ReplayPendingTierEffectsIfActive()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            return;
+
+        foreach (var slot in slotUIs.Values)
+        {
+            if (slot != null)
+                slot.ReplayPendingTierEffectIfActive();
+        }
     }
 
     /// <summary>
@@ -324,12 +381,16 @@ public class EquipmentPanelUI : MonoBehaviour
         Debug.Log($"[EquipmentPanelUI] Click slot {slotType}, item={item?.itemName ?? "trống"}");
 
         if (item == null || item.itemTemplateId <= 0)
+            return;
+
+        // Upgrade select mode: gửi item cho UpgradePanel thay vì hỏi tháo
+        if (_upgradeSelectMode)
         {
-            // Slot trống - không làm gì
+            _upgradeSelectCallback?.Invoke(item, slotType);
             return;
         }
 
-        // Hiện confirm tháo trang bị
+        // Normal mode: hiện confirm tháo trang bị
         ShowUnequipConfirm(slotType, item);
     }
 

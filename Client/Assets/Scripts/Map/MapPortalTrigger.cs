@@ -54,6 +54,7 @@ public class MapPortalTrigger : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (_isTransitioning) return;
+        if (ClientSceneController.IsTransferTriggerBlocked()) return;
         if (!other.CompareTag("Player")) return;
 
         // Chỉ Local Player mới kích hoạt
@@ -66,6 +67,7 @@ public class MapPortalTrigger : MonoBehaviour
     private IEnumerator TryTravel(GameObject player)
     {
         _isTransitioning = true;
+        LoginLoadingManager.ShowLoadingStatic("Đang chuyển map...");
 
         // Lấy playerId từ local player data
         int playerId = GetLocalPlayerId();
@@ -93,6 +95,7 @@ public class MapPortalTrigger : MonoBehaviour
         {
             Debug.LogWarning($"[MapPortalTrigger] API lỗi: {req.error}");
             ShowDenied("Không thể kết nối máy chủ.");
+            LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
             yield break;
         }
@@ -102,6 +105,7 @@ public class MapPortalTrigger : MonoBehaviour
         if (!response.success)
         {
             ShowDenied(response.message);
+            LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
             yield break;
         }
@@ -114,10 +118,12 @@ public class MapPortalTrigger : MonoBehaviour
         {
             Debug.LogError("[MapPortalTrigger] Không tìm thấy ZoneTransitionController trong scene.");
             ShowDenied("Không thể chuyển khu lúc này.");
+            LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
             yield break;
         }
 
+        ClientSceneController.MarkTransferRequestStarted();
         transitionController.RequestMapPortalTransferServerRpc(
             response.dest_map_id,
             preferredZoneId,

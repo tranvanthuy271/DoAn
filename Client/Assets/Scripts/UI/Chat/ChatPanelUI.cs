@@ -42,9 +42,14 @@ public class ChatPanelUI : MonoBehaviour
     // ── State ─────────────────────────────────────────────────────────────────
 
     private const int MAX_DISPLAYED = 80;
+    private const string DefaultMessageEntryResourcesPath = "Prefabs/Chat/MsgEntry";
+    private const string LegacyMessageEntryResourcesPath = "Prefabs/Chat/ChatMessageEntry";
+    private static readonly Color FallbackTimestampColor = new Color32(0x7C, 0x67, 0x55, 0xFF);
+    private static readonly Color FallbackMessageTextColor = new Color32(0x3E, 0x29, 0x18, 0xFF);
     private readonly Queue<GameObject> _msgObjects = new Queue<GameObject>();
     private bool _chatManagerSubscribed;
     private bool _isConnected;  // theo dõi trạng thái kết nối để hiển thị UI
+    private bool _attemptedMessageEntryPrefabResolve;
     private const string GameplayBlockSource = "ChatPanelUI";
 
     // ── MonoBehaviour ─────────────────────────────────────────────────────────
@@ -65,6 +70,7 @@ public class ChatPanelUI : MonoBehaviour
         closeButton?.onClick.AddListener(() => gameObject.SetActive(false));
         channelIconButton?.onClick.AddListener(OnChannelIconClicked);
         EnsureChannelIconGraphic();
+        ResolveMessageEntryPrefab();
 
         chatInputField?.onEndEdit.AddListener(text =>
         {
@@ -218,7 +224,9 @@ public class ChatPanelUI : MonoBehaviour
 
         channelIconImage.raycastTarget = false;
         channelIconImage.preserveAspect = true;
+        channelIconImage.color = Color.white;
         channelIconImage.enabled = false;
+        channelIconImage.transform.SetAsLastSibling();
     }
 
     private void UpdateChannelIconGraphic(ChatChannel ch)
@@ -234,8 +242,10 @@ public class ChatPanelUI : MonoBehaviour
         if (channelDropdown != null && channelDropdown.TryGetChannelItem(ch, out var item) && item.icon != null)
         {
             channelIconImage.sprite = item.icon;
-            channelIconImage.color = item.iconTint == default ? Color.white : item.iconTint;
+            channelIconImage.color = Color.white;
             channelIconImage.enabled = true;
+            channelIconImage.gameObject.SetActive(true);
+            channelIconImage.transform.SetAsLastSibling();
             if (channelIconLabel != null) channelIconLabel.gameObject.SetActive(false);
             return;
         }
@@ -287,16 +297,11 @@ public class ChatPanelUI : MonoBehaviour
     {
         if (messageContent == null) return;
 
-        GameObject go;
-        if (messageEntryPrefab != null)
-        {
-            go = Instantiate(messageEntryPrefab, messageContent);
-        }
-        else
-        {
-            go = BuildFallbackEntry(msg);
-            go.transform.SetParent(messageContent, false);
-        }
+        var entryPrefab = ResolveMessageEntryPrefab();
+        if (entryPrefab == null)
+            return;
+
+        GameObject go = Instantiate(entryPrefab, messageContent, false);
 
         InitializeMessageEntry(go, msg);
         _msgObjects.Enqueue(go);
@@ -407,13 +412,56 @@ public class ChatPanelUI : MonoBehaviour
         tmp.text = BuildMessageMarkup(msg);
     }
 
+    private GameObject ResolveMessageEntryPrefab()
+    {
+        if (messageEntryPrefab != null && !messageEntryPrefab.scene.IsValid())
+            return messageEntryPrefab;
+
+        if (messageEntryPrefab != null && messageEntryPrefab.scene.IsValid())
+        {
+            Debug.LogWarning("[ChatPanelUI] messageEntryPrefab đang trỏ tới scene object. Sẽ nạp lại prefab từ Resources.", this);
+            messageEntryPrefab = null;
+        }
+
+        if (_attemptedMessageEntryPrefabResolve)
+            return messageEntryPrefab;
+
+        _attemptedMessageEntryPrefabResolve = true;
+        messageEntryPrefab = TryLoadMessageEntryPrefab(DefaultMessageEntryResourcesPath)
+                             ?? TryLoadMessageEntryPrefab(LegacyMessageEntryResourcesPath);
+
+        if (messageEntryPrefab == null)
+        {
+            Debug.LogError(
+                $"[ChatPanelUI] Không tìm thấy message entry prefab tại Resources/{DefaultMessageEntryResourcesPath} hoặc Resources/{LegacyMessageEntryResourcesPath}.",
+                this);
+        }
+
+        return messageEntryPrefab;
+    }
+
+    private GameObject TryLoadMessageEntryPrefab(string resourcesPath)
+    {
+        var prefab = Resources.Load<GameObject>(resourcesPath);
+        if (prefab != null)
+        {
+            Debug.LogWarning(
+                $"[ChatPanelUI] messageEntryPrefab chưa được gán trên ChatPanel instance. Đã nạp fallback prefab từ Resources/{resourcesPath}.",
+                this);
+        }
+
+        return prefab;
+    }
+
     private static string BuildMessageMarkup(ChatMessageDto msg)
     {
         var channel = msg.GetChannel();
         string colorHex = ColorUtility.ToHtmlStringRGB(channel.MessageColor());
-        return $"<color=#999999>{msg.timestamp}</color>  " +
+        string timestampHex = ColorUtility.ToHtmlStringRGB(FallbackTimestampColor);
+        string messageHex = ColorUtility.ToHtmlStringRGB(FallbackMessageTextColor);
+        return $"<color=#{timestampHex}>{msg.timestamp}</color>  " +
                $"<color=#{colorHex}>[{msg.senderName}]</color>  " +
-               $"<color=#ffffff>{msg.message}</color>";
+               $"<color=#{messageHex}>{msg.message}</color>";
     }
 
     private static void ConfigureSimpleEntryLayout(GameObject go, TextMeshProUGUI tmp)
@@ -438,6 +486,13 @@ public class ChatPanelUI : MonoBehaviour
         layout.flexibleHeight = -1f;
         layout.layoutPriority = 1;
 
+        var bg = go.GetComponent<Image>();
+        if (bg == null)
+            bg = go.AddComponent<Image>();
+
+        bg.raycastTarget = false;
+        bg.color = new Color32(0xFF, 0xF6, 0xEA, 0x78);
+
         tmp.fontSize = Mathf.Max(tmp.fontSize, 18f);
         tmp.enableAutoSizing = false;
         tmp.enableWordWrapping = true;
@@ -447,16 +502,4 @@ public class ChatPanelUI : MonoBehaviour
         tmp.overflowMode = TextOverflowModes.Overflow;
     }
 
-    // ── Fallback entry (khi chưa gán messageEntryPrefab) ─────────────────────
-
-    private GameObject BuildFallbackEntry(ChatMessageDto msg)
-    {
-        var go = new GameObject("MsgEntry", typeof(RectTransform));
-
-        var tmp = go.AddComponent<TextMeshProUGUI>();
-        ConfigureSimpleEntryLayout(go, tmp);
-        tmp.text = BuildMessageMarkup(msg);
-
-        return go;
-    }
 }

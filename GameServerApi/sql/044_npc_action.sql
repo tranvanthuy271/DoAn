@@ -1,0 +1,22 @@
+-- ============================================================
+-- Migration 044: NPC Action - Khoá cấp nhân vật
+--
+-- Thêm trường is_level_locked vào InfoChar JSON trong player_data.
+-- Vì InfoChar lưu dạng JSON text, KHÔNG cần thay đổi schema SQL.
+--
+-- Trường is_level_locked = false mặc định cho tất cả player
+-- (JsonSerializer sẽ trả false nếu field không tồn tại trong JSON cũ).
+--
+-- Endpoints mới thêm:
+--   POST /api/npc/action/reset-potential  — Tẩy tiềm năng
+--   POST /api/npc/action/reset-skill      — Tẩy kỹ năng
+--   POST /api/npc/action/learn-skill      — Học bí kíp (body: skillId)
+--   POST /api/npc/action/exchange-skill   — Đổi bí kíp (body: oldSkillId, newSkillId)
+--   POST /api/npc/action/exchange-charm   — Đổi bùa nổ
+--   POST /api/npc/action/lock-level       — Khoá / mở cấp nhân vật
+--
+-- File: GameServerApi/Controllers/NpcActionController.cs (MỚI)
+-- ============================================================
+
+-- (NOP — không thay đổi schema)
+SELECT 1;

@@ -50,8 +50,8 @@ MonoBehaviour:
     borderColor: {r: 1, g: 1, b: 1, a: 1}
     bgColor: {r: 1, g: 1, b: 1, a: 1}
   - minLevel: 16
-    borderSprite: {fileID: 21300000, guid: 6e52a3a673da6cb46b233dc220077fac, type: 3}
-    bgSprite: {fileID: 0}
+    borderSprite: {fileID: 21300000, guid: f2c1d97fb14013140b6cda055f2fdcdf, type: 3}
+    bgSprite: {fileID: 21300000, guid: 6e52a3a673da6cb46b233dc220077fac, type: 3}
     borderAnimator: {fileID: 22100000, guid: 3efb0799d48c00040be80aedd1dcb2b1, type: 2}
     bgAnimator: {fileID: 22100000, guid: 52b1aaf09cf6c0f40ac04b4fcad75913, type: 2}
     borderColor: {r: 1, g: 1, b: 1, a: 1}

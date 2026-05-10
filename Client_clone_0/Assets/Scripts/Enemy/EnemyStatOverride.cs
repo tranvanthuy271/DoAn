@@ -60,6 +60,15 @@ public class EnemyStatOverride : MonoBehaviour
         EnemyName    = enemyName ?? "";
         IsApplied    = true;
 
+        BossAI existingBossAI = GetComponent<BossAI>();
+        EnemyAI existingEnemyAI = GetComponent<EnemyAI>();
+        if (ShouldLogBoss25(isBoss, existingBossAI))
+        {
+            Debug.LogWarning(
+                $"[BOSS25][EnemyStatOverride:{name}] Apply hp={hp} exp={exp} isBoss={isBoss} respawn={RespawnTime} level={Level} enemyName='{EnemyName}' hasBossAI={(existingBossAI != null)} bossAIEnabledBefore={(existingBossAI != null && existingBossAI.enabled)} hasEnemyAI={(existingEnemyAI != null)} enemyAIEnabledBefore={(existingEnemyAI != null && existingEnemyAI.enabled)} scene={gameObject.scene.name}",
+                this);
+        }
+
         ApplyHealth(hp);
         ApplyBossMode(isBoss);
         ApplyExpOverride(exp);
@@ -100,6 +109,14 @@ public class EnemyStatOverride : MonoBehaviour
 
         // Bật/tắt BossAI
         BossAI bossAI = GetComponent<BossAI>();
+        bool shouldLog = ShouldLogBoss25(isBoss, bossAI);
+
+        if (shouldLog)
+        {
+            Debug.LogWarning(
+                $"[BOSS25][EnemyStatOverride:{name}] ApplyBossMode BEFORE isBoss={isBoss} hasBossAI={(bossAI != null)} bossAIEnabled={(bossAI != null && bossAI.enabled)} hasEnemyAI={(normalAI != null)} enemyAIEnabled={(normalAI != null && normalAI.enabled)}",
+                this);
+        }
 
         if (isBoss)
         {
@@ -119,6 +136,20 @@ public class EnemyStatOverride : MonoBehaviour
             if (bossAI != null) bossAI.enabled = false;
             if (normalAI != null) normalAI.enabled = true;
         }
+
+        if (shouldLog)
+        {
+            Debug.LogWarning(
+                $"[BOSS25][EnemyStatOverride:{name}] ApplyBossMode AFTER isBoss={isBoss} bossAIEnabled={(bossAI != null && bossAI.enabled)} enemyAIEnabled={(normalAI != null && normalAI.enabled)}",
+                this);
+        }
+    }
+
+    private bool ShouldLogBoss25(bool isBoss, BossAI bossAI)
+    {
+        return isBoss
+            || bossAI != null
+            || gameObject.name.Contains("Enemy 25");
     }
 
     /// <summary>

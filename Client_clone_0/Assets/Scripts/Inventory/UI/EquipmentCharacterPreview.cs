@@ -1,50 +1,126 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Hiển thị prefab nhân vật idle ở giữa Equipment Panel.
 /// Nhân vật chỉ để xem, không điều khiển được.
 ///
-/// Setup:
-/// 1. Tạo 1 GameObject "CharPreviewSlot" ở giữa Equipment Panel
-/// 2. Gắn script này lên
-/// 3. Kéo prefab nhân vật vào characterPrefab
-/// 4. (Tuỳ) gắn RenderTexture nếu muốn render riêng layer
+/// ═══ Auto-resolve prefab (KHUYẾN NGHỊ) ═══
+///   - Để trống characterPrefab.
+///   - Tạo asset PlayerPreviewPrefabConfig tại
+///     Assets/Resources/ScriptableObjects/PlayerPreviewPrefabConfig
+///   - Điền đủ entry cho từng hệ/giới tính → script tự lookup từ GameManager.
+///
+/// ═══ Manual prefab (override) ═══
+///   - Kéo trực tiếp 1 prefab cụ thể vào characterPrefab.
+///   - Script dùng prefab đó bất kể hệ nhân vật.
+///
+/// ═══ MODE A – RenderTexture (KHUYẾN NGHỊ cho Screen Space Canvas) ═══
+///   1. Tạo Layer mới tên "UICharacter" (Edit → Project Settings → Tags and Layers)
+///   2. Tạo Camera con tên "PreviewCamera" bên ngoài Canvas:
+///      - Clear Flags: Solid Color, Background: alpha=0
+///      - Culling Mask: chỉ tick "UICharacter"
+///      - Depth > main camera
+///   3. Tạo RawImage trong Equipment Panel để hiển thị nhân vật
+///   4. Gắn script EquipmentCharacterPreview lên 1 GameObject trống trong Panel
+///   5. Kéo PreviewCamera → previewCamera, RawImage → renderTargetImage
+///   6. Đặt overrideLayer = index của layer "UICharacter"
+///
+/// ═══ MODE B – World Space Canvas (đơn giản hơn) ═══
+///   - Không gán previewCamera / renderTargetImage
+///   - Canvas phải là World Space
+///   - Nhân vật spawn là con của transform này
 /// </summary>
 public class EquipmentCharacterPreview : MonoBehaviour
 {
-    [Header("Prefab")]
-    [Tooltip("Prefab nhân vật (sẽ spawn Idle, tắt mọi input)")]
+    [Header("Prefab (để trống = tự động tra theo hệ nhân vật)")]
+    [Tooltip("Kéo prefab cụ thể vào đây để override. Để trống = dùng PlayerPreviewPrefabConfig.")]
     [SerializeField] private GameObject characterPrefab;
 
-    [Header("Spawn Settings")]
-    [Tooltip("Vị trí spawn local (so với transform này)")]
+    [Tooltip("(Tuỳ chọn) Kéo PlayerPreviewPrefabConfig asset vào đây.\n" +
+             "Nếu để trống, script tự Resources.Load từ ScriptableObjects/PlayerPreviewPrefabConfig.")]
+    [SerializeField] private PlayerPreviewPrefabConfig previewPrefabConfig;
+
+    [Header("Mode A – RenderTexture (Screen Space Canvas)")]
+    [Tooltip("Camera riêng chỉ render layer UICharacter → RenderTexture")]
+    [SerializeField] private Camera previewCamera;
+
+    [Tooltip("RawImage trong UI nhận output từ previewCamera")]
+    [SerializeField] private RawImage renderTargetImage;
+
+    [Tooltip("Vị trí thế giới spawn nhân vật preview (đặt xa scene chính)")]
+    [SerializeField] private Vector3 previewWorldPosition = new Vector3(1000f, 0f, 1000f);
+
+    [Tooltip("Kích thước RenderTexture (pixels). 0 = tự lấy từ RawImage size, fallback 256×512.")]
+    [SerializeField] private Vector2Int renderTextureSize = new Vector2Int(256, 512);
+
+    [Header("Mode B – World Space Canvas")]
+    [Tooltip("Vị trí spawn local so với transform này (chỉ dùng Mode B)")]
     [SerializeField] private Vector3 localOffset = Vector3.zero;
 
+    [Header("Shared Settings")]
     [Tooltip("Scale nhân vật preview")]
     [SerializeField] private Vector3 previewScale = Vector3.one;
 
     [Tooltip("Rotation Y ban đầu (độ)")]
     [SerializeField] private float initialRotationY = 180f;
 
-    [Header("Layer (tuỳ chọn)")]
-    [Tooltip("Layer riêng cho preview (VD: UICharacter). -1 = giữ nguyên layer gốc.")]
+    [Tooltip("Layer override cho nhân vật preview (index layer UICharacter). -1 = giữ nguyên.")]
     [SerializeField] private int overrideLayer = -1;
 
-    private GameObject previewInstance;
+    [Tooltip("Dịch camera theo trục Y để điều chỉnh vị trí nhân vật trong frame. Âm = character lên cao.")]
+    [SerializeField] private float cameraVerticalOffset = -3f;
+
+    [Tooltip("Danh sách tên child object sẽ bị ẩn trong preview (SkillEffect, platform, shadow...).")]
+    [SerializeField] private string[] hideChildrenNamed = { "SkillEffect" };
+
+    // Tên state Idle phổ biến – thử lần lượt cho đến khi tìm được
+    private static readonly string[] IdleStateNames =
+    {
+        "Idle", "idle", "ide", "Ide",
+        "Idle_01", "Idle_Loop", "IdleNormal",
+        "Base Layer.Idle", "locomotion"
+    };
+
+    private GameObject _previewInstance;
+    private RenderTexture _renderTexture;
+    private bool _usingRenderTexture;
+    private Animator _previewAnimator;
+
+    // ───────────────────────── Unity lifecycle ─────────────────────────
+
+    private void Awake()
+    {
+        Debug.Log($"[EquipPreview] Awake trên '{gameObject.name}' | previewCamera={(previewCamera != null ? previewCamera.name : "NULL")} | renderTargetImage={(renderTargetImage != null ? renderTargetImage.name : "NULL")}");
+        // Camera phải luôn disabled khi start.
+        // Chỉ được enable lại sau khi SpawnPreview() tạo xong RenderTexture.
+        if (previewCamera != null)
+        {
+            previewCamera.enabled = false;
+            Debug.Log("[EquipPreview] Awake: previewCamera disabled (chờ spawn).");
+        }
+    }
 
     private void OnEnable()
     {
+        Debug.Log($"[EquipPreview] OnEnable | _previewInstance={((_previewInstance != null) ? _previewInstance.name : "null")}");
         SpawnPreview();
+        if (_usingRenderTexture && previewCamera != null)
+            previewCamera.enabled = true;
     }
 
     private void OnDisable()
     {
+        Debug.Log("[EquipPreview] OnDisable");
+        // Luôn tắt camera — không để nó render to screen khi panel ẩn
+        if (previewCamera != null)
+            previewCamera.enabled = false;
         DestroyPreview();
     }
 
-    /// <summary>
-    /// Thay đổi prefab nhân vật (khi đổi class hoặc costume).
-    /// </summary>
+    // ───────────────────────── Public API ──────────────────────────────
+
+    /// <summary>Đổi prefab nhân vật (VD: khi đổi nhân vật / trang phục).</summary>
     public void SetCharacterPrefab(GameObject newPrefab)
     {
         characterPrefab = newPrefab;
@@ -52,72 +128,414 @@ public class EquipmentCharacterPreview : MonoBehaviour
         SpawnPreview();
     }
 
-    private void SpawnPreview()
+    /// <summary>
+    /// Gọi khi player data thay đổi (VD: sau khi login xong lần đầu).
+    /// Re-spawn preview với đúng prefab theo hệ mới.
+    /// </summary>
+    public void RefreshForLocalPlayer()
     {
-        if (characterPrefab == null || previewInstance != null) return;
+        DestroyPreview();
+        SpawnPreview();
+    }
 
-        previewInstance = Instantiate(characterPrefab, transform);
-        previewInstance.transform.localPosition = localOffset;
-        previewInstance.transform.localScale = previewScale;
-        previewInstance.transform.localRotation = Quaternion.Euler(0f, initialRotationY, 0f);
+    // ───────────────────────── Internal ────────────────────────────────
 
-        // Tắt tất cả script điều khiển — chỉ giữ Animator
-        DisableAllControlScripts(previewInstance);
-
-        // Force Idle
-        var animator = previewInstance.GetComponentInChildren<Animator>();
-        if (animator != null)
+    /// <summary>
+    /// Tra cứu prefab phù hợp:
+    ///   1. characterPrefab gán tay (override)
+    ///   2. PlayerPreviewPrefabConfig.Resolve(GameManager.playerData)
+    ///   3. null → cảnh báo
+    /// </summary>
+    private GameObject ResolveCharacterPrefab()
+    {
+        // 1. Manual override
+        if (characterPrefab != null)
         {
-            animator.Play("Idle", 0, 0f);
-            animator.speed = 1f;
+            Debug.Log($"[EquipPreview] Resolve: dùng characterPrefab (manual) = '{characterPrefab.name}'");
+            return characterPrefab;
         }
 
-        // Override layer
+        Debug.Log("[EquipPreview] Resolve: characterPrefab=null, thử PlayerPreviewPrefabConfig...");
+
+        // 2. Tra config
+        var config = previewPrefabConfig;
+        if (config == null)
+        {
+            Debug.Log("[EquipPreview] Resolve: previewPrefabConfig chưa gán, thử Resources.Load...");
+            config = PlayerPreviewPrefabConfig.Load();
+        }
+
+        if (config != null)
+        {
+            Debug.Log($"[EquipPreview] Resolve: có config '{config.name}'.");
+            PlayerDataResponse playerData = null;
+            if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
+            {
+                playerData = GameManager.Instance.GetPlayerData();
+                Debug.Log($"[EquipPreview] Resolve: playerData element_type='{playerData?.element_type}', gender='{playerData?.gender}', is_hybrid={playerData?.is_hybrid}");
+            }
+            else
+                Debug.LogWarning("[EquipPreview] Resolve: GameManager.Instance=null hoặc HasPlayerData()=false. Prefab sẽ là fallback.");
+
+            var resolved = config.Resolve(playerData);
+            if (resolved != null)
+            {
+                Debug.Log($"[EquipPreview] Resolve: ✓ resolved = '{resolved.name}'");
+                return resolved;
+            }
+            Debug.LogWarning("[EquipPreview] Resolve: config.Resolve() trả về null (không có entry khớp).");
+        }
+        else
+        {
+            Debug.LogWarning("[EquipPreview] Resolve: Không tìm thấy PlayerPreviewPrefabConfig tại Resources/ScriptableObjects/PlayerPreviewPrefabConfig.");
+        }
+
+        Debug.LogWarning("[EquipmentCharacterPreview] Không có characterPrefab và không resolve được từ PlayerPreviewPrefabConfig. " +
+                         "Hãy tạo asset tại Resources/ScriptableObjects/PlayerPreviewPrefabConfig hoặc kéo prefab vào Inspector.");
+        return null;
+    }
+
+    private void SpawnPreview()
+    {
+        if (_previewInstance != null)
+        {
+            Debug.Log("[EquipPreview] SpawnPreview: đã có _previewInstance, bỏ qua.");
+            return;
+        }
+
+        var prefabToSpawn = ResolveCharacterPrefab();
+        if (prefabToSpawn == null)
+        {
+            Debug.LogWarning("[EquipPreview] SpawnPreview: prefabToSpawn = null, dừng lại.");
+            return;
+        }
+
+        Debug.Log($"[EquipPreview] SpawnPreview: dùng prefab '{prefabToSpawn.name}'");
+
+        _usingRenderTexture = (previewCamera != null && renderTargetImage != null);
+        Debug.Log($"[EquipPreview] _usingRenderTexture={_usingRenderTexture} | previewCamera={(previewCamera != null ? previewCamera.name : "NULL")} | renderTargetImage={(renderTargetImage != null ? renderTargetImage.name : "NULL")}");
+
+        if (_usingRenderTexture)
+        {
+            // ── MODE A: RenderTexture ──
+            _previewInstance = Instantiate(prefabToSpawn);
+            _previewInstance.transform.position  = previewWorldPosition;
+            _previewInstance.transform.localScale = previewScale;
+            _previewInstance.transform.rotation   = Quaternion.Euler(0f, initialRotationY, 0f);
+            Debug.Log($"[EquipPreview] MODE A: Spawn tại {previewWorldPosition}, scale={previewScale}");
+
+            // Tính kích thước RT
+            int rtW = renderTextureSize.x > 0 ? renderTextureSize.x : 256;
+            int rtH = renderTextureSize.y > 0 ? renderTextureSize.y : 512;
+            var rect = renderTargetImage.rectTransform.rect;
+            if (rect.width  > 1) rtW = (int)rect.width;
+            if (rect.height > 1) rtH = (int)rect.height;
+            Debug.Log($"[EquipPreview] RenderTexture size={rtW}x{rtH}");
+
+            _renderTexture = new RenderTexture(rtW, rtH, 24, RenderTextureFormat.ARGB32)
+            {
+                antiAliasing = 2,
+                name         = "EquipPreviewRT"
+            };
+            previewCamera.targetTexture   = _renderTexture;
+            renderTargetImage.texture     = _renderTexture;
+            // Hiện RawImage (đã transparent by default từ setup)
+            var c = renderTargetImage.color;
+            renderTargetImage.color = new Color(c.r, c.g, c.b, 1f);
+            // Đảm bảo RawImage render trên cùng (trên mọi sibling như BeDa)
+            int siblingBefore = renderTargetImage.transform.GetSiblingIndex();
+            renderTargetImage.transform.SetAsLastSibling();
+            int siblingAfter = renderTargetImage.transform.GetSiblingIndex();
+            Debug.Log($"[EquipPreview] RawImage sibling: {siblingBefore} → {siblingAfter} (parent='{renderTargetImage.transform.parent?.name}', total children={renderTargetImage.transform.parent?.childCount})");
+            // Log tên các siblings để xác nhận thứ tự
+            if (renderTargetImage.transform.parent != null)
+            {
+                var sb = new System.Text.StringBuilder("[EquipPreview] Children order: ");
+                for (int i = 0; i < renderTargetImage.transform.parent.childCount; i++)
+                    sb.Append($"[{i}]{renderTargetImage.transform.parent.GetChild(i).name} ");
+                Debug.Log(sb.ToString());
+            }
+            previewCamera.enabled = true;
+            Debug.Log($"[EquipPreview] Camera enabled, RenderTexture gán xong.");
+        }
+        else
+        {
+            // ── MODE B: World Space Canvas ──
+            _previewInstance = Instantiate(prefabToSpawn, transform);
+            _previewInstance.transform.localPosition = localOffset;
+            _previewInstance.transform.localScale    = previewScale;
+            _previewInstance.transform.localRotation = Quaternion.Euler(0f, initialRotationY, 0f);
+            Debug.Log($"[EquipPreview] MODE B: Spawn làm con của {transform.name}.");
+        }
+
+        // Tắt mọi script gameplay + physics trước khi Unity simulate frame
+        DisableAllControlScripts(_previewInstance);
+
+        // Ẩn các child object không cần thiết (SkillEffect, platform...)
+        HidePreviewChildren(_previewInstance);
+
+        // Log toàn bộ children sau khi ẩn
+        {
+            var sb = new System.Text.StringBuilder("[EquipPreview] Children sau HidePreviewChildren:\n");
+            foreach (Transform ch in _previewInstance.transform)
+                sb.AppendLine($"  - '{ch.name}' active={ch.gameObject.activeSelf}");
+            Debug.Log(sb.ToString());
+        }
+
+        // Ghim lại vị trí (MODE A: fix tại previewWorldPosition)
+        if (_usingRenderTexture)
+            _previewInstance.transform.position = previewWorldPosition;
+
+        // Bật & play Idle
+        ForceIdleAnimation(_previewInstance);
+        // Cache Animator của character (chỉ lấy active, bỏ qua SkillEffect đã ẩn)
+        _previewAnimator = _previewInstance.GetComponentInChildren<Animator>(false);
+        if (_previewAnimator == null)
+            _previewAnimator = _previewInstance.GetComponentInChildren<Animator>(true);
+        Debug.Log($"[EquipPreview] _previewAnimator cached = '{(_previewAnimator != null ? _previewAnimator.gameObject.name : "NULL")}'");
+
+        // Đặt layer
         if (overrideLayer >= 0)
-            SetLayerRecursive(previewInstance, overrideLayer);
+            SetLayerRecursive(_previewInstance, overrideLayer);
+
+        // Auto-set camera cullingMask theo layer thực tế của prefab
+        if (_usingRenderTexture && previewCamera != null)
+        {
+            int targetLayer = (overrideLayer >= 0) ? overrideLayer : _previewInstance.layer;
+            previewCamera.cullingMask = 1 << targetLayer;
+            Debug.Log($"[EquipPreview] Camera cullingMask = layer {targetLayer} ('{LayerMask.LayerToName(targetLayer)}')");
+
+            // Auto-center camera dựa trên bounds thực của nhân vật
+            AutoCenterCamera();
+        }
+    }
+
+    private void HidePreviewChildren(GameObject root)
+    {
+        Debug.Log($"[EquipPreview] HidePreviewChildren: hideChildrenNamed={hideChildrenNamed?.Length ?? 0} entries, root='{root.name}' childCount={root.transform.childCount}");
+        if (hideChildrenNamed == null || hideChildrenNamed.Length == 0) return;
+        foreach (var childName in hideChildrenNamed)
+        {
+            if (string.IsNullOrEmpty(childName)) continue;
+            var t = root.transform.Find(childName);
+            if (t != null)
+            {
+                t.gameObject.SetActive(false);
+                Debug.Log($"[EquipPreview] Ẩn child '{childName}' ✓");
+            }
+            else
+            {
+                // Tìm trong toàn bộ hierarchy
+                var found = root.transform.GetComponentsInChildren<Transform>(true);
+                Debug.LogWarning($"[EquipPreview] Không tìm thấy direct child '{childName}'. Các children hiện có: {string.Join(", ", System.Array.ConvertAll(found, x => x.name))}");
+            }
+        }
+    }
+
+    /// <summary>Tự động căn chỉnh camera để nhân vật nằm ở giữa frame và đủ kích thước.</summary>
+    private void AutoCenterCamera()
+    {
+        if (previewCamera == null || _previewInstance == null) return;
+
+        // Chỉ lấy renderer của các active children (SkillEffect đã bị ẩn)
+        var renderers = _previewInstance.GetComponentsInChildren<Renderer>(false);
+        Debug.Log($"[EquipPreview] AutoCenter: tìm được {renderers.Length} active renderer(s).");
+        if (renderers.Length == 0)
+        {
+            renderers = _previewInstance.GetComponentsInChildren<Renderer>(true);
+            Debug.LogWarning($"[EquipPreview] AutoCenter: fallback include-inactive, {renderers.Length} renderer(s).");
+        }
+        if (renderers.Length == 0) { Debug.LogWarning("[EquipPreview] AutoCenter: 0 renderers, bỏ qua."); return; }
+
+        var sbR = new System.Text.StringBuilder("[EquipPreview] AutoCenter renderers:\n");
+        foreach (var r in renderers)
+            sbR.AppendLine($"  - '{r.gameObject.name}' bounds={r.bounds.center} size={r.bounds.size} active={r.gameObject.activeSelf}");
+        Debug.Log(sbR.ToString());
+
+        // Tính bounding box chỉ của character
+        var allBounds = renderers[0].bounds;
+        foreach (var r in renderers) allBounds.Encapsulate(r.bounds);
+
+        // Đặt camera Y = center của nhân vật + offset, giữ nguyên X và Z
+        var camT = previewCamera.transform;
+        float newY = allBounds.center.y + cameraVerticalOffset;
+        camT.position = new Vector3(camT.position.x, newY, camT.position.z);
+
+        // OrthoSize: 1.5x lớn hơn (3.6 / 1.5 = 2.4)
+        previewCamera.orthographicSize = allBounds.extents.y * 2.4f;
+
+        Debug.Log($"[EquipPreview] AutoCenter: center={allBounds.center} extents={allBounds.extents} camY={newY:F3} orthoSize={previewCamera.orthographicSize:F3} (offset={cameraVerticalOffset})");
+    }
+
+    private void LateUpdate()
+    {
+        if (_previewAnimator == null || !_previewAnimator.enabled) return;
+        LockIdleParameters(_previewAnimator);
+    }
+
+    /// <summary>Reset Animator parameters mỗi frame để tránh transition sang jump/run/die.</summary>
+    private static void LockIdleParameters(Animator animator)
+    {
+        foreach (var param in animator.parameters)
+        {
+            switch (param.type)
+            {
+                case AnimatorControllerParameterType.Bool:
+                    var pn = param.name.ToLower();
+                    // Parameter có "ground"/"land"/"floor" → true; còn lại → false
+                    bool bval = pn.Contains("ground") || pn.Contains("land") || pn.Contains("floor");
+                    animator.SetBool(param.nameHash, bval);
+                    break;
+                case AnimatorControllerParameterType.Float:
+                    animator.SetFloat(param.nameHash, 0f);
+                    break;
+                case AnimatorControllerParameterType.Int:
+                    animator.SetInteger(param.nameHash, 0);
+                    break;
+                case AnimatorControllerParameterType.Trigger:
+                    animator.ResetTrigger(param.nameHash);
+                    break;
+            }
+        }
     }
 
     private void DestroyPreview()
     {
-        if (previewInstance != null)
+        _previewAnimator = null;
+        if (_previewInstance != null)
         {
-            Destroy(previewInstance);
-            previewInstance = null;
+            Destroy(_previewInstance);
+            _previewInstance = null;
         }
+
+        if (_renderTexture != null)
+        {
+            if (previewCamera      != null) previewCamera.targetTexture  = null;
+            if (renderTargetImage  != null) renderTargetImage.texture    = null;
+            _renderTexture.Release();
+            Destroy(_renderTexture);
+            _renderTexture = null;
+        }
+    }
+
+    private static void ForceIdleAnimation(GameObject root)
+    {
+        // Ƭu tiên active animator trước (bỏ qua SkillEffect đã bị ẩn)
+        var animator = root.GetComponentInChildren<Animator>(false);
+        if (animator == null)
+        {
+            Debug.LogWarning("[EquipPreview] ForceIdle: Không tìm được active Animator, thử include-inactive...");
+            animator = root.GetComponentInChildren<Animator>(true);
+        }
+        if (animator == null)
+        {
+            Debug.LogWarning($"[EquipPreview] ForceIdle: Không tìm thấy Animator trên '{root.name}' hoặc children.");
+            return;
+        }
+
+        Debug.Log($"[EquipPreview] ForceIdle: Animator trên '{animator.gameObject.name}' | controller={(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NULL")}");
+
+        if (animator.runtimeAnimatorController == null)
+        {
+            Debug.LogWarning($"[EquipPreview] ForceIdle: Animator không có Controller, không thể play animation.");
+            return;
+        }
+
+        animator.enabled = true;
+        animator.speed   = 1f;
+
+        // Reset toàn bộ parameters ngay lập tức để tránh transition sang jump/run
+        LockIdleParameters(animator);
+
+        // In ra danh sách tất cả clip names để debug
+        if (animator.runtimeAnimatorController != null)
+        {
+            var clips = animator.runtimeAnimatorController.animationClips;
+            var names = new System.Text.StringBuilder("[EquipPreview] ForceIdle: Clips trong controller: ");
+            foreach (var clip in clips) names.Append(clip.name).Append(", ");
+            Debug.Log(names.ToString());
+        }
+
+        // Thử từng tên state phổ biến
+        foreach (var stateName in IdleStateNames)
+        {
+            int hash = Animator.StringToHash(stateName);
+            if (animator.HasState(0, hash))
+            {
+                animator.Play(hash, 0, 0f);
+                Debug.Log($"[EquipPreview] ForceIdle: ✓ Play state '{stateName}'");
+                return;
+            }
+        }
+
+        // Fallback: thử đúng tên clip (state name thường = clip name)
+        var clips2 = animator.runtimeAnimatorController.animationClips;
+        foreach (var clip in clips2)
+        {
+            // Thử chính xác, lowercase, capitalize
+            string[] candidates = { clip.name, clip.name.ToLower(),
+                char.ToUpper(clip.name[0]) + clip.name.Substring(1).ToLower() };
+            foreach (var c in candidates)
+            {
+                int h = Animator.StringToHash(c);
+                if (animator.HasState(0, h))
+                {
+                    animator.Play(h, 0, 0f);
+                    Debug.Log($"[EquipPreview] ForceIdle: ✓ Play state '{c}' (từ clip '{clip.name}')");
+                    return;
+                }
+            }
+        }
+
+        // Fallback cuối: Rebind → entry state mặc định
+        Debug.Log("[EquipPreview] ForceIdle: Dùng Rebind() → entry state.");
+        animator.Rebind();
+        animator.Update(0f);
     }
 
     /// <summary>
     /// Tắt mọi MonoBehaviour gameplay để nhân vật chỉ hiển thị,
-    /// không di chuyển và không nhận input trong khung preview.
-    /// Animator không nằm trong danh sách MonoBehaviour nên vẫn hoạt động.
+    /// không di chuyển và không nhận input.
+    /// Animator là Behaviour (không phải MonoBehaviour) nên không bị tắt.
     /// </summary>
     private void DisableAllControlScripts(GameObject root)
     {
-        var behaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
-        foreach (var mb in behaviours)
+        int disabledCount = 0;
+        foreach (var mb in root.GetComponentsInChildren<MonoBehaviour>(true))
         {
-            // Giữ chính script preview; các Behaviour không phải MonoBehaviour
-            // như Animator sẽ không bị lấy vào danh sách này.
             if (mb == this) continue;
-
+            if (!mb.enabled) continue;
+            Debug.Log($"[EquipPreview] Disable script: {mb.GetType().Name} trên '{mb.gameObject.name}'");
             mb.enabled = false;
+            disabledCount++;
+        }
+        Debug.Log($"[EquipPreview] DisableAllControlScripts: đã disable {disabledCount} MonoBehaviour(s).");
+
+        foreach (var rb in root.GetComponentsInChildren<Rigidbody>(true))
+        {
+            rb.isKinematic = true;
+            rb.useGravity  = false;
+            rb.velocity     = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
 
-        // Tắt Rigidbody / Rigidbody2D nếu có
-        var rb = root.GetComponentInChildren<Rigidbody>(true);
-        if (rb != null) { rb.isKinematic = true; rb.velocity = Vector3.zero; }
+        foreach (var rb2d in root.GetComponentsInChildren<Rigidbody2D>(true))
+        {
+            rb2d.bodyType = RigidbodyType2D.Kinematic;
+            rb2d.gravityScale = 0f;
+            rb2d.velocity = Vector2.zero;
+        }
 
-        var rb2d = root.GetComponentInChildren<Rigidbody2D>(true);
-        if (rb2d != null) { rb2d.bodyType = RigidbodyType2D.Kinematic; rb2d.velocity = Vector2.zero; }
+        foreach (var col  in root.GetComponentsInChildren<Collider>(true))  col.enabled  = false;
+        foreach (var col2 in root.GetComponentsInChildren<Collider2D>(true)) col2.enabled = false;
 
-        // Tắt Collider
-        foreach (var col in root.GetComponentsInChildren<Collider>(true))
-            col.enabled = false;
-        foreach (var col2d in root.GetComponentsInChildren<Collider2D>(true))
-            col2d.enabled = false;
+        // Ghim vị trí sau khi tắt physics để không bị drift
+        var rigidbodies = root.GetComponentsInChildren<Rigidbody>(true);
+        if (rigidbodies.Length > 0)
+            root.transform.position = root.transform.position; // force sync
     }
 
-    private void SetLayerRecursive(GameObject obj, int layer)
+    private static void SetLayerRecursive(GameObject obj, int layer)
     {
         obj.layer = layer;
         foreach (Transform child in obj.transform)

@@ -184,20 +184,21 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         // Stats từ final_stats hoặc base_stats
         if (playerData.final_stats != null)
         {
-            networkHp.Value        = playerData.final_stats.hp;
+            // Set max BEFORE current so Clamp in SetHealth uses the correct ceiling
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.mp;
+            networkHp.Value        = playerData.final_stats.hp;
             networkMaxMp.Value     = playerData.final_stats.max_mp;
+            networkMp.Value        = playerData.final_stats.mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
             networkMoveSpeed.Value = playerData.final_stats.move_speed;
         }
         else if (playerData.base_stats != null)
         {
-            networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.mp;
+            networkHp.Value        = playerData.base_stats.hp;
             networkMaxMp.Value     = playerData.base_stats.max_mp;
+            networkMp.Value        = playerData.base_stats.mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
         }
@@ -268,22 +269,23 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkLevel.Value = playerData.level;
         
         // Stats từ final_stats hoặc base_stats
+        // IMPORTANT: set max before current so OnHpChanged → SetHealth uses correct ceiling
         if (playerData.final_stats != null)
         {
-            networkHp.Value        = playerData.final_stats.hp;
             networkMaxHp.Value     = playerData.final_stats.max_hp;
-            networkMp.Value        = playerData.final_stats.mp;
+            networkHp.Value        = playerData.final_stats.hp;
             networkMaxMp.Value     = playerData.final_stats.max_mp;
+            networkMp.Value        = playerData.final_stats.mp;
             networkAttack.Value    = playerData.final_stats.attack;
             networkDefense.Value   = playerData.final_stats.defense;
             networkMoveSpeed.Value = playerData.final_stats.move_speed;
         }
         else if (playerData.base_stats != null)
         {
-            networkHp.Value        = playerData.base_stats.hp;
             networkMaxHp.Value     = playerData.base_stats.max_hp;
-            networkMp.Value        = playerData.base_stats.mp;
+            networkHp.Value        = playerData.base_stats.hp;
             networkMaxMp.Value     = playerData.base_stats.max_mp;
+            networkMp.Value        = playerData.base_stats.mp;
             networkAttack.Value    = playerData.base_stats.attack;
             networkMoveSpeed.Value = 5f;
         }
@@ -362,8 +364,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             playerController.stats.moveSpeed = networkMoveSpeed.Value;
         }
 
-        // Apply HP vào NetworkPlayerHealth
-        if (playerHealth != null)
+        // Apply HP vào NetworkPlayerHealth — only on server to avoid stale-default RPCs from client
+        if (IsServer && playerHealth != null)
         {
             playerHealth.SetMaxHealth(networkMaxHp.Value);
             playerHealth.SetHealth(networkHp.Value);
@@ -431,7 +433,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     private void OnHpChanged(int oldValue, int newValue)
     {
         Debug.Log($"[NetworkPlayerDataSync] HP: {oldValue} → {newValue}/{networkMaxHp.Value}");
-        if (playerHealth != null)
+        // Only server should write to NetworkPlayerHealth — clients must not send SetHealthServerRpc
+        // with stale default values (which would overwrite correct server state)
+        if (IsServer && playerHealth != null)
         {
             playerHealth.SetHealth(newValue);
         }
@@ -456,7 +460,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         {
             playerController.stats.maxHealth = newValue;
         }
-        if (playerHealth != null)
+        // Only server should write to NetworkPlayerHealth — clients must not send SetMaxHealthServerRpc
+        // with stale default values (which would overwrite correct server state)
+        if (IsServer && playerHealth != null)
         {
             playerHealth.SetMaxHealth(newValue);
         }

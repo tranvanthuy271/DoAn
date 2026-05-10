@@ -1,222 +1,402 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
-/// SkillRowUI – Một dòng hiển thị thông tin 1 skill trong tab Kỹ Năng.
-///
-/// Cấu trúc GameObject gợi ý:
-/// ┌─ SkillRow
-/// │   ├─ IconImage           [Image]   – icon skill (tuỳ chọn)
-/// │   ├─ TxtSkillName        [TMP_Text] – tên skill + element
-/// │   ├─ TxtLevel            [TMP_Text] – "Lv.2 / 5"
-/// │   ├─ TxtRequire          [TMP_Text] – "Cần lv.X" hoặc "Đã tối đa"
-/// │   ├─ TxtDesc             [TMP_Text] – mô tả efect ở level hiện tại
-/// │   └─ BtnUpgrade          [Button]  – nút "+"
-///
-/// Lưu ý: Prefab này được SkillTabUI instantiate tự động.
+/// Compact skill row used by the character skill tab.
+/// Runtime rebuild keeps old prefabs usable even when their hierarchy is stale.
 /// </summary>
 public class SkillRowUI : MonoBehaviour
 {
+    private const float RowHeight = 104f;
+    private const float IconSize = 84f;
+    private const float RowSpacing = 12f;
+    private const float SkillNameFontSize = 32f;
+    private const float SkillLevelFontSize = 26f;
+    private const float SkillNameLabelHeight = 48f;
+    private const float SkillLevelLabelHeight = 34f;
+    private const float TextLineSpacing = 2f;
+
     [Header("UI References")]
     [SerializeField] private TMP_Text txtSkillName;
     [SerializeField] private TMP_Text txtLevel;
-    [SerializeField] private TMP_Text txtRequire;
-    [SerializeField] private TMP_Text txtDesc;
-    [SerializeField] private Button   btnUpgrade;
-    [SerializeField] private Image    iconImage;
+    [SerializeField] private Image iconImage;
 
-    // ── Internal state ─────────────────────────────────────
+    private Image _background;
+    private Button _rowButton;
     private PlayerSkillInfo _info;
-    private int             _playerId;
-    private Action          _onUpgraded;        // callback để SkillTabUI refresh
-    private bool            _isReadOnlyView;
+    private Action<PlayerSkillInfo> _onSelected;
+    private bool _isReadOnlyView;
+    private bool _isSelected;
 
-    // ───────────────────────────────────────────────────────
+    private static readonly Color RowNormal = new Color(0.20f, 0.10f, 0.04f, 0.82f);
+    private static readonly Color RowSelected = new Color(0.50f, 0.25f, 0.08f, 0.95f);
+    private static readonly Color RowDisabled = new Color(0.13f, 0.13f, 0.13f, 0.72f);
+
     private void Awake()
     {
-        // Tắt Raycast Target trên mọi Image không phải target graphic của Button,
-        // để tránh các Image trang trí (Background, root Image...) chặn click xuống BtnUpgrade.
-        foreach (var img in GetComponentsInChildren<Image>(includeInactive: true))
-        {
-            // Giữ lại raycast chỉ cho graphic của Button
-            bool isButtonTarget = img.GetComponent<Button>() != null
-                               || (img.transform.parent != null &&
-                                   img.transform.parent.GetComponent<Button>() != null &&
-                                   img.transform.parent.GetComponent<Button>().targetGraphic == img);
-            Debug.Log($"[SkillRowUI][Awake] Image '{img.gameObject.name}' raycastTarget={img.raycastTarget} → isButtonTarget={isButtonTarget}");
-            if (!isButtonTarget)
-                img.raycastTarget = false;
-        }
+        // Luôn rebuild để đảm bảo layout compact đúng, không phụ thuộc prefab wire
+        RebuildCompactLayout();
     }
 
-    // ───────────────────────────────────────────────────────
-    #region Public API
-
-    /// <summary>
-    /// Khởi tạo dòng skill với dữ liệu từ API.
-    /// </summary>
-    /// <param name="info">Thông tin skill trả từ server</param>
-    /// <param name="playerId">ID của player</param>
-    /// <param name="onUpgraded">Callback sau khi nâng cấp thành công</param>
-    public void SetData(PlayerSkillInfo info, int playerId, Action onUpgraded, bool readOnly = false)
+    public void SetData(
+        PlayerSkillInfo info,
+        int playerId,
+        Action onUpgraded,
+        bool readOnly = false)
     {
-        _info       = info;
-        _playerId   = playerId;
-        _onUpgraded = onUpgraded;
-        _isReadOnlyView = readOnly;
-
-        RefreshUI();
-
-        // Wire upgrade button
-        if (btnUpgrade == null)
-        {
-            Debug.LogError($"[SkillRowUI] btnUpgrade là NULL trên prefab '{gameObject.name}'! " +
-                            "Chưa kéo BtnUpgrade vào slot trong Prefab Inspector.");
-            return;
-        }
-
-        btnUpgrade.onClick.RemoveAllListeners();
-        if (_isReadOnlyView)
-        {
-            btnUpgrade.gameObject.SetActive(false);
-            Debug.Log($"[SkillRowUI][SetData] '{info.skill_name}' in read-only mode.");
-            return;
-        }
-
-        // Log thẳng trên sự kiện onClick – cái này kích hoạt TRƯỚC OnClickUpgrade
-        btnUpgrade.onClick.AddListener(() =>
-            Debug.Log($"[BtnUpgrade] ===== CLICK NHẬN ĐƯỢC ===== skill='{_info?.skill_name}' interactable={btnUpgrade.interactable}")
-        );
-        btnUpgrade.onClick.AddListener(OnClickUpgrade);
-        Debug.Log($"[SkillRowUI][SetData] '{info.skill_name}' – btnUpgrade.interactable={btnUpgrade.interactable} | btnUpgrade.enabled={btnUpgrade.enabled} | GO.activeInHierarchy={btnUpgrade.gameObject.activeInHierarchy}");
+        SetData(info, readOnly, null);
     }
 
-    #endregion
+    public void SetData(PlayerSkillInfo info, bool readOnly, Action<PlayerSkillInfo> onSelected)
+    {
+        _info = info;
+        _isReadOnlyView = readOnly;
+        _onSelected = onSelected;
+        RefreshUI();
+    }
 
-    // ───────────────────────────────────────────────────────
-    #region Private helpers
+    public void SetSelected(bool selected)
+    {
+        _isSelected = selected;
+        RefreshBackground();
+    }
+
+    private void RebuildCompactLayout()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            GameObject child = transform.GetChild(i).gameObject;
+            child.SetActive(false);
+            if (Application.isPlaying)
+                Destroy(child);
+            else
+                DestroyImmediate(child);
+        }
+
+        var rect = GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.localScale = Vector3.one;
+            rect.sizeDelta = new Vector2(0f, RowHeight);
+        }
+
+        _background = GetComponent<Image>();
+        if (_background == null)
+            _background = gameObject.AddComponent<Image>();
+        _background.color = RowNormal;
+        _background.raycastTarget = true;
+
+        var outline = GetComponent<Outline>();
+        if (outline == null)
+            outline = gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(1f, 0.78f, 0.32f, 0.72f);
+        outline.effectDistance = new Vector2(1f, -1f);
+
+        _rowButton = GetComponent<Button>();
+        if (_rowButton == null)
+            _rowButton = gameObject.AddComponent<Button>();
+        _rowButton.targetGraphic = _background;
+        _rowButton.transition = Selectable.Transition.ColorTint;
+        _rowButton.onClick.RemoveAllListeners();
+        _rowButton.onClick.AddListener(HandleRowClicked);
+
+        var layout = GetComponent<HorizontalLayoutGroup>();
+        if (layout == null)
+            layout = gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.padding = new RectOffset(10, 12, 10, 10);
+        layout.spacing = RowSpacing;
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        var rootLe = GetComponent<LayoutElement>();
+        if (rootLe == null)
+            rootLe = gameObject.AddComponent<LayoutElement>();
+        rootLe.minHeight = RowHeight;
+        rootLe.preferredHeight = RowHeight;
+        rootLe.flexibleWidth = 1f;
+
+        Transform iconFrame = CreatePanel(transform, "IconFrame", new Color(0.05f, 0.04f, 0.03f, 1f));
+        var iconLe = iconFrame.gameObject.AddComponent<LayoutElement>();
+        iconLe.minWidth = IconSize;
+        iconLe.preferredWidth = IconSize;
+        iconLe.minHeight = IconSize;
+        iconLe.preferredHeight = IconSize;
+        iconLe.flexibleWidth = 0f;
+
+        var iconOutline = iconFrame.gameObject.AddComponent<Outline>();
+        iconOutline.effectColor = new Color(1f, 0.88f, 0.55f, 0.95f);
+        iconOutline.effectDistance = new Vector2(2f, -2f);
+
+        iconImage = CreateImage(iconFrame, "IconImage");
+        Stretch(iconImage.rectTransform);
+        iconImage.raycastTarget = false;
+        iconImage.preserveAspect = true;
+
+        Transform textBlock = CreateRect(transform, "TextBlock");
+        var textLe = textBlock.gameObject.AddComponent<LayoutElement>();
+        textLe.minWidth = 1f;
+        textLe.preferredWidth = 1f;
+        textLe.flexibleWidth = 1f;
+        textLe.minHeight = IconSize;
+        textLe.preferredHeight = IconSize;
+
+        var textLayout = textBlock.gameObject.AddComponent<VerticalLayoutGroup>();
+        textLayout.spacing = TextLineSpacing;
+        textLayout.childAlignment = TextAnchor.MiddleLeft;
+        textLayout.childControlWidth = true;
+        textLayout.childControlHeight = true;
+        textLayout.childForceExpandWidth = true;
+        textLayout.childForceExpandHeight = false;
+
+        txtSkillName = CreateLabel(textBlock, "TxtSkillName", SkillNameFontSize, SkillNameLabelHeight, FontStyles.Bold, new Color(0f, 1f, 0.62f, 1f));
+        txtLevel = CreateLabel(textBlock, "TxtLevel", SkillLevelFontSize, SkillLevelLabelHeight, FontStyles.Bold, Color.white);
+    }
 
     private void RefreshUI()
     {
-        if (_info == null) return;
-
-        // Tên skill + hệ (nếu có)
-        string elementTag = string.IsNullOrEmpty(_info.element_type)
-            ? "[Universal]"
-            : $"[{_info.element_type}]";
-        if (txtSkillName != null)
-            txtSkillName.text = $"{elementTag} {_info.skill_name}";
-
-        // Level hiện tại / max
-        if (txtLevel != null)
-            txtLevel.text = $"Lv.{_info.current_level} / {_info.max_level}";
-
-        // Mô tả efect & yêu cầu nâng cấp
-        bool maxed = _info.current_level >= _info.max_level;
-        if (txtRequire != null)
+        if (_info == null)
         {
-            if (_isReadOnlyView)
+            Debug.Log("[SkillRow] RefreshUI: _info là null, bỏ qua.");
+            return;
+        }
+
+        Debug.Log($"[SkillRow] RefreshUI skill_id={_info.skill_id} name='{_info.skill_name}' " +
+                  $"code='{_info.skill_code}' icon_id='{_info.icon_id}' " +
+                  $"lv={_info.current_level}/{_info.max_level}");
+
+        if (txtSkillName != null)
+        {
+            txtSkillName.text = _info.skill_name;
+            txtSkillName.enableWordWrapping = false;
+            txtSkillName.overflowMode = TextOverflowModes.Overflow;
+            RefreshTextMesh(txtSkillName);
+        }
+
+        bool maxed = _info.current_level >= _info.max_level && _info.max_level > 0;
+        if (txtLevel != null)
+        {
+            txtLevel.text = maxed
+                ? "<color=#FFE000>Đã đạt cấp tối đa</color>"
+                : $"Lv {_info.current_level}/{_info.max_level}";
+            txtLevel.enableWordWrapping = false;
+            txtLevel.overflowMode = TextOverflowModes.Overflow;
+            RefreshTextMesh(txtLevel);
+        }
+
+        if (iconImage != null)
+        {
+            string iconKey;
+            Sprite icon = ResolveSkillIcon(_info, out iconKey);
+
+            if (icon != null)
             {
-                txtRequire.text = "<color=#8FD3FF>Chế độ xem hồ sơ bạn bè</color>";
-            }
-            else if (maxed)
-            {
-                txtRequire.text = "<color=#FFD700>Đã đạt tối đa</color>";
+                Debug.Log($"[SkillRow] Icon OK: '{iconKey}' cho '{_info.skill_name}'");
+                iconImage.sprite = icon;
+                iconImage.color  = Color.white;
+                iconImage.enabled = true;
             }
             else
             {
-                // Kiểm tra gene_tier_required
-                int playerGeneTier = GameManager.Instance?.GetPlayerData()?.gene_tier ?? 0;
-                bool geneTierOk = playerGeneTier >= _info.gene_tier_required;
+                // icon_id có thể chưa có trong DB — thử load trực tiếp từ Resources
+                Sprite direct = null;
+                if (!string.IsNullOrWhiteSpace(_info.icon_id))
+                    direct = Resources.Load<Sprite>($"SkillIcons/{_info.icon_id.Trim()}");
+                if (direct == null && !string.IsNullOrWhiteSpace(_info.skill_code))
+                    direct = Resources.Load<Sprite>($"SkillIcons/{_info.skill_code.Trim()}");
 
-                if (_info.gene_tier_required > 0 && !geneTierOk)
+                if (direct != null)
                 {
-                    txtRequire.text = $"<color=#FF8888>Cần Gene Tier {_info.gene_tier_required} • bạn có Tier {playerGeneTier}</color>";
+                    Debug.Log($"[SkillRow] Icon direct-load OK: '{_info.icon_id}' cho '{_info.skill_name}'");
+                    iconImage.sprite  = direct;
+                    iconImage.color   = Color.white;
+                    iconImage.enabled = true;
                 }
                 else
                 {
-                    txtRequire.text = _info.can_upgrade
-                        ? $"<color=#00FF88>Nâng: {_info.next_level_sp_cost} SP • cần lv.{_info.next_level_player_req}</color>"
-                        : $"<color=#FF8888>Khoá đến lv.{_info.next_level_player_req} • cần {_info.next_level_sp_cost} SP</color>";
+                    Debug.LogWarning($"[SkillRow] Không tìm thấy icon cho '{_info.skill_name}' " +
+                                     $"(icon_id='{_info.icon_id}', code='{_info.skill_code}', " +
+                                     $"SkillIconDB={(SkillIconDatabase.Instance != null ? "OK" : "NULL")})");
+                    iconImage.sprite  = null;
+                    iconImage.color   = new Color(0.55f, 0.55f, 0.55f, 1f);
+                    iconImage.enabled = true;
+
+                    // Nếu SkillIconDatabase chưa khởi tạo xong, thử lại sau 1 frame
+                    if (SkillIconDatabase.Instance == null)
+                        StartCoroutine(RetryIconNextFrame());
                 }
             }
         }
 
-        if (txtDesc != null)
-            txtDesc.text = _isReadOnlyView
-                ? (string.IsNullOrWhiteSpace(_info.description) ? "Không có mô tả." : _info.description)
-                : (maxed ? "(Max)" : _info.next_level_desc);
-
-        // Nút "+" chỉ active khi có thể nâng
-        if (btnUpgrade != null)
-        {
-            btnUpgrade.gameObject.SetActive(!_isReadOnlyView);
-            btnUpgrade.interactable = !_isReadOnlyView && _info.can_upgrade && !maxed;
-        }
-
-        // Icon skill (ưu tiên icon_id từ server, fallback sang skill_code)
-        if (iconImage != null)
-        {
-            string iconKey = !string.IsNullOrEmpty(_info.icon_id)
-                ? _info.icon_id
-                : _info.skill_code;
-            Sprite icon = SkillIconDatabase.Instance != null
-                ? SkillIconDatabase.Instance.GetIcon(iconKey)
-                : null;
-            iconImage.sprite  = icon;
-            iconImage.enabled = icon != null;
-        }
+        RefreshBackground();
     }
 
-    private void OnClickUpgrade()
+    private System.Collections.IEnumerator RetryIconNextFrame()
     {
-        if (_isReadOnlyView)
+        yield return null; // chờ 1 frame
+        if (_info != null && iconImage != null && iconImage.sprite == null)
         {
-            Debug.LogWarning($"[SkillRowUI] Ignored upgrade click in read-only mode for skill='{_info?.skill_name}'.");
-            return;
-        }
-
-        Debug.Log($"[SkillRowUI][OnClick] CALLED – skill='{_info?.skill_name}' can_upgrade={_info?.can_upgrade}");
-
-        if (_info == null)                                  { Debug.LogError("[SkillRowUI] _info NULL"); return; }
-        if (GameplayCommandService.Instance == null)        { Debug.LogError("[SkillRowUI] GameplayCommandService NULL"); return; }
-        if (!_info.can_upgrade)                             { Debug.LogWarning("[SkillRowUI] can_upgrade=false"); return; }
-        if (_info.current_level >= _info.max_level)         { Debug.LogWarning("[SkillRowUI] Đã max level"); return; }
-
-        if (btnUpgrade != null) btnUpgrade.interactable = false;
-
-        GameplayCommandService.OnSkillUpgraded -= HandleSkillUpgraded;
-        GameplayCommandService.OnSkillUpgraded += HandleSkillUpgraded;
-        GameplayCommandService.Instance.UpgradeSkillServerRpc(_info.skill_id);
-    }
-
-    private void HandleSkillUpgraded(string json)
-    {
-        GameplayCommandService.OnSkillUpgraded -= HandleSkillUpgraded;
-
-        if (json.Contains("\"error\""))
-        {
-            Debug.LogError($"[SkillRowUI] Lỗi nâng skill: {json}");
-            if (btnUpgrade != null) btnUpgrade.interactable = _info?.can_upgrade ?? false;
-            return;
-        }
-
-        int newLevel = (_info?.current_level ?? 0) + 1;
-        Debug.Log($"[SkillRowUI] Đã nâng {_info?.skill_name} lên Lv.{newLevel}");
-
-        var pd = GameManager.Instance?.GetPlayerData();
-        if (pd?.skills != null)
-        {
-            foreach (var s in pd.skills)
+            string iconKey;
+            Sprite icon = ResolveSkillIcon(_info, out iconKey);
+            if (icon != null)
             {
-                if (s.skill_id == _info?.skill_id) { s.level = newLevel; break; }
+                iconImage.sprite  = icon;
+                iconImage.color   = Color.white;
+                iconImage.enabled = true;
+                Debug.Log($"[SkillRow] Retry icon OK: '{iconKey}' cho '{_info.skill_name}'");
             }
         }
-
-        _onUpgraded?.Invoke();
     }
 
-    #endregion
+    private void RefreshBackground()
+    {
+        if (_background == null)
+            return;
+
+        if (_isReadOnlyView)
+            _background.color = _isSelected ? RowSelected : RowDisabled;
+        else
+            _background.color = _isSelected ? RowSelected : RowNormal;
+    }
+
+    private void HandleRowClicked()
+    {
+        if (_info == null)
+            return;
+
+        _onSelected?.Invoke(_info);
+    }
+
+    private static Transform CreateRect(Transform parent, string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        go.layer = parent.gameObject.layer;
+        return go.transform;
+    }
+
+    private static Transform CreatePanel(Transform parent, string name, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        go.layer = parent.gameObject.layer;
+        var image = go.GetComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+        return go.transform;
+    }
+
+    private static Image CreateImage(Transform parent, string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        go.layer = parent.gameObject.layer;
+        return go.GetComponent<Image>();
+    }
+
+    private static TMP_Text CreateLabel(Transform parent, string name, float fontSize, float height, FontStyles style, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        go.layer = parent.gameObject.layer;
+
+        var rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 0.5f);
+        rect.anchorMax = new Vector2(1f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(0f, height);
+        rect.localScale = Vector3.one;
+
+        var text = go.GetComponent<TextMeshProUGUI>();
+        text.text = string.Empty;
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.color = color;
+        text.alignment = TextAlignmentOptions.MidlineLeft;
+        text.enableWordWrapping = false;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.margin = Vector4.zero;
+        text.raycastTarget = false;
+        UIRuntimeAssetHelper.ApplyNotoSans(text);
+
+        var le = go.AddComponent<LayoutElement>();
+        le.minWidth = 1f;
+        le.preferredWidth = 1f;
+        le.minHeight = height;
+        le.preferredHeight = height;
+        le.flexibleWidth = 1f;
+        le.flexibleHeight = 0f;
+        RefreshTextMesh(text);
+        return text;
+    }
+
+    private static void RefreshTextMesh(TMP_Text text)
+    {
+        if (text == null)
+            return;
+
+        text.enabled = true;
+        text.gameObject.SetActive(true);
+        text.raycastTarget = false;
+        text.alpha = 1f;
+        text.canvasRenderer.SetAlpha(1f);
+        text.SetLayoutDirty();
+        text.SetVerticesDirty();
+        text.SetMaterialDirty();
+        text.ForceMeshUpdate();
+    }
+
+    private static Sprite ResolveSkillIcon(PlayerSkillInfo info, out string resolvedKey)
+    {
+        resolvedKey = null;
+        if (info == null)
+            return null;
+
+        Sprite icon = TryLoadSkillIcon(info.icon_id, out resolvedKey);
+        if (icon != null)
+            return icon;
+
+        icon = TryLoadSkillIcon(info.skill_code, out resolvedKey);
+        if (icon != null)
+            return icon;
+
+        string idKey = info.skill_id > 0 ? info.skill_id.ToString() : null;
+        return TryLoadSkillIcon(idKey, out resolvedKey);
+    }
+
+    private static Sprite TryLoadSkillIcon(string key, out string resolvedKey)
+    {
+        resolvedKey = null;
+        if (string.IsNullOrWhiteSpace(key))
+            return null;
+
+        string trimmedKey = key.Trim();
+        if (trimmedKey == "0")
+            return null;
+
+        Sprite icon = SkillIconDatabase.Instance != null
+            ? SkillIconDatabase.Instance.GetIcon(trimmedKey)
+            : null;
+
+        if (icon == null)
+            icon = Resources.Load<Sprite>($"SkillIcons/{trimmedKey}");
+
+        if (icon != null)
+            resolvedKey = trimmedKey;
+
+        return icon;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
 }

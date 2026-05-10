@@ -1858,6 +1858,135 @@ namespace GameServerApi.Controllers
         //  SKILL ENDPOINTS
         // ================================================================
 
+        private sealed class SkillLevelRow
+        {
+            public int Level { get; set; }
+            public int LevelReq { get; set; }
+            public int SpCost { get; set; }
+            public float EffectValue { get; set; }
+            public int MpCost { get; set; }
+            public float CooldownSec { get; set; }
+            public string Desc { get; set; } = "";
+        }
+
+        private static List<SkillLevelRow> ParseSkillLevels(string? levelsJson)
+        {
+            var result = new List<SkillLevelRow>();
+            if (string.IsNullOrWhiteSpace(levelsJson))
+                return result;
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(levelsJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                    return result;
+
+                int level = 1;
+                foreach (JsonElement item in doc.RootElement.EnumerateArray())
+                {
+                    result.Add(new SkillLevelRow
+                    {
+                        Level = level++,
+                        LevelReq = ReadInt(item, "level_req", 1),
+                        SpCost = ReadInt(item, "sp_cost", 1),
+                        EffectValue = ReadFloat(item, "effect_value", 0f),
+                        MpCost = ReadInt(item, "mp_cost", 0),
+                        CooldownSec = ReadFloat(item, "cooldown_sec", 3f),
+                        Desc = ReadString(item, "desc", "")
+                    });
+                }
+            }
+            catch
+            {
+                // Bad skill rows should not break the character panel.
+            }
+
+            return result;
+        }
+
+        private static int ReadInt(JsonElement item, string propertyName, int fallback)
+        {
+            if (!item.TryGetProperty(propertyName, out JsonElement value))
+                return fallback;
+
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int intValue))
+                return intValue;
+
+            return fallback;
+        }
+
+        private static float ReadFloat(JsonElement item, string propertyName, float fallback)
+        {
+            if (!item.TryGetProperty(propertyName, out JsonElement value))
+                return fallback;
+
+            if (value.ValueKind == JsonValueKind.Number)
+                return (float)value.GetDouble();
+
+            return fallback;
+        }
+
+        private static string ReadString(JsonElement item, string propertyName, string fallback)
+        {
+            if (!item.TryGetProperty(propertyName, out JsonElement value))
+                return fallback;
+
+            return value.ValueKind == JsonValueKind.String ? value.GetString() ?? fallback : fallback;
+        }
+
+        private static object ToLevelDetail(SkillLevelRow row) => new
+        {
+            level = row.Level,
+            level_req = row.LevelReq,
+            sp_cost = row.SpCost,
+            effect_value = row.EffectValue,
+            mp_cost = row.MpCost,
+            cooldown_sec = row.CooldownSec,
+            desc = row.Desc
+        };
+
+        private static int SkillSortGroup(SkillTemplate skill)
+        {
+            if (skill.HybridId != null)
+                return 2;
+
+            return string.IsNullOrEmpty(skill.ElementType) ? 0 : 1;
+        }
+
+        private static int SkillSortOrder(SkillTemplate skill)
+        {
+            if (string.Equals(skill.SkillCode, "NORMAL_ATTACK", StringComparison.OrdinalIgnoreCase))
+                return 0;
+            if (string.Equals(skill.SkillCode, "DASH", StringComparison.OrdinalIgnoreCase))
+                return 1;
+
+            return 10 + Math.Max(0, skill.LevelToUnlock);
+        }
+
+        private static bool IsSkillVisibleForPlayer(SkillTemplate skill, InfoChar info)
+        {
+            if (skill.HybridId != null)
+                return info.IsHybrid && skill.HybridId == info.HybridId;
+
+            return string.IsNullOrEmpty(skill.ElementType)
+                || string.Equals(skill.ElementType, info.ElementType, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeSkillCode(string? skillCode)
+        {
+            if (string.IsNullOrWhiteSpace(skillCode))
+                return string.Empty;
+
+            return skillCode.Trim().ToUpperInvariant() switch
+            {
+                "WATER_SHIELD" => "WATER_ARMOR",
+                "EARTH_SHIELD" => "WATER_ARMOR",
+                "HYBRID_EARTH_FIRE_ERUPTION" => "HYBRID_FIRE_EARTH_LAVA_AURA",
+                "HYBRID_METAL_WIND_GALE" => "HYBRID_METAL_WIND_BARRAGE",
+                _ => skillCode.Trim()
+            };
+        }
+
         /// <summary>
         /// GET /api/player/{playerId}/skills
         /// Trả về tất cả skills từ skill_template kèm level hiện tại của player.
@@ -1876,16 +2005,42 @@ namespace GameServerApi.Controllers
 
             // Parse player skills JSON → Dictionary<skill_id, current_level>
             var playerSkillLevels = new Dictionary<int, int>();
+            var playerSkillLevelsByCode = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(player.SkillsJson) && player.SkillsJson != "[]")
             {
                 try
                 {
                     var arr = JsonSerializer.Deserialize<List<JsonElement>>(player.SkillsJson);
                     if (arr != null)
+                    {
                         foreach (var elem in arr)
-                            if (elem.TryGetProperty("skill_id", out var idP) &&
-                                elem.TryGetProperty("current_level", out var lvP))
-                                playerSkillLevels[idP.GetInt32()] = lvP.GetInt32();
+                        {
+                            int level = 0;
+                            if (elem.TryGetProperty("current_level", out var currentLevelProp))
+                                level = currentLevelProp.GetInt32();
+                            else if (elem.TryGetProperty("currentLevel", out var legacyLevelProp))
+                                level = legacyLevelProp.GetInt32();
+                            else if (elem.TryGetProperty("level", out var levelProp))
+                                level = levelProp.GetInt32();
+
+                            if (elem.TryGetProperty("skill_id", out var idP))
+                                playerSkillLevels[idP.GetInt32()] = level;
+
+                            if (elem.TryGetProperty("skillCode", out var codeProp))
+                            {
+                                string? code = codeProp.GetString();
+                                if (!string.IsNullOrWhiteSpace(code))
+                                    playerSkillLevelsByCode[NormalizeSkillCode(code)] = level;
+                            }
+
+                            if (elem.TryGetProperty("skill_code", out var snakeCodeProp))
+                            {
+                                string? code = snakeCodeProp.GetString();
+                                if (!string.IsNullOrWhiteSpace(code))
+                                    playerSkillLevelsByCode[NormalizeSkillCode(code)] = level;
+                            }
+                        }
+                    }
                 }
                 catch { /* ignore parse errors */ }
             }
@@ -1898,12 +2053,19 @@ namespace GameServerApi.Controllers
                 .Where(s =>
                     (s.HybridId == null && (s.ElementType == null || s.ElementType == info.ElementType)) ||
                     (s.HybridId != null && info.IsHybrid && s.HybridId == info.HybridId))
-                .OrderBy(s => s.ElementType).ThenBy(s => s.SkillId)
                 .ToListAsync();
+
+            templates = templates
+                .OrderBy(SkillSortGroup)
+                .ThenBy(SkillSortOrder)
+                .ThenBy(s => s.SkillId)
+                .ToList();
 
             var skillList = templates.Select(t =>
             {
-                int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl) ? lvl : 0;
+                int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl)
+                    ? lvl
+                    : playerSkillLevelsByCode.TryGetValue(NormalizeSkillCode(t.SkillCode), out var legacyLvl) ? legacyLvl : 0;
                 int nextLevelPlayerReq = 0;
                 int nextSpCost = 1;
                 float nextEffectValue = 0;
@@ -1914,6 +2076,7 @@ namespace GameServerApi.Controllers
                 float currentCooldownSec = 3f;
                 float currentEffectValue = 0f;
                 int   currentMpCost      = 0;
+                var levelDetails = ParseSkillLevels(t.LevelsJson);
 
                 if (!string.IsNullOrEmpty(t.LevelsJson))
                 {
@@ -1968,7 +2131,8 @@ namespace GameServerApi.Controllers
                     next_level_player_req = nextLevelPlayerReq,
                     next_level_sp_cost    = nextSpCost,
                     next_level_desc       = nextDesc,
-                    icon_id               = t.IconId
+                    icon_id               = t.IconId,
+                    level_details         = levelDetails.Select(ToLevelDetail).ToList()
                 };
             }).ToList();
 
@@ -2003,6 +2167,8 @@ namespace GameServerApi.Controllers
                 if (template == null) return BadRequest($"Skill ID {skillId} không tồn tại.");
 
                 var info = player.GetInfoChar();
+                if (!IsSkillVisibleForPlayer(template, info))
+                    return BadRequest($"{template.SkillName} không thuộc hệ/gene hiện tại của nhân vật.");
 
                 // Parse player's skills list
                 var playerSkills = new List<Dictionary<string, object>>();
@@ -2032,8 +2198,22 @@ namespace GameServerApi.Controllers
 
                 // Find current level of this skill
                 var existing = playerSkills.FirstOrDefault(s =>
-                    s.ContainsKey("skill_id") && Convert.ToInt32(s["skill_id"]) == skillId);
-                int curLevel = existing != null ? Convert.ToInt32(existing["current_level"]) : 0;
+                    (s.ContainsKey("skill_id") && Convert.ToInt32(s["skill_id"]) == skillId) ||
+                    (s.TryGetValue("skillCode", out var codeObj) &&
+                     string.Equals(NormalizeSkillCode(Convert.ToString(codeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase)) ||
+                    (s.TryGetValue("skill_code", out var snakeCodeObj) &&
+                     string.Equals(NormalizeSkillCode(Convert.ToString(snakeCodeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase)));
+
+                int curLevel = 0;
+                if (existing != null)
+                {
+                    if (existing.TryGetValue("current_level", out var currentLevelObj))
+                        curLevel = Convert.ToInt32(currentLevelObj);
+                    else if (existing.TryGetValue("currentLevel", out var legacyLevelObj))
+                        curLevel = Convert.ToInt32(legacyLevelObj);
+                    else if (existing.TryGetValue("level", out var levelObj))
+                        curLevel = Convert.ToInt32(levelObj);
+                }
 
                 if (curLevel >= template.MaxLevel)
                     return BadRequest($"{template.SkillName} đã đạt level tối đa ({template.MaxLevel}).");
@@ -2060,6 +2240,9 @@ namespace GameServerApi.Controllers
 
                 if (info.SkillPoints < spCost)
                     return BadRequest($"Không đủ skill points. Cần {spCost}, có {info.SkillPoints}.");
+
+                if (info.GeneTier < template.GeneTierRequired)
+                    return BadRequest($"C\u1ea7n Gene Tier {template.GeneTierRequired} \u0111\u1ec3 n\u00e2ng {template.SkillName}. Hi\u1ec7n t\u1ea1i: {info.GeneTier}.");
 
                 // Apply upgrade
                 int newLevel = curLevel + 1;
@@ -2409,6 +2592,7 @@ namespace GameServerApi.Controllers
                 float currentEffectValue = 0f;
                 int currentMpCost = 0;
                 string currentDesc = row.template.Description ?? string.Empty;
+                var levelDetails = ParseSkillLevels(row.template.LevelsJson);
 
                 if (!string.IsNullOrEmpty(row.template.LevelsJson))
                 {
@@ -2456,7 +2640,8 @@ namespace GameServerApi.Controllers
                     next_level_player_req = 0,
                     next_level_sp_cost = 0,
                     next_level_desc = currentDesc,
-                    icon_id = row.template.IconId
+                    icon_id = row.template.IconId,
+                    level_details = levelDetails.Select(ToLevelDetail).ToList()
                 };
             }).ToList();
 

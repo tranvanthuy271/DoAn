@@ -184,6 +184,7 @@ public static class ChatPrefabCreator
         var chIconGraphic = chIconImage.gameObject.AddComponent<Image>();
         chIconGraphic.raycastTarget = false;
         chIconGraphic.preserveAspect = true;
+        chIconGraphic.color = Color.white;
         chIconGraphic.enabled = false;
 
         // Channel name label
@@ -265,11 +266,14 @@ public static class ChatPrefabCreator
         // ── ChatPanelUI script ───────────────────────────────────────
         var panelScript = root.AddComponent<ChatPanelUI>();
         var so = new SerializedObject(panelScript);
+        var messageEntryPrefab = LoadMessageEntryPrefabAsset();
         SetPrivateField(so, "messageScrollRect",  scrollRect);
         SetPrivateField(so, "messageContent",     content);
+        SetPrivateField(so, "messageEntryPrefab", messageEntryPrefab);
         SetPrivateField(so, "chatInputField",     inputField.GetComponent<TMP_InputField>());
         SetPrivateField(so, "sendButton",         sendGo.GetComponent<Button>());
         SetPrivateField(so, "channelIconButton",  chBtnGo.GetComponent<Button>());
+        SetPrivateField(so, "channelIconImage",   chIconGraphic);
         SetPrivateField(so, "channelIconLabel",   chLbl.GetComponent<TextMeshProUGUI>());
         SetPrivateField(so, "channelNameLabel",   chNameGo.GetComponent<TextMeshProUGUI>());
         SetPrivateField(so, "channelDropdown",    dropdown.GetComponent<ChatChannelDropdownUI>());
@@ -487,6 +491,15 @@ public static class ChatPrefabCreator
         var path = $"{PREFAB_DIR}/{name}.prefab";
         PrefabUtility.SaveAsPrefabAsset(go, path);
         Debug.Log($"[ChatPrefabCreator] Đã tạo: {path}");
+    }
+
+    private static GameObject LoadMessageEntryPrefabAsset()
+    {
+        var preferred = AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/MsgEntry.prefab");
+        if (preferred != null)
+            return preferred;
+
+        return AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/ChatMessageEntry.prefab");
     }
 
     private static GameObject MakeChild<T>(GameObject parent, string name) where T : Component

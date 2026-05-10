@@ -4,29 +4,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Server-side: mỗi map có một Physics2D scene riêng biệt.
-/// Đảm bảo objects ở map khác nhau KHÔNG bao giờ trigger lẫn nhau
-/// (OnTriggerEnter2D, OverlapCircle... chỉ hoạt động trong cùng scene).
-///
-/// SETUP:
-///   Gắn vào "ServerBootstrap" GameObject cùng vị trí MapWorldBootstrap.
-///   MapWorldBootstrap.StartServerRoutine() gọi Initialize(_config) sau registry.Initialize().
-///
-/// DÙNG:
-///   MapSceneManager.Instance.MoveToMapScene(gameObject, mapId);
-///   → Gọi TRƯỚC NetworkObject.Spawn() để đảm bảo đúng physics world từ frame đầu.
-///
-/// GHI CHÚ:
-///   Local Physics2D scenes KHÔNG tự simulate — FixedUpdate() gọi thủ công ở đây.
-///   Physics.autoSimulation phải = false nếu dùng LocalPhysicsMode (tự động khi CreateScene với LocalPhysicsMode).
+/// Server-side: each map gets its own Physics2D scene to isolate cross-map queries.
+/// Static ground colliders from loaded client scenes are mirrored into those scenes so
+/// server-authoritative enemies can use gravity and land on platforms.
 /// </summary>
 [DisallowMultipleComponent]
 public class MapSceneManager : MonoBehaviour
 {
     public static MapSceneManager Instance { get; private set; }
 
-    // mapId → scene riêng với LocalPhysicsMode.Physics2D
     private readonly Dictionary<int, Scene> _mapScenes = new();
+    private readonly Dictionary<int, string> _mapSceneNames = new();
+    private readonly Dictionary<int, GameObject> _groundProxyRoots = new();
+    private MapWorldConfig _config;
+    private ServerGroundColliderDatabase _groundDatabase;
 
     private void Awake()
     {
@@ -35,36 +26,50 @@ public class MapSceneManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+            Instance = null;
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        foreach (var proxyRoot in _groundProxyRoots.Values)
+        {
+            if (proxyRoot != null)
+                Destroy(proxyRoot);
+        }
+        _groundProxyRoots.Clear();
 
         foreach (var kvp in _mapScenes)
         {
             if (kvp.Value.IsValid())
                 SceneManager.UnloadSceneAsync(kvp.Value);
         }
+
         _mapScenes.Clear();
+        _mapSceneNames.Clear();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
-
     /// <summary>
-    /// Gọi một lần khi server boot TRƯỚC khi spawn bất kỳ enemy/NPC/player nào.
-    /// Tạo 1 scene Physics2D riêng cho mỗi map định nghĩa trong config.
+    /// Must run once during server boot before any enemy/NPC/player is spawned.
+    /// Creates one local Physics2D scene for each map id.
     /// </summary>
     public void Initialize(MapWorldConfig config)
     {
         if (config?.maps == null)
         {
-            Debug.LogError("[MapSceneManager] MapWorldConfig null hoặc không có maps — bỏ qua init.");
+            Debug.LogError("[MapSceneManager] MapWorldConfig is null or has no maps.");
             return;
         }
+
+        _config = config;
+        _groundDatabase = Resources.Load<ServerGroundColliderDatabase>(ServerGroundColliderDatabase.ResourcesPath);
+        _mapSceneNames.Clear();
 
         foreach (var mapDef in config.maps)
         {
@@ -76,21 +81,23 @@ public class MapSceneManager : MonoBehaviour
                 new CreateSceneParameters(LocalPhysicsMode.Physics2D));
 
             _mapScenes[mapDef.mapId] = scene;
-            Debug.Log($"[MapSceneManager] ✓ Created physics scene for map {mapDef.mapId} " +
-                      $"({mapDef.mapName ?? "unnamed"})");
+            _mapSceneNames[mapDef.mapId] = mapDef.sceneName;
+
+            Debug.Log($"[MapSceneManager] Created physics scene for map {mapDef.mapId} ({mapDef.mapName ?? "unnamed"}).");
         }
 
-        Debug.Log($"[MapSceneManager] ✓ {_mapScenes.Count} map physics scene(s) ready.");
+        BuildGroundProxiesFromDatabase();
+        RebuildGroundProxiesForLoadedScenes();
+        Debug.Log($"[MapSceneManager] Ready with {_mapScenes.Count} map physics scene(s).");
     }
 
     /// <summary>
-    /// Di chuyển GameObject vào scene Physics2D của map tương ứng.
-    /// GỌI TRƯỚC NetworkObject.Spawn() để đảm bảo đúng physics world từ frame đầu.
-    /// An toàn khi gọi nhiều lần — bỏ qua nếu scene không tồn tại hoặc obj null.
+    /// Move a GameObject into the target map physics scene before NetworkObject.Spawn().
     /// </summary>
     public void MoveToMapScene(GameObject obj, int mapId)
     {
-        if (obj == null) return;
+        if (obj == null)
+            return;
 
         if (_mapScenes.TryGetValue(mapId, out Scene scene) && scene.IsValid())
         {
@@ -103,24 +110,17 @@ public class MapSceneManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[MapSceneManager] Scene cho map {mapId} chưa được tạo. " +
-                             "Kiểm tra Initialize() đã được gọi trước khi spawn objects. " +
-                             "Object sẽ ở main scene — có thể xảy ra cross-map collision!");
+            Debug.LogWarning($"[MapSceneManager] Missing physics scene for map {mapId}. Object stays in main scene.");
         }
     }
 
-    /// <summary>Kiểm tra scene cho map đã được tạo chưa.</summary>
     public bool HasScene(int mapId) =>
-        _mapScenes.TryGetValue(mapId, out Scene s) && s.IsValid();
+        _mapScenes.TryGetValue(mapId, out Scene scene) && scene.IsValid();
 
-    /// <summary>
-    /// Trả về số lượng scenes đang quản lý (dùng cho debug/testing).
-    /// </summary>
     public int SceneCount => _mapScenes.Count;
 
     /// <summary>
-    /// Server-only physics scenes không tồn tại trên client.
-    /// Tắt NGO scene sync để MoveGameObjectToScene không phát sinh SceneMigration sang client.
+    /// Local physics scenes do not exist on clients. Disable NGO scene migration sync.
     /// </summary>
     public static void ConfigureNetworkObjectForServerOnlyScene(NetworkObject networkObject)
     {
@@ -131,21 +131,214 @@ public class MapSceneManager : MonoBehaviour
         networkObject.SceneMigrationSynchronization = false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Physics Simulation
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Local Physics2D scenes KHÔNG tự auto-simulate khi dùng LocalPhysicsMode.
-    /// FixedUpdate thủ công simulate từng scene — PHẢI có để trigger/collision hoạt động.
-    /// </summary>
     private void FixedUpdate()
     {
-        float dt = Time.fixedDeltaTime;
+        float deltaTime = Time.fixedDeltaTime;
         foreach (var kvp in _mapScenes)
         {
-            if (!kvp.Value.IsValid()) continue;
-            kvp.Value.GetPhysicsScene2D().Simulate(dt);
+            if (!kvp.Value.IsValid())
+                continue;
+
+            kvp.Value.GetPhysicsScene2D().Simulate(deltaTime);
         }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (_config == null || !scene.IsValid() || !scene.isLoaded)
+            return;
+
+        foreach (var kvp in _mapSceneNames)
+        {
+            if (!string.Equals(kvp.Value, scene.name, System.StringComparison.Ordinal))
+                continue;
+
+            BuildGroundProxyForMap(kvp.Key, scene);
+        }
+    }
+
+    private void RebuildGroundProxiesForLoadedScenes()
+    {
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                continue;
+
+            foreach (var kvp in _mapSceneNames)
+            {
+                if (!string.Equals(kvp.Value, loadedScene.name, System.StringComparison.Ordinal))
+                    continue;
+
+                BuildGroundProxyForMap(kvp.Key, loadedScene);
+            }
+        }
+    }
+
+    private void BuildGroundProxiesFromDatabase()
+    {
+        if (_groundDatabase == null)
+        {
+            Debug.LogWarning(
+                "[MapSceneManager] ServerGroundColliderDatabase not found. " +
+                "Dedicated server maps will have no ground until the database is baked.");
+            return;
+        }
+
+        foreach (var kvp in _mapScenes)
+        {
+            if (!_groundDatabase.TryGetMap(kvp.Key, out ServerGroundColliderDatabase.MapGroundData mapData))
+            {
+                Debug.LogWarning($"[MapSceneManager] Ground database has no data for map {kvp.Key}.");
+                continue;
+            }
+
+            BuildGroundProxyForMap(kvp.Key, mapData);
+        }
+    }
+
+    private void BuildGroundProxyForMap(int mapId, ServerGroundColliderDatabase.MapGroundData mapData)
+    {
+        if (mapData?.colliders == null)
+            return;
+
+        if (!_mapScenes.TryGetValue(mapId, out Scene targetScene) || !targetScene.IsValid())
+            return;
+
+        DestroyExistingGroundProxy(mapId);
+
+        GameObject root = new GameObject($"__ServerGroundProxy_map{mapId}");
+        root.hideFlags = HideFlags.HideAndDontSave;
+        SceneManager.MoveGameObjectToScene(root, targetScene);
+        _groundProxyRoots[mapId] = root;
+
+        foreach (var colliderData in mapData.colliders)
+            CloneGroundCollider(root.transform, colliderData);
+
+        Debug.Log($"[MapSceneManager] Built {mapData.colliders.Length} baked ground proxy collider(s) for map {mapId}.");
+    }
+
+    private void BuildGroundProxyForMap(int mapId, Scene sourceScene)
+    {
+        if (!_mapScenes.TryGetValue(mapId, out Scene targetScene) || !targetScene.IsValid())
+            return;
+
+        int groundLayer = LayerMask.NameToLayer("Ground");
+        if (groundLayer < 0)
+        {
+            Debug.LogWarning("[MapSceneManager] Layer 'Ground' not found. Skipping ground proxy build.");
+            return;
+        }
+
+        DestroyExistingGroundProxy(mapId);
+
+        GameObject root = new GameObject($"__ServerGroundProxy_map{mapId}");
+        root.hideFlags = HideFlags.HideAndDontSave;
+        SceneManager.MoveGameObjectToScene(root, targetScene);
+        _groundProxyRoots[mapId] = root;
+
+        int clonedCount = 0;
+        foreach (GameObject sourceRoot in sourceScene.GetRootGameObjects())
+        {
+            BoxCollider2D[] groundColliders = sourceRoot.GetComponentsInChildren<BoxCollider2D>(true);
+            foreach (BoxCollider2D sourceCollider in groundColliders)
+            {
+                if (sourceCollider == null || sourceCollider.gameObject.layer != groundLayer)
+                    continue;
+
+                CloneGroundCollider(root.transform, sourceCollider);
+                clonedCount++;
+            }
+        }
+
+        if (clonedCount > 0)
+        {
+            Debug.Log($"[MapSceneManager] Built {clonedCount} ground proxy collider(s) for map {mapId} from scene '{sourceScene.name}'.");
+        }
+        else
+        {
+            Debug.LogWarning($"[MapSceneManager] No Ground BoxCollider2D found in scene '{sourceScene.name}' for map {mapId}.");
+        }
+    }
+
+    private void DestroyExistingGroundProxy(int mapId)
+    {
+        if (!_groundProxyRoots.TryGetValue(mapId, out GameObject existingRoot) || existingRoot == null)
+            return;
+
+        existingRoot.SetActive(false);
+        Destroy(existingRoot);
+        _groundProxyRoots.Remove(mapId);
+    }
+
+    private static void CloneGroundCollider(Transform parent, BoxCollider2D sourceCollider)
+    {
+        GameObject proxy = new GameObject($"__GroundProxy_{sourceCollider.gameObject.name}");
+        proxy.layer = sourceCollider.gameObject.layer;
+        proxy.tag = sourceCollider.gameObject.tag;
+        proxy.hideFlags = HideFlags.HideAndDontSave;
+
+        Transform proxyTransform = proxy.transform;
+        proxyTransform.SetParent(parent, false);
+        proxyTransform.position = sourceCollider.transform.position;
+        proxyTransform.rotation = sourceCollider.transform.rotation;
+        proxyTransform.localScale = sourceCollider.transform.lossyScale;
+
+        PlatformEffector2D sourceEffector = sourceCollider.GetComponent<PlatformEffector2D>();
+        if (sourceEffector != null)
+        {
+            PlatformEffector2D proxyEffector = proxy.AddComponent<PlatformEffector2D>();
+            proxyEffector.useOneWay = sourceEffector.useOneWay;
+            proxyEffector.useOneWayGrouping = sourceEffector.useOneWayGrouping;
+            proxyEffector.surfaceArc = sourceEffector.surfaceArc;
+            proxyEffector.sideArc = sourceEffector.sideArc;
+            proxyEffector.rotationalOffset = sourceEffector.rotationalOffset;
+            proxyEffector.useSideFriction = sourceEffector.useSideFriction;
+            proxyEffector.useSideBounce = sourceEffector.useSideBounce;
+        }
+
+        BoxCollider2D proxyCollider = proxy.AddComponent<BoxCollider2D>();
+        proxyCollider.enabled = sourceCollider.enabled;
+        proxyCollider.isTrigger = sourceCollider.isTrigger;
+        proxyCollider.offset = sourceCollider.offset;
+        proxyCollider.size = sourceCollider.size;
+        proxyCollider.edgeRadius = sourceCollider.edgeRadius;
+        proxyCollider.sharedMaterial = sourceCollider.sharedMaterial;
+        proxyCollider.usedByEffector = sourceCollider.usedByEffector;
+    }
+
+    private static void CloneGroundCollider(
+        Transform parent,
+        ServerGroundColliderDatabase.GroundColliderData colliderData)
+    {
+        GameObject proxy = new GameObject($"__GroundProxy_{colliderData.name}");
+        proxy.layer = LayerMask.NameToLayer("Ground");
+        proxy.tag = "Ground";
+        proxy.hideFlags = HideFlags.HideAndDontSave;
+
+        Transform proxyTransform = proxy.transform;
+        proxyTransform.SetParent(parent, false);
+        proxyTransform.position = colliderData.position;
+        proxyTransform.rotation = Quaternion.Euler(0f, 0f, colliderData.rotationZ);
+        proxyTransform.localScale = colliderData.scale;
+
+        if (colliderData.hasPlatformEffector)
+        {
+            PlatformEffector2D proxyEffector = proxy.AddComponent<PlatformEffector2D>();
+            proxyEffector.useOneWay = colliderData.useOneWay;
+            proxyEffector.useOneWayGrouping = colliderData.useOneWayGrouping;
+            proxyEffector.surfaceArc = colliderData.surfaceArc;
+            proxyEffector.sideArc = colliderData.sideArc;
+            proxyEffector.rotationalOffset = colliderData.rotationalOffset;
+            proxyEffector.useSideFriction = colliderData.useSideFriction;
+            proxyEffector.useSideBounce = colliderData.useSideBounce;
+        }
+
+        BoxCollider2D proxyCollider = proxy.AddComponent<BoxCollider2D>();
+        proxyCollider.isTrigger = colliderData.isTrigger;
+        proxyCollider.offset = colliderData.offset;
+        proxyCollider.size = colliderData.size;
+        proxyCollider.edgeRadius = colliderData.edgeRadius;
+        proxyCollider.usedByEffector = colliderData.usedByEffector;
     }
 }

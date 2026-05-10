@@ -104,6 +104,12 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             Debug.Log($"{LogPrefix} Click ignored because NpcMenuUI is already open.", this);
             return;
         }
+        var dynUi = NpcDynamicMenuUI.GetOrFind();
+        if (dynUi != null && dynUi.IsOpen)
+        {
+            Debug.Log($"{LogPrefix} Click ignored because NpcDynamicMenuUI is already open.", this);
+            return;
+        }
 
         // Pre-check khoảng cách ở client
         NetworkObject localObj = NetworkManager.Singleton?.SpawnManager?.GetLocalPlayerObject();
@@ -251,24 +257,39 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         StartCoroutine(FetchDialogueAndSend(data, clientId));
     }
 
-    private IEnumerator FetchDialogueAndSend(NpcData data, ulong clientId)
+    private IEnumerator FetchDialogueAndSend(NpcData serverData, ulong clientId)
     {
         int userId = ResolveClientUserId(clientId);
         string jwtToken = ResolveClientJwt(clientId);
-        data.dialogue_text = ResolveFallbackDialogueText(data);
+
+        // Tạo bản copy để gửi về client — KHÔNG mutate serverData._npcData
+        var clientData = new NpcData
+        {
+            npc_id       = serverData.npc_id,
+            npc_name     = serverData.npc_name,
+            npc_type     = serverData.npc_type,
+            pos_x        = serverData.pos_x,
+            pos_y        = serverData.pos_y,
+            dialogue_key = serverData.dialogue_key,
+            icon_id      = serverData.icon_id,
+            dialogue_text = ResolveFallbackDialogueText(serverData),
+            // Menu items từ config C# — chỉ gửi labels về client, action_type giữ phía server
+            menu_items   = ExtractMenuItemLabels(
+                               NpcMenuConfig.GetMenuItems(serverData.npc_id, serverData.npc_type)),
+        };
 
         if (userId <= 0)
         {
-            Debug.LogWarning($"{LogPrefix} Skip dialogue fetch | client={clientId} npcId={data.npc_id} because resolved playerId is invalid.", this);
-            Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={data.npc_id} type='{data.npc_type}'", this);
-            OpenMenuClientRpc(JsonUtility.ToJson(data), TargetClient(clientId));
+            Debug.LogWarning($"{LogPrefix} Skip dialogue fetch | client={clientId} npcId={clientData.npc_id} because resolved playerId is invalid.", this);
+            Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}'", this);
+            OpenMenuClientRpc(JsonUtility.ToJson(clientData), TargetClient(clientId));
             yield break;
         }
 
         string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
-        string body    = JsonUtility.ToJson(new InteractPayload { npcId = data.npc_id, playerId = userId });
+        string body    = JsonUtility.ToJson(new InteractPayload { npcId = clientData.npc_id, playerId = userId });
 
-        Debug.Log($"{LogPrefix} FetchDialogue start | client={clientId} npcId={data.npc_id} playerId={userId} url={apiBase}/api/npc/interact", this);
+        Debug.Log($"{LogPrefix} FetchDialogue start | client={clientId} npcId={clientData.npc_id} playerId={userId} url={apiBase}/api/npc/interact", this);
 
         using var req = PostJson($"{apiBase}/api/npc/interact", body);
         if (!string.IsNullOrEmpty(jwtToken))
@@ -277,27 +298,46 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
         if (req.result == UnityWebRequest.Result.Success)
         {
-            string dialogueText = ExtractDialogueText(req.downloadHandler.text);
-            if (!string.IsNullOrWhiteSpace(dialogueText))
-                data.dialogue_text = dialogueText;
+            var resp = JsonUtility.FromJson<InteractResponse>(req.downloadHandler.text);
 
-            Debug.Log($"{LogPrefix} FetchDialogue success | client={clientId} npcId={data.npc_id} dialogue='{data.dialogue_text}'", this);
+            string dialogueText = !string.IsNullOrWhiteSpace(resp?.dialogue_text) ? resp.dialogue_text
+                                : !string.IsNullOrWhiteSpace(resp?.dialogue?.text) ? resp.dialogue.text
+                                : string.Empty;
+            if (!string.IsNullOrWhiteSpace(dialogueText))
+                clientData.dialogue_text = dialogueText;
+
+            Debug.Log($"{LogPrefix} FetchDialogue success | client={clientId} npcId={clientData.npc_id} dialogue='{clientData.dialogue_text}' menuItems='{clientData.menu_items}'", this);
         }
         else
         {
-            Debug.LogWarning($"{LogPrefix} FetchDialogue failed | client={clientId} npcId={data.npc_id} error={req.error} response={req.downloadHandler?.text}", this);
+            Debug.LogWarning($"{LogPrefix} FetchDialogue failed | client={clientId} npcId={clientData.npc_id} error={req.error} response={req.downloadHandler?.text}", this);
         }
 
-        Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={data.npc_id} type='{data.npc_type}'", this);
-        OpenMenuClientRpc(JsonUtility.ToJson(data), TargetClient(clientId));
+        Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}'", this);
+        OpenMenuClientRpc(JsonUtility.ToJson(clientData), TargetClient(clientId));
     }
 
     [ClientRpc]
     private void OpenMenuClientRpc(string npcDataJson, ClientRpcParams clientRpcParams = default)
     {
         var data = JsonUtility.FromJson<NpcData>(npcDataJson);
+        Debug.Log($"{LogPrefix} OpenMenuClientRpc received | {DescribeNpcForLog(data)} menuFound=true state={DescribeClientState()}", this);
+
+        // Nếu server trả về menu_items → hiện NpcDynamicMenuUI (server-driven)
+        if (!string.IsNullOrWhiteSpace(data?.menu_items))
+        {
+            var dynMenu = NpcDynamicMenuUI.GetOrCreate();
+            if (dynMenu != null)
+            {
+                dynMenu.Open(data, this);
+                return;
+            }
+            Debug.LogWarning($"{LogPrefix} NpcDynamicMenuUI not found — fallback to NpcMenuUI.", this);
+        }
+
+        // Fallback: menu cũ theo npc_type
         var menu = NpcMenuUI.GetOrFind();
-        Debug.Log($"{LogPrefix} OpenMenuClientRpc received | {DescribeNpcForLog(data)} menuFound={menu != null} state={DescribeClientState()}", this);
+        Debug.Log($"{LogPrefix} OpenMenuClientRpc fallback to NpcMenuUI | menuFound={menu != null}", this);
         menu?.Open(data, this);
     }
 
@@ -367,7 +407,167 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     [ClientRpc]
     private void ShowShopClientRpc(string shopItemsJson, ClientRpcParams clientRpcParams = default)
     {
-        NpcMenuUI.GetOrFind()?.ShowShop(shopItemsJson);
+        // Đóng dynamic menu trước khi mở shop
+        NpcDynamicMenuUI.GetOrFind()?.Close();
+
+        var ui = NpcMenuUI.GetOrFind();
+        if (ui != null)
+        {
+            ui.OpenShopDirect(this);
+            ui.ShowShop(shopItemsJson);
+        }
+    }
+
+    // ── SELECT MENU ITEM — Client gửi lựa chọn, server thực thi action ──
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SelectMenuItemServerRpc(int menuIndex, ServerRpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+
+        NpcData data = _npcData;
+        if (NpcServerManager.Instance != null && NpcServerManager.Instance.TryGetNpcData(NetworkObjectId, out var cached))
+            data = cached;
+
+        // Lấy menu items từ C# config — KHÔNG đọc từ DB
+        string menuItemsRaw = NpcMenuConfig.GetMenuItems(data?.npc_id ?? 0, data?.npc_type ?? "");
+        if (string.IsNullOrWhiteSpace(menuItemsRaw))
+        {
+            Debug.LogWarning($"{LogPrefix} SelectMenuItemServerRpc: no menu_items | npcId={data?.npc_id}", this);
+            return;
+        }
+
+        string[] items = menuItemsRaw.Split(';');
+        if (menuIndex < 0 || menuIndex >= items.Length)
+        {
+            Debug.LogWarning($"{LogPrefix} SelectMenuItemServerRpc: invalid index={menuIndex} count={items.Length}", this);
+            return;
+        }
+
+        string item       = items[menuIndex];
+        int    colonIdx   = item.IndexOf(':');
+        string actionType = colonIdx >= 0 ? item.Substring(colonIdx + 1).Trim() : item.Trim();
+
+        Debug.Log($"{LogPrefix} SelectMenuItemServerRpc | client={clientId} idx={menuIndex} action='{actionType}'", this);
+
+        switch (actionType.ToLowerInvariant())
+        {
+            case "open_shop":
+                StartCoroutine(FetchShopAndSend(clientId));
+                break;
+            case "open_blacksmith":
+            case "open_gene_upgrade":
+            case "open_secondary_select":
+            case "open_secondary_upgrade":
+            case "open_hybrid_fusion":
+                ExecuteMenuActionClientRpc(actionType.ToLowerInvariant(), TargetClient(clientId));
+                break;
+            case "open_dungeon":
+                ExecuteMenuActionClientRpc("open_dungeon", TargetClient(clientId));
+                break;
+
+            // ── NPC actions xử lý server-side qua NpcAction ──────────
+            case "reset_potential":
+            case "reset_skill":
+            case "learn_skill":
+            case "exchange_skill":
+            case "exchange_charm":
+            case "lock_level":
+                NpcAction.Execute(actionType, data, clientId, this);
+                break;
+
+            case "close":
+            default:
+                ExecuteMenuActionClientRpc("close", TargetClient(clientId));
+                break;
+        }
+    }
+
+    [ClientRpc]
+    private void ExecuteMenuActionClientRpc(string actionType, ClientRpcParams clientRpcParams = default)
+    {
+        var dynMenu = NpcDynamicMenuUI.GetOrFind();
+        var lastData = dynMenu?.LastOpenedNpcData;
+
+        // Đóng dynamic menu trước
+        dynMenu?.Close();
+
+        switch (actionType.ToLowerInvariant())
+        {
+            case "open_blacksmith":
+            {
+                // Mở thẳng BlacksmithTabPanel tab 0 (Cường Hóa Trang Bị)
+                var tabPanel = BlacksmithTabPanel.Instance
+                    ?? UnityEngine.Object.FindObjectOfType<BlacksmithTabPanel>(true);
+                if (tabPanel != null)
+                {
+                    tabPanel.Open(0);
+                }
+                else
+                {
+                    // Fallback cũ nếu chưa có BlacksmithTabPanel trong scene
+                    var mockData = new NpcData { npc_type = "blacksmith", npc_name = lastData?.npc_name ?? "Thợ Rèn" };
+                    NpcMenuUI.GetOrFind()?.Open(mockData, this);
+                }
+                break;
+            }
+            case "open_gene_upgrade":
+            {
+                var panel = GeneUpgradePanel.Instance
+                    ?? UnityEngine.Object.FindObjectOfType<GeneUpgradePanel>(true);
+                if (panel != null) panel.Open();
+                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene!");
+                break;
+            }
+            case "open_secondary_select":
+            {
+                var panel = SecondaryGeneSelectPanel.Instance
+                    ?? UnityEngine.Object.FindObjectOfType<SecondaryGeneSelectPanel>(true);
+                if (panel != null) panel.Open();
+                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: SecondaryGeneSelectPanel không tìm thấy trong scene!");
+                break;
+            }
+            case "open_secondary_upgrade":
+            {
+                var panel = GeneUpgradePanel.Instance
+                    ?? UnityEngine.Object.FindObjectOfType<GeneUpgradePanel>(true);
+                if (panel != null) panel.OpenForSecondary();
+                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene!");
+                break;
+            }
+            case "open_hybrid_fusion":
+            {
+                var panel = HybridFusionPanel.Instance
+                    ?? UnityEngine.Object.FindObjectOfType<HybridFusionPanel>(true);
+                if (panel == null)
+                {
+                    var prefabGO = Resources.Load<GameObject>("UI/HybridFusionCanvas");
+                    if (prefabGO != null)
+                    {
+                        var go = Instantiate(prefabGO);
+                        go.name = "HybridFusionCanvas";
+                        panel = go.GetComponentInChildren<HybridFusionPanel>(true);
+                    }
+                }
+                if (panel != null) panel.Open();
+                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: HybridFusionPanel không tìm thấy!");
+                break;
+            }
+            case "open_dungeon":
+            {
+                var dungeonMenu = DungeonNpcMenuUI.GetOrCreate();
+                if (dungeonMenu != null)
+                {
+                    var mockData = lastData ?? new NpcData { npc_type = "dungeon", npc_name = "Dungeon NPC" };
+                    dungeonMenu.Open(mockData);
+                }
+                break;
+            }
+            case "close":
+            default:
+                // Dynamic menu đã đóng ở trên
+                break;
+        }
     }
 
     // ── BUY — Server gọi API mua, trả kết quả về client ─────
@@ -511,6 +711,25 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             : string.Empty;
     }
 
+    /// <summary>
+    /// Từ chuỗi "label:action_type;label2:action_type2" trả về "label;label2"
+    /// (chỉ labels để gửi về client — action_type giữ lại phía server).
+    /// </summary>
+    private static string ExtractMenuItemLabels(string menuItemsRaw)
+    {
+        if (string.IsNullOrWhiteSpace(menuItemsRaw))
+            return string.Empty;
+
+        var labels = new System.Collections.Generic.List<string>();
+        foreach (var item in menuItemsRaw.Split(';'))
+        {
+            if (string.IsNullOrWhiteSpace(item)) continue;
+            int colonIdx = item.IndexOf(':');
+            labels.Add(colonIdx >= 0 ? item.Substring(0, colonIdx).Trim() : item.Trim());
+        }
+        return string.Join(";", labels);
+    }
+
     private static UnityWebRequest PostJson(string url, string json)
     {
         var req = new UnityWebRequest(url, "POST");
@@ -526,4 +745,50 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     [System.Serializable] private class InteractDialogue { public string text; }
     [System.Serializable] private class BuyPayload       { public int npcId, shopItemId, quantity; }
     [System.Serializable] private class BuyResponse      { public bool success; public string message; public int playerGold; }
+
+    // ── Public static wrappers — dùng bởi NpcAction.cs ──────────────────
+
+    public static int ResolveClientUserIdStatic(ulong clientId) => ResolveClientUserId(clientId);
+    public static string ResolveClientJwtStatic(ulong clientId) => ResolveClientJwt(clientId);
+
+    // ── SendActionResultRpc — gửi kết quả action về client (gọi bởi NpcAction) ──
+
+    /// <summary>
+    /// Gửi kết quả xử lý NPC action (reset_potential, lock_level, ...) về client.
+    /// playerDataJson: JSON của NpcAction.NpcActionPlayerData, có thể null/empty nếu không cần cập nhật.
+    /// </summary>
+    public void SendActionResultRpc(ulong clientId, bool success, string message, string playerDataJson)
+    {
+        if (IsServer)
+            ShowActionResultClientRpc(success, message, playerDataJson ?? "", TargetClient(clientId));
+    }
+
+    [ClientRpc]
+    private void ShowActionResultClientRpc(bool success, string message, string playerDataJson,
+                                           ClientRpcParams clientRpcParams = default)
+    {
+        Debug.Log($"{LogPrefix} ActionResult success={success} msg='{message}'", this);
+
+        // Hiện thông báo trên UI
+        GlobalNotificationUI.Show(message, success ? "Thành công" : "Thông báo", 3f);
+
+        // Cập nhật thông số nhân vật nếu server trả về (dự phòng cho tương lai)
+        if (success && !string.IsNullOrWhiteSpace(playerDataJson) && playerDataJson != "null" && playerDataJson != "{}")
+        {
+            try
+            {
+                var pd = JsonUtility.FromJson<NpcAction.NpcActionPlayerData>(playerDataJson);
+                if (pd != null)
+                {
+                    Debug.Log($"{LogPrefix} Player data updated gold={pd.gold} silver={pd.silver} level={pd.level}");
+                    // TODO: khi có GoldHUD / StatsHUD, gọi cập nhật ở đây
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"{LogPrefix} ShowActionResultClientRpc: parse playerData failed: {ex.Message}");
+            }
+        }
+    }
 }
+

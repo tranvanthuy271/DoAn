@@ -288,10 +288,23 @@ public class PlayerSkillInfo
     public string next_level_desc;
     public string icon_id;
     public int    gene_tier_required;
+    public SkillLevelInfo[] level_details;
     // â”€â”€ Runtime stats â€” client dÃ¹ng Ä‘á»ƒ apply vÃ o SkillData khi load â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public float  current_cooldown_sec;   // cooldown (giÃ¢y) táº¡i level hiá»‡n táº¡i
     public float  current_effect_value;   // sÃ¡t thÆ°Æ¡ng / heal / khoáº£ng cÃ¡ch
     public int    current_mp_cost;        // MP tiÃªu khi dÃ¹ng skill
+}
+
+[System.Serializable]
+public class SkillLevelInfo
+{
+    public int level;
+    public int level_req;
+    public int sp_cost;
+    public float effect_value;
+    public int mp_cost;
+    public float cooldown_sec;
+    public string desc;
 }
 
 [System.Serializable]

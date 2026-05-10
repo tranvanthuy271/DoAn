@@ -1,8 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// NPC shop UI panel -- pure UI layer, no direct API calls.
@@ -38,6 +39,8 @@ public class NpcMenuUI : MonoBehaviour
     [SerializeField] private GameObject shopPanel;
     [SerializeField] private Transform  shopItemContainer; // Content with GridLayoutGroup
     [SerializeField] private GameObject shopItemRowPrefab; // ShopItemCell prefab
+    [SerializeField] private GameObject elementFilterBarPrefab; // ElementFilterBar.prefab
+    [SerializeField] private GameObject equipTypeFilterBarPrefab; // EquipTypeFilterBar.prefab
 
     // ── Bag panel ──────────────────────────────────────────────────────
     [Header("Tui Panel")]
@@ -61,6 +64,18 @@ public class NpcMenuUI : MonoBehaviour
     private NpcInteraction _currentInteraction;
     private Coroutine      _feedbackCoroutine;
 
+    // ── Element filter state ───────────────────────────────────────
+    private GameObject                        _filterBarGo;
+    private readonly List<(GameObject go, int elemClass)> _shopCellsWithClass = new List<(GameObject, int)>();
+    private int   _activeElementFilter    = 0;
+    private float _originalScrollOffsetTop = 0f;
+    private bool  _scrollOffsetModified    = false;
+    // ── Equip type filter state ──────────────────────────
+    private GameObject                        _equipFilterBarGo;
+    private readonly List<(GameObject go, int equipType)> _shopCellsWithEquipType = new List<(GameObject, int)>();
+    private int   _activeEquipTypeFilter   = -1;  // -1 = Tất Cả
+    private float _originalScrollOffsetTop2 = 0f;
+    private bool  _scrollOffsetModified2    = false;
     // ──────────────────────────────────────────────────────────────────
 
     private void Awake()
@@ -204,6 +219,25 @@ public class NpcMenuUI : MonoBehaviour
         BlacksmithFunctionMenuPanel.Instance?.Close();
         HideItemDetailPanelIfOpen();
         _currentInteraction = null;
+        _activeElementFilter = 0;
+        _activeEquipTypeFilter = -1;
+    }
+
+    /// <summary>
+    /// Mở trực tiếp shop panel (không qua tab selection) — gọi từ NpcInteraction.ShowShopClientRpc
+    /// sau khi dynamic menu đã đóng và shop data đã sẵn sàng.
+    /// </summary>
+    public void OpenShopDirect(NpcInteraction interaction)
+    {
+        EnsureInitialized();
+        _currentInteraction = interaction;
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
+        mainPanel.SetActive(true);
+        if (shopPanel) shopPanel.SetActive(true);
+        if (bagPanel)  bagPanel.SetActive(false);
+        HideItemDetailPanelIfOpen();
+        ClearShopItems();
+        Debug.Log($"{LogPrefix} OpenShopDirect called.", this);
     }
 
     // ── Tabs ──────────────────────────────────────────────────────────
@@ -231,6 +265,25 @@ public class NpcMenuUI : MonoBehaviour
     {
         foreach (Transform child in shopItemContainer)
             Destroy(child.gameObject);
+
+        _shopCellsWithClass.Clear();
+        _shopCellsWithEquipType.Clear();
+
+        // Destroy element filter bar and restore scroll position
+        if (_filterBarGo != null)
+        {
+            Destroy(_filterBarGo);
+            _filterBarGo = null;
+        }
+        RestoreShopScrollOffset();
+
+        // Destroy equip type filter bar and restore scroll position
+        if (_equipFilterBarGo != null)
+        {
+            Destroy(_equipFilterBarGo);
+            _equipFilterBarGo = null;
+        }
+        RestoreShopScrollOffset2();
     }
 
     /// <summary>Called by NpcInteraction.ShowShopClientRpc with a JSON array of shop items.</summary>
@@ -256,9 +309,33 @@ public class NpcMenuUI : MonoBehaviour
             return;
         }
 
-        // Clear any stale 'no items' feedback before spawning new items
+        // Clear stale feedback
         if (feedbackText != null) feedbackText.gameObject.SetActive(false);
         if (_feedbackCoroutine != null) { StopCoroutine(_feedbackCoroutine); _feedbackCoroutine = null; }
+
+        // Update shop tab title from first item's shop_name
+        string shopName = resp.items[0].shop_name;
+        if (!string.IsNullOrWhiteSpace(shopName) && btnTabShop != null)
+        {
+            var tabTxt = btnTabShop.GetComponentInChildren<TMP_Text>(true);
+            if (tabTxt != null) tabTxt.text = shopName;
+        }
+
+        // Check whether any item has an element class (triggers element filter bar)
+        bool hasElements = false;
+        foreach (var i in resp.items)
+            if (i.element_class > 0) { hasElements = true; break; }
+        if (!hasElements) _activeElementFilter = 0;
+        CreateElementFilterBar(hasElements);
+
+        // Check whether any item is equippable (type 0-5) — triggers equip-type filter bar
+        bool hasEquipTypes = false;
+        foreach (var i in resp.items)
+            if (i.equip_type >= 0 && i.equip_type <= 5) { hasEquipTypes = true; break; }
+        if (!hasEquipTypes) _activeEquipTypeFilter = -1;
+        CreateEquipTypeFilterBar(hasEquipTypes);
+
+        _shopCellsWithEquipType.Clear();
 
         foreach (var item in resp.items)
         {
@@ -271,6 +348,7 @@ public class NpcMenuUI : MonoBehaviour
             }
 
             cell.EnsureVisualsConfigured();
+            cell.ElementClass = item.element_class;
 
             if (cell.itemIcon != null)
             {
@@ -293,18 +371,27 @@ public class NpcMenuUI : MonoBehaviour
                 cell.btnBuy.onClick.AddListener(() => TryBuyShopItem(capturedItem));
             }
 
-            // Nhấn vào icon item -> hiện ItemDetailPanel dùng chung với túi đồ.
+            // Nhấn vào icon item -> hiện ItemDetailPanel
             if (cell.itemIcon != null)
             {
                 var iconBtn = cell.itemIcon.gameObject.GetComponent<Button>()
                               ?? cell.itemIcon.gameObject.AddComponent<Button>();
-                iconBtn.transition = Selectable.Transition.None;
+                iconBtn.transition   = Selectable.Transition.None;
                 iconBtn.targetGraphic = cell.itemIcon;
-                var capturedForInfo = item;
+                var capturedForInfo  = item;
                 iconBtn.onClick.RemoveAllListeners();
                 iconBtn.onClick.AddListener(() => ShowShopItemDetail(capturedForInfo));
             }
+
+            _shopCellsWithClass.Add((cellGO, item.element_class));
+            _shopCellsWithEquipType.Add((cellGO, item.equip_type));
         }
+
+        // Re-apply filters after rebuild (e.g. shop reload following a purchase)
+        if (_activeElementFilter != 0)
+            ApplyElementFilter(_activeElementFilter);
+        if (_activeEquipTypeFilter >= 0)
+            ApplyEquipTypeFilter(_activeEquipTypeFilter);
     }
 
     private bool TryBuyShopItem(ShopItem shopItem)
@@ -384,7 +471,182 @@ public class NpcMenuUI : MonoBehaviour
             existingPanel.Hide();
     }
 
+    // ── Element filter bar ───────────────────────────────────────────
+
+    private void CreateElementFilterBar(bool enabled)
+    {
+        RestoreShopScrollOffset();
+        if (_filterBarGo != null) { Destroy(_filterBarGo); _filterBarGo = null; }
+        if (!enabled || shopPanel == null) return;
+
+        if (elementFilterBarPrefab == null)
+        {
+            Debug.LogWarning("[NpcMenuUI] elementFilterBarPrefab chua duoc gan trong Inspector!", this);
+            return;
+        }
+
+        _filterBarGo = Instantiate(elementFilterBarPrefab, shopPanel.transform);
+        _filterBarGo.transform.SetAsLastSibling();
+
+        // Wire up button click callbacks -- direct children: 0=TatCa 1=Hoa 2=Thuy 3=Tho 4=Loi 5=Moc 6=Phong
+        int idx = 0;
+        foreach (Transform child in _filterBarGo.transform)
+        {
+            int captured = idx;
+            var btn = child.GetComponent<Button>();
+            if (btn != null)
+                btn.onClick.AddListener(() => ApplyElementFilter(captured));
+            idx++;
+        }
+
+        // Highlight the currently active filter button
+        ApplyElementFilter(_activeElementFilter);
+
+        // Push grid content down so first row clears the filter bar (read height from prefab)
+        if (shopItemContainer != null)
+        {
+            var grid = shopItemContainer.GetComponent<GridLayoutGroup>();
+            if (grid != null)
+            {
+                if (!_scrollOffsetModified)
+                    _originalScrollOffsetTop = grid.padding.top;
+                var barRt = _filterBarGo.GetComponent<RectTransform>();
+                float barH = (barRt != null) ? Mathf.Abs(barRt.sizeDelta.y) : 48f;
+                var p = grid.padding;
+                p.top = (int)(_originalScrollOffsetTop + barH);
+                grid.padding = p;
+                _scrollOffsetModified = true;
+            }
+        }
+    }
+
+    private void RestoreShopScrollOffset()
+    {
+        if (!_scrollOffsetModified || shopItemContainer == null) return;
+        var grid = shopItemContainer.GetComponent<GridLayoutGroup>();
+        if (grid != null)
+        {
+            var p = grid.padding;
+            p.top = (int)_originalScrollOffsetTop;
+            grid.padding = p;
+        }
+        _scrollOffsetModified = false;
+    }
+
+    private void ApplyElementFilter(int elementClass)
+    {
+        _activeElementFilter = elementClass;
+
+        foreach (var (go, elemClass) in _shopCellsWithClass)
+        {
+            if (go == null) continue;
+            go.SetActive(elementClass == 0 || elemClass == elementClass);
+        }
+
+        // Update button alphas: selected = full, others = dim
+        if (_filterBarGo == null) return;
+        int idx = 0;
+        foreach (Transform child in _filterBarGo.transform)
+        {
+            var img = child.GetComponent<Image>();
+            if (img != null)
+            {
+                float a = (idx == elementClass) ? 1f : 0.5f;
+                img.color = new Color(img.color.r, img.color.g, img.color.b, a);
+            }
+            idx++;
+        }
+    }
+
     // ── Buy result ────────────────────────────────────────────────────
+
+    // ── Equip type filter bar ─────────────────────────────────────────
+
+    private void CreateEquipTypeFilterBar(bool enabled)
+    {
+        RestoreShopScrollOffset2();
+        if (_equipFilterBarGo != null) { Destroy(_equipFilterBarGo); _equipFilterBarGo = null; }
+        if (!enabled || shopPanel == null) return;
+
+        if (equipTypeFilterBarPrefab == null)
+        {
+            Debug.LogWarning("[NpcMenuUI] equipTypeFilterBarPrefab chua duoc gan trong Inspector!", this);
+            return;
+        }
+
+        _equipFilterBarGo = Instantiate(equipTypeFilterBarPrefab, shopPanel.transform);
+        _equipFilterBarGo.transform.SetAsLastSibling();
+
+        // Children order: 0=TatCa(-1) 1=VuKhi(1) 2=Mu(0) 3=Giap(2) 4=Quan(3) 5=Giay(4) 6=Nhan(5)
+        int[] typeMap = new int[] { -1, 1, 0, 2, 3, 4, 5 };
+        int idx = 0;
+        foreach (Transform child in _equipFilterBarGo.transform)
+        {
+            if (idx >= typeMap.Length) break;
+            int captured = typeMap[idx];
+            var btn = child.GetComponent<Button>();
+            if (btn != null)
+                btn.onClick.AddListener(() => ApplyEquipTypeFilter(captured));
+            idx++;
+        }
+
+        ApplyEquipTypeFilter(_activeEquipTypeFilter);
+
+        if (shopItemContainer != null)
+        {
+            var grid = shopItemContainer.GetComponent<GridLayoutGroup>();
+            if (grid != null)
+            {
+                if (!_scrollOffsetModified2)
+                    _originalScrollOffsetTop2 = grid.padding.top;
+                var barRt = _equipFilterBarGo.GetComponent<RectTransform>();
+                float barH = (barRt != null) ? Mathf.Abs(barRt.sizeDelta.y) : 48f;
+                var p = grid.padding;
+                p.top = (int)(_originalScrollOffsetTop2 + barH);
+                grid.padding = p;
+                _scrollOffsetModified2 = true;
+            }
+        }
+    }
+
+    private void RestoreShopScrollOffset2()
+    {
+        if (!_scrollOffsetModified2 || shopItemContainer == null) return;
+        var grid = shopItemContainer.GetComponent<GridLayoutGroup>();
+        if (grid != null)
+        {
+            var p = grid.padding;
+            p.top = (int)_originalScrollOffsetTop2;
+            grid.padding = p;
+        }
+        _scrollOffsetModified2 = false;
+    }
+
+    private void ApplyEquipTypeFilter(int equipType)
+    {
+        _activeEquipTypeFilter = equipType;
+
+        foreach (var (go, et) in _shopCellsWithEquipType)
+        {
+            if (go == null) continue;
+            go.SetActive(equipType == -1 || et == equipType);
+        }
+
+        if (_equipFilterBarGo == null) return;
+        int[] typeMap = new int[] { -1, 1, 0, 2, 3, 4, 5 };
+        int idx = 0;
+        foreach (Transform child in _equipFilterBarGo.transform)
+        {
+            if (idx >= typeMap.Length) break;
+            var img = child.GetComponent<Image>();
+            if (img != null)
+            {
+                float a = (typeMap[idx] == equipType) ? 1f : 0.5f;
+                img.color = new Color(img.color.r, img.color.g, img.color.b, a);
+            }
+            idx++;
+        }
+    }
 
     /// <summary>Called by NpcInteraction.BuyResultClientRpc after server processes purchase.</summary>
     public void OnBuyResult(bool success, string message, int newGold)
@@ -427,7 +689,7 @@ public class NpcMenuUI : MonoBehaviour
     [System.Serializable]
     public class ShopItem
     {
-        public int    shop_item_id;
+        public int    shop_item_id;       // = item_template_id khi dùng JSON config
         public int    item_template_id;
         public int    icon_id;
         public string item_name;
@@ -436,6 +698,9 @@ public class NpcMenuUI : MonoBehaviour
         public int    price_gold;
         public int    stock;
         public int    required_level;
+        public int    element_class;     // idClass: 0=Tất Cả 1=Hỏa 2=Thủy 3=Thổ 4=Lôi 5=Mộc 6=Phong
+        public int    equip_type;         // type: 0=Mũ 1=Vũ Khí 2=Giáp 3=Quần 4=Giày 5=Nhẫn; -1 hoặc không phải trang bị
+        public string shop_name;         // Tên loại shop, hiển thị trên tab tiêu đề
         public bool   can_afford;
         public bool   meets_level;
     }

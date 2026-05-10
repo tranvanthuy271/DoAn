@@ -15,6 +15,7 @@ using UnityEngine;
 /// ── Setup trong Unity ─────────────────────────────────────────────────────
 /// Tạo một GameObject rỗng trong scene, đặt tên "SkillIconDatabase",
 /// gắn component này vào. Không cần config gì thêm.
+/// Script cũng tự tạo instance qua RuntimeInitializeOnLoadMethod nếu scene chưa có.
 /// </summary>
 public class SkillIconDatabase : MonoBehaviour
 {
@@ -24,6 +25,19 @@ public class SkillIconDatabase : MonoBehaviour
     [SerializeField] private string resourcesFolder = "SkillIcons";
 
     private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Auto-bootstrap: nếu scene không có SkillIconDatabase, tự tạo khi game bắt đầu.
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void AutoBootstrap()
+    {
+        if (Instance != null) return;
+        var go = new GameObject("SkillIconDatabase [auto]");
+        go.AddComponent<SkillIconDatabase>();
+        DontDestroyOnLoad(go);
+        Debug.Log("[SkillIconDatabase] Auto-bootstrapped (không tìm thấy instance trong scene).");
+    }
 
     private void Awake()
     {

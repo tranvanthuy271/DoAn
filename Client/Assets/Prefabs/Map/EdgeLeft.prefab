@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bf8757ea2bdfb1469b92ed6d7448b1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  direction: right
+  direction: left
   currentMapId: 1
   loadingPanel: {fileID: 0}
   transitionDelay: 0.5

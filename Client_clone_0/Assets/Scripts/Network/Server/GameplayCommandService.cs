@@ -35,6 +35,8 @@ public class GameplayCommandService : NetworkBehaviour
 
     public static event Action<string> OnSkillsReceived;          // GetPlayerSkillsServerRpc
     public static event Action<string> OnSkillUpgraded;           // UpgradeSkillServerRpc
+    /// <summary>Server đẩy skill data về ngay khi player spawn (pre-cache, không cần client request).</summary>
+    public static event Action<string> OnInitialSkillsReceived;   // PushSkillsToClient (server-initiated)
 
     public static event Action<string> OnPotentialReceived;       // GetPlayerPotentialServerRpc
     public static event Action<string> OnPotentialAllocated;      // AllocatePotentialStatsServerRpc
@@ -146,6 +148,24 @@ public class GameplayCommandService : NetworkBehaviour
 
     [ClientRpc] private void UpgradeSkillResultClientRpc(string json, ClientRpcParams p = default)
         => OnSkillUpgraded?.Invoke(json);
+
+    /// <summary>
+    /// Server chủ động đẩy skill data về client ngay khi player spawn.
+    /// Gọi từ ZonePlayerSessionManager sau khi spawn xong — client không cần request riêng.
+    /// </summary>
+    public void PushSkillsToClient(ulong clientId, int playerId, string jwt)
+    {
+        if (!IsServer) return;
+        StartCoroutine(DoGet(
+            $"{ApiBase}/player/{playerId}/skills", jwt,
+            json => SendInitialSkillsClientRpc(json, Target(clientId)),
+            err  => Debug.LogWarning($"[GameplayCmd] PushSkillsToClient pid={playerId}: {err}")
+        ));
+    }
+
+    [ClientRpc]
+    private void SendInitialSkillsClientRpc(string json, ClientRpcParams p = default)
+        => OnInitialSkillsReceived?.Invoke(json);
 
     // ─────────────────────────────────────────────────────────────────────────
     // POTENTIAL

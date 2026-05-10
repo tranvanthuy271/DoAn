@@ -57,7 +57,8 @@ public class MapTransitionButton : MonoBehaviour
     private IEnumerator DoTravel()
     {
         button.interactable = false;
-        if (loadingPanel) loadingPanel.SetActive(true);
+        LoginLoadingManager.ShowLoadingStatic("Đang chuyển map...");
+        if (loadingPanel) loadingPanel.SetActive(false);
 
         // 1. Lấy portal trái hoặc phải của map hiện tại
         string direction = isRightButton ? "right" : "left";
@@ -70,7 +71,7 @@ public class MapTransitionButton : MonoBehaviour
         {
             Debug.LogError($"[MapTransitionButton] Không tìm được portal: {portalReq.error}");
             ShowError("Không có đường đi " + (isRightButton ? "sang phải" : "sang trái") + ".");
-            ResetButton();
+            ResetButton(hideGlobalLoading: true);
             yield break;
         }
 
@@ -109,7 +110,7 @@ public class MapTransitionButton : MonoBehaviour
             }
             catch { /* giữ displayErr mặc định */ }
             ShowError(displayErr);
-            ResetButton();
+            ResetButton(hideGlobalLoading: true);
             yield break;
         }
 
@@ -121,22 +122,28 @@ public class MapTransitionButton : MonoBehaviour
         {
             Debug.LogError("[MapTransitionButton] Không tìm thấy ZoneTransitionController trong scene.");
             ShowError("Không thể chuyển map lúc này.");
-            ResetButton();
+            ResetButton(hideGlobalLoading: true);
             yield break;
         }
 
+        ClientSceneController.MarkTransferRequestStarted();
         transitionController.RequestMapPortalTransferServerRpc(
             resp.dest_map_id,
             preferredZoneId,
             resp.dest_x,
             resp.dest_y);
 
-        ResetButton();
+        ResetButton(hideGlobalLoading: false);
     }
 
-    private void ResetButton()
+    private void ResetButton(bool hideGlobalLoading)
     {
         button.interactable = true;
+        if (hideGlobalLoading)
+        {
+            LoginLoadingManager.HideLoadingStatic();
+        }
+
         if (loadingPanel) loadingPanel.SetActive(false);
     }
 

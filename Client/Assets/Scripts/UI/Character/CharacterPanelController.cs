@@ -40,6 +40,9 @@ public class CharacterPanelController : MonoBehaviour
     private bool _isExternalProfileView;
     private PlayerProfileDto _externalProfile;
     private string _externalProfileFallbackName;
+    private Graphic[] _panelRootGraphics;
+    private bool[] _panelRootGraphicInitialStates;
+    private bool _panelRootGraphicsCached;
 
     // ───────────────────────────────────────────────
     #region Unity lifecycle
@@ -57,6 +60,7 @@ public class CharacterPanelController : MonoBehaviour
         }
         
         if (contentRoot == null) contentRoot = panelRoot; // fallback nếu chưa gán
+        CachePanelRootGraphics();
 
         btnStats     ?.onClick.AddListener(() => SwitchTab(0));
         btnEquipment ?.onClick.AddListener(() => SwitchTab(1));
@@ -107,6 +111,8 @@ public class CharacterPanelController : MonoBehaviour
 
     public void ShowFriendProfile(PlayerProfileDto profile, string fallbackUsername = null)
     {
+        EnsurePanelRootReady();
+
         if (profile == null)
         {
             Debug.LogWarning("[CharacterPanelController] ShowFriendProfile called with null profile.");
@@ -132,10 +138,10 @@ public class CharacterPanelController : MonoBehaviour
         }
 
         panelRoot.SetActive(true);
+        SetPanelRootGraphicsVisible(true);
         if (contentRoot != null)
             contentRoot.SetActive(true);
 
-        panelRoot.transform.SetAsLastSibling();
         activeTab = 0;
         SwitchTab(activeTab);
     }
@@ -166,6 +172,7 @@ public class CharacterPanelController : MonoBehaviour
     /// <summary>Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
     public void Show()
     {
+        EnsurePanelRootReady();
         ExitExternalProfileView();
 
         if (panelRoot == null)
@@ -176,7 +183,7 @@ public class CharacterPanelController : MonoBehaviour
         
         Debug.Log($"[CharacterPanelController] Show() - Active panelRoot: {panelRoot.name}");
         panelRoot.SetActive(true);
-        panelRoot.transform.SetAsLastSibling();
+        SetPanelRootGraphicsVisible(true);
         
         if (contentRoot != null)
         {
@@ -193,6 +200,7 @@ public class CharacterPanelController : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(false);
 
+        SetPanelRootGraphicsVisible(true);
         ExitExternalProfileView();
     }
 
@@ -202,7 +210,9 @@ public class CharacterPanelController : MonoBehaviour
     /// </summary>
     public void ShowEquipmentTab()
     {
+        EnsurePanelRootReady();
         if (panelRoot != null) panelRoot.SetActive(true);
+        SetPanelRootGraphicsVisible(true);
         if (contentRoot != null && contentRoot != panelRoot) contentRoot.SetActive(true);
         SwitchTab(1);
     }
@@ -213,6 +223,8 @@ public class CharacterPanelController : MonoBehaviour
     /// </summary>
     public void ShowContent()
     {
+        EnsurePanelRootReady();
+        SetPanelRootGraphicsVisible(true);
         if (!panelRoot.activeSelf) panelRoot.SetActive(true);
         contentRoot.SetActive(true);
         SwitchTab(activeTab);
@@ -224,11 +236,14 @@ public class CharacterPanelController : MonoBehaviour
     /// </summary>
     public void HideContent()
     {
+        EnsurePanelRootReady();
         if (panelRoot != null && !panelRoot.activeSelf)
             panelRoot.SetActive(true);
 
-        if (contentRoot != null)
+        if (contentRoot != null && contentRoot != panelRoot)
             contentRoot.SetActive(false);
+
+        SetPanelRootGraphicsVisible(true);
     }
 
     public bool IsVisible() => panelRoot != null && panelRoot.activeSelf;
@@ -287,6 +302,56 @@ public class CharacterPanelController : MonoBehaviour
         if (btn == null) return;
         var img = btn.GetComponent<Image>();
         if (img != null) img.color = active ? colorActiveTab : colorInactiveTab;
+    }
+
+    private void EnsurePanelRootReady()
+    {
+        if (panelRoot == null)
+        {
+            panelRoot = transform.parent != null && transform.parent.gameObject.name.Contains("CharacterPanel")
+                ? transform.parent.gameObject
+                : gameObject;
+            Debug.LogWarning($"[CharacterPanelController] panelRoot chưa được gán, tự động lấy: {panelRoot.name}");
+        }
+
+        if (contentRoot == null)
+            contentRoot = panelRoot;
+
+        CachePanelRootGraphics();
+    }
+
+    private void CachePanelRootGraphics()
+    {
+        if (_panelRootGraphicsCached || panelRoot == null)
+            return;
+
+        _panelRootGraphics = panelRoot.GetComponents<Graphic>();
+        _panelRootGraphicInitialStates = new bool[_panelRootGraphics.Length];
+        for (int i = 0; i < _panelRootGraphics.Length; i++)
+            _panelRootGraphicInitialStates[i] = _panelRootGraphics[i] != null && _panelRootGraphics[i].enabled;
+
+        _panelRootGraphicsCached = true;
+    }
+
+    private void SetPanelRootGraphicsVisible(bool visible)
+    {
+        CachePanelRootGraphics();
+        if (_panelRootGraphics == null)
+            return;
+
+        for (int i = 0; i < _panelRootGraphics.Length; i++)
+        {
+            Graphic graphic = _panelRootGraphics[i];
+            if (graphic == null)
+                continue;
+
+            bool shouldEnable = visible
+                && _panelRootGraphicInitialStates != null
+                && i < _panelRootGraphicInitialStates.Length
+                && _panelRootGraphicInitialStates[i];
+
+            graphic.enabled = shouldEnable;
+        }
     }
 
     #endregion

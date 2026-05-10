@@ -52,6 +52,7 @@ public class MapEdgeTrigger : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (_isTransitioning) return;
+        if (ClientSceneController.IsTransferTriggerBlocked()) return;
 
         // ── Khớp cách ZoneTrigger detect: chỉ cần NetworkObject + IsOwner ──
         // KHÔNG check CompareTag vì Player có thể chưa được tag đúng
@@ -74,7 +75,8 @@ public class MapEdgeTrigger : MonoBehaviour
     private IEnumerator DoTravel(GameObject player)
     {
         _isTransitioning = true;
-        if (loadingPanel) loadingPanel.SetActive(true);
+        LoginLoadingManager.ShowLoadingStatic("Đang chuyển map...");
+        if (loadingPanel) loadingPanel.SetActive(false);
 
         int mapId = ResolveMapId();
 
@@ -88,7 +90,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (portalReq.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning($"[MapEdgeTrigger] Bước 1 FAIL — portal '{direction}' map {mapId}: {portalReq.error} | HTTP={portalReq.responseCode}");
-            ResetTrigger();
+            ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
@@ -119,7 +121,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (travelReq.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning($"[MapEdgeTrigger] Bước 2 FAIL — Travel lỗi HTTP={travelReq.responseCode}: {travelReq.downloadHandler.text}");
-            ResetTrigger();
+            ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
@@ -128,7 +130,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (!resp.success)
         {
             Debug.LogWarning($"[MapEdgeTrigger] Bước 2 — Server từ chối: {resp.message}");
-            ResetTrigger();
+            ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
@@ -137,10 +139,11 @@ public class MapEdgeTrigger : MonoBehaviour
         if (transitionController == null)
         {
             Debug.LogWarning("[MapEdgeTrigger] Không tìm thấy ZoneTransitionController để chuyển map.");
-            ResetTrigger();
+            ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
+        ClientSceneController.MarkTransferRequestStarted();
         transitionController.RequestMapPortalTransferServerRpc(
             resp.dest_map_id,
             preferredZoneId,
@@ -148,12 +151,17 @@ public class MapEdgeTrigger : MonoBehaviour
             resp.dest_y);
 
         Debug.Log($"[MapEdgeTrigger] Bước 3 — RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({resp.dest_x},{resp.dest_y})");
-        ResetTrigger();
+        ResetTrigger(hideGlobalLoading: false);
     }
 
-    private void ResetTrigger()
+    private void ResetTrigger(bool hideGlobalLoading)
     {
         _isTransitioning = false;
+        if (hideGlobalLoading)
+        {
+            LoginLoadingManager.HideLoadingStatic();
+        }
+
         if (loadingPanel) loadingPanel.SetActive(false);
     }
 

@@ -369,9 +369,9 @@ MonoBehaviour:
   - enemyId: 12
     enemyPrefab: {fileID: 4006840501700251420, guid: cd1bc4a2baaad3c4f850f74277fd4866, type: 3}
     enemyName: Enemy1
-  - enemyId: 11
-    enemyPrefab: {fileID: 4006840501700251420, guid: 94f45d9de42eb7543b808d637db2e333, type: 3}
-    enemyName: Enemy1
+  - enemyId: 13
+    enemyPrefab: {fileID: 4006840501700251420, guid: b0220811a442e22419e4695e51434477, type: 3}
+    enemyName: Orochimaru
 --- !u!1 &9900030
 GameObject:
   m_ObjectHideFlags: 0
@@ -507,7 +507,7 @@ MonoBehaviour:
     PlayerPrefab: {fileID: 0}
     Prefabs:
       NetworkPrefabsLists:
-      - {fileID: 11400000, guid: fbafdb48a751bfa458fedad0225d791e, type: 2}
+      - {fileID: 11400000, guid: 43fcef39bb9107644aa04b716168edbe, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 1

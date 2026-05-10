@@ -21,6 +21,13 @@ public class ShopItemRowUI : MonoBehaviour
     [Header("Button")]
     [SerializeField] public Button       btnBuy;     // root button -- whole cell is clickable
 
+    /// <summary>
+    /// Element class từ item_template.idClass — set bởi NpcMenuUI khi spawn cell.
+    /// 0=Tất Cả 1=Hỏa 2=Thủy 3=Thổ 4=Lôi(Kim) 5=Mộc 6=Phong
+    /// Dùng bởi element filter để ẩn/hiện cell.
+    /// </summary>
+    public int ElementClass { get; set; }
+
     private Vector2 itemIconMaxSize = new Vector2(100f, 100f);
 
     private void Awake()

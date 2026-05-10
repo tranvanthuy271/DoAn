@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Unity.Netcode;
+using Unity.Collections;
 
 /// <summary>
 /// NetworkEnemyHealth - Server-Authoritative Health System cho Enemy
@@ -19,24 +20,44 @@ public class NetworkEnemyHealth : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
-    // NetworkVariable sync maxHealth — cần để HP bar client hiển thị đúng tỉ lệ
-    private NetworkVariable<int> networkMaxHealth = new NetworkVariable<int>(
-        10,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+        // NetworkVariable sync maxHealth — cần để HP bar client hiển thị đúng tỉ lệ
+        private NetworkVariable<int> networkMaxHealth = new NetworkVariable<int>(
+            10,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
 
-    [Header("Events")]
+        [Header("Events")]
     public UnityEvent<int, int> OnHealthChanged; // current, max
     public UnityEvent OnDeath;
     public UnityEvent OnTakeDamage;
+    public event System.Action<int, ulong> OnServerTakeDamage;
 
-    private bool isDead = false; // Flag để tránh xử lý death nhiều lần
-    private bool _healBlocked = false;
-    private ulong _lastAttackerClientId = ulong.MaxValue; // Client ID của người gây damage cuối
+        private bool isDead = false;
+        private bool _healBlocked = false;
+        private ulong _lastAttackerClientId = ulong.MaxValue;
 
-    /// <summary>Trả về true nếu enemy đang bị chặn hồi HP.</summary>
-    public bool IsHealBlocked => _healBlocked;
+        // ── Enemy info synced via NetworkVariable (replicated to late joiners too) ──
+        private NetworkVariable<FixedString128Bytes> _networkEnemyName =
+            new NetworkVariable<FixedString128Bytes>(default,
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
+
+        private NetworkVariable<FixedString32Bytes> _networkElementType =
+            new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes("None"),
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
+
+        private NetworkVariable<int> _networkEnemyLevel =
+            new NetworkVariable<int>(1,
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
+
+        public string EnemyName    => _networkEnemyName.Value.IsEmpty ? "" : _networkEnemyName.Value.ToString();
+        public string ElementType  => _networkElementType.Value.IsEmpty ? "None" : _networkElementType.Value.ToString();
+        public int    EnemyLevel   => _networkEnemyLevel.Value > 0 ? _networkEnemyLevel.Value : 1;
+
+        public bool IsHealBlocked => _healBlocked;
 
     public override void OnNetworkSpawn()
     {
@@ -53,11 +74,9 @@ public class NetworkEnemyHealth : NetworkBehaviour
         networkCurrentHealth.OnValueChanged += OnHealthValueChanged;
         networkMaxHealth.OnValueChanged += OnMaxHealthValueChanged;
 
-        // Chỉ server mới set giá trị ban đầu
+                                // Chỉ server mới set giá trị ban đầu
         if (IsServer)
         {
-            // maxHealth đã được PreInitMaxHp() set đúng trước Spawn() (nếu đến từ WaveDungeon)
-            Debug.Log($"[NetworkEnemyHealth] OnNetworkSpawn: IsServer=true, maxHealth={maxHealth} (object={gameObject.name})");
             networkMaxHealth.Value = maxHealth;
             networkCurrentHealth.Value = maxHealth;
         }
@@ -130,6 +149,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;
 
+        OnServerTakeDamage?.Invoke(damage, attackerClientId);
         OnTakeDamageClientRpc(damage);
 
         Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
@@ -144,10 +164,23 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// <summary>
     /// ClientRpc: Notify clients về damage (để play sound/effect)
     /// </summary>
-    [ClientRpc]
+        [ClientRpc]
     private void OnTakeDamageClientRpc(int damage)
     {
         OnTakeDamage?.Invoke();
+    }
+
+    // ── Enemy Info Sync (tên, hệ, level) ───────────────────────────────────
+
+    /// <summary>
+    /// Server gọi để set NetworkVariables — được replicate tự động đến mọi client kể cả late-joiner.
+    /// </summary>
+    public void SetEnemyInfo(string enemyName, string elementType, int level)
+    {
+        if (!IsServer) return;
+        _networkEnemyName.Value  = enemyName ?? "";
+        _networkElementType.Value = string.IsNullOrEmpty(elementType) ? "None" : elementType;
+        _networkEnemyLevel.Value  = level > 0 ? level : 1;
     }
 
     /// <summary>

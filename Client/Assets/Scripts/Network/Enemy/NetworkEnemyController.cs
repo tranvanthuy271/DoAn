@@ -10,8 +10,10 @@ public class NetworkEnemyController : NetworkBehaviour
 
     [Header("Components")]
     private EnemyAI enemyAI;
+    private BossAI bossAI;
     private Rigidbody2D rb;
     private Animator animator;
+    private float initialGravityScale = 1f;
 
     [Header("Network Sync")]
     private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -20,8 +22,12 @@ public class NetworkEnemyController : NetworkBehaviour
     private void Awake()
     {
         enemyAI = GetComponent<EnemyAI>();
+        bossAI = GetComponent<BossAI>();
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+
+        if (rb != null)
+            initialGravityScale = rb.gravityScale > 0f ? rb.gravityScale : 1f;
         
         // Đảm bảo có NetworkTransform component
         if (GetComponent<NetworkTransform>() == null)
@@ -46,9 +52,7 @@ public class NetworkEnemyController : NetworkBehaviour
             {
                 rb.bodyType = RigidbodyType2D.Dynamic;
             }
-            // Tắt gravity để enemy không rơi (server đã set gravityScale=0,
-            // client cũng phải tắt vì Awake chạy trên mọi instance)
-            rb.gravityScale = 0f;
+            ApplyGravityMode();
         }
 
         // Enemy không đẩy nhau (di chuyển xuyên qua nhau như đặc trưng RPG 2D)
@@ -61,6 +65,8 @@ public class NetworkEnemyController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+
+        ApplyGravityMode();
 
         // Subscribe to networkScaleX changes để sync flip direction
         networkScaleX.OnValueChanged += OnScaleXChanged;
@@ -98,6 +104,9 @@ public class NetworkEnemyController : NetworkBehaviour
         // Chỉ server mới xử lý movement logic
         if (!IsServer) return;
 
+        if (bossAI == null)
+            bossAI = GetComponent<BossAI>();
+
         // EnemyAI sẽ xử lý movement, chúng ta chỉ cần sync scale (flip direction)
         // NetworkTransform sẽ tự động sync position và rotation
         if (enemyAI != null)
@@ -109,6 +118,25 @@ public class NetworkEnemyController : NetworkBehaviour
                 networkScaleX.Value = currentScaleX;
             }
         }
+    }
+
+    private void ApplyGravityMode()
+    {
+        if (rb == null)
+            return;
+
+        bool disableGravity = true;
+
+        if (bossAI != null && bossAI.UsesGroundPhysics)
+        {
+            disableGravity = false;
+        }
+        else if (enemyAI != null && enemyAI.canFly)
+        {
+            disableGravity = true;
+        }
+
+        rb.gravityScale = disableGravity ? 0f : initialGravityScale;
     }
 
     /// <summary>

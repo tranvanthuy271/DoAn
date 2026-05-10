@@ -68,6 +68,7 @@ public class FriendListUI : MonoBehaviour
     private void Awake()
     {
         _rectTransform = transform as RectTransform;
+        UIDraggablePanel.Ensure(gameObject);
 
         closeButton?.onClick.AddListener(() => HidePanel("CloseButton"));
 
@@ -567,28 +568,11 @@ public class FriendListUI : MonoBehaviour
 
     private void EnsurePanelVisible()
     {
-        var parent = transform.parent as RectTransform;
-        if (_rectTransform == null || parent == null) return;
+        if (_rectTransform == null)
+            return;
 
-        Canvas.ForceUpdateCanvases();
-
-        Vector2 pos = _rectTransform.anchoredPosition;
-        Vector2 size = _rectTransform.rect.size;
-
-        float minX = -parent.rect.width * 0.5f + size.x * _rectTransform.pivot.x;
-        float maxX = parent.rect.width * 0.5f - size.x * (1f - _rectTransform.pivot.x);
-        float minY = -parent.rect.height * 0.5f + size.y * _rectTransform.pivot.y;
-        float maxY = parent.rect.height * 0.5f - size.y * (1f - _rectTransform.pivot.y);
-
-        Vector2 clamped = new Vector2(
-            Mathf.Clamp(pos.x, minX, maxX),
-            Mathf.Clamp(pos.y, minY, maxY));
-
-        if ((clamped - pos).sqrMagnitude > 0.01f)
-        {
-            Debug.LogWarning($"[FriendUI] Panel position was outside parent bounds. old={pos} new={clamped}");
-            _rectTransform.anchoredPosition = clamped;
-        }
+        if (UIDraggablePanel.ClampToRootCanvas(_rectTransform))
+            Debug.LogWarning("[FriendUI] Panel position was adjusted to stay inside the root canvas.");
     }
 
     private void FocusSearchInput()

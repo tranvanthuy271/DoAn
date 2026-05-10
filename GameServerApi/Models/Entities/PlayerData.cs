@@ -93,6 +93,13 @@ namespace GameServerApi.Models
         [JsonPropertyName("daily_wave_entries")] public int    DailyWaveEntries { get; set; } = 0;
         /// <summary>Ngày (UTC) ghi nhận daily_wave_entries, định dạng "yyyy-MM-dd".</summary>
         [JsonPropertyName("daily_wave_date")]    public string DailyWaveDate    { get; set; } = "";
+
+        // ---- Level lock ----
+        /// <summary>
+        /// Khoá cấp nhân vật — khi true, nhân vật không lên cấp kể cả khi đủ kinh nghiệm.
+        /// Được bật/tắt qua chức năng "Khoá cấp nhân vật" tại NPC.
+        /// </summary>
+        [JsonPropertyName("is_level_locked")]    public bool   IsLevelLocked    { get; set; } = false;
     }
 
     // ----------------------------------------------------------------

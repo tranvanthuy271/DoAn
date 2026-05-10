@@ -117,6 +117,7 @@ public class NetworkManagerCustom : MonoBehaviour
         transport.ConnectionData.Port = effectivePort;
         networkManager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(payload);
 
+        LoginLoadingManager.ShowLoadingStatic("Đang kết nối vào game...");
         GameErrorNotifier.WatchClientConnection();
 
         serverIP = effectiveIp;

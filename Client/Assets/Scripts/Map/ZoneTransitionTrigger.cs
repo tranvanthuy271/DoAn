@@ -40,7 +40,7 @@ public class ZoneTransitionTrigger : MonoBehaviour
     public LayerMask playerLayerMask;
 
     // Cooldown để tránh double-trigger khi player đứng ở ranh giới
-    private const float TRIGGER_COOLDOWN = 1.5f;
+    private const float TRIGGER_COOLDOWN = 0.35f;
     private float _lastTriggerTime = -999f;
 
     private void Reset()
@@ -53,6 +53,7 @@ public class ZoneTransitionTrigger : MonoBehaviour
     {
         // Rate limit
         if (Time.time - _lastTriggerTime < TRIGGER_COOLDOWN) return;
+        if (ClientSceneController.IsTransferTriggerBlocked()) return;
 
         // Kiểm tra layer — chỉ phản ứng với player
         if (playerLayerMask != 0 && ((1 << other.gameObject.layer) & playerLayerMask) == 0)
@@ -75,6 +76,8 @@ public class ZoneTransitionTrigger : MonoBehaviour
         Debug.Log($"[ZoneTransitionTrigger] '{transitionLabel}' → " +
                   $"map={targetMapId} zone={targetZoneId} entry={entryPointId}");
 
+        LoginLoadingManager.ShowLoadingStatic("Đang chuyển map...");
+        ClientSceneController.MarkTransferRequestStarted();
         transController.RequestZoneTransferServerRpc(targetMapId, targetZoneId, entryPointId);
     }
 

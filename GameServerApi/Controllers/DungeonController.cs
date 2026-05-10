@@ -422,6 +422,8 @@ namespace GameServerApi.Controllers
                 drop_items_json   = enemy.DropItemsJson,
                 // Kỹ năng (raw JSON — BossAI deserialize phía client)
                 skills_json       = enemy.SkillsJson,
+                // Phase config (raw JSON — BossAI deserialize phía client)
+                phases_json       = enemy.PhasesJson,
                 // Spawn config
                 spawn_config = bossConfig == null ? null : new
                 {
@@ -716,6 +718,7 @@ namespace GameServerApi.Controllers
                 respawn_time = Math.Max(0, spawn.RespawnTime),
                 move_speed = spawn.Enemy?.MoveSpeed ?? 2f,
                 can_fly = false,
+                element_type = spawn.Enemy?.ElementType ?? "None",
                 drops = ParseDropItems(spawn.Enemy?.DropItemsJson)
             };
         }

@@ -262,6 +262,16 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         EnemySkillsEntry skillsEntry)
     {
         GameObject enemyObj = Instantiate(prefab, pos, Quaternion.identity);
+        bool watchBoss25 = entry.enemy_id == 25 || entry.is_boss || prefab.GetComponent<BossAI>() != null || enemyObj.name.Contains("Enemy 25");
+        if (watchBoss25)
+        {
+            BossAI prefabBossAI = prefab.GetComponent<BossAI>();
+            BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
+            EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
+            Debug.LogWarning(
+                $"[BOSS25][HostSpawnConfigLoader] Instantiate enemy_id={entry.enemy_id} prefab={prefab.name} instance={enemyObj.name} pos={pos} mapId={mapId} entry.is_boss={entry.is_boss} skillsName='{(skillsEntry != null ? skillsEntry.enemy_name : "")}' prefabHasBossAI={(prefabBossAI != null)} prefabBossEnabled={(prefabBossAI != null && prefabBossAI.enabled)} instanceHasBossAI={(instanceBossAI != null)} instanceBossEnabled={(instanceBossAI != null && instanceBossAI.enabled)} instanceEnemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
+                enemyObj);
+        }
 
         NetworkObject netObj = enemyObj.GetComponent<NetworkObject>();
         if (netObj == null)
@@ -289,14 +299,32 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         // rồi mới dùng base_hp/exp_reward từ enemy_skills (bảng enemy).
         int baseHp    = entry.override_hp  > 0 ? entry.override_hp  : (skillsEntry != null ? skillsEntry.base_hp    : 0);
         int expReward = entry.override_exp > 0 ? entry.override_exp : (skillsEntry != null ? skillsEntry.exp_reward : 0);
+        bool forceBossMode = entry.enemy_id == 25 || enemyObj.GetComponent<BossAI>() != null;
+        bool effectiveIsBoss = entry.is_boss || forceBossMode;
+        if (watchBoss25 && effectiveIsBoss != entry.is_boss)
+        {
+            Debug.LogWarning(
+                $"[BOSS25][HostSpawnConfigLoader] Force boss mode for enemy_id={entry.enemy_id}. entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss}",
+                enemyObj);
+        }
+
         statOverride.Apply(
             baseHp,
             expReward,
-            entry.is_boss,
+            effectiveIsBoss,
             entry.respawn_time,
             entry.level,
             skillsEntry != null ? skillsEntry.enemy_name : ""
         );
+
+        if (watchBoss25)
+        {
+            BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
+            EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
+            Debug.LogWarning(
+                $"[BOSS25][HostSpawnConfigLoader] After statOverride enemy_id={entry.enemy_id} entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)} netSpawned={netObj.IsSpawned} scene={enemyObj.scene.name}",
+                enemyObj);
+        }
 
         // Set drop rules từ enemy_skills (reward_json đã parse sẵn trên server)
         if (skillsEntry != null && skillsEntry.drops != null && skillsEntry.drops.Length > 0)
@@ -339,6 +367,10 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             EnemyAI enemyAI = enemyObj.GetComponent<EnemyAI>();
             if (enemyAI != null)
                 enemyAI.damage = skillsEntry.base_damage;
+
+            BossAI bossAI = enemyObj.GetComponent<BossAI>();
+            if (bossAI != null)
+                bossAI.ApplyRuntimeOverride(skillsEntry.base_damage, 0f);
         }
 
         _totalSpawned++;

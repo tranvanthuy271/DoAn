@@ -830,6 +830,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
             respawnTime   = Mathf.Max(0,    spawn.respawn_time),
             moveSpeed     = Mathf.Max(0.1f, spawn.move_speed),
             canFly        = spawn.can_fly,
+            elementType   = string.IsNullOrEmpty(spawn.element_type) ? "None" : spawn.element_type,
             drops         = spawn.drops != null ? new List<DropItemEntry>(spawn.drops) : new List<DropItemEntry>()
         };
     }

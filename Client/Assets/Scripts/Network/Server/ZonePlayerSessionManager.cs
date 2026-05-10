@@ -423,6 +423,17 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
         StartCoroutine(RefreshVisibilityAfterClientReady(clientId));
 
+        // 7 — Đẩy skill data về client ngay lúc spawn (client cache, không cần request lại khi mở tab)
+        if (GameplayCommandService.Instance != null && int.TryParse(userInfo.UserId, out int pushPlayerId))
+        {
+            GameplayCommandService.Instance.PushSkillsToClient(clientId, pushPlayerId, userInfo.JwtToken);
+            Debug.Log($"[ZonePlayerSessionManager] PushSkillsToClient đã gửi cho clientId={clientId} playerId={pushPlayerId}");
+        }
+        else
+        {
+            Debug.LogWarning($"[ZonePlayerSessionManager] Bỏ qua PushSkillsToClient – GameplayCommandService={(GameplayCommandService.Instance == null ? "NULL" : "ok")}, userId='{userInfo.UserId}'");
+        }
+
         Debug.Log($"[ZonePlayerSessionManager] ✓ Spawned player clientId={clientId} " +
                   $"userId={userInfo.UserId} at {spawnPos}");
     }

@@ -56,4 +56,5 @@ public class DungeonWaveEnemySpawnDto
     public float move_speed = 2f;
     public bool can_fly;
     public DropItemEntry[] drops;
+    public string element_type = "None";
 }

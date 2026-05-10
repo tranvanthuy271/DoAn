@@ -207,6 +207,11 @@ MonoBehaviour:
   quantityText: {fileID: 1540216501188015907}
   equippedMark: {fileID: 0}
   lockMark: {fileID: 1377709373023525115}
+  itemBgImage: {fileID: 0}
+  iconPadding: {x: 20, y: 20}
+  fallbackIconMaxSize: {x: 80, y: 80}
+  chooseButton: {fileID: 0}
+  canvasGroup: {fileID: 0}
 --- !u!114 &3754095961815687689
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -436,7 +441,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 4
   m_VerticalAlignment: 256
   m_textAlignment: 65535

@@ -357,6 +357,7 @@ public class SelectElementController : MonoBehaviour
                 }
 
                 // Chuyển sang GameScene
+                LoginLoadingManager.ShowLoadingStatic("Đang vào game...");
                 SceneManager.LoadScene("GameScene");
             },
             onError: (error) =>
@@ -386,6 +387,7 @@ public class SelectElementController : MonoBehaviour
         // Debug.Log("[SelectElementController] Player data already created. Loading scene 'GameScene'...");
         
         // Chuyển sang GameScene (logic connect sẽ được xử lý trong GameScene)
+        LoginLoadingManager.ShowLoadingStatic("Đang vào game...");
         SceneManager.LoadScene("GameScene");
     }
 

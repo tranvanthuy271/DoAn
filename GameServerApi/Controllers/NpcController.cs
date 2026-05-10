@@ -1,8 +1,10 @@
 using GameServerApi.Data;
+using GameServerApi.Models;
 using GameServerApi.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -132,7 +134,9 @@ namespace GameServerApi.Controllers
 
         // ══════════════════════════════════════════════════════════════
         //  GET /api/npc/shop?npcId=1&playerId=1
-        //  Lấy danh sách item của shop NPC, kèm giá và level yêu cầu
+        //  Lấy danh sách item của shop NPC — đọc từ npc_config.shop_items_json.
+        //  Fallback về bảng npc_shop_item nếu JSON chưa config.
+        //  Response per item có thêm: shop_name, element_class (idClass).
         // ══════════════════════════════════════════════════════════════
         [HttpGet("shop")]
         public async Task<IActionResult> GetShop([FromQuery] int npcId, [FromQuery] int playerId)
@@ -140,8 +144,12 @@ namespace GameServerApi.Controllers
             var npc = await _db.NpcConfigs.FindAsync(npcId);
             if (npc == null || !npc.IsActive)
                 return NotFound("NPC không tồn tại.");
-            if (npc.NpcType != "shop" && npc.NpcType != "blacksmith")
-                return BadRequest("NPC này không phải cửa hàng.");
+
+            // Ưu tiên JWT claim cho playerId (chống gian lận)
+            string? playerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                                 ?? User.FindFirstValue("sub");
+            if (int.TryParse(playerIdClaim, out int tokenPlayerId) && tokenPlayerId > 0)
+                playerId = tokenPlayerId;
 
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null)
@@ -149,6 +157,63 @@ namespace GameServerApi.Controllers
 
             var info        = player.GetInfoChar();
             int playerLevel = info.Level;
+
+            // ── Thử đọc từ JSON config (LangLa-style) ──────────────────
+            if (!string.IsNullOrWhiteSpace(npc.ShopItemsJson))
+            {
+                ShopConfigDto? shopConfig = null;
+                try
+                {
+                    shopConfig = JsonSerializer.Deserialize<ShopConfigDto>(npc.ShopItemsJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch { /* parse fail → fallback */ }
+
+                if (shopConfig?.Items != null && shopConfig.Items.Length > 0)
+                {
+                    // Batch load tất cả item_template cần thiết trong 1 query
+                    var ids = shopConfig.Items.Select(x => x.ItemTemplateId).Distinct().ToList();
+                    var templates = await _db.ItemTemplates
+                        .Where(t => ids.Contains(t.Id))
+                        .ToDictionaryAsync(t => t.Id);
+
+                    string shopName = shopConfig.ShopName ?? npc.NpcName;
+
+                    var result = shopConfig.Items
+                        .Where(i => templates.ContainsKey(i.ItemTemplateId))
+                        .Select(i =>
+                        {
+                            var t = templates[i.ItemTemplateId];
+                            return new
+                            {
+                                // shop_item_id = item_template_id (client dùng để gửi buy request)
+                                shop_item_id     = i.ItemTemplateId,
+                                item_template_id = i.ItemTemplateId,
+                                item_name        = t.Name,
+                                item_detail      = t.Detail ?? "",
+                                icon_id          = t.IdIcon,
+                                price_silver     = i.PriceSilver,
+                                price_gold       = i.PriceGold,
+                                stock            = i.Stock,
+                                required_level   = i.LevelNeed,
+                                element_class    = t.IdClass,   // 0=All 1=Hỏa 2=Thủy 3=Thổ 4=Lôi 5=Mộc 6=Phong
+                                equip_type       = t.Type,       // 0=Mũ 1=Vũ Khí 2=Giáp 3=Quần 4=Giày 5=Nhẫn (-1=không phải trang bị)
+                                shop_name        = shopName,
+                                can_afford       = i.PriceGold > 0
+                                                   ? info.Gold   >= i.PriceGold
+                                                   : info.Silver >= i.PriceSilver,
+                                meets_level      = playerLevel >= i.LevelNeed,
+                            };
+                        })
+                        .ToList();
+
+                    return Ok(result);
+                }
+            }
+
+            // ── Fallback: bảng npc_shop_item (dữ liệu cũ) ──────────────
+            if (npc.NpcType != "shop" && npc.NpcType != "blacksmith")
+                return BadRequest("NPC này không phải cửa hàng.");
 
             var rawItems = await _db.NpcShopItems
                 .Where(s => s.NpcId == npcId)
@@ -160,7 +225,10 @@ namespace GameServerApi.Controllers
                           ShopItemId    = s.Id,
                           s.ItemTemplateId,
                           ItemName      = t.Name,
+                          Detail        = t.Detail ?? "",
                           IconId        = t.IdIcon,
+                          IdClass       = t.IdClass,
+                          IdType        = t.Type,
                           s.PriceSilver,
                           s.PriceGold,
                           s.Stock,
@@ -168,19 +236,20 @@ namespace GameServerApi.Controllers
                       })
                 .ToListAsync();
 
-            // Trả về JSON array với snake_case để JsonUtility (Unity) parse được.
-            // ShowShop() phía client bọc thành {"items":[...]} trước khi parse ShopListWrapper.
             return Ok(rawItems.Select(i => new
             {
                 shop_item_id     = i.ShopItemId,
                 item_template_id = i.ItemTemplateId,
                 item_name        = i.ItemName,
-                item_detail      = "",
+                item_detail      = i.Detail,
                 icon_id          = i.IconId,
                 price_silver     = i.PriceSilver,
                 price_gold       = i.PriceGold,
                 stock            = i.Stock,
                 required_level   = i.RequiredLevel,
+                element_class    = i.IdClass,
+                equip_type       = i.IdType,
+                shop_name        = npc.NpcName,
                 can_afford       = i.PriceGold > 0 ? info.Gold >= i.PriceGold
                                                    : info.Silver >= i.PriceSilver,
                 meets_level      = playerLevel >= i.RequiredLevel,
@@ -217,11 +286,66 @@ namespace GameServerApi.Controllers
             if (npc == null || !npc.IsActive)
                 return NotFound("NPC không tồn tại.");
 
-            var shopItem = await _db.NpcShopItems
-                .Include(s => s.ItemTemplate)
-                .FirstOrDefaultAsync(s => s.Id == shopItemId && s.NpcId == npcId);
-            if (shopItem == null)
-                return NotFound("Item không tồn tại trong shop.");
+            // ── Resolve giá từ JSON config (shopItemId = item_template_id) ──
+            int    resolvedPriceSilver = 0;
+            int    resolvedPriceGold   = 0;
+            int    resolvedStock       = -1;
+            int    resolvedLevelNeed   = 1;
+            int    resolvedTemplateId  = shopItemId;  // default: shopItemId = item_template_id
+            string resolvedItemName    = "";
+            bool   fromJson            = false;
+
+            if (!string.IsNullOrWhiteSpace(npc.ShopItemsJson))
+            {
+                try
+                {
+                    var shopConfig = JsonSerializer.Deserialize<ShopConfigDto>(npc.ShopItemsJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    var entry = shopConfig?.Items?.FirstOrDefault(i => i.ItemTemplateId == shopItemId);
+                    if (entry != null)
+                    {
+                        resolvedPriceSilver = entry.PriceSilver;
+                        resolvedPriceGold   = entry.PriceGold;
+                        resolvedStock       = entry.Stock;
+                        resolvedLevelNeed   = entry.LevelNeed;
+                        fromJson = true;
+                    }
+                }
+                catch { /* fallback below */ }
+            }
+
+            // ── Fallback: bảng npc_shop_item (shopItemId = npc_shop_item.id) ──
+            NpcShopItem? legacyShopItem = null;
+            if (!fromJson)
+            {
+                legacyShopItem = await _db.NpcShopItems
+                    .Include(s => s.ItemTemplate)
+                    .FirstOrDefaultAsync(s => s.Id == shopItemId && s.NpcId == npcId);
+                if (legacyShopItem == null)
+                    return NotFound("Item không tồn tại trong shop.");
+
+                resolvedTemplateId  = legacyShopItem.ItemTemplateId;
+                resolvedPriceSilver = legacyShopItem.PriceSilver;
+                resolvedPriceGold   = legacyShopItem.PriceGold;
+                resolvedStock       = legacyShopItem.Stock;
+                resolvedLevelNeed   = legacyShopItem.RequiredLevel;
+                resolvedItemName    = legacyShopItem.ItemTemplate?.Name ?? "";
+            }
+
+            // Load item_template nếu cần (để lấy tên, icon)
+            ItemTemplate? tmpl = null;
+            if (fromJson)
+            {
+                tmpl = await _db.ItemTemplates.FindAsync(resolvedTemplateId);
+                if (tmpl == null)
+                    return NotFound("Item template không tồn tại.");
+                resolvedItemName = tmpl.Name;
+            }
+            else
+            {
+                tmpl = legacyShopItem?.ItemTemplate;
+                resolvedItemName = tmpl?.Name ?? resolvedItemName;
+            }
 
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null)
@@ -230,15 +354,15 @@ namespace GameServerApi.Controllers
             var info = player.GetInfoChar();
 
             // Kiểm tra level
-            if (info.Level < shopItem.RequiredLevel)
-                return BadRequest($"Yêu cầu level {shopItem.RequiredLevel}.");
+            if (info.Level < resolvedLevelNeed)
+                return BadRequest($"Yêu cầu level {resolvedLevelNeed}.");
 
             // Kiểm tra tồn kho
-            if (shopItem.Stock != -1 && shopItem.Stock < quantity)
-                return BadRequest($"Chỉ còn {shopItem.Stock} trong kho.");
+            if (resolvedStock != -1 && resolvedStock < quantity)
+                return BadRequest($"Chỉ còn {resolvedStock} trong kho.");
 
-            int totalSilver = shopItem.PriceSilver * quantity;
-            int totalGold   = shopItem.PriceGold   * quantity;
+            int totalSilver = resolvedPriceSilver * quantity;
+            int totalGold   = resolvedPriceGold   * quantity;
 
             // Kiểm tra tiền
             if (totalGold > 0 && info.Gold < totalGold)
@@ -252,15 +376,15 @@ namespace GameServerApi.Controllers
             else
                 info.Silver -= totalSilver;
 
-            // Trừ tồn kho
-            if (shopItem.Stock != -1)
-                shopItem.Stock -= quantity;
+            // Trừ tồn kho (chỉ áp dụng với bảng npc_shop_item cũ; JSON config dùng stock read-only)
+            if (!fromJson && legacyShopItem != null && legacyShopItem.Stock != -1)
+                legacyShopItem.Stock -= quantity;
 
             // Thêm item vào inventory
             var inventory = ParseJsonList(player.InventoryJson);
             var existing = inventory.FirstOrDefault(s =>
                 s.ContainsKey("itemTemplateId") &&
-                Convert.ToInt32(s["itemTemplateId"]) == shopItem.ItemTemplateId &&
+                Convert.ToInt32(s["itemTemplateId"]) == resolvedTemplateId &&
                 !(s.ContainsKey("isEquipped") && Convert.ToBoolean(s["isEquipped"])));
 
             if (existing != null)
@@ -270,7 +394,6 @@ namespace GameServerApi.Controllers
             }
             else
             {
-                // Tìm slotIndex tiếp theo chưa bị chiếm
                 var usedSlots = new System.Collections.Generic.HashSet<int>(
                     inventory
                         .Where(s => s.ContainsKey("slotIndex"))
@@ -286,9 +409,9 @@ namespace GameServerApi.Controllers
                 inventory.Add(new Dictionary<string, object>
                 {
                     ["slotIndex"]      = nextSlot,
-                    ["itemTemplateId"] = shopItem.ItemTemplateId,
-                    ["itemCode"]       = shopItem.ItemTemplate?.Name ?? "",
-                    ["iconId"]         = shopItem.ItemTemplate?.IdIcon.ToString() ?? "",
+                    ["itemTemplateId"] = resolvedTemplateId,
+                    ["itemCode"]       = resolvedItemName,
+                    ["iconId"]         = tmpl?.IdIcon.ToString() ?? "",
                     ["quantity"]       = quantity,
                     ["isEquipped"]     = false,
                     ["upgradeLevel"]   = 0,
@@ -296,7 +419,7 @@ namespace GameServerApi.Controllers
             }
 
             player.SetInfoChar(info);
-            player.InventoryJson = System.Text.Json.JsonSerializer.Serialize(inventory);
+            player.InventoryJson = JsonSerializer.Serialize(inventory);
             player.UpdatedAt     = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
@@ -305,7 +428,7 @@ namespace GameServerApi.Controllers
                 success      = true,
                 playerGold   = info.Gold,
                 playerSilver = info.Silver,
-                message      = $"Mua thành công {quantity}x {shopItem.ItemTemplate?.Name}.",
+                message      = $"Mua thành công {quantity}x {resolvedItemName}.",
             });
         }
 
@@ -335,6 +458,34 @@ namespace GameServerApi.Controllers
 
             value = 0;
             return false;
+        }
+
+        // ── Shop config DTOs (JSON-per-NPC) ──────────────────────────
+        private class ShopConfigDto
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("shop_name")]
+            public string ShopName { get; set; } = "";
+
+            [System.Text.Json.Serialization.JsonPropertyName("items")]
+            public ShopConfigItem[] Items { get; set; } = Array.Empty<ShopConfigItem>();
+        }
+
+        private class ShopConfigItem
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("item_template_id")]
+            public int ItemTemplateId { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("price_silver")]
+            public int PriceSilver { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("price_gold")]
+            public int PriceGold { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("stock")]
+            public int Stock { get; set; } = -1;
+
+            [System.Text.Json.Serialization.JsonPropertyName("level_need")]
+            public int LevelNeed { get; set; } = 1;
         }
 
         private static List<Dictionary<string, object>> ParseJsonList(string? json)

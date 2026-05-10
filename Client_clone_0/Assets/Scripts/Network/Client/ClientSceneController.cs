@@ -15,12 +15,15 @@ using Unity.Netcode;
 public class ClientSceneController : MonoBehaviour
 {
     public static ClientSceneController Instance { get; private set; }
+    private const float PostTeleportTriggerGraceSeconds = 0.75f;
 
     [Header("UI (optional — assign hoặc để null)")]
     [SerializeField] private GameObject _loadingScreenPrefab;
 
-    private GameObject _loadingScreenInstance;
     private bool       _isTransitioning;
+    private bool       _hasPendingTransferRequest;
+    private float      _lastTransferRequestAt = -999f;
+    private float      _triggerGraceUntil;
 
     // Thông tin zone hiện tại của client
     public int CurrentMapId  { get; private set; } = -1;
@@ -69,7 +72,9 @@ public class ClientSceneController : MonoBehaviour
             return;
         }
 
+        _hasPendingTransferRequest = false;
         Debug.Log($"[ClientSceneController] HandleZoneTeleport | fromScene={SceneManager.GetActiveScene().name} toScene={sceneName} target=({x:F2}, {y:F2}) map={mapId} zone={zoneId}", this);
+        ShowLoadingScreen("Đang chuyển map...");
         StartCoroutine(LoadSceneAndReposition(sceneName, new Vector3(x, y, 0), mapId, zoneId));
     }
 
@@ -110,7 +115,44 @@ public class ClientSceneController : MonoBehaviour
         CurrentMapId = -1;
         CurrentZoneId = -1;
         _isTransitioning = false;
+        _hasPendingTransferRequest = false;
+        _lastTransferRequestAt = -999f;
+        _triggerGraceUntil = 0f;
         HideLoadingScreen();
+    }
+
+    public static void MarkTransferRequestStarted()
+    {
+        if (Instance == null)
+            return;
+
+        Instance._hasPendingTransferRequest = true;
+        Instance._lastTransferRequestAt = Time.unscaledTime;
+    }
+
+    public static void MarkTransferRequestFinished()
+    {
+        if (Instance == null)
+            return;
+
+        Instance._hasPendingTransferRequest = false;
+    }
+
+    public static bool ShouldSuppressTransferCooldownFeedback()
+    {
+        if (Instance == null)
+            return false;
+
+        if (Instance._isTransitioning)
+            return true;
+
+        return Instance._hasPendingTransferRequest &&
+               Time.unscaledTime - Instance._lastTransferRequestAt <= 1.5f;
+    }
+
+    public static bool IsTransferTriggerBlocked()
+    {
+        return Instance != null && Time.unscaledTime < Instance._triggerGraceUntil;
     }
 
     private void HandlePlayerDataSet(PlayerDataResponse data)
@@ -160,7 +202,7 @@ public class ClientSceneController : MonoBehaviour
         _isTransitioning = true;
 
         // 1 — Hiển thị loading screen
-        ShowLoadingScreen();
+        ShowLoadingScreen("Đang tải khu vực...");
 
         // 2 — Chờ 1 frame để UI render
         yield return null;
@@ -248,10 +290,13 @@ public class ClientSceneController : MonoBehaviour
         CurrentZoneId = zoneId;
 
         // 5 — Reposition local player
+        ShowLoadingScreen("Đang đồng bộ nhân vật...");
         yield return StartCoroutine(RepositionLocalPlayer(targetPos));
+        _triggerGraceUntil = Time.unscaledTime + PostTeleportTriggerGraceSeconds;
 
         // 6 — Ẩn loading screen
         HideLoadingScreen();
+        _hasPendingTransferRequest = false;
         _isTransitioning = false;
 
         Debug.Log($"[ClientSceneController] ✓ Zone transfer hoàn thành → map{mapId}_zone{zoneId}");
@@ -260,11 +305,15 @@ public class ClientSceneController : MonoBehaviour
     private IEnumerator RepositionLocalPlayer(Vector3 pos)
     {
         // Chờ vài frame cho scene ổn định
-        for (int i = 0; i < 5; i++) yield return null;
+        for (int i = 0; i < 5; i++)
+        {
+            yield return null;
+        }
 
         NetworkObject playerNetObj = null;
 
-        for (int attempt = 0; attempt < 60; attempt++)
+        float deadline = Time.unscaledTime + 6f;
+        while (Time.unscaledTime < deadline)
         {
             // Cách 1: LocalClient.PlayerObject — đây là player NetworkObject được đăng ký chính thức
             try { playerNetObj = NetworkManager.Singleton?.LocalClient?.PlayerObject; }
@@ -318,7 +367,7 @@ public class ClientSceneController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject sau 60 frames.");
+            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject trong thời gian chờ reposition.");
         }
     }
 
@@ -326,23 +375,14 @@ public class ClientSceneController : MonoBehaviour
     // Loading Screen
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void ShowLoadingScreen()
+    private void ShowLoadingScreen(string status = null)
     {
-        if (_loadingScreenPrefab != null && _loadingScreenInstance == null)
-        {
-            _loadingScreenInstance = Instantiate(_loadingScreenPrefab);
-            DontDestroyOnLoad(_loadingScreenInstance);
-        }
-        else if (_loadingScreenInstance != null)
-        {
-            _loadingScreenInstance.SetActive(true);
-        }
+        LoginLoadingManager.ShowLoadingStatic(status);
     }
 
     private void HideLoadingScreen()
     {
-        if (_loadingScreenInstance != null)
-            _loadingScreenInstance.SetActive(false);
+        LoginLoadingManager.HideLoadingStatic();
     }
 
     private static void ProtectLegacyUiRoot(GameObject rootObj)

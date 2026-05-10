@@ -51,11 +51,12 @@ public class InventoryToggleButton : MonoBehaviour
         if (informationPanel != null)
         {
             Debug.Log("[InventoryToggleButton] Sử dụng InformationPanelController");
-
-            // Toggle: nếu túi đồ đang mở thì đóng toàn bộ, ngược lại mở tab Túi Đồ
+            
+            // LUÔN hiển thị tab Túi Đồ (giống như nhấn vào BtnTuiDo)
+            // Nếu đã đang hiển thị Túi Đồ thì đóng, nếu không thì mở Túi Đồ
             if (informationPanel.IsAnyPanelVisible && informationPanel.IsShowingInventory)
             {
-                Debug.Log("[InventoryToggleButton] Túi Đồ đang mở → đóng toàn bộ panel");
+                Debug.Log("[InventoryToggleButton] Đang hiển thị Túi Đồ → đóng panel");
                 informationPanel.HideAll();
             }
             else
@@ -71,14 +72,13 @@ public class InventoryToggleButton : MonoBehaviour
         bool inventoryVisible = inventoryUI != null && inventoryUI.gameObject.activeSelf;
         if (inventoryVisible)
         {
-            Debug.Log("[InventoryToggleButton] Túi đồ đang mở → đóng");
+            Debug.Log("[InventoryToggleButton] Đang hiển thị Túi Đồ → đóng fallback panels");
             inventoryUI.HideInventory();
             characterPanel?.Hide();
         }
         else if (inventoryUI != null)
         {
             Debug.Log("[InventoryToggleButton] Show CharacterPanel shell + InventoryUI");
-            characterPanel?.Show();
             characterPanel?.HideContent();
             inventoryUI.ShowInventory();
         }

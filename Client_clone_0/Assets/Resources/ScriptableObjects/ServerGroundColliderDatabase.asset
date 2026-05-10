@@ -1,0 +1,1285 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f6b8d5a7e7b4f8498c71d21f0ab8f22, type: 3}
+  m_Name: ServerGroundColliderDatabase
+  m_EditorClassIdentifier: 
+  maps:
+  - mapId: 0
+    sceneName: GameScene
+    colliders:
+    - name: Ground
+      position: {x: 7.4090004, y: 2}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -5.883307, y: -4.6914706}
+      size: {x: 14.419795, y: 1.8667686}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 0
+      hasPlatformEffector: 0
+      useOneWay: 0
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (1)
+      position: {x: 7.4090004, y: 2}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -1.1164455, y: -4.361067}
+      size: {x: 4.8860717, y: 2.527576}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 0
+      hasPlatformEffector: 0
+      useOneWay: 0
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (3)
+      position: {x: 7.4090004, y: 2}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.948784, y: -1.4022943}
+      size: {x: 3.4837399, y: 0.26238942}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (4)
+      position: {x: 5.9659996, y: 5.653}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.537322, y: -1.5539273}
+      size: {x: 4.574085, y: 0.56498647}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (5)
+      position: {x: 12.920998, y: 4.613}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.537322, y: -1.568722}
+      size: {x: 4.574085, y: 0.53539705}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (6)
+      position: {x: 12.920998, y: 1.714}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.402477, y: -1.6049297}
+      size: {x: 3.5539474, y: 0.46298158}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (9)
+      position: {x: 19.278, y: 5.757}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.8934546, y: -1.5835842}
+      size: {x: 4.571993, y: 0.5056727}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (11)
+      position: {x: 25.763699, y: 1.8218999}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.388609, y: -1.5865571}
+      size: {x: 3.581684, y: 0.49972677}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (12)
+      position: {x: 35.19, y: 1.6229999}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.388609, y: -1.5865571}
+      size: {x: 3.581684, y: 0.49972677}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (13)
+      position: {x: 34.696, y: 4.626}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.577867}
+      size: {x: 4.5225124, y: 0.5171071}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (14)
+      position: {x: 41.625, y: 5.731}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.585181}
+      size: {x: 4.5225124, y: 0.50247896}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (15)
+      position: {x: 50.751, y: 5.731}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.577867}
+      size: {x: 4.5225124, y: 0.5171069}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (16)
+      position: {x: 51.466, y: 2.013}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.5632386}
+      size: {x: 4.5225124, y: 0.54636383}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (17)
+      position: {x: 57.654, y: 4.665}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.5998089}
+      size: {x: 4.5225124, y: 0.4732231}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (18)
+      position: {x: 64.336, y: 4.9639997}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -8.532573, y: -1.5559248}
+      size: {x: 3.293757, y: 0.5609915}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (20)
+      position: {x: 48.644997, y: 8.356999}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.918195, y: -1.6144371}
+      size: {x: 4.5225124, y: 0.44396687}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (21)
+      position: {x: 57.342, y: 6.5239997}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -9.643162, y: -1.4673443}
+      size: {x: 1.0725784, y: 0.4237175}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (22)
+      position: {x: 57.342, y: 6.5239997}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -9.643162, y: -1.6004467}
+      size: {x: 1.0725794, y: 0.15751266}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (19)
+      position: {x: 58.538002, y: 8.396}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -6.402201, y: -1.5943222}
+      size: {x: 7.5544996, y: 0.48419666}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (10)
+      position: {x: 26.513798, y: 4.9796}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -7.2955327, y: -1.5822749}
+      size: {x: 5.7678366, y: 0.50829124}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (7)
+      position: {x: 12.920998, y: 6.641}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -10.495125, y: -1.5857873}
+      size: {x: 1.121952, y: 0.5012665}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (8)
+      position: {x: 18.797, y: 6.641}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: -10.511721, y: -1.5802555}
+      size: {x: 1.0887594, y: 0.51233006}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 150
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (2)
+      position: {x: 7.4090004, y: 2}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 16.679077, y: -4.6783705}
+      size: {x: 40.47712, y: 1.8929696}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 0
+      hasPlatformEffector: 0
+      useOneWay: 0
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 0
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+  - mapId: 1
+    sceneName: Map1
+    colliders:
+    - name: Ground
+      position: {x: 1.8273172, y: 0.9245772}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 7.5101414, y: -3.6540477}
+      size: {x: 31.217587, y: 1.8576207}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (1)
+      position: {x: -7.2986827, y: 2.653577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.731599, y: -3.7925992}
+      size: {x: 5.4761906, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (2)
+      position: {x: -10.994583, y: 4.642577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (3)
+      position: {x: -16.893982, y: 4.7725773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (4)
+      position: {x: -18.535883, y: 7.6689773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (5)
+      position: {x: -12.073582, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (6)
+      position: {x: -6.105283, y: 7.6741767}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (7)
+      position: {x: -0.26048255, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (8)
+      position: {x: -1.1236827, y: 4.5671773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (9)
+      position: {x: 4.894017, y: 4.740077}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (10)
+      position: {x: 6.103017, y: 7.6754766}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.558601, y: -3.7925992}
+      size: {x: 5.1301994, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (11)
+      position: {x: 12.811018, y: 9.673576}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.188663, y: -3.7925992}
+      size: {x: 4.3903236, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (12)
+      position: {x: 13.649517, y: 6.121977}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 11.023395, y: -3.7925992}
+      size: {x: 6.0597897, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (13)
+      position: {x: 13.649517, y: 8.266976}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.167142, y: -3.7925992}
+      size: {x: 1.772295, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (14)
+      position: {x: -1.8633823, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.508624, y: -3.7925992}
+      size: {x: 1.0893307, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (15)
+      position: {x: -19.768282, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.394796, y: -3.6977432}
+      size: {x: 0.86167526, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (16)
+      position: {x: 4.154317, y: 4.616577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.813771, y: -3.6977432}
+      size: {x: 1.699625, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+  - mapId: 1
+    sceneName: Map01
+    colliders:
+    - name: Ground
+      position: {x: 1.8273172, y: 0.9245772}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 7.5101414, y: -3.6540477}
+      size: {x: 31.217587, y: 1.8576207}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (1)
+      position: {x: -7.2986827, y: 2.653577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.731599, y: -3.7925992}
+      size: {x: 5.4761906, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (2)
+      position: {x: -10.994583, y: 4.642577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (3)
+      position: {x: -16.893982, y: 4.7725773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (4)
+      position: {x: -18.535883, y: 7.6689773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (5)
+      position: {x: -12.073582, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (6)
+      position: {x: -6.105283, y: 7.6741767}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (7)
+      position: {x: -0.26048255, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (8)
+      position: {x: -1.1236827, y: 4.5671773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (9)
+      position: {x: 4.894017, y: 4.740077}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (10)
+      position: {x: 6.103017, y: 7.6754766}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.558601, y: -3.7925992}
+      size: {x: 5.1301994, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (11)
+      position: {x: 12.811018, y: 9.673576}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.188663, y: -3.7925992}
+      size: {x: 4.3903236, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (12)
+      position: {x: 13.649517, y: 6.121977}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 11.023395, y: -3.7925992}
+      size: {x: 6.0597897, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (13)
+      position: {x: 13.649517, y: 8.266976}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.167142, y: -3.7925992}
+      size: {x: 1.772295, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (14)
+      position: {x: -1.8633823, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.508624, y: -3.7925992}
+      size: {x: 1.0893307, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (15)
+      position: {x: -19.768282, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.394796, y: -3.6977432}
+      size: {x: 0.86167526, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (16)
+      position: {x: 4.154317, y: 4.616577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.813771, y: -3.6977432}
+      size: {x: 1.699625, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+  - mapId: 1
+    sceneName: Map01
+    colliders:
+    - name: Ground
+      position: {x: 1.8273172, y: 0.9245772}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 7.5101414, y: -3.6540477}
+      size: {x: 31.217587, y: 1.8576207}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (1)
+      position: {x: -7.2986827, y: 2.653577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.731599, y: -3.7925992}
+      size: {x: 5.4761906, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (2)
+      position: {x: -10.994583, y: 4.642577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (3)
+      position: {x: -16.893982, y: 4.7725773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (4)
+      position: {x: -18.535883, y: 7.6689773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (5)
+      position: {x: -12.073582, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (6)
+      position: {x: -6.105283, y: 7.6741767}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (7)
+      position: {x: -0.26048255, y: 7.107377}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (8)
+      position: {x: -1.1236827, y: 4.5671773}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (9)
+      position: {x: 4.894017, y: 4.740077}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.008436, y: -3.7925992}
+      size: {x: 4.029867, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (10)
+      position: {x: 6.103017, y: 7.6754766}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.558601, y: -3.7925992}
+      size: {x: 5.1301994, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (11)
+      position: {x: 12.811018, y: 9.673576}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 10.188663, y: -3.7925992}
+      size: {x: 4.3903236, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (12)
+      position: {x: 13.649517, y: 6.121977}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 11.023395, y: -3.7925992}
+      size: {x: 6.0597897, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (13)
+      position: {x: 13.649517, y: 8.266976}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.167142, y: -3.7925992}
+      size: {x: 1.772295, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (14)
+      position: {x: -1.8633823, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.508624, y: -3.7925992}
+      size: {x: 1.0893307, y: 0.68279934}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (15)
+      position: {x: -19.768282, y: 7.280277}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.394796, y: -3.6977432}
+      size: {x: 0.86167526, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0
+    - name: Ground (16)
+      position: {x: 4.154317, y: 4.616577}
+      rotationZ: 0
+      scale: {x: 1.3, y: 1.3}
+      offset: {x: 13.813771, y: -3.6977432}
+      size: {x: 1.699625, y: 0.4930873}
+      edgeRadius: 0
+      isTrigger: 0
+      usedByEffector: 1
+      hasPlatformEffector: 1
+      useOneWay: 1
+      useOneWayGrouping: 0
+      surfaceArc: 180
+      sideArc: 1
+      rotationalOffset: 0
+      useSideFriction: 0
+      useSideBounce: 0

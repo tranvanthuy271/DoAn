@@ -93,7 +93,7 @@ public class ChatChannelDropdownUI : MonoBehaviour
             if (iconImg != null)
             {
                 iconImg.sprite = item.icon;
-                iconImg.color = item.iconTint == default ? Color.white : item.iconTint;
+                iconImg.color = Color.white;
                 iconImg.enabled = item.icon != null;
             }
 

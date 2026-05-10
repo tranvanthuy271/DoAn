@@ -78,7 +78,8 @@ public class ZoneConnectionManager : MonoBehaviour
 
     private IEnumerator DoSwitchZone(string apiBase, int mapId, int targetZoneIndex, float spawnX, float spawnY)
     {
-        if (loadingPanel) loadingPanel.SetActive(true);
+        LoginLoadingManager.ShowLoadingStatic("Đang chuyển map...");
+        if (loadingPanel) loadingPanel.SetActive(false);
         HideError();
 
         // ── 1. Lấy zone config từ API ────────────────────────────────
@@ -149,6 +150,7 @@ public class ZoneConnectionManager : MonoBehaviour
             Debug.Log($"[ZoneConnectionManager] Kết nối Zone {targetZoneIndex} — {zoneData.host_ip}:{zoneData.host_port}");
         }
 
+        LoginLoadingManager.HideLoadingStatic();
         if (loadingPanel) loadingPanel.SetActive(false);
         isSwitching = false;
     }
@@ -178,6 +180,7 @@ public class ZoneConnectionManager : MonoBehaviour
 
     private void FinishSwitch(bool success)
     {
+        LoginLoadingManager.HideLoadingStatic();
         if (loadingPanel) loadingPanel.SetActive(false);
         isSwitching = false;
     }

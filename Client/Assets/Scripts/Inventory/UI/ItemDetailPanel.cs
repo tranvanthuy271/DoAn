@@ -1,98 +1,107 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using System;
 
 /// <summary>
-/// ItemDetailPanel - Hiển thị chi tiết item khi nhấn vào slot trong inventory
-/// Bao gồm: hình ảnh, tên, mô tả, nút sử dụng
-///
-/// Setup Prefab trong Unity:
-/// 1. Tạo Panel trong Canvas (đặt tên "ItemDetailPanel")
-/// 2. Thêm các UI con: Image (icon), TMP_Text (tên), TMP_Text (mô tả), Button (sử dụng)
-/// 3. Gắn script này lên Panel và kéo các reference vào Inspector
-/// 4. Kéo thả Panel này vào thư mục Assets/Prefabs để tạo Prefab
-/// 5. Xóa Panel gốc ra khỏi scene (chỉ giữ Prefab)
-/// 6. Trong InventoryUI → gán Prefab vào slot "Item Detail Panel Prefab"
-/// 7. (Tùy chọn) Gán Canvas gốc vào "Item Detail Panel Parent" để panel render đúng layer
+/// ItemDetailPanel - hiển thị chi tiết vật phẩm/trang bị khi nhấn vào slot inventory.
 /// </summary>
 public class ItemDetailPanel : MonoBehaviour
 {
+    private const string Red = "#ff4040";
+    private const string White = "#ffffff";
+    private const string Dim = "#9a9a9a";
+    private const string Gold = "#ffd24a";
+    private const string Green = "#b7e34d";
+
     [Header("UI References")]
-    [Tooltip("Image hiển thị icon của item")]
     [SerializeField] private Image itemIcon;
-
-    [Tooltip("Text hiển thị tên item")]
     [SerializeField] private TMP_Text itemNameText;
-
-    [Tooltip("Text hiển thị mô tả item")]
     [SerializeField] private TMP_Text itemDescriptionText;
-
-    [Tooltip("Nút sử dụng item")]
     [SerializeField] private Button useButton;
-
-    [Tooltip("Text trên nút sử dụng (tuỳ chọn)")]
     [SerializeField] private TMP_Text useButtonText;
-
-    [Tooltip("Nút đóng panel")]
     [SerializeField] private Button btnClose;
 
+    [Header("Action Buttons")]
+    [SerializeField] private Button shortcutButton;
+    [SerializeField] private TMP_Text shortcutButtonText;
+    [SerializeField] private Button splitButton;
+    [SerializeField] private TMP_Text splitButtonText;
+    [SerializeField] private Button dropButton;
+    [SerializeField] private TMP_Text dropButtonText;
+    [SerializeField] private Button useManyButton;
+    [SerializeField] private TMP_Text useManyButtonText;
+
     [Header("Settings")]
-    [Tooltip("Ẩn panel khi Start")]
     [SerializeField] private bool hideOnStart = true;
 
     [Header("Icon Layout")]
-    [Tooltip("Kích thước fallback nếu icon chưa có RectTransform hợp lệ ở frame đầu.")]
-    [SerializeField] private Vector2 fallbackIconMaxSize = new Vector2(128f, 128f);
+    [SerializeField] private Vector2 fallbackIconMaxSize = new Vector2(48f, 48f);
 
-    // Dữ liệu item đang hiển thị
+    private static List<OptionTemplateDto> s_optionTemplates;
+    private static bool s_optionTemplatesLoading;
+
     private InventorySlotDto currentSlotData;
+    private EquipmentItemDto currentEquipmentData;
     private ItemTemplateDto currentTemplate;
     private Vector2 itemIconMaxSize;
     private Action _primaryButtonActionOverride;
-
-    // Cờ để Start() biết ShowItem/ShowEquipmentItem đã được gọi trước khi Start() chạy
     private bool _hasBeenShown;
+    private Coroutine _refreshAfterOptionsRoutine;
 
-    // Event khi nhấn nút sử dụng - các script khác có thể subscribe
     public event Action<InventorySlotDto> OnUseItemClicked;
 
     private void Awake()
     {
+        UIDraggablePanel.Ensure(gameObject);
+
         if (useButton != null)
             useButton.onClick.AddListener(OnUseButtonPressed);
-
+        if (shortcutButton != null)
+            shortcutButton.onClick.AddListener(OnShortcutButtonPressed);
+        if (splitButton != null)
+            splitButton.onClick.AddListener(OnSplitButtonPressed);
+        if (dropButton != null)
+            dropButton.onClick.AddListener(OnDropButtonPressed);
+        if (useManyButton != null)
+            useManyButton.onClick.AddListener(OnUseManyButtonPressed);
         if (btnClose != null)
             btnClose.onClick.AddListener(Hide);
 
-        // Đảm bảo panel render đè lên toàn bộ UI khác
         var canvas = GetComponent<Canvas>();
         if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
         canvas.overrideSorting = true;
         canvas.sortingOrder = 200;
 
-        if (GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
-            gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        if (GetComponent<GraphicRaycaster>() == null)
+            gameObject.AddComponent<GraphicRaycaster>();
 
         itemIconMaxSize = ResolveItemIconMaxSize();
-        UIRuntimeAssetHelper.ApplyNotoSans(itemNameText, itemDescriptionText, useButtonText);
+        UIRuntimeAssetHelper.ApplyNotoSans(
+            itemNameText,
+            itemDescriptionText,
+            useButtonText,
+            shortcutButtonText,
+            splitButtonText,
+            dropButtonText,
+            useManyButtonText);
+
+        if (itemDescriptionText != null)
+        {
+            itemDescriptionText.richText = true;
+            itemDescriptionText.enableWordWrapping = true;
+        }
     }
 
     private void Start()
     {
-        // Chỉ ẩn nếu ShowItem/ShowEquipmentItem chưa được gọi trước Start().
-        // Trường hợp: panel được Instantiate() rồi ShowItem() gọi ngay cùng frame,
-        // Start() chạy frame sau → không được ẩn panel đang hiển thị.
         if (hideOnStart && !_hasBeenShown)
-        {
             Hide();
-        }
     }
 
-    /// <param name="showUseButton">false khi không muốn hiện nút hành động.</param>
-    /// <param name="buttonTextOverride">Cho phép đổi text nút thành "Mua" hoặc text khác.</param>
-    /// <param name="primaryButtonAction">Callback tùy biến cho nút hành động; null = dùng luồng mặc định của inventory.</param>
     public void ShowItem(InventorySlotDto slotData, bool showUseButton = true,
                          string buttonTextOverride = null, Action primaryButtonAction = null)
     {
@@ -103,204 +112,389 @@ public class ItemDetailPanel : MonoBehaviour
         }
 
         currentSlotData = slotData;
-        currentTemplate = null;
+        currentEquipmentData = null;
+        currentTemplate = ResolveTemplate(slotData.itemTemplateId, slotData.itemCode);
         _primaryButtonActionOverride = primaryButtonAction;
 
-        if (ItemTemplateManager.Instance != null)
-        {
-            if (slotData.itemTemplateId > 0)
-                currentTemplate = ItemTemplateManager.Instance.GetItemTemplate(slotData.itemTemplateId);
-            if (currentTemplate == null && !string.IsNullOrEmpty(slotData.itemCode))
-                currentTemplate = ItemTemplateManager.Instance.GetItemTemplateByCode(slotData.itemCode);
-        }
+        SetIcon(slotData.iconId, currentTemplate);
 
-        // 1. Icon
-        if (itemIcon != null)
-        {
-            Sprite icon = null;
-            if (IconDatabase.Instance != null && !string.IsNullOrEmpty(slotData.iconId))
-                icon = IconDatabase.Instance.GetIcon(slotData.iconId);
-            UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, icon, itemIconMaxSize);
-        }
-
-        // 2. Tên item (bold, góc trên-trái)
+        bool isEquipment = IsEquipment(slotData, currentTemplate);
         if (itemNameText != null)
-        {
-            string rawName = (currentTemplate != null && !string.IsNullOrEmpty(currentTemplate.name))
-                ? currentTemplate.name
-                : (!string.IsNullOrEmpty(slotData.itemCode) ? slotData.itemCode : "Unknown Item");
-            itemNameText.text = rawName;
-        }
+            itemNameText.text = BuildDisplayName(slotData, currentTemplate, isEquipment);
 
-        // 3. Phần thân: cấp yêu cầu • khóa • xếp chồng • giá bán • mô tả
         if (itemDescriptionText != null)
+            itemDescriptionText.text = isEquipment
+                ? BuildEquipmentBody(slotData, currentTemplate, s_optionTemplates)
+                : BuildRegularItemBody(slotData, currentTemplate);
+
+        ConfigureButtons(isEquipment, showUseButton, buttonTextOverride);
+
+        if (isEquipment && HasOptions(slotData.strOptions) && s_optionTemplates == null)
+            RefreshWhenOptionTemplatesLoaded();
+
+        ShowPanel();
+    }
+
+    /// <summary>
+    /// Hiển thị trang bị đang mặc hoặc trang bị từ flow nâng cấp.
+    /// </summary>
+    public void ShowEquipmentItem(EquipmentItemDto item, List<OptionTemplateDto> optTemplates = null)
+    {
+        if (item == null)
         {
-            var sb = new System.Text.StringBuilder();
-
-            if (currentTemplate != null)
-            {
-                // Cấp yêu cầu
-                if (currentTemplate.levelNeed > 0)
-                    sb.AppendLine($"Yêu cầu cấp: {currentTemplate.levelNeed}");
-
-                // Trạng thái khóa (từ template)
-                sb.AppendLine(currentTemplate.isLock ? "Đã khóa" : "Không khóa");
-
-                // Xếp chồng
-                sb.AppendLine(currentTemplate.isXepChong ? "Có thể xếp chồng" : "Không thể xếp chồng");
-
-                // Giá bán (từ template)
-                string priceUnit = currentTemplate.isLock ? "bạc khóa" : "bạc";
-                sb.AppendLine($"Giá bán: {currentTemplate.sellPrice} {priceUnit}");
-
-                // Mô tả
-                if (!string.IsNullOrWhiteSpace(currentTemplate.detail))
-                {
-                    sb.AppendLine();
-                    sb.Append(currentTemplate.detail);
-                }
-            }
-            else
-            {
-                sb.Append("Không có thông tin.");
-            }
-
-            itemDescriptionText.text = sb.ToString().TrimEnd();
+            Hide();
+            return;
         }
 
-        // 4. Nút hành động
+        currentSlotData = null;
+        currentEquipmentData = item;
+        currentTemplate = ResolveTemplate(item.id, item.itemCode);
+        _primaryButtonActionOverride = null;
+
+        SetIcon(item.iconId, currentTemplate);
+
+        if (itemNameText != null)
+            itemNameText.text = BuildDisplayName(item, currentTemplate);
+
+        if (optTemplates != null)
+            s_optionTemplates = optTemplates;
+
+        if (itemDescriptionText != null)
+            itemDescriptionText.text = BuildEquipmentBody(item, currentTemplate, optTemplates ?? s_optionTemplates);
+
+        ConfigureButtons(isEquipment: true, showUseButton: false, buttonTextOverride: null);
+
+        if (HasOptions(item.strOptions) && s_optionTemplates == null)
+            RefreshWhenOptionTemplatesLoaded();
+
+        ShowPanel();
+    }
+
+    public void Hide()
+    {
+        gameObject.SetActive(false);
+        currentSlotData = null;
+        currentEquipmentData = null;
+        currentTemplate = null;
+        _primaryButtonActionOverride = null;
+    }
+
+    public bool IsVisible()
+    {
+        return gameObject.activeSelf;
+    }
+
+    private void ShowPanel()
+    {
+        _hasBeenShown = true;
+        gameObject.SetActive(true);
+        transform.SetAsLastSibling();
+    }
+
+    private void SetIcon(string iconId, ItemTemplateDto template)
+    {
+        if (itemIcon == null)
+            return;
+
+        Sprite icon = null;
+        string resolvedIconId = !string.IsNullOrEmpty(iconId)
+            ? iconId
+            : template != null && template.idIcon > 0 ? template.idIcon.ToString() : null;
+
+        if (IconDatabase.Instance != null && !string.IsNullOrEmpty(resolvedIconId))
+            icon = IconDatabase.Instance.GetIcon(resolvedIconId);
+
+        UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, icon, itemIconMaxSize);
+    }
+
+    private void ConfigureButtons(bool isEquipment, bool showUseButton, string buttonTextOverride)
+    {
+        bool stackable = currentTemplate != null && currentTemplate.isXepChong;
+        int quantity = currentSlotData?.quantity ?? 1;
+        bool hasInventorySlot = currentSlotData != null && currentSlotData.slotIndex >= 0;
+
+        SetButton(shortcutButton, shortcutButtonText, hasInventorySlot, "Phím tắt");
+        SetButton(splitButton, splitButtonText, hasInventorySlot && !isEquipment && stackable && quantity > 1, "Tách");
+        SetButton(dropButton, dropButtonText, hasInventorySlot, "Vứt bỏ");
+        SetButton(useManyButton, useManyButtonText, hasInventorySlot && !isEquipment && showUseButton && stackable && quantity > 1, "SD nhiều");
+
         if (useButton != null)
             useButton.gameObject.SetActive(showUseButton);
 
         if (showUseButton && useButtonText != null)
         {
             if (!string.IsNullOrEmpty(buttonTextOverride))
-            {
                 useButtonText.text = buttonTextOverride;
-            }
-            else if (currentTemplate != null)
-            {
-                useButtonText.text = currentTemplate.category == 1 ? "Trang bị" : "Sử dụng";
-            }
+            else if (isEquipment)
+                useButtonText.text = "Trang bị";
             else
-            {
                 useButtonText.text = "Sử dụng";
-            }
         }
-
-        _hasBeenShown = true;
-        gameObject.SetActive(true);
-        transform.SetAsLastSibling();
     }
 
-    /// <summary>
-    /// Hiển thị chi tiết trang bị (EquipmentItemDto) kèm các chỉ số strOptions.
-    /// Gọi từ UpgradePanel khi click ô trang bị, bùa, hoặc nút "Xem TT".
-    /// </summary>
-    public void ShowEquipmentItem(EquipmentItemDto item, List<OptionTemplateDto> optTemplates = null)
+    private static void SetButton(Button button, TMP_Text label, bool active, string text)
     {
-        if (item == null) return;
+        if (button != null)
+            button.gameObject.SetActive(active);
+        if (label != null)
+            label.text = text;
+    }
 
-        _primaryButtonActionOverride = null;
-        var tmpl = ItemTemplateManager.Instance?.GetItemTemplate(item.id);
+    private string BuildRegularItemBody(InventorySlotDto slot, ItemTemplateDto template)
+    {
+        if (template == null)
+            return "Không có thông tin.";
 
-        // Icon
-        if (itemIcon != null && tmpl != null && IconDatabase.Instance != null)
+        var sb = new StringBuilder();
+
+        if (template.levelNeed > 0)
+            AppendLine(sb, $"Yêu cầu cấp: {template.levelNeed}", White);
+
+        AppendLine(sb, ResolveLocked(slot, template) ? "Đã khóa" : "Không khóa", White);
+        AppendLine(sb, template.isXepChong ? "Có thể xếp chồng" : "Không thể xếp chồng", White);
+        AppendLine(sb, BuildSellPriceLine(slot, template), White);
+
+        if (!string.IsNullOrWhiteSpace(template.detail))
+            AppendLine(sb, template.detail.Trim(), White);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private string BuildEquipmentBody(InventorySlotDto slot, ItemTemplateDto template, List<OptionTemplateDto> optionTemplates)
+    {
+        int upgradeLevel = slot?.upgradeLevel ?? 0;
+        string strOptions = slot?.strOptions;
+        bool locked = ResolveLocked(slot, template);
+        return BuildEquipmentBodyCore(template, upgradeLevel, strOptions, locked, optionTemplates);
+    }
+
+    private string BuildEquipmentBody(EquipmentItemDto item, ItemTemplateDto template, List<OptionTemplateDto> optionTemplates)
+    {
+        int upgradeLevel = item?.upgradeLevel ?? 0;
+        string strOptions = item?.strOptions;
+        bool locked = template != null && template.isLock;
+        return BuildEquipmentBodyCore(template, upgradeLevel, strOptions, locked, optionTemplates);
+    }
+
+    private string BuildEquipmentBodyCore(ItemTemplateDto template, int upgradeLevel, string strOptions,
+                                          bool locked, List<OptionTemplateDto> optionTemplates)
+    {
+        var sb = new StringBuilder();
+
+        if (template != null)
         {
-            var sp = IconDatabase.Instance.GetIcon(tmpl.idIcon.ToString());
-            UIRuntimeAssetHelper.SetSpriteWithNativeFit(itemIcon, sp, itemIconMaxSize);
+            if (template.levelNeed > 0)
+                AppendLine(sb, $"Yêu cầu cấp: {template.levelNeed}", Red);
+
+            if (template.gioiTinh == 0)
+                AppendLine(sb, "Yêu cầu giới tính: Nam", Red);
+            else if (template.gioiTinh == 1)
+                AppendLine(sb, "Yêu cầu giới tính: Nữ", Red);
+
+            if (template.idClass > 0)
+                AppendLine(sb, $"Hệ: {GetElementName(template.idClass)}", Red);
+
+            AppendLine(sb, locked ? "Đã khóa" : "Không khóa", White);
+            AppendLine(sb, BuildSellPriceLine(locked, template.sellPrice), White);
+
+            if (!string.IsNullOrWhiteSpace(template.detail))
+                AppendLine(sb, template.detail.Trim(), Green);
         }
-        else if (itemIcon != null)
+        else
         {
-            itemIcon.enabled = false;
+            AppendLine(sb, "Không có thông tin template.", Dim);
         }
 
-        // Tên + cấp nâng
-        if (itemNameText != null)
+        if (HasOptions(strOptions))
         {
-            string n = tmpl != null ? tmpl.name : $"Item #{item.id}";
-            itemNameText.text = item.upgradeLevel > 0 ? $"{n}  +{item.upgradeLevel}" : n;
-        }
+            if (sb.Length > 0)
+                sb.AppendLine();
 
-        // Mô tả + chỉ số
-        if (itemDescriptionText != null)
-        {
-            var sb = new System.Text.StringBuilder();
-
-            if (tmpl != null)
+            var opts = EquippedOptionDisplay.ParseAll(strOptions);
+            foreach (var opt in opts)
             {
-                if (tmpl.levelNeed > 0)
-                    sb.AppendLine($"<color=#ff6060>Yêu cầu cấp: {tmpl.levelNeed}</color>");
+                OptionTemplateDto templateOption = optionTemplates?.Find(t => t.id == opt.optionId);
+                string line = templateOption != null
+                    ? templateOption.BuildLabel(opt.value)
+                    : $"Thuộc tính {opt.optionId}: +{opt.value}";
 
-                if (tmpl.gioiTinh == 0)
-                    sb.AppendLine("<color=#ff6060>Yêu cầu giới tính: Nam</color>");
-                else if (tmpl.gioiTinh == 1)
-                    sb.AppendLine("<color=#ff6060>Yêu cầu giới tính: Nữ</color>");
-
-                if (tmpl.idClass > 0)
-                {
-                    string[] elements = { "", "Hỏa", "Thủy", "Thổ", "Kim", "Mộc" };
-                    string elem = tmpl.idClass < elements.Length ? elements[tmpl.idClass] : tmpl.idClass.ToString();
-                    sb.AppendLine($"<color=#ff6060>Hệ: {elem}</color>");
-                }
-
-                if (tmpl.isLock)
-                    sb.AppendLine("Đã khóa");
-
-                if (!string.IsNullOrWhiteSpace(tmpl.detail))
-                {
-                    sb.AppendLine();
-                    sb.AppendLine(tmpl.detail);
-                }
+                bool active = templateOption == null || templateOption.IsActive(upgradeLevel);
+                AppendLine(sb, line, active ? Gold : Dim);
             }
-
-            // strOptions stats
-            if (!string.IsNullOrEmpty(item.strOptions))
-            {
-                if (sb.Length > 0) sb.AppendLine("───────────────");
-                var opts = EquippedOptionDisplay.ParseAll(item.strOptions);
-                foreach (var opt in opts)
-                {
-                    OptionTemplateDto ot = optTemplates?.Find(t => t.id == opt.optionId);
-                    string line = ot != null
-                        ? ot.BuildLabel(opt.value)
-                        : $"[{opt.optionId}] +{opt.value}";
-                    // Màu: trắng nếu active, xám nếu chưa đạt cấp
-                    bool active = ot == null || ot.IsActive(item.upgradeLevel);
-                    // TMP rich text không cần ở đây vì itemDescriptionText không set color per-line
-                    sb.AppendLine(line);
-                }
-            }
-
-            itemDescriptionText.text = sb.ToString().TrimEnd();
+        }
+        else
+        {
+            if (sb.Length > 0)
+                sb.AppendLine();
+            AppendLine(sb, "Không có thuộc tính.", Dim);
         }
 
-        // Ẩn nút sử dụng (trang bị đang ở ô, không dùng được)
-        if (useButton != null) useButton.gameObject.SetActive(false);
-
-        _hasBeenShown = true;
-        gameObject.SetActive(true);
-        transform.SetAsLastSibling();
+        return sb.ToString().TrimEnd();
     }
-    public void Hide()
+
+    private static void AppendLine(StringBuilder sb, string text, string color)
     {
-        gameObject.SetActive(false);
-        currentSlotData = null;
-        currentTemplate = null;
-        _primaryButtonActionOverride = null;
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        sb.Append("<color=");
+        sb.Append(color);
+        sb.Append('>');
+        sb.Append(text);
+        sb.AppendLine("</color>");
     }
 
-    /// <summary>
-    /// Kiểm tra panel có đang hiển thị không
-    /// </summary>
-    public bool IsVisible()
+    private static string BuildSellPriceLine(InventorySlotDto slot, ItemTemplateDto template)
     {
-        return gameObject.activeSelf;
+        return BuildSellPriceLine(ResolveLocked(slot, template), template != null ? template.sellPrice : 0);
     }
 
-    /// <summary>
-    /// Callback khi nhấn nút sử dụng
-    /// </summary>
+    private static string BuildSellPriceLine(bool locked, int sellPrice)
+    {
+        return $"Giá bán: {Mathf.Max(0, sellPrice)} {(locked ? "bạc khóa" : "bạc")}";
+    }
+
+    private static bool ResolveLocked(InventorySlotDto slot, ItemTemplateDto template)
+    {
+        return (slot != null && slot.isLocked) || (template != null && template.isLock);
+    }
+
+    private static bool IsEquipment(InventorySlotDto slot, ItemTemplateDto template)
+    {
+        if (template != null && template.category == 1)
+            return true;
+
+        if (slot == null)
+            return false;
+
+        return slot.upgradeLevel > 0 || HasOptions(slot.strOptions);
+    }
+
+    private static bool HasOptions(string strOptions)
+    {
+        return !string.IsNullOrWhiteSpace(strOptions);
+    }
+
+    private static string BuildDisplayName(InventorySlotDto slot, ItemTemplateDto template, bool isEquipment)
+    {
+        string name = template != null && !string.IsNullOrEmpty(template.name)
+            ? template.name
+            : !string.IsNullOrEmpty(slot.itemCode) ? slot.itemCode : "Unknown Item";
+
+        return isEquipment && slot.upgradeLevel > 0 ? $"{name} (+{slot.upgradeLevel})" : name;
+    }
+
+    private static string BuildDisplayName(EquipmentItemDto item, ItemTemplateDto template)
+    {
+        string name = template != null && !string.IsNullOrEmpty(template.name)
+            ? template.name
+            : !string.IsNullOrEmpty(item.itemName) ? item.itemName : $"Item #{item.id}";
+
+        return item.upgradeLevel > 0 ? $"{name} (+{item.upgradeLevel})" : name;
+    }
+
+    private static string GetElementName(int idClass)
+    {
+        return idClass switch
+        {
+            1 => "Hỏa",
+            2 => "Thủy",
+            3 => "Thổ",
+            4 => "Kim",
+            5 => "Mộc",
+            6 => "Phong",
+            _ => idClass.ToString()
+        };
+    }
+
+    private static ItemTemplateDto ResolveTemplate(int templateId, string itemCode)
+    {
+        if (ItemTemplateManager.Instance == null)
+            return null;
+
+        ItemTemplateDto template = null;
+        if (templateId > 0)
+            template = ItemTemplateManager.Instance.GetItemTemplate(templateId);
+        if (template == null && !string.IsNullOrEmpty(itemCode))
+            template = ItemTemplateManager.Instance.GetItemTemplateByCode(itemCode);
+        return template;
+    }
+
+    private void RefreshWhenOptionTemplatesLoaded()
+    {
+        RequestOptionTemplatesIfNeeded();
+        if (!s_optionTemplatesLoading)
+            return;
+
+        if (_refreshAfterOptionsRoutine != null)
+            StopCoroutine(_refreshAfterOptionsRoutine);
+        _refreshAfterOptionsRoutine = StartCoroutine(RefreshCurrentDescriptionAfterOptions());
+    }
+
+    private IEnumerator RefreshCurrentDescriptionAfterOptions()
+    {
+        float timeoutAt = Time.realtimeSinceStartup + 6f;
+        while (s_optionTemplatesLoading && Time.realtimeSinceStartup < timeoutAt)
+            yield return null;
+
+        if (s_optionTemplatesLoading)
+            s_optionTemplatesLoading = false;
+
+        _refreshAfterOptionsRoutine = null;
+        RefreshCurrentEquipmentDescription();
+    }
+
+    private void RefreshCurrentEquipmentDescription()
+    {
+        if (!isActiveAndEnabled || itemDescriptionText == null || s_optionTemplates == null)
+            return;
+
+        if (currentSlotData != null && IsEquipment(currentSlotData, currentTemplate))
+        {
+            itemDescriptionText.text = BuildEquipmentBody(currentSlotData, currentTemplate, s_optionTemplates);
+            return;
+        }
+
+        if (currentEquipmentData != null)
+            itemDescriptionText.text = BuildEquipmentBody(currentEquipmentData, currentTemplate, s_optionTemplates);
+    }
+
+    private static void RequestOptionTemplatesIfNeeded()
+    {
+        if (s_optionTemplates != null || s_optionTemplatesLoading || GameplayCommandService.Instance == null)
+            return;
+
+        s_optionTemplatesLoading = true;
+        GameplayCommandService.OnOptionTemplatesReceived -= HandleOptionTemplatesReceived;
+        GameplayCommandService.OnOptionTemplatesReceived += HandleOptionTemplatesReceived;
+        GameplayCommandService.Instance.GetOptionTemplatesServerRpc();
+    }
+
+    private static void HandleOptionTemplatesReceived(string json)
+    {
+        GameplayCommandService.OnOptionTemplatesReceived -= HandleOptionTemplatesReceived;
+        s_optionTemplatesLoading = false;
+
+        if (string.IsNullOrWhiteSpace(json) || json.Contains("\"error\""))
+        {
+            s_optionTemplates = new List<OptionTemplateDto>();
+            return;
+        }
+
+        try
+        {
+            var wrapper = JsonUtility.FromJson<OptionTemplateListWrapper>(json);
+            s_optionTemplates = wrapper?.options != null
+                ? new List<OptionTemplateDto>(wrapper.options)
+                : new List<OptionTemplateDto>();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[ItemDetailPanel] Parse option templates failed: {ex.Message}");
+            s_optionTemplates = new List<OptionTemplateDto>();
+        }
+    }
+
     private void OnUseButtonPressed()
     {
         if (_primaryButtonActionOverride != null)
@@ -311,35 +505,57 @@ public class ItemDetailPanel : MonoBehaviour
 
         if (currentSlotData == null)
         {
-            Debug.LogWarning("[ItemDetailPanel] OnUseButtonPressed: Không có item nào đang được chọn!");
+            Debug.LogWarning("[ItemDetailPanel] OnUseButtonPressed: không có item đang chọn.");
             return;
         }
 
-        Debug.Log($"[ItemDetailPanel] Nhấn sử dụng item: code={currentSlotData.itemCode}, slot={currentSlotData.slotIndex}");
-
-        // Fire event (các listener khác có thể xử lý thêm)
         OnUseItemClicked?.Invoke(currentSlotData);
 
-        // Ưu tiên dùng ItemUseHandler (singleton)
         if (ItemUseHandler.Instance != null)
         {
             ItemUseHandler.Instance.RequestUseItem(currentSlotData);
+            return;
         }
+
+        var bridge = FindObjectOfType<InventoryNetworkBridge>();
+        if (bridge != null)
+            bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
         else
-        {
-            // Fallback: gọi trực tiếp bridge
-            var bridge = FindObjectOfType<InventoryNetworkBridge>();
-            if (bridge != null)
-                bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
-            else
-                Debug.LogWarning("[ItemDetailPanel] Không tìm thấy ItemUseHandler và InventoryNetworkBridge!");
-        }
+            Debug.LogWarning("[ItemDetailPanel] Không tìm thấy ItemUseHandler hoặc InventoryNetworkBridge.");
+    }
+
+    private void OnShortcutButtonPressed()
+    {
+        Debug.Log("[ItemDetailPanel] Nút Phím tắt đã được hiển thị. Chưa có flow gán phím tắt trong client hiện tại.");
+    }
+
+    private void OnSplitButtonPressed()
+    {
+        Debug.Log("[ItemDetailPanel] Nút Tách đã được hiển thị. Chưa có flow tách stack trong client hiện tại.");
+    }
+
+    private void OnDropButtonPressed()
+    {
+        Debug.Log("[ItemDetailPanel] Nút Vứt bỏ đã được hiển thị. Chưa có API vứt bỏ item trong client hiện tại.");
+    }
+
+    private void OnUseManyButtonPressed()
+    {
+        Debug.Log("[ItemDetailPanel] Nút SD nhiều đã được hiển thị. Chưa có flow dùng nhiều trong client hiện tại.");
     }
 
     private void OnDestroy()
     {
         if (useButton != null)
             useButton.onClick.RemoveListener(OnUseButtonPressed);
+        if (shortcutButton != null)
+            shortcutButton.onClick.RemoveListener(OnShortcutButtonPressed);
+        if (splitButton != null)
+            splitButton.onClick.RemoveListener(OnSplitButtonPressed);
+        if (dropButton != null)
+            dropButton.onClick.RemoveListener(OnDropButtonPressed);
+        if (useManyButton != null)
+            useManyButton.onClick.RemoveListener(OnUseManyButtonPressed);
         if (btnClose != null)
             btnClose.onClick.RemoveListener(Hide);
     }
@@ -347,21 +563,15 @@ public class ItemDetailPanel : MonoBehaviour
     private Vector2 ResolveItemIconMaxSize()
     {
         if (itemIcon == null)
-        {
             return fallbackIconMaxSize;
-        }
 
         Vector2 currentSize = itemIcon.rectTransform.sizeDelta;
         if (currentSize.x > 0f && currentSize.y > 0f)
-        {
             return currentSize;
-        }
 
         Vector2 rectSize = itemIcon.rectTransform.rect.size;
         if (rectSize.x > 0f && rectSize.y > 0f)
-        {
             return rectSize;
-        }
 
         return fallbackIconMaxSize;
     }

@@ -1,19 +1,19 @@
 using UnityEngine;
 
-/// <summary>Kênh chat trong game.</summary>
+/// <summary>Kenh chat trong game.</summary>
 public enum ChatChannel
 {
-    World     = 0,   // Thế giới   – tất cả người chơi
-    Proximity = 1,   // Lân cận    – hiển thị bubble trên đầu nhân vật
-    Clan      = 2,   // Gia tộc
-    Class     = 3,   // Lớp
-    Group     = 4,   // Nhóm / Party
-    Private   = 5,   // Tin riêng
+    World     = 0,
+    Proximity = 1,
+    Clan      = 2,
+    Class     = 3,
+    Group     = 4,
+    Private   = 5,
 }
 
 public static class ChatChannelHelper
 {
-    /// <summary>Tên hiển thị trên Tab / Dropdown.</summary>
+    /// <summary>Ten hien thi tren Tab / Dropdown.</summary>
     public static string DisplayName(this ChatChannel ch) => ch switch
     {
         ChatChannel.World     => "Thế giới",
@@ -25,7 +25,7 @@ public static class ChatChannelHelper
         _                     => ch.ToString()
     };
 
-    /// <summary>Mã viết tắt (2 ký tự) cho icon badge.</summary>
+    /// <summary>Ma viet tat cho icon badge.</summary>
     public static string ShortCode(this ChatChannel ch) => ch switch
     {
         ChatChannel.World     => "TG",
@@ -37,19 +37,19 @@ public static class ChatChannelHelper
         _                     => "?"
     };
 
-    /// <summary>Màu hiển thị tin nhắn của kênh.</summary>
+    /// <summary>Mau ten nguoi gui theo tung kenh, toi uu tren nen giay sang.</summary>
     public static Color MessageColor(this ChatChannel ch) => ch switch
     {
-        ChatChannel.World     => new Color(1f, 1f, 0.6f),       // vàng nhạt
-        ChatChannel.Proximity => Color.white,
-        ChatChannel.Clan      => new Color(0.5f, 1f, 0.5f),     // xanh lá
-        ChatChannel.Class     => new Color(0.6f, 0.8f, 1f),     // xanh dương
-        ChatChannel.Group     => new Color(1f, 0.7f, 0.3f),     // cam
-        ChatChannel.Private   => new Color(1f, 0.6f, 0.8f),     // hồng
-        _                     => Color.white
+        ChatChannel.World     => new Color32(0xA3, 0x61, 0x10, 0xFF),
+        ChatChannel.Proximity => new Color32(0x4F, 0x66, 0x73, 0xFF),
+        ChatChannel.Clan      => new Color32(0x3E, 0x7A, 0x2E, 0xFF),
+        ChatChannel.Class     => new Color32(0x2D, 0x5C, 0x91, 0xFF),
+        ChatChannel.Group     => new Color32(0x9B, 0x52, 0x19, 0xFF),
+        ChatChannel.Private   => new Color32(0x9A, 0x3F, 0x61, 0xFF),
+        _                     => new Color32(0x3E, 0x29, 0x18, 0xFF)
     };
 
-    /// <summary>Mapping từ string channel name (server) sang enum.</summary>
+    /// <summary>Mapping tu string channel name (server) sang enum.</summary>
     public static ChatChannel FromString(string s) => s?.ToLower() switch
     {
         "world"     => ChatChannel.World,

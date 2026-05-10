@@ -260,20 +260,43 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         return Vector3.zero;
     }
 
-    private IEnumerator SavePlayerPosition(PlayerSession session)
+            private IEnumerator SavePlayerPosition(PlayerSession session)
     {
         if (session.NetworkObject == null) yield break;
 
         Vector3 pos = session.NetworkObject.transform.position;
         string apiBase = _config != null ? _config.apiBaseUrl : "http://localhost:5247/api";
-        string url = $"{apiBase}/player/{session.UserId}/position";
-        // Body theo PUT /api/player/{id}/position (PlayerController thực tế)
-        string body = $"{{\"map_id\":{session.MapId},\"zone_id\":{session.ZoneId}," +
-                      $"\"position_x\":{pos.x:F2},\"position_y\":{pos.y:F2}}}";
 
-        using var req = new UnityWebRequest(url, "PUT")
+        // Lấy HP/MP hiện tại từ NetworkPlayerHealth và NetworkPlayerDataSync trên PlayerObject
+        int hp = 0, maxHp = 0, mp = 0, maxMp = 0;
+        var playerHealth = session.NetworkObject.GetComponent<NetworkPlayerHealth>();
+        if (playerHealth != null)
         {
-            uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body)),
+            hp = playerHealth.GetCurrentHealth();
+            maxHp = playerHealth.GetMaxHealth();
+        }
+        var dataSync = session.NetworkObject.GetComponent<NetworkPlayerDataSync>();
+        if (dataSync != null)
+        {
+            mp = dataSync.networkMp.Value;
+            maxMp = dataSync.networkMaxMp.Value;
+            // Nếu chưa có NetworkPlayerHealth, lấy HP từ dataSync
+            if (playerHealth == null)
+            {
+                hp = dataSync.networkHp.Value;
+                maxHp = dataSync.networkMaxHp.Value;
+            }
+        }
+
+        // Gọi PUT /api/player/{id}/data để save cả HP/MP cùng position
+        string dataUrl = $"{apiBase}/player/{session.UserId}/data";
+        string dataBody = $"{{\"map_id\":{session.MapId},\"zone_id\":{session.ZoneId}," +
+                          $"\"position_x\":{pos.x:F2},\"position_y\":{pos.y:F2}," +
+                          $"\"hp\":{hp},\"max_hp\":{maxHp},\"mp\":{mp},\"max_mp\":{maxMp}}}";
+
+        using var req = new UnityWebRequest(dataUrl, "PUT")
+        {
+            uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(dataBody)),
             downloadHandler = new DownloadHandlerBuffer()
         };
         req.SetRequestHeader("Content-Type", "application/json");
@@ -283,7 +306,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
-            Debug.LogWarning($"[ZonePlayerSessionManager] Save position thất bại user={session.UserId}: {req.error}");
+            Debug.LogWarning($"[ZonePlayerSessionManager] Save player data thất bại user={session.UserId}: {req.error}");
+        else
+            Debug.Log($"[ZonePlayerSessionManager] Saved player data user={session.UserId} hp={hp}/{maxHp} mp={mp}/{maxMp} pos=({pos.x:F2},{pos.y:F2})");
     }
 
     // ── Inner types ───────────────────────────────────────────────────────────

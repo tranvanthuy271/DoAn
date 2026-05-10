@@ -85,6 +85,7 @@ public class DungeonEnemyUnitConfig
     public int respawnTime = 30;
     public float moveSpeed = 2f;
     public bool canFly;
+    public string elementType = "None";
     public List<DropItemEntry> drops = new();
 }
 

@@ -900,6 +900,12 @@ public class UpgradePanel : MonoBehaviour
 
     private void OnCancelClicked()
     {
+        if (BlacksmithTabPanel.Instance != null && BlacksmithTabPanel.Instance.gameObject.activeInHierarchy)
+        {
+            BlacksmithTabPanel.Instance.Close();
+            return;
+        }
+
         CloseFromTabPanel();
         gameObject.SetActive(false);
     }

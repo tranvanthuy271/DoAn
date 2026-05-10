@@ -17,7 +17,7 @@ public class ZoneTransitionController : NetworkBehaviour
 {
     [Header("Security")]
     [Tooltip("Cooldown giữa 2 lần transfer liên tiếp (chống race condition / spam)")]
-    [SerializeField] private float _transferCooldown = 2f;
+    [SerializeField] private float _transferCooldown = 0.35f;
 
     // Endpoint: PUT /api/player/{playerId}/position  (dùng X-Zone-Api-Key)
     // Đúng URL theo PlayerController thực tế trong GameServerApi
@@ -528,13 +528,16 @@ public class ZoneTransitionController : NetworkBehaviour
         if (_lastTransferTime.TryGetValue(clientId, out float last) &&
             Time.time - last < _transferCooldown)
         {
-            Debug.Log($"[ZoneTransitionController] Client {clientId} request quá nhanh (cooldown). Bỏ qua.");
+            float remaining = _transferCooldown - (Time.time - last);
+            Debug.Log($"[ZoneTransitionController] Client {clientId} request too fast. Remaining cooldown={remaining:0.00}s");
+            SendTransferFailedClientRpc("TRANSFER_COOLDOWN", BuildSingleClientRpcParams(clientId));
             return false;
         }
 
         if (_registry == null)
         {
             Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
+            SendTransferFailedClientRpc("TRANSFER_SYSTEM_NOT_READY", BuildSingleClientRpcParams(clientId));
             return false;
         }
 
@@ -636,6 +639,16 @@ public class ZoneTransitionController : NetworkBehaviour
     private void SendTransferFailedClientRpc(string reason, ClientRpcParams rpcParams = default)
     {
         Debug.LogWarning($"[ZoneTransitionController] Zone transfer thất bại: {reason}");
+        bool suppressCooldownFeedback = reason == "TRANSFER_COOLDOWN" &&
+                                        ClientSceneController.ShouldSuppressTransferCooldownFeedback();
+        ClientSceneController.MarkTransferRequestFinished();
+        LoginLoadingManager.HideLoadingStatic();
+        if (suppressCooldownFeedback)
+        {
+            Debug.Log("[ZoneTransitionController] Suppressed duplicate cooldown feedback while a valid transfer is already in-flight.");
+            return;
+        }
+        GlobalNotificationUI.Show(MapTransferFailureMessage(reason), "Không thể chuyển map", 2.5f, "Đóng");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -650,6 +663,24 @@ public class ZoneTransitionController : NetworkBehaviour
     {
         foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))
             filter.RefreshVisibility();
+    }
+
+    private static string MapTransferFailureMessage(string reason)
+    {
+        return reason switch
+        {
+            "TRANSFER_COOLDOWN" => "Thao tác chuyển map đang diễn ra quá nhanh. Vui lòng chờ một nhịp rồi thử lại.",
+            "TRANSFER_SYSTEM_NOT_READY" => "Hệ thống chuyển map chưa sẵn sàng. Vui lòng thử lại sau.",
+            "MAP_FULL" => "Map đích đang đầy. Vui lòng thử lại sau.",
+            "MAP_NOT_FOUND" => "Không tìm thấy map đích.",
+            "ZONE_NOT_FOUND" => "Không tìm thấy khu đích.",
+            "ZONE_SWITCH_DISABLED" => "Map hiện tại không cho phép đổi khu thủ công.",
+            "PRIVATE_ZONE_SERVER_ONLY" => "Khu riêng chỉ có thể được mở từ server hoặc phó bản.",
+            "DUNGEON_MAP_INVALID" => "Phó bản này chưa được cấu hình hợp lệ.",
+            "DUNGEON_ROOM_CREATE_FAILED" => "Không thể tạo phòng phó bản lúc này.",
+            "NO_RETURN_ROOM" => "Không tìm thấy vị trí phù hợp để quay về.",
+            _ => "Chuyển map thất bại. Vui lòng thử lại."
+        };
     }
 
     private static ClientRpcParams BuildSingleClientRpcParams(ulong clientId) =>

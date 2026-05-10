@@ -123,25 +123,44 @@ public class EnemyClickHandler : MonoBehaviour
 
     // ─────────────────────────────────────────────────────────────────
 
-    private EnemyStats BuildStats()
+        private EnemyStats BuildStats()
     {
         // Lazy-load vì _statOverride được AddComponent runtime sau khi NetworkObject.Spawn()
         if (_statOverride == null)
             _statOverride = GetComponent<EnemyStatOverride>();
 
-        // Tên quái: ưu tiên từ EnemyStatOverride (lấy từ DB), fallback tên GameObject
-        string name = (_statOverride != null && !string.IsNullOrEmpty(_statOverride.EnemyName))
-            ? _statOverride.EnemyName
-            : gameObject.name.Replace("(Clone)", "").Trim();
+        // Tên quái: ưu tiên NetworkEnemyHealth (sync từ server), fallback EnemyStatOverride, rồi tên GameObject
+        string name = gameObject.name.Replace("(Clone)", "").Trim();
+        if (_netHealth != null && !string.IsNullOrEmpty(_netHealth.EnemyName))
+            name = _netHealth.EnemyName;
+        else if (_statOverride != null && !string.IsNullOrEmpty(_statOverride.EnemyName))
+            name = _statOverride.EnemyName;
+
+        // Hệ: ưu tiên NetworkEnemyHealth (sync từ server), fallback EnemySkillSet
+        string element = "None";
+        if (_netHealth != null && !string.IsNullOrEmpty(_netHealth.ElementType) && _netHealth.ElementType != "None")
+            element = _netHealth.ElementType;
+        else if (_skillSet != null && !string.IsNullOrEmpty(_skillSet.ElementType))
+            element = _skillSet.ElementType;
+
+        // Level: ưu tiên NetworkEnemyHealth, fallback EnemyStatOverride
+        int level = 1;
+        if (_netHealth != null && _netHealth.EnemyLevel > 0)
+            level = _netHealth.EnemyLevel;
+        else if (_statOverride != null && _statOverride.Level > 0)
+            level = _statOverride.Level;
+
+        // EXP: chỉ có trên EnemyStatOverride (server)
+        int exp = _statOverride != null ? _statOverride.OverrideExp : 0;
 
         return new EnemyStats
         {
             enemyName   = name,
             currentHp   = _netHealth    != null ? _netHealth.GetCurrentHealth() : 0,
             maxHp       = _netHealth    != null ? _netHealth.GetMaxHealth()     : 0,
-            elementType = _skillSet     != null ? _skillSet.ElementType         : "None",
-            level       = _statOverride != null ? _statOverride.Level           : 1,
-            expReward   = _statOverride != null ? _statOverride.OverrideExp     : 0
+            elementType = element,
+            level       = level,
+            expReward   = exp
         };
     }
 

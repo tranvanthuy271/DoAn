@@ -51,6 +51,7 @@ public class PotentialTabUI : MonoBehaviour
     private bool _isExternalProfileView;
     private PotentialStatInfo[] _externalStats;
     private string _externalCharacterName;
+    private ScrollRect _scrollRect;
 
     private readonly List<PotentialStatRowUI> _allRows = new List<PotentialStatRowUI>();
 
@@ -59,6 +60,7 @@ public class PotentialTabUI : MonoBehaviour
     {
         btnHuy?.onClick.AddListener(OnClickHuy);
         btnCong?.onClick.AddListener(OnClickCong);
+        EnsureScrollLayout();
     }
 
     private void OnDestroy()
@@ -96,6 +98,8 @@ public class PotentialTabUI : MonoBehaviour
     /// <summary>Load dữ liệu tiềm năng từ server và render toàn bộ các dòng.</summary>
     public void Load()
     {
+        EnsureScrollLayout();
+
         if (_isExternalProfileView)
         {
             RenderFriendPotential();
@@ -138,6 +142,7 @@ public class PotentialTabUI : MonoBehaviour
         _originalAvailablePoints = response.potential_points_available;
         _pendingAvailablePoints  = _originalAvailablePoints;
         BuildAllRows(response);
+        RebuildScrollLayout(resetToTop: true);
         UpdatePointsLabel();
         SetStatus("");
         SetActionButtonsEnabled(true);
@@ -221,6 +226,8 @@ public class PotentialTabUI : MonoBehaviour
 
     private void BuildAllRows(PlayerPotentialResponse response)
     {
+        EnsureScrollLayout();
+
         if (potentialRowPrefab == null || statListContainer == null)
         {
             Debug.LogError("[PotentialTabUI] potentialRowPrefab hoặc statListContainer == NULL!");
@@ -275,6 +282,55 @@ public class PotentialTabUI : MonoBehaviour
                 Destroy(statListContainer.GetChild(i).gameObject);
     }
 
+    private void EnsureScrollLayout()
+    {
+        if (statListContainer == null)
+        {
+            ScrollRect existingScroll = GetComponentInChildren<ScrollRect>(true);
+            if (existingScroll != null && existingScroll.content != null)
+                statListContainer = existingScroll.content;
+        }
+
+        if (statListContainer == null)
+            return;
+
+        RectTransform contentRect = statListContainer as RectTransform;
+        if (contentRect == null)
+            return;
+
+        _scrollRect = statListContainer.GetComponentInParent<ScrollRect>(true);
+        if (_scrollRect != null)
+        {
+            if (_scrollRect.content == null)
+                _scrollRect.content = contentRect;
+
+            if (_scrollRect.viewport == null)
+            {
+                Mask viewportMask = _scrollRect.GetComponentInChildren<Mask>(true);
+                if (viewportMask != null)
+                    _scrollRect.viewport = viewportMask.transform as RectTransform;
+            }
+        }
+    }
+
+    private void RebuildScrollLayout(bool resetToTop)
+    {
+        EnsureScrollLayout();
+
+        RectTransform contentRect = statListContainer as RectTransform;
+        if (contentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+
+        Canvas.ForceUpdateCanvases();
+
+        if (_scrollRect != null)
+        {
+            _scrollRect.StopMovement();
+            if (resetToTop)
+                _scrollRect.verticalNormalizedPosition = 1f;
+        }
+    }
+
     private void SetStatus(string msg)
     {
         if (txtStatus != null)
@@ -314,6 +370,8 @@ public class PotentialTabUI : MonoBehaviour
             row.SetReadOnlyData(stat);
             _allRows.Add(row);
         }
+
+        RebuildScrollLayout(resetToTop: true);
     }
 
     #endregion
