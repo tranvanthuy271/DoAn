@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82da1b763cf1a1149a296be208f4ec09, type: 3}
+  m_Name: Weaken_Config
+  m_EditorClassIdentifier: 
+  debuffType: 2
+  debuffValue: 25
+  debuffDuration: 5
+  debuffName: "Suy Y\u1EBFu"
+  debuffTintColor: {r: 0.9245283, g: 0.9127871, b: 0.43173724, a: 0.5}
+  isBuff: 0
+  buffName: 
+  buffDuration: 0
+  buffTintColor: {r: 0, g: 0, b: 0, a: 0}
+  iconId: 309
+  ringColor: {r: 0.9138343, g: 0.9245283, b: 0.58873266, a: 1}

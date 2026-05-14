@@ -211,49 +211,7 @@ namespace GameServerApi.Controllers
                 }
             }
 
-            // ── Fallback: bảng npc_shop_item (dữ liệu cũ) ──────────────
-            if (npc.NpcType != "shop" && npc.NpcType != "blacksmith")
-                return BadRequest("NPC này không phải cửa hàng.");
-
-            var rawItems = await _db.NpcShopItems
-                .Where(s => s.NpcId == npcId)
-                .Join(_db.ItemTemplates,
-                      s => s.ItemTemplateId,
-                      t => t.Id,
-                      (s, t) => new
-                      {
-                          ShopItemId    = s.Id,
-                          s.ItemTemplateId,
-                          ItemName      = t.Name,
-                          Detail        = t.Detail ?? "",
-                          IconId        = t.IdIcon,
-                          IdClass       = t.IdClass,
-                          IdType        = t.Type,
-                          s.PriceSilver,
-                          s.PriceGold,
-                          s.Stock,
-                          s.RequiredLevel,
-                      })
-                .ToListAsync();
-
-            return Ok(rawItems.Select(i => new
-            {
-                shop_item_id     = i.ShopItemId,
-                item_template_id = i.ItemTemplateId,
-                item_name        = i.ItemName,
-                item_detail      = i.Detail,
-                icon_id          = i.IconId,
-                price_silver     = i.PriceSilver,
-                price_gold       = i.PriceGold,
-                stock            = i.Stock,
-                required_level   = i.RequiredLevel,
-                element_class    = i.IdClass,
-                equip_type       = i.IdType,
-                shop_name        = npc.NpcName,
-                can_afford       = i.PriceGold > 0 ? info.Gold >= i.PriceGold
-                                                   : info.Silver >= i.PriceSilver,
-                meets_level      = playerLevel >= i.RequiredLevel,
-            }));
+            return BadRequest("Shop NPC này chưa được cấu hình.");
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -314,38 +272,14 @@ namespace GameServerApi.Controllers
                 catch { /* fallback below */ }
             }
 
-            // ── Fallback: bảng npc_shop_item (shopItemId = npc_shop_item.id) ──
-            NpcShopItem? legacyShopItem = null;
             if (!fromJson)
-            {
-                legacyShopItem = await _db.NpcShopItems
-                    .Include(s => s.ItemTemplate)
-                    .FirstOrDefaultAsync(s => s.Id == shopItemId && s.NpcId == npcId);
-                if (legacyShopItem == null)
-                    return NotFound("Item không tồn tại trong shop.");
+                return NotFound("Item không có trong shop.");
 
-                resolvedTemplateId  = legacyShopItem.ItemTemplateId;
-                resolvedPriceSilver = legacyShopItem.PriceSilver;
-                resolvedPriceGold   = legacyShopItem.PriceGold;
-                resolvedStock       = legacyShopItem.Stock;
-                resolvedLevelNeed   = legacyShopItem.RequiredLevel;
-                resolvedItemName    = legacyShopItem.ItemTemplate?.Name ?? "";
-            }
-
-            // Load item_template nếu cần (để lấy tên, icon)
-            ItemTemplate? tmpl = null;
-            if (fromJson)
-            {
-                tmpl = await _db.ItemTemplates.FindAsync(resolvedTemplateId);
-                if (tmpl == null)
-                    return NotFound("Item template không tồn tại.");
-                resolvedItemName = tmpl.Name;
-            }
-            else
-            {
-                tmpl = legacyShopItem?.ItemTemplate;
-                resolvedItemName = tmpl?.Name ?? resolvedItemName;
-            }
+            // Load item_template để lấy tên, icon
+            var tmpl = await _db.ItemTemplates.FindAsync(resolvedTemplateId);
+            if (tmpl == null)
+                return NotFound("Item template không tồn tại.");
+            resolvedItemName = tmpl.Name;
 
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null)
@@ -375,10 +309,6 @@ namespace GameServerApi.Controllers
                 info.Gold -= totalGold;
             else
                 info.Silver -= totalSilver;
-
-            // Trừ tồn kho (chỉ áp dụng với bảng npc_shop_item cũ; JSON config dùng stock read-only)
-            if (!fromJson && legacyShopItem != null && legacyShopItem.Stock != -1)
-                legacyShopItem.Stock -= quantity;
 
             // Thêm item vào inventory
             var inventory = ParseJsonList(player.InventoryJson);

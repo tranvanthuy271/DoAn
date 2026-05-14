@@ -35,6 +35,12 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     /// <summary>% giảm sát thương nhận (DefenseBuff).</summary>
     public NetworkVariable<int> networkDefenseBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    /// <summary>
+    /// ID nhóm (party) mà player đang ở. Rỗng nếu không có nhóm.
+    /// Dùng server-side để kiểm tra 2 player có cùng nhóm không trước khi áp buff đồng đội.
+    /// </summary>
+    public NetworkVariable<FixedString64Bytes> networkPartyId = new NetworkVariable<FixedString64Bytes>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     [Header("References")]
     private PlayerController playerController;
@@ -75,6 +81,19 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkGeneTier.OnValueChanged += OnGeneTierChanged;
         networkMp.OnValueChanged += OnMpChanged;
         networkMaxMp.OnValueChanged += OnMaxMpChanged;
+
+        // Sync party ID khi owner thay đổi party (chỉ owner client mới subscribe PartyManager)
+        if (IsOwner)
+        {
+            var pm = PartyManager.Instance;
+            if (pm != null)
+            {
+                pm.OnPartyStateChanged += OnPartyStateChanged_Sync;
+                // Sync ngay giá trị hiện tại nếu đang có party
+                if (pm.HasParty && !string.IsNullOrEmpty(pm.CurrentParty?.partyId))
+                    SyncPartyIdServerRpc(pm.CurrentParty.partyId);
+            }
+        }
 
         // Apply data ngay lập tức
         ApplyPlayerData();
@@ -224,6 +243,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkGeneTier.OnValueChanged -= OnGeneTierChanged;
         networkMp.OnValueChanged -= OnMpChanged;
         networkMaxMp.OnValueChanged -= OnMaxMpChanged;
+
+        // Unsubscribe party sync
+        if (IsOwner)
+        {
+            var pm = PartyManager.Instance;
+            if (pm != null)
+                pm.OnPartyStateChanged -= OnPartyStateChanged_Sync;
+        }
 
         base.OnNetworkDespawn();
     }
@@ -712,5 +739,42 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     private void ShowProximityBubbleClientRpc(FixedString128Bytes senderName, FixedString512Bytes message)
     {
         GetComponentInChildren<ProximityChatBubble>()?.ShowMessage(senderName.ToString(), message.ToString());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  Party ID Sync — dùng để server kiểm tra 2 player có cùng nhóm không
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Owner client gọi khi PartyManager.OnPartyStateChanged fire.
+    /// Sync partyId của bản thân lên server để server có thể kiểm tra party membership.
+    /// </summary>
+    private void OnPartyStateChanged_Sync(PartyStatePayload state)
+    {
+        string pid = state?.partyId ?? string.Empty;
+        SyncPartyIdServerRpc(pid);
+    }
+
+    /// <summary>Server nhận partyId từ owner và set vào networkPartyId.</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void SyncPartyIdServerRpc(string partyId, ServerRpcParams rpc = default)
+    {
+        networkPartyId.Value = new FixedString64Bytes(partyId ?? string.Empty);
+        Debug.Log($"[NetworkPlayerDataSync] SyncPartyId clientId={rpc.Receive.SenderClientId} partyId={partyId}");
+    }
+
+    /// <summary>
+    /// Kiểm tra xem NetworkObject khác có cùng party với object này không.
+    /// Dùng server-side trước khi áp buff đồng đội.
+    /// Trả về true nếu cả hai đều có partyId giống nhau (không rỗng).
+    /// </summary>
+    public bool IsInSameParty(NetworkObject other)
+    {
+        if (other == null) return false;
+        var otherSync = other.GetComponent<NetworkPlayerDataSync>();
+        if (otherSync == null) return false;
+        string myId    = networkPartyId.Value.ToString();
+        string otherId = otherSync.networkPartyId.Value.ToString();
+        return !string.IsNullOrEmpty(myId) && myId == otherId;
     }
 }

@@ -78,13 +78,18 @@ public class SkillData
              "Nếu để trống, SkillHotbarUI sẽ fallback sang skillCode.")]
     public string iconId = "";
 
+    [Header("Skill Effect Config (buff / debuff)")]
+    [Tooltip("Config hiệu ứng khi skill hit target (debuff: slow/burn/freeze...) hoặc buff (armor/attack).\n"
+           + "Tạo ScriptableObject: Assets → Create → DoAn → Skill Effect Config.")]
+    public SkillEffectConfig effectConfig;
+
     [Header("Runtime Stats (load từ DB — không chỉnh tay)")]
     [Tooltip("Sát thương / hiệu ứng tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]
     public float currentEffectValue = 0f;
 
     [Tooltip("MP tiêu tốn khi dùng skill tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]
     public int currentMpCost = 0;
-    
+
     [Header("Internal State (Không chỉnh sửa)")]
     [SerializeField] private float cooldownTimer = 0f;
     [SerializeField] private bool canUse = true;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Collections;
 using Unity.Netcode;
 
 /// <summary>
@@ -34,6 +35,15 @@ public class DotDamage : NetworkBehaviour
 
     /// <summary>Set owner để tránh tự gây damage cho chính mình.</summary>
     public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
+
+    // ── Debuff Config ─────────────────────────────────────────────────────────
+    private SkillEffectConfig _debuffConfig;
+
+    /// <summary>
+    /// Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
+    /// Gọi từ skill script ngay sau khi Instantiate projectile.
+    /// </summary>
+    public void SetDebuffConfig(SkillEffectConfig cfg) => _debuffConfig = cfg;
 
     private void Awake()
     {
@@ -83,6 +93,7 @@ public class DotDamage : NetworkBehaviour
         {
             hasHit = true;
             MarkHitClientRpc();
+            ApplyDebuffToTarget((neh != null ? (UnityEngine.Component)neh : eh).gameObject);
             StartCoroutine(ApplyDotEnemy(eh, neh));
             if (destroyOnHit)
                 StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
@@ -102,6 +113,7 @@ public class DotDamage : NetworkBehaviour
                 hasHit = true;
                 // Đồng bộ hit animation sang tất cả client — kích hoạt animation event trên client
                 MarkHitClientRpc();
+                ApplyDebuffToTarget((nph != null ? (UnityEngine.Component)nph : ph).gameObject);
                 StartCoroutine(ApplyDotPlayer(nph, ph));
                 if (destroyOnHit)
                     StartCoroutine(DespawnAfterDelay(dotTicks * tickInterval + 0.2f));
@@ -153,5 +165,25 @@ public class DotDamage : NetworkBehaviour
             else if (ph != null) ph.TakeDamage(dotDamagePerTick);
             yield return new WaitForSeconds(tickInterval);
         }
+    }
+
+    /// <summary>Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.</summary>
+    private void ApplyDebuffToTarget(UnityEngine.GameObject target)
+    {
+        if (_debuffConfig == null) return;
+        if (_debuffConfig.debuffType == SkillDebuffType.None) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+
+        var debuffMgr = target.GetComponent<DebuffManager>()
+                     ?? target.GetComponentInParent<DebuffManager>();
+        if (debuffMgr == null) return;
+
+        debuffMgr.ApplyDebuffServerRpc(
+            _debuffConfig.debuffType,
+            _debuffConfig.debuffValue,
+            _debuffConfig.debuffDuration,
+            _debuffConfig.iconId,
+            new Unity.Collections.FixedString64Bytes(_debuffConfig.debuffName)
+        );
     }
 }

@@ -120,18 +120,53 @@ public class EarthAttackBuffSkill : NetworkBehaviour
     {
         TriggerAuraAnimationClientRpc();
 
+        // Lấy NetworkPlayerDataSync của bản thân để kiểm tra party
+        var mySelf     = GetComponent<NetworkPlayerDataSync>();
+        var selfNetObj = GetComponent<NetworkObject>();
+
         // Tìm tất cả player trong cùng physics scene của map hiện tại và áp dụng buff
         Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, buffRadius);
         Debug.Log($"[EarthAttackBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
+
         foreach (var hit in hits)
         {
             if (!hit.CompareTag("Player")) continue;
+
+            NetworkObject netObj = hit.GetComponent<NetworkObject>()
+                                ?? hit.GetComponentInParent<NetworkObject>();
+
+            // Bỏ qua chính mình (xử lý riêng bên dưới)
+            if (netObj != null && selfNetObj != null && netObj.NetworkObjectId == selfNetObj.NetworkObjectId)
+                continue;
+
+            // ── Kiểm tra party: chỉ buff player cùng nhóm ──────────────────
+            bool sameParty = netObj != null && mySelf != null && mySelf.IsInSameParty(netObj);
+            if (!sameParty) continue;
+
             PlayerHealth ph = hit.GetComponentInParent<PlayerHealth>();
             if (ph != null)
+            {
                 ph.ApplyAttackBuff(attackBonusPercent, buffDuration);
+
+                // Sync lên HUD của target qua PlayerBuffSync
+                var buffSync = hit.GetComponent<PlayerBuffSync>()
+                            ?? hit.GetComponentInParent<PlayerBuffSync>();
+                if (buffSync != null)
+                    buffSync.SetAttackBuffServerRpc(attackBonusPercent, buffDuration, 152, "Địa Uy Khí");
+            }
         }
 
-        Debug.Log($"[EarthAttackBuffSkill] Áp dụng buff +{attackBonusPercent}% tấn công trong {buffRadius} units.");
+        // Bản thân người dùng skill luôn được buff (không cần kiểm tra party)
+        var selfPh = GetComponent<PlayerHealth>();
+        if (selfPh != null)
+        {
+            selfPh.ApplyAttackBuff(attackBonusPercent, buffDuration);
+            var selfBuffSync = GetComponent<PlayerBuffSync>();
+            if (selfBuffSync != null)
+                selfBuffSync.SetAttackBuffServerRpc(attackBonusPercent, buffDuration, 152, "Địa Uy Khí");
+        }
+
+        Debug.Log($"[EarthAttackBuffSkill] Áp dụng buff +{attackBonusPercent}% tấn công trong {buffRadius} units (party only).");
 
         yield return new WaitForSeconds(0.2f);
         ResetIsUsingClientRpc();

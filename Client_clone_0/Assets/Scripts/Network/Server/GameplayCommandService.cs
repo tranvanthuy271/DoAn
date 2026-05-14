@@ -58,6 +58,9 @@ public class GameplayCommandService : NetworkBehaviour
     public static event Action<string> OnDungeonListReceived;     // GetDungeonListServerRpc
     public static event Action<string> OnInventoryReceived;       // GetPlayerInventoryServerRpc
 
+    public static event Action<string> OnUtilityShopReceived;     // LoadUtilityShopServerRpc
+    public static event Action<string> OnUtilityShopBuyResult;    // BuyUtilityShopItemServerRpc
+
     [Serializable]
     private sealed class UseItemServerResponse
     {
@@ -505,6 +508,48 @@ public class GameplayCommandService : NetworkBehaviour
 
     [ClientRpc] private void SendInventoryClientRpc(string json, ClientRpcParams p = default)
         => OnInventoryReceived?.Invoke(json);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UTILITY SHOP (Virtual NPC 999 — accessible from anywhere via HUD)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private const int UtilityShopNpcId = 999;
+
+    /// <summary>Tải danh sách item của Cửa Hàng Tiện Ích (NPC ảo id=999).</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void LoadUtilityShopServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        ulong cid = rpcParams.Receive.SenderClientId;
+        int pid   = ResolveClientUserId(cid);
+        string jwt = ResolveClientJwt(cid);
+        StartCoroutine(DoGet(
+            $"{ApiBase}/npc/shop?npcId={UtilityShopNpcId}&playerId={pid}", jwt,
+            json => SendUtilityShopClientRpc(json, Target(cid)),
+            err  => SendUtilityShopClientRpc(ErrorJson(err), Target(cid))
+        ));
+    }
+
+    /// <summary>Mua item từ Cửa Hàng Tiện Ích.</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void BuyUtilityShopItemServerRpc(int shopItemId, int quantity, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        ulong cid  = rpcParams.Receive.SenderClientId;
+        string jwt = ResolveClientJwt(cid);
+        string body = $"{{\"npcId\":{UtilityShopNpcId},\"shopItemId\":{shopItemId},\"quantity\":{quantity}}}";
+        StartCoroutine(DoPost(
+            $"{ApiBase}/npc/shop/buy", body, jwt,
+            json => UtilityShopBuyResultClientRpc(json, Target(cid)),
+            err  => UtilityShopBuyResultClientRpc(ErrorJson(err), Target(cid))
+        ));
+    }
+
+    [ClientRpc] private void SendUtilityShopClientRpc(string json, ClientRpcParams p = default)
+        => OnUtilityShopReceived?.Invoke(json);
+
+    [ClientRpc] private void UtilityShopBuyResultClientRpc(string json, ClientRpcParams p = default)
+        => OnUtilityShopBuyResult?.Invoke(json);
 
     // ─────────────────────────────────────────────────────────────────────────
     // UTILITY

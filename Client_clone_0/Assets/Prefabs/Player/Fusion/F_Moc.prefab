@@ -33,6 +33,9 @@ GameObject:
   - component: {fileID: 6831001135495181788}
   - component: {fileID: 7661034511984332026}
   - component: {fileID: -1506226328167664735}
+  - component: {fileID: -6806674116994229950}
+  - component: {fileID: -6994246682230548379}
+  - component: {fileID: 897233357531897313}
   m_Layer: 8
   m_Name: F_Moc
   m_TagString: Player
@@ -192,7 +195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2081500041
+  GlobalObjectIdHash: 2155272050
   InScenePlacedSourceGlobalObjectIdHash: 3434770090
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -302,6 +305,7 @@ MonoBehaviour:
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 1
     iconId: icon_skill_5
+    effectConfig: {fileID: 0}
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -322,6 +326,7 @@ MonoBehaviour:
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 1
     iconId: icon_normal_attack
+    effectConfig: {fileID: 0}
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -342,6 +347,7 @@ MonoBehaviour:
     projectileSpriteFacesLeft: 0
     disablePlayerSkillEffectAnimation: 0
     iconId: icon_hybrid_110
+    effectConfig: {fileID: 11400000, guid: 18263b117e808874481a2d2c99adc8f4, type: 2}
     currentEffectValue: 0
     currentMpCost: 0
     cooldownTimer: 0
@@ -644,6 +650,75 @@ MonoBehaviour:
     m_InternalValue: 0
   networkDefenseBonusPct:
     m_InternalValue: 0
+  networkPartyId:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
 --- !u!50 &3466425412121715438
 Rigidbody2D:
   serializedVersion: 4
@@ -872,6 +947,203 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _alwaysVisibleToServer: 1
+--- !u!114 &-6806674116994229950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580626100454965037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1181680d38fd7534694026df04d3dfce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  armorBuffExpiry:
+    m_InternalValue: 0
+  armorBuffValue:
+    m_InternalValue: 0
+  armorIconId:
+    m_InternalValue: 0
+  armorBuffName:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+  armorBuffTotalDuration:
+    m_InternalValue: 0
+  attackBuffExpiry:
+    m_InternalValue: 0
+  attackBuffValue:
+    m_InternalValue: 0
+  attackIconId:
+    m_InternalValue: 0
+  attackBuffName:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+  attackBuffTotalDuration:
+    m_InternalValue: 0
+--- !u!114 &-6994246682230548379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580626100454965037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6301d0475d4679438adfaa86d3a308d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &897233357531897313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580626100454965037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39df7667051f7c4d9ed64aa05896505, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slowColor: {r: 1, g: 1, b: 0, a: 0.5}
+  weakenColor: {r: 0.7, g: 0, b: 1, a: 0.5}
+  burnColor: {r: 1, g: 0.3, b: 0, a: 0.6}
+  freezeColor: {r: 0.3, g: 0.8, b: 1, a: 0.7}
+  defenseDownColor: {r: 0.5, g: 0, b: 0, a: 0.5}
+  armorBuffColor: {r: 0.2, g: 0.8, b: 1, a: 0.6}
+  attackBuffColor: {r: 1, g: 0.85, b: 0.1, a: 0.5}
 --- !u!1 &2025925324465436838
 GameObject:
   m_ObjectHideFlags: 0
@@ -903,6 +1175,83 @@ Transform:
   m_Children: []
   m_Father: {fileID: 650564255913534289}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7413842665687950711
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5839530294494943891}
+  - component: {fileID: 7353134532505295309}
+  - component: {fileID: 1388932369398791704}
+  m_Layer: 0
+  m_Name: StatusIconContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5839530294494943891
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7413842665687950711}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3600306452722775889}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 4}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7353134532505295309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7413842665687950711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 4
+  m_Spacing: 2
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
+--- !u!114 &1388932369398791704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7413842665687950711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_HorizontalFit: 2
+  m_VerticalFit: 0
 --- !u!1001 &4764687451440501643
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1001,11 +1350,38 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8352288736990012634, guid: 85f29d8aa6194f449a6ef911cb8d05f4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5839530294494943891}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3380693803885481464, guid: 85f29d8aa6194f449a6ef911cb8d05f4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7723349855261144259}
   m_SourcePrefab: {fileID: 100100000, guid: 85f29d8aa6194f449a6ef911cb8d05f4, type: 3}
 --- !u!224 &3600306452722775889 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8352288736990012634, guid: 85f29d8aa6194f449a6ef911cb8d05f4, type: 3}
   m_PrefabInstance: {fileID: 4764687451440501643}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7851237482273840755 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3380693803885481464, guid: 85f29d8aa6194f449a6ef911cb8d05f4, type: 3}
+  m_PrefabInstance: {fileID: 4764687451440501643}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7723349855261144259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7851237482273840755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9381083bbc03dc4d8b14a66902525d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  statusIconPrefab: {fileID: 7194126505992068813, guid: f9b821727e6f1ea43936e57c98b9740c, type: 3}
+  iconContainer: {fileID: 5839530294494943891}
+  buffRingColor: {r: 1, g: 0.9, b: 0.2, a: 1}
+  debuffRingColor: {r: 1, g: 0.2, b: 0.2, a: 1}

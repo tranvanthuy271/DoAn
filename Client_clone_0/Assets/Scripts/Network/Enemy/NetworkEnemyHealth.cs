@@ -53,9 +53,16 @@ public class NetworkEnemyHealth : NetworkBehaviour
                 NetworkVariableReadPermission.Everyone,
                 NetworkVariableWritePermission.Server);
 
+        /// <summary>DB enemy_id (từ bảng enemy) — dùng cho quest kill tracking.</summary>
+        private NetworkVariable<int> _networkEnemyDbId =
+            new NetworkVariable<int>(0,
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
+
         public string EnemyName    => _networkEnemyName.Value.IsEmpty ? "" : _networkEnemyName.Value.ToString();
         public string ElementType  => _networkElementType.Value.IsEmpty ? "None" : _networkElementType.Value.ToString();
         public int    EnemyLevel   => _networkEnemyLevel.Value > 0 ? _networkEnemyLevel.Value : 1;
+        public int    EnemyDbId    => _networkEnemyDbId.Value;
 
         public bool IsHealBlocked => _healBlocked;
 
@@ -142,6 +149,15 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (runtimeStats != null && runtimeStats.HasRuntimeOverride)
             damage = runtimeStats.ResolveIncomingDamage(damage);
 
+        // DefenseDown debuff từ skill player: TĂNG damage nhận vào theo % giảm giáp
+        var debuffMgr = GetComponent<DebuffManager>();
+        if (debuffMgr != null)
+        {
+            int defDownPct = debuffMgr.GetDefenseDebuffPct();
+            if (defDownPct > 0)
+                damage = Mathf.Max(1, Mathf.RoundToInt(damage * (1f + defDownPct / 100f)));
+        }
+
         if (attackerClientId != ulong.MaxValue)
             _lastAttackerClientId = attackerClientId;
 
@@ -175,12 +191,13 @@ public class NetworkEnemyHealth : NetworkBehaviour
     /// <summary>
     /// Server gọi để set NetworkVariables — được replicate tự động đến mọi client kể cả late-joiner.
     /// </summary>
-    public void SetEnemyInfo(string enemyName, string elementType, int level)
+    public void SetEnemyInfo(string enemyName, string elementType, int level, int enemyDbId = 0)
     {
         if (!IsServer) return;
-        _networkEnemyName.Value  = enemyName ?? "";
+        _networkEnemyName.Value   = enemyName ?? "";
         _networkElementType.Value = string.IsNullOrEmpty(elementType) ? "None" : elementType;
         _networkEnemyLevel.Value  = level > 0 ? level : 1;
+        if (enemyDbId > 0) _networkEnemyDbId.Value = enemyDbId;
     }
 
     /// <summary>
@@ -242,7 +259,15 @@ public class NetworkEnemyHealth : NetworkBehaviour
             }
 
             if (killerSync != null)
+            {
                 killerSync.AwardExpOnServer(ExpReward);
+
+                // Quest kill hook: báo cáo tiến trình nhiệm vụ loại "kill"
+                int dbPlayerId = killerSync.networkPlayerId.Value;
+                int enemyDbId  = EnemyDbId;
+                if (dbPlayerId > 0 && enemyDbId > 0)
+                    QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Kill, enemyDbId);
+            }
             else
                 Debug.LogWarning($"[NetworkEnemyHealth] Không tìm được NetworkPlayerDataSync cho client {_lastAttackerClientId}");
         }

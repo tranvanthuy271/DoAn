@@ -87,6 +87,9 @@ namespace GameServerApi.Controllers
             user.LastLogin = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
+            // ── Điểm danh chuyên cần (1 lần / ngày, INSERT IGNORE logic) ────
+            await RecordDailyAttendanceAsync(user.UserId);
+
             var token = _authService.GenerateJwtToken(user);
 
             _logger.LogInformation("Login thành công: {Username} (userId={UserId})", user.Username, user.UserId);
@@ -97,6 +100,30 @@ namespace GameServerApi.Controllers
                 user_id  = user.UserId,
                 username = user.Username
             });
+        }
+        // ── Điểm danh chuyên cần ─────────────────────────────────────────────
+        private async Task RecordDailyAttendanceAsync(int userId)
+        {
+            try
+            {
+                var player = await _db.PlayerData.FindAsync(userId);
+                if (player == null) return;
+
+                var info  = player.GetInfoChar();
+                var today = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+
+                // Chỉ đếm 1 lần/ngày
+                if (info.LastAttendanceDate == today) return;
+
+                info.AttendanceCount++;
+                info.LastAttendanceDate = today;
+                player.SetInfoChar(info);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("[Auth] Không thể ghi điểm danh cho userId={UserId}: {Msg}", userId, ex.Message);
+            }
         }
     }
 }

@@ -211,7 +211,10 @@ public class PlayerMovement : MonoBehaviour
         HandleStepClimb(horizontalInput);
 
         // 1. Horizontal movement (A/D) – luôn hoạt động kể cả khi trên không
-        float targetVelocityX = horizontalInput * stats.moveSpeed;
+        float slowFactor = 1f;
+        var debuffMgr = GetComponent<DebuffManager>();
+        if (debuffMgr != null) slowFactor = debuffMgr.GetSlowFactor();
+        float targetVelocityX = horizontalInput * stats.moveSpeed * slowFactor;
         rb.velocity = new Vector2(targetVelocityX, rb.velocity.y);
 
         if (horizontalInput > 0)       transform.localScale = new Vector3(1, 1, 1);

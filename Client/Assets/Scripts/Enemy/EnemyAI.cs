@@ -159,6 +159,26 @@ public class EnemyAI : MonoBehaviour
             rb.gravityScale = 0f;
     }
 
+    // ── Freeze (DebuffManager gọi qua ClientRpc) ─────────────────────────────
+    private bool _isFrozen;
+
+    public void ApplyFreeze(float duration)
+    {
+        _isFrozen = true;
+        // Auto-unfreeze sau duration (fallback nếu DebuffManager không gọi RemoveFreeze đúng lúc)
+        CancelInvoke(nameof(RemoveFreeze));
+        Invoke(nameof(RemoveFreeze), duration);
+    }
+
+    public void RemoveFreeze()
+    {
+        _isFrozen = false;
+    }
+
+    /// <summary>DebuffManager.GetSlowFactor() hoặc IsFrozen() không accessible trực tiếp từ đây
+    /// vì EnemyAI có thể chạy trên client. Thay vào đó, DebuffManager gọi ApplyFreeze để tắt movement.</summary>
+    public bool IsFrozen => _isFrozen;
+
     // ── Map isolation helpers ────────────────────────────────────────────────
 
     /// <summary>Trả về MapId của enemy này (qua ZoneOwnerTag). -999 nếu chưa gắn tag.</summary>
@@ -559,17 +579,25 @@ public class EnemyAI : MonoBehaviour
     private void RunTowards(float targetX)
     {
         if (rb == null) return;
-        
+        if (_isFrozen) { rb.velocity = Vector2.zero; return; }
+
         float dir = Mathf.Sign(targetX - transform.position.x);
-        // ✅ FIX: Flying enemy giữ velocity.y = 0 khi tuần tra (tránh trôi dần do physics)
         float yVel = canFly ? 0f : rb.velocity.y;
-        Vector2 newVelocity = new Vector2(dir * moveSpeed, yVel);
+        // Áp dụng SlowFactor từ DebuffManager nếu có
+        float slow = GetDebuffSlowFactor();
+        Vector2 newVelocity = new Vector2(dir * moveSpeed * slow, yVel);
         rb.velocity = newVelocity;
 
         if ((dir > 0 && !facingRight) || (dir < 0 && facingRight))
         {
             Flip();
         }
+    }
+
+    private float GetDebuffSlowFactor()
+    {
+        var debuffMgr = GetComponent<DebuffManager>();
+        return debuffMgr != null ? debuffMgr.GetSlowFactor() : 1f;
     }
 
     private bool HasProjectileSkillConfigured()
@@ -689,7 +717,9 @@ public class EnemyAI : MonoBehaviour
         }
 
         float horizontalDirection = Mathf.Sign(horizontalDelta);
-        rb.velocity = new Vector2(horizontalDirection * moveSpeed, 0f);
+        float slow = GetDebuffSlowFactor();
+        if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
+        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, 0f);
         UpdateFacingFromHorizontal(rb.velocity.x);
     }
 
@@ -709,7 +739,9 @@ public class EnemyAI : MonoBehaviour
             ? Mathf.Sign(horizontalDelta)
             : (facingRight ? -1f : 1f);
 
-        rb.velocity = new Vector2(horizontalDirection * moveSpeed, 0f);
+        float slow = GetDebuffSlowFactor();
+        if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
+        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, 0f);
         UpdateFacingFromHorizontal(rb.velocity.x);
     }
 
@@ -726,7 +758,9 @@ public class EnemyAI : MonoBehaviour
 
         Vector2 moveDirection = desiredDirection.normalized;
         float verticalSpeed = Mathf.Max(0.1f, projectileVerticalMoveSpeed);
-        Vector2 velocity = new Vector2(moveDirection.x * moveSpeed, moveDirection.y * verticalSpeed);
+        float slow = GetDebuffSlowFactor();
+        if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
+        Vector2 velocity = new Vector2(moveDirection.x * moveSpeed * slow, moveDirection.y * verticalSpeed * slow);
 
         if (velocity.y < -0.01f && !CanProjectileEnemyMoveDown())
         {

@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// Skill 3 của hệ Thủy — "Thủy Giáp Hộ Thể" (Buff Giáp Cho Đồng Đội)
@@ -218,20 +216,39 @@ public class WaterArmorBuffSkill : NetworkBehaviour
 
         Debug.Log($"[WaterArmorBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
 
-        var buffedIds = new HashSet<ulong>();
+        // Lấy NetworkPlayerDataSync của bản thân để kiểm tra party
+        var mySelf = GetComponent<NetworkPlayerDataSync>();
 
         // Luôn bao gồm bản thân người dùng skill dù vật lý có tìm thấy hay không
         var selfNetObj = GetComponent<NetworkObject>();
-        if (selfNetObj != null)
-            buffedIds.Add(selfNetObj.NetworkObjectId);
+
+        // Áp dụng buff giáp + PlayerBuffSync cho bản thân
+        var selfPh = GetComponent<PlayerHealth>();
+        if (selfPh != null)
+        {
+            selfPh.ApplyArmorBuff(armorValue, buffDuration);
+            var selfBuffSync = GetComponent<PlayerBuffSync>();
+            if (selfBuffSync != null)
+                selfBuffSync.SetArmorBuffServerRpc(armorValue, buffDuration, 151, "Thủy Giáp Hộ Thể");
+        }
 
         foreach (var col in hits)
         {
-            // Thu thập NetworkObject ID trước — độc lập với PlayerHealth
             NetworkObject netObj = col.GetComponent<NetworkObject>()
                                 ?? col.GetComponentInParent<NetworkObject>();
-            if (netObj != null)
-                buffedIds.Add(netObj.NetworkObjectId);
+
+            // Bỏ qua nếu là chính bản thân (đã xử lý ở trên)
+            if (netObj != null && selfNetObj != null && netObj.NetworkObjectId == selfNetObj.NetworkObjectId)
+                continue;
+
+            // ── Kiểm tra party: chỉ buff player cùng nhóm ──────────────────
+            // Nếu cả hai đều có partyId khớp nhau → cùng nhóm → được buff.
+            // Nếu một trong hai không có partyId (solo) → không buff người lạ.
+            bool sameParty = false;
+            if (netObj != null && mySelf != null)
+                sameParty = mySelf.IsInSameParty(netObj);
+
+            if (!sameParty) continue;
 
             // Áp dụng buff giáp nếu có PlayerHealth
             PlayerHealth ph = col.GetComponent<PlayerHealth>()
@@ -240,19 +257,23 @@ public class WaterArmorBuffSkill : NetworkBehaviour
             {
                 ph.ApplyArmorBuff(armorValue, buffDuration);
                 Debug.Log($"[WaterArmorBuffSkill] Đã buff giáp cho: {col.name}");
+
+                // Sync lên HUD của target qua PlayerBuffSync
+                var buffSync = col.GetComponent<PlayerBuffSync>()
+                            ?? col.GetComponentInParent<PlayerBuffSync>();
+                if (buffSync != null)
+                    buffSync.SetArmorBuffServerRpc(armorValue, buffDuration, 151, "Thủy Giáp Hộ Thể");
             }
         }
 
-        // 3. Bật aura xanh cho tất cả client (luôn gọi vì buffedIds luôn có ít nhất bản thân)
-        UpdateBuffedPlayersVisualClientRpc(new List<ulong>(buffedIds).ToArray(), true);
+        // 3. Không cần gọi UpdateBuffedPlayersVisualClientRpc nữa.
+        //    Sprite tint được xử lý tự động bởi DebuffSpriteTint.cs
+        //    khi nó nhận được sự thay đổi của PlayerBuffSync NetworkVariable.
 
         // 4. Chờ hết thời gian buff
         yield return new WaitForSeconds(buffDuration);
 
-        // 5. Tắt aura buff
-        UpdateBuffedPlayersVisualClientRpc(new List<ulong>(buffedIds).ToArray(), false);
-
-        // 6. Reset isUsing
+        // 5. Reset isUsing
         ResetIsUsingClientRpc();
     }
 

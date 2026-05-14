@@ -663,10 +663,14 @@ namespace GameServerApi.Controllers
                 .FirstOrDefaultAsync(s => s.PlayerId == playerId && s.DungeonId == dungeonId && s.IsActive);
             if (session == null) return Ok(new { success = true, message = "Không có session active để đóng." });
 
+            int reachedWave = session.CurrentWave;
             session.IsActive   = false;
             session.ExitReason = reason;
             session.UpdatedAt  = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            // ── Cập nhật kỷ lục phó bản (best_wave) ───────────────────────
+            await UpdateDungeonRecordAsync(playerId, dungeonId, reachedWave);
 
             return Ok(new { success = true });
         }
@@ -695,6 +699,31 @@ namespace GameServerApi.Controllers
             public int entry_item_plus1_id { get; set; }
             public int entry_item_plus2_id { get; set; }
             public string milestone_reward_json { get; set; } = "[]";
+        }
+
+        // ── Cập nhật kỷ lục phó bản ───────────────────────────────────────────
+        private async Task UpdateDungeonRecordAsync(int characterId, int dungeonId, int reachedWave)
+        {
+            try
+            {
+                var player = await _db.PlayerData.FindAsync(characterId);
+                if (player == null) return;
+
+                var info = player.GetInfoChar();
+                info.DungeonBestWaves ??= new System.Collections.Generic.Dictionary<int, int>();
+
+                if (!info.DungeonBestWaves.TryGetValue(dungeonId, out int existing)
+                    || reachedWave > existing)
+                {
+                    info.DungeonBestWaves[dungeonId] = reachedWave;
+                    player.SetInfoChar(info);
+                    await _db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("[Dungeon] Không thể cập nhật kỷ lục cho characterId={Id}: {Msg}", characterId, ex.Message);
+            }
         }
 
         private static object CreateWaveSpawnPayload(EnemySpawnDataCompat.ResolvedEnemySpawn spawn)

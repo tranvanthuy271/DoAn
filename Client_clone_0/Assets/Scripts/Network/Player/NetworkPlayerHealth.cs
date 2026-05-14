@@ -197,6 +197,15 @@ public class NetworkPlayerHealth : NetworkBehaviour
             damage = Mathf.Max(1, Mathf.RoundToInt(damage / (1f + defBonus)));
         }
 
+        // DefenseDown debuff từ skill enemy/PvP: TĂNG damage nhận vào theo % giảm giáp
+        var debuffMgr = GetComponent<DebuffManager>();
+        if (debuffMgr != null)
+        {
+            int defDownPct = debuffMgr.GetDefenseDebuffPct();
+            if (defDownPct > 0)
+                damage = Mathf.Max(1, Mathf.RoundToInt(damage * (1f + defDownPct / 100f)));
+        }
+
         int newHealth = networkCurrentHealth.Value - damage;
         newHealth = Mathf.Max(newHealth, 0);
         networkCurrentHealth.Value = newHealth;

@@ -179,6 +179,48 @@ public class ActiveBuffManager : MonoBehaviour
     /// <summary>Lấy snapshot bất biến để HUD render.</summary>
     public List<ActiveBuffDto> GetActiveBuffs() => new List<ActiveBuffDto>(_activeBuffs);
 
+    /// <summary>
+    /// Push buff từ skill (WaterArmor, EarthAura) vào HUD.
+    /// Gọi từ PlayerBuffSync khi local player nhận buff từ skill.
+    /// Không persist lên server — chỉ là visual UI.
+    /// </summary>
+    public void PushSkillBuff(ActiveBuffDto dto)
+    {
+        if (dto == null || dto.IsExpired()) return;
+
+        var existing = _activeBuffs.FirstOrDefault(x => x.effectType == dto.effectType);
+        if (existing != null)
+        {
+            // Refresh expiry nếu mới dài hơn
+            double newExpiry   = ParseExpireAt(dto.expireAt);
+            double curExpiry   = ParseExpireAt(existing.expireAt);
+            if (newExpiry > curExpiry)
+            {
+                existing.expireAt = dto.expireAt;
+                existing.value    = dto.value;
+                existing.iconId   = dto.iconId;
+                existing.name     = dto.name;
+                existing.detail   = dto.detail;
+                FireChanged();
+            }
+        }
+        else
+        {
+            _activeBuffs.Add(dto);
+            FireChanged();
+        }
+    }
+
+    private static double ParseExpireAt(string expireAt)
+    {
+        if (string.IsNullOrEmpty(expireAt)) return double.MaxValue;
+        if (System.DateTime.TryParse(expireAt, null,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out var dt))
+            return dt.ToUniversalTime().Subtract(System.DateTime.UnixEpoch).TotalSeconds;
+        return 0;
+    }
+
     // ── Internal ──────────────────────────────────────────────────────────
 
     private IEnumerator TrimExpiredBuffsLoop()

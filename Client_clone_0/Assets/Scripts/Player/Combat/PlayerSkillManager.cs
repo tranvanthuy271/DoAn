@@ -1120,7 +1120,17 @@ public class PlayerSkillManager : NetworkBehaviour
                 if (skill.currentEffectValue > 0f) fireballDmg.SetDamage((int)skill.currentEffectValue);
             }
             var dotDmg = projectile.GetComponent<DotDamage>();
-            if (dotDmg != null) dotDmg.SetOwner(ownerId);
+            if (dotDmg != null)
+            {
+                dotDmg.SetOwner(ownerId);
+                if (skill.effectConfig != null) dotDmg.SetDebuffConfig(skill.effectConfig);
+            }
+
+            // Truyền debuff config từ SkillData vào projectile (tự động, không cần set thủ công)
+            if (skill.effectConfig != null)
+            {
+                fireballDmg?.SetDebuffConfig(skill.effectConfig);
+            }
         }
         else
         {

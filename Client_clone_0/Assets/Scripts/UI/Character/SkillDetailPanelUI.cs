@@ -158,11 +158,9 @@ public class SkillDetailPanelUI : MonoBehaviour
         return null;
     }
 
-    // â”€â”€ Layout builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     private void RebuildLayout()
     {
-        // XÃ³a cÃ¡c child cÅ©
+      
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             var child = transform.GetChild(i).gameObject;
@@ -177,7 +175,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         rootImg.color         = new Color(0f, 0f, 0f, 0f);
         rootImg.raycastTarget = false;
 
-        // â”€â”€ Backdrop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Backdrop
         var backdropGo = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));
         backdropGo.transform.SetParent(transform, false);
         backdropGo.layer = gameObject.layer;
@@ -189,7 +187,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         backdropBtn.transition = Selectable.Transition.None;
         backdropBtn.onClick.AddListener(Hide);
 
-        // â”€â”€ ContentBox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     
         var boxGo = new GameObject("ContentBox", typeof(RectTransform), typeof(Image));
         boxGo.transform.SetParent(transform, false);
         boxGo.layer = gameObject.layer;
@@ -211,7 +209,7 @@ public class SkillDetailPanelUI : MonoBehaviour
 
         Transform box = boxGo.transform;
 
-        // â”€â”€ Header (icon + title) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+       
         Transform header    = CreateRect(box, "Header");
         var headerRect      = header.GetComponent<RectTransform>();
         headerRect.anchorMin        = new Vector2(0f, 1f);
@@ -255,7 +253,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         titleLe.flexibleWidth = 1f;
         titleLe.minHeight     = 80f;
 
-        // â”€â”€ Close button (top-right of ContentBox) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        
         var closeBtnGo = CreateButtonGo(box, "BtnClose", "âœ•", new Color(0.65f, 0.15f, 0.10f, 0.95f));
         var closeBtnRect = closeBtnGo.GetComponent<RectTransform>();
         closeBtnRect.anchorMin        = new Vector2(1f, 1f);
@@ -265,7 +263,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         closeBtnRect.sizeDelta        = new Vector2(CloseBtnSize, CloseBtnSize);
         closeBtnGo.GetComponent<Button>().onClick.AddListener(Hide);
 
-        // â”€â”€ Scroll view (body) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      
         Transform scrollRoot = CreatePanel(box, "SkillInfoScrollView", new Color(0.28f, 0.12f, 0.04f, 0.8f));
         var scrollRootRect = scrollRoot.GetComponent<RectTransform>();
         scrollRootRect.anchorMin  = new Vector2(0f, 0f);
@@ -334,7 +332,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         scrollRect.verticalScrollbarVisibility  = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
         scrollRect.verticalScrollbarSpacing     = -3f;
 
-        // â”€â”€ Upgrade button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    
         var upgradeGo  = CreateButtonGo(box, "BtnUpgrade", "NÃ¢ng cáº¥p", new Color(0.55f, 0.32f, 0.06f, 1f));
         var upgradeRect = upgradeGo.GetComponent<RectTransform>();
         upgradeRect.anchorMin        = new Vector2(1f, 0f);
@@ -350,7 +348,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         Debug.Log("[SkillDetail] RebuildLayout xong.");
     }
 
-    // â”€â”€ Refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   
 
     private void Refresh()
     {
@@ -363,7 +361,7 @@ public class SkillDetailPanelUI : MonoBehaviour
             return;
         }
 
-        // TiÃªu Ä‘á»
+      
         if (txtTitle != null)
             txtTitle.text = _info.skill_name;
 
@@ -396,7 +394,7 @@ public class SkillDetailPanelUI : MonoBehaviour
             }
         }
 
-        // NÃºt nÃ¢ng cáº¥p
+      
         if (btnUpgrade != null)
         {
             bool maxed = _info.current_level >= _info.max_level && _info.max_level > 0;
@@ -415,7 +413,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         _onUpgrade?.Invoke(_info);
     }
 
-    // â”€â”€ Static helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  
 
     private static string BuildBody(PlayerSkillInfo info)
     {

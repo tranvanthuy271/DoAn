@@ -419,7 +419,8 @@ public class NetworkEnemySpawner : NetworkBehaviour
                     netHealth.SetEnemyInfo(
                         spawnData.enemy?.enemy_name ?? enemyObj.name,
                         spawnData.enemy?.element_type ?? "None",
-                        resolvedLevel);
+                        resolvedLevel,
+                        spawnData.enemy?.enemy_id ?? 0);
                 }
 
         if (spawnData.enemy != null && spawnData.enemy.base_damage > 0)

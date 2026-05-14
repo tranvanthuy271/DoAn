@@ -27,7 +27,6 @@ namespace GameServerApi.Data
         public DbSet<GeneHybridConfig>        GeneHybridConfigs        => Set<GeneHybridConfig>();
         public DbSet<GeneHybridSkill>         GeneHybridSkills         => Set<GeneHybridSkill>();
         public DbSet<NpcConfig>                NpcConfigs               => Set<NpcConfig>();
-        public DbSet<NpcShopItem>              NpcShopItems             => Set<NpcShopItem>();
         public DbSet<NpcDialogue>              NpcDialogues             => Set<NpcDialogue>();
         public DbSet<MapPortal>                MapPortals               => Set<MapPortal>();
         public DbSet<BossConfig>               BossConfigs              => Set<BossConfig>();
@@ -47,6 +46,13 @@ namespace GameServerApi.Data
         // ── Dungeon Wave (entry limit + session reconnect) ────────────────────
         public DbSet<GameServerApi.Models.Entities.DungeonWaveEntry>   DungeonWaveEntries   => Set<GameServerApi.Models.Entities.DungeonWaveEntry>();
         public DbSet<GameServerApi.Models.Entities.DungeonWaveSession> DungeonWaveSessions  => Set<GameServerApi.Models.Entities.DungeonWaveSession>();
+
+        // ── Quest system ──────────────────────────────────────────────────────
+        public DbSet<GameServerApi.Models.Entities.QuestConfig>  QuestConfigs  => Set<GameServerApi.Models.Entities.QuestConfig>();
+        public DbSet<GameServerApi.Models.Entities.PlayerQuest>  PlayerQuests  => Set<GameServerApi.Models.Entities.PlayerQuest>();
+
+        // ── Leaderboard cache (1 row per category) ────────────────────────────────
+        public DbSet<GameServerApi.Models.Entities.LeaderboardCache> LeaderboardCaches => Set<GameServerApi.Models.Entities.LeaderboardCache>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -371,19 +377,6 @@ namespace GameServerApi.Data
                 entity.Property(n => n.IsActive).HasColumnName("is_active");
             });
 
-            modelBuilder.Entity<NpcShopItem>(entity =>
-            {
-                entity.ToTable("npc_shop_item");
-                entity.HasKey(n => n.Id);
-                entity.Property(n => n.Id).HasColumnName("id");
-                entity.Property(n => n.NpcId).HasColumnName("npc_id");
-                entity.Property(n => n.ItemTemplateId).HasColumnName("item_template_id");
-                entity.Property(n => n.PriceSilver).HasColumnName("price_silver");
-                entity.Property(n => n.PriceGold).HasColumnName("price_gold");
-                entity.Property(n => n.Stock).HasColumnName("stock");
-                entity.Property(n => n.RequiredLevel).HasColumnName("required_level");
-            });
-
             modelBuilder.Entity<NpcDialogue>(entity =>
             {
                 entity.ToTable("npc_dialogue");
@@ -574,6 +567,17 @@ namespace GameServerApi.Data
                 entity.Property(e => e.ExitReason).HasColumnName("exit_reason").HasMaxLength(20);
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
                 entity.HasIndex(e => e.PlayerId);
+            });
+
+            // ── Leaderboard cache ───────────────────────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.LeaderboardCache>(entity =>
+            {
+                entity.ToTable("leaderboard_cache");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
+                entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100);
+                entity.Property(e => e.ListJson).HasColumnName("list");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             });
         }
     }

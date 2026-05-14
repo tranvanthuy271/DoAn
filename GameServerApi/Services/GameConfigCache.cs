@@ -69,7 +69,6 @@ namespace GameServerApi.Services
 
         // ── NPC ──
         NpcConfig? GetNpc(int npcId);
-        IReadOnlyList<NpcShopItem> GetShopItems(int npcId);
         IReadOnlyList<NpcDialogue> GetDialogues(int npcId);
 
         // ── Dungeon ──
@@ -105,7 +104,6 @@ namespace GameServerApi.Services
         private ConcurrentDictionary<int, MapConfig> _maps = new();
         private ConcurrentDictionary<int, List<MapPortal>> _portalsBySource = new();
         private ConcurrentDictionary<int, NpcConfig> _npcs = new();
-        private ConcurrentDictionary<int, List<NpcShopItem>> _shopItems = new();
         private ConcurrentDictionary<int, List<NpcDialogue>> _dialogues = new();
         private ConcurrentDictionary<int, DungeonConfig> _dungeons = new();
 
@@ -208,10 +206,6 @@ namespace GameServerApi.Services
             var npcs = await db.NpcConfigs.AsNoTracking().ToListAsync(ct);
             _npcs = new ConcurrentDictionary<int, NpcConfig>(npcs.ToDictionary(n => n.NpcId));
 
-            var shopItems = await db.NpcShopItems.AsNoTracking().ToListAsync(ct);
-            _shopItems = new ConcurrentDictionary<int, List<NpcShopItem>>(
-                shopItems.GroupBy(s => s.NpcId).ToDictionary(g => g.Key, g => g.ToList()));
-
             var dialogues = await db.NpcDialogues.AsNoTracking().ToListAsync(ct);
             _dialogues = new ConcurrentDictionary<int, List<NpcDialogue>>(
                 dialogues.GroupBy(d => d.NpcId).ToDictionary(g => g.Key, g => g.ToList()));
@@ -268,8 +262,6 @@ namespace GameServerApi.Services
             _portalsBySource.GetValueOrDefault(sourceMapId) ?? (IReadOnlyList<MapPortal>)System.Array.Empty<MapPortal>();
 
         public NpcConfig? GetNpc(int npcId) => _npcs.GetValueOrDefault(npcId);
-        public IReadOnlyList<NpcShopItem> GetShopItems(int npcId) =>
-            _shopItems.GetValueOrDefault(npcId) ?? (IReadOnlyList<NpcShopItem>)System.Array.Empty<NpcShopItem>();
         public IReadOnlyList<NpcDialogue> GetDialogues(int npcId) =>
             _dialogues.GetValueOrDefault(npcId) ?? (IReadOnlyList<NpcDialogue>)System.Array.Empty<NpcDialogue>();
 

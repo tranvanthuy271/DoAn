@@ -245,7 +245,16 @@ public class NetworkInventory : NetworkBehaviour
             return false;
         }
 
-        return TryAddItemInternal(itemID, quantity, out _);
+        bool added = TryAddItemInternal(itemID, quantity, out int addedQty);
+        if (added && addedQty > 0)
+        {
+            // Quest collect hook
+            var playerSync = GetComponent<NetworkPlayerDataSync>();
+            int dbPlayerId = playerSync != null ? playerSync.networkPlayerId.Value : 0;
+            if (dbPlayerId > 0)
+                QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Collect, itemID, addedQty);
+        }
+        return added;
     }
 
     private bool TryAddItemInternal(int itemID, int quantity, out int addedQuantity)

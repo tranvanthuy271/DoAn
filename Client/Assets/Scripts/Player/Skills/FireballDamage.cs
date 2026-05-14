@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Unity.Collections;
 using Unity.Netcode;
 
 /// <summary>
@@ -27,8 +28,18 @@ public class FireballDamage : MonoBehaviour
     // NetworkObjectId cá»§a player sá»­ dá»¥ng skill (Ä'á»ƒ trÃ¡nh tá»± bán)
     private ulong ownerNetworkObjectId = 0;
 
-    /// <summary>Set owner NetworkObjectId Ä'á»ƒ projectile khÃ´ng tá»± gÃ¢y damage cho chÃ­nh ngÆ°á»i bán.</summary>
+    /// <summary>Set owner NetworkObjectId để projectile không tự gây damage cho chính người bắn.</summary>
     public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
+
+    // ── Debuff Config ─────────────────────────────────────────────────────────
+    private SkillEffectConfig _debuffConfig;
+
+    /// <summary>
+    /// Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
+    /// Gọi từ skill script ngay sau khi Instantiate projectile.
+    /// </summary>
+    public void SetDebuffConfig(SkillEffectConfig cfg) => _debuffConfig = cfg;
+
     /// <summary>
     /// Lấy MapId của player sở hữu projectile này qua ZoneRoomRegistry.
     /// Trả về -999 nếu không tra được (registry chưa sẵn sàng).
@@ -88,6 +99,7 @@ public class FireballDamage : MonoBehaviour
                 return;
             }
             networkEnemyHealth.TakeDamage(finalDamage);
+            ApplyDebuffToTarget(networkEnemyHealth.gameObject);
             hasHit = true;
             Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network)");
             if (destroyOnHit) Destroy(gameObject);
@@ -106,13 +118,14 @@ public class FireballDamage : MonoBehaviour
             if (targetNetObj != null && ownerNetworkObjectId != 0 && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
                 return;
 
-            // Network mode: dÃ¹ng NetworkPlayerHealth
+            // Network mode: dùng NetworkPlayerHealth
             NetworkPlayerHealth networkPlayerHealth = collision.GetComponentInParent<NetworkPlayerHealth>();
             if (networkPlayerHealth != null)
             {
                 networkPlayerHealth.TakeDamage(finalDamage);
+                ApplyDebuffToTarget(networkPlayerHealth.gameObject);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Hit player {collision.name} vá»›i {finalDamage} damage! (Network PvP)");
+                Debug.Log($"[FireballDamage] Hit player {collision.name} với {finalDamage} damage! (Network PvP)");
                 if (destroyOnHit) Destroy(gameObject);
                 return;
             }
@@ -135,8 +148,27 @@ public class FireballDamage : MonoBehaviour
     }
 
     /// <summary>
-    /// Set sÃ¡t thÆ°Æ¡ng cá»§a fireball (cÃ³ thá»ƒ gá»i tá»« script khÃ¡c)
+    /// Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.
     /// </summary>
+    private void ApplyDebuffToTarget(GameObject target)
+    {
+        if (_debuffConfig == null) return;
+        if (_debuffConfig.debuffType == SkillDebuffType.None) return;
+        if (!Unity.Netcode.NetworkManager.Singleton.IsServer) return;
+
+        var debuffMgr = target.GetComponent<DebuffManager>()
+                     ?? target.GetComponentInParent<DebuffManager>();
+        if (debuffMgr == null) return;
+
+        debuffMgr.ApplyDebuffServerRpc(
+            _debuffConfig.debuffType,
+            _debuffConfig.debuffValue,
+            _debuffConfig.debuffDuration,
+            _debuffConfig.iconId,
+            new Unity.Collections.FixedString64Bytes(_debuffConfig.debuffName)
+        );
+    }
+
     /// <summary>Set attack bonus % from owner's EarthAura buff.</summary>
     public void SetAttackBonus(int bonusPercent) => attackBonusPercent = bonusPercent;
 

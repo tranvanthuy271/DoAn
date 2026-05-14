@@ -100,6 +100,16 @@ namespace GameServerApi.Models
         /// Được bật/tắt qua chức năng "Khoá cấp nhân vật" tại NPC.
         /// </summary>
         [JsonPropertyName("is_level_locked")]    public bool   IsLevelLocked    { get; set; } = false;
+
+        // ---- Leaderboard tracking ----
+        /// <summary>Số ngày đăng nhập (chúyên cần), tăng 1 lần/ngày khi login.</summary>
+        [JsonPropertyName("attendance_count")]      public int    AttendanceCount      { get; set; } = 0;
+        /// <summary>Ngày điểm danh gần nhất ("yyyy-MM-dd" UTC), tránh đếm 2 lần trong ngày.</summary>
+        [JsonPropertyName("last_attendance_date")] public string LastAttendanceDate   { get; set; } = "";
+        /// <summary>Số nhiệm vụ đã hoàn thành.</summary>
+        [JsonPropertyName("quest_completed_count")] public int   QuestCompletedCount  { get; set; } = 0;
+        /// <summary>Kỷ lục phó bản: key=dungeonId, value=wave cao nhất đạt được.</summary>
+        [JsonPropertyName("dungeon_best_waves")]    public Dictionary<int, int> DungeonBestWaves { get; set; } = new();
     }
 
     // ----------------------------------------------------------------

@@ -1619,6 +1619,65 @@ ALTER TABLE `player_inventory`
 ALTER TABLE `player_skill_record`
   ADD CONSTRAINT `fk_psr_player` FOREIGN KEY (`player_id`) REFERENCES `player_data` (`player_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_psr_skill` FOREIGN KEY (`skill_id`) REFERENCES `skill_template` (`skill_id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+-- Hệ thống Nhiệm Vụ (Quest System)
+-- --------------------------------------------------------
+
+CREATE TABLE `quest_config` (
+  `id`              int(11) NOT NULL AUTO_INCREMENT,
+  `name`            varchar(100) NOT NULL COMMENT 'Tên nhiệm vụ hiển thị',
+  `description`     varchar(500) NOT NULL DEFAULT '' COMMENT 'Mô tả nhiệm vụ',
+  `level_need`      int(11) NOT NULL DEFAULT 1 COMMENT 'Cấp độ tối thiểu để nhận',
+  `npc_giver_id`    int(11) NOT NULL COMMENT 'FK → npc_config.npc_id: NPC giao nhiệm vụ',
+  `npc_receiver_id` int(11) NOT NULL COMMENT 'FK → npc_config.npc_id: NPC nhận hoàn thành',
+  `steps_json`      longtext NOT NULL DEFAULT '[]'
+    COMMENT 'JSON array các bước: [{type:"kill"|"collect"|"talk", target_id:int, target_name:str, required_count:int}]'
+    CHECK (json_valid(`steps_json`)),
+  `rewards_json`    longtext NOT NULL DEFAULT '{}'
+    COMMENT 'JSON phần thưởng: {exp:int, gold:int, silver:int}'
+    CHECK (json_valid(`rewards_json`)),
+  `sort_order`      int(11) NOT NULL DEFAULT 0,
+  `is_active`       tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `quest_config` (`id`, `name`, `description`, `level_need`, `npc_giver_id`, `npc_receiver_id`, `steps_json`, `rewards_json`, `sort_order`, `is_active`) VALUES
+(1, 'Dẹp Loạn Goblin', 'Vùng đất phía đông đang bị Goblin hoành hành. Hãy tiêu diệt chúng!',
+   1, 2, 2,
+   '[{"type":"kill","target_id":1,"target_name":"Goblin","required_count":5}]',
+   '{"exp":500,"gold":50,"silver":0}',
+   1, 1),
+(2, 'Hái Thuốc Cứu Người', 'Ta cần ngươi thu thập Cỏ Hồi Sinh từ cánh đồng để chữa bệnh cho dân.',
+   1, 14, 14,
+   '[{"type":"collect","target_id":11,"target_name":"Cỏ Hồi Sinh","required_count":3}]',
+   '{"exp":300,"gold":30,"silver":0}',
+   2, 1),
+(3, 'Gặp Gỡ Đại Tướng', 'Hướng Dẫn Viên yêu cầu ngươi đến gặp Đại Tướng Lan ở làng chính.',
+   1, 14, 2,
+   '[{"type":"talk","target_id":2,"target_name":"Đại Tướng Lan","required_count":1}]',
+   '{"exp":200,"gold":20,"silver":0}',
+   3, 1);
+
+CREATE TABLE `player_quest` (
+  `id`                  int(11) NOT NULL AUTO_INCREMENT,
+  `player_id`           int(11) NOT NULL,
+  `quest_config_id`     int(11) NOT NULL,
+  `status`              enum('active','completed') NOT NULL DEFAULT 'active',
+  `current_step_index`  int(11) NOT NULL DEFAULT 0,
+  `progress_json`       longtext NOT NULL DEFAULT '{}' CHECK (json_valid(`progress_json`)),
+  `accepted_at`         datetime NOT NULL DEFAULT current_timestamp(),
+  `completed_at`        datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_player_quest` (`player_id`, `quest_config_id`),
+  KEY `idx_pq_player_id` (`player_id`),
+  KEY `idx_pq_status` (`player_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `player_quest`
+  ADD CONSTRAINT `fk_pq_player` FOREIGN KEY (`player_id`) REFERENCES `player_data` (`player_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pq_quest`  FOREIGN KEY (`quest_config_id`) REFERENCES `quest_config` (`id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
