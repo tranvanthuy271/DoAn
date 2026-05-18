@@ -64,6 +64,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     private void Awake()
     {
+        UIPanelManager.Register(gameObject, Close);
         closeButton       ?.onClick.AddListener(Close);
         questButton       ?.onClick.AddListener(OnQuestClicked);
         relationButton    ?.onClick.AddListener(OnRelationClicked);
@@ -93,13 +94,16 @@ public class CharacterMenuPanelUI : MonoBehaviour
     /// <summary>Mở panel và làm mới dữ liệu hiển thị.</summary>
     public void Open()
     {
+        UIPanelManager.CloseOthers(gameObject);
         gameObject.SetActive(true);
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     /// <summary>Đóng panel.</summary>
     public void Close()
     {
         gameObject.SetActive(false);
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     #endregion

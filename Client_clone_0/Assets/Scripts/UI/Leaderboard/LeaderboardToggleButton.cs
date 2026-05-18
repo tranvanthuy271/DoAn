@@ -12,8 +12,6 @@ public class LeaderboardToggleButton : MonoBehaviour
     [Header("Panel (tự tìm trong scene nếu để trống)")]
     [SerializeField] private LeaderboardPanelUI leaderboardPanel;
 
-    [Tooltip("Dùng khi panel chưa có trong scene.")]
-    [SerializeField] private string panelResourcesPath = "Prefabs/UI/LeaderboardPanel";
 
     private Button _btn;
 

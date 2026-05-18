@@ -110,6 +110,16 @@ namespace GameServerApi.Models
         [JsonPropertyName("quest_completed_count")] public int   QuestCompletedCount  { get; set; } = 0;
         /// <summary>Kỷ lục phó bản: key=dungeonId, value=wave cao nhất đạt được.</summary>
         [JsonPropertyName("dungeon_best_waves")]    public Dictionary<int, int> DungeonBestWaves { get; set; } = new();
+
+        // ---- Quest progress (lưu tại đây, không có bảng player_quest) ----
+        /// <summary>ID quest đang làm (-1 = không có quest active).</summary>
+        [JsonPropertyName("active_quest_id")]    public int ActiveQuestId    { get; set; } = -1;
+        /// <summary>Bước hiện tại (step index) của quest đang làm.</summary>
+        [JsonPropertyName("quest_step")]         public int QuestStep        { get; set; } = 0;
+        /// <summary>Tiến trình từng bước: key=stepIndex, value=số đã thực hiện.</summary>
+        [JsonPropertyName("quest_progress")]     public Dictionary<string, int> QuestProgress   { get; set; } = new();
+        /// <summary>Danh sách id quest đã hoàn thành.</summary>
+        [JsonPropertyName("completed_quests")]   public List<int>               CompletedQuests { get; set; } = new();
     }
 
     // ----------------------------------------------------------------

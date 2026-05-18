@@ -2782,6 +2782,139 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5638256326072347985, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
   m_PrefabInstance: {fileID: 8448253211593094032}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &530638386016741526
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 783836901493698278}
+  - component: {fileID: 224889079781485405}
+  m_Layer: 0
+  m_Name: EnemyPrefabManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &783836901493698278
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 530638386016741526}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &224889079781485405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 530638386016741526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffca5f52e12934541b415eb6a17900ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyPrefabs:
+  - enemyId: 2
+    enemyPrefab: {fileID: 4006840501700251420, guid: 7053c1f878c1e8e4d811e3077acf7296, type: 3}
+    enemyName: Goblin
+  - enemyId: 4
+    enemyPrefab: {fileID: 4006840501700251420, guid: e556b69e4f1391d42b65a5af6403da78, type: 3}
+    enemyName: Fire Slime
+
+--- !u!1 &153536567626297713
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 496081508929911832}
+  - component: {fileID: 305262788879920215}
+  - component: {fileID: 601144409505854789}
+  m_Layer: 0
+  m_Name: HostSpawnConfigLoader
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &496081508929911832
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 153536567626297713}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &305262788879920215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 153536567626297713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 163690606
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &601144409505854789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 153536567626297713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 032c39a771bbb1f448896a492a6cb12c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  apiBaseURL: http://localhost:5000/api
+  mapId: 100
+  enemyPrefabManager: {fileID: 224889079781485405}
+  fallbackSpawner: {fileID: 0}
+  fallbackToOldSpawner: 1
+  multiSpawnSpreadRadius: 0.8
+  OnSpawnComplete:
+    m_PersistentCalls:
+      m_Calls: []
+  OnSpawnError:
+    m_PersistentCalls:
+      m_Calls: []
+
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2789,3 +2922,5 @@ SceneRoots:
   - {fileID: 1250084152}
   - {fileID: 544991212}
   - {fileID: 1326443216}
+  - {fileID: 530638386016741526}
+  - {fileID: 153536567626297713}

@@ -77,6 +77,7 @@ public class BlacksmithTabPanel : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        UIPanelManager.Register(gameObject, Close);
 
         ResolveReferences();
 
@@ -104,8 +105,10 @@ public class BlacksmithTabPanel : MonoBehaviour
     /// <summary>Mở panel, mặc định tab Cường Hóa (0).</summary>
     public void Open(int defaultTab = 0)
     {
+        UIPanelManager.CloseOthers(gameObject);
         ResolveReferences();
         gameObject.SetActive(true);
+        UIPanelManager.NotifyOpened(gameObject);
         BringNavigationToFront();
         _activeTab = -1; // force refresh
         SwitchTab(defaultTab);
@@ -129,6 +132,7 @@ public class BlacksmithTabPanel : MonoBehaviour
 
         _activeTab = -1;
         gameObject.SetActive(false);
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     /// <summary>Chuyển sang tab Túi với filter đặc biệt (gọi từ UpgradePanel).</summary>

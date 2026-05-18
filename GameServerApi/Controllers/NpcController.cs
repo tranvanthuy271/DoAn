@@ -135,7 +135,6 @@ namespace GameServerApi.Controllers
         // ══════════════════════════════════════════════════════════════
         //  GET /api/npc/shop?npcId=1&playerId=1
         //  Lấy danh sách item của shop NPC — đọc từ npc_config.shop_items_json.
-        //  Fallback về bảng npc_shop_item nếu JSON chưa config.
         //  Response per item có thêm: shop_name, element_class (idClass).
         // ══════════════════════════════════════════════════════════════
         [HttpGet("shop")]

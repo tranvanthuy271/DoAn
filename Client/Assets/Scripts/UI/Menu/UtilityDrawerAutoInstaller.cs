@@ -146,10 +146,7 @@ public static class UtilityDrawerAutoInstaller
         colors.highlightedColor = new Color(1f, 0.90f, 0.38f, 1f);
         colors.pressedColor = new Color(0.85f, 0.67f, 0.16f, 1f);
         button.colors = colors;
-        if (label == "Shop")
-            button.onClick.AddListener(OpenUtilityShop);
-        else
-            button.onClick.AddListener(() => Debug.Log($"[UtilityDrawerAutoInstaller] Clicked utility '{label}'."));
+        button.onClick.AddListener(() => Debug.Log($"[UtilityDrawerAutoInstaller] Clicked utility '{label}'."));
 
         RectTransform textRect = CreateRect("Label", buttonRect, new Vector2(46f, 46f));
         textRect.anchorMin = Vector2.zero;
@@ -211,14 +208,5 @@ public static class UtilityDrawerAutoInstaller
         rect.sizeDelta = size;
         rect.localScale = Vector3.one;
         return rect;
-    }
-
-    private static void OpenUtilityShop()
-    {
-        var ui = NpcMenuUI.GetOrFind();
-        if (ui != null)
-            ui.OpenUtilityMode();
-        else
-            Debug.LogWarning("[UtilityDrawerAutoInstaller] NpcMenuUI not found in scene — cannot open utility shop.");
     }
 }

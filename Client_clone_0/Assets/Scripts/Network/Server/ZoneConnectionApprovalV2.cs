@@ -55,7 +55,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         try   { json = Encoding.UTF8.GetString(request.Payload); }
         catch { Reject(response, "Payload không phải UTF-8"); return; }
 
-        if (!TryParsePayload(json, out string token, out int mapId, out int zoneId))
+        if (!TryParsePayload(json, out string token, out int mapId, out int zoneId, out int geneSlot))
         {
             Reject(response, "Payload JSON không hợp lệ");
             return;
@@ -108,8 +108,9 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         registry.AssignClientToRoom(clientId, room);
 
         // 7 — Lưu session (userId, username)
+        Debug.Log($"[ZoneConnectionApprovalV2] geneSlot={geneSlot} parsed from payload for client {clientId}");
         ZonePlayerSessionManager.RegisterSessionOrQueue(clientId, result.UserId, result.Username,
-            room.MapId, room.ZoneId, token);
+            room.MapId, room.ZoneId, token, geneSlot);
 
         Debug.Log($"[ZoneConnectionApprovalV2] ✓ Client {clientId} ({result.Username}) " +
                   $"→ map{room.MapId}_zone{room.ZoneId}");
@@ -134,14 +135,16 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     // Minimal JSON parser (không dùng thư viện ngoài)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private static bool TryParsePayload(string json, out string token, out int mapId, out int zoneId)
+    private static bool TryParsePayload(string json, out string token, out int mapId, out int zoneId, out int geneSlot)
     {
-        token = ""; mapId = 0; zoneId = 0;
+        token = ""; mapId = 0; zoneId = 0; geneSlot = 1;
         try
         {
-            token  = ExtractString(json, "token");
-            mapId  = ExtractInt(json, "mapId");
-            zoneId = ExtractInt(json, "zoneId");
+            token    = ExtractString(json, "token");
+            mapId    = ExtractInt(json, "mapId");
+            zoneId   = ExtractInt(json, "zoneId");
+            geneSlot = ExtractInt(json, "geneSlot");
+            if (geneSlot < 1 || geneSlot > 2) geneSlot = 1; // sanity
             return !string.IsNullOrEmpty(token);
         }
         catch { return false; }

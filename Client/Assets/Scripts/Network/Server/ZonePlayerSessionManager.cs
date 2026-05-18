@@ -99,7 +99,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     /// <summary>
     /// Gọi từ ZoneConnectionApprovalV2 khi client được approve.
     /// </summary>
-    public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null)
+    public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null, int geneSlot = 1)
     {
         lock (_lock)
         {
@@ -109,19 +109,20 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                 Username = username,
                 MapId    = mapId,
                 ZoneId   = zoneId,
-                JwtToken = jwtToken ?? string.Empty
+                JwtToken = jwtToken ?? string.Empty,
+                GeneSlot = geneSlot
             };
         }
 
-        Debug.Log($"[ZonePlayerSessionManager] RegisterSession: clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}, isSpawned={IsSpawned}");
+        Debug.Log($"[ZonePlayerSessionManager] RegisterSession: clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}, geneSlot={geneSlot}, isSpawned={IsSpawned}");
         TrySpawnPendingConnectedClients("RegisterSession");
     }
 
-    public static void RegisterSessionOrQueue(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null)
+    public static void RegisterSessionOrQueue(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null, int geneSlot = 1)
     {
         if (Instance != null)
         {
-            Instance.RegisterSession(clientId, userId, username, mapId, zoneId, jwtToken);
+            Instance.RegisterSession(clientId, userId, username, mapId, zoneId, jwtToken, geneSlot);
             return;
         }
 
@@ -133,11 +134,12 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                 Username = username,
                 MapId = mapId,
                 ZoneId = zoneId,
-                JwtToken = jwtToken ?? string.Empty
+                JwtToken = jwtToken ?? string.Empty,
+                GeneSlot = geneSlot
             };
         }
 
-        Debug.LogWarning($"[ZonePlayerSessionManager] Instance chưa sẵn sàng tại approval. Queue session cho clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}.");
+        Debug.LogWarning($"[ZonePlayerSessionManager] Instance chưa sẵn sàng tại approval. Queue session cho clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}, geneSlot={geneSlot}.");
     }
 
     /// <summary>
@@ -168,6 +170,15 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s.JwtToken : null;
+    }
+
+    /// <summary>
+    /// Trả về gene slot (1 hoặc 2) của client đang active.
+    /// </summary>
+    public int GetClientGeneSlot(ulong clientId)
+    {
+        lock (_lock)
+            return _activeSessions.TryGetValue(clientId, out var s) ? s.GeneSlot : 1;
     }
 
     /// <summary>
@@ -293,12 +304,13 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
     private IEnumerator LoadAndSpawnPlayer(ulong clientId, ApprovedUserInfo userInfo)
     {
-        // 1 — Fetch PlayerData từ API: GET /api/player/{id}/data
+        // 1 — Fetch PlayerData từ API: GET /api/player/{id}/data or /data2
         string apiBase = _config != null ? _config.apiBaseUrl : ServerAddressConfig.Instance.ApiUrl;
-        string url = $"{apiBase}/player/{userInfo.UserId}/data";
+        string dataEndpoint = userInfo.GeneSlot == 2 ? "data2" : "data";
+        string url = $"{apiBase}/player/{userInfo.UserId}/{dataEndpoint}";
         string apiKey = _config != null ? _config.GetZoneApiKey() : "dev-zone-key";
 
-        Debug.Log($"[ZonePlayerSessionManager] LoadAndSpawnPlayer: clientId={clientId}, userId={userInfo.UserId}, username={userInfo.Username}, room=map{userInfo.MapId}_zone{userInfo.ZoneId}, url={url}");
+        Debug.Log($"==== [GENE2_DEBUG] ZonePlayerSessionManager.LoadAndSpawnPlayer: clientId={clientId}, userId={userInfo.UserId}, geneSlot={userInfo.GeneSlot}, url={url} ====");
 
         using var request = UnityWebRequest.Get(url);
         request.SetRequestHeader("X-Zone-Api-Key", apiKey);
@@ -412,7 +424,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                 JwtToken      = userInfo.JwtToken,
                 NetworkObject = netObj,
                 MapId         = userInfo.MapId,
-                ZoneId        = userInfo.ZoneId
+                ZoneId        = userInfo.ZoneId,
+                GeneSlot      = userInfo.GeneSlot
             };
         }
 
@@ -426,8 +439,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         // 7 — Đẩy skill data về client ngay lúc spawn (client cache, không cần request lại khi mở tab)
         if (GameplayCommandService.Instance != null && int.TryParse(userInfo.UserId, out int pushPlayerId))
         {
-            GameplayCommandService.Instance.PushSkillsToClient(clientId, pushPlayerId, userInfo.JwtToken);
-            Debug.Log($"[ZonePlayerSessionManager] PushSkillsToClient đã gửi cho clientId={clientId} playerId={pushPlayerId}");
+            GameplayCommandService.Instance.PushSkillsToClient(clientId, pushPlayerId, userInfo.JwtToken, userInfo.GeneSlot);
+            Debug.Log($"[ZonePlayerSessionManager] PushSkillsToClient đã gửi cho clientId={clientId} playerId={pushPlayerId} geneSlot={userInfo.GeneSlot}");
         }
         else
         {
@@ -773,6 +786,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int    MapId;
         public int    ZoneId;
         public string JwtToken;
+        public int    GeneSlot;
     }
 
     public class PlayerSession
@@ -783,6 +797,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public NetworkObject NetworkObject;
         public int           MapId;
         public int           ZoneId;
+        public int           GeneSlot;
     }
 
     /// <summary>

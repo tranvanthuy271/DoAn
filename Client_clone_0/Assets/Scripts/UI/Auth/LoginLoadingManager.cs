@@ -172,9 +172,25 @@ public class LoginLoadingManager : MonoBehaviour
 
         if (success)
         {
-            ShowLoading("Đang kết nối vào game...");
-            yield return null;
-            SceneManager.LoadScene(targetScene);
+            // Kiểm tra xem gene 2 đã được mở khoá chưa
+            var playerData = GameManager.Instance?.GetPlayerData();
+            bool gene2Unlocked = playerData != null && !string.IsNullOrEmpty(playerData.secondary_element);
+
+            if (gene2Unlocked)
+            {
+                // Lưu scene đích để SelectGeneController dùng sau khi chọn xong
+                PlayerPrefs.SetString("POST_GENE_SELECT_SCENE", targetScene);
+                PlayerPrefs.Save();
+                ShowLoading("Đang mở màn chọn hệ gene...");
+                yield return null;
+                SceneManager.LoadScene("SelectGene");
+            }
+            else
+            {
+                ShowLoading("Đang kết nối vào game...");
+                yield return null;
+                SceneManager.LoadScene(targetScene);
+            }
             yield break;
         }
 
@@ -211,7 +227,7 @@ public class LoginLoadingManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == "Login" || scene.name == "SelectElement")
+        if (scene.name == "Login" || scene.name == "SelectElement" || scene.name == "SelectGene")
         {
             HideLoading(hideErrorPanel: true);
         }

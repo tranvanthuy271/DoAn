@@ -749,4 +749,104 @@ public class APIClient : MonoBehaviour
     {
         public AddInventoryItemRequest[] items;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // GENE SLOT 2 METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Tải thông tin tóm tắt cả 2 gene slot để hiển thị màn SelectGene.</summary>
+    public void LoadGeneSlots(int playerId, Action<GeneSlotsResponse> onSuccess, Action<string> onError)
+    {
+        StartCoroutine(LoadGeneSlotsCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator LoadGeneSlotsCoroutine(int playerId, Action<GeneSlotsResponse> onSuccess, Action<string> onError)
+    {
+        using (var www = UnityWebRequest.Get($"{baseURL}/player/{playerId}/gene-slots"))
+        {
+            www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityWebRequest.Result.Success)
+                onSuccess?.Invoke(JsonUtility.FromJson<GeneSlotsResponse>(www.downloadHandler.text));
+            else
+                onError?.Invoke(www.error);
+        }
+    }
+
+    /// <summary>Tạo nhân vật hệ gene 2 mới.</summary>
+    public void CreatePlayer2(string elementType, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
+    {
+        StartCoroutine(CreatePlayer2Coroutine(elementType, characterName, onSuccess, onError));
+    }
+
+    private IEnumerator CreatePlayer2Coroutine(string elementType, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
+    {
+        string escapedName = characterName.Replace("\"", "\\\"").Replace("\\", "\\\\");
+        string json = $"{{\"element_type\":\"{elementType}\",\"character_name\":\"{escapedName}\"}}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+
+        using (var www = new UnityWebRequest($"{baseURL}/player/create2", "POST"))
+        {
+            www.uploadHandler   = new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityWebRequest.Result.Success)
+                onSuccess?.Invoke(JsonUtility.FromJson<PlayerDataResponse>(www.downloadHandler.text));
+            else
+                onError?.Invoke(www.error);
+        }
+    }
+
+    /// <summary>Tải full dữ liệu nhân vật hệ gene 2.</summary>
+    public void LoadPlayer2Data(int playerId, Action<PlayerDataResponse> onSuccess, Action<string> onError)
+    {
+        StartCoroutine(LoadPlayer2DataCoroutine(playerId, onSuccess, onError));
+    }
+
+    private IEnumerator LoadPlayer2DataCoroutine(int playerId, Action<PlayerDataResponse> onSuccess, Action<string> onError)
+    {
+        using (var www = UnityWebRequest.Get($"{baseURL}/player/{playerId}/data2"))
+        {
+            www.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
+            yield return www.SendWebRequest();
+            if (www.result == UnityWebRequest.Result.Success)
+                onSuccess?.Invoke(JsonUtility.FromJson<PlayerDataResponse>(www.downloadHandler.text));
+            else
+                onError?.Invoke(www.error);
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Gene Slot DTOs  (SelectGene scene)
+// ══════════════════════════════════════════════════════════════════════
+[System.Serializable]
+public class GeneSlotInfo
+{
+    public int    slot;
+    public bool   exists;
+    public bool   is_unlocked;
+    public string character_name;
+    public string gender;
+    public int    level;
+    public string element_type;
+    public int    gene_tier;
+    public bool   is_hybrid;
+}
+
+[System.Serializable]
+public class GeneSlotsResponse
+{
+    public GeneSlotInfo slot1;
+    public GeneSlotInfo slot2;
+    public bool         gene2_unlocked;
+}
+
+[System.Serializable]
+public class CreatePlayer2Request
+{
+    public string character_name;
+    public string element_type;
 }

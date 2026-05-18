@@ -35,6 +35,7 @@ public class NetworkManagerCustom : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("==== [GENE2_DEBUG] NetworkManagerCustom.Start() ACTIVE_GENE_SLOT=" + PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1));
         InitFromConfig();
         EnsureCallbacksSubscribed();
     }
@@ -111,7 +112,9 @@ public class NetworkManagerCustom : MonoBehaviour
         ushort effectivePort = ResolveServerPort();
         int mapId = ResolveInitialMapId();
         int zoneId = ResolveInitialZoneId();
-        string payload = BuildConnectionPayload(token, mapId, zoneId);
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
+        string payload = BuildConnectionPayload(token, mapId, zoneId, geneSlot);
+        Debug.Log($"==== [GENE2_DEBUG] NetworkManagerCustom.ConnectToServer: ACTIVE_GENE_SLOT={geneSlot} included in payload ====");
 
         transport.ConnectionData.Address = effectiveIp;
         transport.ConnectionData.Port = effectivePort;
@@ -187,10 +190,10 @@ public class NetworkManagerCustom : MonoBehaviour
         return 0;
     }
 
-    private static string BuildConnectionPayload(string token, int mapId, int zoneId)
+    private static string BuildConnectionPayload(string token, int mapId, int zoneId, int geneSlot = 1)
     {
         string escapedToken = token.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        return $"{{\"token\":\"{escapedToken}\",\"mapId\":{mapId},\"zoneId\":{zoneId}}}";
+        return $"{{\"token\":\"{escapedToken}\",\"mapId\":{mapId},\"zoneId\":{zoneId},\"geneSlot\":{geneSlot}}}";
     }
 
     /// <summary>
@@ -370,6 +373,8 @@ public class NetworkManagerCustom : MonoBehaviour
             
             int userId = PlayerPrefs.GetInt("USER_ID", 0);
             string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+            int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
+            Debug.Log($"==== [GENE2_DEBUG] NetworkManagerCustom HOST path: ACTIVE_GENE_SLOT = {geneSlot} ====");
             
             if (userId == 0 || string.IsNullOrEmpty(token))
             {
@@ -387,12 +392,13 @@ public class NetworkManagerCustom : MonoBehaviour
                     userId,
                     onSuccess: (playerData) =>
                     {
-                        Debug.Log($"[NetworkManagerCustom] ✓ Host player data loaded: {playerData.character_name}");
+                        Debug.Log($"[NetworkManagerCustom] ✓ Host player data loaded: {playerData.character_name} (slot {geneSlot})");
                     },
                     onError: (error) =>
                     {
                         Debug.LogError($"[NetworkManagerCustom] ✗ Failed to load host player data: {error}");
-                    }
+                    },
+                    geneSlot: geneSlot
                 );
             }
             else

@@ -1,9 +1,9 @@
-﻿-- phpMyAdmin SQL Dump
+-- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th5 13, 2026 lúc 03:31 AM
+-- Thời gian đã tạo: Th5 18, 2026 lúc 04:10 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -726,6 +726,54 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `leaderboard_cache`
+--
+
+CREATE TABLE `leaderboard_cache` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL DEFAULT '',
+  `list` longtext NOT NULL DEFAULT '[]',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+--
+-- Đang đổ dữ liệu cho bảng `leaderboard_cache`
+--
+
+INSERT INTO `leaderboard_cache` (`id`, `name`, `list`, `updated_at`) VALUES
+(1, 'Cấp Độ', '[{\"Rank\":1,\"CharacterName\":\"Phong\",\"Value\":100,\"Extra\":\"C\\u1EA5p 100\"},{\"Rank\":2,\"CharacterName\":\"kim\",\"Value\":1,\"Extra\":\"C\\u1EA5p 1\"},{\"Rank\":3,\"CharacterName\":\"Hoa\",\"Value\":1,\"Extra\":\"C\\u1EA5p 1\"},{\"Rank\":4,\"CharacterName\":\"Thuy\",\"Value\":1,\"Extra\":\"C\\u1EA5p 1\"}]', '2026-05-14 23:41:28'),
+(2, 'Nhiệm Vụ', '[{\"Rank\":1,\"CharacterName\":\"Phong\",\"Value\":0,\"Extra\":\"0 nhi\\u1EC7m v\\u1EE5\"},{\"Rank\":2,\"CharacterName\":\"kim\",\"Value\":0,\"Extra\":\"0 nhi\\u1EC7m v\\u1EE5\"},{\"Rank\":3,\"CharacterName\":\"Hoa\",\"Value\":0,\"Extra\":\"0 nhi\\u1EC7m v\\u1EE5\"},{\"Rank\":4,\"CharacterName\":\"Thuy\",\"Value\":0,\"Extra\":\"0 nhi\\u1EC7m v\\u1EE5\"}]', '2026-05-14 23:41:28'),
+(3, 'Chuyên Cần', '[{\"Rank\":1,\"CharacterName\":\"Phong\",\"Value\":0,\"Extra\":\"0 ng\\u00E0y\"},{\"Rank\":2,\"CharacterName\":\"kim\",\"Value\":0,\"Extra\":\"0 ng\\u00E0y\"},{\"Rank\":3,\"CharacterName\":\"Hoa\",\"Value\":0,\"Extra\":\"0 ng\\u00E0y\"},{\"Rank\":4,\"CharacterName\":\"Thuy\",\"Value\":0,\"Extra\":\"0 ng\\u00E0y\"}]', '2026-05-14 23:41:28'),
+(4, 'Phó Bản', '[{\"Rank\":1,\"CharacterName\":\"Phong\",\"Value\":0,\"Extra\":\"Wave 0\"},{\"Rank\":2,\"CharacterName\":\"kim\",\"Value\":0,\"Extra\":\"Wave 0\"},{\"Rank\":3,\"CharacterName\":\"Hoa\",\"Value\":0,\"Extra\":\"Wave 0\"},{\"Rank\":4,\"CharacterName\":\"Thuy\",\"Value\":0,\"Extra\":\"Wave 0\"}]', '2026-05-14 23:41:28'),
+(5, 'Vàng', '[{\"Rank\":1,\"CharacterName\":\"kim\",\"Value\":2000000000,\"Extra\":\"2B v\\u00E0ng\"},{\"Rank\":2,\"CharacterName\":\"Phong\",\"Value\":0,\"Extra\":\"0 v\\u00E0ng\"},{\"Rank\":3,\"CharacterName\":\"Hoa\",\"Value\":0,\"Extra\":\"0 v\\u00E0ng\"},{\"Rank\":4,\"CharacterName\":\"Thuy\",\"Value\":0,\"Extra\":\"0 v\\u00E0ng\"}]', '2026-05-14 23:41:28');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `leaderboard_caches`
+--
+
+CREATE TABLE `leaderboard_caches` (
+  `Id` int(11) NOT NULL,
+  `Name` varchar(100) NOT NULL DEFAULT '',
+  `ListJson` longtext NOT NULL DEFAULT '[]',
+  `UpdatedAt` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `leaderboard_caches`
+--
+
+INSERT INTO `leaderboard_caches` (`Id`, `Name`, `ListJson`, `UpdatedAt`) VALUES
+(1, 'C?p ð?', '[]', '2026-05-17 06:36:30'),
+(2, 'Nhi?m V?', '[]', '2026-05-17 06:36:30'),
+(3, 'ChuyÛn C?n', '[]', '2026-05-17 06:36:30'),
+(4, 'Ph¾ B?n', '[]', '2026-05-17 06:36:30'),
+(5, 'VÓng', '[]', '2026-05-17 06:36:30');
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `map_config`
 --
 
@@ -745,62 +793,62 @@ CREATE TABLE `map_config` (
 --
 
 INSERT INTO `map_config` (`map_id`, `map_name`, `scene_name`, `spawn_points_json`, `min_level`, `max_level`, `created_at`, `updated_at`) VALUES
-(0, 'L??ng Kh???i ?????u', 'GameScene', '[{\"x\":0,\"y\":0},{\"x\":5,\"y\":0}]', 1, 10, '2026-03-27 06:38:35', '2026-05-08 19:41:31'),
-(6, '?????a cung (s?? c???p)', 'Map6', '[{\"x\":0,\"y\":0}]', 10, 30, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(7, '?????a cung (trung c???p)', 'Map7', '[{\"x\":0,\"y\":0}]', 30, 60, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(18, '?????a cung (cao c???p)', 'Map18', '[{\"x\":0,\"y\":0}]', 80, 110, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(19, '?????a cung (th?????ng c???p)', 'Map19', '[{\"x\":0,\"y\":0}]', 110, 140, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(56, '?????i trung t??m', 'Map56', '[{\"x\":0,\"y\":0}]', 136, 155, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(57, 'Th??nh ?????a Th???t Ki???m', 'Map57', '[{\"x\":0,\"y\":0}]', 141, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(58, 'Hang V?? Th??', 'Map58', '[{\"x\":0,\"y\":0}]', 135, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(59, 'L??ng C??t', 'Map59', '[{\"x\":0,\"y\":0}]', 36, 55, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(60, 'L??ng S????ng M??', 'Map60', '[{\"x\":0,\"y\":0}]', 71, 90, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(61, 'V??ch Chigiri', 'Map61', '[{\"x\":0,\"y\":0}]', 41, 60, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(62, 'N??i Kirigakure', 'Map62', '[{\"x\":0,\"y\":0}]', 46, 65, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(63, 'C??nh ?????ng Kaminari', 'Map63', '[{\"x\":0,\"y\":0}]', 51, 70, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(64, 'Thung L??ng Ch???t', 'Map64', '[{\"x\":0,\"y\":0}]', 56, 75, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(65, '?????i Hoang', 'Map65', '[{\"x\":0,\"y\":0}]', 61, 80, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(66, 'H???m N??i Mizu', 'Map66', '[{\"x\":0,\"y\":0}]', 66, 85, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(67, 'H???m b?? m???t', 'Map67', '[{\"x\":0,\"y\":0}]', 50, 70, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(68, 'L??ng C???', 'Map68', '[{\"x\":0,\"y\":0}]', 76, 95, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(69, 'L??ng M??y', 'Map69', '[{\"x\":0,\"y\":0}]', 106, 125, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(70, 'V??ch ???? Ngang', 'Map70', '[{\"x\":0,\"y\":0}]', 81, 100, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(71, 'Mi???u Iwagakure', 'Map71', '[{\"x\":0,\"y\":0}]', 86, 105, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(72, 'Ch??n N??i Tsuchi', 'Map72', '[{\"x\":0,\"y\":0}]', 91, 110, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(73, 'R???ng N???m', 'Map73', '[{\"x\":0,\"y\":0}]', 96, 115, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(74, 'D??ng S??ng Kusagakure', 'Map74', '[{\"x\":0,\"y\":0}]', 101, 120, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(75, 'L??ng L??', 'Map75', '[{\"x\":0,\"y\":0}]', 1, 20, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(76, '?????ng C??? Tenchi', 'Map76', '[{\"x\":0,\"y\":0}]', 6, 25, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(77, 'R???ng Kumogakure', 'Map77', '[{\"x\":0,\"y\":0}]', 11, 30, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(78, 'Ngh??a ?????a B??? Hoang', 'Map78', '[{\"x\":0,\"y\":0}]', 16, 35, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(79, 'Chi???n Tr?????ng C???', 'Map79', '[{\"x\":0,\"y\":0}]', 21, 40, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(80, '?????i C??t', 'Map80', '[{\"x\":0,\"y\":0}]', 26, 45, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(81, 'Sa m???c Sunagakure', 'Map81', '[{\"x\":0,\"y\":0}]', 31, 50, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(82, 'N??i Hokage', 'Map82', '[{\"x\":0,\"y\":0}]', 111, 130, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(83, 'Thung l??ng T???n C??ng', 'Map83', '[{\"x\":0,\"y\":0}]', 146, 165, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(84, 'Khu luy???n t???p', 'Map84', '[{\"x\":0,\"y\":0}]', 1, 15, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(85, 'L??ng ????', 'Map85', '[{\"x\":0,\"y\":0}]', 116, 135, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(86, 'Tr?????ng Konoha', 'Map86', '[{\"x\":0,\"y\":0}]', 121, 140, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(87, 'Hang Kh???', 'Map87', '[{\"x\":0,\"y\":0}]', 126, 145, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(88, 'C???u Kannabi', 'Map88', '[{\"x\":0,\"y\":0}]', 131, 150, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(89, 'V??ng L???p ???o T?????ng', 'Map89', '[{\"x\":0,\"y\":0}]', 130, 155, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(90, 'Hang V?? Th?? (c???p 1)', 'Map90', '[{\"x\":0,\"y\":0}]', 135, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(91, 'Hang V?? Th?? (c???p 2)', 'Map91', '[{\"x\":0,\"y\":0}]', 145, 170, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(92, 'Hang V?? Th?? (c???p 3)', 'Map92', '[{\"x\":0,\"y\":0}]', 155, 180, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(0, 'Làng Khởi Đầu', 'GameScene', '[{\"x\":0,\"y\":0},{\"x\":5,\"y\":0}]', 1, 10, '2026-03-27 06:38:35', '2026-05-08 19:41:31'),
+(6, 'Địa cung (sơ cấp)', 'Map6', '[{\"x\":0,\"y\":0}]', 10, 30, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(7, 'Địa cung (trung cấp)', 'Map7', '[{\"x\":0,\"y\":0}]', 30, 60, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(18, 'Địa cung (cao cấp)', 'Map18', '[{\"x\":0,\"y\":0}]', 80, 110, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(19, 'Địa cung (thượng cấp)', 'Map19', '[{\"x\":0,\"y\":0}]', 110, 140, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(56, 'Đồi trung tâm', 'Map56', '[{\"x\":0,\"y\":0}]', 136, 155, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(57, 'Thánh Địa Thất Kiếm', 'Map57', '[{\"x\":0,\"y\":0}]', 141, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(58, 'Hang Vô Thú', 'Map58', '[{\"x\":0,\"y\":0}]', 135, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(59, 'Làng Cát', 'Map59', '[{\"x\":0,\"y\":0}]', 36, 55, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(60, 'Làng Sương Mù', 'Map60', '[{\"x\":0,\"y\":0}]', 71, 90, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(61, 'Vách Chigiri', 'Map61', '[{\"x\":0,\"y\":0}]', 41, 60, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(62, 'Núi Kirigakure', 'Map62', '[{\"x\":0,\"y\":0}]', 46, 65, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(63, 'Cánh Đồng Kaminari', 'Map63', '[{\"x\":0,\"y\":0}]', 51, 70, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(64, 'Thung Lũng Chết', 'Map64', '[{\"x\":0,\"y\":0}]', 56, 75, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(65, 'Đồi Hoang', 'Map65', '[{\"x\":0,\"y\":0}]', 61, 80, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(66, 'Hầm Núi Mizu', 'Map66', '[{\"x\":0,\"y\":0}]', 66, 85, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(67, 'Hầm bí mật', 'Map67', '[{\"x\":0,\"y\":0}]', 50, 70, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(68, 'Làng Cổ', 'Map68', '[{\"x\":0,\"y\":0}]', 76, 95, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(69, 'Làng Mây', 'Map69', '[{\"x\":0,\"y\":0}]', 106, 125, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(70, 'Vách Đá Ngang', 'Map70', '[{\"x\":0,\"y\":0}]', 81, 100, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(71, 'Miếu Iwagakure', 'Map71', '[{\"x\":0,\"y\":0}]', 86, 105, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(72, 'Chân Núi Tsuchi', 'Map72', '[{\"x\":0,\"y\":0}]', 91, 110, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(73, 'Rừng Nấm', 'Map73', '[{\"x\":0,\"y\":0}]', 96, 115, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(74, 'Dòng Sông Kusagakure', 'Map74', '[{\"x\":0,\"y\":0}]', 101, 120, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(75, 'Làng Lá', 'Map75', '[{\"x\":0,\"y\":0}]', 1, 20, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(76, 'Đồng Cỏ Tenchi', 'Map76', '[{\"x\":0,\"y\":0}]', 6, 25, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(77, 'Rừng Kumogakure', 'Map77', '[{\"x\":0,\"y\":0}]', 11, 30, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(78, 'Nghĩa Địa Bỏ Hoang', 'Map78', '[{\"x\":0,\"y\":0}]', 16, 35, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(79, 'Chiến Trường Cổ', 'Map79', '[{\"x\":0,\"y\":0}]', 21, 40, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(80, 'Đồi Cát', 'Map80', '[{\"x\":0,\"y\":0}]', 26, 45, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(81, 'Sa mạc Sunagakure', 'Map81', '[{\"x\":0,\"y\":0}]', 31, 50, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(82, 'Núi Hokage', 'Map82', '[{\"x\":0,\"y\":0}]', 111, 130, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(83, 'Thung lũng Tấn Công', 'Map83', '[{\"x\":0,\"y\":0}]', 146, 165, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(84, 'Khu luyện tập', 'Map84', '[{\"x\":0,\"y\":0}]', 1, 15, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(85, 'Làng Đá', 'Map85', '[{\"x\":0,\"y\":0}]', 116, 135, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(86, 'Trường Konoha', 'Map86', '[{\"x\":0,\"y\":0}]', 121, 140, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(87, 'Hang Khổ', 'Map87', '[{\"x\":0,\"y\":0}]', 126, 145, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(88, 'Cầu Kannabi', 'Map88', '[{\"x\":0,\"y\":0}]', 131, 150, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(89, 'Vòng Lặp Ảo Tưởng', 'Map89', '[{\"x\":0,\"y\":0}]', 130, 155, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(90, 'Hang Vô Thú (cấp 1)', 'Map90', '[{\"x\":0,\"y\":0}]', 135, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(91, 'Hang Vô Thú (cấp 2)', 'Map91', '[{\"x\":0,\"y\":0}]', 145, 170, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(92, 'Hang Vô Thú (cấp 3)', 'Map92', '[{\"x\":0,\"y\":0}]', 155, 180, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (93, 'Hang Gamaken', 'Map93', '[{\"x\":0,\"y\":0}]', 125, 150, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (94, 'Hang Gamatatsu', 'Map94', '[{\"x\":0,\"y\":0}]', 135, 160, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (95, 'Hang Gama Armored', 'Map95', '[{\"x\":0,\"y\":0}]', 145, 170, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (96, 'Hang Gamabunta', 'Map96', '[{\"x\":0,\"y\":0}]', 155, 180, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (97, 'Hang Gamahiro', 'Map97', '[{\"x\":0,\"y\":0}]', 165, 190, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(98, 'Chi???n tr?????ng', 'Map98', '[{\"x\":0,\"y\":0}]', 151, 170, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(99, 'C???a ph??a t??y', 'Map99', '[{\"x\":0,\"y\":0}]', 156, 175, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(100, 'C???a ph??a ????ng', 'Map100', '[{\"x\":0,\"y\":0}]', 161, 180, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(101, 'Chi???n tr?????ng ph?? b???n', 'Map101', '[{\"x\":0,\"y\":0}]', 160, 185, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(102, 'L??ng M??a', 'Map102', '[{\"x\":0,\"y\":0}]', 166, 185, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(103, 'Ph??o ????i Amega', 'Map103', '[{\"x\":0,\"y\":0}]', 171, 190, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(104, 'V??ng tr??ng Kusa', 'Map104', '[{\"x\":0,\"y\":0}]', 176, 195, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(105, 'L??nh ?????a thi??n th???n', 'Map105', '[{\"x\":0,\"y\":0}]', 181, 200, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
-(106, 'C??n c??? Akatsuki', 'Map106', '[{\"x\":0,\"y\":0}]', 186, 205, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(98, 'Chiến trường', 'Map98', '[{\"x\":0,\"y\":0}]', 151, 170, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(99, 'Cửa phía tây', 'Map99', '[{\"x\":0,\"y\":0}]', 156, 175, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(100, 'Cửa phía đông', 'Map100', '[{\"x\":0,\"y\":0}]', 161, 180, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(101, 'Chiến trường phó bản', 'Map101', '[{\"x\":0,\"y\":0}]', 160, 185, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(102, 'Làng Mưa', 'Map102', '[{\"x\":0,\"y\":0}]', 166, 185, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(103, 'Pháo Đài Amega', 'Map103', '[{\"x\":0,\"y\":0}]', 171, 190, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(104, 'Vùng trũng Kusa', 'Map104', '[{\"x\":0,\"y\":0}]', 176, 195, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(105, 'Lãnh Địa thiên thần', 'Map105', '[{\"x\":0,\"y\":0}]', 181, 200, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
+(106, 'Căn cứ Akatsuki', 'Map106', '[{\"x\":0,\"y\":0}]', 186, 205, '2026-05-08 19:41:31', '2026-05-08 19:41:31'),
 (110, 'Vòng lặp vô tận', 'DungeonWaveScene', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-20 21:02:08'),
 (111, 'Địa Cung', 'DungeonPartyScene', '[{\"x\":0,\"y\":0}]', 1, 999, '2026-04-06 10:58:57', '2026-04-20 21:02:08');
 
@@ -833,118 +881,118 @@ CREATE TABLE `map_portal` (
 --
 
 INSERT INTO `map_portal` (`portal_id`, `portal_name`, `source_map_id`, `src_x`, `src_y`, `src_radius`, `dest_map_id`, `dest_scene_name`, `dest_x`, `dest_y`, `portal_type`, `portal_direction`, `required_item_id`, `dungeon_id`, `is_active`) VALUES
-(1, 'L??ng Kh???i ?????u ??? L??ng L??', 0, 30, 0, 2.5, 75, 'Map75', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(2, 'L??ng L?? ??? L??ng Kh???i ?????u', 75, -28, 0, 2.5, 0, 'GameScene', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(3, 'L??ng L?? ??? ?????ng C??? Tenchi', 75, 30, 0, 2.5, 76, 'Map76', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(4, '?????ng C??? Tenchi ??? L??ng L??', 76, -28, 0, 2.5, 75, 'Map75', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(5, '?????ng C??? Tenchi ??? R???ng Kumogakure', 76, 30, 0, 2.5, 77, 'Map77', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(6, 'R???ng Kumogakure ??? ?????ng C??? Tenchi', 77, -28, 0, 2.5, 76, 'Map76', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(7, 'R???ng Kumogakure ??? Ngh??a ?????a B??? Hoang', 77, 30, 0, 2.5, 78, 'Map78', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(8, 'Ngh??a ?????a B??? Hoang ??? R???ng Kumogakure', 78, -28, 0, 2.5, 77, 'Map77', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(9, 'Ngh??a ?????a B??? Hoang ??? Chi???n Tr?????ng C???', 78, 30, 0, 2.5, 79, 'Map79', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(10, 'Chi???n Tr?????ng C??? ??? Ngh??a ?????a B??? Hoang', 79, -28, 0, 2.5, 78, 'Map78', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(11, 'Chi???n Tr?????ng C??? ??? ?????i C??t', 79, 30, 0, 2.5, 80, 'Map80', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(12, '?????i C??t ??? Chi???n Tr?????ng C???', 80, -28, 0, 2.5, 79, 'Map79', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(13, '?????i C??t ??? Sa m???c Sunagakure', 80, 30, 0, 2.5, 81, 'Map81', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(14, 'Sa m???c Sunagakure ??? ?????i C??t', 81, -28, 0, 2.5, 80, 'Map80', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(15, 'Sa m???c Sunagakure ??? L??ng C??t', 81, 30, 0, 2.5, 59, 'Map59', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(16, 'L??ng C??t ??? Sa m???c Sunagakure', 59, -28, 0, 2.5, 81, 'Map81', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(17, 'L??ng C??t ??? V??ch Chigiri', 59, 30, 0, 2.5, 61, 'Map61', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(18, 'V??ch Chigiri ??? L??ng C??t', 61, -28, 0, 2.5, 59, 'Map59', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(19, 'V??ch Chigiri ??? N??i Kirigakure', 61, 30, 0, 2.5, 62, 'Map62', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(20, 'N??i Kirigakure ??? V??ch Chigiri', 62, -28, 0, 2.5, 61, 'Map61', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(21, 'N??i Kirigakure ??? C??nh ?????ng Kaminari', 62, 30, 0, 2.5, 63, 'Map63', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(22, 'C??nh ?????ng Kaminari ??? N??i Kirigakure', 63, -28, 0, 2.5, 62, 'Map62', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(23, 'C??nh ?????ng Kaminari ??? Thung L??ng Ch???t', 63, 30, 0, 2.5, 64, 'Map64', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(24, 'Thung L??ng Ch???t ??? C??nh ?????ng Kaminari', 64, -28, 0, 2.5, 63, 'Map63', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(25, 'Thung L??ng Ch???t ??? ?????i Hoang', 64, 30, 0, 2.5, 65, 'Map65', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(26, '?????i Hoang ??? Thung L??ng Ch???t', 65, -28, 0, 2.5, 64, 'Map64', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(27, '?????i Hoang ??? H???m N??i Mizu', 65, 30, 0, 2.5, 66, 'Map66', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(28, 'H???m N??i Mizu ??? ?????i Hoang', 66, -28, 0, 2.5, 65, 'Map65', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(29, 'H???m N??i Mizu ??? L??ng S????ng M??', 66, 30, 0, 2.5, 60, 'Map60', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(30, 'L??ng S????ng M?? ??? H???m N??i Mizu', 60, -28, 0, 2.5, 66, 'Map66', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(31, 'L??ng S????ng M?? ??? L??ng C???', 60, 30, 0, 2.5, 68, 'Map68', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(32, 'L??ng C??? ??? L??ng S????ng M??', 68, -28, 0, 2.5, 60, 'Map60', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(33, 'L??ng C??? ??? V??ch ???? Ngang', 68, 30, 0, 2.5, 70, 'Map70', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(34, 'V??ch ???? Ngang ??? L??ng C???', 70, -28, 0, 2.5, 68, 'Map68', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(35, 'V??ch ???? Ngang ??? Mi???u Iwagakure', 70, 30, 0, 2.5, 71, 'Map71', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(36, 'Mi???u Iwagakure ??? V??ch ???? Ngang', 71, -28, 0, 2.5, 70, 'Map70', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(37, 'Mi???u Iwagakure ??? Ch??n N??i Tsuchi', 71, 30, 0, 2.5, 72, 'Map72', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(38, 'Ch??n N??i Tsuchi ??? Mi???u Iwagakure', 72, -28, 0, 2.5, 71, 'Map71', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(39, 'Ch??n N??i Tsuchi ??? R???ng N???m', 72, 30, 0, 2.5, 73, 'Map73', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(40, 'R???ng N???m ??? Ch??n N??i Tsuchi', 73, -28, 0, 2.5, 72, 'Map72', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(41, 'R???ng N???m ??? D??ng S??ng Kusagakure', 73, 30, 0, 2.5, 74, 'Map74', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(42, 'D??ng S??ng Kusagakure ??? R???ng N???m', 74, -28, 0, 2.5, 73, 'Map73', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(43, 'D??ng S??ng Kusagakure ??? L??ng M??y', 74, 30, 0, 2.5, 69, 'Map69', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(44, 'L??ng M??y ??? D??ng S??ng Kusagakure', 69, -28, 0, 2.5, 74, 'Map74', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(45, 'L??ng M??y ??? N??i Hokage', 69, 30, 0, 2.5, 82, 'Map82', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(46, 'N??i Hokage ??? L??ng M??y', 82, -28, 0, 2.5, 69, 'Map69', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(47, 'N??i Hokage ??? L??ng ????', 82, 30, 0, 2.5, 85, 'Map85', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(48, 'L??ng ???? ??? N??i Hokage', 85, -28, 0, 2.5, 82, 'Map82', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(49, 'L??ng ???? ??? Tr?????ng Konoha', 85, 30, 0, 2.5, 86, 'Map86', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(50, 'Tr?????ng Konoha ??? L??ng ????', 86, -28, 0, 2.5, 85, 'Map85', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(51, 'Tr?????ng Konoha ??? Hang Kh???', 86, 30, 0, 2.5, 87, 'Map87', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(52, 'Hang Kh??? ??? Tr?????ng Konoha', 87, -28, 0, 2.5, 86, 'Map86', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(53, 'Hang Kh??? ??? C???u Kannabi', 87, 30, 0, 2.5, 88, 'Map88', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(54, 'C???u Kannabi ??? Hang Kh???', 88, -28, 0, 2.5, 87, 'Map87', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(55, 'C???u Kannabi ??? ?????i trung t??m', 88, 30, 0, 2.5, 56, 'Map56', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(56, '?????i trung t??m ??? C???u Kannabi', 56, -28, 0, 2.5, 88, 'Map88', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(57, '?????i trung t??m ??? Th??nh ?????a Th???t Ki???m', 56, 30, 0, 2.5, 57, 'Map57', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(58, 'Th??nh ?????a Th???t Ki???m ??? ?????i trung t??m', 57, -28, 0, 2.5, 56, 'Map56', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(59, 'Th??nh ?????a Th???t Ki???m ??? Thung l??ng T???n C??ng', 57, 30, 0, 2.5, 83, 'Map83', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(60, 'Thung l??ng T???n C??ng ??? Th??nh ?????a Th???t Ki???m', 83, -28, 0, 2.5, 57, 'Map57', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(61, 'Thung l??ng T???n C??ng ??? Chi???n tr?????ng', 83, 30, 0, 2.5, 98, 'Map98', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(62, 'Chi???n tr?????ng ??? Thung l??ng T???n C??ng', 98, -28, 0, 2.5, 83, 'Map83', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(63, 'Chi???n tr?????ng ??? C???a ph??a t??y', 98, 30, 0, 2.5, 99, 'Map99', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(64, 'C???a ph??a t??y ??? Chi???n tr?????ng', 99, -28, 0, 2.5, 98, 'Map98', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(65, 'C???a ph??a t??y ??? C???a ph??a ????ng', 99, 30, 0, 2.5, 100, 'Map100', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(66, 'C???a ph??a ????ng ??? C???a ph??a t??y', 100, -28, 0, 2.5, 99, 'Map99', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(67, 'C???a ph??a ????ng ??? L??ng M??a', 100, 30, 0, 2.5, 102, 'Map102', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(68, 'L??ng M??a ??? C???a ph??a ????ng', 102, -28, 0, 2.5, 100, 'Map100', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(69, 'L??ng M??a ??? Ph??o ????i Amega', 102, 30, 0, 2.5, 103, 'Map103', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(70, 'Ph??o ????i Amega ??? L??ng M??a', 103, -28, 0, 2.5, 102, 'Map102', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(71, 'Ph??o ????i Amega ??? V??ng tr??ng Kusa', 103, 30, 0, 2.5, 104, 'Map104', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(72, 'V??ng tr??ng Kusa ??? Ph??o ????i Amega', 104, -28, 0, 2.5, 103, 'Map103', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(73, 'V??ng tr??ng Kusa ??? L??nh ?????a thi??n th???n', 104, 30, 0, 2.5, 105, 'Map105', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(74, 'L??nh ?????a thi??n th???n ??? V??ng tr??ng Kusa', 105, -28, 0, 2.5, 104, 'Map104', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(75, 'L??nh ?????a thi??n th???n ??? C??n c??? Akatsuki', 105, 30, 0, 2.5, 106, 'Map106', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
-(76, 'C??n c??? Akatsuki ??? L??nh ?????a thi??n th???n', 106, -28, 0, 2.5, 105, 'Map105', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
-(77, 'L??ng Kh???i ?????u ??? ?????a cung (s?? c???p)', 0, 0, 0, 3, 6, 'Map6', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(78, '?????a cung (s?? c???p) ??? L??ng Kh???i ?????u', 6, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(79, 'L??ng Kh???i ?????u ??? ?????a cung (trung c???p)', 0, 0, 0, 3, 7, 'Map7', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(80, '?????a cung (trung c???p) ??? L??ng Kh???i ?????u', 7, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(81, 'L??ng Kh???i ?????u ??? ?????a cung (cao c???p)', 0, 0, 0, 3, 18, 'Map18', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(82, '?????a cung (cao c???p) ??? L??ng Kh???i ?????u', 18, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(83, 'L??ng Kh???i ?????u ??? ?????a cung (th?????ng c???p)', 0, 0, 0, 3, 19, 'Map19', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(84, '?????a cung (th?????ng c???p) ??? L??ng Kh???i ?????u', 19, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(85, '?????i trung t??m ??? Hang V?? Th??', 56, 0, 0, 3, 58, 'Map58', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(86, 'Hang V?? Th?? ??? ?????i trung t??m', 58, 0, 0, 3, 56, 'Map56', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(87, 'C??nh ?????ng Kaminari ??? H???m b?? m???t', 63, 0, 0, 3, 67, 'Map67', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(88, 'H???m b?? m???t ??? C??nh ?????ng Kaminari', 67, 0, 0, 3, 63, 'Map63', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(89, 'L??ng L?? ??? Khu luy???n t???p', 75, 0, 0, 3, 84, 'Map84', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(90, 'Khu luy???n t???p ??? L??ng L??', 84, 0, 0, 3, 75, 'Map75', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(91, 'C???u Kannabi ??? V??ng L???p ???o T?????ng', 88, 0, 0, 3, 89, 'Map89', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(92, 'V??ng L???p ???o T?????ng ??? C???u Kannabi', 89, 0, 0, 3, 88, 'Map88', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(93, 'Hang V?? Th?? ??? Hang V?? Th?? (c???p 1)', 58, 0, 0, 3, 90, 'Map90', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(94, 'Hang V?? Th?? (c???p 1) ??? Hang V?? Th??', 90, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(95, 'Hang V?? Th?? ??? Hang V?? Th?? (c???p 2)', 58, 0, 0, 3, 91, 'Map91', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(96, 'Hang V?? Th?? (c???p 2) ??? Hang V?? Th??', 91, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(97, 'Hang V?? Th?? ??? Hang V?? Th?? (c???p 3)', 58, 0, 0, 3, 92, 'Map92', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(98, 'Hang V?? Th?? (c???p 3) ??? Hang V?? Th??', 92, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(99, 'Hang Kh??? ??? Hang Gamaken', 87, 0, 0, 3, 93, 'Map93', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(100, 'Hang Gamaken ??? Hang Kh???', 93, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(101, 'Hang Kh??? ??? Hang Gamatatsu', 87, 0, 0, 3, 94, 'Map94', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(102, 'Hang Gamatatsu ??? Hang Kh???', 94, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(103, 'Hang Kh??? ??? Hang Gama Armored', 87, 0, 0, 3, 95, 'Map95', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(104, 'Hang Gama Armored ??? Hang Kh???', 95, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(105, 'Hang Kh??? ??? Hang Gamabunta', 87, 0, 0, 3, 96, 'Map96', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(106, 'Hang Gamabunta ??? Hang Kh???', 96, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(107, 'Hang Kh??? ??? Hang Gamahiro', 87, 0, 0, 3, 97, 'Map97', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(108, 'Hang Gamahiro ??? Hang Kh???', 97, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(109, 'C???a ph??a ????ng ??? Chi???n tr?????ng ph?? b???n', 100, 0, 0, 3, 101, 'Map101', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
-(110, 'Chi???n tr?????ng ph?? b???n ??? C???a ph??a ????ng', 101, 0, 0, 3, 100, 'Map100', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
-(111, 'V??o V??ng l???p v?? t???n', 0, 5, 0, 3, 110, 'DungeonWaveScene', 0, 0, 'enter_dungeon', 'none', NULL, 110, 1),
-(112, 'V??o ?????a Cung', 0, -5, 0, 3, 111, 'DungeonPartyScene', 0, 0, 'enter_dungeon', 'none', NULL, 111, 1);
+(1, 'Làng Khởi Đầu → Làng Lá', 0, 30, 0, 2.5, 75, 'Map75', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(2, 'Làng Lá → Làng Khởi Đầu', 75, -28, 0, 2.5, 0, 'GameScene', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(3, 'Làng Lá → Đồng Cỏ Tenchi', 75, 30, 0, 2.5, 76, 'Map76', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(4, 'Đồng Cỏ Tenchi → Làng Lá', 76, -28, 0, 2.5, 75, 'Map75', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(5, 'Đồng Cỏ Tenchi → Rừng Kumogakure', 76, 30, 0, 2.5, 77, 'Map77', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(6, 'Rừng Kumogakure → Đồng Cỏ Tenchi', 77, -28, 0, 2.5, 76, 'Map76', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(7, 'Rừng Kumogakure → Nghĩa Địa Bỏ Hoang', 77, 30, 0, 2.5, 78, 'Map78', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(8, 'Nghĩa Địa Bỏ Hoang → Rừng Kumogakure', 78, -28, 0, 2.5, 77, 'Map77', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(9, 'Nghĩa Địa Bỏ Hoang → Chiến Trường Cổ', 78, 30, 0, 2.5, 79, 'Map79', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(10, 'Chiến Trường Cổ → Nghĩa Địa Bỏ Hoang', 79, -28, 0, 2.5, 78, 'Map78', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(11, 'Chiến Trường Cổ → Đồi Cát', 79, 30, 0, 2.5, 80, 'Map80', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(12, 'Đồi Cát → Chiến Trường Cổ', 80, -28, 0, 2.5, 79, 'Map79', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(13, 'Đồi Cát → Sa mạc Sunagakure', 80, 30, 0, 2.5, 81, 'Map81', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(14, 'Sa mạc Sunagakure → Đồi Cát', 81, -28, 0, 2.5, 80, 'Map80', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(15, 'Sa mạc Sunagakure → Làng Cát', 81, 30, 0, 2.5, 59, 'Map59', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(16, 'Làng Cát → Sa mạc Sunagakure', 59, -28, 0, 2.5, 81, 'Map81', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(17, 'Làng Cát → Vách Chigiri', 59, 30, 0, 2.5, 61, 'Map61', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(18, 'Vách Chigiri → Làng Cát', 61, -28, 0, 2.5, 59, 'Map59', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(19, 'Vách Chigiri → Núi Kirigakure', 61, 30, 0, 2.5, 62, 'Map62', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(20, 'Núi Kirigakure → Vách Chigiri', 62, -28, 0, 2.5, 61, 'Map61', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(21, 'Núi Kirigakure → Cánh Đồng Kaminari', 62, 30, 0, 2.5, 63, 'Map63', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(22, 'Cánh Đồng Kaminari → Núi Kirigakure', 63, -28, 0, 2.5, 62, 'Map62', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(23, 'Cánh Đồng Kaminari → Thung Lũng Chết', 63, 30, 0, 2.5, 64, 'Map64', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(24, 'Thung Lũng Chết → Cánh Đồng Kaminari', 64, -28, 0, 2.5, 63, 'Map63', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(25, 'Thung Lũng Chết → Đồi Hoang', 64, 30, 0, 2.5, 65, 'Map65', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(26, 'Đồi Hoang → Thung Lũng Chết', 65, -28, 0, 2.5, 64, 'Map64', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(27, 'Đồi Hoang → Hầm Núi Mizu', 65, 30, 0, 2.5, 66, 'Map66', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(28, 'Hầm Núi Mizu → Đồi Hoang', 66, -28, 0, 2.5, 65, 'Map65', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(29, 'Hầm Núi Mizu → Làng Sương Mù', 66, 30, 0, 2.5, 60, 'Map60', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(30, 'Làng Sương Mù → Hầm Núi Mizu', 60, -28, 0, 2.5, 66, 'Map66', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(31, 'Làng Sương Mù → Làng Cổ', 60, 30, 0, 2.5, 68, 'Map68', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(32, 'Làng Cổ → Làng Sương Mù', 68, -28, 0, 2.5, 60, 'Map60', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(33, 'Làng Cổ → Vách Đá Ngang', 68, 30, 0, 2.5, 70, 'Map70', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(34, 'Vách Đá Ngang → Làng Cổ', 70, -28, 0, 2.5, 68, 'Map68', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(35, 'Vách Đá Ngang → Miếu Iwagakure', 70, 30, 0, 2.5, 71, 'Map71', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(36, 'Miếu Iwagakure → Vách Đá Ngang', 71, -28, 0, 2.5, 70, 'Map70', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(37, 'Miếu Iwagakure → Chân Núi Tsuchi', 71, 30, 0, 2.5, 72, 'Map72', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(38, 'Chân Núi Tsuchi → Miếu Iwagakure', 72, -28, 0, 2.5, 71, 'Map71', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(39, 'Chân Núi Tsuchi → Rừng Nấm', 72, 30, 0, 2.5, 73, 'Map73', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(40, 'Rừng Nấm → Chân Núi Tsuchi', 73, -28, 0, 2.5, 72, 'Map72', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(41, 'Rừng Nấm → Dòng Sông Kusagakure', 73, 30, 0, 2.5, 74, 'Map74', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(42, 'Dòng Sông Kusagakure → Rừng Nấm', 74, -28, 0, 2.5, 73, 'Map73', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(43, 'Dòng Sông Kusagakure → Làng Mây', 74, 30, 0, 2.5, 69, 'Map69', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(44, 'Làng Mây → Dòng Sông Kusagakure', 69, -28, 0, 2.5, 74, 'Map74', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(45, 'Làng Mây → Núi Hokage', 69, 30, 0, 2.5, 82, 'Map82', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(46, 'Núi Hokage → Làng Mây', 82, -28, 0, 2.5, 69, 'Map69', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(47, 'Núi Hokage → Làng Đá', 82, 30, 0, 2.5, 85, 'Map85', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(48, 'Làng Đá → Núi Hokage', 85, -28, 0, 2.5, 82, 'Map82', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(49, 'Làng Đá → Trường Konoha', 85, 30, 0, 2.5, 86, 'Map86', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(50, 'Trường Konoha → Làng Đá', 86, -28, 0, 2.5, 85, 'Map85', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(51, 'Trường Konoha → Hang Khổ', 86, 30, 0, 2.5, 87, 'Map87', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(52, 'Hang Khổ → Trường Konoha', 87, -28, 0, 2.5, 86, 'Map86', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(53, 'Hang Khổ → Cầu Kannabi', 87, 30, 0, 2.5, 88, 'Map88', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(54, 'Cầu Kannabi → Hang Khổ', 88, -28, 0, 2.5, 87, 'Map87', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(55, 'Cầu Kannabi → Đồi trung tâm', 88, 30, 0, 2.5, 56, 'Map56', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(56, 'Đồi trung tâm → Cầu Kannabi', 56, -28, 0, 2.5, 88, 'Map88', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(57, 'Đồi trung tâm → Thánh Địa Thất Kiếm', 56, 30, 0, 2.5, 57, 'Map57', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(58, 'Thánh Địa Thất Kiếm → Đồi trung tâm', 57, -28, 0, 2.5, 56, 'Map56', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(59, 'Thánh Địa Thất Kiếm → Thung lũng Tấn Công', 57, 30, 0, 2.5, 83, 'Map83', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(60, 'Thung lũng Tấn Công → Thánh Địa Thất Kiếm', 83, -28, 0, 2.5, 57, 'Map57', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(61, 'Thung lũng Tấn Công → Chiến trường', 83, 30, 0, 2.5, 98, 'Map98', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(62, 'Chiến trường → Thung lũng Tấn Công', 98, -28, 0, 2.5, 83, 'Map83', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(63, 'Chiến trường → Cửa phía tây', 98, 30, 0, 2.5, 99, 'Map99', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(64, 'Cửa phía tây → Chiến trường', 99, -28, 0, 2.5, 98, 'Map98', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(65, 'Cửa phía tây → Cửa phía đông', 99, 30, 0, 2.5, 100, 'Map100', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(66, 'Cửa phía đông → Cửa phía tây', 100, -28, 0, 2.5, 99, 'Map99', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(67, 'Cửa phía đông → Làng Mưa', 100, 30, 0, 2.5, 102, 'Map102', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(68, 'Làng Mưa → Cửa phía đông', 102, -28, 0, 2.5, 100, 'Map100', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(69, 'Làng Mưa → Pháo Đài Amega', 102, 30, 0, 2.5, 103, 'Map103', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(70, 'Pháo Đài Amega → Làng Mưa', 103, -28, 0, 2.5, 102, 'Map102', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(71, 'Pháo Đài Amega → Vùng trũng Kusa', 103, 30, 0, 2.5, 104, 'Map104', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(72, 'Vùng trũng Kusa → Pháo Đài Amega', 104, -28, 0, 2.5, 103, 'Map103', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(73, 'Vùng trũng Kusa → Lãnh Địa thiên thần', 104, 30, 0, 2.5, 105, 'Map105', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(74, 'Lãnh Địa thiên thần → Vùng trũng Kusa', 105, -28, 0, 2.5, 104, 'Map104', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(75, 'Lãnh Địa thiên thần → Căn cứ Akatsuki', 105, 30, 0, 2.5, 106, 'Map106', -28, 0, 'world_travel', 'right', NULL, NULL, 1),
+(76, 'Căn cứ Akatsuki → Lãnh Địa thiên thần', 106, -28, 0, 2.5, 105, 'Map105', 28, 0, 'world_travel', 'left', NULL, NULL, 1),
+(77, 'Làng Khởi Đầu → Địa cung (sơ cấp)', 0, 0, 0, 3, 6, 'Map6', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(78, 'Địa cung (sơ cấp) → Làng Khởi Đầu', 6, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(79, 'Làng Khởi Đầu → Địa cung (trung cấp)', 0, 0, 0, 3, 7, 'Map7', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(80, 'Địa cung (trung cấp) → Làng Khởi Đầu', 7, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(81, 'Làng Khởi Đầu → Địa cung (cao cấp)', 0, 0, 0, 3, 18, 'Map18', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(82, 'Địa cung (cao cấp) → Làng Khởi Đầu', 18, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(83, 'Làng Khởi Đầu → Địa cung (thượng cấp)', 0, 0, 0, 3, 19, 'Map19', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(84, 'Địa cung (thượng cấp) → Làng Khởi Đầu', 19, 0, 0, 3, 0, 'GameScene', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(85, 'Đồi trung tâm → Hang Vô Thú', 56, 0, 0, 3, 58, 'Map58', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(86, 'Hang Vô Thú → Đồi trung tâm', 58, 0, 0, 3, 56, 'Map56', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(87, 'Cánh Đồng Kaminari → Hầm bí mật', 63, 0, 0, 3, 67, 'Map67', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(88, 'Hầm bí mật → Cánh Đồng Kaminari', 67, 0, 0, 3, 63, 'Map63', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(89, 'Làng Lá → Khu luyện tập', 75, 0, 0, 3, 84, 'Map84', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(90, 'Khu luyện tập → Làng Lá', 84, 0, 0, 3, 75, 'Map75', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(91, 'Cầu Kannabi → Vòng Lặp Ảo Tưởng', 88, 0, 0, 3, 89, 'Map89', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(92, 'Vòng Lặp Ảo Tưởng → Cầu Kannabi', 89, 0, 0, 3, 88, 'Map88', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(93, 'Hang Vô Thú → Hang Vô Thú (cấp 1)', 58, 0, 0, 3, 90, 'Map90', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(94, 'Hang Vô Thú (cấp 1) → Hang Vô Thú', 90, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(95, 'Hang Vô Thú → Hang Vô Thú (cấp 2)', 58, 0, 0, 3, 91, 'Map91', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(96, 'Hang Vô Thú (cấp 2) → Hang Vô Thú', 91, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(97, 'Hang Vô Thú → Hang Vô Thú (cấp 3)', 58, 0, 0, 3, 92, 'Map92', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(98, 'Hang Vô Thú (cấp 3) → Hang Vô Thú', 92, 0, 0, 3, 58, 'Map58', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(99, 'Hang Khổ → Hang Gamaken', 87, 0, 0, 3, 93, 'Map93', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(100, 'Hang Gamaken → Hang Khổ', 93, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(101, 'Hang Khổ → Hang Gamatatsu', 87, 0, 0, 3, 94, 'Map94', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(102, 'Hang Gamatatsu → Hang Khổ', 94, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(103, 'Hang Khổ → Hang Gama Armored', 87, 0, 0, 3, 95, 'Map95', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(104, 'Hang Gama Armored → Hang Khổ', 95, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(105, 'Hang Khổ → Hang Gamabunta', 87, 0, 0, 3, 96, 'Map96', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(106, 'Hang Gamabunta → Hang Khổ', 96, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(107, 'Hang Khổ → Hang Gamahiro', 87, 0, 0, 3, 97, 'Map97', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(108, 'Hang Gamahiro → Hang Khổ', 97, 0, 0, 3, 87, 'Map87', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(109, 'Cửa phía đông → Chiến trường phó bản', 100, 0, 0, 3, 101, 'Map101', 0, 0, 'world_travel', 'none', NULL, NULL, 1),
+(110, 'Chiến trường phó bản → Cửa phía đông', 101, 0, 0, 3, 100, 'Map100', 5, 0, 'world_travel', 'none', NULL, NULL, 1),
+(111, 'Vào Vòng lặp vô tận', 0, 5, 0, 3, 110, 'DungeonWaveScene', 0, 0, 'enter_dungeon', 'none', NULL, 110, 1),
+(112, 'Vào Địa Cung', 0, -5, 0, 3, 111, 'DungeonPartyScene', 0, 0, 'enter_dungeon', 'none', NULL, 111, 1);
 
 -- --------------------------------------------------------
 
@@ -997,13 +1045,14 @@ INSERT INTO `npc_config` (`npc_id`, `npc_name`, `npc_type`, `map_id`, `pos_x`, `
 (1, 'Dược Phẩm', 'shop', 0, -4, 1.2, 'greet', 'npc_merchant_1', 1, '{\"shop_name\":\"Dược Phẩm\",\"items\":[\n  {\"item_template_id\":11,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":12,\"price_silver\":1500,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":13,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":14,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":15,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":16,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":121,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":122,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":161,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1}\n]}'),
 (2, 'Đại Tướng Lan', 'quest', 0, -5, 4.9, 'quest_intro', 'npc_quest_1', 1, NULL),
 (3, 'Thợ Rèn Hắc Long', 'blacksmith', 0, 2, 3.8, 'greet', 'npc_smith_1', 1, NULL),
-(5, 'Binh Khí', 'shop', 0, 15.0086, -1.90751, 'greet', 'npc_merchant_2', 1, '{\"shop_name\":\"Binh Khí\",\"items\":[\r\n  {\"item_template_id\":200,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":201,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":202,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":203,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":204,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":205,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":206,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":207,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":208,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":209,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":210,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":211,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":212,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":213,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":214,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":215,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":216,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":217,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":218,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":219,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":220,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":221,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":222,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":223,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":224,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":225,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":226,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":227,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":228,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":229,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50}\r\n]}'),
+(5, 'Binh Khí', 'shop', 0, 15.0086, -1.90751, 'greet', 'npc_merchant_2', 1, '{\"shop_name\":\"Binh Khí\",\"items\":[\n  {\"item_template_id\":200,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":201,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":202,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":203,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":204,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\n  {\"item_template_id\":205,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":206,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":207,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":208,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":209,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\n  {\"item_template_id\":210,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":211,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":212,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":213,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":214,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\n  {\"item_template_id\":215,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":216,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":217,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":218,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":219,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\n  {\"item_template_id\":220,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":221,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":222,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":223,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":224,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\n  {\"item_template_id\":225,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":226,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":227,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":228,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\n  {\"item_template_id\":229,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50}\n]}'),
 (7, 'Trang bị ', 'shop', 0, 25.2086, -1.90751, 'greet', 'npc_merchant_3', 1, '{\"shop_name\":\"Trang Bị\",\"items\":[\r\n  {\"item_template_id\":100,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":101,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":102,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":103,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":104,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":105,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":106,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":107,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":108,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":109,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":110,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":111,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":112,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":113,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":114,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":115,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":116,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":117,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":118,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":119,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":130,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":131,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":132,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":133,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":134,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":135,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":136,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":137,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":138,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":139,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":140,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":141,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":142,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":143,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":144,\"price_silver\":150000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":150,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":151,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":152,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":153,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":154,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50},\r\n  {\"item_template_id\":155,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":156,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":157,\"price_silver\":10000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":158,\"price_silver\":35000,\"price_gold\":0,\"stock\":-1,\"level_need\":35},\r\n  {\"item_template_id\":159,\"price_silver\":100000,\"price_gold\":0,\"stock\":-1,\"level_need\":50}\r\n]}'),
-(8, 'Tiên Dược', 'shop', 0, 35.0086, -1.90751, 'greet', 'npc_merchant_4', 1, '{\"shop_name\":\"Tiên Dược\",\"items\":[\r\n  {\"item_template_id\":121,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":122,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":123,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":40},\r\n  {\"item_template_id\":161,\"price_silver\":8000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\r\n  {\"item_template_id\":162,\"price_silver\":25000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":163,\"price_silver\":80000,\"price_gold\":0,\"stock\":-1,\"level_need\":40},\r\n  {\"item_template_id\":171,\"price_silver\":8000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\r\n  {\"item_template_id\":172,\"price_silver\":25000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\r\n  {\"item_template_id\":173,\"price_silver\":80000,\"price_gold\":0,\"stock\":-1,\"level_need\":40}\r\n]}'),
-(12, 'Thuong Nhan Canh Dong', 'shop', 1, 3, -1, 'greet', 'npc_merchant_1', 1, '{\"shop_name\":\"Tạp Hóa\",\"items\":[\r\n  {\"item_template_id\":11,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":12,\"price_silver\":1500,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\r\n  {\"item_template_id\":13,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":14,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":15,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\r\n  {\"item_template_id\":16,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\r\n  {\"item_template_id\":121,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":122,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\r\n  {\"item_template_id\":161,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1}\r\n]}'),
+(8, 'Tiên Dược', 'shop', 0, 35.0086, -1.90751, 'greet', 'npc_merchant_4', 1, '{\"shop_name\":\"Tiên Dược\",\"items\":[\n  {\"item_template_id\":121,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":122,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":123,\"price_silver\":50000,\"price_gold\":0,\"stock\":-1,\"level_need\":40},\n  {\"item_template_id\":161,\"price_silver\":8000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":162,\"price_silver\":25000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":163,\"price_silver\":80000,\"price_gold\":0,\"stock\":-1,\"level_need\":40},\n  {\"item_template_id\":171,\"price_silver\":8000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":172,\"price_silver\":25000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":173,\"price_silver\":80000,\"price_gold\":0,\"stock\":-1,\"level_need\":40}\n]}'),
+(12, 'Thuong Nhan Canh Dong', 'shop', 1, 3, -1, 'greet', 'npc_merchant_1', 1, '{\"shop_name\":\"Tạp Hóa\",\"items\":[\n  {\"item_template_id\":11,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":12,\"price_silver\":1500,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":13,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":14,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":15,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":16,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":121,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":122,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":161,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1}\n]}'),
 (13, 'Tho Ren Canh Dong', 'blacksmith', 1, 9, 0.5, 'greet', 'npc_smith_1', 1, NULL),
 (14, 'Huong Dan Vien', 'quest', 1, 15, 0.5, 'quest_intro', 'npc_quest_1', 1, NULL),
-(15, 'Thủ môn Phó Bản', 'dungeon', 0, 40, -1.90751, NULL, NULL, 1, NULL);
+(15, 'Thủ môn Phó Bản', 'dungeon', 0, 40, -1.90751, NULL, NULL, 1, NULL),
+(999, 'Shop', 'shop', -1, 0, 0, NULL, 'shop_utility', 1, '{\"shop_name\":\"Cửa Hàng Tiện Ích\",\"items\":[\n  {\"item_template_id\":11,\"price_silver\":0,\"price_gold\":10,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":12,\"price_silver\":1500,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":13,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":14,\"price_silver\":500,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":15,\"price_silver\":1500,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":16,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":10},\n  {\"item_template_id\":1,\"price_silver\":1000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":2,\"price_silver\":3000,\"price_gold\":0,\"stock\":-1,\"level_need\":5},\n  {\"item_template_id\":3,\"price_silver\":8000,\"price_gold\":0,\"stock\":-1,\"level_need\":15},\n  {\"item_template_id\":8,\"price_silver\":2000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":121,\"price_silver\":15000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":122,\"price_silver\":40000,\"price_gold\":0,\"stock\":-1,\"level_need\":20},\n  {\"item_template_id\":17,\"price_silver\":5000,\"price_gold\":0,\"stock\":-1,\"level_need\":1},\n  {\"item_template_id\":18,\"price_silver\":20000,\"price_gold\":0,\"stock\":-1,\"level_need\":15},\n  {\"item_template_id\":19,\"price_silver\":60000,\"price_gold\":0,\"stock\":-1,\"level_need\":30}\n]}');
 
 -- --------------------------------------------------------
 
@@ -1031,6 +1080,129 @@ INSERT INTO `npc_dialogue` (`id`, `npc_id`, `dialogue_key`, `text_vi`, `next_key
 (4, 2, 'quest_accept', 'Hãy tiêu diệt 10 con Goblin Đen và quay lại gặp ta.', NULL, 'give_quest'),
 (5, 3, 'greet', 'Mang trang bị đến đây đi, ta sẽ rèn cho mạnh hơn!', NULL, 'open_shop');
 
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `npc_shop_item`
+--
+
+CREATE TABLE `npc_shop_item` (
+  `id` int(11) NOT NULL,
+  `npc_id` int(11) NOT NULL,
+  `item_template_id` int(11) NOT NULL,
+  `price_silver` int(11) NOT NULL DEFAULT 0,
+  `price_gold` int(11) NOT NULL DEFAULT 0,
+  `stock` int(11) NOT NULL DEFAULT -1 COMMENT '-1 = vô hạn',
+  `required_level` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `npc_shop_item`
+--
+
+INSERT INTO `npc_shop_item` (`id`, `npc_id`, `item_template_id`, `price_silver`, `price_gold`, `stock`, `required_level`) VALUES
+(1, 1, 11, 500, 0, -1, 1),
+(2, 1, 12, 1500, 0, -1, 5),
+(3, 1, 13, 5000, 0, -1, 10),
+(4, 1, 14, 15000, 0, -1, 1),
+(7, 1, 15, 15000, 0, -1, 5),
+(8, 1, 16, 15000, 0, -1, 10),
+(10, 1, 121, 15000, 0, -1, 1),
+(11, 1, 122, 15000, 0, -1, 1),
+(12, 1, 161, 15000, 0, -1, 1),
+(13, 5, 200, 1000, 0, -1, 1),
+(14, 5, 201, 5000, 0, -1, 10),
+(15, 5, 202, 15000, 0, -1, 20),
+(16, 5, 203, 50000, 0, -1, 35),
+(17, 5, 204, 150000, 0, -1, 50),
+(18, 5, 205, 1000, 0, -1, 1),
+(19, 5, 206, 5000, 0, -1, 10),
+(20, 5, 207, 15000, 0, -1, 20),
+(21, 5, 208, 50000, 0, -1, 35),
+(22, 5, 209, 150000, 0, -1, 50),
+(23, 5, 210, 1000, 0, -1, 1),
+(24, 5, 211, 5000, 0, -1, 10),
+(25, 5, 212, 15000, 0, -1, 20),
+(26, 5, 213, 50000, 0, -1, 35),
+(27, 5, 214, 150000, 0, -1, 50),
+(28, 5, 215, 1000, 0, -1, 1),
+(29, 5, 216, 5000, 0, -1, 10),
+(30, 5, 217, 15000, 0, -1, 20),
+(31, 5, 218, 50000, 0, -1, 35),
+(32, 5, 219, 150000, 0, -1, 50),
+(33, 5, 220, 1000, 0, -1, 1),
+(34, 5, 221, 5000, 0, -1, 10),
+(35, 5, 222, 15000, 0, -1, 20),
+(36, 5, 223, 50000, 0, -1, 35),
+(37, 5, 224, 150000, 0, -1, 50),
+(38, 5, 225, 1000, 0, -1, 1),
+(39, 5, 226, 5000, 0, -1, 10),
+(40, 5, 227, 15000, 0, -1, 20),
+(41, 5, 228, 50000, 0, -1, 35),
+(42, 5, 229, 150000, 0, -1, 50),
+(43, 7, 100, 500, 0, -1, 1),
+(44, 7, 101, 3000, 0, -1, 10),
+(45, 7, 102, 10000, 0, -1, 20),
+(46, 7, 103, 35000, 0, -1, 35),
+(47, 7, 104, 100000, 0, -1, 50),
+(48, 7, 105, 500, 0, -1, 1),
+(49, 7, 106, 3000, 0, -1, 10),
+(50, 7, 107, 10000, 0, -1, 20),
+(51, 7, 108, 35000, 0, -1, 35),
+(52, 7, 109, 100000, 0, -1, 50),
+(53, 7, 110, 500, 0, -1, 1),
+(54, 7, 111, 3000, 0, -1, 10),
+(55, 7, 112, 10000, 0, -1, 20),
+(56, 7, 113, 35000, 0, -1, 35),
+(57, 7, 114, 100000, 0, -1, 50),
+(58, 7, 115, 500, 0, -1, 1),
+(59, 7, 116, 3000, 0, -1, 10),
+(60, 7, 117, 10000, 0, -1, 20),
+(61, 7, 118, 35000, 0, -1, 35),
+(62, 7, 119, 100000, 0, -1, 50),
+(63, 7, 130, 500, 0, -1, 1),
+(64, 7, 131, 3000, 0, -1, 10),
+(65, 7, 132, 10000, 0, -1, 20),
+(66, 7, 133, 35000, 0, -1, 35),
+(67, 7, 134, 100000, 0, -1, 50),
+(68, 7, 135, 500, 0, -1, 1),
+(69, 7, 136, 3000, 0, -1, 10),
+(70, 7, 137, 10000, 0, -1, 20),
+(71, 7, 138, 35000, 0, -1, 35),
+(72, 7, 139, 100000, 0, -1, 50),
+(73, 7, 150, 500, 0, -1, 1),
+(74, 7, 151, 3000, 0, -1, 10),
+(75, 7, 152, 10000, 0, -1, 20),
+(76, 7, 153, 35000, 0, -1, 35),
+(77, 7, 154, 100000, 0, -1, 50),
+(78, 7, 155, 500, 0, -1, 1),
+(79, 7, 156, 3000, 0, -1, 10),
+(80, 7, 157, 10000, 0, -1, 20),
+(81, 7, 158, 35000, 0, -1, 35),
+(82, 7, 159, 100000, 0, -1, 50),
+(83, 7, 140, 1000, 0, -1, 1),
+(84, 7, 141, 5000, 0, -1, 10),
+(85, 7, 142, 15000, 0, -1, 20),
+(86, 7, 143, 50000, 0, -1, 35),
+(87, 7, 144, 150000, 0, -1, 50),
+(88, 8, 121, 5000, 0, -1, 1),
+(89, 8, 122, 15000, 0, -1, 20),
+(90, 8, 123, 50000, 0, -1, 40),
+(91, 8, 161, 8000, 0, -1, 5),
+(92, 8, 162, 25000, 0, -1, 20),
+(93, 8, 163, 80000, 0, -1, 40),
+(94, 8, 171, 8000, 0, -1, 5),
+(95, 8, 172, 25000, 0, -1, 20),
+(96, 8, 173, 80000, 0, -1, 40),
+(97, 12, 11, 500, 0, -1, 1),
+(98, 12, 12, 1500, 0, -1, 5),
+(99, 12, 13, 5000, 0, -1, 10),
+(100, 12, 14, 15000, 0, -1, 1),
+(101, 12, 15, 15000, 0, -1, 5),
+(102, 12, 16, 15000, 0, -1, 10),
+(103, 12, 121, 15000, 0, -1, 1),
+(104, 12, 122, 15000, 0, -1, 1),
+(105, 12, 161, 15000, 0, -1, 1);
 
 -- --------------------------------------------------------
 
@@ -1101,6 +1273,32 @@ INSERT INTO `option_template` (`id`, `name`, `type`, `level`, `strOption`) VALUE
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `player2_data`
+--
+
+CREATE TABLE `player2_data` (
+  `player_id` int(11) NOT NULL COMMENT 'FK → player_data.player_id (cùng user)',
+  `character_name` varchar(50) NOT NULL DEFAULT '',
+  `gender` varchar(10) NOT NULL DEFAULT 'Male',
+  `info_char` longtext NOT NULL DEFAULT '{}' COMMENT 'JSON InfoChar: level, exp, element_type, gene_tier, gene_exp, skills_points, potential_points, hp, mp, map_id, position...',
+  `equipment` longtext NOT NULL DEFAULT '{}' COMMENT 'JSON trang bị đang mặc',
+  `inventory` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON danh sách vật phẩm túi đồ',
+  `skills` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON danh sách skill đã học',
+  `potential_stats` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON tiềm năng đã phân bổ',
+  `active_buffs` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON buff đang active',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dữ liệu nhân vật hệ gene thứ 2 — dùng chung player_id với player_data';
+
+--
+-- Đang đổ dữ liệu cho bảng `player2_data`
+--
+
+INSERT INTO `player2_data` (`player_id`, `character_name`, `gender`, `info_char`, `equipment`, `inventory`, `skills`, `potential_stats`, `active_buffs`, `updated_at`) VALUES
+(16, 'thuy123', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Metal\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":\"Wind\",\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"bag_equipped_items\":[],\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\",\"is_level_locked\":false,\"attendance_count\":0,\"last_attendance_date\":\"\",\"quest_completed_count\":0,\"dungeon_best_waves\":{},\"active_quest_id\":-1,\"quest_step\":0,\"quest_progress\":{},\"completed_quests\":[]}', '{}', '[]', '[{\"skill_id\":20,\"current_level\":1}]', '{\"attack\":0,\"hp\":0,\"mp\":0,\"defense\":0,\"gene\":0}', '[]', '2026-05-17 06:54:25');
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `player_action_log`
 --
 
@@ -1136,9 +1334,9 @@ CREATE TABLE `player_data` (
 --
 
 INSERT INTO `player_data` (`player_id`, `character_name`, `gender`, `info_char`, `equipment`, `inventory`, `skills`, `potential_stats`, `updated_at`, `active_buffs`) VALUES
-(16, 'Phong', 'Female', '{\"level\":100,\"experience\":0,\"gold\":0,\"silver\":1000,\"skill_points\":0,\"potential_points\":0,\"element_type\":\"Wind\",\"gene_tier\":5,\"gene_exp\":1000000,\"is_hybrid\":true,\"secondary_element\":\"Metal\",\"secondary_gene_tier\":5,\"secondary_gene_exp\":0,\"hybrid_element_a\":\"Wind\",\"hybrid_element_b\":\"Metal\",\"hybrid_bonus_targets\":\"Wood,Fire\",\"hybrid_immune_elements\":\"Fire,Earth\",\"hybrid_atk_bonus_pct\":0.5,\"hybrid_id\":13,\"hybrid_prefab_path\":\"Prefabs/Player/Hybrid/Hybrid_Metal_Wind\",\"hp\":2335,\"max_hp\":2335,\"mp\":566,\"max_mp\":566,\"attack\":760,\"defense\":200,\"bag_slots\":35,\"bag_equipped_items\":[{\"quick_slot_index\":0,\"item_template_id\":64,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 4\",\"icon_id\":774,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false},{\"quick_slot_index\":2,\"item_template_id\":63,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 3\",\"icon_id\":285,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false},{\"quick_slot_index\":1,\"item_template_id\":61,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 1\",\"icon_id\":283,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false}],\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\",\"is_level_locked\":true}', '{\"weapon\":null,\"helmet\":null,\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":null}', '[{\"slotIndex\":0,\"itemTemplateId\":52,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":1,\"itemTemplateId\":31,\"quantity\":14,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":2,\"itemTemplateId\":11,\"strOptions\":\"\",\"quantity\":10,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":29,\"quantity\":42,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":4,\"itemTemplateId\":2,\"quantity\":43,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":5,\"itemTemplateId\":26,\"quantity\":130,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":6,\"itemTemplateId\":1,\"quantity\":15,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":7,\"itemTemplateId\":27,\"quantity\":55,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":8,\"itemTemplateId\":62,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\",\"isLocked\":false},{\"slotIndex\":9,\"itemTemplateId\":410,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":10,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":4,\"strOptions\":\"1,10\"},{\"slotIndex\":11,\"itemTemplateId\":100,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":12,\"itemTemplateId\":61,\"quantity\":100,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":13,\"itemTemplateId\":37,\"quantity\":15,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":14,\"itemTemplateId\":12,\"strOptions\":\"\",\"quantity\":12,\"upgradeLevel\":0},{\"slotIndex\":15,\"itemTemplateId\":25,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":16,\"itemTemplateId\":107,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":17,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":16,\"strOptions\":\"1,12\"},{\"slotIndex\":18,\"itemTemplateId\":140,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":19,\"itemTemplateId\":141,\"quantity\":1,\"upgradeLevel\":8,\"strOptions\":\"\"},{\"slotIndex\":20,\"itemTemplateId\":203,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":21,\"itemTemplateId\":229,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0}]', '[{\"skill_id\":38,\"current_level\":1}]', '{\"attack\":5,\"hp\":0,\"mp\":0,\"defense\":0,\"gene\":0}', '2026-05-13 00:57:30', '[{\"effectType\":\"HpRestoreOverTime\",\"value\":200,\"iconId\":531,\"name\":\"H\\u1ED3i m\\u00E1u\",\"detail\":\"\\u002B200 HP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-05-13T00:57:27.9496894Z\"}]'),
+(16, 'Phong', 'Female', '{\"level\":100,\"experience\":0,\"gold\":0,\"silver\":1000,\"skill_points\":0,\"potential_points\":0,\"element_type\":\"Wind\",\"gene_tier\":5,\"gene_exp\":1000000,\"is_hybrid\":true,\"secondary_element\":\"Metal\",\"secondary_gene_tier\":5,\"secondary_gene_exp\":0,\"hybrid_element_a\":\"Wind\",\"hybrid_element_b\":\"Metal\",\"hybrid_bonus_targets\":\"Wood,Fire\",\"hybrid_immune_elements\":\"Fire,Earth\",\"hybrid_atk_bonus_pct\":0.5,\"hybrid_id\":13,\"hybrid_prefab_path\":\"Prefabs/Player/Hybrid/Hybrid_Metal_Wind\",\"hp\":2335,\"max_hp\":2335,\"mp\":566,\"max_mp\":566,\"attack\":760,\"defense\":200,\"bag_slots\":35,\"bag_equipped_items\":[{\"quick_slot_index\":0,\"item_template_id\":64,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 4\",\"icon_id\":774,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false},{\"quick_slot_index\":2,\"item_template_id\":63,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 3\",\"icon_id\":285,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false},{\"quick_slot_index\":1,\"item_template_id\":61,\"item_code\":\"\",\"item_name\":\"T\\u00FAi M\\u1EDF R\\u1ED9ng C\\u1EA5p 1\",\"icon_id\":283,\"upgrade_level\":0,\"str_options\":\"\",\"slot_bonus\":5,\"is_locked\":false}],\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\",\"is_level_locked\":true,\"attendance_count\":3,\"last_attendance_date\":\"2026-05-18\",\"quest_completed_count\":0,\"dungeon_best_waves\":{},\"active_quest_id\":1,\"quest_step\":0,\"quest_progress\":{},\"completed_quests\":[]}', '{\"weapon\":{\"itemTemplateId\":203,\"itemCode\":\"\",\"iconId\":\"171\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa Th\\u1EA7n\",\"itemType\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},\"helmet\":null,\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":null}', '[{\"slotIndex\":0,\"itemTemplateId\":52,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":1,\"itemTemplateId\":31,\"quantity\":14,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":2,\"itemTemplateId\":11,\"strOptions\":\"\",\"quantity\":10,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":29,\"quantity\":42,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":4,\"itemTemplateId\":2,\"quantity\":43,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":5,\"itemTemplateId\":26,\"quantity\":130,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":6,\"itemTemplateId\":1,\"quantity\":16,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":7,\"itemTemplateId\":27,\"quantity\":64,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":8,\"itemTemplateId\":62,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\",\"isLocked\":false},{\"slotIndex\":9,\"itemTemplateId\":410,\"quantity\":8,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":10,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":4,\"strOptions\":\"1,10\"},{\"slotIndex\":11,\"itemTemplateId\":100,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":12,\"itemTemplateId\":61,\"quantity\":100,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":13,\"itemTemplateId\":37,\"quantity\":15,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":14,\"itemTemplateId\":12,\"strOptions\":\"\",\"quantity\":12,\"upgradeLevel\":0},{\"slotIndex\":15,\"itemTemplateId\":25,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":16,\"itemTemplateId\":107,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"},{\"slotIndex\":17,\"itemTemplateId\":200,\"quantity\":1,\"upgradeLevel\":16,\"strOptions\":\"1,12\"},{\"slotIndex\":18,\"itemTemplateId\":140,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"3,30\"},{\"slotIndex\":19,\"itemTemplateId\":141,\"quantity\":1,\"upgradeLevel\":8,\"strOptions\":\"\"},{\"slotIndex\":21,\"itemTemplateId\":229,\"strOptions\":\"\",\"quantity\":1,\"upgradeLevel\":0}]', '[{\"skill_id\":38,\"current_level\":1}]', '{\"attack\":5,\"hp\":0,\"mp\":0,\"defense\":0,\"gene\":0}', '2026-05-18 02:09:46', '[{\"effectType\":\"HpRestoreOverTime\",\"value\":200,\"iconId\":531,\"name\":\"H\\u1ED3i m\\u00E1u\",\"detail\":\"\\u002B200 HP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-05-13T00:57:27.9496894Z\"}]'),
 (17, 'kim', 'Male', '{\"level\":1,\"experience\":0,\"gold\":2000000000,\"silver\":699800500,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Metal\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":90,\"max_hp\":100,\"mp\":0,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0}', '{\"weapon\":{\"itemTemplateId\":200,\"itemCode\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"iconId\":\"168\",\"itemName\":\"Ki\\u1EBFm H\\u1ECFa S\\u01A1 C\\u1EA5p\",\"itemType\":1,\"upgradeLevel\":0,\"strOptions\":\"1,10\"},\"helmet\":null,\"armor\":null,\"pants\":null,\"boots\":null,\"accessory\":null}', '[{\"slotIndex\":0,\"itemTemplateId\":161,\"itemCode\":\"\\u0110an C\\u01B0\\u1EDDng Sinh Nh\\u1ECF\",\"iconId\":\"388\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":1,\"itemTemplateId\":11,\"itemCode\":\"B\\u00ECnh HP Nh\\u1ECF\",\"iconId\":\"409\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":2,\"itemTemplateId\":122,\"itemCode\":\"Nh\\u00E2n S\\u00E2m Th\\u1EA7n Th\\u00E1nh\",\"iconId\":\"435\",\"quantity\":2,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":3,\"itemTemplateId\":121,\"itemCode\":\"Nh\\u00E2n S\\u00E2m T\\u00E2m Linh\",\"iconId\":\"434\",\"quantity\":6,\"isEquipped\":false,\"upgradeLevel\":0},{\"slotIndex\":4,\"itemTemplateId\":14,\"itemCode\":\"B\\u00ECnh MP Nh\\u1ECF\",\"iconId\":\"236\",\"quantity\":1,\"isEquipped\":false,\"upgradeLevel\":0}]', '[]', '{}', '2026-04-18 14:33:05', '[{\"effectType\":\"MpRestoreOverTime\",\"value\":150,\"iconId\":538,\"name\":\"H\\u1ED3i linh\",\"detail\":\"\\u002B150 MP/s trong 30 gi\\u00E2y\",\"expireAt\":\"2026-04-17T13:40:18.9788225Z\"}]'),
-(18, 'Hoa', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\"}', '{}', '[]', '[]', '{}', '2026-04-21 17:13:38', '[]'),
+(18, 'Hoa', 'Male', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Fire\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"bag_equipped_items\":[],\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\",\"is_level_locked\":false,\"attendance_count\":0,\"last_attendance_date\":\"\",\"quest_completed_count\":0,\"dungeon_best_waves\":{},\"active_quest_id\":-1,\"quest_step\":0,\"quest_progress\":{},\"completed_quests\":[]}', '{}', '[{\"slotIndex\":0,\"itemTemplateId\":27,\"quantity\":1,\"upgradeLevel\":0,\"strOptions\":\"\"}]', '[]', '{}', '2026-05-16 01:10:06', '[]'),
 (19, 'Thuy', 'Female', '{\"level\":1,\"experience\":0,\"gold\":0,\"silver\":0,\"skill_points\":0,\"potential_points\":5,\"element_type\":\"Water\",\"gene_tier\":1,\"gene_exp\":0,\"is_hybrid\":false,\"secondary_element\":null,\"secondary_gene_tier\":null,\"secondary_gene_exp\":null,\"hybrid_element_a\":null,\"hybrid_element_b\":null,\"hybrid_bonus_targets\":null,\"hybrid_immune_elements\":null,\"hybrid_atk_bonus_pct\":0,\"hybrid_id\":null,\"hybrid_prefab_path\":null,\"hp\":100,\"max_hp\":100,\"mp\":50,\"max_mp\":50,\"attack\":10,\"defense\":0,\"bag_slots\":20,\"bag_equipped_items\":[],\"map_id\":0,\"zone_id\":0,\"position_x\":0,\"position_y\":0,\"daily_wave_entries\":0,\"daily_wave_date\":\"\",\"is_level_locked\":false}', '{}', '[]', '[]', '{}', '2026-05-09 21:01:41', '[]');
 
 -- --------------------------------------------------------
@@ -1156,6 +1354,39 @@ CREATE TABLE `player_equipment` (
   `str_options` varchar(500) NOT NULL DEFAULT '',
   `equipped_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `quest_config`
+--
+
+CREATE TABLE `quest_config` (
+  `id` int(11) NOT NULL,
+  `name` varchar(200) NOT NULL DEFAULT '',
+  `level_need` int(11) NOT NULL DEFAULT 1,
+  `npc_id` int(11) NOT NULL DEFAULT 0 COMMENT 'NPC nhận và giao nhiệm vụ (cùng 1 NPC)',
+  `str1` text NOT NULL COMMENT 'Hội thoại khi nhận nhiệm vụ',
+  `str2` text NOT NULL COMMENT 'Hội thoại khi nộp/hoàn thành nhiệm vụ',
+  `str3` text NOT NULL COMMENT 'Ghi chú / hướng dẫn cho người chơi',
+  `exp_reward` int(11) NOT NULL DEFAULT 0,
+  `gold_reward` int(11) NOT NULL DEFAULT 0,
+  `silver_reward` int(11) NOT NULL DEFAULT 0,
+  `item_reward` varchar(500) NOT NULL DEFAULT '' COMMENT 'Format: itemId@quantity,itemId@quantity',
+  `step` longtext NOT NULL COMMENT 'JSON steps: [{id,name,idMob,idNpc,idItem,idMap,x,y,require,STR}]',
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `quest_config`
+--
+
+INSERT INTO `quest_config` (`id`, `name`, `level_need`, `npc_id`, `str1`, `str2`, `str3`, `exp_reward`, `gold_reward`, `silver_reward`, `item_reward`, `step`, `sort_order`, `is_active`) VALUES
+(1, 'Diệt quái vật đầu tiên', 1, 2, 'Hoan nghênh, dũng sĩ! Ta là Đại Tướng Lan. Khu vực này đang bị Goblin quấy phá.\nNhiệm vụ đầu tiên của ngươi là tiêu diệt 5 con Goblin gần đây.\nNgươi có sẵn sàng nhận nhiệm vụ không?', 'Xuất sắc! Ngươi đã hoàn thành nhiệm vụ. Đây là phần thưởng xứng đáng.', 'Ghi chú: Goblin xuất hiện ở khu vực phía đông bản đồ.', 500, 0, 100, '', '[{\"id\":0,\"name\":\"Tiêu diệt Goblin\",\"idMob\":2,\"idNpc\":-1,\"idItem\":-1,\"idMap\":-1,\"x\":0,\"y\":0,\"require\":5,\"STR\":\"\"}]', 1, 1),
+(2, 'Điều tra nguồn gốc', 5, 2, 'Dũng sĩ, ta cần ngươi làm rõ tại sao Goblin ngày càng xuất hiện nhiều hơn.\nHãy nói chuyện với Hướng Dẫn Viên ở bản đồ tiếp theo,\nsau đó tiêu diệt 10 con Goblin để thu thập manh mối.', 'Tốt lắm! Đúng như ta lo ngại — cần có hành động ngay. Nhận thưởng đi.', 'Ghi chú: Hướng Dẫn Viên ở npc_id=14, bản đồ 1.', 1200, 50, 300, '', '[{\"id\":5,\"name\":\"Nói chuyện với Hướng Dẫn Viên\",\"idMob\":-1,\"idNpc\":14,\"idItem\":-1,\"idMap\":1,\"x\":0,\"y\":0,\"require\":1,\"STR\":\"14@Chào dũng sĩ! Ta đã biết về tình trạng Goblin tăng đột biến. Hãy đi tiêu diệt chúng và thu thập manh mối.\"},{\"id\":0,\"name\":\"Tiêu diệt Goblin để điều tra\",\"idMob\":2,\"idNpc\":-1,\"idItem\":-1,\"idMap\":-1,\"x\":0,\"y\":0,\"require\":10,\"STR\":\"\"}]', 2, 1),
+(3, 'Thu thập nguyên liệu', 10, 14, 'Chào mừng đến với bản đồ mới, dũng sĩ! Ta là Hướng Dẫn Viên.\nTa cần ngươi thu thập 3 mảnh Goblin từ bọn chúng làm nguyên liệu chế tạo.\nNgươi có nhận nhiệm vụ này không?', 'Cảm ơn! Đây chính là nguyên liệu ta cần. Nhận phần thưởng của ngươi.', '', 2000, 100, 500, '', '[{\"id\":1,\"name\":\"Thu thập mảnh Goblin\",\"idMob\":2,\"idNpc\":-1,\"idItem\":1,\"idMap\":-1,\"x\":0,\"y\":0,\"require\":3,\"STR\":\"\"}]', 1, 1),
+(4, 'Tên Quest', 5, 100, 'Hội thoại khi nhận quest', 'Hội thoại khi nộp quest', 'Ghi chú cho player', 1000, 100, 50, '1@5,2@3', '[{\"id\":0,\"name\":\"Diệt 5 quái\",\"idMob\":2,\"require\":5,\"idNpc\":-1,\"idItem\":-1,\"idMap\":-1,\"x\":0,\"y\":0,\"STR\":\"\"}]', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -1227,9 +1458,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `created_at`, `last_login`) VALUES
-(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-05-12 11:14:49'),
+(16, 'phong', 'phong@gmail.com', '$2a$12$IVR2P43G/o.2px.QU691Qe0gsZzuYZoq0QVaKJtRgHCQOk.JrcYbO', '2026-04-01 19:08:48', '2026-05-18 02:08:34'),
 (17, 'kim', 'kim@gmail.com', '$2a$12$G1hEIuasIWxnsJsYm4g.YexoQdX2lV5rucvhH04mRlGJ3Vd4KDkTy', '2026-04-01 19:29:09', '2026-04-18 14:27:47'),
-(18, 'hoa', '123456@gmail.com', '$2a$12$4yyKm9g2cka5cE.4SFlTceYwBq.Lb5EIMOjYB0Lc88sy.qdk3rLcy', '2026-04-17 13:38:03', '2026-04-21 17:12:45'),
+(18, 'hoa', '123456@gmail.com', '$2a$12$4yyKm9g2cka5cE.4SFlTceYwBq.Lb5EIMOjYB0Lc88sy.qdk3rLcy', '2026-04-17 13:38:03', '2026-05-14 01:51:02'),
 (19, 'thuy', 'fl2k3xb@gmail.com', '$2a$12$Y8UiEeKhlpXpBkhaOlhiLeiCBKtiBX163kv7xOJSHmEY27Lh443dC', '2026-05-07 22:41:26', '2026-05-09 21:00:31');
 
 --
@@ -1333,6 +1564,19 @@ ALTER TABLE `item_template`
   ADD KEY `idx_item_level` (`levelNeed`);
 
 --
+-- Chỉ mục cho bảng `leaderboard_cache`
+--
+ALTER TABLE `leaderboard_cache`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Chỉ mục cho bảng `leaderboard_caches`
+--
+ALTER TABLE `leaderboard_caches`
+  ADD PRIMARY KEY (`Id`),
+  ADD KEY `idx_id` (`Id`);
+
+--
 -- Chỉ mục cho bảng `map_config`
 --
 ALTER TABLE `map_config`
@@ -1366,12 +1610,24 @@ ALTER TABLE `npc_dialogue`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_npc_dialogue_key` (`npc_id`,`dialogue_key`);
 
+--
+-- Chỉ mục cho bảng `npc_shop_item`
+--
+ALTER TABLE `npc_shop_item`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_npc_shop_npc` (`npc_id`);
 
 --
 -- Chỉ mục cho bảng `option_template`
 --
 ALTER TABLE `option_template`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Chỉ mục cho bảng `player2_data`
+--
+ALTER TABLE `player2_data`
+  ADD PRIMARY KEY (`player_id`);
 
 --
 -- Chỉ mục cho bảng `player_action_log`
@@ -1399,6 +1655,12 @@ ALTER TABLE `player_equipment`
   ADD UNIQUE KEY `uq_player_slot` (`player_id`,`slot`),
   ADD KEY `idx_pe_player_id` (`player_id`),
   ADD KEY `idx_pe_template_id` (`item_template_id`);
+
+--
+-- Chỉ mục cho bảng `quest_config`
+--
+ALTER TABLE `quest_config`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Chỉ mục cho bảng `skill_template`
@@ -1462,6 +1724,12 @@ ALTER TABLE `item_template`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=411;
 
 --
+-- AUTO_INCREMENT cho bảng `leaderboard_caches`
+--
+ALTER TABLE `leaderboard_caches`
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT cho bảng `map_portal`
 --
 ALTER TABLE `map_portal`
@@ -1477,7 +1745,7 @@ ALTER TABLE `map_spawn_config`
 -- AUTO_INCREMENT cho bảng `npc_config`
 --
 ALTER TABLE `npc_config`
-  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `npc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1000;
 
 --
 -- AUTO_INCREMENT cho bảng `npc_dialogue`
@@ -1485,6 +1753,11 @@ ALTER TABLE `npc_config`
 ALTER TABLE `npc_dialogue`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
+--
+-- AUTO_INCREMENT cho bảng `npc_shop_item`
+--
+ALTER TABLE `npc_shop_item`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT cho bảng `player_action_log`
@@ -1497,6 +1770,12 @@ ALTER TABLE `player_action_log`
 --
 ALTER TABLE `player_equipment`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT cho bảng `quest_config`
+--
+ALTER TABLE `quest_config`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `skill_template`
@@ -1553,6 +1832,17 @@ ALTER TABLE `map_spawn_config`
 ALTER TABLE `npc_dialogue`
   ADD CONSTRAINT `fk_npc_dialogue_npc` FOREIGN KEY (`npc_id`) REFERENCES `npc_config` (`npc_id`) ON DELETE CASCADE;
 
+--
+-- Các ràng buộc cho bảng `npc_shop_item`
+--
+ALTER TABLE `npc_shop_item`
+  ADD CONSTRAINT `fk_npc_shop_npc` FOREIGN KEY (`npc_id`) REFERENCES `npc_config` (`npc_id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `player2_data`
+--
+ALTER TABLE `player2_data`
+  ADD CONSTRAINT `fk_p2d_player` FOREIGN KEY (`player_id`) REFERENCES `player_data` (`player_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `player_action_log`

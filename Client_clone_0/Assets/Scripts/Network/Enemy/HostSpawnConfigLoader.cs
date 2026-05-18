@@ -224,9 +224,13 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     /// <summary>Spawn `entry.count` enemy tại (cx, cy) với spread nhỏ nếu count > 1.</summary>
     private void SpawnEnemyGroup(SpawnEntry entry)
     {
+        // Fallback to singleton instance if serialized reference is null
+        // (e.g. when EnemyPrefabManager from another scene was made DontDestroyOnLoad)
+        if (enemyPrefabManager == null)
+            enemyPrefabManager = EnemyPrefabManager.Instance;
         if (enemyPrefabManager == null)
         {
-            Debug.LogError("[HostSpawnConfigLoader] EnemyPrefabManager chưa được gán!");
+            Debug.LogError("[HostSpawnConfigLoader] EnemyPrefabManager chưa được gán và Instance cũng null!");
             return;
         }
 

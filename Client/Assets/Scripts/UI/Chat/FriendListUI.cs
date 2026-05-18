@@ -68,6 +68,7 @@ public class FriendListUI : MonoBehaviour
     private void Awake()
     {
         _rectTransform = transform as RectTransform;
+        UIPanelManager.Register(gameObject, () => HidePanel("UIPanelManager"));
         UIDraggablePanel.Ensure(gameObject);
 
         closeButton?.onClick.AddListener(() => HidePanel("CloseButton"));
@@ -187,7 +188,9 @@ public class FriendListUI : MonoBehaviour
         {
             if (!gameObject.activeSelf)
             {
+                UIPanelManager.CloseOthers(gameObject);
                 gameObject.SetActive(true);
+                UIPanelManager.NotifyOpened(gameObject);
             }
             else
             {
@@ -201,6 +204,7 @@ public class FriendListUI : MonoBehaviour
 
         if (gameObject.activeSelf)
             gameObject.SetActive(false);
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     // ── Tab switching ─────────────────────────────────────────────────────────

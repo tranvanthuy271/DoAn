@@ -63,6 +63,7 @@ public class InformationPanelController : MonoBehaviour
 
     private void Awake()
     {
+        UIPanelManager.Register(gameObject, HideAll);
         ResolveReferences();
         RegisterButtonListeners();
     }
@@ -75,6 +76,7 @@ public class InformationPanelController : MonoBehaviour
 
     private void OnDestroy()
     {
+        UIPanelManager.Unregister(gameObject);
         UnregisterButtonListeners();
     }
 
@@ -117,6 +119,7 @@ public class InformationPanelController : MonoBehaviour
     /// </summary>
     public void ShowPanel()
     {
+        UIPanelManager.CloseOthers(gameObject);
         ResolveReferences();
         Debug.Log("[InformationPanelController] ShowPanel() được gọi");
 
@@ -124,6 +127,7 @@ public class InformationPanelController : MonoBehaviour
             Debug.LogError("[InformationPanelController] characterPanel là NULL! Kiểm tra Inspector.");
 
         SwitchTo(TopTab.ThongTin);
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     /// <summary>
@@ -139,6 +143,7 @@ public class InformationPanelController : MonoBehaviour
         _activeTab = TopTab.ThongTin;
         SetBtnColor(btnThongTin, false);
         SetBtnColor(btnTuiDo,    false);
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     /// <summary>Trả về true nếu bất kỳ panel nào đang hiện.</summary>

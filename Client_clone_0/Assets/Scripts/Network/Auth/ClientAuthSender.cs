@@ -15,6 +15,7 @@ public class ClientAuthSender : NetworkBehaviour
     internal static bool shouldSendAuth = false;
     internal static string pendingAuthToken = "";
     internal static int pendingAuthUserId = 0;
+    internal static int pendingAuthGeneSlot = 1;
     internal static float authScheduledTime = 0f;
     internal static ClientAuthSender pendingAuthInstance = null;
     
@@ -35,14 +36,17 @@ public class ClientAuthSender : NetworkBehaviour
 
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
 
         // Use LocalClientId for accurate client ID (the callback parameter 'clientId' may be 0 on client side)
         ulong actualClientId = NetworkManager.Singleton?.LocalClientId ?? clientId;
 
         Debug.Log($"[ClientAuthSender] ===== CLIENT SENDING AUTH =====");
+        Debug.Log($"==== [GENE2_DEBUG] ClientAuthSender: ACTIVE_GENE_SLOT = {geneSlot} ====");
         Debug.Log($"[ClientAuthSender] Callback ClientId param: {clientId}");
         Debug.Log($"[ClientAuthSender] LocalClientId (actual): {actualClientId}");
         Debug.Log($"[ClientAuthSender] UserId: {userId}");
+        Debug.Log($"[ClientAuthSender] GeneSlot: {geneSlot}");
         Debug.Log($"[ClientAuthSender] Token length: {token?.Length ?? 0}");
         Debug.Log($"[ClientAuthSender] Token (first 50 chars): {(token?.Length > 50 ? token.Substring(0, 50) + "..." : token)}");
 
@@ -67,7 +71,7 @@ public class ClientAuthSender : NetworkBehaviour
             Debug.Log("[ClientAuthSender] 🚀 Calling SendAuthNow() IMMEDIATELY (NO DELAY)");
             Debug.Log($"[ClientAuthSender] Reason: Update() only runs once during Netcode connection handshake");
             
-            senderInstance.SendAuthNow(token, userId);
+            senderInstance.SendAuthNow(token, userId, geneSlot);
             hasSentAuth = true;
         }
         else
@@ -209,7 +213,7 @@ public class ClientAuthSender : NetworkBehaviour
             Debug.Log("========================================\n");
             
             // Send immediately
-            SendAuthNow(pendingAuthToken, pendingAuthUserId);
+            SendAuthNow(pendingAuthToken, pendingAuthUserId, pendingAuthGeneSlot);
             
             // Clear flags
             shouldSendAuth = false;
@@ -226,7 +230,7 @@ public class ClientAuthSender : NetworkBehaviour
     /// <summary>
     /// Actually send the ServerRpc - now called IMMEDIATELY (no delay)
     /// </summary>
-    public void SendAuthNow(string token, int userId)
+    public void SendAuthNow(string token, int userId, int geneSlot = 1)
     {
         Debug.Log("[ClientAuthSender] ===== SENDING SERVERRPC NOW =====");
         Debug.Log($"[ClientAuthSender] NetworkObject is spawned: {IsSpawned}");
@@ -258,7 +262,7 @@ public class ClientAuthSender : NetworkBehaviour
         {
             Debug.Log("[ClientAuthSender] 📤📤📤 CALLING SendAuthServerRpc() 📤📤📤");
             
-            SendAuthServerRpc(token, userId);
+            SendAuthServerRpc(token, userId, geneSlot);
             
             Debug.Log("[ClientAuthSender] ✓✓✓ SendAuthServerRpc() CALLED SUCCESSFULLY ✓✓✓");
             Debug.Log("[ClientAuthSender] ⚠️ Now check HOST console for 'SERVERRPC RECEIVED ON HOST' message!");
@@ -278,7 +282,7 @@ public class ClientAuthSender : NetworkBehaviour
     // RequireOwnership = false để client có thể gọi ServerRpc trên object do server spawn (server-owned).
     // Quan trọng: phải dùng SenderClientId thay vì OwnerClientId để map đúng clientId.
     [ServerRpc(RequireOwnership = false)]
-    private void SendAuthServerRpc(string token, int userId, ServerRpcParams rpcParams = default)
+    private void SendAuthServerRpc(string token, int userId, int geneSlot, ServerRpcParams rpcParams = default)
     {
         Debug.Log("\n\n\n");
         Debug.Log("█████████████████████████████████████████████████████");
@@ -346,7 +350,8 @@ public class ClientAuthSender : NetworkBehaviour
                     Debug.LogError($"[ClientAuthSender] ✗ ClientId: {senderClientId}");
                     Debug.LogError($"[ClientAuthSender] ✗ UserId: {userId}");
                     Debug.LogError($"[ClientAuthSender] ✗ Error: {error}");
-                }
+                },
+                geneSlot: geneSlot
             );
         }
         else
@@ -377,6 +382,7 @@ public class ClientAuthRetryHelper : MonoBehaviour
         
         // Mỗi lần StartRetry coi như một attempt mới, không phụ thuộc hasSentAuth
         ClientAuthSender.Reset();
+        // Preserve gene slot that was already stored by SendAuthAfterConnection
         StartCoroutine(RetryFindNetworkObject());
     }
 

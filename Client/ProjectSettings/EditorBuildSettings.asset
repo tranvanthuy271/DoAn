@@ -209,4 +209,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Map99.unity
     guid: 81d26323be954a16b2ea97ca52a8b794
+  - enabled: 1
+    path: Assets/Scenes/SelectGene.unity
+    guid: 03195e939b9af3f4e8b7af3edc11d7d9
   m_configObjects: {}

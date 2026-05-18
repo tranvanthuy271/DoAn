@@ -59,6 +59,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        UIPanelManager.Register(gameObject, Close);
         if (mainPanel) mainPanel.SetActive(false);
     }
 
@@ -164,8 +165,10 @@ public class NpcDynamicMenuUI : MonoBehaviour
         }
 
         // Hiện panel
+        UIPanelManager.CloseOthers(gameObject);
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         if (mainPanel) mainPanel.SetActive(true);
+        UIPanelManager.NotifyOpened(gameObject);
 
         // Diagnostics: log trạng thái các component quan trọng sau khi open
         var scrollRect = GetComponentInChildren<ScrollRect>(true);
@@ -198,6 +201,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         _currentInteraction = null;
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, false);
         Debug.Log($"{LogPrefix} Close.");
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     // ── Rows ───────────────────────────────────────────────────────────

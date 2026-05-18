@@ -107,6 +107,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
 
         if (string.IsNullOrEmpty(token) || userId == 0)
         {
@@ -121,14 +122,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] OwnerClientId: {OwnerClientId}");
         Debug.Log($"[NetworkPlayerDataSync] Calling SendAuthServerRpc...");
 
-        SendAuthServerRpc(token, userId);
+        SendAuthServerRpc(token, userId, geneSlot);
     }
 
     /// <summary>
     /// ServerRpc: Nhận auth từ client và load player data
     /// </summary>
     [ServerRpc(RequireOwnership = true)]
-    private void SendAuthServerRpc(string token, int userId, ServerRpcParams rpcParams = default)
+    private void SendAuthServerRpc(string token, int userId, int geneSlot, ServerRpcParams rpcParams = default)
     {
         var senderClientId = rpcParams.Receive.SenderClientId;
 
@@ -171,7 +172,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
                     Debug.LogError($"[NetworkPlayerDataSync] ✗ ClientId: {senderClientId}");
                     Debug.LogError($"[NetworkPlayerDataSync] ✗ UserId: {userId}");
                     Debug.LogError($"[NetworkPlayerDataSync] ✗ Error: {error}");
-                }
+                },
+                geneSlot: geneSlot
             );
         }
         else

@@ -75,6 +75,7 @@ public class LeaderboardPanelUI : MonoBehaviour
         }
 
         closeButton?.onClick.AddListener(Close);
+        UIPanelManager.Register(gameObject, Close);
     }
 
     private void OnEnable()
@@ -89,9 +90,18 @@ public class LeaderboardPanelUI : MonoBehaviour
         InputManager.Instance?.SetGameplayInputBlocked(BlockKey, false);
     }
 
-    public void Open() => gameObject.SetActive(true);
+    public void Open()
+    {
+        UIPanelManager.CloseOthers(gameObject);
+        gameObject.SetActive(true);
+        UIPanelManager.NotifyOpened(gameObject);
+    }
 
-    public void Close() => gameObject.SetActive(false);
+    public void Close()
+    {
+        gameObject.SetActive(false);
+        UIPanelManager.NotifyClosed(gameObject);
+    }
 
     public void SelectTab(int idx, bool forceReload = false)
     {

@@ -1,0 +1,26 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Gắn vào bất kỳ Button nào trong scene để mở Cửa Hàng Tiện Ích (NPC 999).
+/// Không cần UtilityDrawerAutoInstaller.
+/// </summary>
+[RequireComponent(typeof(Button))]
+public class UtilityShopButton : MonoBehaviour
+{
+    private void Start()
+    {
+        GetComponent<Button>().onClick.AddListener(OpenShop);
+    }
+
+    private void OpenShop()
+    {
+        var ui = NpcMenuUI.GetOrFind();
+        if (ui == null)
+        {
+            Debug.LogWarning("[UtilityShopButton] Không tìm thấy NpcMenuUI trong scene!");
+            return;
+        }
+        ui.OpenUtilityMode();
+    }
+}

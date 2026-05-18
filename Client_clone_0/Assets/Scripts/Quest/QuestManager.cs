@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
+
 /// <summary>
 /// QuestManager — Singleton quản lý trạng thái nhiệm vụ phía client.
 /// Giữ ActiveQuest của người chơi và phát sự kiện khi trạng thái thay đổi.
@@ -23,6 +24,8 @@ public class QuestManager : MonoBehaviour
     // ─── State ────────────────────────────────────────────────────────────────
     public QuestStatusDto ActiveQuest   { get; private set; }
     public List<QuestStatusDto> AllQuests { get; private set; } = new();
+    /// <summary>Quest cần hiển thị trên HUD: active nếu có, không thì quest available đầu tiên.</summary>
+    public QuestStatusDto HintQuest     { get; private set; }
 
     /// <summary>Phát khi danh sách / tiến trình nhiệm vụ thay đổi.</summary>
     public event Action OnQuestListChanged;
@@ -56,6 +59,15 @@ public class QuestManager : MonoBehaviour
     public void CompleteQuest(int questId, Action<bool, string> onDone = null)
     {
         StartCoroutine(CompleteQuestRoutine(questId, onDone));
+    }
+
+    /// <summary>
+    /// Tải trạng thái tổng hợp: quest đang active hoặc quest available đầu tiên.
+    /// Dùng để cập nhật HintQuest cho QuestHudWidget.
+    /// </summary>
+    public void RefreshPlayerOverview(Action onDone = null)
+    {
+        StartCoroutine(LoadPlayerOverviewRoutine(onDone));
     }
 
     // ─── Coroutines ──────────────────────────────────────────────────────────
@@ -95,7 +107,7 @@ public class QuestManager : MonoBehaviour
 
         bool ok = req.result == UnityWebRequest.Result.Success;
         string msg = ok ? "" : (req.downloadHandler?.text ?? req.error);
-        if (ok) StartCoroutine(LoadQuestListRoutine(0, null)); // refresh state
+        if (ok) { StartCoroutine(LoadQuestListRoutine(0, null)); RefreshPlayerOverview(); }
         onDone?.Invoke(ok, msg);
     }
 
@@ -113,8 +125,46 @@ public class QuestManager : MonoBehaviour
 
         bool ok = req.result == UnityWebRequest.Result.Success;
         string msg = ok ? "" : (req.downloadHandler?.text ?? req.error);
-        if (ok) StartCoroutine(LoadQuestListRoutine(0, null)); // refresh state
+        if (ok) { StartCoroutine(LoadQuestListRoutine(0, null)); RefreshPlayerOverview(); }
         onDone?.Invoke(ok, msg);
+    }
+
+    private IEnumerator LoadPlayerOverviewRoutine(Action onDone)
+    {
+        using var req = UnityWebRequest.Get(ApiUrl("quest/player-overview"));
+        req.SetRequestHeader("Authorization", $"Bearer {JwtToken}");
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogWarning($"[QuestManager] PlayerOverview failed: {req.error}");
+            onDone?.Invoke();
+            yield break;
+        }
+
+        string text = req.downloadHandler.text?.Trim();
+        if (string.IsNullOrEmpty(text) || text == "null")
+        {
+            HintQuest   = null;
+            ActiveQuest = null;
+            OnQuestListChanged?.Invoke();
+            onDone?.Invoke();
+            yield break;
+        }
+
+        try
+        {
+            var dto = JsonUtility.FromJson<QuestStatusDto>(text);
+            HintQuest = dto;
+            if (dto?.status == "active") ActiveQuest = dto;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[QuestManager] ParsePlayerOverview error: {ex.Message}");
+        }
+
+        OnQuestListChanged?.Invoke();
+        onDone?.Invoke();
     }
 
     // ─── JSON Parsing ─────────────────────────────────────────────────────────
@@ -138,21 +188,30 @@ public class QuestManager : MonoBehaviour
     [Serializable]
     public class QuestStatusDto
     {
-        public int    id;
+        public int    quest_id;
         public string name;
-        public string description;
         public int    level_need;
-        public int    npc_giver_id;
-        public int    npc_receiver_id;
-        public string status;               // "available","active","completed","locked"
+        public int    npc_id;
+        public string npc_name;                 // tên NPC để hiển thị gợi ý HUD
+        public string str1;                     // hội thoại nhận quest
+        public string str2;                     // hội thoại nộp quest
+        public string str3;                     // ghi chú / hint
+        public int    exp_reward;
+        public int    gold_reward;
+        public int    silver_reward;
+        public string item_reward;
+        public string status;                   // "available","active","completed","locked"
         public int    current_step_index;
-        public string progress_json;
-        public string steps_json;           // raw JSON from server
-        public string rewards_json;         // raw JSON from server
+        public string steps_json;               // raw JSON array string
+        public string quest_progress_json;      // {"0":3,"1":0} — tiến trình từng bước
+        public int    npc_map_id;               // map của NPC nhận thưởng (-1 = không xác định)
+        public float  npc_pos_x;               // toạ độ X của NPC
+        public float  npc_pos_y;               // toạ độ Y của NPC
 
         // Convenience helpers
         public bool IsActive    => status == "active";
         public bool IsCompleted => status == "completed";
+        public bool IsAvailable => status == "available";
     }
 
     [Serializable]

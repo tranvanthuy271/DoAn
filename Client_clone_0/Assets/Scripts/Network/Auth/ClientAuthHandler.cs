@@ -2,8 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 
 /// <summary>
-/// Client-side: Gửi JWT token và user_id lên server sau khi connect thành công
-/// Có thể dùng như NetworkBehaviour (attach vào NetworkObject) hoặc MonoBehaviour (gọi trực tiếp)
+/// Client-side: Gá»­i JWT token vÃ  user_id lÃªn server sau khi connect thÃ nh cÃ´ng
+/// CÃ³ thá»ƒ dÃ¹ng nhÆ° NetworkBehaviour (attach vÃ o NetworkObject) hoáº·c MonoBehaviour (gá»i trá»±c tiáº¿p)
 /// </summary>
 public class ClientAuthHandler : NetworkBehaviour
 {
@@ -14,7 +14,7 @@ public class ClientAuthHandler : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
-        // Chỉ client owner mới gửi auth
+        // Chá»‰ client owner má»›i gá»­i auth
         if (IsOwner && IsClient)
         {
             SendAuthToServer();
@@ -22,7 +22,7 @@ public class ClientAuthHandler : NetworkBehaviour
     }
 
     /// <summary>
-    /// Static method để gửi auth từ bất kỳ đâu (không cần NetworkObject)
+    /// Static method Ä‘á»ƒ gá»­i auth tá»« báº¥t ká»³ Ä‘Ã¢u (khÃ´ng cáº§n NetworkObject)
     /// </summary>
     public static void SendAuthAfterConnection(ulong clientId)
     {
@@ -43,12 +43,12 @@ public class ClientAuthHandler : NetworkBehaviour
 
         // Debug.Log($"[ClientAuthHandler] Sending auth to server via static method: userId={userId}, token length={token.Length}");
 
-        // Tạo temporary NetworkObject để gửi ServerRpc
+        // Táº¡o temporary NetworkObject Ä‘á»ƒ gá»­i ServerRpc
         GameObject tempObj = new GameObject("TempAuthHandler");
         ClientAuthHandler handler = tempObj.AddComponent<ClientAuthHandler>();
         instance = handler;
         
-        // Spawn NetworkObject để có thể gửi ServerRpc
+        // Spawn NetworkObject Ä‘á»ƒ cÃ³ thá»ƒ gá»­i ServerRpc
         NetworkObject netObj = tempObj.AddComponent<NetworkObject>();
         netObj.SpawnWithOwnership(clientId);
         
@@ -56,7 +56,7 @@ public class ClientAuthHandler : NetworkBehaviour
     }
 
     /// <summary>
-    /// Gửi JWT token và user_id lên server để verify và load player data
+    /// Gá»­i JWT token vÃ  user_id lÃªn server Ä‘á»ƒ verify vÃ  load player data
     /// </summary>
     private void SendAuthToServer()
     {
@@ -67,6 +67,7 @@ public class ClientAuthHandler : NetworkBehaviour
 
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
 
         if (string.IsNullOrEmpty(token) || userId == 0)
         {
@@ -74,20 +75,20 @@ public class ClientAuthHandler : NetworkBehaviour
             return;
         }
 
-        // Debug.Log($"[ClientAuthHandler] Sending auth to server: userId={userId}, token length={token.Length}");
-        SendAuthServerRpc(token, userId);
+        Debug.Log($"==== [GENE2_DEBUG] ClientAuthHandler.SendAuthToServer: ACTIVE_GENE_SLOT = {geneSlot} ====");
+        SendAuthServerRpc(token, userId, geneSlot);
         hasSentAuth = true;
     }
 
     /// <summary>
-    /// ServerRpc: Gửi token và user_id lên server
+    /// ServerRpc: Gá»­i token vÃ  user_id lÃªn server
     /// </summary>
     [ServerRpc(RequireOwnership = true)]
-    private void SendAuthServerRpc(string token, int userId)
+    private void SendAuthServerRpc(string token, int userId, int geneSlot)
     {
-        // Debug.Log($"[ClientAuthHandler] Server received auth from client {OwnerClientId}: userId={userId}");
+        Debug.Log($"[ClientAuthHandler] Server received auth from client {OwnerClientId}: userId={userId} geneSlot={geneSlot}");
 
-        // Verify token và load player data
+        // Verify token vÃ  load player data
         if (ServerPlayerDataManager.Instance != null)
         {
             ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
@@ -95,17 +96,21 @@ public class ClientAuthHandler : NetworkBehaviour
                 userId,
                 onSuccess: (playerData) =>
                 {
-                    // Debug.Log($"[ClientAuthHandler] ✓ Player data loaded for client {OwnerClientId}: {playerData.character_name}");
+                    Debug.Log($"[ClientAuthHandler] âœ“ Player data loaded for client {OwnerClientId}: {playerData.character_name} (slot {geneSlot})");
                 },
                 onError: (error) =>
                 {
-                    // Debug.LogError($"[ClientAuthHandler] ✗ Failed to load player data for client {OwnerClientId}: {error}");
-                }
+                    Debug.LogError($"[ClientAuthHandler] âœ— Failed to load player data for client {OwnerClientId}: {error}");
+                },
+                geneSlot: geneSlot
             );
         }
         else
         {
-            // Debug.LogError("[ClientAuthHandler] ServerPlayerDataManager.Instance is null!");
+            Debug.LogError("[ClientAuthHandler] ServerPlayerDataManager.Instance is null!");
         }
     }
 }
+
+// FORCE_RECOMPILE_082007
+// FORCE_RECOMPILE_082012

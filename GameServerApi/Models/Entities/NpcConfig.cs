@@ -46,7 +46,7 @@ namespace GameServerApi.Models.Entities
         /// <summary>
         /// JSON config shop per NPC (LangLa-style).
         /// Format: {"shop_name":"Binh Khí","items":[{"item_template_id":200,"price_silver":1000,"price_gold":0,"stock":-1,"level_need":1}]}
-        /// null = NPC không có shop hoặc dùng bảng npc_shop_item cũ.
+        /// null = NPC không có shop.
         /// idClass: 0=Tất Cả 1=Hỏa 2=Thủy 3=Thổ 4=Lôi(Kim) 5=Mộc 6=Phong
         /// </summary>
         [Column("shop_items_json")]

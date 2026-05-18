@@ -12,6 +12,7 @@ namespace GameServerApi.Data
 
         public DbSet<User> Users => Set<User>();
         public DbSet<PlayerData> PlayerData => Set<PlayerData>();
+        public DbSet<Player2Data> Player2Data => Set<Player2Data>();
         public DbSet<ExpRequirement> ExpRequirements => Set<ExpRequirement>();
         public DbSet<MapConfig> MapConfigs => Set<MapConfig>();
         public DbSet<Enemy> Enemies => Set<Enemy>();
@@ -47,12 +48,14 @@ namespace GameServerApi.Data
         public DbSet<GameServerApi.Models.Entities.DungeonWaveEntry>   DungeonWaveEntries   => Set<GameServerApi.Models.Entities.DungeonWaveEntry>();
         public DbSet<GameServerApi.Models.Entities.DungeonWaveSession> DungeonWaveSessions  => Set<GameServerApi.Models.Entities.DungeonWaveSession>();
 
-        // ── Quest system ──────────────────────────────────────────────────────
+        // ── Quest system (1 bảng config; tiến trình lưu trong player_data.info_char) ──
         public DbSet<GameServerApi.Models.Entities.QuestConfig>  QuestConfigs  => Set<GameServerApi.Models.Entities.QuestConfig>();
-        public DbSet<GameServerApi.Models.Entities.PlayerQuest>  PlayerQuests  => Set<GameServerApi.Models.Entities.PlayerQuest>();
 
-        // ── Leaderboard cache (1 row per category) ────────────────────────────────
-        public DbSet<GameServerApi.Models.Entities.LeaderboardCache> LeaderboardCaches => Set<GameServerApi.Models.Entities.LeaderboardCache>();
+        // ── Leaderboard tables ────────────────────────────────────────────────
+        public DbSet<GameServerApi.Models.Entities.LeaderboardCache>    LeaderboardCaches    => Set<GameServerApi.Models.Entities.LeaderboardCache>();
+        public DbSet<GameServerApi.Models.Entities.PlayerQuestLog>      PlayerQuestLogs      => Set<GameServerApi.Models.Entities.PlayerQuestLog>();
+        public DbSet<GameServerApi.Models.Entities.PlayerAttendance>    PlayerAttendances    => Set<GameServerApi.Models.Entities.PlayerAttendance>();
+        public DbSet<GameServerApi.Models.Entities.PlayerDungeonRecord> PlayerDungeonRecords => Set<GameServerApi.Models.Entities.PlayerDungeonRecord>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +110,23 @@ namespace GameServerApi.Data
                 entity.Property(p => p.PotentialStatsJson).HasColumnName("potential_stats");
                 entity.Property(p => p.ActiveBuffsJson).HasColumnName("active_buffs");
 
+                entity.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+            });
+
+            modelBuilder.Entity<Player2Data>(entity =>
+            {
+                entity.ToTable("player2_data");
+                entity.HasKey(p => p.PlayerId);
+
+                entity.Property(p => p.PlayerId).HasColumnName("player_id");
+                entity.Property(p => p.CharacterName).HasColumnName("character_name");
+                entity.Property(p => p.Gender).HasColumnName("gender");
+                entity.Property(p => p.InfoCharJson).HasColumnName("info_char");
+                entity.Property(p => p.EquipmentJson).HasColumnName("equipment");
+                entity.Property(p => p.InventoryJson).HasColumnName("inventory");
+                entity.Property(p => p.SkillsJson).HasColumnName("skills");
+                entity.Property(p => p.PotentialStatsJson).HasColumnName("potential_stats");
+                entity.Property(p => p.ActiveBuffsJson).HasColumnName("active_buffs");
                 entity.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             });
 
@@ -569,15 +589,44 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.PlayerId);
             });
 
-            // ── Leaderboard cache ───────────────────────────────────────────────
-            modelBuilder.Entity<GameServerApi.Models.Entities.LeaderboardCache>(entity =>
+            // ── Leaderboard: player_quest_log ─────────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.PlayerQuestLog>(entity =>
             {
-                entity.ToTable("leaderboard_cache");
+                entity.ToTable("player_quest_log");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
-                entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100);
-                entity.Property(e => e.ListJson).HasColumnName("list");
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.CharacterId).HasColumnName("character_id");
+                entity.Property(e => e.QuestId).HasColumnName("quest_id");
+                entity.Property(e => e.QuestName).HasColumnName("quest_name").HasMaxLength(255);
+                entity.Property(e => e.CompletedAt).HasColumnName("completed_at");
+                entity.HasIndex(e => e.CharacterId).HasDatabaseName("idx_pql_character");
+            });
+
+            // ── Leaderboard: player_attendance ────────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.PlayerAttendance>(entity =>
+            {
+                entity.ToTable("player_attendance");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.CharacterId).HasColumnName("character_id");
+                entity.Property(e => e.CheckDate).HasColumnName("check_date").HasColumnType("date");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.HasIndex(e => new { e.CharacterId, e.CheckDate }).IsUnique()
+                      .HasDatabaseName("uq_attendance");
+            });
+
+            // ── Leaderboard: player_dungeon_record ────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.PlayerDungeonRecord>(entity =>
+            {
+                entity.ToTable("player_dungeon_record");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(e => e.CharacterId).HasColumnName("character_id");
+                entity.Property(e => e.DungeonId).HasColumnName("dungeon_id");
+                entity.Property(e => e.BestWave).HasColumnName("best_wave");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.HasIndex(e => new { e.CharacterId, e.DungeonId }).IsUnique()
+                      .HasDatabaseName("uq_dungeon_record");
             });
         }
     }

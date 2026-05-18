@@ -65,6 +65,7 @@ public class ChatPanelUI : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        UIPanelManager.Register(gameObject, () => gameObject.SetActive(false));
 
         sendButton?.onClick.AddListener(OnSendClicked);
         closeButton?.onClick.AddListener(() => gameObject.SetActive(false));
@@ -99,6 +100,8 @@ public class ChatPanelUI : MonoBehaviour
     private void OnEnable()
     {
         // Setup tabs luôn chạy — không phụ thuộc ChatManager
+        UIPanelManager.CloseOthers(gameObject);
+        UIPanelManager.NotifyOpened(gameObject);
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, true);
         InputManager.Instance?.CancelAutoMove();
         ResolveFriendPanel();
@@ -110,6 +113,7 @@ public class ChatPanelUI : MonoBehaviour
 
     private void OnDisable()
     {
+        UIPanelManager.NotifyClosed(gameObject);
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, false);
         InputManager.Instance?.SetInputEnabled(true);
 
@@ -123,6 +127,7 @@ public class ChatPanelUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        UIPanelManager.Unregister(gameObject);
         if (Instance == this)
             Instance = null;
     }

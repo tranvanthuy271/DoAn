@@ -123,8 +123,10 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ZonePlayerSessionManager.Instance != null ? ZonePlayerSessionManager.Instance.GetClientGeneSlot(cid) : 1;
+        string endpoint = geneSlot == 2 ? $"{ApiBase}/player/{pid}/skills2" : $"{ApiBase}/player/{pid}/skills";
         StartCoroutine(DoGet(
-            $"{ApiBase}/player/{pid}/skills", jwt,
+            endpoint, jwt,
             json => SendSkillsClientRpc(json, Target(cid)),
             err  => SendSkillsClientRpc(ErrorJson(err), Target(cid))
         ));
@@ -156,13 +158,14 @@ public class GameplayCommandService : NetworkBehaviour
     /// Server chủ động đẩy skill data về client ngay khi player spawn.
     /// Gọi từ ZonePlayerSessionManager sau khi spawn xong — client không cần request riêng.
     /// </summary>
-    public void PushSkillsToClient(ulong clientId, int playerId, string jwt)
+    public void PushSkillsToClient(ulong clientId, int playerId, string jwt, int geneSlot = 1)
     {
         if (!IsServer) return;
+        string endpoint = geneSlot == 2 ? $"{ApiBase}/player/{playerId}/skills2" : $"{ApiBase}/player/{playerId}/skills";
         StartCoroutine(DoGet(
-            $"{ApiBase}/player/{playerId}/skills", jwt,
+            endpoint, jwt,
             json => SendInitialSkillsClientRpc(json, Target(clientId)),
-            err  => Debug.LogWarning($"[GameplayCmd] PushSkillsToClient pid={playerId}: {err}")
+            err  => Debug.LogWarning($"[GameplayCmd] PushSkillsToClient pid={playerId} geneSlot={geneSlot}: {err}")
         ));
     }
 

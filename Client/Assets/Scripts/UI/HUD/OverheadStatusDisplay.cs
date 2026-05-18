@@ -124,9 +124,6 @@ public class OverheadStatusDisplay : MonoBehaviour
         if (_debuffManager != null)
         {
             var debuffs = _debuffManager.ActiveDebuffs;
-            bool hasAnyDebuff = false;
-            float longestDebuffRemaining = 0f;
-            Color strongestDebuffColor = debuffRingColor;
 
             for (int i = 0; i < debuffs.Count; i++)
             {
@@ -139,12 +136,6 @@ public class OverheadStatusDisplay : MonoBehaviour
                 icon.UpdateCountdown(remain);
                 SetRingColor(icon, debuffRingColor);
 
-                hasAnyDebuff = true;
-                if (remain > longestDebuffRemaining)
-                {
-                    longestDebuffRemaining = remain;
-                    // Lấy màu của debuff config nếu muốn customize per-debuff
-                }
             }
 
         }

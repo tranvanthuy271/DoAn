@@ -2716,6 +2716,457 @@ namespace GameServerApi.Controllers
                 }
             });
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // GENE SLOT 2 ENDPOINTS
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// GET /api/player/{playerId}/gene-slots
+        /// Trả về thông tin tóm tắt của cả 2 slot gene để hiển thị trên màn SelectGene.
+        /// Slot 1 luôn tồn tại; slot 2 tồn tại khi secondary_element đã được mở khoá.
+        /// </summary>
+        [HttpGet("{playerId}/gene-slots")]
+        public async Task<IActionResult> GetGeneSlots(int playerId)
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+            if (userIdClaim == null) return Unauthorized();
+            int userId = int.Parse(userIdClaim.Value);
+
+            var player1 = await _db.PlayerData.FindAsync(userId);
+            if (player1 == null) return NotFound("Player không tồn tại.");
+
+            var info1 = player1.GetInfoChar();
+            bool gene2Unlocked = !string.IsNullOrEmpty(info1.SecondaryElement);
+
+            var slot1 = new
+            {
+                slot = 1,
+                exists = true,
+                is_unlocked = true,
+                character_name = player1.CharacterName,
+                gender = player1.Gender,
+                level = info1.Level,
+                element_type = info1.ElementType,
+                gene_tier = info1.GeneTier,
+                is_hybrid = info1.IsHybrid
+            };
+
+            object slot2;
+            if (gene2Unlocked)
+            {
+                var player2 = await _db.Player2Data.FindAsync(userId);
+                if (player2 != null)
+                {
+                    var info2 = player2.GetInfoChar();
+                    slot2 = new
+                    {
+                        slot = 2,
+                        exists = true,
+                        is_unlocked = true,
+                        character_name = player2.CharacterName,
+                        gender = player2.Gender,
+                        level = info2.Level,
+                        element_type = info2.ElementType,
+                        gene_tier = info2.GeneTier,
+                        is_hybrid = info2.IsHybrid
+                    };
+                }
+                else
+                {
+                    slot2 = new
+                    {
+                        slot = 2,
+                        exists = false,
+                        is_unlocked = true,
+                        character_name = "",
+                        gender = "",
+                        level = 0,
+                        element_type = info1.SecondaryElement,
+                        gene_tier = 0,
+                        is_hybrid = false
+                    };
+                }
+            }
+            else
+            {
+                slot2 = new
+                {
+                    slot = 2,
+                    exists = false,
+                    is_unlocked = false,
+                    character_name = "",
+                    gender = "",
+                    level = 0,
+                    element_type = (string?)null,
+                    gene_tier = 0,
+                    is_hybrid = false
+                };
+            }
+
+            return Ok(new { slot1, slot2, gene2_unlocked = gene2Unlocked });
+        }
+
+        /// <summary>
+        /// POST /api/player/create2
+        /// Tạo nhân vật hệ gene thứ 2. Chỉ được phép khi secondary_element đã mở.
+        /// Body: { "character_name": "...", "element_type": "..." }
+        /// </summary>
+        [HttpPost("create2")]
+        public async Task<IActionResult> CreatePlayer2([FromBody] JsonElement body)
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+            if (userIdClaim == null) return Unauthorized();
+            int userId = int.Parse(userIdClaim.Value);
+
+            // Kiểm tra player1 tồn tại và đã mở gene 2
+            var player1 = await _db.PlayerData.FindAsync(userId);
+            if (player1 == null) return NotFound("Player không tồn tại.");
+
+            var info1 = player1.GetInfoChar();
+            if (string.IsNullOrEmpty(info1.SecondaryElement))
+                return BadRequest("Chưa mở khoá hệ gene thứ 2. Cần đạt đủ điều kiện trước.");
+
+            // Không tạo lại nếu đã tồn tại
+            var existing = await _db.Player2Data.FindAsync(userId);
+            if (existing != null)
+                return Conflict("Nhân vật hệ gene 2 đã tồn tại.");
+
+            if (!body.TryGetProperty("character_name", out var nameProp) || string.IsNullOrWhiteSpace(nameProp.GetString()))
+                return BadRequest("Thiếu character_name.");
+
+            if (!body.TryGetProperty("element_type", out var elemProp) || string.IsNullOrWhiteSpace(elemProp.GetString()))
+                return BadRequest("Thiếu element_type.");
+
+            string characterName = nameProp.GetString()!.Trim();
+            string elementType = elemProp.GetString()!.Trim();
+
+            if (characterName.Length < 3 || characterName.Length > 20)
+                return BadRequest("Tên nhân vật phải từ 3-20 ký tự.");
+
+            // Kiểm tra trùng tên trong player_data VÀ player2_data
+            bool nameTaken = await _db.PlayerData.AnyAsync(p => p.CharacterName == characterName)
+                          || await _db.Player2Data.AnyAsync(p => p.CharacterName == characterName);
+            if (nameTaken) return Conflict("Tên nhân vật đã tồn tại. Vui lòng chọn tên khác.");
+
+            // Xác định gender từ element_type (giống CreatePlayer)
+            string gender = elementType.ToLower() switch
+            {
+                "fire"  => "Male",
+                "water" => "Female",
+                "earth" => "Male",
+                "wood"  => "Female",
+                "metal" => "Male",
+                "wind"  => "Female",
+                _       => "Male"
+            };
+
+            var defaultInfo = Player2Data.DefaultInfoChar(elementType, info1.ElementType);
+
+            // Tìm skill mặc định cho element_type (level_to_unlock = 1)
+            string capitalizedElement = char.ToUpper(elementType[0]) + elementType.Substring(1).ToLower();
+            var defaultSkill = await _db.SkillTemplates
+                .Where(s => s.ElementType == capitalizedElement && s.LevelToUnlock <= 1 && s.GeneTierRequired == 0)
+                .OrderBy(s => s.SkillId)
+                .FirstOrDefaultAsync();
+            string defaultSkillsJson = defaultSkill != null
+                ? $"[{{\"skill_id\":{defaultSkill.SkillId},\"current_level\":1}}]"
+                : "[]";
+
+            var player2 = new Player2Data
+            {
+                PlayerId      = userId,
+                CharacterName = characterName,
+                Gender        = gender,
+                EquipmentJson = "{}",
+                InventoryJson = "[]",
+                SkillsJson    = defaultSkillsJson,
+                PotentialStatsJson = "{\"attack\":0,\"hp\":0,\"mp\":0,\"defense\":0,\"gene\":0}",
+                ActiveBuffsJson    = "[]",
+                UpdatedAt     = DateTime.UtcNow
+            };
+            player2.SetInfoChar(defaultInfo);
+
+            _db.Player2Data.Add(player2);
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Nhân vật hệ gene 2 đã được tạo thành công.",
+                player_id = player2.PlayerId,
+                character_name = player2.CharacterName,
+                gender = player2.Gender,
+                element_type = elementType,
+                level = 1
+            });
+        }
+
+        /// <summary>
+        /// GET /api/player/{playerId}/data2
+        /// Trả về full dữ liệu nhân vật hệ gene 2 (cùng format với /data).
+        /// </summary>
+        [HttpGet("{playerId}/data2")]
+        public async Task<IActionResult> GetPlayer2Data(int playerId)
+        {
+            var player2 = await _db.Player2Data.FindAsync(playerId);
+            if (player2 == null) return NotFound("Nhân vật hệ gene 2 chưa được tạo.");
+
+            var info = player2.GetInfoChar();
+
+            var (leveledUp, expAtCurrentLevel, expForNextLevel) = await ProcessLevelUpAsync(info);
+            if (leveledUp)
+            {
+                player2.SetInfoChar(info);
+                player2.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            var finalStats = StatCalculator.Compute(info, player2.EquipmentJson, player2.PotentialStatsJson);
+
+            var response = new
+            {
+                player_id  = player2.PlayerId,
+                user_id    = player2.PlayerId,
+                level      = info.Level,
+                experience = info.Experience,
+                exp_required_for_next_level = expForNextLevel,
+                exp_at_current_level        = expAtCurrentLevel,
+                gold   = info.Gold,
+                silver = info.Silver,
+                map_id     = info.MapId,
+                zone_id    = info.ZoneId,
+                position_x = info.PositionX,
+                position_y = info.PositionY,
+                base_stats = new
+                {
+                    hp = info.Hp, max_hp = info.MaxHp,
+                    mp = info.Mp, max_mp = info.MaxMp,
+                    attack = info.Attack, defense = info.Defense
+                },
+                equipment      = JsonSerializer.Deserialize<object>(player2.EquipmentJson),
+                potential_stats= JsonSerializer.Deserialize<object>(player2.PotentialStatsJson),
+                final_stats    = new
+                {
+                    hp = finalStats.Hp, max_hp = finalStats.MaxHp,
+                    mp = finalStats.Mp, max_mp = finalStats.MaxMp,
+                    attack = finalStats.Attack, defense = finalStats.Defense,
+                    move_speed = finalStats.MoveSpeed
+                },
+                inventory  = JsonSerializer.Deserialize<object>(player2.InventoryJson),
+                skills     = JsonSerializer.Deserialize<object>(player2.SkillsJson),
+                skill_points_available     = info.SkillPoints,
+                potential_points_available = info.PotentialPoints,
+                element_type       = info.ElementType,
+                gene_tier          = info.GeneTier,
+                gene_exp           = info.GeneExp,
+                is_hybrid          = info.IsHybrid,
+                gender             = player2.Gender,
+                character_name     = player2.CharacterName,
+                bag_slots          = info.BagSlots,
+                bag_equipped_items = BuildBagEquippedItemsResponse(info.BagEquippedItems),
+                secondary_element      = info.SecondaryElement,
+                secondary_gene_tier    = info.SecondaryGeneTier,
+                secondary_gene_exp     = info.SecondaryGeneExp,
+                hybrid_id              = info.HybridId ?? 0,
+                hybrid_element_a       = info.HybridElementA,
+                hybrid_element_b       = info.HybridElementB,
+                hybrid_bonus_targets   = info.HybridBonusTargets,
+                hybrid_immune_elements = info.HybridImmuneElements,
+                hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
+                hybrid_prefab_path     = info.HybridPrefabPath,
+                // Đánh dấu đây là gene slot 2
+                gene_slot = 2
+            };
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// GET /api/player/{playerId}/skills2
+        /// Trả về skills của nhân vật hệ gene 2 (cùng format với /skills nhưng đọc từ player2_data).
+        /// </summary>
+        [HttpGet("{playerId}/skills2")]
+        public async Task<IActionResult> GetPlayer2Skills(int playerId)
+        {
+            var player2 = await _db.Player2Data.FindAsync(playerId);
+            if (player2 == null) return NotFound("Nhân vật hệ gene 2 chưa được tạo.");
+
+            var info = player2.GetInfoChar();
+            var finalStats     = StatCalculator.Compute(info, player2.EquipmentJson, player2.PotentialStatsJson);
+            int playerFinalAtk = finalStats.Attack;
+
+            var playerSkillLevels = new Dictionary<int, int>();
+            var playerSkillLevelsByCode = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(player2.SkillsJson) && player2.SkillsJson != "[]")
+            {
+                try
+                {
+                    var arr = JsonSerializer.Deserialize<List<JsonElement>>(player2.SkillsJson);
+                    if (arr != null)
+                    {
+                        foreach (var elem in arr)
+                        {
+                            int level = 0;
+                            if (elem.TryGetProperty("current_level", out var clp)) level = clp.GetInt32();
+                            else if (elem.TryGetProperty("currentLevel", out var llp)) level = llp.GetInt32();
+                            else if (elem.TryGetProperty("level", out var lp)) level = lp.GetInt32();
+
+                            if (elem.TryGetProperty("skill_id", out var idP))
+                                playerSkillLevels[idP.GetInt32()] = level;
+                            if (elem.TryGetProperty("skillCode", out var cp))
+                            { var c = cp.GetString(); if (!string.IsNullOrWhiteSpace(c)) playerSkillLevelsByCode[NormalizeSkillCode(c)] = level; }
+                            if (elem.TryGetProperty("skill_code", out var scp))
+                            { var c = scp.GetString(); if (!string.IsNullOrWhiteSpace(c)) playerSkillLevelsByCode[NormalizeSkillCode(c)] = level; }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            var templates = await _db.SkillTemplates
+                .Where(s =>
+                    (s.HybridId == null && (s.ElementType == null || s.ElementType == info.ElementType)) ||
+                    (s.HybridId != null && info.IsHybrid && s.HybridId == info.HybridId))
+                .ToListAsync();
+
+            templates = templates
+                .OrderBy(SkillSortGroup)
+                .ThenBy(SkillSortOrder)
+                .ThenBy(s => s.SkillId)
+                .ToList();
+
+            var skillList = templates.Select(t =>
+            {
+                int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl)
+                    ? lvl
+                    : playerSkillLevelsByCode.TryGetValue(NormalizeSkillCode(t.SkillCode), out var legacyLvl) ? legacyLvl : 0;
+                int nextLevelPlayerReq = 0;
+                int nextSpCost = 1;
+                string nextDesc = "";
+                bool canUpgrade = false;
+
+                float currentCooldownSec = 3f;
+                float currentEffectValue = 0f;
+                int   currentMpCost      = 0;
+                var levelDetails = ParseSkillLevels(t.LevelsJson);
+
+                if (!string.IsNullOrEmpty(t.LevelsJson))
+                {
+                    try
+                    {
+                        var levels = JsonSerializer.Deserialize<List<JsonElement>>(t.LevelsJson);
+                        if (levels != null)
+                        {
+                            int curIdx = curLevel > 0 ? curLevel - 1 : 0;
+                            if (curIdx < levels.Count)
+                            {
+                                var cur = levels[curIdx];
+                                if (cur.TryGetProperty("cooldown_sec",  out var cs)) currentCooldownSec = (float)cs.GetDouble();
+                                if (cur.TryGetProperty("effect_value",  out var cv)) currentEffectValue = (float)cv.GetDouble();
+                                if (cur.TryGetProperty("mp_cost",       out var cm)) currentMpCost      = cm.GetInt32();
+                            }
+
+                            if (curLevel < t.MaxLevel && curLevel < levels.Count)
+                            {
+                                var nextData = levels[curLevel];
+                                if (nextData.TryGetProperty("level_req",    out var lr)) nextLevelPlayerReq = lr.GetInt32();
+                                if (nextData.TryGetProperty("sp_cost",      out var sc)) nextSpCost         = sc.GetInt32();
+                                if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
+                                canUpgrade = info.Level >= nextLevelPlayerReq
+                                          && info.SkillPoints >= nextSpCost
+                                          && info.GeneTier >= t.GeneTierRequired;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                return new
+                {
+                    skill_id              = t.SkillId,
+                    skill_code            = t.SkillCode,
+                    skill_name            = t.SkillName,
+                    description           = t.Description,
+                    element_type          = t.ElementType,
+                    max_level             = t.MaxLevel,
+                    level_to_unlock       = t.LevelToUnlock,
+                    gene_tier_required    = t.GeneTierRequired,
+                    current_level         = curLevel,
+                    current_cooldown_sec  = currentCooldownSec,
+                    current_effect_value  = currentEffectValue,
+                    current_mp_cost       = currentMpCost,
+                    can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
+                    next_level_player_req = nextLevelPlayerReq,
+                    next_level_sp_cost    = nextSpCost,
+                    next_level_desc       = nextDesc,
+                    icon_id               = t.IconId,
+                    level_details         = levelDetails.Select(ToLevelDetail).ToList()
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                skill_points_available = info.SkillPoints,
+                player_level           = info.Level,
+                player_final_attack    = playerFinalAtk,
+                skills                 = skillList
+            });
+        }
+
+        /// <summary>
+        /// PUT /api/player/{playerId}/data2
+        /// Batch save dữ liệu nhân vật hệ gene 2 (cùng format với PUT /data).
+        /// </summary>
+        [HttpPut("{playerId}/data2")]
+        public async Task<IActionResult> UpdatePlayer2Data(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id");
+                if (userIdClaim == null) return Unauthorized();
+                int userId = int.Parse(userIdClaim.Value);
+
+                var player2 = await _db.Player2Data.FindAsync(userId);
+                if (player2 == null) return NotFound("Nhân vật hệ gene 2 không tồn tại.");
+
+                var info = player2.GetInfoChar();
+
+                if (body.TryGetProperty("level", out var levelProp))       info.Level       = levelProp.GetInt32();
+                if (body.TryGetProperty("experience", out var expProp))    info.Experience  = expProp.GetInt32();
+                if (body.TryGetProperty("gold", out var goldProp))         info.Gold        = goldProp.GetInt32();
+                if (body.TryGetProperty("skill_points", out var spProp))   info.SkillPoints = spProp.GetInt32();
+                if (body.TryGetProperty("potential_points", out var ppProp)) info.PotentialPoints = ppProp.GetInt32();
+                if (body.TryGetProperty("hp", out var hpProp))             info.Hp          = hpProp.GetInt32();
+                if (body.TryGetProperty("max_hp", out var maxHpProp))      info.MaxHp       = maxHpProp.GetInt32();
+                if (body.TryGetProperty("mp", out var mpProp))             info.Mp          = mpProp.GetInt32();
+                if (body.TryGetProperty("max_mp", out var maxMpProp))      info.MaxMp       = maxMpProp.GetInt32();
+                if (body.TryGetProperty("attack", out var atkProp))        info.Attack      = atkProp.GetInt32();
+                if (body.TryGetProperty("defense", out var defProp))       info.Defense     = defProp.GetInt32();
+                if (body.TryGetProperty("gene_tier", out var gtProp))      info.GeneTier    = gtProp.GetInt32();
+                if (body.TryGetProperty("gene_exp", out var geProp))       info.GeneExp     = geProp.GetInt32();
+                if (body.TryGetProperty("element_type", out var etProp))   info.ElementType = etProp.GetString() ?? info.ElementType;
+                if (body.TryGetProperty("map_id", out var mapProp))        info.MapId       = mapProp.GetInt32();
+                if (body.TryGetProperty("position_x", out var pxProp))     info.PositionX   = (float)pxProp.GetDouble();
+                if (body.TryGetProperty("position_y", out var pyProp))     info.PositionY   = (float)pyProp.GetDouble();
+
+                await ProcessLevelUpAsync(info);
+                player2.SetInfoChar(info);
+
+                if (body.TryGetProperty("equipment", out var equipProp))       player2.EquipmentJson      = equipProp.GetRawText();
+                if (body.TryGetProperty("inventory", out var invProp))         player2.InventoryJson      = invProp.GetRawText();
+                if (body.TryGetProperty("skills", out var skillsProp))         player2.SkillsJson         = skillsProp.GetRawText();
+                if (body.TryGetProperty("potential_stats", out var potProp))   player2.PotentialStatsJson = potProp.GetRawText();
+
+                player2.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new { message = "Player2 data updated successfully", player_id = player2.PlayerId, updated_at = player2.UpdatedAt });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi update player2 data: {ex.Message}");
+            }
+        }
     }
 }
 

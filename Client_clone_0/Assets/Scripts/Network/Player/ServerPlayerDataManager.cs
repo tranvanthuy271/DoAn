@@ -24,6 +24,12 @@ public class ServerPlayerDataManager : NetworkBehaviour
     // Dictionary để map clientId -> PlayerDataResponse (để truy cập nhanh)
     private Dictionary<ulong, PlayerDataResponse> clientIdToPlayerData = new Dictionary<ulong, PlayerDataResponse>();
 
+    // Cache riêng cho gene slot 2
+    private Dictionary<int, PlayerDataResponse> playerData2Cache = new Dictionary<int, PlayerDataResponse>();
+
+    // Ghi nhớ gene slot cuối cùng đã load thành công cho mỗi client (để tránh slot 1 overwrite slot 2)
+    private Dictionary<ulong, int> clientIdToGeneSlot = new Dictionary<ulong, int>();
+
     // Dictionary để map clientId -> JWT token (để dùng khi sync DB cho client đúng token)
     private Dictionary<ulong, string> clientIdToJwt = new Dictionary<ulong, string>();
 
@@ -124,28 +130,30 @@ public class ServerPlayerDataManager : NetworkBehaviour
     }
 
     /// <summary>
-    /// Load player data từ API cho client vừa connect
-    /// Được gọi từ ClientAuthSenderComponent khi client gửi userid lên host
-    /// Query DB để lấy player data dựa trên userId
+    /// Load player data từ API cho client vừa connect.
+    /// geneSlot=1 → player_data, geneSlot=2 → player2_data.
     /// </summary>
-    public void LoadPlayerDataForClient(ulong clientId, int userId, Action<PlayerDataResponse> onSuccess, Action<string> onError)
+    public void LoadPlayerDataForClient(ulong clientId, int userId, Action<PlayerDataResponse> onSuccess, Action<string> onError, int geneSlot = 1)
     {
         Debug.Log($"[ServerPlayerDataManager] ===== LOADING PLAYER DATA FOR CLIENT =====");
-        Debug.Log($"[ServerPlayerDataManager] ClientId: {clientId}");
-        Debug.Log($"[ServerPlayerDataManager] UserId: {userId}");
-        Debug.Log($"[ServerPlayerDataManager] Current cache state - Total cached users: {playerDataCache.Count}");
-        Debug.Log($"[ServerPlayerDataManager] Current clientIdToPlayerData mappings: {clientIdToPlayerData.Count}");
+        Debug.Log($"[ServerPlayerDataManager] ClientId: {clientId}, UserId: {userId}, GeneSlot: {geneSlot}");
+
+        // Chọn cache theo gene slot
+        var cache = geneSlot == 2 ? playerData2Cache : playerDataCache;
 
         // Check cache trước
-        if (playerDataCache.ContainsKey(userId))
+        if (cache.ContainsKey(userId))
         {
-            PlayerDataResponse cachedData = playerDataCache[userId];
+            PlayerDataResponse cachedData = cache[userId];
             clientIdToUserId[clientId] = userId;
-            clientIdToPlayerData[clientId] = cachedData;
-            Debug.Log($"[ServerPlayerDataManager] ✓ Using CACHED player data for userId: {userId}");
-            Debug.Log($"[ServerPlayerDataManager] ✓ Cached data - Character: {cachedData.character_name}, Element: {cachedData.element_type}, Gender: {cachedData.gender}");
-            Debug.Log($"[ServerPlayerDataManager] ✓ Successfully mapped clientId {clientId} -> userId {userId}");
-            Debug.Log($"[ServerPlayerDataManager] ✓ Cache verification - clientIdToPlayerData[{clientId}] exists: {clientIdToPlayerData.ContainsKey(clientId)}");
+            // Priority guard trong cache path
+            int existingSlot = clientIdToGeneSlot.GetValueOrDefault(clientId, 0);
+            if (geneSlot >= existingSlot)
+            {
+                clientIdToGeneSlot[clientId] = geneSlot;
+                clientIdToPlayerData[clientId] = cachedData;
+            }
+            Debug.Log($"[ServerPlayerDataManager] ✓ Using CACHED player data (slot {geneSlot}) for userId: {userId}");
             onSuccess?.Invoke(cachedData);
             return;
         }
@@ -164,45 +172,44 @@ public class ServerPlayerDataManager : NetworkBehaviour
             }
         }
 
-        Debug.Log($"[ServerPlayerDataManager] Querying ServerAPI for userId: {userId}...");
-        Debug.Log($"[ServerPlayerDataManager] API Endpoint: /api/player/{userId}/data");
+        string endpoint = geneSlot == 2 ? $"/api/player/{userId}/data2" : $"/api/player/{userId}/data";
+        Debug.Log($"[ServerPlayerDataManager] Querying API (slot {geneSlot}): {endpoint}");
 
-        apiClient.LoadPlayerData(
+        Action<int, Action<PlayerDataResponse>, Action<string>> loadFunc =
+            geneSlot == 2
+                ? apiClient.LoadPlayer2Data
+                : apiClient.LoadPlayerData;
+
+        var cacheToUse = geneSlot == 2 ? playerData2Cache : playerDataCache;
+
+        loadFunc(
             userId,
-            onSuccess: (playerData) =>
+            (playerData) =>
             {
-                Debug.Log($"[ServerPlayerDataManager] ===== PLAYER DATA LOADED FROM API =====");
-                Debug.Log($"[ServerPlayerDataManager] ✓ API Response received for userId: {userId}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ ClientId: {clientId}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Character Name: {playerData.character_name}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Element Type: {playerData.element_type}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Gender: {playerData.gender}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Level: {playerData.level}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Map ID: {playerData.map_id}");
+                Debug.Log($"[ServerPlayerDataManager] ✓ Loaded slot {geneSlot} data for userId {userId}: {playerData.character_name} ({playerData.element_type})");
 
                 // Cache data
-                playerDataCache[userId] = playerData;
+                cacheToUse[userId] = playerData;
                 clientIdToUserId[clientId] = userId;
-                clientIdToPlayerData[clientId] = playerData;
 
-                Debug.Log($"[ServerPlayerDataManager] ===== CACHING PLAYER DATA =====");
-                Debug.Log($"[ServerPlayerDataManager] ✓ playerDataCache[{userId}] = PlayerData ({playerData.character_name})");
-                Debug.Log($"[ServerPlayerDataManager] ✓ clientIdToUserId[{clientId}] = {userId}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ clientIdToPlayerData[{clientId}] = PlayerData ({playerData.character_name})");
-                Debug.Log($"[ServerPlayerDataManager] ===== VERIFY CACHE =====");
-                Debug.Log($"[ServerPlayerDataManager] ✓ playerDataCache contains userId {userId}: {playerDataCache.ContainsKey(userId)}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ clientIdToPlayerData contains clientId {clientId}: {clientIdToPlayerData.ContainsKey(clientId)}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Total cached users: {playerDataCache.Count}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Total clientId mappings: {clientIdToPlayerData.Count}");
-                Debug.Log($"[ServerPlayerDataManager] ✓ Player data successfully cached and mapped to clientId: {clientId}");
+                // Priority guard: slot 2 không bao giờ bị overwrite bởi slot 1
+                int existingSlot = clientIdToGeneSlot.GetValueOrDefault(clientId, 0);
+                if (geneSlot >= existingSlot)
+                {
+                    clientIdToGeneSlot[clientId] = geneSlot;
+                    clientIdToPlayerData[clientId] = playerData;
+                    Debug.Log($"[ServerPlayerDataManager] ✓ clientIdToPlayerData updated: clientId={clientId} slot={geneSlot} element={playerData.element_type}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[ServerPlayerDataManager] ⚠ Skipped overwrite: slot {geneSlot} tried to overwrite existing slot {existingSlot} for clientId={clientId}");
+                }
+
                 onSuccess?.Invoke(playerData);
             },
-            onError: (error) =>
+            (error) =>
             {
-                Debug.LogError($"[ServerPlayerDataManager] ===== FAILED TO LOAD PLAYER DATA FROM API =====");
-                Debug.LogError($"[ServerPlayerDataManager] UserId: {userId}");
-                Debug.LogError($"[ServerPlayerDataManager] ClientId: {clientId}");
-                Debug.LogError($"[ServerPlayerDataManager] Error: {error}");
+                Debug.LogError($"[ServerPlayerDataManager] ✗ Failed to load slot {geneSlot} data for userId {userId}: {error}");
                 onError?.Invoke(error);
             }
         );
