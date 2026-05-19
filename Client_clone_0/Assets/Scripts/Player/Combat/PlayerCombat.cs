@@ -181,8 +181,10 @@ public class PlayerCombat : MonoBehaviour
             var networkEnemyHealth = enemy.GetComponentInParent<NetworkEnemyHealth>();
             if (networkEnemyHealth != null)
             {
+                // Lấy clientId của người tấn công (quan trọng cho quest kill tracking)
+                ulong attackerId = GetComponent<NetworkObject>()?.OwnerClientId ?? ulong.MaxValue;
                 // Gây damage từ baseDamage trong PlayerStats (tự động gọi ServerRpc)
-                networkEnemyHealth.TakeDamage(damage);
+                networkEnemyHealth.TakeDamage(damage, attackerId);
                 Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (NetworkEnemyHealth)");
             }
             else

@@ -101,32 +101,41 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
     {
         if (data == null) return fallbackPrefab;
 
-        // ── Hybrid ──
-        if (data.is_hybrid && hybridPrefabMap != null)
+        return Resolve(data.element_type, data.gender, data.is_hybrid, data.hybrid_prefab_path);
+    }
+
+    public GameObject Resolve(string elementType, string gender, bool isHybrid = false, string hybridPrefabPath = null)
+    {
+        if (isHybrid && hybridPrefabMap != null && !string.IsNullOrEmpty(hybridPrefabPath))
         {
-            // hybrid_prefab_path dạng "Earth_Fire" hoặc 2 element riêng
-            string hPath = data.hybrid_prefab_path;
-            if (!string.IsNullOrEmpty(hPath))
-            {
-                var hyGo = hybridPrefabMap.GetByPath(hPath);
-                if (hyGo != null) return hyGo;
-            }
+            var hybridPrefab = hybridPrefabMap.GetByPath(hybridPrefabPath);
+            if (hybridPrefab != null)
+                return hybridPrefab;
         }
 
-        string elementType = data.element_type ?? "";
-        string gender      = data.gender       ?? "";
+        elementType ??= string.Empty;
+        gender ??= string.Empty;
 
         if (_cache == null) RebuildCache();
 
-        // Pass 1: exact element + gender
-        if (_cache.TryGetValue(MakeKey(elementType, gender), out var go1) && go1 != null)
-            return go1;
+        if (_cache.TryGetValue(MakeKey(elementType, gender), out var exactMatch) && exactMatch != null)
+            return exactMatch;
 
-        // Pass 2: element only (gender trống)
-        if (_cache.TryGetValue(MakeKey(elementType, ""), out var go2) && go2 != null)
-            return go2;
+        if (_cache.TryGetValue(MakeKey(elementType, string.Empty), out var elementOnlyMatch) && elementOnlyMatch != null)
+            return elementOnlyMatch;
 
-        // Pass 3: fallback
+        if (!string.IsNullOrEmpty(elementType) && entries != null)
+        {
+            foreach (var entry in entries)
+            {
+                if (entry == null || entry.prefab == null)
+                    continue;
+
+                if (string.Equals(entry.elementType, elementType, StringComparison.OrdinalIgnoreCase))
+                    return entry.prefab;
+            }
+        }
+
         if (fallbackPrefab != null)
             return fallbackPrefab;
 

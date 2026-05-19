@@ -66,6 +66,16 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     private int _totalSpawned = 0;
     private bool _started = false;
 
+    // Map IDs đã được HostSpawnConfigLoader "claim" — NetworkEnemySpawner
+    // sẽ bỏ qua các map này để tránh spawn trùng (double-spawn).
+    private static readonly HashSet<int> _claimedMapIds = new HashSet<int>();
+    public static bool IsMapClaimed(int mapId) => _claimedMapIds.Contains(mapId);
+
+    // Respawn tracking: mỗi SpawnEntry → danh sách enemy GO + thời điểm spawn cuối.
+    private readonly List<SpawnEntry> _spawnEntries = new List<SpawnEntry>();
+    private readonly Dictionary<int, List<GameObject>> _spawnGroupInstances = new Dictionary<int, List<GameObject>>();
+    private readonly Dictionary<int, float> _spawnGroupLastTime = new Dictionary<int, float>();
+
     // ─────────────────────────────────────────────────────────────────────
     //  Lifecycle
     // ─────────────────────────────────────────────────────────────────────
@@ -82,7 +92,17 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         if (mapId < 0 && MapManager.Instance != null)
             mapId = MapManager.Instance.GetMapId();
 
+        if (mapId > 0)
+            _claimedMapIds.Add(mapId);
+
         StartCoroutine(LoadAndApplyConfig());
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (IsServer && mapId > 0)
+            _claimedMapIds.Remove(mapId);
+        base.OnNetworkDespawn();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -152,7 +172,9 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 continue;
 
             ApplySpawnEntryDefaults(entry);
-            SpawnEnemyGroup(entry);
+            int entryIdx = _spawnEntries.Count;
+            _spawnEntries.Add(entry);
+            SpawnEnemyGroup(entry, entryIdx);
 
             // Yield mỗi 5 enemy để tránh freeze frame
             if (i % 5 == 4)
@@ -161,6 +183,40 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
         Debug.Log($"[HostSpawnConfigLoader] Spawn hoàn tất: {_totalSpawned} enemy từ {totalEntries} entries.");
         OnSpawnComplete?.Invoke(_totalSpawned);
+
+        // Khởi động respawn loop: theo dõi mỗi group, nếu tất cả enemy chết
+        // và qua respawn_time thì re-spawn lại nguyên group.
+        StartCoroutine(CheckRespawnLoop());
+    }
+
+    /// <summary>
+    /// Coroutine kiểm tra respawn cho mỗi SpawnEntry. Chạy mỗi 5s trên server.
+    /// </summary>
+    private IEnumerator CheckRespawnLoop()
+    {
+        yield return new WaitForSeconds(5f);
+        while (true)
+        {
+            yield return new WaitForSeconds(5f);
+            if (!IsServer) yield break;
+
+            for (int idx = 0; idx < _spawnEntries.Count; idx++)
+            {
+                SpawnEntry entry = _spawnEntries[idx];
+                if (!_spawnGroupInstances.TryGetValue(idx, out var instances)) continue;
+
+                // Dọn enemy đã destroyed khỏi list
+                instances.RemoveAll(go => go == null);
+                if (instances.Count > 0) continue; // còn sống — chưa respawn
+
+                if (!_spawnGroupLastTime.TryGetValue(idx, out float lastTime)
+                    || Time.time - lastTime < entry.respawn_time)
+                    continue;
+
+                Debug.Log($"[HostSpawnConfigLoader] Respawning group idx={idx} enemy_id={entry.enemy_id} count={entry.count} after {entry.respawn_time}s");
+                SpawnEnemyGroup(entry, idx);
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -222,7 +278,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     // ─────────────────────────────────────────────────────────────────────
 
     /// <summary>Spawn `entry.count` enemy tại (cx, cy) với spread nhỏ nếu count > 1.</summary>
-    private void SpawnEnemyGroup(SpawnEntry entry)
+    private void SpawnEnemyGroup(SpawnEntry entry, int entryIdx)
     {
         // Fallback to singleton instance if serialized reference is null
         // (e.g. when EnemyPrefabManager from another scene was made DontDestroyOnLoad)
@@ -239,11 +295,20 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
         _skillLookup.TryGetValue(entry.enemy_id, out var skillsEntry);
 
+        if (!_spawnGroupInstances.TryGetValue(entryIdx, out var groupList))
+        {
+            groupList = new List<GameObject>();
+            _spawnGroupInstances[entryIdx] = groupList;
+        }
+        groupList.Clear();
+
         for (int i = 0; i < entry.count; i++)
         {
             Vector3 pos = CalculateSpawnPosition(entry.cx, entry.cy, i, entry.count);
-            SpawnSingleEnemy(prefab, pos, entry, skillsEntry);
+            GameObject go = SpawnSingleEnemy(prefab, pos, entry, skillsEntry);
+            if (go != null) groupList.Add(go);
         }
+        _spawnGroupLastTime[entryIdx] = Time.time;
     }
 
     /// <summary>Tính vị trí spread cho nhiều enemy cùng điểm.</summary>
@@ -262,7 +327,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     }
 
     /// <summary>Instantiate, Spawn qua Network, áp dụng override stats + drops + skills.</summary>
-    private void SpawnSingleEnemy(GameObject prefab, Vector3 pos, SpawnEntry entry,
+    private GameObject SpawnSingleEnemy(GameObject prefab, Vector3 pos, SpawnEntry entry,
         EnemySkillsEntry skillsEntry)
     {
         GameObject enemyObj = Instantiate(prefab, pos, Quaternion.identity);
@@ -282,7 +347,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         {
             Debug.LogError($"[HostSpawnConfigLoader] Prefab enemy_id={entry.enemy_id} thiếu NetworkObject component!");
             Destroy(enemyObj);
-            return;
+            return null;
         }
 
         // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
@@ -378,6 +443,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         }
 
         _totalSpawned++;
+        return enemyObj;
     }
 
     // ─────────────────────────────────────────────────────────────────────

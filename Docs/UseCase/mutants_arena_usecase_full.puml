@@ -1,0 +1,115 @@
+' Dán trực tiếp vào diagrams.net / draw.io web:
+' Arrange -> Insert -> Advanced -> PlantUML...
+@startuml MutantsArenaFullUseCase
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam packageStyle rectangle
+skinparam usecase {
+  BorderColor black
+  ArrowColor black
+}
+
+actor "Khách" as Guest
+actor "Người chơi" as Player
+actor "Quản trị viên" as Admin
+actor "Máy chủ gameplay /\nNetcode server" as Server
+
+rectangle "Hệ thống Mutants Arena" {
+  package "Nhóm xác thực và nhân vật" {
+    usecase "UC01\nĐăng ký tài khoản" as UC01
+    usecase "UC02\nĐăng nhập và\nkhởi tạo phiên JWT" as UC02
+    usecase "UC03\nTạo nhân vật chính\nvà vào game" as UC03
+  }
+
+  package "Nhóm gameplay cốt lõi" {
+    usecase "UC04\nDi chuyển qua portal\nvà chuyển map" as UC04
+    usecase "UC05\nChiến đấu và dùng\nkỹ năng thời gian thực" as UC05
+    usecase "UC06\nQuản lý túi đồ,\nvật phẩm và trang bị" as UC06
+    usecase "UC07\nNâng cấp trang bị\ntại Blacksmith" as UC07
+    usecase "UC08\nNâng Gene chính" as UC08
+    usecase "UC09\nChọn và nâng\nGene phụ" as UC09
+    usecase "UC10\nDung hợp Hybrid Gene" as UC10
+    usecase "UC11\nPhân bổ tiềm năng\nvà quản lý kỹ năng" as UC11
+  }
+
+  package "Nhóm NPC, nhiệm vụ và nội dung" {
+    usecase "UC12\nTương tác NPC, mua vật phẩm\nvà dùng dịch vụ đặc biệt" as UC12
+    usecase "UC13\nNhận, bỏ, theo dõi và\nhoàn thành nhiệm vụ" as UC13
+  }
+
+  package "Nhóm xã hội và phó bản" {
+    usecase "UC14\nQuản lý bạn bè" as UC14
+    usecase "UC15\nTạo và quản lý tổ đội" as UC15
+    usecase "UC16\nChat đa kênh\nthời gian thực" as UC16
+    usecase "UC17\nTạo, tham gia và\nhoàn tất phó bản" as UC17
+    usecase "UC18\nXem và làm mới\nleaderboard" as UC18
+  }
+
+  package "Nhóm vận hành kỹ thuật" {
+    usecase "UC19\nĐăng ký, heartbeat và\ngiải phóng gameplay server" as UC19
+    usecase "UC20\nĐăng ký host map, cập nhật\nspawn config và phát thưởng dungeon" as UC20
+  }
+
+  package "Nhóm dịch vụ Netcode runtime" {
+    usecase "Xác thực kết nối /\ngán zone ban đầu" as UNetAuth
+    usecase "Đồng bộ vị trí,\nanimation và trạng thái" as UNetSync
+    usecase "Chuyển zone / scene /\nrefresh visibility" as UNetZone
+    usecase "Spawn quái, boss và\nđối tượng mạng" as UNetRuntime
+  }
+}
+
+Guest --> UC01
+Guest --> UC02
+
+Player --> UC02
+Player --> UC03
+Player --> UC04
+Player --> UC05
+Player --> UC06
+Player --> UC07
+Player --> UC08
+Player --> UC09
+Player --> UC10
+Player --> UC11
+Player --> UC12
+Player --> UC13
+Player --> UC14
+Player --> UC15
+Player --> UC16
+Player --> UC17
+Player --> UC18
+Player --> UNetSync
+Player --> UNetZone
+
+Admin --> UC18
+Admin --> UC19
+Admin --> UC20
+
+Server --> UNetAuth
+Server --> UNetSync
+Server --> UNetZone
+Server --> UNetRuntime
+Server --> UC05
+Server --> UC13
+Server --> UC17
+Server --> UC19
+Server --> UC20
+
+UC03 .> UC02 : <<include>>
+UC03 .> UNetAuth : <<include>>
+UC03 .> UNetZone : <<include>>
+UC04 .> UNetZone : <<include>>
+UC05 .> UNetSync : <<include>>
+UC05 .> UNetRuntime : <<include>>
+UC07 .> UC06 : <<include>>
+UC09 .> UC08 : <<extend>>
+UC10 .> UC09 : <<include>>
+UC13 .> UC12 : <<include>>
+UC13 .> UNetRuntime : <<include>>
+UC17 .> UC15 : <<extend>>
+UC17 .> UNetRuntime : <<include>>
+UC17 .> UNetZone : <<include>>
+UC20 .> UC17 : <<include>>
+@enduml

@@ -20,9 +20,17 @@ namespace GameServerApi.Controllers
     public class QuestController : ControllerBase
     {
         private readonly GameDbContext _db;
+        private readonly ILogger<QuestController> _logger;
         private static readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
+        private const int DefaultBagSlots = 20;
+        private const int BagExpandBy = 5;
+        private const int MaxEquippedBagQuickSlots = 3;
 
-        public QuestController(GameDbContext db) => _db = db;
+        public QuestController(GameDbContext db, ILogger<QuestController> logger)
+        {
+            _db = db;
+            _logger = logger;
+        }
 
         // ═════════════════════════════════════════════════════════════════════
         //  GET /api/quest/list?npcId=2
@@ -271,6 +279,19 @@ namespace GameServerApi.Controllers
                     return BadRequest($"Chưa hoàn thành bước {i + 1}: {steps[i].Name} ({done}/{steps[i].Require}).");
             }
 
+            var rewardItems = await ResolveQuestRewardItemsAsync(quest.ItemReward);
+            if (rewardItems.Count > 0)
+            {
+                int maxSlots = ResolveBagSlotLimit(info);
+                var inventory = ParseMutableInventory(pdata.InventoryJson);
+                NormalizeInventory(inventory, maxSlots);
+
+                if (!TryGrantRewardItemsToInventory(inventory, rewardItems, maxSlots, out string inventoryError))
+                    return BadRequest(inventoryError);
+
+                pdata.InventoryJson = JsonSerializer.Serialize(inventory);
+            }
+
             // Cộng thưởng
             info.Experience   += quest.ExpReward;
             info.Gold         += quest.GoldReward;
@@ -285,17 +306,30 @@ namespace GameServerApi.Controllers
             info.QuestProgress = new Dictionary<string, int>();
 
             pdata.SetInfoChar(info);
-
-            // Ghi log
-            _db.PlayerQuestLogs.Add(new PlayerQuestLog
-            {
-                CharacterId = playerId,
-                QuestId     = questId,
-                QuestName   = quest.Name,
-                CompletedAt = DateTime.UtcNow,
-            });
+            pdata.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            try
+            {
+                _db.PlayerQuestLogs.Add(new PlayerQuestLog
+                {
+                    CharacterId = playerId,
+                    QuestId     = questId,
+                    QuestName   = quest.Name,
+                    CompletedAt = DateTime.UtcNow,
+                });
+
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "[Quest] Failed to write player_quest_log for playerId={PlayerId}, questId={QuestId}. Quest completion has already been committed.",
+                    playerId,
+                    questId);
+                _db.ChangeTracker.Clear();
+            }
 
             return Ok(new
             {
@@ -304,7 +338,216 @@ namespace GameServerApi.Controllers
                 reward_gold   = quest.GoldReward,
                 reward_silver = quest.SilverReward,
                 item_reward   = quest.ItemReward,
+                reward_items  = rewardItems.Select(item => new
+                {
+                    item_template_id = item.ItemTemplateId,
+                    item_name = item.ItemName,
+                    quantity = item.Quantity,
+                }).ToArray(),
             });
+        }
+
+        private async Task<List<QuestRewardItemGrant>> ResolveQuestRewardItemsAsync(string itemReward)
+        {
+            var requests = ParseQuestRewardSpec(itemReward);
+            if (requests.Count == 0)
+                return new List<QuestRewardItemGrant>();
+
+            var templateIds = requests
+                .Select(request => request.ItemTemplateId)
+                .Distinct()
+                .ToList();
+
+            var templates = await _db.ItemTemplates.AsNoTracking()
+                .Where(item => templateIds.Contains(item.Id))
+                .ToDictionaryAsync(item => item.Id);
+
+            var rewards = new List<QuestRewardItemGrant>();
+            foreach (var request in requests)
+            {
+                if (!templates.TryGetValue(request.ItemTemplateId, out var template))
+                    continue;
+
+                rewards.Add(new QuestRewardItemGrant
+                {
+                    ItemTemplateId = template.Id,
+                    ItemName = template.Name,
+                    Quantity = request.Quantity,
+                    UpgradeLevel = 0,
+                    StrOptions = GetDefaultStrOptions(template.Id),
+                    IsStackable = string.Equals(template.IsXepChong, "True", StringComparison.OrdinalIgnoreCase),
+                });
+            }
+
+            return rewards;
+        }
+
+        private static List<QuestRewardItemRequest> ParseQuestRewardSpec(string itemReward)
+        {
+            var items = new List<QuestRewardItemRequest>();
+            if (string.IsNullOrWhiteSpace(itemReward))
+                return items;
+
+            foreach (var rawEntry in itemReward.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var parts = rawEntry.Split('@', StringSplitOptions.TrimEntries);
+                if (parts.Length == 0)
+                    continue;
+
+                if (!int.TryParse(parts[0], out int itemTemplateId) || itemTemplateId <= 0)
+                    continue;
+
+                int quantity = 1;
+                if (parts.Length > 1 && int.TryParse(parts[1], out int parsedQty) && parsedQty > 0)
+                    quantity = parsedQty;
+
+                items.Add(new QuestRewardItemRequest
+                {
+                    ItemTemplateId = itemTemplateId,
+                    Quantity = quantity,
+                });
+            }
+
+            return items;
+        }
+
+        private static List<Dictionary<string, object>> ParseMutableInventory(string inventoryJson)
+        {
+            var inventory = new List<Dictionary<string, object>>();
+            if (string.IsNullOrWhiteSpace(inventoryJson) || inventoryJson == "[]")
+                return inventory;
+
+            var parsed = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(inventoryJson);
+            if (parsed == null)
+                return inventory;
+
+            foreach (var item in parsed)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var kvp in item)
+                {
+                    dict[kvp.Key] = kvp.Value.ValueKind switch
+                    {
+                        JsonValueKind.Number => kvp.Value.TryGetInt32(out var intVal) ? intVal : kvp.Value.GetDouble(),
+                        JsonValueKind.String => kvp.Value.GetString() ?? string.Empty,
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        _ => kvp.Value.ToString()
+                    };
+                }
+
+                inventory.Add(dict);
+            }
+
+            return inventory;
+        }
+
+        private static void NormalizeInventory(List<Dictionary<string, object>> inventory, int maxSlots)
+        {
+            int autoSlot = 0;
+            foreach (var item in inventory)
+            {
+                if (!item.ContainsKey("slotIndex"))
+                {
+                    while (autoSlot < maxSlots && inventory.Any(slot => slot.ContainsKey("slotIndex") && Convert.ToInt32(slot["slotIndex"]) == autoSlot))
+                        autoSlot++;
+
+                    if (autoSlot < maxSlots)
+                    {
+                        item["slotIndex"] = autoSlot;
+                        autoSlot++;
+                    }
+                }
+
+                item.Remove("iconId");
+                item.Remove("isEquipped");
+                item.Remove("itemCode");
+                if (!item.ContainsKey("strOptions"))
+                    item["strOptions"] = string.Empty;
+            }
+        }
+
+        private static bool TryGrantRewardItemsToInventory(
+            List<Dictionary<string, object>> inventory,
+            List<QuestRewardItemGrant> rewardItems,
+            int maxSlots,
+            out string error)
+        {
+            foreach (var reward in rewardItems)
+            {
+                if (reward.IsStackable && reward.UpgradeLevel == 0)
+                {
+                    var existingSlot = inventory.FirstOrDefault(slot =>
+                        slot.ContainsKey("itemTemplateId") &&
+                        Convert.ToInt32(slot["itemTemplateId"]) == reward.ItemTemplateId);
+
+                    if (existingSlot != null)
+                    {
+                        int currentQty = existingSlot.ContainsKey("quantity")
+                            ? Convert.ToInt32(existingSlot["quantity"]) : 0;
+                        existingSlot["quantity"] = currentQty + reward.Quantity;
+                        continue;
+                    }
+                }
+
+                int emptySlotIndex = -1;
+                for (int slotIndex = 0; slotIndex < maxSlots; slotIndex++)
+                {
+                    var existingSlot = inventory.FirstOrDefault(slot =>
+                        slot.ContainsKey("slotIndex") && Convert.ToInt32(slot["slotIndex"]) == slotIndex);
+
+                    if (existingSlot == null || !existingSlot.ContainsKey("quantity") || Convert.ToInt32(existingSlot["quantity"]) <= 0)
+                    {
+                        emptySlotIndex = slotIndex;
+                        break;
+                    }
+                }
+
+                if (emptySlotIndex < 0)
+                {
+                    error = $"Túi đồ không đủ chỗ để nhận {reward.ItemName} x{reward.Quantity}.";
+                    return false;
+                }
+
+                inventory.RemoveAll(slot => slot.ContainsKey("slotIndex") && Convert.ToInt32(slot["slotIndex"]) == emptySlotIndex);
+                inventory.Add(new Dictionary<string, object>
+                {
+                    ["slotIndex"] = emptySlotIndex,
+                    ["itemTemplateId"] = reward.ItemTemplateId,
+                    ["quantity"] = reward.Quantity,
+                    ["upgradeLevel"] = reward.UpgradeLevel,
+                    ["strOptions"] = reward.StrOptions,
+                });
+            }
+
+            error = string.Empty;
+            return true;
+        }
+
+        private static string GetDefaultStrOptions(int itemTemplateId) =>
+            UpgradeController.DefaultStrOptions.TryGetValue(itemTemplateId, out var value) ? value : string.Empty;
+
+        private static int ResolveBagSlotLimit(InfoChar? info)
+        {
+            int maxPossible = DefaultBagSlots + MaxEquippedBagQuickSlots * BagExpandBy;
+            int actual = info?.BagSlots > 0 ? info.BagSlots : DefaultBagSlots;
+            return Math.Min(actual, maxPossible);
+        }
+
+        private sealed class QuestRewardItemRequest
+        {
+            public int ItemTemplateId { get; set; }
+            public int Quantity { get; set; }
+        }
+
+        private sealed class QuestRewardItemGrant
+        {
+            public int ItemTemplateId { get; set; }
+            public string ItemName { get; set; } = string.Empty;
+            public int Quantity { get; set; }
+            public int UpgradeLevel { get; set; }
+            public string StrOptions { get; set; } = string.Empty;
+            public bool IsStackable { get; set; }
         }
 
         // ═════════════════════════════════════════════════════════════════════

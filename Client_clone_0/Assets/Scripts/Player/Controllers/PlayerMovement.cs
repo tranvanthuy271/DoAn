@@ -280,6 +280,9 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public bool IsGrounded() => isGrounded;
+    public Transform GroundCheckTransform => groundCheck;
+    public float GroundCheckRadius => groundCheckRadius;
+    public LayerMask GroundLayerMask => groundLayer;
     public bool IsFlying() => isFlying;
     public float GetHorizontalInput() => horizontalInput;
     public float GetFlightTime() => flightTime;

@@ -18,6 +18,8 @@ public class QuestManager : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        // DontDestroyOnLoad chỉ hoạt động trên root GameObject — tách khỏi parent nếu có
+        transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
     }
 
@@ -106,7 +108,8 @@ public class QuestManager : MonoBehaviour
         yield return req.SendWebRequest();
 
         bool ok = req.result == UnityWebRequest.Result.Success;
-        string msg = ok ? "" : (req.downloadHandler?.text ?? req.error);
+        string responseText = req.downloadHandler?.text ?? string.Empty;
+        string msg = ExtractApiMessage(responseText, req.error);
         if (ok) { StartCoroutine(LoadQuestListRoutine(0, null)); RefreshPlayerOverview(); }
         onDone?.Invoke(ok, msg);
     }
@@ -124,8 +127,15 @@ public class QuestManager : MonoBehaviour
         yield return req.SendWebRequest();
 
         bool ok = req.result == UnityWebRequest.Result.Success;
-        string msg = ok ? "" : (req.downloadHandler?.text ?? req.error);
-        if (ok) { StartCoroutine(LoadQuestListRoutine(0, null)); RefreshPlayerOverview(); }
+        string responseText = req.downloadHandler?.text ?? string.Empty;
+        string msg = ExtractApiMessage(responseText, req.error);
+        if (ok)
+        {
+            ShowQuestCompletionNotification(ParseCompleteResponse(responseText));
+            RefreshInventoryAfterQuestComplete();
+            StartCoroutine(LoadQuestListRoutine(0, null));
+            RefreshPlayerOverview();
+        }
         onDone?.Invoke(ok, msg);
     }
 
@@ -155,6 +165,7 @@ public class QuestManager : MonoBehaviour
         try
         {
             var dto = JsonUtility.FromJson<QuestStatusDto>(text);
+            Debug.Log($"[QuestManager] PlayerOverview parsed: id={dto?.quest_id} name={dto?.name} status={dto?.status} progress={dto?.quest_progress_json} stepIdx={dto?.current_step_index}");
             HintQuest = dto;
             if (dto?.status == "active") ActiveQuest = dto;
         }
@@ -163,6 +174,7 @@ public class QuestManager : MonoBehaviour
             Debug.LogWarning($"[QuestManager] ParsePlayerOverview error: {ex.Message}");
         }
 
+        Debug.Log($"[QuestManager] OnQuestListChanged.Invoke() — subscribers={OnQuestListChanged?.GetInvocationList()?.Length ?? 0}");
         OnQuestListChanged?.Invoke();
         onDone?.Invoke();
     }
@@ -182,6 +194,83 @@ public class QuestManager : MonoBehaviour
             Debug.LogWarning($"[QuestManager] ParseQuestList error: {ex.Message}\nJson: {json}");
             return new List<QuestStatusDto>();
         }
+    }
+
+    private static string ExtractApiMessage(string responseText, string fallback = "")
+    {
+        if (string.IsNullOrWhiteSpace(responseText))
+            return string.IsNullOrWhiteSpace(fallback) ? string.Empty : fallback;
+
+        string trimmed = responseText.Trim();
+        if (!trimmed.StartsWith("{"))
+            return trimmed;
+
+        try
+        {
+            var envelope = JsonUtility.FromJson<ApiEnvelope>(trimmed);
+            if (!string.IsNullOrEmpty(envelope?.error))
+                return envelope.error;
+            if (!string.IsNullOrEmpty(envelope?.message))
+                return envelope.message;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[QuestManager] ExtractApiMessage parse failed: {ex.Message}");
+        }
+
+        return trimmed;
+    }
+
+    private static QuestCompleteResponse ParseCompleteResponse(string responseText)
+    {
+        if (string.IsNullOrWhiteSpace(responseText))
+            return null;
+
+        try
+        {
+            return JsonUtility.FromJson<QuestCompleteResponse>(responseText);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[QuestManager] ParseCompleteResponse error: {ex.Message}\nJson: {responseText}");
+            return null;
+        }
+    }
+
+    private static void ShowQuestCompletionNotification(QuestCompleteResponse response)
+    {
+        if (response == null)
+            return;
+
+        var lines = new List<string>();
+        if (!string.IsNullOrEmpty(response.message))
+            lines.Add(response.message);
+        if (response.reward_exp > 0)
+            lines.Add($"+{response.reward_exp} EXP");
+        if (response.reward_gold > 0)
+            lines.Add($"+{response.reward_gold} vàng");
+        if (response.reward_silver > 0)
+            lines.Add($"+{response.reward_silver} bạc");
+        if (response.reward_items != null && response.reward_items.Length > 0)
+        {
+            lines.Add("Vật phẩm nhận được:");
+            foreach (var item in response.reward_items)
+            {
+                if (item == null || item.quantity <= 0) continue;
+                string itemName = string.IsNullOrEmpty(item.item_name) ? $"Item #{item.item_template_id}" : item.item_name;
+                lines.Add($"- {itemName} x{item.quantity}");
+            }
+        }
+
+        if (lines.Count > 0)
+            GlobalNotificationUI.Show(string.Join("\n", lines), "Nhận thưởng", 4f, "Đóng");
+    }
+
+    private static void RefreshInventoryAfterQuestComplete()
+    {
+        var bridge = FindObjectOfType<InventoryNetworkBridge>(true);
+        if (bridge != null)
+            bridge.RefreshInventoryFromDB();
     }
 
     // ─── DTOs ─────────────────────────────────────────────────────────────────
@@ -212,6 +301,32 @@ public class QuestManager : MonoBehaviour
         public bool IsActive    => status == "active";
         public bool IsCompleted => status == "completed";
         public bool IsAvailable => status == "available";
+    }
+
+    [Serializable]
+    private class ApiEnvelope
+    {
+        public string message;
+        public string error;
+    }
+
+    [Serializable]
+    private class QuestCompleteResponse
+    {
+        public string message;
+        public int reward_exp;
+        public int reward_gold;
+        public int reward_silver;
+        public string item_reward;
+        public QuestRewardItemDto[] reward_items;
+    }
+
+    [Serializable]
+    private class QuestRewardItemDto
+    {
+        public int item_template_id;
+        public string item_name;
+        public int quantity;
     }
 
     [Serializable]

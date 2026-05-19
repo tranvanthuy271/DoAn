@@ -134,6 +134,9 @@ public class MapEdgeTrigger : MonoBehaviour
             yield break;
         }
 
+        Vector2 arrivalPos = new Vector2(resp.dest_x, resp.dest_y);
+        yield return StartCoroutine(ResolveDirectionalArrivalPosition(resp.dest_map_id, direction, arrivalPos, resolved => arrivalPos = resolved));
+
         // ── Bước 3: gửi ServerRpc portal-transfer theo kiến trúc 1-port ──
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
         if (transitionController == null)
@@ -147,11 +150,41 @@ public class MapEdgeTrigger : MonoBehaviour
         transitionController.RequestMapPortalTransferServerRpc(
             resp.dest_map_id,
             preferredZoneId,
-            resp.dest_x,
-            resp.dest_y);
+            arrivalPos.x,
+            arrivalPos.y);
 
-        Debug.Log($"[MapEdgeTrigger] Bước 3 — RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({resp.dest_x},{resp.dest_y})");
+        Debug.Log($"[MapEdgeTrigger] Bước 3 — RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({arrivalPos.x},{arrivalPos.y})");
         ResetTrigger(hideGlobalLoading: false);
+    }
+
+    private IEnumerator ResolveDirectionalArrivalPosition(int targetMapId, string travelDirection, Vector2 fallbackPos, Action<Vector2> onResolved)
+    {
+        string oppositeDirection = travelDirection == "left" ? "right" : "left";
+        string url = $"{apiBase}/api/map/portal/direction?mapId={targetMapId}&direction={oppositeDirection}";
+        Debug.Log($"[MapEdgeTrigger] Resolve arrival — GET {url}");
+
+        using var req = UnityWebRequest.Get(url);
+        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var portal = JsonUtility.FromJson<PortalInfo>(req.downloadHandler.text);
+            // Offset 1.5 units inward from the edge trigger so the player lands
+            // on solid ground instead of exactly at the boundary collider.
+            // oppositeDirection == "right"  → player arrives from left, move left  (x - offset)
+            // oppositeDirection == "left"   → player arrives from right, move right (x + offset)
+            const float inwardOffset = 1.5f;
+            float arrX = oppositeDirection == "right" ? portal.src_x - inwardOffset : portal.src_x + inwardOffset;
+            Vector2 resolved = new Vector2(arrX, portal.src_y);
+            Debug.Log($"[MapEdgeTrigger] Resolve arrival OK — target {oppositeDirection} portal map={targetMapId} raw=({portal.src_x},{portal.src_y}) adjusted=({resolved.x},{resolved.y})");
+            onResolved?.Invoke(resolved);
+        }
+        else
+        {
+            Debug.LogWarning($"[MapEdgeTrigger] Resolve arrival FAIL — target {oppositeDirection} portal map={targetMapId}. Fallback dest_x/dest_y. HTTP={req.responseCode} err={req.error}");
+            onResolved?.Invoke(fallbackPos);
+        }
     }
 
     private void ResetTrigger(bool hideGlobalLoading)
@@ -174,7 +207,12 @@ public class MapEdgeTrigger : MonoBehaviour
     // ── DTOs ──
 
     [Serializable]
-    private class PortalInfo { public int portal_id; }
+    private class PortalInfo
+    {
+        public int portal_id;
+        public float src_x;
+        public float src_y;
+    }
 
     [Serializable]
     private class TravelPayload

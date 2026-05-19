@@ -587,7 +587,7 @@ public class PlayerDash : NetworkBehaviour
 
             if (networkEnemyHealth != null)
             {
-                networkEnemyHealth.TakeDamage(dashDamage);
+                networkEnemyHealth.TakeDamage(dashDamage, OwnerClientId);
                 hasDamagedThisDash = true;
                 Debug.Log($"[PlayerDash] Dash damage enemy {networkEnemyHealth.name} voi {dashDamage} damage! (Network)");
                 break;

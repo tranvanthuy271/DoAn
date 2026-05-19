@@ -56,7 +56,7 @@ public class BarrageBulletDamage : NetworkBehaviour
         if (netHealth != null)
         {
             _hasHit = true;
-            netHealth.TakeDamage(damage);
+            netHealth.TakeDamage(damage, GetOwnerClientId());
             DespawnOrDestroy();
             return;
         }
@@ -82,6 +82,15 @@ public class BarrageBulletDamage : NetworkBehaviour
                 DespawnOrDestroy();
             }
         }
+    }
+
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out var netOwner) == true)
+            return netOwner.OwnerClientId;
+        return ulong.MaxValue;
     }
 
     private void DespawnOrDestroy()

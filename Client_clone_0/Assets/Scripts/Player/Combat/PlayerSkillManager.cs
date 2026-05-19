@@ -837,7 +837,7 @@ public class PlayerSkillManager : NetworkBehaviour
             if (netEnemy != null)
             {
                 Debug.Log($"[PlayerSkillManager] Melee hit NetworkEnemyHealth: {hit.transform.root.name} for {dmg}");
-                netEnemy.TakeDamage(dmg);
+                netEnemy.TakeDamage(dmg, OwnerClientId);
                 damaged.Add(rootId);
                 continue;
             }

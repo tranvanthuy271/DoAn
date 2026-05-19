@@ -1,0 +1,44 @@
+' Dán trực tiếp vào diagrams.net / draw.io web:
+' Arrange -> Insert -> Advanced -> PlantUML...
+@startuml MutantsArenaGameplayContent
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam packageStyle rectangle
+
+actor "Người chơi" as Player
+actor "Máy chủ gameplay /\nNetcode server" as Server
+
+rectangle "Hệ thống Mutants Arena" {
+  usecase "Chuyển map\nqua portal" as UC04
+  usecase "Chiến đấu\nvà dùng kỹ năng" as UC05
+  usecase "Quản lý túi đồ\nvà trang bị" as UC06
+  usecase "Nâng cấp\ntrang bị" as UC07
+  usecase "Nâng Gene chính" as UC08
+  usecase "Chọn và nâng\nGene phụ" as UC09
+  usecase "Dung hợp\nHybrid Gene" as UC10
+  usecase "Phân bổ tiềm năng\nvà kỹ năng" as UC11
+  usecase "Đồng bộ vị trí /\nanimation / trạng thái" as UNetSync
+  usecase "Chuyển zone / scene /\nrefresh visibility" as UNetZone
+}
+
+Player --> UC04
+Player --> UC05
+Player --> UC06
+Player --> UC07
+Player --> UC08
+Player --> UC09
+Player --> UC10
+Player --> UC11
+Player --> UNetSync
+Player --> UNetZone
+Server --> UC05
+Server --> UNetSync
+Server --> UNetZone
+UC04 .> UNetZone : <<include>>
+UC05 .> UNetSync : <<include>>
+UC07 .> UC06 : <<include>>
+UC09 .> UC08 : <<extend>>
+UC10 .> UC09 : <<include>>
+@enduml

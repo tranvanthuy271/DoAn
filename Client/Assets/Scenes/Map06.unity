@@ -2237,7 +2237,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5455916139836146813, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: currentMapId
-      value: 105
+      value: 106
       objectReference: {fileID: 0}
     - target: {fileID: 8876727282495522588, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: m_text

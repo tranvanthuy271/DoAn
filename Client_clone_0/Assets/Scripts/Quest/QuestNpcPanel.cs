@@ -296,7 +296,7 @@ public class QuestNpcPanel : MonoBehaviour
         var dialogueUI = QuestDialogueUI.GetOrCreate();
         if (dialogueUI == null)
         {
-            Debug.LogWarning($"{LogPrefix} QuestDialogueUI khÃ´ng tá»“n táº¡i!");
+            Debug.LogWarning($"{LogPrefix} QuestDialogueUI không tồn tại!");
             if (rootPanel) rootPanel.SetActive(true);
             return;
         }
@@ -313,8 +313,12 @@ public class QuestNpcPanel : MonoBehaviour
                 {
                     QuestManager.Instance?.CompleteQuest(quest.quest_id, (ok, msg) =>
                     {
-                        if (!ok) Debug.LogWarning($"{LogPrefix} Ná»™p quest tháº¥t báº¡i: {msg}");
-                        // KhÃ´ng má»Ÿ láº¡i panel (quest Ä‘Ã£ hoÃ n thÃ nh)
+                        if (!ok)
+                        {
+                            Debug.LogWarning($"{LogPrefix} Nộp quest thất bại: {msg}");
+                            GlobalNotificationUI.Show(msg, "Nộp nhiệm vụ thất bại", 3f, "Đóng");
+                            Open(_currentNpc);
+                        }
                     });
                 }
                 else
@@ -334,10 +338,13 @@ public class QuestNpcPanel : MonoBehaviour
                     QuestManager.Instance?.AcceptQuest(quest.quest_id, (ok, msg) =>
                     {
                         if (ok)
-                            Debug.Log($"{LogPrefix} ÄÃ£ nháº­n nhiá»‡m vá»¥ '{quest.name}'.");
+                            Debug.Log($"{LogPrefix} Đã nhận nhiệm vụ '{quest.name}'.");
                         else
-                            Debug.LogWarning($"{LogPrefix} Nháº­n quest tháº¥t báº¡i: {msg}");
-                        // KhÃ´ng má»Ÿ láº¡i panel sau khi nháº­n
+                        {
+                            Debug.LogWarning($"{LogPrefix} Nhận quest thất bại: {msg}");
+                            GlobalNotificationUI.Show(msg, "Nhận nhiệm vụ thất bại", 3f, "Đóng");
+                            Open(_currentNpc);
+                        }
                     });
                 }
                 else

@@ -74,7 +74,13 @@ public class QuestHudWidget : MonoBehaviour
     {
         // Táº£i tráº¡ng thÃ¡i HUD ngay khi vÃ o scene
         if (QuestManager.Instance != null)
+        {
+            // Subscribe ở đây phòng trường hợp OnEnable() chạy trước QuestManager.Awake()
+            // (khi đó Instance=null → OnEnable không subscribe được → subscribers=0)
+            QuestManager.Instance.OnQuestListChanged -= Refresh; // tránh double nếu đã subscribe
+            QuestManager.Instance.OnQuestListChanged += Refresh;
             QuestManager.Instance.RefreshPlayerOverview(Refresh);
+        }
         else
             Refresh();
     }
@@ -106,6 +112,8 @@ public class QuestHudWidget : MonoBehaviour
         var quest = QuestManager.Instance?.HintQuest
                  ?? QuestManager.Instance?.ActiveQuest;
 
+        Debug.Log($"[QuestHudWidget] Refresh() — QuestManager={QuestManager.Instance != null} HintQuest={QuestManager.Instance?.HintQuest?.name} ActiveQuest={QuestManager.Instance?.ActiveQuest?.name} rootWidget={rootWidget?.name} active={rootWidget?.activeSelf}");
+
         // Luôn hiện widget (ẩn chỉ khi rootWidget = null)
         if (rootWidget) rootWidget.SetActive(true);
 
@@ -115,8 +123,11 @@ public class QuestHudWidget : MonoBehaviour
             if (questNameText) questNameText.text = "Nhiệm vụ: Chưa có";
             if (questStepText)  questStepText.text  = "- Tìm NPC nhiệm vụ để bắt đầu";
             if (btnNavigate)    btnNavigate.gameObject.SetActive(false);
+            Debug.Log("[QuestHudWidget] quest=null → hiển thị 'Chưa có'");
             return;
         }
+
+        Debug.Log($"[QuestHudWidget] quest={quest.name} status={quest.status} progress={quest.quest_progress_json} stepIdx={quest.current_step_index}");
 
         StopAutoMove();
 
@@ -208,17 +219,17 @@ public class QuestHudWidget : MonoBehaviour
         if (q.status == "available")
         {
             string npc = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
-            return $"- TÃ¬m {npc} Ä‘á»ƒ nháº­n nhiá»‡m vá»¥";
+            return $"- Tìm {npc} để nhận nhiệm vụ";
         }
 
         var steps = ParseSteps(q.steps_json);
-        if (steps == null || steps.Count == 0) return "- Äang thá»±c hiá»‡n...";
+        if (steps == null || steps.Count == 0) return "- Đang thực hiện...";
 
         bool allDone = AreAllDone(q, steps);
         if (allDone)
         {
             string npc = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
-            return $"- âœ“ TÃ¬m {npc} Ä‘á»ƒ ná»™p nhiá»‡m vá»¥";
+            return $"- ✓ Tìm {npc} để nộp nhiệm vụ";
         }
 
         int idx = Mathf.Clamp(q.current_step_index, 0, steps.Count - 1);
@@ -229,7 +240,7 @@ public class QuestHudWidget : MonoBehaviour
         for (int i = 0; i < steps.Count; i++)
             if (GetProgress(q, i) < steps[i].require) remaining++;
 
-        string extra = remaining > 1 ? $" (cÃ²n {remaining} viá»‡c)" : "";
+        string extra = remaining > 1 ? $" (còn {remaining} việc)" : "";
         return $"- {step.name}: {done}/{step.require}{extra}";
     }
 

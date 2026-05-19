@@ -59,6 +59,18 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("Random hướng tuần tra ban đầu để enemy không chạy đồng loạt cùng một hướng khi vừa spawn.")]
     public bool randomizeInitialPatrolDirection = true;
 
+    [Header("Server Virtual Ground (non-fly)")]
+    [Tooltip("Trên dedicated server không có ground collider của mọi map. Non-fly enemy sẽ dùng spawn_y làm 'virtual ground' — khoá Y tại vị trí spawn để không rơi mãi.")]
+    public bool useServerVirtualGround = true;
+
+    [Header("Fly Patrol (canFly)")]
+    [Tooltip("Bán kính patrol trục X cho enemy bay khi chưa thấy player.")]
+    public float flyPatrolRadiusX = 3f;
+    [Tooltip("Bán kính patrol trục Y cho enemy bay khi chưa thấy player (lên/xuống quanh vị trí spawn).")]
+    public float flyPatrolRadiusY = 2f;
+    [Tooltip("Mỗi bao nhiêu giây sẽ random một điểm patrol 2D mới khi enemy bay đi tuần.")]
+    public float flyPatrolRetargetSeconds = 2.5f;
+
     private Transform player;
     private Rigidbody2D rb;
     private NetworkAnimator networkAnimator; // Dùng NetworkAnimator thay vì Animator
@@ -79,6 +91,13 @@ public class EnemyAI : MonoBehaviour
     private string _activeAttackBoolParameter;
     private bool _initialPatrolDirectionInitialized;
 
+    // Server virtual ground / fly patrol state
+    private float _serverAnchorY;
+    private float _serverAnchorX;
+    private bool _serverAnchorSet;
+    private Vector2 _flyPatrolTarget;
+    private float _flyPatrolRetargetTimer;
+
     // Skill system — set bởi HostSpawnConfigLoader sau khi spawn
     private EnemySkillSet _skillSet;
     private readonly Dictionary<string, GameObject> _projectilePrefabLookup
@@ -86,6 +105,8 @@ public class EnemyAI : MonoBehaviour
     private Coroutine _projectileFallThroughCoroutine;
     private Collider2D _ignoredGroundCollider;
     private int _groundLayerMask;
+    private bool _hasMapBounds;
+    private float _mapMinX, _mapMaxX, _mapMinY, _mapMaxY;
 
     private enum State { Run, MeleeAttack, Dead }
     private State state = State.Run;
@@ -93,6 +114,8 @@ public class EnemyAI : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        // Cho phép enemy đi xuyên nhau (không va chạm giữa các enemy cùng layer)
+        Physics2D.IgnoreLayerCollision(gameObject.layer, gameObject.layer, true);
         animator = GetComponent<Animator>();
         networkAnimator = GetComponent<NetworkAnimator>();
         health = GetComponent<EnemyHealth>();
@@ -141,6 +164,20 @@ public class EnemyAI : MonoBehaviour
         
         FindPlayerInNetwork();
         InitializeInitialPatrolDirection();
+        DetectMapBounds();
+
+        // Ghi nhớ vị trí spawn làm anchor cho server-side virtual ground (non-fly)
+        // và tâm patrol 2D (fly).
+        if (!_serverAnchorSet)
+        {
+            _serverAnchorX = transform.position.x;
+            _serverAnchorY = transform.position.y;
+            _serverAnchorSet = true;
+        }
+
+        // Mỗi enemy bay có một patrol target ban đầu khác nhau → mỗi con bay 1 hướng khác.
+        if (canFly)
+            RetargetFlyPatrol();
     }
 
     public void ApplyRuntimeOverride(int attackDamage, float movementSpeed, bool enableFlight)
@@ -554,6 +591,30 @@ public class EnemyAI : MonoBehaviour
 
     private void PatrolLoop()
     {
+        if (canFly)
+        {
+            // Tuần tra 2D ngẫu nhiên quanh anchor (mỗi con 1 hướng).
+            _flyPatrolRetargetTimer -= Time.deltaTime;
+            float dist = Vector2.Distance(transform.position, _flyPatrolTarget);
+            if (dist < 0.25f || _flyPatrolRetargetTimer <= 0f)
+                RetargetFlyPatrol();
+
+            MoveProjectileEnemyTowards(_flyPatrolTarget, 0.15f);
+
+            // Cập nhật facing theo hướng X tới target
+            float dx = _flyPatrolTarget.x - transform.position.x;
+            if (Mathf.Abs(dx) > 0.05f)
+            {
+                bool wantRight = dx > 0f;
+                if (wantRight != facingRight)
+                {
+                    facingRight = wantRight;
+                    Flip();
+                }
+            }
+            return;
+        }
+
         if (leftPoint == null || rightPoint == null)
         {
             if (!autoPatrolPointsCreated)
@@ -566,20 +627,41 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        float targetX = facingRight ? rightPoint.position.x : leftPoint.position.x;
-        RunTowards(targetX);
-
-        if (Mathf.Abs(transform.position.x - targetX) < 0.1f)
+        Vector2 targetPos = facingRight ? (Vector2)rightPoint.position : (Vector2)leftPoint.position;
+        RunTowards(targetPos.x);
+        if (Mathf.Abs(transform.position.x - targetPos.x) < 0.1f)
         {
             facingRight = !facingRight;
             Flip();
         }
     }
 
+    private void RetargetFlyPatrol()
+    {
+        if (!_serverAnchorSet)
+        {
+            _serverAnchorX = transform.position.x;
+            _serverAnchorY = transform.position.y;
+            _serverAnchorSet = true;
+        }
+
+        float rx = Mathf.Max(0.5f, flyPatrolRadiusX);
+        float ry = Mathf.Max(0.5f, flyPatrolRadiusY);
+        float ox = UnityEngine.Random.Range(-rx, rx);
+        // Bias lên trên một chút để enemy bay trải đều trên không (anchor +- ry, không bị âm quá nhiều).
+        float oy = UnityEngine.Random.Range(-ry * 0.5f, ry);
+        _flyPatrolTarget = new Vector2(_serverAnchorX + ox, _serverAnchorY + oy);
+        _flyPatrolRetargetTimer = Mathf.Max(0.5f, flyPatrolRetargetSeconds);
+    }
+
     private void RunTowards(float targetX)
     {
         if (rb == null) return;
         if (_isFrozen) { rb.velocity = Vector2.zero; return; }
+        // Server không có ground colliders đầy đủ → bỏ qua IsGroundedEnough.
+        // Non-fly sẽ được khoá Y về _serverAnchorY trong LateUpdate (xem ApplyServerVirtualGround).
+        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+        if (!canFly && !isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
 
         float dir = Mathf.Sign(targetX - transform.position.x);
         float yVel = canFly ? 0f : rb.velocity.y;
@@ -716,10 +798,12 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
+        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+        if (!isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
         float horizontalDirection = Mathf.Sign(horizontalDelta);
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
-        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, 0f);
+        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, rb.velocity.y);
         UpdateFacingFromHorizontal(rb.velocity.x);
     }
 
@@ -739,9 +823,11 @@ public class EnemyAI : MonoBehaviour
             ? Mathf.Sign(horizontalDelta)
             : (facingRight ? -1f : 1f);
 
+        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+        if (!isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
-        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, 0f);
+        rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, rb.velocity.y);
         UpdateFacingFromHorizontal(rb.velocity.x);
     }
 
@@ -762,7 +848,7 @@ public class EnemyAI : MonoBehaviour
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
         Vector2 velocity = new Vector2(moveDirection.x * moveSpeed * slow, moveDirection.y * verticalSpeed * slow);
 
-        if (velocity.y < -0.01f && !CanProjectileEnemyMoveDown())
+        if (!canFly && velocity.y < -0.01f && !CanProjectileEnemyMoveDown())
         {
             velocity.y = 0f;
             if (Mathf.Abs(velocity.x) < 0.01f)
@@ -1435,6 +1521,148 @@ public class EnemyAI : MonoBehaviour
         yield return new WaitForSeconds(duration);
         moveSpeed = _originalMoveSpeed;
         _slowCoroutine = null;
+    }
+
+    private bool IsGroundedEnough()
+    {
+        if (canFly || bodyCollider == null || _groundLayerMask == 0) return true;
+
+        var physScene = gameObject.scene.GetPhysicsScene2D();
+        Bounds b = bodyCollider.bounds;
+
+        float inset = Mathf.Min(b.extents.x * 0.5f, 0.2f);
+        float originY = Mathf.Max(transform.position.y, b.center.y);
+        float feetY = b.min.y;
+        float checkDist = Mathf.Max(0.75f, originY - feetY + 0.4f);
+
+        return IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.center.x, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
+            || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.min.x + inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
+            || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.max.x - inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY);
+    }
+
+    private bool IsGroundHitCloseToFeet(RaycastHit2D hit, float feetY)
+    {
+        if (hit.collider == null)
+            return false;
+
+        float surfaceY = hit.point.y;
+        float maxGapBelowFeet = 0.35f;
+        float maxSurfaceAboveFeet = 0.12f;
+        return surfaceY <= feetY + maxSurfaceAboveFeet
+            && feetY - surfaceY <= maxGapBelowFeet;
+    }
+
+    private void LateUpdate()
+    {
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+            return;
+        if (state == State.Dead) return;
+
+        // Server virtual ground cho non-fly: khoá Y tại _serverAnchorY để
+        // tránh rơi mãi (server không baked ground collider cho mọi map).
+        if (useServerVirtualGround && !canFly && rb != null && _serverAnchorSet)
+        {
+            Vector2 p = rb.position;
+            if (!Mathf.Approximately(p.y, _serverAnchorY))
+                rb.position = new Vector2(p.x, _serverAnchorY);
+            if (Mathf.Abs(rb.velocity.y) > 0.01f)
+                rb.velocity = new Vector2(rb.velocity.x, 0f);
+        }
+
+        ClampToMapBounds();
+    }
+
+    private void DetectMapBounds()
+    {
+        int maxMapLayerId = LayerMask.NameToLayer("MaxMap");
+        if (maxMapLayerId < 0) return;
+
+        BoxCollider2D[] allCols = FindObjectsOfType<BoxCollider2D>();
+        Bounds combined = new Bounds();
+        bool anyFound = false;
+
+        foreach (var col in allCols)
+        {
+            if (col.gameObject.layer != maxMapLayerId) continue;
+            if (!anyFound) { combined = col.bounds; anyFound = true; }
+            else combined.Encapsulate(col.bounds);
+        }
+
+        if (!anyFound) return;
+
+        Vector2 center = combined.center;
+        float innerMinX = float.MinValue, innerMaxX = float.MaxValue;
+        float innerMinY = float.MaxValue, innerMaxY = float.MaxValue;
+
+        foreach (var col in allCols)
+        {
+            if (col.gameObject.layer != maxMapLayerId) continue;
+            Bounds b = col.bounds;
+            bool isVertical   = b.size.y > b.size.x * 1.5f;
+            bool isHorizontal = b.size.x > b.size.y * 1.5f;
+
+            if (isVertical)
+            {
+                if (b.center.x < center.x)
+                    innerMinX = Mathf.Max(innerMinX, b.max.x);
+                else
+                    innerMaxX = Mathf.Min(innerMaxX, b.min.x);
+            }
+            if (isHorizontal)
+            {
+                if (b.center.y > center.y)
+                    innerMaxY = Mathf.Min(innerMaxY, b.min.y);
+                else
+                    innerMinY = Mathf.Min(innerMinY, b.max.y);
+            }
+        }
+
+        _mapMinX = (innerMinX > float.MinValue) ? innerMinX : combined.min.x;
+        _mapMaxX = (innerMaxX < float.MaxValue) ? innerMaxX : combined.max.x;
+        _mapMinY = (innerMinY < float.MaxValue) ? innerMinY : combined.min.y;
+        _mapMaxY = (innerMaxY < float.MaxValue) ? innerMaxY : combined.max.y;
+        _hasMapBounds = true;
+    }
+
+    private void ClampToMapBounds()
+    {
+        if (!_hasMapBounds || rb == null) return;
+
+        Vector2 pos = rb.position;
+        float newX = pos.x, newY = pos.y;
+        float newVx = rb.velocity.x, newVy = rb.velocity.y;
+
+        if (pos.x < _mapMinX)
+        {
+            newX = _mapMinX;
+            if (newVx < 0f) newVx = 0f;
+            if (!facingRight) { facingRight = true; ApplyFacing(); }
+        }
+        else if (pos.x > _mapMaxX)
+        {
+            newX = _mapMaxX;
+            if (newVx > 0f) newVx = 0f;
+            if (facingRight) { facingRight = false; ApplyFacing(); }
+        }
+
+        if (canFly)
+        {
+            if (pos.y < _mapMinY)
+            {
+                newY = _mapMinY;
+                if (newVy < 0f) newVy = 0f;
+            }
+            else if (pos.y > _mapMaxY)
+            {
+                newY = _mapMaxY;
+                if (newVy > 0f) newVy = 0f;
+            }
+        }
+
+        if (newX != pos.x || newY != pos.y)
+            rb.position = new Vector2(newX, newY);
+        if (newVx != rb.velocity.x || newVy != rb.velocity.y)
+            rb.velocity = new Vector2(newVx, newVy);
     }
 }
 

@@ -252,7 +252,8 @@ public class NetworkInventory : NetworkBehaviour
             var playerSync = GetComponent<NetworkPlayerDataSync>();
             int dbPlayerId = playerSync != null ? playerSync.networkPlayerId.Value : 0;
             if (dbPlayerId > 0)
-                QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Collect, itemID, addedQty);
+                QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Collect, itemID, addedQty,
+                    () => playerSync?.NotifyQuestProgressOnServer("collect"));
         }
         return added;
     }

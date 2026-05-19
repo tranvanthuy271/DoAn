@@ -131,9 +131,9 @@ public class NetworkEnemyController : NetworkBehaviour
         {
             disableGravity = false;
         }
-        else if (enemyAI != null && enemyAI.canFly)
+        else if (enemyAI != null)
         {
-            disableGravity = true;
+            disableGravity = enemyAI.canFly;
         }
 
         rb.gravityScale = disableGravity ? 0f : initialGravityScale;

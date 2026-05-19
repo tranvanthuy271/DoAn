@@ -2358,11 +2358,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5455916139836146813, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: currentMapId
-      value: 101
+      value: 102
       objectReference: {fileID: 0}
     - target: {fileID: 8876727282495522588, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: m_text
-      value: "R\u1EEBng B\u0103ng"
+      value: "Ph\u00E1o \u0110\u00E0i Amega"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3018,6 +3018,10 @@ PrefabInstance:
     - target: {fileID: 2069323437285224715, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
       propertyPath: m_Name
       value: EdgeLeft
+      objectReference: {fileID: 0}
+    - target: {fileID: 4656592567886915710, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
+      propertyPath: m_text
+      value: "C\u1EEDa ph\u00EDa \u0111\u00F4ng"
       objectReference: {fileID: 0}
     - target: {fileID: 5638256326072347985, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
       propertyPath: m_LocalPosition.x

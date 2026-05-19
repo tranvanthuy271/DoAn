@@ -1,0 +1,54 @@
+' Dán trực tiếp vào diagrams.net / draw.io web:
+' Arrange -> Insert -> Advanced -> PlantUML...
+@startuml MutantsArenaOverview
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam packageStyle rectangle
+
+actor "Khách" as Guest
+actor "Người chơi" as Player
+actor "Quản trị viên" as Admin
+actor "Máy chủ gameplay /\nNetcode server" as Server
+
+rectangle "Hệ thống Mutants Arena" {
+  usecase "Đăng ký /\nĐăng nhập" as UAuth
+  usecase "Quản lý\nnhân vật" as UCharacter
+  usecase "Di chuyển / Combat /\nKỹ năng" as UCombat
+  usecase "Gene / Trang bị /\nVật phẩm" as UProgression
+  usecase "NPC / Nhiệm vụ /\nCửa hàng" as UContent
+  usecase "Bạn bè / Tổ đội /\nChat" as USocial
+  usecase "Phó bản / Boss /\nThưởng" as UDungeon
+  usecase "Đồng bộ vị trí /\nAnimation / Trạng thái" as USync
+  usecase "Chuyển zone / scene /\nvisibility" as UZone
+  usecase "Spawn quái / boss /\nđối tượng mạng" as URuntime
+  usecase "Leaderboard" as ULeaderboard
+  usecase "Vận hành\nserver" as UOps
+}
+
+Guest --> UAuth
+Player --> UAuth
+Player --> UCharacter
+Player --> UCombat
+Player --> UProgression
+Player --> UContent
+Player --> USocial
+Player --> UDungeon
+Player --> USync
+Player --> UZone
+Player --> ULeaderboard
+Admin --> ULeaderboard
+Admin --> UOps
+Server --> UContent
+Server --> UDungeon
+Server --> USync
+Server --> UZone
+Server --> URuntime
+Server --> UOps
+UCombat .> USync : <<include>>
+UDungeon .> URuntime : <<include>>
+UCharacter .> UZone : <<include>>
+UDungeon .> USocial : <<include>>
+UProgression .> UCombat : <<extend>>
+@enduml

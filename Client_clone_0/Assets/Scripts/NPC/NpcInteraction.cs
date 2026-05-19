@@ -254,6 +254,8 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
         Debug.Log($"{LogPrefix} Interact validated | sender={clientId} npcId={data.npc_id} type='{data.npc_type}' name='{data.npc_name}'", this);
 
+        TryReportQuestTalkProgress(clientId, data);
+
         StartCoroutine(FetchDialogueAndSend(data, clientId));
     }
 
@@ -695,6 +697,46 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             return "Xin chào, ta có thể đưa ngươi vào các vùng nguy hiểm.";
 
         return "Xin chào, ta có thể giúp gì cho ngươi?";
+    }
+
+    private void TryReportQuestTalkProgress(ulong clientId, NpcData data)
+    {
+        if (!IsServer || data == null)
+            return;
+
+        if (!string.Equals(data.npc_type, "quest", StringComparison.OrdinalIgnoreCase) || data.npc_id <= 0)
+            return;
+
+        var playerSync = FindPlayerSyncByClientId(clientId);
+        int dbPlayerId = playerSync != null ? playerSync.networkPlayerId.Value : ResolveClientUserId(clientId);
+        if (dbPlayerId <= 0)
+        {
+            Debug.LogWarning($"[QuestTalk] BỎ QUA: không resolve được playerId cho clientId={clientId} npcId={data.npc_id}", this);
+            return;
+        }
+
+        Debug.Log($"[QuestTalk] → gọi QuestProgressReporter.Report Talk playerId={dbPlayerId} npcId={data.npc_id}", this);
+        QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Talk, data.npc_id, 1,
+            () => playerSync?.NotifyQuestProgressOnServer("talk"));
+    }
+
+    private static NetworkPlayerDataSync FindPlayerSyncByClientId(ulong clientId)
+    {
+        var spawnedObjects = NetworkManager.Singleton?.SpawnManager?.SpawnedObjects;
+        if (spawnedObjects == null)
+            return null;
+
+        foreach (var kvp in spawnedObjects)
+        {
+            if (kvp.Value.OwnerClientId != clientId)
+                continue;
+
+            var sync = kvp.Value.GetComponent<NetworkPlayerDataSync>();
+            if (sync != null)
+                return sync;
+        }
+
+        return null;
     }
 
     private static string ExtractDialogueText(string json)

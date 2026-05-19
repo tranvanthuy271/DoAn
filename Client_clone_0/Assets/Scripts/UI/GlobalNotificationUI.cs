@@ -43,7 +43,8 @@ public class GlobalNotificationUI : MonoBehaviour
         EnsureReferences();
         BindListeners();
         if (panel) panel.SetActive(false);
-        DontDestroyOnLoad(gameObject);
+        if (transform.parent == null)
+            DontDestroyOnLoad(gameObject);
     }
 
     private void OnEnable()

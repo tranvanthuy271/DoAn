@@ -28,6 +28,8 @@ public class NetworkEnemySpawner : NetworkBehaviour
     private readonly HashSet<string> _spawnedEnemyKeys = new HashSet<string>();
     private Dictionary<int, GameObject> spawnedEnemies = new Dictionary<int, GameObject>(); // spawn_id -> GameObject
     private Dictionary<int, float> lastRespawnTime = new Dictionary<int, float>(); // spawn_id -> last respawn time
+    private Dictionary<int, EnemySpawnData> _spawnDataCache = new Dictionary<int, EnemySpawnData>(); // spawn_id -> spawn data
+    private Dictionary<int, int> _spawnMapIdCache = new Dictionary<int, int>(); // spawn_id -> mapId
 
     private void Awake()
     {
@@ -100,6 +102,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
         hasStartedLoading = true;
         StartCoroutine(LoadAndSpawnEnemies());
+        StartCoroutine(CheckRespawnLoop());
     }
 
     /// <summary>
@@ -133,7 +136,14 @@ public class NetworkEnemySpawner : NetworkBehaviour
             yield break;
         }
 
-        if (MapManager.Instance != null)
+        // Dedicated server: ServerScene đặt mapId=-1 và spawner này là nguồn
+        // spawn chính cho toàn bộ map (vì MapXX.unity không được load trên
+        // dedicated server, HostSpawnConfigLoader trong map scene sẽ không
+        // chạy). Vì vậy phải iterate qua MapWorldConfig để spawn cho tất cả
+        // map. Dedup giữa hai spawner đã được xử lý qua
+        // HostSpawnConfigLoader.IsMapClaimed (chỉ true khi map scene được
+        // load trong host/listen-server).
+        if (MapManager.Instance != null && !IsDedicatedWorldServer())
         {
             int currentMapId = MapManager.Instance.GetMapId();
             if (yielded.Add(currentMapId))
@@ -160,7 +170,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 if (yielded.Add(mapDef.mapId))
                 {
                     bool canSpawn = ShouldAutoSpawnForMap(mapDef.mapId);
-                    Debug.Log($"[NetworkEnemySpawner] MapManager resolved mapId={mapDef.mapId} canSpawn={canSpawn} scene={gameObject.scene.name}");
+                    Debug.Log($"[NetworkEnemySpawner] MapWorldConfig resolved mapId={mapDef.mapId} canSpawn={canSpawn} scene={gameObject.scene.name}");
                     if (canSpawn)
                         yield return mapDef.mapId;
                 }
@@ -201,6 +211,16 @@ public class NetworkEnemySpawner : NetworkBehaviour
     {
         if (!ShouldAutoSpawnForMap(targetMapId))
             yield break;
+
+        // ✅ Tránh double-spawn: nếu HostSpawnConfigLoader của map scene này
+        // đã claim mapId, bỏ qua. NetworkEnemySpawner chỉ đóng vai trò fallback
+        // cho map không có HostSpawnConfigLoader.
+        if (HostSpawnConfigLoader.IsMapClaimed(targetMapId))
+        {
+            Debug.Log($"[NetworkEnemySpawner] Skip mapId={targetMapId} vì HostSpawnConfigLoader đã claim. scene={gameObject.scene.name}");
+            loadedMapIds.Add(targetMapId);
+            yield break;
+        }
 
         Debug.Log($"[NetworkEnemySpawner] Loading enemy spawns for map {targetMapId}... scene={gameObject.scene.name}, apiBaseURL={apiBaseURL}, isServer={IsServer}, dedicated={IsDedicatedWorldServer()}");
 
@@ -308,7 +328,10 @@ public class NetworkEnemySpawner : NetworkBehaviour
             
             if (networkObj != null)
             {
-                // Server-side: tắt gravity (ServerScene không có ground)
+                // Server-side: dedicated server không có đủ ground collider cho mọi map
+                // (ServerGroundColliderDatabase chỉ baked vài map). Vì vậy LUÔN tắt gravity
+                // và để EnemyAI tự kẹp Y về _serverAnchorY (virtual ground) cho non-fly.
+                // Fly enemy đã tự tắt gravity trong EnemyAI.Awake.
                 var rb = enemyObj.GetComponent<Rigidbody2D>();
                 if (rb != null)
                     rb.gravityScale = 0f;
@@ -320,6 +343,9 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 ApplyMapVisibility(enemyObj, targetMapId);
                 networkObj.Spawn();
                 StartCoroutine(DelayedRefreshVisibility(enemyObj));
+
+                // Track spawned GO để CheckRespawnLoop detect khi nó die
+                spawnedEnemies[spawnData.spawn_id] = enemyObj;
 
                 ApplyEnemyOverrides(enemyObj, spawnData, targetMapId);
 
@@ -342,6 +368,48 @@ public class NetworkEnemySpawner : NetworkBehaviour
         }
 
         lastRespawnTime[spawnData.spawn_id] = Time.time;
+        // Cache để CheckRespawnLoop có thể respawn lại sau khi enemy chết
+        _spawnDataCache[spawnData.spawn_id] = spawnData;
+        _spawnMapIdCache[spawnData.spawn_id] = targetMapId;
+    }
+
+    /// <summary>
+    /// Coroutine chạy liên tục trên server — poll mỗi 5s, phát hiện spawn point trống và respawn.
+    /// </summary>
+    private IEnumerator CheckRespawnLoop()
+    {
+        yield return new WaitForSeconds(10f); // chờ initial spawn xong
+        while (true)
+        {
+            yield return new WaitForSeconds(5f);
+            if (!IsServer) yield break;
+
+            foreach (var kvp in _spawnDataCache)
+            {
+                int spawnId = kvp.Key;
+                EnemySpawnData spawnData = kvp.Value;
+
+                // Kiểm tra enemy có còn sống không
+                if (spawnedEnemies.TryGetValue(spawnId, out var go) && go != null)
+                    continue; // vẫn còn sống
+
+                // Enemy đã chết — kiểm tra respawn timer
+                if (!lastRespawnTime.TryGetValue(spawnId, out float lastTime)
+                    || Time.time - lastTime < spawnData.respawn_time)
+                    continue;
+
+                if (!_spawnMapIdCache.TryGetValue(spawnId, out int cachedMapId))
+                    continue;
+
+                Debug.Log($"[NetworkEnemySpawner] Respawning spawn_id={spawnId} enemy_type_id={spawnData.enemy_type_id} map={cachedMapId} after {spawnData.respawn_time}s");
+
+                // Xóa dedup keys cũ để SpawnEnemyAtPoint không bị skip
+                for (int i = 0; i < spawnData.max_spawn_count; i++)
+                    _spawnedEnemyKeys.Remove($"map{cachedMapId}_spawn{spawnId}_i{i}");
+
+                SpawnEnemyAtPoint(spawnData, cachedMapId);
+            }
+        }
     }
 
     private IEnumerator DelayedRefreshVisibility(GameObject obj)

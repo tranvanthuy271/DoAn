@@ -413,8 +413,11 @@ public class ChatPanelUI : MonoBehaviour
         var tmp = go.GetComponent<TextMeshProUGUI>() ?? go.GetComponentInChildren<TextMeshProUGUI>(true);
         if (tmp == null) return;
 
-        ConfigureSimpleEntryLayout(go, tmp);
+        // Đặt text trước khi cấu hình layout để tránh trường hợp layout setup
+        // ném exception (ví dụ trên prefab đã có sẵn Graphic) làm text gốc
+        // của prefab không bị ghi đè.
         tmp.text = BuildMessageMarkup(msg);
+        ConfigureSimpleEntryLayout(go, tmp);
     }
 
     private GameObject ResolveMessageEntryPrefab()
@@ -492,11 +495,21 @@ public class ChatPanelUI : MonoBehaviour
         layout.layoutPriority = 1;
 
         var bg = go.GetComponent<Image>();
+        // Một GameObject chỉ chứa được 1 Graphic. Nếu prefab đã đặt
+        // TextMeshProUGUI trên root thì không thể (và không cần) thêm Image
+        // làm background tại đây — bỏ qua để tránh NullReferenceException.
         if (bg == null)
-            bg = go.AddComponent<Image>();
+        {
+            var existingGraphic = go.GetComponent<Graphic>();
+            if (existingGraphic == null)
+                bg = go.AddComponent<Image>();
+        }
 
-        bg.raycastTarget = false;
-        bg.color = new Color32(0xFF, 0xF6, 0xEA, 0x78);
+        if (bg != null)
+        {
+            bg.raycastTarget = false;
+            bg.color = new Color32(0xFF, 0xF6, 0xEA, 0x78);
+        }
 
         tmp.fontSize = Mathf.Max(tmp.fontSize, 18f);
         tmp.enableAutoSizing = false;

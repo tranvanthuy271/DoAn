@@ -129,7 +129,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
 
         // Damage enemy
         var netEnemy = other.GetComponentInParent<NetworkEnemyHealth>();
-        if (netEnemy != null) { netEnemy.TakeDamage(finalDamage); return; }
+        if (netEnemy != null) { netEnemy.TakeDamage(finalDamage, GetOwnerClientId()); return; }
 
         var localEnemy = other.GetComponent<EnemyHealth>()
                       ?? other.GetComponentInParent<EnemyHealth>();
@@ -170,6 +170,15 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         // Khi về đủ gần owner thì Despawn
         if (Vector2.Distance(transform.position, ownerT.position) < 0.5f)
             DespawnOrDestroy();
+    }
+
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out var netOwner) == true)
+            return netOwner.OwnerClientId;
+        return ulong.MaxValue;
     }
 
     private Transform ResolveOwner()

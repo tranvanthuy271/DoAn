@@ -56,6 +56,16 @@ public class FireballDamage : MonoBehaviour
         var room = registry.GetClientRoom(ownerNetObj.OwnerClientId);
         return room?.MapId ?? -999;
     }
+
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        var nm = Unity.Netcode.NetworkManager.Singleton;
+        if (nm == null) return ulong.MaxValue;
+        if (!nm.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
+            return ulong.MaxValue;
+        return ownerNetObj.OwnerClientId;
+    }
     private void Start()
     {
         // Äáº£m báº£o collider lÃ  trigger
@@ -98,7 +108,7 @@ public class FireballDamage : MonoBehaviour
                 Debug.LogWarning($"[FireballDamage] Bỏ qua cross-map: owner map={ownerMap}, enemy map={enemyZoneTag.MapId}");
                 return;
             }
-            networkEnemyHealth.TakeDamage(finalDamage);
+            networkEnemyHealth.TakeDamage(finalDamage, GetOwnerClientId());
             ApplyDebuffToTarget(networkEnemyHealth.gameObject);
             hasHit = true;
             Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network)");

@@ -82,6 +82,12 @@ public class NpcMenuUI : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        UIPanelManager.Register(gameObject, Close);
+    }
+
+    private void OnDestroy()
+    {
+        UIPanelManager.Unregister(gameObject);
     }
 
     private void OnEnable()
@@ -222,7 +228,9 @@ public class NpcMenuUI : MonoBehaviour
         // Non-blacksmith: kích hoạt root và hiện mainPanel
         if (!gameObject.activeSelf)
             gameObject.SetActive(true);
+        UIPanelManager.CloseOthers(gameObject);
         mainPanel.SetActive(true);
+        UIPanelManager.NotifyOpened(gameObject);
         ShowShopTab();
     }
 
@@ -243,6 +251,7 @@ public class NpcMenuUI : MonoBehaviour
         _currentInteraction = null;
         _activeElementFilter = 0;
         _activeEquipTypeFilter = -1;
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     /// <summary>

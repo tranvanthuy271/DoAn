@@ -589,6 +589,17 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.PlayerId);
             });
 
+            // ── Leaderboard: leaderboard_cache ───────────────────────────────
+            modelBuilder.Entity<GameServerApi.Models.Entities.LeaderboardCache>(entity =>
+            {
+                entity.ToTable("leaderboard_caches");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.Name).HasColumnName("Name").HasMaxLength(100);
+                entity.Property(e => e.ListJson).HasColumnName("ListJson");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
+            });
+
             // ── Leaderboard: player_quest_log ─────────────────────────────────
             modelBuilder.Entity<GameServerApi.Models.Entities.PlayerQuestLog>(entity =>
             {

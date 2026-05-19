@@ -19,14 +19,16 @@ public static class QuestProgressReporter
     /// Báo cáo sự kiện lên /api/quest/progress.
     /// type: "kill" | "collect" | "talk"
     /// targetId: enemy_id, item_template_id, hoặc npc_id tương ứng
+    /// host: nên truyền MonoBehaviour tồn tại lâu dài (vd: killerSync) để tránh coroutine bị hủy khi enemy despawn
+    /// onSuccess: callback sau khi REST call thành công (chạy trên main thread)
     /// </summary>
-    public static void Report(MonoBehaviour host, int playerId, ProgressType type, int targetId, int delta = 1)
+    public static void Report(MonoBehaviour host, int playerId, ProgressType type, int targetId, int delta = 1, System.Action onSuccess = null)
     {
         if (host == null || playerId <= 0) return;
-        host.StartCoroutine(ReportCoroutine(playerId, type.ToString().ToLower(), targetId, delta));
+        host.StartCoroutine(ReportCoroutine(playerId, type.ToString().ToLower(), targetId, delta, onSuccess));
     }
 
-    private static IEnumerator ReportCoroutine(int playerId, string type, int targetId, int delta)
+    private static IEnumerator ReportCoroutine(int playerId, string type, int targetId, int delta, System.Action onSuccess = null)
     {
         string baseUrl = ServerAddressConfig.Instance != null
             ? ServerAddressConfig.Instance.ApiUrl
@@ -57,9 +59,15 @@ public static class QuestProgressReporter
         yield return req.SendWebRequest();
 
         if (req.result == UnityWebRequest.Result.Success)
-            Debug.Log($"[QuestProgress] OK playerId={playerId} type={type} targetId={targetId}: {req.downloadHandler.text}");
+        {
+            string responseText = req.downloadHandler.text;
+            Debug.Log($"[QuestProgress] ✓ OK playerId={playerId} type={type} targetId={targetId}: {responseText}");
+            // Chỉ notify client khi server thực sự cộng tiến trình (response có step_progress)
+            if (responseText.Contains("step_progress"))
+                onSuccess?.Invoke();
+        }
         else
-            Debug.LogWarning($"[QuestProgress] FAIL playerId={playerId} type={type} targetId={targetId}: {req.error} {req.downloadHandler?.text}");
+            Debug.LogWarning($"[QuestProgress] ✗ FAIL playerId={playerId} type={type} targetId={targetId}: {req.error} | body={req.downloadHandler?.text}");
     }
 
     [System.Serializable]

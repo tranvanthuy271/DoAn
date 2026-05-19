@@ -147,12 +147,22 @@ public class DotDamage : NetworkBehaviour
             Destroy(gameObject);
     }
 
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out var netOwner) == true)
+            return netOwner.OwnerClientId;
+        return ulong.MaxValue;
+    }
+
     private System.Collections.IEnumerator ApplyDotEnemy(EnemyHealth eh, NetworkEnemyHealth neh)
     {
+        ulong ownerClientId = GetOwnerClientId();
         for (int i = 0; i < dotTicks; i++)
         {
             if (eh != null) eh.TakeDamage(dotDamagePerTick);
-            else if (neh != null) neh.TakeDamage(dotDamagePerTick);
+            else if (neh != null) neh.TakeDamage(dotDamagePerTick, ownerClientId);
             yield return new WaitForSeconds(tickInterval);
         }
     }

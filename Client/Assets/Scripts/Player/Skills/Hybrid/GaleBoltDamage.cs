@@ -51,7 +51,7 @@ public class GaleBoltDamage : MonoBehaviour
         var netHealth = other.GetComponentInParent<NetworkEnemyHealth>();
         if (netHealth != null)
         {
-            netHealth.TakeDamage(damage);
+            netHealth.TakeDamage(damage, GetOwnerClientId());
             _pierced++;
             if (_pierced >= pierceCount) DespawnOrDestroy();
             return;
@@ -78,6 +78,15 @@ public class GaleBoltDamage : MonoBehaviour
                 if (_pierced >= pierceCount) DespawnOrDestroy();
             }
         }
+    }
+
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out var netOwner) == true)
+            return netOwner.OwnerClientId;
+        return ulong.MaxValue;
     }
 
     private void DespawnOrDestroy()

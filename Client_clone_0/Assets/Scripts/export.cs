@@ -1,6 +1,7 @@
-using UnityEngine;
-using UnityEditor;
+#if UNITY_EDITOR
 using System.IO;
+using UnityEditor;
+using UnityEngine;
 
 public class ExportSprites
 {
@@ -33,3 +34,4 @@ public class ExportSprites
         Debug.Log("Export done!");
     }
 }
+#endif

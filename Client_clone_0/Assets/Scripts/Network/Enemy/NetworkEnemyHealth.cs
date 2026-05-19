@@ -243,8 +243,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
         // Notify clients — play Die animation trước khi xóa
         OnDeathClientRpc();
 
-        // Thưởng EXP cho người đánh cuối (chạy trên server)
-        if (ExpReward > 0 && _lastAttackerClientId != ulong.MaxValue)
+        // Xử lý sự kiện attacker (EXP + Quest kill) — chạy trên server
+        if (_lastAttackerClientId != ulong.MaxValue)
         {
             // Tìm NetworkPlayerDataSync của killer theo OwnerClientId
             // (dùng SpawnedObjects vì game dùng SpawnWithOwnership, không phải SpawnAsPlayerObject)
@@ -260,13 +260,24 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
             if (killerSync != null)
             {
-                killerSync.AwardExpOnServer(ExpReward);
+                // Thưởng EXP
+                if (ExpReward > 0)
+                    killerSync.AwardExpOnServer(ExpReward);
 
                 // Quest kill hook: báo cáo tiến trình nhiệm vụ loại "kill"
                 int dbPlayerId = killerSync.networkPlayerId.Value;
                 int enemyDbId  = EnemyDbId;
+                Debug.Log($"[QuestKill] dbPlayerId={dbPlayerId} enemyDbId={enemyDbId} enemy={gameObject.name} expReward={ExpReward}");
                 if (dbPlayerId > 0 && enemyDbId > 0)
-                    QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Kill, enemyDbId);
+                {
+                    Debug.Log($"[QuestKill] → gọi QuestProgressReporter.Report Kill playerId={dbPlayerId} targetId={enemyDbId}");
+                    // Dùng killerSync làm host để coroutine không bị kill khi enemy despawn
+                    var capturedSync = killerSync;
+                    QuestProgressReporter.Report(killerSync, dbPlayerId, QuestProgressReporter.ProgressType.Kill, enemyDbId, 1,
+                        () => capturedSync.NotifyQuestKillOnServer());
+                }
+                else
+                    Debug.LogWarning($"[QuestKill] BỎ QUA: dbPlayerId={dbPlayerId} enemyDbId={enemyDbId} — một trong hai bằng 0!");
             }
             else
                 Debug.LogWarning($"[NetworkEnemyHealth] Không tìm được NetworkPlayerDataSync cho client {_lastAttackerClientId}");
@@ -362,12 +373,13 @@ public class NetworkEnemyHealth : NetworkBehaviour
     public void SetExpReward(int exp) => ExpReward = exp;
 
     /// <summary>
-    /// Public method để các script khác gọi (tự động chuyển thành ServerRpc)
+    /// Public method để các script khác gọi (tự động chuyển thành ServerRpc).
+    /// Server-side callers (projectiles, skills) nên truyền attackerClientId để quest kill được ghi nhận.
     /// </summary>
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, ulong attackerClientId = ulong.MaxValue)
     {
         if (IsServer)
-            TakeDamageInternal(damage, ulong.MaxValue);
+            TakeDamageInternal(damage, attackerClientId);
         else
             TakeDamageServerRpc(damage);
     }

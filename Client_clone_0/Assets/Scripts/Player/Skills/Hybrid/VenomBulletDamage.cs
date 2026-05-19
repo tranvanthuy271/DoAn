@@ -75,7 +75,7 @@ public class VenomBulletDamage : NetworkBehaviour
         if (netHealth != null)
         {
             _hasHit = true;
-            netHealth.TakeDamage(damage);
+            netHealth.TakeDamage(damage, GetOwnerClientId());
 
             var enemyAI = other.GetComponent<EnemyAI>()
                        ?? other.GetComponentInParent<EnemyAI>();
@@ -118,6 +118,15 @@ public class VenomBulletDamage : NetworkBehaviour
                 DespawnOrDestroy();
             }
         }
+    }
+
+    private ulong GetOwnerClientId()
+    {
+        if (ownerNetworkObjectId == 0) return ulong.MaxValue;
+        if (NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out var netOwner) == true)
+            return netOwner.OwnerClientId;
+        return ulong.MaxValue;
     }
 
     private void DespawnOrDestroy()

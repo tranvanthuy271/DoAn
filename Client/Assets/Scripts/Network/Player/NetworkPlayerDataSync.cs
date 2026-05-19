@@ -725,6 +725,34 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             FindObjectOfType<StatsTabUI>()?.Load();
     }
 
+    // ── Quest Refresh Notify ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Server gọi sau khi QuestProgressReporter.Report() thành công.
+    /// Gửi ClientRpc đến owner client để refresh QuestHudWidget.
+    /// </summary>
+    public void NotifyQuestKillOnServer()
+    {
+        NotifyQuestProgressOnServer("kill");
+    }
+
+    public void NotifyQuestProgressOnServer(string source = "unknown")
+    {
+        if (!IsServer) return;
+        Debug.Log($"[NetworkPlayerDataSync] NotifyQuestProgressOnServer source={source} → gửi ClientRpc đến clientId={OwnerClientId}");
+        NotifyQuestRefreshClientRpc(new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+        });
+    }
+
+    [ClientRpc]
+    private void NotifyQuestRefreshClientRpc(ClientRpcParams _ = default)
+    {
+        Debug.Log("[NetworkPlayerDataSync] NotifyQuestRefresh nhận được → RefreshPlayerOverview()");
+        QuestManager.Instance?.RefreshPlayerOverview();
+    }
+
     // ── Proximity Chat Bubble ─────────────────────────────────────────────────
 
     /// <summary>

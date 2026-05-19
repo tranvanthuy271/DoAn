@@ -115,6 +115,8 @@ public class MapTransitionButton : MonoBehaviour
         }
 
         var resp = JsonUtility.FromJson<TravelResponse>(travelReq.downloadHandler.text);
+        Vector2 arrivalPos = new Vector2(resp.dest_x, resp.dest_y);
+        yield return StartCoroutine(ResolveDirectionalArrivalPosition(resp.dest_map_id, direction, arrivalPos, resolved => arrivalPos = resolved));
 
         // 3. Gửi yêu cầu chuyển map theo kiến trúc 1-port
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
@@ -130,10 +132,32 @@ public class MapTransitionButton : MonoBehaviour
         transitionController.RequestMapPortalTransferServerRpc(
             resp.dest_map_id,
             preferredZoneId,
-            resp.dest_x,
-            resp.dest_y);
+            arrivalPos.x,
+            arrivalPos.y);
 
         ResetButton(hideGlobalLoading: false);
+    }
+
+    private IEnumerator ResolveDirectionalArrivalPosition(int targetMapId, string travelDirection, Vector2 fallbackPos, System.Action<Vector2> onResolved)
+    {
+        string oppositeDirection = travelDirection == "left" ? "right" : "left";
+        string url = $"{apiBase}/api/map/portal/direction?mapId={targetMapId}&direction={oppositeDirection}";
+
+        using var req = UnityWebRequest.Get(url);
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var portal = JsonUtility.FromJson<PortalData>(req.downloadHandler.text);
+            Vector2 resolved = new Vector2(portal.src_x, portal.src_y);
+            Debug.Log($"[MapTransitionButton] Arrival resolved from target {oppositeDirection} portal → map={targetMapId} pos=({resolved.x},{resolved.y})");
+            onResolved?.Invoke(resolved);
+        }
+        else
+        {
+            Debug.LogWarning($"[MapTransitionButton] Không resolve được portal '{oppositeDirection}' của map {targetMapId}. Fallback về dest_x/dest_y từ travel response. HTTP={req.responseCode} err={req.error}");
+            onResolved?.Invoke(fallbackPos);
+        }
     }
 
     private void ResetButton(bool hideGlobalLoading)
@@ -195,6 +219,7 @@ public class MapTransitionButton : MonoBehaviour
         public int    portal_id;
         public string portal_name;
         public float  src_x;
+        public float  src_y;
         public int    dest_map_id;
         public string dest_scene_name;
         public float  dest_x;

@@ -1,0 +1,9639 @@
+{
+  "Map00": {
+    "map_id": 99,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          12.7505,
+          2.177
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 2.6208,
+        "left_x": 10.1311,
+        "right_x": 15.3699
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          6.9057,
+          2.7438
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 3.1876,
+        "left_x": 4.2863,
+        "right_x": 9.5251
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          11.5905,
+          -3.8257
+        ],
+        "world_size": [
+          40.5829,
+          2.4149
+        ],
+        "top_y": -2.6182,
+        "left_x": -8.7009,
+        "right_x": 31.8819
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          11.8873,
+          -0.3632
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 0.0806,
+        "left_x": 9.2679,
+        "right_x": 14.5067
+      },
+      {
+        "name": "Ground (16)",
+        "go_fid": 413333793,
+        "world_center": [
+          22.1122,
+          -0.1905
+        ],
+        "world_size": [
+          2.2095,
+          0.641
+        ],
+        "top_y": 0.13,
+        "left_x": 21.0075,
+        "right_x": 23.217
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          -3.883,
+          -0.1578
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 0.286,
+        "left_x": -6.5024,
+        "right_x": -1.2636
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          0.9374,
+          2.177
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 2.6208,
+        "left_x": -1.682,
+        "right_x": 3.5568
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          30.7668,
+          3.3366
+        ],
+        "world_size": [
+          2.304,
+          0.8876
+        ],
+        "top_y": 3.7804,
+        "left_x": 29.6148,
+        "right_x": 31.9188
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          6.6524,
+          -2.2768
+        ],
+        "world_size": [
+          7.119,
+          0.8876
+        ],
+        "top_y": -1.833,
+        "left_x": 3.0929,
+        "right_x": 10.2119
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          27.9799,
+          1.1916
+        ],
+        "world_size": [
+          7.8777,
+          0.8876
+        ],
+        "top_y": 1.6354,
+        "left_x": 24.0411,
+        "right_x": 31.9188
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          19.8292,
+          2.7451
+        ],
+        "world_size": [
+          6.6693,
+          0.8876
+        ],
+        "top_y": 3.1889,
+        "left_x": 16.4946,
+        "right_x": 23.1638
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          17.905,
+          -0.1903
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 0.2535,
+        "left_x": 15.2856,
+        "right_x": 20.5244
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          2.0164,
+          -0.2878
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 0.156,
+        "left_x": -0.603,
+        "right_x": 4.6358
+      },
+      {
+        "name": "Ground (15)",
+        "go_fid": 1645575129,
+        "world_center": [
+          -2.355,
+          2.4732
+        ],
+        "world_size": [
+          1.1202,
+          0.641
+        ],
+        "top_y": 2.7937,
+        "left_x": -2.9151,
+        "right_x": -1.795
+      },
+      {
+        "name": "Ground (14)",
+        "go_fid": 1878273637,
+        "world_center": [
+          15.6978,
+          2.3499
+        ],
+        "world_size": [
+          1.4161,
+          0.8876
+        ],
+        "top_y": 2.7937,
+        "left_x": 14.9898,
+        "right_x": 16.4059
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -5.5249,
+          2.7386
+        ],
+        "world_size": [
+          5.2388,
+          0.8876
+        ],
+        "top_y": 3.1824,
+        "left_x": -8.1443,
+        "right_x": -2.9055
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          26.0563,
+          4.7432
+        ],
+        "world_size": [
+          5.7074,
+          0.8876
+        ],
+        "top_y": 5.187,
+        "left_x": 23.2026,
+        "right_x": 28.91
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -5.58,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -2.46,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 0.66,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 3.79,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 6.91,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 10.03,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 13.15,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 16.27,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 19.39,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 22.52,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 25.64,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 28.76,
+        "cy": -2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -7.27,
+        "cy": 3.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -6.4,
+        "cy": 3.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -5.52,
+        "cy": 3.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -4.65,
+        "cy": 3.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -3.78,
+        "cy": 3.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.63,
+        "cy": 0.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -4.76,
+        "cy": 0.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -3.88,
+        "cy": 0.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -3.01,
+        "cy": 0.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -2.14,
+        "cy": 0.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -0.81,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.06,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 0.94,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 1.81,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 2.68,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.27,
+        "cy": 0.66,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 1.14,
+        "cy": 0.66,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 2.02,
+        "cy": 0.66,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 2.89,
+        "cy": 0.66,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 3.76,
+        "cy": 0.66,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 3.98,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 4.87,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 5.76,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.65,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 7.54,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 8.43,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 9.32,
+        "cy": -1.33,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 5.16,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 6.03,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.91,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 7.78,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 8.65,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 10.14,
+        "cy": 0.58,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 11.01,
+        "cy": 0.58,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 11.89,
+        "cy": 0.58,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.76,
+        "cy": 0.58,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 13.63,
+        "cy": 0.58,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 11.0,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 11.88,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.75,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 13.62,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 14.5,
+        "cy": 3.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 15.7,
+        "cy": 3.29,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 16.16,
+        "cy": 0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.03,
+        "cy": 0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 17.91,
+        "cy": 0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 18.78,
+        "cy": 0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 19.65,
+        "cy": 0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.45,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.4,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 19.35,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 20.31,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 21.26,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 22.21,
+        "cy": 3.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 21.74,
+        "cy": 0.63,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 22.48,
+        "cy": 0.63,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 24.15,
+        "cy": 5.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 25.11,
+        "cy": 5.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 26.06,
+        "cy": 5.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 27.01,
+        "cy": 5.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 27.96,
+        "cy": 5.69,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 25.03,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 26.01,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 27.0,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 27.98,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 28.96,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 29.95,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 30.93,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 30.38,
+        "cy": 4.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 31.15,
+        "cy": 4.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      }
+    ]
+  },
+  "Map01": {
+    "map_id": 100,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          8.1372,
+          11.3629
+        ],
+        "world_size": [
+          5.9751,
+          0.9589
+        ],
+        "top_y": 11.8423,
+        "left_x": 5.1497,
+        "right_x": 11.1247
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          8.0397,
+          7.6192
+        ],
+        "world_size": [
+          9.7274,
+          1.6476
+        ],
+        "top_y": 8.443,
+        "left_x": 3.176,
+        "right_x": 12.9034
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          8.1138,
+          -3.345
+        ],
+        "world_size": [
+          33.9501,
+          3.3625
+        ],
+        "top_y": -1.6638,
+        "left_x": -8.8612,
+        "right_x": 25.0888
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          6.9029,
+          2.2489
+        ],
+        "world_size": [
+          2.4745,
+          0.8605
+        ],
+        "top_y": 2.6792,
+        "left_x": 5.6656,
+        "right_x": 8.1401
+      },
+      {
+        "name": "Ground (16)",
+        "go_fid": 413333793,
+        "world_center": [
+          23.1204,
+          13.008
+        ],
+        "world_size": [
+          3.8787,
+          0.9749
+        ],
+        "top_y": 13.4955,
+        "left_x": 21.181,
+        "right_x": 25.0597
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          2.1122,
+          2.5272
+        ],
+        "world_size": [
+          3.8454,
+          0.4477
+        ],
+        "top_y": 2.751,
+        "left_x": 0.1896,
+        "right_x": 4.0349
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          1.1333,
+          9.2136
+        ],
+        "world_size": [
+          5.3338,
+          0.3652
+        ],
+        "top_y": 9.3962,
+        "left_x": -1.5336,
+        "right_x": 3.8002
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          12.5544,
+          0.6373
+        ],
+        "world_size": [
+          2.4182,
+          0.857
+        ],
+        "top_y": 1.0658,
+        "left_x": 11.3453,
+        "right_x": 13.7635
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          6.4921,
+          2.4086
+        ],
+        "world_size": [
+          7.119,
+          0.8876
+        ],
+        "top_y": 2.8524,
+        "left_x": 2.9326,
+        "right_x": 10.0516
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          19.7361,
+          1.2985
+        ],
+        "world_size": [
+          10.6972,
+          0.5255
+        ],
+        "top_y": 1.5613,
+        "left_x": 14.3875,
+        "right_x": 25.0848
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          20.337,
+          7.396
+        ],
+        "world_size": [
+          9.3877,
+          0.8185
+        ],
+        "top_y": 7.8052,
+        "left_x": 15.6431,
+        "right_x": 25.0308
+      },
+      {
+        "name": "Ground (17)",
+        "go_fid": 1374918723,
+        "world_center": [
+          -7.1916,
+          14.6457
+        ],
+        "world_size": [
+          3.6938,
+          0.625
+        ],
+        "top_y": 14.9582,
+        "left_x": -9.0385,
+        "right_x": -5.3447
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          9.9022,
+          1.3653
+        ],
+        "world_size": [
+          2.3433,
+          0.9796
+        ],
+        "top_y": 1.8551,
+        "left_x": 8.7306,
+        "right_x": 11.0738
+      },
+      {
+        "name": "Ground (18)",
+        "go_fid": 1571541988,
+        "world_center": [
+          -4.3261,
+          13.7276
+        ],
+        "world_size": [
+          3.0817,
+          0.5695
+        ],
+        "top_y": 14.0123,
+        "left_x": -5.867,
+        "right_x": -2.7852
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          -4.4126,
+          3.6235
+        ],
+        "world_size": [
+          9.3077,
+          0.6647
+        ],
+        "top_y": 3.9558,
+        "left_x": -9.0664,
+        "right_x": 0.2412
+      },
+      {
+        "name": "Ground (15)",
+        "go_fid": 1645575129,
+        "world_center": [
+          -0.0425,
+          11.6145
+        ],
+        "world_size": [
+          7.9323,
+          0.5944
+        ],
+        "top_y": 11.9117,
+        "left_x": -4.0086,
+        "right_x": 3.9237
+      },
+      {
+        "name": "Ground (14)",
+        "go_fid": 1878273637,
+        "world_center": [
+          16.7068,
+          12.2349
+        ],
+        "world_size": [
+          9.626,
+          0.5393
+        ],
+        "top_y": 12.5046,
+        "left_x": 11.8938,
+        "right_x": 21.5198
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -2.061,
+          6.7312
+        ],
+        "world_size": [
+          10.8341,
+          0.5054
+        ],
+        "top_y": 6.9839,
+        "left_x": -7.4781,
+        "right_x": 3.3561
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          22.7727,
+          4.7895
+        ],
+        "world_size": [
+          4.7008,
+          0.5488
+        ],
+        "top_y": 5.0639,
+        "left_x": 20.4223,
+        "right_x": 25.1231
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -8.14,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -7.2,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -6.27,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -5.34,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -4.41,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -3.48,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -2.55,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -1.62,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -0.69,
+        "cy": 4.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -8.12,
+        "cy": 15.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -7.19,
+        "cy": 15.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -6.27,
+        "cy": 15.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -6.25,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -3.64,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -1.03,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 1.58,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 4.2,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 6.81,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 9.42,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.03,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 14.64,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.25,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 19.87,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.48,
+        "cy": -1.16,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -6.49,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.51,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -4.52,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -3.54,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -2.55,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -1.57,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -0.58,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.4,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 1.39,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 2.37,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.1,
+        "cy": 14.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -4.33,
+        "cy": 14.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -3.56,
+        "cy": 14.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -3.02,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -2.03,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": -1.03,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -0.04,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 0.95,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 1.94,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 2.93,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -0.64,
+        "cy": 9.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 0.24,
+        "cy": 9.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 1.13,
+        "cy": 9.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 2.02,
+        "cy": 9.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 2.91,
+        "cy": 9.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 1.15,
+        "cy": 3.25,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 2.11,
+        "cy": 3.25,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 3.07,
+        "cy": 3.25,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 3.82,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 4.71,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 5.6,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.49,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.38,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 8.27,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 9.16,
+        "cy": 3.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 4.15,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 5.12,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.09,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.07,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 8.04,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 9.01,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.99,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 10.96,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 11.93,
+        "cy": 8.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 6.15,
+        "cy": 12.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 7.14,
+        "cy": 12.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 8.14,
+        "cy": 12.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.13,
+        "cy": 12.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 10.13,
+        "cy": 12.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.49,
+        "cy": 3.18,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.32,
+        "cy": 3.18,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 9.51,
+        "cy": 2.36,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 10.29,
+        "cy": 2.36,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 12.15,
+        "cy": 1.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 12.96,
+        "cy": 1.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.86,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 13.82,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 14.78,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 15.74,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.71,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.67,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.63,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.59,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 20.56,
+        "cy": 13.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 15.36,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.33,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.3,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.28,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.25,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 20.22,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 21.19,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.17,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 23.14,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 24.11,
+        "cy": 2.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.58,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 17.52,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.46,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.4,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 20.34,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 21.28,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.21,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 23.15,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 24.09,
+        "cy": 8.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 21.36,
+        "cy": 5.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 22.3,
+        "cy": 5.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 23.24,
+        "cy": 5.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 24.18,
+        "cy": 5.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 1,
+        "hp": 50,
+        "exp": 50,
+        "cx": 22.15,
+        "cy": 14.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 1
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 23.12,
+        "cy": 14.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 24.09,
+        "cy": 14.0,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      }
+    ]
+  },
+  "Map02": {
+    "map_id": 101,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          16.531,
+          5.6892
+        ],
+        "world_size": [
+          9.6067,
+          0.6471
+        ],
+        "top_y": 6.0127,
+        "left_x": 11.7276,
+        "right_x": 21.3343
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          8.3054,
+          8.3784
+        ],
+        "world_size": [
+          9.7393,
+          0.7813
+        ],
+        "top_y": 8.7691,
+        "left_x": 3.4358,
+        "right_x": 13.1751
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          11.5196,
+          -4.4756
+        ],
+        "world_size": [
+          40.7247,
+          0.9875
+        ],
+        "top_y": -3.9818,
+        "left_x": -8.8428,
+        "right_x": 31.8819
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          5.8499,
+          4.3691
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": 4.7885,
+        "left_x": 4.6726,
+        "right_x": 7.0272
+      },
+      {
+        "name": "Ground (16)",
+        "go_fid": 413333793,
+        "world_center": [
+          22.1122,
+          3.4419
+        ],
+        "world_size": [
+          2.2095,
+          0.641
+        ],
+        "top_y": 3.7624,
+        "left_x": 21.0075,
+        "right_x": 23.217
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          -2.5851,
+          4.4443
+        ],
+        "world_size": [
+          10.699,
+          0.4998
+        ],
+        "top_y": 4.6942,
+        "left_x": -7.9346,
+        "right_x": 2.7644
+      },
+      {
+        "name": "Ground (21)",
+        "go_fid": 444233622,
+        "world_center": [
+          12.6619,
+          10.4635
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": 10.8829,
+        "left_x": 11.4846,
+        "right_x": 13.8392
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          0.0049,
+          10.0446
+        ],
+        "world_size": [
+          9.6683,
+          0.5768
+        ],
+        "top_y": 10.333,
+        "left_x": -4.8293,
+        "right_x": 4.839
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          17.8932,
+          11.4696
+        ],
+        "world_size": [
+          5.3231,
+          0.8876
+        ],
+        "top_y": 11.9134,
+        "left_x": 15.2316,
+        "right_x": 20.5547
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          -4.4996,
+          1.2661
+        ],
+        "world_size": [
+          8.8356,
+          0.7086
+        ],
+        "top_y": 1.6204,
+        "left_x": -8.9174,
+        "right_x": -0.0818
+      },
+      {
+        "name": "Ground (17)",
+        "go_fid": 965748642,
+        "world_center": [
+          4.6279,
+          -2.9135
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": -2.4941,
+        "left_x": 3.4506,
+        "right_x": 5.8052
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          13.8852,
+          -2.6744
+        ],
+        "world_size": [
+          10.7686,
+          0.8876
+        ],
+        "top_y": -2.2306,
+        "left_x": 8.5009,
+        "right_x": 19.2695
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          16.5499,
+          5.7113
+        ],
+        "world_size": [
+          9.6801,
+          0.5397
+        ],
+        "top_y": 5.9811,
+        "left_x": 11.7098,
+        "right_x": 21.39
+      },
+      {
+        "name": "Ground (19)",
+        "go_fid": 1014119123,
+        "world_center": [
+          10.8809,
+          -1.3925
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": -0.9731,
+        "left_x": 9.7036,
+        "right_x": 12.0582
+      },
+      {
+        "name": "Ground (22)",
+        "go_fid": 1136782345,
+        "world_center": [
+          9.6069,
+          12.6735
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": 13.0929,
+        "left_x": 8.4296,
+        "right_x": 10.7842
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          19.8422,
+          1.0421
+        ],
+        "world_size": [
+          10.7589,
+          0.6133
+        ],
+        "top_y": 1.3488,
+        "left_x": 14.4627,
+        "right_x": 25.2216
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          1.8672,
+          0.2266
+        ],
+        "world_size": [
+          3.926,
+          0.4402
+        ],
+        "top_y": 0.4467,
+        "left_x": -0.0958,
+        "right_x": 3.8302
+      },
+      {
+        "name": "Ground (14)",
+        "go_fid": 1878273637,
+        "world_center": [
+          22.828,
+          10.2861
+        ],
+        "world_size": [
+          4.8849,
+          1.4015
+        ],
+        "top_y": 10.9869,
+        "left_x": 20.3856,
+        "right_x": 25.2705
+      },
+      {
+        "name": "Ground (18)",
+        "go_fid": 1881090288,
+        "world_center": [
+          7.6049,
+          -1.3925
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": -0.9731,
+        "left_x": 6.4276,
+        "right_x": 8.7822
+      },
+      {
+        "name": "Ground (20)",
+        "go_fid": 1916562721,
+        "world_center": [
+          12.1029,
+          0.9605
+        ],
+        "world_size": [
+          2.3546,
+          0.8388
+        ],
+        "top_y": 1.3799,
+        "left_x": 10.9256,
+        "right_x": 13.2802
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -6.6517,
+          11.0337
+        ],
+        "world_size": [
+          4.4617,
+          0.5768
+        ],
+        "top_y": 11.3221,
+        "left_x": -8.8826,
+        "right_x": -4.4209
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          24.929,
+          6.572
+        ],
+        "world_size": [
+          7.962,
+          0.8183
+        ],
+        "top_y": 6.9811,
+        "left_x": 20.948,
+        "right_x": 28.91
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -7.94,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -6.95,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.97,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -4.99,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -4.01,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -3.03,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -2.05,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -1.06,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -7.99,
+        "cy": 11.82,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -7.1,
+        "cy": 11.82,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -6.21,
+        "cy": 11.82,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -5.31,
+        "cy": 11.82,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.71,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -2.58,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.56,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 3.69,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.82,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.95,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 13.09,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.22,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 19.35,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.48,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 25.62,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 28.75,
+        "cy": -3.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -6.96,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -5.99,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -5.02,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -4.04,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -3.07,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -2.1,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -1.13,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -0.15,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.82,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 1.79,
+        "cy": 5.19,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -3.86,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -2.9,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": -1.93,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -0.96,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 0.0,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 0.97,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 1.94,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 2.91,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 3.87,
+        "cy": 10.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 0.89,
+        "cy": 0.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 1.87,
+        "cy": 0.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 2.85,
+        "cy": 0.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 4.41,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 5.38,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.36,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.33,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 8.31,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.28,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 10.25,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 11.23,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.2,
+        "cy": 9.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 4.24,
+        "cy": -1.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 5.02,
+        "cy": -1.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 5.46,
+        "cy": 5.29,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 6.24,
+        "cy": 5.29,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.21,
+        "cy": -0.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 8.0,
+        "cy": -0.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.21,
+        "cy": 13.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 10.0,
+        "cy": 13.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.48,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 10.46,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 11.44,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.42,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 13.4,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 14.37,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 15.35,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 16.33,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 17.31,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.29,
+        "cy": -1.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 10.49,
+        "cy": -0.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 11.27,
+        "cy": -0.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 11.71,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.5,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 12.27,
+        "cy": 11.38,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 13.05,
+        "cy": 11.38,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 12.68,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 13.65,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 14.61,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 15.58,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.55,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 17.52,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 18.49,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 19.45,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 20.42,
+        "cy": 6.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 12.69,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 13.65,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 14.61,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 15.57,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 16.53,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 17.49,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.45,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.41,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 20.37,
+        "cy": 6.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 15.44,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 16.42,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 17.4,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.38,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.35,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 20.33,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 21.31,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 22.29,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 23.27,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 24.24,
+        "cy": 1.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 16.12,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 17.01,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 17.89,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 18.78,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.67,
+        "cy": 12.41,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 21.36,
+        "cy": 11.49,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.34,
+        "cy": 11.49,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 23.32,
+        "cy": 11.49,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 24.29,
+        "cy": 11.49,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 21.94,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.94,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 23.93,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 24.93,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 25.92,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 26.92,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 27.91,
+        "cy": 7.48,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 21.74,
+        "cy": 4.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 2,
+        "hp": 80,
+        "exp": 20,
+        "cx": 22.48,
+        "cy": 4.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      }
+    ]
+  },
+  "Map03": {
+    "map_id": 102,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          13.4991,
+          2.578
+        ],
+        "world_size": [
+          4.8141,
+          0.5196
+        ],
+        "top_y": 2.8378,
+        "left_x": 11.092,
+        "right_x": 15.9061
+      },
+      {
+        "name": "Ground (15)",
+        "go_fid": 295839893,
+        "world_center": [
+          3.9157,
+          2.5256
+        ],
+        "world_size": [
+          0.7508,
+          0.8876
+        ],
+        "top_y": 2.9694,
+        "left_x": 3.5403,
+        "right_x": 4.2911
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          7.1942,
+          3.0103
+        ],
+        "world_size": [
+          4.9132,
+          0.4205
+        ],
+        "top_y": 3.2205,
+        "left_x": 4.7376,
+        "right_x": 9.6508
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          12.5875,
+          -4.1281
+        ],
+        "world_size": [
+          42.6344,
+          2.7352
+        ],
+        "top_y": -2.7605,
+        "left_x": -8.7297,
+        "right_x": 33.9047
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          12.332,
+          -0.1197
+        ],
+        "world_size": [
+          4.8309,
+          0.4588
+        ],
+        "top_y": 0.1097,
+        "left_x": 9.9166,
+        "right_x": 14.7474
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          -3.8527,
+          0.1423
+        ],
+        "world_size": [
+          5.0482,
+          0.5063
+        ],
+        "top_y": 0.3954,
+        "left_x": -6.3767,
+        "right_x": -1.3286
+      },
+      {
+        "name": "Ground (16)",
+        "go_fid": 545582057,
+        "world_center": [
+          -2.6623,
+          2.7726
+        ],
+        "world_size": [
+          0.7508,
+          0.8876
+        ],
+        "top_y": 3.2164,
+        "left_x": -3.0377,
+        "right_x": -2.2869
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          0.4424,
+          2.5918
+        ],
+        "world_size": [
+          4.9681,
+          0.5586
+        ],
+        "top_y": 2.8711,
+        "left_x": -2.0416,
+        "right_x": 2.9265
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          16.8767,
+          2.874
+        ],
+        "world_size": [
+          0.7508,
+          0.8876
+        ],
+        "top_y": 3.3178,
+        "left_x": 16.5013,
+        "right_x": 17.2521
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          7.0964,
+          -2.5747
+        ],
+        "world_size": [
+          7.2288,
+          1.2169
+        ],
+        "top_y": -1.9663,
+        "left_x": 3.482,
+        "right_x": 10.7108
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          27.8323,
+          2.8059
+        ],
+        "world_size": [
+          1.9205,
+          1.0516
+        ],
+        "top_y": 3.3317,
+        "left_x": 26.8721,
+        "right_x": 28.7926
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          20.2299,
+          2.7981
+        ],
+        "world_size": [
+          4.9735,
+          0.4522
+        ],
+        "top_y": 3.0242,
+        "left_x": 17.7431,
+        "right_x": 22.7166
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          23.1062,
+          0.338
+        ],
+        "world_size": [
+          15.8031,
+          0.4404
+        ],
+        "top_y": 0.5582,
+        "left_x": 15.2047,
+        "right_x": 31.0078
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          2.1421,
+          0.151
+        ],
+        "world_size": [
+          5.2388,
+          0.437
+        ],
+        "top_y": 0.3694,
+        "left_x": -0.4773,
+        "right_x": 4.7615
+      },
+      {
+        "name": "Ground (14)",
+        "go_fid": 1741211842,
+        "world_center": [
+          10.4417,
+          2.5256
+        ],
+        "world_size": [
+          0.7508,
+          0.8876
+        ],
+        "top_y": 2.9694,
+        "left_x": 10.0663,
+        "right_x": 10.8171
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -5.9068,
+          3.1833
+        ],
+        "world_size": [
+          4.7852,
+          0.4988
+        ],
+        "top_y": 3.4327,
+        "left_x": -8.2995,
+        "right_x": -3.5142
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          31.1781,
+          2.7369
+        ],
+        "world_size": [
+          4.6521,
+          0.5501
+        ],
+        "top_y": 3.0119,
+        "left_x": 28.8521,
+        "right_x": 33.5042
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -5.45,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -2.17,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 1.11,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 4.39,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 7.67,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 10.95,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 14.23,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 17.51,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 20.79,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 24.07,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 27.35,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 30.63,
+        "cy": -2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -7.34,
+        "cy": 3.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -6.39,
+        "cy": 3.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -5.43,
+        "cy": 3.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -4.47,
+        "cy": 3.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -5.54,
+        "cy": 0.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -4.69,
+        "cy": 0.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -3.85,
+        "cy": 0.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -3.01,
+        "cy": 0.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -2.17,
+        "cy": 0.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -1.05,
+        "cy": 3.37,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": -0.05,
+        "cy": 3.37,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 0.94,
+        "cy": 3.37,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 1.93,
+        "cy": 3.37,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 0.4,
+        "cy": 0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 1.27,
+        "cy": 0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 2.14,
+        "cy": 0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 3.02,
+        "cy": 0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 3.89,
+        "cy": 0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 4.39,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 5.29,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 6.19,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 7.1,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 8.0,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 8.9,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 9.81,
+        "cy": -1.47,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 5.72,
+        "cy": 3.72,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 6.7,
+        "cy": 3.72,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 7.69,
+        "cy": 3.72,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 8.67,
+        "cy": 3.72,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 10.88,
+        "cy": 0.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 11.85,
+        "cy": 0.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 12.82,
+        "cy": 0.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 13.78,
+        "cy": 0.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 12.05,
+        "cy": 3.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 13.02,
+        "cy": 3.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 13.98,
+        "cy": 3.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 14.94,
+        "cy": 3.34,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 16.42,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 17.64,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 18.85,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 20.07,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 21.28,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 22.5,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 23.71,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 24.93,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 26.15,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 27.36,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 28.58,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 29.79,
+        "cy": 1.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 18.74,
+        "cy": 3.52,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 19.73,
+        "cy": 3.52,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 20.73,
+        "cy": 3.52,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 21.72,
+        "cy": 3.52,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 27.83,
+        "cy": 3.83,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 29.78,
+        "cy": 3.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 30.71,
+        "cy": 3.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 3,
+        "hp": 150,
+        "exp": 50,
+        "cx": 31.64,
+        "cy": 3.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 3
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 32.57,
+        "cy": 3.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      }
+    ]
+  },
+  "Map04": {
+    "map_id": 103,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          7.9662,
+          4.0485
+        ],
+        "world_size": [
+          8.8308,
+          1.0084
+        ],
+        "top_y": 4.5526,
+        "left_x": 3.5508,
+        "right_x": 12.3816
+      },
+      {
+        "name": "Ground (32)",
+        "go_fid": 41795388,
+        "world_center": [
+          38.5271,
+          -1.6259
+        ],
+        "world_size": [
+          1.4517,
+          0.7521
+        ],
+        "top_y": -1.2498,
+        "left_x": 37.8012,
+        "right_x": 39.2529
+      },
+      {
+        "name": "Ground (31)",
+        "go_fid": 94037643,
+        "world_center": [
+          37.9681,
+          -1.8859
+        ],
+        "world_size": [
+          1.4517,
+          0.7521
+        ],
+        "top_y": -1.5098,
+        "left_x": 37.2422,
+        "right_x": 38.6939
+      },
+      {
+        "name": "Ground (22)",
+        "go_fid": 108050549,
+        "world_center": [
+          29.791,
+          0.8143
+        ],
+        "world_size": [
+          7.2137,
+          0.9178
+        ],
+        "top_y": 1.2732,
+        "left_x": 26.1842,
+        "right_x": 33.3978
+      },
+      {
+        "name": "Ground (17)",
+        "go_fid": 109600931,
+        "world_center": [
+          3.4647,
+          -1.5692
+        ],
+        "world_size": [
+          1.617,
+          1.034
+        ],
+        "top_y": -1.0522,
+        "left_x": 2.6562,
+        "right_x": 4.2732
+      },
+      {
+        "name": "Ground (35)",
+        "go_fid": 201823572,
+        "world_center": [
+          49.1101,
+          -1.6663
+        ],
+        "world_size": [
+          3.4714,
+          0.8329
+        ],
+        "top_y": -1.2498,
+        "left_x": 47.3744,
+        "right_x": 50.8458
+      },
+      {
+        "name": "Ground (34)",
+        "go_fid": 327956499,
+        "world_center": [
+          46.3431,
+          -1.7672
+        ],
+        "world_size": [
+          1.4921,
+          0.7925
+        ],
+        "top_y": -1.371,
+        "left_x": 45.5971,
+        "right_x": 47.0892
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          3.4,
+          1.7557
+        ],
+        "world_size": [
+          5.4666,
+          1.0415
+        ],
+        "top_y": 2.2764,
+        "left_x": 0.6667,
+        "right_x": 6.1333
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          20.9817,
+          -5.0635
+        ],
+        "world_size": [
+          59.7189,
+          2.5917
+        ],
+        "top_y": -3.7676,
+        "left_x": -8.8778,
+        "right_x": 50.8412
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          7.4954,
+          -1.1782
+        ],
+        "world_size": [
+          7.2008,
+          0.948
+        ],
+        "top_y": -0.7042,
+        "left_x": 3.895,
+        "right_x": 11.0958
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          -4.6438,
+          0.9225
+        ],
+        "world_size": [
+          7.1255,
+          0.9181
+        ],
+        "top_y": 1.3815,
+        "left_x": -8.2065,
+        "right_x": -1.081
+      },
+      {
+        "name": "Ground (14)",
+        "go_fid": 507254133,
+        "world_center": [
+          43.0145,
+          4.086
+        ],
+        "world_size": [
+          9.0893,
+          0.8869
+        ],
+        "top_y": 4.5295,
+        "left_x": 38.4699,
+        "right_x": 47.5592
+      },
+      {
+        "name": "Ground (29)",
+        "go_fid": 622280831,
+        "world_center": [
+          49.5963,
+          3.9844
+        ],
+        "world_size": [
+          2.3498,
+          1.1816
+        ],
+        "top_y": 4.5752,
+        "left_x": 48.4214,
+        "right_x": 50.7712
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          -3.1251,
+          4.8549
+        ],
+        "world_size": [
+          8.9818,
+          0.8268
+        ],
+        "top_y": 5.2683,
+        "left_x": -7.616,
+        "right_x": 1.3658
+      },
+      {
+        "name": "Ground (25)",
+        "go_fid": 681233529,
+        "world_center": [
+          24.4181,
+          -1.1628
+        ],
+        "world_size": [
+          7.2137,
+          0.7669
+        ],
+        "top_y": -0.7794,
+        "left_x": 20.8113,
+        "right_x": 28.025
+      },
+      {
+        "name": "Ground (19)",
+        "go_fid": 696173640,
+        "world_center": [
+          14.8483,
+          3.9881
+        ],
+        "world_size": [
+          6.2349,
+          0.8876
+        ],
+        "top_y": 4.4319,
+        "left_x": 11.7309,
+        "right_x": 17.9658
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          39.2878,
+          1.7978
+        ],
+        "world_size": [
+          3.9117,
+          1.0254
+        ],
+        "top_y": 2.3105,
+        "left_x": 37.332,
+        "right_x": 41.2437
+      },
+      {
+        "name": "Ground (15)",
+        "go_fid": 889683545,
+        "world_center": [
+          43.3683,
+          1.1925
+        ],
+        "world_size": [
+          1.4517,
+          0.7521
+        ],
+        "top_y": 1.5686,
+        "left_x": 42.6424,
+        "right_x": 44.0941
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          -2.682,
+          -1.911
+        ],
+        "world_size": [
+          7.119,
+          0.8876
+        ],
+        "top_y": -1.4671,
+        "left_x": -6.2415,
+        "right_x": 0.8775
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          25.3237,
+          1.1916
+        ],
+        "world_size": [
+          1.4786,
+          0.8876
+        ],
+        "top_y": 1.6354,
+        "left_x": 24.5844,
+        "right_x": 26.063
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          16.3881,
+          1.3717
+        ],
+        "world_size": [
+          1.4171,
+          0.7971
+        ],
+        "top_y": 1.7702,
+        "left_x": 15.6796,
+        "right_x": 17.0967
+      },
+      {
+        "name": "Ground (27)",
+        "go_fid": 1154297860,
+        "world_center": [
+          19.5131,
+          -1.7967
+        ],
+        "world_size": [
+          0.7843,
+          0.5858
+        ],
+        "top_y": -1.5038,
+        "left_x": 19.121,
+        "right_x": 19.9053
+      },
+      {
+        "name": "Ground (26)",
+        "go_fid": 1199414264,
+        "world_center": [
+          20.4187,
+          -1.4345
+        ],
+        "world_size": [
+          1.3276,
+          0.5858
+        ],
+        "top_y": -1.1416,
+        "left_x": 19.7548,
+        "right_x": 21.0825
+      },
+      {
+        "name": "Ground (30)",
+        "go_fid": 1203344458,
+        "world_center": [
+          32.9734,
+          -1.5871
+        ],
+        "world_size": [
+          7.5651,
+          1.035
+        ],
+        "top_y": -1.0696,
+        "left_x": 29.1908,
+        "right_x": 36.7559
+      },
+      {
+        "name": "Ground (24)",
+        "go_fid": 1368425169,
+        "world_center": [
+          14.6534,
+          -1.6609
+        ],
+        "world_size": [
+          7.7872,
+          0.7971
+        ],
+        "top_y": -1.2623,
+        "left_x": 10.7598,
+        "right_x": 18.547
+      },
+      {
+        "name": "Ground (20)",
+        "go_fid": 1475945418,
+        "world_center": [
+          8.4043,
+          1.2962
+        ],
+        "world_size": [
+          1.4473,
+          0.6462
+        ],
+        "top_y": 1.6193,
+        "left_x": 7.6806,
+        "right_x": 9.1279
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          12.2604,
+          0.8058
+        ],
+        "world_size": [
+          6.1444,
+          0.8876
+        ],
+        "top_y": 1.2496,
+        "left_x": 9.1883,
+        "right_x": 15.3326
+      },
+      {
+        "name": "Ground (16)",
+        "go_fid": 1485385003,
+        "world_center": [
+          47.4878,
+          0.8802
+        ],
+        "world_size": [
+          6.5669,
+          0.8302
+        ],
+        "top_y": 1.2953,
+        "left_x": 44.2043,
+        "right_x": 50.7712
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          2.2908,
+          -1.7512
+        ],
+        "world_size": [
+          1.617,
+          1.034
+        ],
+        "top_y": -1.2342,
+        "left_x": 1.4823,
+        "right_x": 3.0993
+      },
+      {
+        "name": "Ground (28)",
+        "go_fid": 1618161683,
+        "world_center": [
+          28.2516,
+          -1.8269
+        ],
+        "world_size": [
+          1.5389,
+          0.7669
+        ],
+        "top_y": -1.4434,
+        "left_x": 27.4821,
+        "right_x": 29.0211
+      },
+      {
+        "name": "Ground (23)",
+        "go_fid": 1676779321,
+        "world_center": [
+          34.4395,
+          1.3576
+        ],
+        "world_size": [
+          1.3578,
+          0.7971
+        ],
+        "top_y": 1.7562,
+        "left_x": 33.7605,
+        "right_x": 35.1184
+      },
+      {
+        "name": "Ground (33)",
+        "go_fid": 1919853009,
+        "world_center": [
+          42.5058,
+          -1.1613
+        ],
+        "world_size": [
+          6.9048,
+          0.8733
+        ],
+        "top_y": -0.7247,
+        "left_x": 39.0534,
+        "right_x": 45.9582
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -0.6865,
+          4.1688
+        ],
+        "world_size": [
+          7.3081,
+          0.8876
+        ],
+        "top_y": 4.6126,
+        "left_x": -4.3405,
+        "right_x": 2.9676
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          25.1507,
+          4.0489
+        ],
+        "world_size": [
+          9.39,
+          0.8876
+        ],
+        "top_y": 4.4928,
+        "left_x": 20.4558,
+        "right_x": 29.8457
+      },
+      {
+        "name": "Ground (18)",
+        "go_fid": 2083347900,
+        "world_center": [
+          0.2234,
+          1.4013
+        ],
+        "world_size": [
+          1.3408,
+          0.8896
+        ],
+        "top_y": 1.8461,
+        "left_x": -0.447,
+        "right_x": 0.8938
+      },
+      {
+        "name": "Ground (21)",
+        "go_fid": 2096158199,
+        "world_center": [
+          33.2251,
+          4.0037
+        ],
+        "world_size": [
+          5.7376,
+          0.7971
+        ],
+        "top_y": 4.4022,
+        "left_x": 30.3563,
+        "right_x": 36.094
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -4.28,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 0.31,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 4.9,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 9.5,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 14.09,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 18.68,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 23.28,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.87,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 32.47,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 37.06,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 41.65,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 46.25,
+        "cy": -3.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -7.32,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -6.43,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -5.53,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -4.64,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -3.75,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -2.86,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -1.97,
+        "cy": 1.88,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -6.62,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -5.62,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -4.62,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -3.62,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -2.63,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -1.63,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -0.63,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 0.37,
+        "cy": 5.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -5.35,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -4.46,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -3.57,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -2.68,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -1.79,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -0.9,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -0.01,
+        "cy": -0.97,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -3.43,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -2.51,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": -1.6,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -0.69,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 0.23,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 1.14,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 2.05,
+        "cy": 5.11,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 0.22,
+        "cy": 2.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 1.58,
+        "cy": 2.78,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 2.49,
+        "cy": 2.78,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 3.4,
+        "cy": 2.78,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 4.31,
+        "cy": 2.78,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 5.22,
+        "cy": 2.78,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 2.29,
+        "cy": -0.73,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 3.46,
+        "cy": -0.55,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 4.53,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 5.51,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 6.49,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 7.48,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 8.46,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 9.44,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 10.42,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 11.4,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 4.8,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 5.7,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 6.6,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 7.5,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 8.4,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 9.3,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 10.2,
+        "cy": -0.2,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 8.4,
+        "cy": 2.12,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 10.07,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 10.94,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 11.82,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 12.7,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 13.58,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 14.45,
+        "cy": 1.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 11.73,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 12.71,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 13.68,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 14.65,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 15.63,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 16.6,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 17.57,
+        "cy": -0.76,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 12.62,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 13.51,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 14.4,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 15.29,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 16.18,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 17.08,
+        "cy": 4.93,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 16.39,
+        "cy": 2.27,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 20.42,
+        "cy": -0.64,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 21.39,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 22.33,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 23.27,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 24.21,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 25.15,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 26.09,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 27.03,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.97,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 28.91,
+        "cy": 4.99,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 21.71,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 22.61,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 23.52,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 24.42,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 25.32,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 26.22,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.12,
+        "cy": -0.28,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 25.32,
+        "cy": 2.14,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.09,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 27.99,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 28.89,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 29.79,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 30.69,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 31.59,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 32.5,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 28.25,
+        "cy": -0.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 30.14,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 31.08,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 32.03,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 32.97,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 33.92,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 34.86,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 35.81,
+        "cy": -0.57,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 31.31,
+        "cy": 4.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 32.27,
+        "cy": 4.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 33.23,
+        "cy": 4.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 34.18,
+        "cy": 4.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 35.14,
+        "cy": 4.9,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 34.44,
+        "cy": 2.26,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 37.97,
+        "cy": -1.01,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 38.31,
+        "cy": 2.81,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 39.29,
+        "cy": 2.81,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 40.27,
+        "cy": 2.81,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 38.53,
+        "cy": -0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 39.38,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 40.29,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 41.2,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 42.11,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 43.01,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 43.92,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 44.83,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 45.74,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 46.65,
+        "cy": 5.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 40.04,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 41.03,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 42.01,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 43.0,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 43.99,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 44.97,
+        "cy": -0.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 43.37,
+        "cy": 2.07,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 45.14,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 46.08,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 47.02,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 47.96,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 48.89,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 49.83,
+        "cy": 1.8,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 46.34,
+        "cy": -0.87,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 48.24,
+        "cy": -0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 49.11,
+        "cy": -0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 49.98,
+        "cy": -0.75,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 49.2,
+        "cy": 5.08,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 4,
+        "hp": 70,
+        "exp": 15,
+        "cx": 49.99,
+        "cy": 5.08,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 2
+      }
+    ]
+  },
+  "Map05": {
+    "map_id": 104,
+    "grounds": [
+      {
+        "name": "Ground (7)",
+        "go_fid": 34427796,
+        "world_center": [
+          11.3065,
+          2.2734
+        ],
+        "world_size": [
+          1.5107,
+          0.8876
+        ],
+        "top_y": 2.7172,
+        "left_x": 10.5511,
+        "right_x": 12.0619
+      },
+      {
+        "name": "Ground (6)",
+        "go_fid": 362427157,
+        "world_center": [
+          6.1608,
+          4.9227
+        ],
+        "world_size": [
+          9.1198,
+          0.9823
+        ],
+        "top_y": 5.4138,
+        "left_x": 1.6009,
+        "right_x": 10.7206
+      },
+      {
+        "name": "Ground",
+        "go_fid": 373952251,
+        "world_center": [
+          14.8235,
+          -3.9994
+        ],
+        "world_size": [
+          47.2135,
+          1.8746
+        ],
+        "top_y": -3.0621,
+        "left_x": -8.7833,
+        "right_x": 38.4302
+      },
+      {
+        "name": "Ground (8)",
+        "go_fid": 396910292,
+        "world_center": [
+          15.872,
+          -0.2668
+        ],
+        "world_size": [
+          11.1798,
+          0.8876
+        ],
+        "top_y": 0.177,
+        "left_x": 10.282,
+        "right_x": 21.4619
+      },
+      {
+        "name": "Ground (3)",
+        "go_fid": 441134861,
+        "world_center": [
+          -3.2286,
+          0.6508
+        ],
+        "world_size": [
+          11.2309,
+          0.9368
+        ],
+        "top_y": 1.1192,
+        "left_x": -8.8441,
+        "right_x": 2.3869
+      },
+      {
+        "name": "Ground (5)",
+        "go_fid": 658110449,
+        "world_center": [
+          1.4467,
+          5.6811
+        ],
+        "world_size": [
+          1.4999,
+          0.8876
+        ],
+        "top_y": 6.1249,
+        "left_x": 0.6967,
+        "right_x": 2.1966
+      },
+      {
+        "name": "Ground (22)",
+        "go_fid": 723047013,
+        "world_center": [
+          12.179,
+          3.1459
+        ],
+        "world_size": [
+          0.7175,
+          0.8348
+        ],
+        "top_y": 3.5633,
+        "left_x": 11.8203,
+        "right_x": 12.5378
+      },
+      {
+        "name": "Ground (18)",
+        "go_fid": 774310599,
+        "world_center": [
+          2.3202,
+          -0.9692
+        ],
+        "world_size": [
+          1.5349,
+          0.8876
+        ],
+        "top_y": -0.5254,
+        "left_x": 1.5527,
+        "right_x": 3.0876
+      },
+      {
+        "name": "Ground (24)",
+        "go_fid": 797056665,
+        "world_center": [
+          33.0922,
+          3.5539
+        ],
+        "world_size": [
+          1.5809,
+          0.6987
+        ],
+        "top_y": 3.9033,
+        "left_x": 32.3017,
+        "right_x": 33.8826
+      },
+      {
+        "name": "Ground (13)",
+        "go_fid": 883563724,
+        "world_center": [
+          32.2922,
+          4.5001
+        ],
+        "world_size": [
+          1.9194,
+          0.8064
+        ],
+        "top_y": 4.9033,
+        "left_x": 31.3325,
+        "right_x": 33.2519
+      },
+      {
+        "name": "Ground (1)",
+        "go_fid": 912476037,
+        "world_center": [
+          0.0452,
+          -2.4512
+        ],
+        "world_size": [
+          1.5349,
+          0.8876
+        ],
+        "top_y": -2.0074,
+        "left_x": -0.7223,
+        "right_x": 0.8126
+      },
+      {
+        "name": "Ground (30)",
+        "go_fid": 941245609,
+        "world_center": [
+          24.2409,
+          -2.6301
+        ],
+        "world_size": [
+          1.3534,
+          0.3893
+        ],
+        "top_y": -2.4354,
+        "left_x": 23.5642,
+        "right_x": 24.9176
+      },
+      {
+        "name": "Ground (12)",
+        "go_fid": 1003389065,
+        "world_center": [
+          30.7656,
+          1.8616
+        ],
+        "world_size": [
+          2.5758,
+          0.8566
+        ],
+        "top_y": 2.2899,
+        "left_x": 29.4777,
+        "right_x": 32.0535
+      },
+      {
+        "name": "Ground (10)",
+        "go_fid": 1006985376,
+        "world_center": [
+          16.5211,
+          4.1197
+        ],
+        "world_size": [
+          7.2292,
+          0.8633
+        ],
+        "top_y": 4.5513,
+        "left_x": 12.9065,
+        "right_x": 20.1357
+      },
+      {
+        "name": "Ground (29)",
+        "go_fid": 1114726494,
+        "world_center": [
+          25.6381,
+          -2.1904
+        ],
+        "world_size": [
+          1.373,
+          0.6824
+        ],
+        "top_y": -1.8492,
+        "left_x": 24.9516,
+        "right_x": 26.3246
+      },
+      {
+        "name": "Ground (20)",
+        "go_fid": 1154179056,
+        "world_center": [
+          -0.1862,
+          6.3673
+        ],
+        "world_size": [
+          1.4526,
+          0.7457
+        ],
+        "top_y": 6.7401,
+        "left_x": -0.9124,
+        "right_x": 0.5401
+      },
+      {
+        "name": "Ground (19)",
+        "go_fid": 1159989844,
+        "world_center": [
+          3.5292,
+          -0.3452
+        ],
+        "world_size": [
+          1.5349,
+          0.8876
+        ],
+        "top_y": 0.0986,
+        "left_x": 2.7617,
+        "right_x": 4.2966
+      },
+      {
+        "name": "Ground (25)",
+        "go_fid": 1163339158,
+        "world_center": [
+          34.6922,
+          2.5463
+        ],
+        "world_size": [
+          4.504,
+          0.8372
+        ],
+        "top_y": 2.9649,
+        "left_x": 32.4402,
+        "right_x": 36.9441
+      },
+      {
+        "name": "Ground (21)",
+        "go_fid": 1470052613,
+        "world_center": [
+          -3.0606,
+          7.6416
+        ],
+        "world_size": [
+          8.9783,
+          0.9281
+        ],
+        "top_y": 8.1056,
+        "left_x": -7.5497,
+        "right_x": 1.4286
+      },
+      {
+        "name": "Ground (9)",
+        "go_fid": 1479362448,
+        "world_center": [
+          25.8104,
+          1.3303
+        ],
+        "world_size": [
+          6.2296,
+          0.9496
+        ],
+        "top_y": 1.8051,
+        "left_x": 22.6957,
+        "right_x": 28.9252
+      },
+      {
+        "name": "Ground (17)",
+        "go_fid": 1488637804,
+        "world_center": [
+          1.3257,
+          -1.7492
+        ],
+        "world_size": [
+          1.5349,
+          0.8876
+        ],
+        "top_y": -1.3054,
+        "left_x": 0.5582,
+        "right_x": 2.0931
+      },
+      {
+        "name": "Ground (32)",
+        "go_fid": 1552133169,
+        "world_center": [
+          16.6124,
+          8.0792
+        ],
+        "world_size": [
+          8.9596,
+          0.7948
+        ],
+        "top_y": 8.4766,
+        "left_x": 12.1326,
+        "right_x": 21.0922
+      },
+      {
+        "name": "Ground (2)",
+        "go_fid": 1577952714,
+        "world_center": [
+          6.391,
+          0.8321
+        ],
+        "world_size": [
+          7.1707,
+          0.8743
+        ],
+        "top_y": 1.2692,
+        "left_x": 2.8057,
+        "right_x": 9.9764
+      },
+      {
+        "name": "Ground (31)",
+        "go_fid": 1719894598,
+        "world_center": [
+          9.9168,
+          7.2528
+        ],
+        "world_size": [
+          7.1797,
+          0.8372
+        ],
+        "top_y": 7.6714,
+        "left_x": 6.3269,
+        "right_x": 13.5066
+      },
+      {
+        "name": "Ground (23)",
+        "go_fid": 1723394215,
+        "world_center": [
+          11.7428,
+          4.5208
+        ],
+        "world_size": [
+          1.5901,
+          0.8348
+        ],
+        "top_y": 4.9382,
+        "left_x": 10.9477,
+        "right_x": 12.5378
+      },
+      {
+        "name": "Ground (27)",
+        "go_fid": 1770749945,
+        "world_center": [
+          36.0525,
+          6.0342
+        ],
+        "world_size": [
+          4.6784,
+          0.8372
+        ],
+        "top_y": 6.4528,
+        "left_x": 33.7133,
+        "right_x": 38.3916
+      },
+      {
+        "name": "Ground (28)",
+        "go_fid": 1891089246,
+        "world_center": [
+          29.6051,
+          -1.5944
+        ],
+        "world_size": [
+          6.2194,
+          1.0146
+        ],
+        "top_y": -1.087,
+        "left_x": 26.4954,
+        "right_x": 32.7148
+      },
+      {
+        "name": "Ground (4)",
+        "go_fid": 1924289340,
+        "world_center": [
+          -4.7317,
+          4.0419
+        ],
+        "world_size": [
+          8.1259,
+          1.0296
+        ],
+        "top_y": 4.5567,
+        "left_x": -8.7946,
+        "right_x": -0.6687
+      },
+      {
+        "name": "Ground (11)",
+        "go_fid": 1926037402,
+        "world_center": [
+          27.0811,
+          5.275
+        ],
+        "world_size": [
+          9.5141,
+          0.8628
+        ],
+        "top_y": 5.7064,
+        "left_x": 22.3241,
+        "right_x": 31.8382
+      },
+      {
+        "name": "Ground (26)",
+        "go_fid": 2033819035,
+        "world_center": [
+          32.7127,
+          5.9034
+        ],
+        "world_size": [
+          1.731,
+          0.8895
+        ],
+        "top_y": 6.3482,
+        "left_x": 31.8472,
+        "right_x": 33.5783
+      }
+    ],
+    "spawn_entries": [
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -7.91,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -6.97,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -6.04,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -5.1,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -4.16,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -3.23,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -2.29,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -1.36,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -0.42,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 0.52,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 1.45,
+        "cy": 1.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -7.89,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -6.99,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -6.09,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -5.18,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -4.28,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -3.38,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -2.47,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -1.57,
+        "cy": 5.06,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -5.15,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -1.52,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 2.11,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 5.74,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 9.38,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 13.01,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 16.64,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 20.27,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 23.9,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.53,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 31.17,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 34.8,
+        "cy": -2.56,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -6.55,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -5.55,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -4.56,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -3.56,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -2.56,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": -1.56,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -0.57,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 0.43,
+        "cy": 8.61,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": -0.19,
+        "cy": 7.24,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 0.05,
+        "cy": -1.51,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 1.33,
+        "cy": -0.81,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 1.45,
+        "cy": 6.62,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 2.32,
+        "cy": -0.03,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 2.51,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 3.42,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 4.34,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 5.25,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 6.16,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 7.07,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 7.98,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 8.9,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 9.81,
+        "cy": 5.91,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 3.53,
+        "cy": 0.6,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 3.7,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 4.6,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 5.49,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 6.39,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 7.29,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 8.18,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 9.08,
+        "cy": 1.77,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 7.22,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 8.12,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 9.02,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 9.92,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 10.81,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 11.71,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 12.61,
+        "cy": 8.17,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 11.21,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 12.15,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 13.08,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 14.01,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 14.94,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 15.87,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 16.8,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 17.74,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 18.67,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 19.6,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 20.53,
+        "cy": 0.68,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 11.31,
+        "cy": 3.22,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 11.74,
+        "cy": 5.44,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 13.13,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 14.12,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 15.12,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 16.11,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 17.11,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 18.11,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 19.1,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 20.1,
+        "cy": 8.98,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 13.81,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 14.71,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 15.62,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 16.52,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 17.42,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 18.33,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 19.23,
+        "cy": 5.05,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 23.28,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 24.23,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 25.18,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 26.13,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 27.08,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 28.03,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 28.98,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 29.94,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 30.89,
+        "cy": 6.21,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 23.59,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 24.48,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 25.37,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 26.26,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 27.15,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 28.04,
+        "cy": 2.31,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 24.24,
+        "cy": -1.94,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 25.64,
+        "cy": -1.35,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 27.38,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 28.27,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 29.16,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 30.05,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 30.94,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 31.83,
+        "cy": -0.59,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 30.34,
+        "cy": 2.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 31.19,
+        "cy": 2.79,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 32.29,
+        "cy": 5.4,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 32.71,
+        "cy": 6.85,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 33.09,
+        "cy": 4.4,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 33.34,
+        "cy": 3.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 34.24,
+        "cy": 3.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 35.14,
+        "cy": 3.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 36.04,
+        "cy": 3.46,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 34.65,
+        "cy": 6.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 35.58,
+        "cy": 6.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      },
+      {
+        "enemy_id": 6,
+        "hp": 200,
+        "exp": 60,
+        "cx": 36.52,
+        "cy": 6.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 8
+      },
+      {
+        "enemy_id": 7,
+        "hp": 220,
+        "exp": 65,
+        "cx": 37.46,
+        "cy": 6.95,
+        "is_boss": false,
+        "count": 1,
+        "respawn_time": 10,
+        "level": 10
+      }
+    ]
+  }
+}

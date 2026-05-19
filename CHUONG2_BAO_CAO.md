@@ -18,88 +18,90 @@ Mục tiêu cuối cùng là tạo ra một sản phẩm game chơi được ho�
 
 ### 2.1.2. Các đối tượng của hệ thống
 
-Hệ thống game Mutants Arena phục vụ ba nhóm đối tượng chính với vai trò và quyền hạn khác nhau. Sự phân chia rõ ràng này đảm bảo mỗi nhóm chỉ truy cập các chức năng phù hợp với vai trò, tránh xung đột quyền hạn và tăng cường bảo mật hệ thống.
+Đối chiếu trực tiếp với mã nguồn hiện tại cho thấy Mutants Arena không chỉ có các tác nhân nghiệp vụ truyền thống mà còn có các tác nhân kỹ thuật bên ngoài hệ thống game client. Việc bổ sung actor kỹ thuật là cần thiết vì nhiều use case quan trọng trong dự án được thực thi bởi Zone Server, Dungeon Host và các tiến trình gameplay gọi API bằng JWT hoặc Zone API Key thay vì do người chơi thao tác trực tiếp.
 
 Bảng 2.1: Các tác nhân tham gia hệ thống
 
-| Tên tác nhân | Vai trò |
-|---|---|
-| Khách (Guest) | Người dùng chưa đăng nhập. Chỉ truy cập được màn hình đăng nhập và đăng ký. Không có quyền tương tác với bất kỳ nội dung game nào. |
-| Người chơi (Player) | Người dùng đã đăng ký và đăng nhập thành công. Thực hiện toàn bộ hoạt động gameplay: tạo nhân vật, di chuyển, chiến đấu, nâng cấp Gene, làm nhiệm vụ, giao dịch với NPC, tham gia nhóm và phó bản. |
-| Quản trị viên (Admin) | Người vận hành hệ thống server. Có quyền quản lý cấu hình bản đồ, điều chỉnh chỉ số quái vật/boss, theo dõi trạng thái server và xử lý sự cố. Tương tác qua giao diện quản trị server-side, không qua client game. |
+| Tên tác nhân | Nhóm | Vai trò |
+|---|---|---|
+| Khách (Guest) | Nghiệp vụ | Người dùng chưa đăng nhập. Chỉ thực hiện đăng ký và đăng nhập tài khoản. |
+| Người chơi (Player) | Nghiệp vụ | Tác nhân trung tâm của hệ thống. Thực hiện tạo nhân vật, vào game, di chuyển, chiến đấu, nâng Gene, quản lý túi đồ, làm nhiệm vụ, tương tác NPC, bạn bè, party, chat, dungeon và leaderboard. |
+| Quản trị / vận hành (Admin/Operator) | Nghiệp vụ vận hành | Theo dõi trạng thái server, cập nhật spawn config, kiểm tra host map, refresh leaderboard, giám sát session gameplay và xử lý cấu hình vận hành. |
+| Máy chủ gameplay / Netcode server (Zone Server / Dungeon Host) | Kỹ thuật | Actor hệ thống kỹ thuật bên ngoài lớp REST API. Xác thực kết nối NGO, gán map/zone ban đầu, đồng bộ vị trí - animation - trạng thái chiến đấu qua NetworkVariable/ClientRpc, cập nhật tiến trình quest theo event runtime, quản lý session dungeon, spawn đối tượng mạng và đăng ký heartbeat/host gameplay. |
 
 ### 2.1.3. Yêu cầu chức năng
 
-Hệ thống game Mutants Arena cần đáp ứng các yêu cầu chức năng được nhóm theo từng lĩnh vực nghiệp vụ. Mỗi nhóm chức năng tương ứng với một module độc lập trong kiến trúc phần mềm, cho phép phát triển và kiểm thử từng phần một cách độc lập trước khi tích hợp tổng thể.
+Sau khi đối chiếu các controller ASP.NET Core, SignalR Hub và phần client Unity, có thể xác định phạm vi chức năng thực sự đã được triển khai theo từng module nghiệp vụ như sau. Trong chương này, một *use case* được hiểu là một mục tiêu nghiệp vụ hoàn chỉnh; các endpoint phụ trợ như `config`, `detail`, `heartbeat` hoặc `refresh` sẽ được gộp vào use case gần nhất nếu chúng cùng phục vụ một mục tiêu nghiệp vụ duy nhất.
 
-**Phân loại theo phạm vi đề tài.** Trong bối cảnh tên đề tài đã định danh rõ trục Gene Evolution + Multiplayer, các yêu cầu chức năng được phân thành hai nhóm: *chức năng cốt lõi* (trực tiếp phục vụ hai trục chính) và *chức năng mở rộng* (gameplay nền hoặc demo có thể bị thu hẹp khi cần). Cách phân loại này giúp người đọc và hội đồng chấm đồ án không nhầm lẫn giữa "phần phải đánh giá đầy đủ" và "phần để mở cho hướng phát triển".
+**Bảng 2.1a: Phân nhóm chức năng theo module triển khai thực tế**
 
-**Bảng 2.0a: Phân loại chức năng cốt lõi và mở rộng**
-
-| Nhóm chức năng | Vai trò trong đề tài | Mức ưu tiên | Trạng thái |
+| Module | Vai trò trong đề tài | Mức ưu tiên | Trạng thái |
 |---|---|---|---|
-| Đăng nhập / nhân vật | Lưu tiến trình, gắn JWT cho NGO | **Cốt lõi** | Hoàn thành |
-| Di chuyển / combat real-time | Gameplay nền cho Gene và Multiplayer | **Cốt lõi** | Hoàn thành |
-| **Gene Upgrade + Fusion + Tương khắc** | **Trục đặc trưng đề tài** | **Cốt lõi (trọng tâm)** | Hoàn thành |
-| **Multiplayer Server-Authoritative (NGO + Zone)** | **Trục đặc trưng đề tài** | **Cốt lõi (trọng tâm)** | Hoàn thành |
-| Party (SignalR) + Dungeon đồng đội | Tạo ngữ cảnh để Gene + Multiplayer phát huy | **Cốt lõi** | Hoàn thành |
-| Lưu CSDL (player_data, gene_inventory, party_groups) | Persistence cho hai trục trên | **Cốt lõi** | Hoàn thành |
-| Quest / NPC / Shop / Trang bị | Gameplay nền | Phụ trợ | Hoàn thành cơ bản |
-| Marketplace (P2P trading) | Demo tham khảo | **Mở rộng** | Chưa triển khai |
-| Ranked PvP | Demo tham khảo | **Mở rộng** | Chưa triển khai |
-| Friend system | Tiện ích xã hội | **Mở rộng** | Hoàn thành cơ bản |
-| Admin Web Dashboard | Vận hành | **Mở rộng** | Hoàn thành mức cơ bản |
-| Daily Quest, Achievement | Tăng vòng quay người chơi | **Mở rộng** | Chưa triển khai |
+| Xác thực tài khoản + JWT | Khởi tạo phiên và bảo vệ toàn bộ hệ thống | **Cốt lõi** | Hoàn thành |
+| Nhân vật + vào game + đồng bộ vị trí | Vòng đời nhân vật và bootstrap gameplay | **Cốt lõi** | Hoàn thành |
+| Combat thời gian thực + kỹ năng + buff | Gameplay nền cho Gene và Dungeon | **Cốt lõi** | Hoàn thành |
+| **Gene Evolution: Gene chính / Gene phụ / Hybrid Fusion** | **Trục đặc trưng của đề tài** | **Cốt lõi (trọng tâm)** | Hoàn thành |
+| Túi đồ + trang bị + Blacksmith | Vòng lặp progression và nâng sức mạnh | **Cốt lõi** | Hoàn thành |
+| NPC + Quest + Shop + dịch vụ đặc biệt | Nội dung PvE và điều hướng người chơi | **Cốt lõi** | Hoàn thành |
+| Friend + Party + Chat SignalR | Lớp tương tác xã hội thời gian thực | **Cốt lõi** | Hoàn thành cơ bản |
+| **Dungeon Wave/Boss + Reward** | **Trục multiplayer co-op chính** | **Cốt lõi (trọng tâm)** | Hoàn thành |
+| Leaderboard | Theo dõi thành tích và vòng lặp cạnh tranh mềm | Phụ trợ | Hoàn thành cơ bản |
+| Map/Portal/Zone Ops + Spawn Config | Hạ tầng vận hành gameplay server-authoritative | Phụ trợ quan trọng | Hoàn thành |
 
-Phần liệt kê chi tiết dưới đây tuân theo thứ tự ưu tiên trên: nhóm cốt lõi trước, nhóm mở rộng sau.
+Các nhóm chức năng đã có trong mã nguồn hiện tại được mô tả chi tiết như sau:
 
-Quản lý tài khoản và xác thực:
-▪ Người dùng đăng ký tài khoản bằng tên đăng nhập và mật khẩu; hệ thống kiểm tra tính hợp lệ, mã hóa mật khẩu bằng BCrypt và lưu vào database
-▪ Người dùng đăng nhập; hệ thống xác thực và cấp JWT token HS256 có thời hạn 24 giờ
-▪ JWT token được đính kèm trong mọi request REST API và trong handshake kết nối NGO; kết nối không có token hợp lệ bị từ chối
-▪ Người chơi đăng xuất; hệ thống vô hiệu hóa phiên và xóa token phía client
+Quản lý tài khoản và phiên đăng nhập:
+▪ Đăng ký tài khoản bằng `username`, `email`, `password`; kiểm tra trùng lặp và băm mật khẩu trước khi lưu database
+▪ Đăng nhập bằng `username/password`; server cấp JWT, cập nhật `last_login` và ghi nhận điểm danh ngày đầu tiên trong phiên đăng nhập
+▪ JWT được gắn vào REST API, SignalR Hub và kết nối gameplay; request không hợp lệ bị từ chối
 
-Quản lý nhân vật:
-▪ Tạo nhân vật mới: chọn tên và lớp nguyên tố (Hỏa/Kim/Mộc/Phong/Thổ/Thủy); mỗi lớp có bộ chỉ số cơ bản và kỹ năng đặc trưng khác nhau; mỗi tài khoản tối đa 2 nhân vật
-▪ Xem và theo dõi thông tin nhân vật: cấp độ, HP/MP, chỉ số chiến đấu, Gene đang trang bị, trang bị đang mặc
-▪ Hệ thống lên cấp tự động khi nhân vật tích lũy đủ EXP; mỗi cấp tăng chỉ số cơ bản theo bảng tính sẵn
-▪ Lưu tự động tiến trình nhân vật sau mỗi sự kiện quan trọng: hoàn thành nhiệm vụ, đánh boss, nâng cấp trang bị hoặc Gene
+Quản lý nhân vật và hồ sơ chơi:
+▪ Tạo nhân vật chính với `element_type` thuộc 6 hệ: Kim, Mộc, Thủy, Hỏa, Thổ, Phong; tên nhân vật giới hạn từ 3 đến 20 ký tự
+▪ Nạp dữ liệu nhân vật, kỹ năng, trang bị, buff đang hoạt động và trạng thái Gene khi vào game
+▪ Đồng bộ vị trí, map, zone và trạng thái nhân vật giữa client, gameplay server và API persistence
+▪ Nhận EXP, lên cấp tự động, cộng điểm tiềm năng/kỹ năng; hỗ trợ khóa cấp bằng dịch vụ NPC
 
-Di chuyển và chiến đấu:
-▪ Nhân vật di chuyển trái/phải, nhảy đơn và nhảy đôi, Dash với invincibility frames
-▪ Đòn tấn công thường (melee hoặc ranged tùy lớp) với hitbox xác định vùng va chạm; toàn bộ tính toán sát thương thực hiện trên server
-▪ Hệ thống kỹ năng: mỗi nhân vật có tối đa 4 kỹ năng gắn vào slot Q/W/E/R, mỗi kỹ năng có cooldown và tiêu MP
-▪ Hệ thống tương khắc nguyên tố: sát thương nhân được ×1.5 (ưu thế) hoặc ×0.75 (bất lợi) tùy thuộc vào cặp nguyên tố giữa người tấn công và người nhận
-▪ Trạng thái chiến đấu (status effects) gồm Burn, Freeze, Stun, Poison — mỗi trạng thái có thời lượng và hiệu ứng riêng
+Di chuyển, bản đồ và chiến đấu:
+▪ Di chuyển trái/phải, nhảy, dash và thao tác chiến đấu thời gian thực trong scene 2D side-scrolling
+▪ Dùng đòn đánh thường và kỹ năng; server kiểm tra hitbox, cooldown, MP và áp dụng sát thương theo mô hình server-authoritative
+▪ Áp dụng tương khắc nguyên tố và hiệu ứng trạng thái Burn, Freeze, Stun, Poison cùng hệ buff/debuff đồng bộ lên HUD
+▪ Dịch chuyển qua portal, chuyển map/scene, kiểm tra khoảng cách đến cổng và vật phẩm yêu cầu nếu map có khóa truy cập
 
-Hệ thống Gene và nâng cấp:
-▪ Mỗi nhân vật có Gene chính (cùng lớp nguyên tố) và tối đa hai Gene phụ (khác lớp)
-▪ Gene có 5 Tier (1 → 5); nâng Tier cần Fragment và Gold theo bảng yêu cầu tăng dần
-▪ Gene Fusion: kết hợp hai Gene để tạo Hybrid Gene với hiệu ứng từ cả hai nguyên tố
-▪ Gene trang bị cung cấp chỉ số thụ động (ATK, DEF, HP, Critical Rate) và mở khóa kỹ năng đặc trưng theo Tier
+Hệ thống Gene Evolution:
+▪ Nâng Gene chính từ Tier 1 đến Tier 5 bằng `gene_exp`, vàng và item cấu hình theo DB
+▪ Chọn Gene phụ theo cặp cố định đã triển khai trong code: Hỏa↔Thổ, Thủy↔Mộc, Kim↔Phong
+▪ Nâng Gene phụ từ Tier 1 đến Tier 5; bonus chỉ số nhỏ hơn Gene chính và là điều kiện để mở Hybrid Fusion
+▪ Fusion hai Gene Tier 5 hợp lệ thành Hybrid Gene; hệ thống lưu `hybridId`, `prefabPath`, bonus target, immune element và thêm bộ kỹ năng hybrid
 
-Trang bị và vật phẩm:
-▪ Hệ thống trang bị gồm ba slot: Weapon, Armor, Accessory — mỗi slot ảnh hưởng chỉ số khác nhau
-▪ Nâng cấp trang bị từ +1 đến +20 tại NPC Blacksmith bằng nguyên liệu và Gold; xác suất thành công giảm dần ở mức cao
-▪ Inventory lưu trữ vật phẩm, phân loại theo loại và độ hiếm từ Common đến Legendary
-▪ Giao dịch mua/bán tại NPC cửa hàng; mỗi NPC có danh sách hàng hóa riêng theo zone
+Túi đồ, trang bị và nâng cấp:
+▪ Xem túi đồ, sắp xếp inventory, dùng consumable, cộng buff và tự động cập nhật số ô túi
+▪ Mang/tháo trang bị giữa inventory và equipment slot; hỗ trợ item mở rộng túi nhanh với giới hạn tối đa 3 quick-slot expansion item
+▪ Nâng cấp trang bị tại Blacksmith từ +1 đến +24 bằng đá cường hóa, Lucky Stone, Protection Stone và bạc; server kiểm tra từng slot vật liệu chống gian lận số lượng
 
-Nhiệm vụ (Quest):
-▪ Hệ thống nhiệm vụ chính (Main Quest) dẫn dắt cốt truyện theo từng chương game
-▪ Hệ thống nhiệm vụ phụ (Side Quest) cung cấp thêm EXP, vật phẩm và Gold
-▪ Theo dõi tiến trình nhiệm vụ: hoàn thành mục tiêu (giết X quái vật, thu thập Y vật phẩm, đến địa điểm Z)
-▪ Nhận thưởng tự động khi hoàn thành; lịch sử nhiệm vụ lưu trong database theo trạng thái Not_Started/In_Progress/Completed
+NPC, quest và shop:
+▪ Liệt kê NPC theo map, tương tác NPC, đi qua từng node hội thoại kế tiếp và mở menu động theo loại NPC
+▪ Mua vật phẩm từ NPC shop; server kiểm tra tiền, cấp độ, stock và thêm item vào inventory
+▪ Nhận, bỏ, theo dõi và hoàn thành quest; quest progress được cập nhật tự động theo event `kill`, `collect`, `talk`, `reach`
+▪ Chỉ cho phép một quest active tại một thời điểm trên mỗi nhân vật
+▪ Cung cấp dịch vụ đặc biệt qua NPC: reset potential, reset skill, learn skill, exchange skill, exchange charm, lock/unlock level
 
-Chế độ nhóm và phó bản:
-▪ Tạo nhóm (Party) tối đa 4 người; mời người chơi khác qua tên nhân vật qua SignalR Hub
-▪ Chia sẻ EXP và loot khi chiến đấu cùng nhóm; tỷ lệ phân chia theo đóng góp sát thương
-▪ Phó bản (Dungeon): khu vực đặc biệt dành riêng cho nhóm với hệ thống wave quái liên tiếp, kết thúc bằng Boss
-▪ Hệ thống Wave-based: quái xuất hiện theo từng đợt có cấu hình riêng; độ khó tăng dần; Boss xuất hiện sau wave cuối
+Chức năng xã hội và co-op:
+▪ Tìm kiếm bạn bè theo tên nhân vật, gửi lời mời, chấp nhận và xóa quan hệ bạn bè
+▪ Tạo party tối đa 4 người, gửi invite, xin vào party, bật/tắt auto-accept, lock party, tìm party hoặc người chơi gần đó theo map/zone
+▪ Chat thời gian thực qua SignalR với các kênh world, proximity, group, private; phần hạ tầng chat cũng đã có nhánh clan/class trong code
 
-Quản trị hệ thống (Admin):
-▪ Cấu hình thuộc tính zone/map: kích thước, spawn points quái, điểm hồi sinh, vùng trigger event
-▪ Quản lý chỉ số quái vật và boss qua trường phases_json; thay đổi không cần recompile code
-▪ Theo dõi số lượng người chơi online theo zone; xem log kết nối và xử lý sự cố ngắt kết nối bất thường
+Phó bản và reward:
+▪ Liệt kê dungeon, xem chi tiết dungeon, xem boss và reward config
+▪ Tạo session dungeon, tham gia session, vào wave, cập nhật session wave, kết thúc wave, kết thúc dungeon và rời dungeon giữa chừng
+▪ Cấp thưởng phó bản qua API riêng dùng Zone API Key, thêm item reward trực tiếp vào inventory player
+
+Vận hành gameplay server:
+▪ Zone Server đăng ký, heartbeat và deregister với API để báo số map, số player và thống kê zone
+▪ Host gameplay kiểm tra/đăng ký/heartbeat/hủy host cho từng map hoặc từng session dungeon
+▪ Admin cập nhật spawn config theo JSON cho từng map; server xác thực `enemy_id` trước khi lưu và làm mới cache runtime
+▪ Leaderboard hỗ trợ 5 hạng mục: level, quest, attendance, dungeon, gold; có cơ chế cache 5 phút và manual refresh
+
+Các chức năng chưa có luồng hoàn chỉnh trong mã nguồn hiện tại và vì thế không được đưa vào use case chính của chương này gồm marketplace P2P, ranked PvP, achievement và daily quest.
 
 ### 2.1.4. Yêu cầu phi chức năng
 
@@ -164,184 +166,275 @@ Cùng với câu hỏi "vì sao chia ba tầng?", một câu hỏi cốt yếu k
 
 ### 2.2.2. Biểu đồ Use Case tổng quát
 
-Biểu đồ Use Case tổng quát mô tả các nhóm chức năng chính mà hệ thống cung cấp cho từng loại tác nhân. Mỗi use case đại diện cho một mục tiêu nghiệp vụ hoàn chỉnh từ góc nhìn người dùng — từ khi bắt đầu tương tác đến khi hệ thống phản hồi kết quả cuối cùng. Biểu đồ này giúp hình dung tổng quan phạm vi chức năng và ranh giới quyền hạn giữa các tác nhân trước khi đi vào đặc tả chi tiết.
+Để phản ánh đúng dự án đang triển khai, phần use case của Mutants Arena được tổ chức thành hai mức: mức tổng quát theo module chức năng và mức chi tiết theo ca sử dụng hoàn chỉnh. Mức tổng quát dùng để trình bày phạm vi hệ thống; mức chi tiết dùng để đặc tả luồng nghiệp vụ đủ gần với mã nguồn hiện tại nhưng vẫn giữ được ý nghĩa phân tích hệ thống.
 
-Bảng 2.1 đã liệt kê ba tác nhân chính: Khách (Guest), Người chơi (Player) và Quản trị viên (Admin). Trên biểu đồ Use Case tổng quát (Hình 2.2), Guest chỉ tương tác với nhóm chức năng Quản lý tài khoản (Đăng ký, Đăng nhập). Sau khi đăng nhập, Người chơi có quyền truy cập toàn bộ chức năng gameplay gồm sáu nhóm: Quản lý nhân vật, Chiến đấu & Gene, Trang bị & Vật phẩm, Nhiệm vụ, Nhóm & Phó bản. Admin tương tác với nhóm chức năng Quản trị hệ thống qua giao diện riêng.
+**Bảng 2.1b: Danh mục use case toàn hệ thống Mutants Arena**
 
-**Hình 2.2: Biểu đồ Use Case tổng quát hệ thống Mutants Arena**
+| Mã | Use case | Actor chính | Nhóm chức năng |
+|---|---|---|---|
+| UC01 | Đăng ký tài khoản | Guest | Xác thực |
+| UC02 | Đăng nhập và khởi tạo phiên JWT | Guest / Player | Xác thực |
+| UC03 | Tạo nhân vật chính và vào game | Player | Nhân vật |
+| UC04 | Di chuyển qua portal và chuyển map | Player | Bản đồ |
+| UC05 | Chiến đấu và dùng kỹ năng thời gian thực | Player | Combat |
+| UC06 | Quản lý túi đồ, vật phẩm và trang bị | Player | Inventory |
+| UC07 | Nâng cấp trang bị tại Blacksmith | Player | Trang bị |
+| UC08 | Nâng Gene chính | Player | Gene Evolution |
+| UC09 | Chọn và nâng Gene phụ | Player | Gene Evolution |
+| UC10 | Dung hợp Hybrid Gene | Player | Gene Evolution |
+| UC11 | Phân bổ tiềm năng và quản lý kỹ năng | Player | Progression |
+| UC12 | Tương tác NPC, mua vật phẩm và dùng dịch vụ đặc biệt | Player | NPC / Shop |
+| UC13 | Nhận, bỏ, theo dõi và hoàn thành nhiệm vụ | Player / Máy chủ gameplay | Quest |
+| UC14 | Quản lý bạn bè | Player | Social |
+| UC15 | Tạo và quản lý tổ đội | Player | Party |
+| UC16 | Chat đa kênh thời gian thực | Player | Chat |
+| UC17 | Tạo, tham gia và hoàn tất phó bản | Player / Máy chủ gameplay | Dungeon |
+| UC18 | Xem và làm mới leaderboard | Player / Admin | Leaderboard |
+| UC19 | Đăng ký, heartbeat và giải phóng gameplay server | Máy chủ gameplay / Admin | Vận hành |
+| UC20 | Đăng ký host map, cập nhật spawn config và phát thưởng dungeon | Máy chủ gameplay / Admin | Vận hành |
 
-*Mô tả biểu đồ:* Biểu đồ bao gồm một vùng hệ thống (system boundary) mang tên "Hệ thống Mutants Arena". Bên ngoài ranh giới hệ thống có ba tác nhân: **Guest** (bên trái trên), **Player** (bên trái dưới) và **Admin** (bên phải). Bên trong vùng hệ thống có 7 use case được bố trí thành hai hàng:
+Hình 2.2 Biểu đồ Usecase tổng quát hệ thống Mutants Arena
 
-- Hàng trên (phải): **Đăng ký/Đăng nhập** → **Quản lý nhân vật** → **Chiến đấu & Skill**
-- Hàng dưới (phải): **Nâng cấp Gene** → **Party & Dungeon** → **Quest/NPC/Shop**
-- Ngoài vùng biên (phải trên): **Quản trị server** (dành riêng cho Admin)
+Mô tả: Vùng hệ thống mang tên "Hệ thống Mutants Arena" bao gồm các cụm use case mức cao: xác thực tài khoản, quản lý nhân vật, gameplay chiến đấu, Gene Evolution, inventory - trang bị, NPC - nhiệm vụ - cửa hàng, bạn bè - tổ đội - chat, phó bản đồng đội, đồng bộ thời gian thực, chuyển zone/visibility, spawn runtime, leaderboard và vận hành gameplay server. Bên ngoài vùng hệ thống có bốn actor: Khách, Người chơi, Quản trị viên và Máy chủ gameplay / Netcode server. Các actor này tương tác với những nhóm chức năng khác nhau tùy theo vai trò nghiệp vụ và vai trò kỹ thuật của mình.
 
-Quan hệ tác nhân – use case: **Guest** chỉ kết nối tới "Đăng ký/Đăng nhập". **Player** kết nối tới tất cả 6 use case bên trong vùng hệ thống (bao gồm "Đăng ký/Đăng nhập" như Guest nhưng mở rộng thêm toàn bộ chức năng gameplay). **Admin** kết nối tới "Quản trị server". Mũi tên từ các tác nhân đến use case thể hiện quan hệ kết hợp (association), không có quan hệ <<include>> hay <<extend>> ở biểu đồ tổng quát này.
+Ngoài sơ đồ tổng quát, bộ tài liệu còn có một sơ đồ tổng hợp chi tiết toàn bộ UC01 đến UC20 để đối chiếu giữa danh mục use case và các nhóm chức năng chuyên biệt.
 
-### 2.2.3. Biểu đồ Use Case chi tiết
+Các sơ đồ Usecase chi tiết của chương này được biên tập theo cùng một mẫu trình bày của luận văn; trong nội dung chương chỉ giữ phần hình minh họa và phần đặc tả nghiệp vụ tương ứng.
 
-a) Use Case Đăng ký tài khoản
+### 2.2.3. Đặc tả Use Case chi tiết
 
-**Hình 2.3: Biểu đồ Use Case — Đăng ký tài khoản**
+Phần đặc tả dưới đây mô tả đầy đủ các use case đã có trong dự án ở mức mục tiêu nghiệp vụ. Những endpoint phụ trợ như `config`, `detail`, `list`, `refresh`, `heartbeat` được gộp vào use case tương ứng để tránh tách nhỏ quá mức kỹ thuật.
 
-*Mô tả biểu đồ:* Vùng hệ thống "Hệ thống Mutants Arena" chứa 4 use case nằm trên một chuỗi tuần tự nối bằng mũi tên: **Nhập thông tin** → **Kiểm tra hợp lệ** → **Lưu tài khoản/JWT** → **Trả kết quả**. Tác nhân **Guest** và **Player** (bên trái) kết nối vào use case "Nhập thông tin" — đây là điểm khởi phát. Tác nhân **Admin** (bên phải) kết nối vào use case "Trả kết quả" — thể hiện vai trò giám sát log và phê duyệt tài khoản khi cần. Toàn bộ chuỗi use case nằm hoàn toàn bên trong vùng hệ thống, phản ánh việc logic xử lý thuộc trách nhiệm của API Server.
+a) Biểu đồ Usecase chức năng Xác thực và khởi tạo nhân vật
 
-**Đặc tả Use Case:**
+Hình 2.3 Biểu đồ Usecase chức năng Xác thực và khởi tạo nhân vật
 
-| Trường | Nội dung |
-|---|---|
-| **Use Case** | Đăng ký tài khoản |
-| **Actor** | Khách (Guest) |
-| **Mô tả** | Người dùng chưa có tài khoản tạo tài khoản mới với tên đăng nhập và mật khẩu. Hệ thống kiểm tra tính hợp lệ, mã hóa mật khẩu và lưu vào database. |
-| **Tiền điều kiện** | 1. Người dùng đang ở màn hình đăng nhập và chọn "Đăng ký". 2. API Server đang hoạt động và có thể kết nối. |
-| **Luồng chính** | 1. Người dùng nhập tên đăng nhập, mật khẩu và xác nhận mật khẩu. 2. Client kiểm tra validation phía client (độ dài, ký tự hợp lệ, khớp mật khẩu). 3. Client gửi POST /api/auth/register với thông tin đăng ký. 4. Server kiểm tra tên đăng nhập chưa tồn tại trong database. 5. Server hash mật khẩu bằng BCrypt (cost factor 12). 6. Server tạo bản ghi Player mới; trả về 201 Created. 7. Client hiển thị thông báo thành công và chuyển hướng về màn hình đăng nhập. |
-| **Luồng phụ** | 2.1. Mật khẩu và xác nhận không khớp → client hiển thị lỗi ngay lập tức, không gửi request. 2.2. Tên đăng nhập ít hơn 4 ký tự hoặc chứa ký tự đặc biệt → client hiển thị lỗi validation. 4.1. Tên đăng nhập đã tồn tại → server trả về 409 Conflict; client hiển thị "Tên đăng nhập đã được sử dụng". 3.1. Timeout kết nối → client hiển thị "Không thể kết nối server" và cho phép thử lại. |
-| **Kết quả** | Tài khoản được tạo thành công; người dùng có thể đăng nhập ngay với thông tin vừa tạo. |
-
-b) Use Case Đăng nhập
-
-**Hình 2.4: Biểu đồ Use Case — Đăng nhập**
-
-*Mô tả biểu đồ:* Cấu trúc biểu đồ tương tự Hình 2.3. Vùng hệ thống chứa 4 use case theo chuỗi: **Nhập thông tin** → **Kiểm tra hợp lệ** → **Lưu khoản/JWT** → **Trả kết quả**. Tác nhân **Guest** và **Player** (bên trái) khởi phát tại "Nhập thông tin". Tác nhân **Admin** (bên phải) kết nối vào "Trả kết quả" để theo dõi log đăng nhập. Điểm khác biệt với Hình 2.3 là use case thứ ba mang tên "Lưu khoản/JWT" — nhấn mạnh việc server cấp JWT token và lưu phiên đăng nhập, là điều kiện để các request tiếp theo được xác thực.
-
-**Đặc tả Use Case:**
-
-| Trường | Nội dung |
-|---|---|
-| **Use Case** | Đăng nhập |
-| **Actor** | Khách (Guest) |
-| **Mô tả** | Người dùng xác thực tài khoản bằng tên đăng nhập và mật khẩu. Hệ thống cấp JWT token để sử dụng cho các request và kết nối game sau đó. |
-| **Tiền điều kiện** | 1. Người dùng đã có tài khoản hợp lệ. 2. API Server đang hoạt động. |
-| **Luồng chính** | 1. Người dùng nhập tên đăng nhập và mật khẩu. 2. Client gửi POST /api/auth/login. 3. Server tìm Player theo tên đăng nhập trong database. 4. Server so sánh mật khẩu nhập vào với hash BCrypt đã lưu. 5. Server tạo JWT token (HS256, thời hạn 24 giờ) và trả về kèm thông tin player. 6. Client lưu token vào PlayerPrefs; chuyển đến màn hình chọn nhân vật. |
-| **Luồng phụ** | 3.1. Tên đăng nhập không tồn tại → server trả về 401; client hiển thị "Tên đăng nhập hoặc mật khẩu không đúng" (không tiết lộ field nào sai). 4.1. Mật khẩu không khớp → trả về 401 với thông báo giống trường hợp 3.1. 2.1. Timeout kết nối → client hiển thị "Không thể kết nối server, vui lòng thử lại" và giữ nguyên màn hình. |
-| **Kết quả** | Người dùng đăng nhập thành công; JWT token được lưu; truy cập được toàn bộ chức năng game. |
-
-c) Use Case Tạo và chọn nhân vật
-
-**Hình 2.5: Biểu đồ Use Case — Tạo và chọn nhân vật**
-
-*Mô tả biểu đồ:* Vùng hệ thống chứa 4 use case theo chuỗi: **Tạo và chọn nhân vật** → **Kiểm tra điều kiện** → **Cập nhật dữ liệu** → **Phản hồi**. Tác nhân **Guest** (bên trái trên) và **Player** (bên trái dưới) cùng kết nối vào use case đầu tiên "Tạo và chọn nhân vật" — Guest có thể xem màn hình chọn nhân vật nhưng chỉ Player đã đăng nhập mới thực sự tạo và vào game. Tác nhân **Admin** (bên phải) kết nối vào "Phản hồi" để theo dõi trạng thái. Use case "Kiểm tra điều kiện" bao gồm: xác thực JWT, kiểm tra số lượng nhân vật chưa đầy (≤2), kiểm tra tên không trùng. "Cập nhật dữ liệu" ghi nhân vật mới vào DB và nạp character data khi chọn nhân vật cũ.
-
-**Đặc tả Use Case:**
+Bảng 2.3 Bảng đặc tả nhóm chức năng Xác thực và khởi tạo nhân vật
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Tạo và chọn nhân vật |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi tạo nhân vật mới với lớp nguyên tố hoặc chọn nhân vật đã có để bắt đầu phiên chơi. Mỗi tài khoản tối đa 3 nhân vật. |
-| **Tiền điều kiện** | 1. Người chơi đã đăng nhập và có JWT token hợp lệ. 2. Màn hình Character Select đang hiển thị. |
-| **Luồng chính — Tạo mới** | 1. Người chơi chọn slot trống và nhấn "Tạo nhân vật". 2. Nhập tên nhân vật và chọn lớp nguyên tố từ 6 lựa chọn. 3. Client gửi POST /api/characters với thông tin nhân vật kèm JWT. 4. Server tạo bản ghi Character với chỉ số khởi đầu theo lớp. 5. Server trả về 201; client hiển thị nhân vật mới trong slot. |
-| **Luồng chính — Chọn nhân vật** | 1. Người chơi click vào nhân vật đã có. 2. Client lưu characterId được chọn. 3. Người chơi nhấn "Vào game". 4. Client kết nối đến Game Server NGO với JWT token và characterId trong Connection Data. 5. Server xác thực token và nạp dữ liệu nhân vật từ database. 6. Client chuyển đến scene bản đồ cuối cùng nhân vật đang đứng. |
-| **Luồng phụ** | 2.1. Tên nhân vật đã tồn tại → server trả về 409; client hiển thị "Tên nhân vật đã được sử dụng". 1.1. Đã có 3 nhân vật → slot tạo mới bị vô hiệu hóa; hiển thị "Đã đầy slot nhân vật". 4.1. JWT hết hạn → server từ chối kết nối NGO; client hiển thị "Phiên đăng nhập hết hạn" và chuyển về màn hình đăng nhập. |
-| **Kết quả** | Nhân vật được tạo hoặc chọn thành công; người chơi vào game tại bản đồ tương ứng. |
-
-d) Use Case Chiến đấu với quái vật
-
-**Hình 2.6: Biểu đồ Use Case — Chiến đấu với quái vật**
-
-*Mô tả biểu đồ:* Vùng hệ thống chứa 4 use case theo chuỗi: **Chiến đấu với quái vật** → **Kiểm tra điều kiện** → **Cập nhật dữ liệu** → **Phản hồi**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) kết nối vào use case khởi phát — thực tế chỉ Player đã đăng nhập và đang trong bản đồ mới thực hiện được. Tác nhân **Admin** (phải) kết nối vào "Phản hồi" để theo dõi log server. "Kiểm tra điều kiện" ở đây bao gồm xác nhận player còn sống, đang trong zone có quái, kỹ năng không đang cooldown. "Cập nhật dữ liệu" là bước server tính sát thương (áp dụng hệ số nguyên tố ×1.5/×0.75), trừ HP quái, cập nhật NetworkVariable và ghi EXP vào DB khi quái chết.
-
-**Đặc tả Use Case:**
+| **Mã / Use Case** | **UC01 - Đăng ký tài khoản** |
+| **Actor chính** | Guest |
+| **Mô tả** | Người dùng tạo tài khoản mới bằng `username`, `email`, `password`; hệ thống kiểm tra trùng lặp và lưu mật khẩu dưới dạng hash. |
+| **Tiền điều kiện** | 1. Người dùng đang ở màn hình Register.<br>2. API Auth đang sẵn sàng. |
+| **Luồng chính** | 1. Người dùng nhập thông tin đăng ký.<br>2. Client gửi `POST /api/auth/register`.<br>3. Server kiểm tra `username/email` chưa tồn tại.<br>4. Server hash password, tạo bản ghi user, phát JWT và trả `user_id`.<br>5. Client thông báo đăng ký thành công và khởi tạo phiên đầu tiên hoặc chuyển về login tùy luồng UI. |
+| **Luồng thay thế / ngoại lệ** | 1. Thiếu trường bắt buộc → trả `400 BadRequest`.<br>2. `username` hoặc `email` đã tồn tại → trả lỗi trùng lặp.<br>3. Lỗi kết nối API → client hiển thị lỗi và cho phép thử lại. |
+| **Hậu điều kiện** | Tài khoản được tạo thành công và có thể dùng ngay cho đăng nhập hoặc khởi tạo phiên đầu tiên. |
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Chiến đấu với quái vật |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi tiêu diệt quái vật trong bản đồ để nhận EXP và vật phẩm drop. Toàn bộ tính toán sát thương và HP được thực hiện trên server, không phụ thuộc client. |
-| **Tiền điều kiện** | 1. Người chơi đang ở trong bản đồ có quái vật spawn. 2. Nhân vật đang sống (HP > 0). |
-| **Luồng chính** | 1. Quái vật phát hiện người chơi trong tầm nhìn; AI chuyển sang trạng thái Chase. 2. Quái vật tiếp cận và tấn công; server tính sát thương áp dụng hệ số nguyên tố. 3. Người chơi gửi input tấn công lên server qua AttackServerRpc. 4. Server kiểm tra hitbox, áp dụng nguyên tố multiplier và trừ HP quái. 5. Server đồng bộ HP quái mới xuống tất cả client qua NetworkVariable. 6. Khi HP quái về 0: server kích hoạt death animation, tính toán và spawn vật phẩm drop. 7. Server gọi API lưu EXP mới, kiểm tra điều kiện lên cấp và cập nhật database. |
-| **Luồng phụ** | 2.1. Người chơi nhận đủ sát thương → HP = 0; nhân vật chết; hồi sinh tại checkpoint gần nhất sau 5 giây. 6.1. Không có vật phẩm drop theo xác suất → chỉ cộng EXP, không spawn item vật lý. 7.1. Đủ EXP để lên cấp → server xử lý lên cấp, cập nhật chỉ số và thông báo cho client. |
-| **Kết quả** | Quái vật bị tiêu diệt; người chơi nhận EXP và vật phẩm (nếu có); dữ liệu được lưu database. |
-
-e) Use Case Nâng cấp Gene
-
-**Hình 2.7: Biểu đồ Use Case — Nâng cấp Gene**
-
-*Mô tả biểu đồ:* Đây là use case có chuỗi dài nhất — 5 bước bên trong vùng hệ thống: **Xem Gene** → **Chọn Tier** → **Kiểm tra vật liệu** → **Nâng cấp/Fusion** → **Cập nhật chỉ số**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) kết nối vào "Xem Gene" — Guest có thể xem thông tin Gene nhưng không thể thực hiện nâng cấp. Tác nhân **Admin** (phải) kết nối vào "Cập nhật chỉ số". Chuỗi 5 bước phản ánh đúng luồng thực tế: (1) player vào menu Gene, (2) chọn Gene mục tiêu và Tier đích, (3) server kiểm tra đủ vật liệu (stone + gold theo `gene_upgrade_config`), (4) server thực hiện nâng cấp hoặc Fusion, (5) server cập nhật HP/ATK/DEF của nhân vật theo `gene_tier_stat_config`. Use case "Nâng cấp/Fusion" tách thành hai nhánh: nâng Tier (Tier 1→5 cho một nguyên tố) hoặc Fusion (ghép hai Gene khác nguyên tố thành Hybrid).
-
-**Đặc tả Use Case:**
+| **Mã / Use Case** | **UC02 - Đăng nhập và khởi tạo phiên JWT** |
+| **Actor chính** | Guest / Player |
+| **Mô tả** | Người dùng xác thực bằng `username/password`; server cấp JWT, cập nhật `last_login` và ghi nhận điểm danh ngày. |
+| **Tiền điều kiện** | 1. Tài khoản đã tồn tại.<br>2. API Server đang hoạt động. |
+| **Luồng chính** | 1. Người dùng nhập tài khoản và mật khẩu.<br>2. Client gửi `POST /api/auth/login`.<br>3. Server tìm user theo `username` và xác thực password hash.<br>4. Server cập nhật `last_login`, gọi logic điểm danh ngày và phát JWT mới.<br>5. Client lưu token, khởi tạo các service gameplay/SignalR và chuyển sang bước tạo hoặc nạp nhân vật. |
+| **Luồng thay thế / ngoại lệ** | 1. Sai `username/password` → trả `401 Unauthorized` với thông báo chung.<br>2. API timeout → client báo lỗi kết nối.<br>3. Token lỗi hoặc không lưu được → không cho đi tiếp vào gameplay. |
+| **Hậu điều kiện** | Phiên người dùng hợp lệ được khởi tạo; JWT sẵn sàng dùng cho REST API, SignalR và gameplay server. |
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Nâng cấp Gene |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi nâng cấp Tier của Gene nguyên tố để tăng chỉ số thụ động và mở khóa kỹ năng đặc trưng mới. Cần đủ Fragment và Gold theo bảng yêu cầu từng Tier. |
-| **Tiền điều kiện** | 1. Người chơi đã đăng nhập và đang ở menu Gene. 2. Nhân vật có Gene chưa đạt Tier tối đa (Tier 5). |
-| **Luồng chính** | 1. Người chơi vào menu Gene, chọn Gene cần nâng cấp. 2. Hệ thống hiển thị yêu cầu Fragment và Gold cho Tier tiếp theo và so sánh với số hiện có. 3. Người chơi nhấn "Nâng cấp". 4. Client gửi POST /api/gene/upgrade với characterId và geneType kèm JWT. 5. Server kiểm tra đủ Fragment và Gold; trừ nguyên liệu, tăng Tier Gene trong database. 6. Server tính toán lại chỉ số nhân vật dựa trên Gene mới và cập nhật character_stats. 7. Server trả về dữ liệu Gene mới; client cập nhật UI hiển thị Tier và chỉ số mới. |
-| **Luồng phụ** | 2.1. Không đủ Fragment → nút "Nâng cấp" bị vô hiệu hóa; hiển thị số Fragment còn thiếu và gợi ý địa điểm farm. 2.2. Không đủ Gold → tương tự, hiển thị số Gold còn thiếu. 5.1. Gene đã ở Tier 5 → server trả về 400; client hiển thị "Gene đã đạt cấp tối đa". |
-| **Kết quả** | Gene được nâng Tier thành công; chỉ số nhân vật cập nhật tự động; kỹ năng mới được mở khóa nếu Tier đủ điều kiện. |
+| **Mã / Use Case** | **UC03 - Tạo nhân vật chính và vào game** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi tạo nhân vật chính theo 1 trong 6 hệ nguyên tố, nạp dữ liệu nhân vật và kết nối vào gameplay world. |
+| **Tiền điều kiện** | 1. Người chơi đã có JWT hợp lệ.<br>2. Tài khoản chưa có dữ liệu `player_data` hoặc đang cần nạp lại dữ liệu nhân vật. |
+| **Luồng chính** | 1. Người chơi chọn `element_type` và nhập tên nhân vật.<br>2. Client gửi `POST /api/player/create`.<br>3. Server kiểm tra tính hợp lệ của tên, hệ và ràng buộc `user_id` từ JWT.<br>4. Server tạo `PlayerData`, gán `InfoChar` mặc định theo hệ nguyên tố.<br>5. Client gọi các API nạp dữ liệu như `data`, `skills`, `equipment`, `active-buffs` và chuẩn bị kết nối gameplay server.<br>6. Netcode server thực hiện connection approval, gán map/zone ban đầu, trả vị trí entry point và đưa nhân vật vào scene gameplay. |
+| **Luồng thay thế / ngoại lệ** | 1. Tên nhân vật rỗng hoặc dài ngoài 3-20 ký tự → trả lỗi validation.<br>2. Tài khoản đã có nhân vật chính → trả `409 Conflict`.<br>3. Kết nối gameplay server thất bại → quay về màn hình chờ và cho phép thử lại. |
+| **Hậu điều kiện** | Nhân vật chính được tạo hoặc nạp thành công; người chơi đi vào vòng lặp gameplay. |
 
-f) Use Case Nhận và hoàn thành nhiệm vụ
+b) Biểu đồ Usecase chức năng Gameplay cốt lõi
 
-**Hình 2.8: Biểu đồ Use Case — Nhận và hoàn thành nhiệm vụ**
+Hình 2.4 Biểu đồ Usecase chức năng Gameplay cốt lõi
 
-*Mô tả biểu đồ:* Vùng hệ thống chứa 4 use case theo chuỗi: **Nhận và hoàn thành nhiệm vụ** → **Kiểm tra điều kiện** → **Cập nhật dữ liệu** → **Phản hồi**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) cùng kết nối vào use case đầu, thực tế chỉ Player mới nhận được nhiệm vụ từ NPC. Tác nhân **Admin** (phải) theo dõi ở bước "Phản hồi". "Kiểm tra điều kiện" gồm: xác nhận Player đủ cấp độ yêu cầu, nhiệm vụ chưa được nhận trước đó, đang đứng trong vùng tương tác NPC. "Cập nhật dữ liệu" tạo bản ghi `player_quests` (trạng thái IN_PROGRESS) khi nhận, hoặc đánh dấu COMPLETED và phát thưởng khi nộp nhiệm vụ.
-
-**Đặc tả Use Case:**
+Bảng 2.4 Bảng đặc tả nhóm chức năng Gameplay cốt lõi
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Nhận và hoàn thành nhiệm vụ |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi nhận nhiệm vụ từ NPC, thực hiện các mục tiêu trong game và nhận thưởng khi hoàn thành. Tiến trình nhiệm vụ được theo dõi và lưu tự động trên server. |
-| **Tiền điều kiện** | 1. Người chơi đang ở gần NPC quest-giver (trong vùng tương tác). 2. Nhân vật đủ cấp độ yêu cầu của nhiệm vụ (nếu có). |
-| **Luồng chính** | 1. Người chơi tiếp cận NPC và nhấn phím tương tác (F). 2. NPC hiển thị menu dialog; người chơi chọn nhiệm vụ cần nhận. 3. Client gửi POST /api/quests/accept với questId và characterId. 4. Server tạo bản ghi PlayerQuest với trạng thái IN_PROGRESS và progress ban đầu. 5. Người chơi thực hiện mục tiêu (giết quái, thu thập item, đến địa điểm). 6. Game Server tự động cập nhật progress khi điều kiện được thỏa mãn; đồng bộ về client. 7. Khi progress đạt 100%, server đánh dấu nhiệm vụ COMPLETED. 8. Người chơi quay lại NPC nộp nhiệm vụ; client gửi POST /api/quests/complete. 9. Server phát thưởng (EXP, Gold, vật phẩm) và cập nhật trạng thái trong database. |
-| **Luồng phụ** | 2.1. Nhiệm vụ đã được nhận → NPC hiển thị tiến trình hiện tại thay vì cho nhận lại. 3.1. Nhân vật không đủ cấp độ → server trả về 403; NPC hiển thị "Cần đạt cấp X để nhận nhiệm vụ này". 8.1. Nhiệm vụ chưa hoàn thành (progress < 100%) → server từ chối; NPC nhắc nhở mục tiêu còn lại. |
-| **Kết quả** | Nhiệm vụ hoàn thành; phần thưởng được cộng vào nhân vật; trạng thái COMPLETED lưu database. |
-
-g) Use Case Nâng cấp trang bị
-
-**Hình 2.9: Biểu đồ Use Case — Nâng cấp trang bị**
-
-*Mô tả biểu đồ:* Vùng hệ thống chứa 4 use case theo chuỗi: **Nâng cấp trang bị** → **Kiểm tra điều kiện** → **Cập nhật dữ liệu** → **Phản hồi**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) kết nối vào use case đầu tiên; chỉ Player đứng gần NPC Blacksmith với đủ nguyên liệu mới thực hiện được. Tác nhân **Admin** (phải) kết nối vào "Phản hồi". "Kiểm tra điều kiện" xác nhận: trang bị chưa đạt +20, số lượng Enhancement Stone và Gold đủ theo mức nâng cấp. "Cập nhật dữ liệu" server tung xúc xắc theo xác suất thành công, cập nhật `enhancement_level` trong bảng `character_equipment`, tính lại chỉ số ATK/DEF của nhân vật.
-
-**Đặc tả Use Case:**
+| **Mã / Use Case** | **UC04 - Di chuyển qua portal và chuyển map** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi di chuyển giữa các map/scene thông qua portal hoặc nút chuyển map; server xác thực vị trí và điều kiện truy cập. |
+| **Tiền điều kiện** | 1. Nhân vật đang online trong gameplay world.<br>2. Map hiện tại có portal đang active. |
+| **Luồng chính** | 1. Client lấy danh sách portal hoặc portal trái/phải của map hiện tại.<br>2. Người chơi chạm vùng portal hoặc kích hoạt thao tác chuyển map.<br>3. Client gửi `POST /api/map/travel` kèm `portal_id`, `current_map_id`, vị trí nhân vật.<br>4. Server kiểm tra đúng source map, khoảng cách đến portal và item yêu cầu nếu có khóa truy cập.<br>5. Server trả `dest_map_id`, `scene_name`, `dest_x`, `dest_y`.<br>6. Client tải scene đích và reposition nhân vật. |
+| **Luồng thay thế / ngoại lệ** | 1. Người chơi đứng quá xa portal → từ chối dịch chuyển.<br>2. Thiếu item chìa khóa của portal → từ chối truy cập.<br>3. Portal bị khóa hoặc không tồn tại → trả lỗi. |
+| **Hậu điều kiện** | Nhân vật được dịch chuyển thành công đến map đích và tiếp tục gameplay ở zone mới. |
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Nâng cấp trang bị |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi mang trang bị đến NPC Blacksmith để nâng cấp từ +0 đến +20 bằng nguyên liệu và Gold. Xác suất thành công giảm dần ở mức nâng cấp cao. |
-| **Tiền điều kiện** | 1. Người chơi đang ở gần NPC Blacksmith. 2. Nhân vật có trang bị chưa đạt +20 trong inventory. 3. Có đủ nguyên liệu Enhancement Stone và Gold. |
-| **Luồng chính** | 1. Người chơi tương tác NPC Blacksmith, chọn chức năng nâng cấp. 2. Giao diện Blacksmith hiển thị; người chơi kéo trang bị vào slot và xem xác suất thành công. 3. Người chơi nhấn "Nâng cấp". 4. Client gửi POST /api/equipment/enhance với itemId và characterId kèm JWT. 5. Server kiểm tra nguyên liệu và Gold; trừ nguyên liệu. 6. Server tính kết quả theo xác suất: Thành công → tăng enhancement_level +1; Thất bại → không thay đổi hoặc giảm cấp (tùy cấu hình mức nguy hiểm). 7. Server trả về kết quả; client hiển thị animation thành công/thất bại và cập nhật chỉ số trang bị. |
-| **Luồng phụ** | 2.1. Không đủ nguyên liệu → nút "Nâng cấp" bị vô hiệu hóa; hiển thị thiếu bao nhiêu. 2.2. Trang bị đã đạt +20 → không hiển thị tùy chọn nâng cấp thêm. 6.1. Thất bại ở mức +15 trở lên → enhancement_level giảm 1; thông báo rõ ràng cho người chơi. |
-| **Kết quả** | Trang bị được nâng cấp (hoặc thất bại); chỉ số equipment_level cập nhật trong database; chỉ số nhân vật được tính lại. |
-
-h) Use Case Tạo và quản lý nhóm (Party)
-
-**Hình 2.10: Biểu đồ Use Case — Tạo và quản lý nhóm**
-
-*Mô tả biểu đồ:* Vùng hệ thống chứa 4 use case theo chuỗi: **Tạo và quản lý nhóm** → **Kiểm tra điều kiện** → **Cập nhật dữ liệu** → **Phản hồi**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) kết nối vào use case đầu — thực tế chỉ Player đã đăng nhập và chưa trong nhóm nào mới tạo được. Tác nhân **Admin** (phải) kết nối vào "Phản hồi". Điểm đặc biệt của use case này so với các use case REST khác: "Cập nhật dữ liệu" không đi qua HTTP mà qua **SignalR Hub** (`PartyHub`) — server đẩy `PartyStateUpdated` realtime cho tất cả thành viên trong SignalR group mỗi khi có thay đổi (mời/chấp nhận/rời/chuyển leader).
-
-**Đặc tả Use Case:**
+| **Mã / Use Case** | **UC05 - Chiến đấu và dùng kỹ năng thời gian thực** |
+| **Actor chính** | Player |
+| **Actor phụ** | Máy chủ gameplay |
+| **Mô tả** | Người chơi thực hiện di chuyển chiến đấu, tấn công thường, dùng kỹ năng, nhận/trả sát thương và kích hoạt buff/debuff theo mô hình server-authoritative. |
+| **Tiền điều kiện** | 1. Người chơi đã vào scene gameplay.<br>2. Nhân vật còn sống và có quyền điều khiển. |
+| **Luồng chính** | 1. Người chơi di chuyển, nhảy hoặc dash để tiếp cận mục tiêu.<br>2. Player gửi input tấn công hoặc cast skill đến gameplay server.<br>3. Server kiểm tra cooldown, MP, hitbox và quyền thi triển.<br>4. Server tính sát thương, áp dụng tương khắc nguyên tố và trạng thái Burn/Freeze/Stun/Poison nếu có.<br>5. Netcode server đồng bộ vị trí, hướng mặt, animation chiến đấu, HP/buff và các trạng thái liên quan xuống client bằng NetworkVariable, ClientRpc hoặc cơ chế sync phù hợp; HUD cập nhật theo thời gian thực.<br>6. Khi enemy chết, gameplay server kích hoạt loot, EXP và các hook như quest progress/report reward. |
+| **Luồng thay thế / ngoại lệ** | 1. Không đủ MP hoặc skill đang cooldown → thao tác bị từ chối.<br>2. Mục tiêu ngoài phạm vi/hitbox → không ghi nhận hit.<br>3. Player tử vong → nhân vật vào trạng thái chết/hồi sinh theo logic runtime. |
+| **Hậu điều kiện** | Trạng thái chiến đấu được đồng bộ nhất quán; EXP, drop và hiệu ứng phụ được xử lý server-side. |
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Tạo và quản lý nhóm |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Người chơi tạo nhóm hoặc tham gia nhóm có sẵn để cùng chiến đấu và khám phá phó bản. Hệ thống nhóm vận hành real-time qua SignalR Hub. |
-| **Tiền điều kiện** | 1. Người chơi đã đăng nhập và đang trong game. 2. Người chơi chưa thuộc nhóm nào. |
-| **Luồng chính — Tạo nhóm** | 1. Người chơi mở UI Party và nhấn "Tạo nhóm". 2. Client gửi yêu cầu tạo nhóm qua SignalR Hub với JWT xác thực. 3. Server tạo Party mới, gán leaderId là người chơi hiện tại. 4. Server gửi xác nhận tạo nhóm thành công về client qua SignalR. 5. Người chơi nhập tên nhân vật cần mời và nhấn "Mời". 6. Server kiểm tra người chơi đang online; gửi lời mời đến người được mời qua SignalR. 7. Người được mời chấp nhận; server cập nhật danh sách thành viên và push cho tất cả. |
-| **Luồng phụ** | 5.1. Tên nhân vật không tồn tại hoặc offline → server thông báo "Không tìm thấy người chơi". 7.1. Người được mời từ chối → server thông báo cho người mời; không thay đổi nhóm. 5.2. Nhóm đã đủ 4 người → nút mời bị vô hiệu hóa; hiển thị "Nhóm đã đầy". 1.1. Người chơi đang trong nhóm khác → hệ thống yêu cầu rời nhóm cũ trước. |
-| **Kết quả** | Nhóm được tạo; thành viên cùng thấy danh sách nhóm real-time; có thể cùng vào phó bản. |
-
-i) Use Case Vào phó bản (Dungeon)
-
-**Hình 2.11: Biểu đồ Use Case — Vào phó bản**
-
-*Mô tả biểu đồ:* Đây là use case phức tạp nhất — chuỗi dài 6 bước bên trong vùng hệ thống, phản ánh toàn bộ vòng đời một phiên Dungeon: **Tạo party** → **Mời thành viên** → **Vào Dungeon** → **Đánh wave** → **Đánh Boss** → **Nhận thưởng**. Tác nhân **Guest** (trái trên) và **Player** (trái dưới) kết nối vào use case đầu tiên "Tạo party" — điểm khởi phát toàn bộ luồng. Tác nhân **Admin** (phải) kết nối vào use case cuối "Nhận thưởng" để giám sát log loot distribution. Lưu ý cấu trúc luồng: bước 1–2 ("Tạo party" và "Mời thành viên") đi qua **SignalR PartyHub**; bước 3–6 (từ "Vào Dungeon" đến "Nhận thưởng") chuyển sang **Unity NGO Dedicated Server** quản lý `DungeonInstance` — đây là điểm chuyển giao giữa hai kênh giao tiếp đã trình bày tại §3.0.1. Boss xuất hiện sau khi tất cả wave thường đã bị tiêu diệt; loot chia theo damage contribution như mô tả tại §3.7.4.
-
-**Đặc tả Use Case:**
+| **Mã / Use Case** | **UC06 - Quản lý túi đồ, vật phẩm và trang bị** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi xem inventory, sắp xếp túi, dùng consumable, gắn/tháo trang bị và quản lý quick-slot mở rộng túi. |
+| **Tiền điều kiện** | 1. Người chơi đã có dữ liệu inventory hợp lệ.<br>2. Nhân vật đang ở trạng thái cho phép thao tác UI. |
+| **Luồng chính** | 1. Người chơi mở UI túi đồ.<br>2. Client lấy dữ liệu inventory/equipment hiện tại từ API cache hoặc refresh từ server.<br>3. Người chơi có thể sắp xếp túi, dùng item, gắn trang bị vào slot hoặc tháo ra khỏi slot.<br>4. Server cập nhật `inventory`, `equipment`, `active-buffs` và chỉ số tổng hợp của nhân vật.<br>5. Client làm mới UI túi đồ, thông tin nhân vật và HUD buff. |
+| **Luồng thay thế / ngoại lệ** | 1. Túi đầy → không thể thêm item mới.<br>2. Item không hợp lệ hoặc sai loại slot → từ chối thao tác.<br>3. Đã gắn tối đa 3 quick-slot mở rộng túi → không cho gắn thêm. |
+| **Hậu điều kiện** | Inventory, equipment và chỉ số nhân vật được lưu nhất quán sau thao tác. |
 
 | Trường | Nội dung |
 |---|---|
-| **Use Case** | Vào phó bản |
-| **Actor** | Người chơi (Player) |
-| **Mô tả** | Nhóm người chơi vào phó bản — khu vực đặc biệt với hệ thống wave quái liên tiếp kết thúc bằng Boss, mang lại phần thưởng cao hơn bản đồ thường. |
-| **Tiền điều kiện** | 1. Người chơi đang ở trong nhóm (tối thiểu 1 người). 2. Người chơi đứng tại cổng vào phó bản. 3. Nhóm chưa đang trong phó bản khác. |
-| **Luồng chính** | 1. Trưởng nhóm tương tác cổng phó bản; hệ thống hiển thị thông tin (cấp yêu cầu, số wave, boss). 2. Trưởng nhóm xác nhận; client gửi DungeonEnterRequest qua SignalR. 3. Server tạo DungeonInstance riêng trong ZoneRoomRegistry cho nhóm. 4. Server dịch chuyển tất cả thành viên đến Scene phó bản. 5. Wave 1 bắt đầu: server spawn quái theo cấu hình wave. 6. Nhóm tiêu diệt toàn bộ quái trong wave → server kích hoạt wave tiếp theo tự động. 7. Sau wave cuối: Boss xuất hiện với Phase System đã cấu hình. 8. Nhóm tiêu diệt Boss; server tính thưởng, phát EXP và vật phẩm đặc biệt. 9. Server dịch chuyển nhóm về bản đồ chính; xóa DungeonInstance. |
-| **Luồng phụ** | 1.1. Nhóm không đủ cấp độ yêu cầu → hiển thị cảnh báo; không cho vào. 5.1. Thành viên chết → hồi sinh tại điểm spawn phó bản sau 10 giây; tiếp tục chiến đấu. 8.1. Toàn bộ nhóm chết trước khi Boss chết → DungeonInstance hủy; nhóm trở về bản đồ chính không có thưởng. |
-| **Kết quả** | Phó bản hoàn thành; nhóm nhận thưởng EXP và vật phẩm đặc biệt; DungeonInstance được giải phóng. |
+| **Mã / Use Case** | **UC07 - Nâng cấp trang bị tại Blacksmith** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi nâng cấp một trang bị lên các mốc cao hơn bằng đá cường hóa, Lucky Stone, Protection Stone và bạc. |
+| **Tiền điều kiện** | 1. Có trang bị hợp lệ trong inventory hoặc equipment slot.<br>2. Có đủ vật liệu và tiền theo cấu hình bậc nâng cấp.<br>3. Đang mở giao diện Blacksmith hoặc giao diện tương đương. |
+| **Luồng chính** | 1. Client gọi API config của bậc mục tiêu để lấy `stoneId`, `stoneNeeded`, `baseSuccessRate`, `failPolicy`.<br>2. Người chơi chọn vật phẩm nâng cấp và các slot vật liệu tương ứng.<br>3. Client gửi `POST /api/upgrade/equipment` kèm danh sách slot đá/charm thực dùng.<br>4. Server kiểm tra số lượng từng slot chống gian lận stack, trừ bạc và vật liệu.<br>5. Server tính kết quả nâng cấp, cập nhật `upgradeLevel`, `strOptions` và các bonus liên quan.<br>6. Client hiển thị kết quả thành công/thất bại và cập nhật lại inventory/equipment. |
+| **Luồng thay thế / ngoại lệ** | 1. Không đủ vật liệu hoặc bạc → trả lỗi rõ nguyên nhân.<br>2. Vật phẩm đã đạt +24 → không cho nâng thêm.<br>3. Theo `failPolicy`, nâng cấp thất bại có thể giữ nguyên hoặc tụt cấp tùy mốc. |
+| **Hậu điều kiện** | Trạng thái trang bị được lưu sau lần cường hóa; chỉ số nhân vật thay đổi theo kết quả cuối cùng. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC08 - Nâng Gene chính** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi nâng Gene chính từ Tier 1 đến Tier 5 bằng gene EXP, vàng và vật liệu theo cấu hình DB. |
+| **Tiền điều kiện** | 1. Nhân vật đã có Gene chính.<br>2. Tier hiện tại nhỏ hơn 5.<br>3. Đủ `gene_exp`, vàng và item yêu cầu. |
+| **Luồng chính** | 1. Client lấy `GET /api/gene/config` theo `elementType` và `tier` hiện tại.<br>2. Người chơi chọn số lượng item hỗ trợ nâng cấp.<br>3. Client gửi `POST /api/gene/upgrade`.<br>4. Server kiểm tra điều kiện tài nguyên, tiêu hao vàng/item/gene EXP và tính xác suất thành công.<br>5. Nếu thành công, Gene tăng Tier, cộng thêm HP/MP/ATK/DEF và mở khóa kỹ năng đúng `gene_tier`.<br>6. Client cập nhật UI Gene, final stats và inventory. |
+| **Luồng thay thế / ngoại lệ** | 1. Gene đã đạt Tier 5 → trả lỗi tối đa.<br>2. Thiếu `gene_exp`, vàng hoặc vật liệu → từ chối nâng cấp.<br>3. Nâng cấp thất bại → tier không tăng nhưng tài nguyên vẫn tiêu hao theo cấu hình gọi API. |
+| **Hậu điều kiện** | Trạng thái Gene chính, inventory và chỉ số nhân vật được lưu mới. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC09 - Chọn và nâng Gene phụ** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi chọn một Gene phụ hợp lệ cho nhân vật và nâng Gene phụ đến Tier 5 để chuẩn bị Hybrid Fusion. |
+| **Tiền điều kiện** | 1. Nhân vật đã có Gene chính.<br>2. Nếu là bước chọn Gene phụ: nhân vật chưa chọn Gene phụ trước đó.<br>3. Nếu là bước nâng Gene phụ: đã có `secondaryElement`. |
+| **Luồng chính** | 1. Người chơi chọn Gene phụ lần đầu bằng `POST /api/gene/secondary/select`.<br>2. Server kiểm tra cặp đối tác cố định theo code: Hỏa↔Thổ, Thủy↔Mộc, Kim↔Phong.<br>3. Sau khi chọn thành công, client lấy `GET /api/gene/multi/config` cho Tier hiện tại.<br>4. Người chơi gửi `POST /api/gene/secondary/upgrade` để nâng hệ phụ.<br>5. Server tính tiêu hao và xác suất thành công; nếu thành công thì tăng Tier và cộng bonus chỉ số hệ phụ ở mức giảm hệ số so với Gene chính.<br>6. Khi Gene chính và Gene phụ cùng Tier 5, hệ thống bật cờ `canFuse`. |
+| **Luồng thay thế / ngoại lệ** | 1. Gene phụ đã được chọn trước đó → không cho đổi hệ.<br>2. Chọn sai cặp nguyên tố → trả lỗi không hợp lệ.<br>3. Thiếu vàng/vật liệu/gene EXP hệ phụ → nâng cấp bị từ chối. |
+| **Hậu điều kiện** | Gene phụ được khóa theo cặp hợp lệ và/hoặc đạt Tier mới, sẵn sàng cho Fusion nếu đủ điều kiện. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC10 - Dung hợp Hybrid Gene** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi hợp nhất Gene chính và Gene phụ đã đạt điều kiện thành Hybrid Gene để mở bonus chiến đấu và kỹ năng hybrid. |
+| **Tiền điều kiện** | 1. Chưa là Hybrid.<br>2. Gene chính và Gene phụ đều đạt Tier 5.<br>3. Cặp hệ nằm trong 3 cặp hybrid hợp lệ.<br>4. Đủ vàng và số lượng Fusion Core theo config. |
+| **Luồng chính** | 1. Client gọi `GET /api/gene/hybrid/config` để lấy điều kiện fusion, item, gold cost và bonus.<br>2. Người chơi xác nhận fusion.<br>3. Client gửi `POST /api/gene/hybrid/fuse`.<br>4. Server kiểm tra điều kiện, trừ vàng và Fusion Core theo hệ chính.<br>5. Server đánh dấu `IsHybrid=true`, lưu `HybridId`, `HybridPrefabPath`, bonus target, immune elements và bonus ATK/HP/MP/DEF.<br>6. Server thay đổi bộ kỹ năng để giữ một phần kỹ năng hệ chính và thêm kỹ năng hybrid.<br>7. Client cập nhật UI hybrid, prefab và final stats. |
+| **Luồng thay thế / ngoại lệ** | 1. Cặp hệ không hợp lệ hoặc chưa đủ Tier → trả lỗi chi tiết.<br>2. Thiếu Fusion Core hoặc vàng → từ chối fusion.<br>3. Nhân vật đã là Hybrid → không cho thực hiện lại. |
+| **Hậu điều kiện** | Nhân vật chuyển sang trạng thái Hybrid Gene với bonus, prefab và bộ kỹ năng mới. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC11 - Phân bổ tiềm năng và quản lý kỹ năng** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi tăng điểm chỉ số và quản lý kỹ năng đã học thông qua Character Panel và các dịch vụ NPC. |
+| **Tiền điều kiện** | 1. Người chơi có điểm tiềm năng hoặc điểm kỹ năng, hoặc đứng gần NPC dịch vụ tương ứng.<br>2. Phiên đăng nhập còn hiệu lực. |
+| **Luồng chính** | 1. Client gọi API lấy `potential` và `skills` hiện tại.<br>2. Người chơi phân bổ điểm tiềm năng hoặc nâng level skill trực tiếp từ UI nhân vật.<br>3. Nếu cần reset/learn/exchange skill hoặc reset potential, client gọi các API `npc/action/*` tương ứng.<br>4. Server kiểm tra bạc, điểm kỹ năng và tính hợp lệ của skill trước khi áp dụng thay đổi.<br>5. Client cập nhật lại chỉ số, skill list và trạng thái `level lock` nếu thao tác có liên quan. |
+| **Luồng thay thế / ngoại lệ** | 1. Không đủ điểm hoặc skill đã đạt level tối đa → từ chối nâng.<br>2. Không đủ bạc cho dịch vụ NPC → trả thông báo lỗi.<br>3. Đổi sang skill đã có hoặc reset khi không có dữ liệu tương ứng → thao tác không hợp lệ. |
+| **Hậu điều kiện** | Chỉ số tiềm năng, điểm kỹ năng, skill list và trạng thái khóa cấp được lưu mới. |
+
+c) Biểu đồ Usecase chức năng NPC, nhiệm vụ và cửa hàng
+
+Hình 2.5 Biểu đồ Usecase chức năng NPC, nhiệm vụ và cửa hàng
+
+Bảng 2.5 Bảng đặc tả nhóm chức năng NPC, nhiệm vụ và cửa hàng
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC12 - Tương tác NPC, mua vật phẩm và dùng dịch vụ đặc biệt** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi tương tác với NPC trên map để đọc hội thoại, mở shop hoặc gọi các màn hình chức năng như Blacksmith, Dungeon Menu, Skill Service. |
+| **Tiền điều kiện** | 1. NPC đang active trên map hiện tại.<br>2. Người chơi ở đủ gần để tương tác. |
+| **Luồng chính** | 1. Client lấy danh sách NPC theo map qua `GET /api/npc/list`.<br>2. Người chơi chọn một NPC và gửi `POST /api/npc/interact`.<br>3. Server trả node hội thoại đầu tiên và loại NPC/menu phù hợp.<br>4. Nếu còn hội thoại, client gửi `POST /api/npc/dialogue/next` để đi tiếp các node.<br>5. Nếu là shop, client gọi `GET /api/npc/shop` và người chơi thực hiện `POST /api/npc/shop/buy` để mua item.<br>6. Nếu là NPC dịch vụ, client điều hướng sang Blacksmith, Dungeon menu hoặc các API `npc/action/*` tương ứng. |
+| **Luồng thay thế / ngoại lệ** | 1. NPC không tồn tại hoặc bị vô hiệu hóa → trả lỗi not found.<br>2. Người chơi không đủ cấp hoặc không đủ tiền để mua item → từ chối giao dịch.<br>3. Shop chưa cấu hình đúng → server báo lỗi `Shop NPC này chưa được cấu hình`. |
+| **Hậu điều kiện** | Người chơi hoàn tất hội thoại, mua vật phẩm hoặc mở được luồng chức năng chuyên biệt từ NPC. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC13 - Nhận, bỏ, theo dõi và hoàn thành nhiệm vụ** |
+| **Actor chính** | Player |
+| **Actor phụ** | Máy chủ gameplay |
+| **Mô tả** | Người chơi nhận quest từ NPC, theo dõi tiến trình trong HUD và hoàn thành quest bằng các event runtime của gameplay server. |
+| **Tiền điều kiện** | 1. Người chơi đã đăng nhập và có nhân vật active.<br>2. Đứng gần NPC phát quest hoặc đang có quest active.<br>3. Nếu nhận quest mới, nhân vật không được có quest active khác. |
+| **Luồng chính** | 1. Client gọi `GET /api/quest/list?npcId=...` để xem quest theo trạng thái `available/active/completed/locked`.<br>2. Người chơi nhận quest bằng `POST /api/quest/accept`.<br>3. Server ghi `ActiveQuestId`, reset `QuestStep` và `QuestProgress` cho player.<br>4. Trong gameplay, Zone Server gửi `POST /api/quest/progress-by-event` cho các sự kiện `kill`, `collect`, `talk`, `reach`.<br>5. HUD cập nhật tiến trình active quest theo phản hồi từ server.<br>6. Người chơi có thể bỏ quest bằng `POST /api/quest/abandon`.<br>7. Khi đạt đủ điều kiện, người chơi gửi `POST /api/quest/complete`; server phát EXP, vàng, bạc, item và đánh dấu quest hoàn thành. |
+| **Luồng thay thế / ngoại lệ** | 1. Nhân vật chưa đủ level quest → quest ở trạng thái `locked`.<br>2. Đã có quest active → không cho nhận quest mới.<br>3. Event runtime không khớp bước quest hiện tại → server bỏ qua không cộng tiến trình.<br>4. Quest chưa đủ điều kiện hoàn thành → không thể nộp. |
+| **Hậu điều kiện** | Tiến trình quest được cập nhật chính xác; player nhận thưởng và lưu dấu completed khi hoàn tất. |
+
+d) Biểu đồ Usecase chức năng Xã hội, phó bản và vận hành
+
+Hình 2.6 Biểu đồ Usecase chức năng Xã hội, phó bản và vận hành
+
+Bảng 2.6 Bảng đặc tả nhóm chức năng Xã hội, phó bản và vận hành
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC14 - Quản lý bạn bè** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi tìm kiếm nhân vật khác, gửi lời mời kết bạn, chấp nhận lời mời hoặc xóa quan hệ bạn bè. |
+| **Tiền điều kiện** | 1. Người chơi đã đăng nhập.<br>2. Friend API khả dụng. |
+| **Luồng chính** | 1. Người chơi mở Friend Panel.<br>2. Client lấy danh sách hiện tại bằng `GET /api/friends`.<br>3. Người chơi nhập từ khóa tên nhân vật và gọi `GET /api/friends/search?q=...`.<br>4. Người chơi gửi lời mời qua `POST /api/friends/request`.<br>5. Người nhận mở panel và chấp nhận bằng `PUT /api/friends/{id}/accept` hoặc xóa bằng `DELETE /api/friends/{id}`.<br>6. UI cập nhật trạng thái `pending_sent`, `pending_received`, `accepted`. |
+| **Luồng thay thế / ngoại lệ** | 1. Tìm kiếm dưới 2 ký tự → API từ chối.<br>2. Gửi lời mời cho chính mình → từ chối.<br>3. Quan hệ đã tồn tại hoặc target không tồn tại → trả lỗi. |
+| **Hậu điều kiện** | Quan hệ bạn bè được tạo, chấp nhận hoặc xóa theo thao tác cuối cùng. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC15 - Tạo và quản lý tổ đội** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi tạo party, mời thành viên, xử lý yêu cầu tham gia, khóa party và quản trị trạng thái tổ đội qua SignalR. |
+| **Tiền điều kiện** | 1. Người chơi đã kết nối `PartyHub` và cập nhật presence map/zone/level.<br>2. Người chơi chưa nằm trong party khác nếu muốn tạo hoặc xin vào party mới. |
+| **Luồng chính** | 1. Player gọi `CreateParty` để tạo tổ đội mới.<br>2. Leader mời thành viên bằng `InviteMember` hoặc người chơi khác xin vào bằng `RequestJoinParty`.<br>3. Leader chấp nhận hoặc từ chối yêu cầu thông qua `AcceptJoinRequest` / `RejectJoinRequest`.<br>4. Hệ thống đồng bộ `PartyStateUpdated` cho toàn bộ thành viên trong group SignalR.<br>5. Leader có thể bật/tắt `autoAccept`, khóa party hoặc giải tán party; thành viên có thể tự rời party. |
+| **Luồng thay thế / ngoại lệ** | 1. Party đã đủ 4 người → không thể thêm thành viên.<br>2. Người chơi đang ở party khác → không được xin vào party mới.<br>3. Party bị khóa → từ chối yêu cầu join thường.<br>4. Leader thoát khỏi party → hệ thống tự chuyển leader hoặc giải tán nếu không còn ai. |
+| **Hậu điều kiện** | Trạng thái tổ đội được cập nhật thời gian thực cho mọi thành viên và sẵn sàng cho nội dung co-op. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC16 - Chat đa kênh thời gian thực** |
+| **Actor chính** | Player |
+| **Mô tả** | Người chơi gửi và nhận chat qua nhiều kênh SignalR gồm world, proximity, group, private; phần hạ tầng còn hỗ trợ clan/class. |
+| **Tiền điều kiện** | 1. Người chơi đã kết nối `ChatHub` bằng JWT.<br>2. Với proximity/group, người chơi đã join đúng group map hoặc group party. |
+| **Luồng chính** | 1. Người chơi nhập nội dung tin nhắn trên kênh đã chọn.<br>2. Client gọi method SignalR tương ứng như `SendWorldMessage`, `SendProximityMessage`, `SendGroupMessage`, `SendPrivateMessage`.<br>3. Hub kiểm tra rỗng và giới hạn chiều dài 300 ký tự.<br>4. Server broadcast tin nhắn đến đúng group người nhận và echo lại cho caller nếu cần.<br>5. Khi đổi map hoặc đổi party, client gọi `JoinMap/LeaveMap` hoặc `JoinGroup/LeaveGroup` để cập nhật phạm vi chat. |
+| **Luồng thay thế / ngoại lệ** | 1. Nội dung rỗng hoặc vượt quá 300 ký tự → tin nhắn bị bỏ qua.<br>2. Người nhận private offline → không có phản hồi realtime về phía người nhận.<br>3. Sai group/map hiện tại → tin nhắn không tới đúng phạm vi. |
+| **Hậu điều kiện** | Tin nhắn được phân phối đúng kênh và được hiển thị tức thời trên UI chat. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC17 - Tạo, tham gia và hoàn tất phó bản** |
+| **Actor chính** | Player |
+| **Actor phụ** | Máy chủ gameplay |
+| **Mô tả** | Người chơi truy cập danh sách dungeon, tạo hoặc tham gia session, vượt wave quái và boss, sau đó nhận thưởng phó bản. |
+| **Tiền điều kiện** | 1. Dungeon đang active trong database.<br>2. Người chơi hoặc party đạt level yêu cầu.<br>3. Session còn chỗ trống nếu join session đã tồn tại. |
+| **Luồng chính** | 1. Client gọi `GET /api/dungeon/list` và `GET /api/dungeon/{id}` để hiển thị dungeon list/detail.<br>2. Nếu chưa có session phù hợp, host gọi `POST /api/dungeon/session/create`; nếu đã có session thì player gọi `POST /api/dungeon/session/{id}/join`.<br>3. Khi vào phó bản, gameplay server gọi `POST /api/dungeon/wave/{dungeonId}/enter` và các API cập nhật session wave trong quá trình chiến đấu.<br>4. Server spawn wave quái, sau wave cuối thì nạp boss config và cho boss xuất hiện.<br>5. Khi dungeon kết thúc, host gọi `POST /api/dungeon/session/{id}/end` hoặc `leave/end wave session` tương ứng.<br>6. Reward service gọi `POST /api/dungeonreward/grant` để cấp item cho player tham gia. |
+| **Luồng thay thế / ngoại lệ** | 1. Session đã đầy hoặc đã kết thúc → không thể join.<br>2. Người chơi không đủ level → không thể vào dungeon.<br>3. Thành viên rời giữa chừng → session vẫn tiếp tục nếu còn người khác.<br>4. Inventory đầy khi grant reward → chỉ thêm được các item còn chỗ hợp lệ. |
+| **Hậu điều kiện** | Session phó bản được cập nhật hoặc kết thúc; người chơi nhận reward, EXP và quay về gameplay thường. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC18 - Xem và làm mới leaderboard** |
+| **Actor chính** | Player / Admin |
+| **Mô tả** | Người chơi xem bảng xếp hạng theo nhiều hạng mục; Admin có thể ép hệ thống refresh thủ công khi cần. |
+| **Tiền điều kiện** | 1. Người dùng đã xác thực.<br>2. Bảng cache leaderboard đã được seed hợp lệ. |
+| **Luồng chính** | 1. Client gọi `GET /api/leaderboard/all` hoặc `GET /api/leaderboard/{id}`.<br>2. Server kiểm tra cache 5 phút; nếu stale thì chạy `RefreshAllAsync` để tính top 50 theo từng hạng mục.<br>3. Server trả dữ liệu xếp hạng level, quest, attendance, dungeon, gold.<br>4. Admin có thể gọi `POST /api/leaderboard/refresh` để ép refresh thủ công. |
+| **Luồng thay thế / ngoại lệ** | 1. Category không tồn tại → trả not found.<br>2. Cache rỗng hoặc cũ → hệ thống tự tính lại trước khi trả về. |
+| **Hậu điều kiện** | Dữ liệu leaderboard được cập nhật hoặc hiển thị thành công cho người dùng. |
+
+e) Đặc tả riêng nhóm chức năng Vận hành kỹ thuật
+
+Bảng 2.7 Bảng đặc tả riêng nhóm chức năng Vận hành kỹ thuật
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC19 - Đăng ký, heartbeat và giải phóng gameplay server** |
+| **Actor chính** | Máy chủ gameplay / Admin |
+| **Mô tả** | Gameplay server / Netcode server thông báo trạng thái sống với API để hệ thống vận hành biết số zone, số player, tình trạng session và năng lực phục vụ đồng bộ runtime đang chạy. |
+| **Tiền điều kiện** | 1. Gameplay server có quyền `GameServer` hợp lệ.<br>2. Server biết IP/port vận hành của chính nó. |
+| **Luồng chính** | 1. Khi khởi động, server gọi `POST /api/zone/server/register` để đăng ký `ip`, `port`, `mapCount`.<br>2. Trong runtime, server định kỳ gọi `PUT /api/zone/server/heartbeat` gửi `playerCount`, `zoneStats` và trạng thái vận hành các room/zone đang quản lý.<br>3. Trong thời gian phục vụ, server tiếp tục duy trì connection approval, zone registry và các cơ chế đồng bộ runtime cho client đang online.<br>4. Khi shutdown, server gọi `DELETE /api/zone/server/deregister` để gỡ khỏi registry.<br>5. Admin theo dõi registry và dựa trên dữ liệu heartbeat để giám sát trạng thái zone. |
+| **Luồng thay thế / ngoại lệ** | 1. Port/IP không hợp lệ → API từ chối đăng ký.<br>2. Auth sai role → request bị chặn.<br>3. Server chết đột ngột trước khi deregister → trạng thái cuối cùng chỉ còn heartbeat cũ trong registry. |
+| **Hậu điều kiện** | Registry server phản ánh tương đối chính xác tình trạng zone/gameplay server đang vận hành. |
+
+| Trường | Nội dung |
+|---|---|
+| **Mã / Use Case** | **UC20 - Đăng ký host map, cập nhật spawn config và phát thưởng dungeon** |
+| **Actor chính** | Máy chủ gameplay / Admin |
+| **Mô tả** | Nhóm use case vận hành kỹ thuật gồm kiểm tra host map, đăng ký host runtime, cập nhật spawn JSON theo map và phát item reward cho player sau dungeon. |
+| **Tiền điều kiện** | 1. Map hoặc dungeon liên quan phải tồn tại trong cấu hình.<br>2. Actor gọi API có đủ quyền tương ứng.<br>3. Player mục tiêu tồn tại nếu cần phát thưởng. |
+| **Luồng chính** | 1. Host runtime kiểm tra host hiện có bằng `GET /api/map/host/check`.<br>2. Nếu phù hợp, host gọi `POST /api/map/host/register` rồi heartbeat định kỳ bằng `POST /api/map/host/heartbeat`; khi rời map thì gọi `unregister`.<br>3. Admin hoặc tool cập nhật spawn bằng `PUT /api/map/{mapId}/spawn-config`; API xác thực `enemy_id`, ghi DB và xóa cache runtime.<br>4. Khi dungeon kết thúc, gameplay server gọi `POST /api/dungeonreward/grant` để thêm item reward vào inventory player. |
+| **Luồng thay thế / ngoại lệ** | 1. `spawn_json` không hợp lệ hoặc chứa `enemy_id` không tồn tại → từ chối cập nhật.<br>2. Host không khớp player hiện hành → unregister không thành công.<br>3. Reward target player không tồn tại hoặc inventory không còn slot → phần thưởng không được thêm đủ. |
+| **Hậu điều kiện** | Host registry, spawn config runtime và inventory reward của player được cập nhật đúng với thao tác vận hành cuối cùng. |
 
 ### 2.2.4. Thiết kế cơ sở dữ liệu
 
@@ -404,8 +497,8 @@ Bảng 2.2: Tổng hợp cấu trúc cơ sở dữ liệu
 
 ## 2.3. Tổng kết chương 2
 
-Chương 2 đã trình bày đầy đủ quá trình phân tích và thiết kế hệ thống game Mutants Arena từ góc nhìn kỹ thuật phần mềm. Qua phân tích bài toán, hệ thống được xác định phục vụ ba nhóm tác nhân chính (Guest, Player, Admin) với hai mươi chức năng nghiệp vụ được nhóm theo sáu lĩnh vực: quản lý tài khoản, quản lý nhân vật, chiến đấu và Gene, nhiệm vụ, trang bị và cộng đồng (nhóm, phó bản). Các yêu cầu phi chức năng (hiệu năng, độ tin cậy, bảo mật) và yêu cầu bảo mật (JWT, BCrypt, Server Authoritative) được định nghĩa rõ ràng làm tiêu chí kiểm thử và nghiệm thu cuối kỳ.
+Chương 2 đã được chuẩn hóa lại theo đúng trạng thái triển khai thực tế của dự án Mutants Arena thay vì chỉ dừng ở mức mô tả ý tưởng. Trên cơ sở đọc trực tiếp mã nguồn API, SignalR Hub và client Unity, hệ thống được xác định có bốn actor chính gồm Guest, Player, Admin/Operator và Máy chủ gameplay / Netcode server. Từ đó, các yêu cầu chức năng được tái cấu trúc thành các nhóm triển khai thật: xác thực, nhân vật, bản đồ, combat, Gene Evolution, inventory/equipment, NPC/quest/shop, social, dungeon, đồng bộ thời gian thực và vận hành server.
 
-Về thiết kế, kiến trúc phân ba tầng (Unity Client — Game Server/API Server — MySQL) cung cấp sự tách biệt rõ ràng giữa tầng trình bày, tầng nghiệp vụ và tầng dữ liệu. Mô hình Server Authoritative đảm bảo tính toàn vẹn dữ liệu game và ngăn chặn gian lận phía client một cách có hệ thống. Chín use case chi tiết được đặc tả với đầy đủ luồng chính, luồng phụ và điều kiện tiên quyết, tạo nền tảng rõ ràng cho việc kiểm thử chức năng. Mười bốn bảng database được thiết kế theo hướng thực thể-quan hệ với JSON column cho dữ liệu cấu trúc linh hoạt, cân bằng giữa tính chuẩn hóa quan hệ và tính linh hoạt cần thiết cho nội dung game thay đổi thường xuyên.
+Phần Use Case là trọng tâm được viết lại toàn diện với 20 use case đầy đủ, bao phủ toàn bộ tính năng đã có trong mã nguồn: từ đăng ký, đăng nhập, tạo nhân vật, combat, Gene chính/Gene phụ/Hybrid Fusion, blacksmith, NPC service, quest event-driven, friend, party, chat, dungeon, leaderboard đến các luồng vận hành kỹ thuật như zone heartbeat, host runtime, spawn config và dungeon reward grant. Nhờ đó, chương 2 không chỉ mô tả đầy đủ nghiệp vụ của hệ thống mà còn tạo được sự liên kết rõ ràng giữa kiến trúc cài đặt, sơ đồ phân tích và đặc tả chức năng trong báo cáo.
 
-Toàn bộ nội dung phân tích và thiết kế trong chương này là cơ sở trực tiếp để triển khai lập trình trong Chương 3 — xây dựng từng hệ thống game cụ thể theo bản thiết kế đã được xây dựng ở đây.
+Toàn bộ kết quả phân tích và đặc tả trong chương này là cơ sở trực tiếp cho Chương 3, nơi từng hệ thống sẽ được triển khai, giải thích kiến trúc code và kiểm chứng bằng luồng runtime tương ứng.

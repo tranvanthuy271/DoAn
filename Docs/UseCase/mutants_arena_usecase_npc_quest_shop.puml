@@ -1,0 +1,28 @@
+' Dán trực tiếp vào diagrams.net / draw.io web:
+' Arrange -> Insert -> Advanced -> PlantUML...
+@startuml MutantsArenaNpcQuestShop
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam packageStyle rectangle
+
+actor "Người chơi" as Player
+actor "Máy chủ gameplay /\nNetcode server" as Server
+
+rectangle "Hệ thống Mutants Arena" {
+  usecase "Tương tác NPC /\nShop / Dịch vụ" as UC12
+  usecase "Nhận và hoàn thành\nnhiệm vụ" as UC13
+  usecase "Mở hội thoại" as UDialog
+  usecase "Mua vật phẩm" as UBuy
+  usecase "Cập nhật\ntiến trình" as UProgress
+}
+
+Player --> UC12
+Player --> UC13
+Server --> UC13
+UC12 .> UDialog : <<include>>
+UC12 .> UBuy : <<extend>>
+UC13 .> UProgress : <<include>>
+UC13 .> UC12 : <<include>>
+@enduml

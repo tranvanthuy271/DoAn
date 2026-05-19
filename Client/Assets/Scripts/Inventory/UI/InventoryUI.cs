@@ -79,6 +79,7 @@ public class InventoryUI : MonoBehaviour
     private void Awake()
     {
         ResolveInventoryRoot();
+        UIPanelManager.Register(gameObject, HideInventory);
 
         // Đảm bảo ban đầu Inventory đóng
         if (inventoryRoot != null && !_openingInventoryRoot)
@@ -358,13 +359,16 @@ public class InventoryUI : MonoBehaviour
         if (!active)
         {
             inventoryRoot.SetActive(false);
+            UIPanelManager.NotifyClosed(gameObject);
             return;
         }
 
+        UIPanelManager.CloseOthers(gameObject);
         bool previousOpeningState = _openingInventoryRoot;
         _openingInventoryRoot = true;
         inventoryRoot.SetActive(true);
         _openingInventoryRoot = previousOpeningState;
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     private static InventorySlotDto CloneSlot(InventorySlotDto slot)
@@ -582,6 +586,8 @@ public class InventoryUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        UIPanelManager.Unregister(gameObject);
+
         // Unsubscribe events
         if (slotUIs != null)
         {

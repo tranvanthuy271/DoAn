@@ -2262,11 +2262,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5455916139836146813, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: currentMapId
-      value: 100
+      value: 101
       objectReference: {fileID: 0}
     - target: {fileID: 8876727282495522588, guid: 3b5457cef5d7f9447b8a62333afae39c, type: 3}
       propertyPath: m_text
-      value: Map3
+      value: "L\u00E0ng M\u01B0a"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2727,7 +2727,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4656592567886915710, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
       propertyPath: m_text
-      value: Map1
+      value: "C\u1EEDa ph\u00EDa t\u00E2y"
       objectReference: {fileID: 0}
     - target: {fileID: 5638256326072347985, guid: 009f854fc0d81c444b4a42a03d251105, type: 3}
       propertyPath: m_LocalPosition.x
