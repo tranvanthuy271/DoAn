@@ -81,6 +81,10 @@ public class GeneSlotUI : MonoBehaviour
 
         if (lockedLabel != null)
             lockedLabel.text = "Cần mở khoá hệ gene 2";
+
+        // Explicitly show/hide create button (in case it was deactivated separately)
+        if (createCharacterButton != null)
+            createCharacterButton.gameObject.SetActive(isUnlocked);
     }
 
     // ── Private Helpers ──────────────────────────────────────────────────

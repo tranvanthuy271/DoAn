@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 /// <summary>
@@ -19,6 +20,13 @@ public class InventoryUI : MonoBehaviour
 
     [Tooltip("Prefab của 1 ô slot (có InventorySlotUI)")]
     [SerializeField] private InventorySlotUI slotPrefab;
+
+    [Header("Close Button")]
+    [Tooltip("Nút đóng Inventory (tùy chọn). Khi nhấn sẽ gọi HideInventory() và invoke OnCloseButtonClicked.")]
+    [SerializeField] private Button btnClose;
+
+    /// <summary>Callback được gọi khi người dùng nhấn nút đóng Inventory (btnClose). Dùng để đóng panel cha nếu cần.</summary>
+    public System.Action OnCloseButtonClicked;
 
     [Header("Item Detail")]
     [Tooltip("Prefab của ItemDetailPanel (sẽ được định vị dưới parent khi cần)")]
@@ -80,6 +88,16 @@ public class InventoryUI : MonoBehaviour
     {
         ResolveInventoryRoot();
         UIPanelManager.Register(gameObject, HideInventory);
+
+        if (btnClose != null)
+        {
+            btnClose.onClick.RemoveAllListeners();
+            btnClose.onClick.AddListener(() =>
+            {
+                HideInventory();
+                OnCloseButtonClicked?.Invoke();
+            });
+        }
 
         // Đảm bảo ban đầu Inventory đóng
         if (inventoryRoot != null && !_openingInventoryRoot)

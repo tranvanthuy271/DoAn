@@ -93,6 +93,8 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         // Bật cả canvas cha nếu đang bị tắt
         var root = transform.root.gameObject;
         if (!root.activeSelf) root.SetActive(true);
+        gameObject.SetActive(true);
+        // Awake() may have fired on first activation and called SetActive(false); re-ensure visible.
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         StartCoroutine(LoadAndRefresh());
     }

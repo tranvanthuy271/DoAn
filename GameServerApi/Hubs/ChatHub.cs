@@ -19,6 +19,7 @@ namespace GameServerApi.Hubs
     {
         private readonly ILogger<ChatHub> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
+        private const int MaxDisplayNameLength = 24;
 
         public ChatHub(ILogger<ChatHub> logger, IServiceScopeFactory scopeFactory)
         {
@@ -41,8 +42,9 @@ namespace GameServerApi.Hubs
 
             _sessions[Context.ConnectionId] = new ChatUserSession
             {
-                UserId   = userId,
-                Username = username
+                UserId      = userId,
+                Username    = username,
+                DisplayName = username
             };
 
             // Thông báo người dùng online cho client của chính họ
@@ -157,6 +159,41 @@ namespace GameServerApi.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"group_{groupId}");
         }
 
+        /// <summary>
+        /// Đồng bộ tên hiển thị runtime của nhân vật hiện tại.
+        /// Chat dùng tên này thay cho username tài khoản trong JWT.
+        /// </summary>
+        public Task UpdateDisplayName(string displayName)
+        {
+            var userId = GetUserId();
+            var fallbackName = GetUsername();
+            var sanitizedDisplayName = SanitizeDisplayName(displayName, fallbackName);
+
+            _sessions.AddOrUpdate(
+                Context.ConnectionId,
+                _ => new ChatUserSession
+                {
+                    UserId = userId,
+                    Username = fallbackName,
+                    DisplayName = sanitizedDisplayName
+                },
+                (_, existing) =>
+                {
+                    existing.UserId = string.IsNullOrWhiteSpace(existing.UserId) ? userId : existing.UserId;
+                    existing.Username = string.IsNullOrWhiteSpace(existing.Username) ? fallbackName : existing.Username;
+                    existing.DisplayName = sanitizedDisplayName;
+                    return existing;
+                });
+
+            _logger.LogInformation(
+                "[ChatHub] Updated display name: connectionId={ConnectionId} userId={UserId} displayName={DisplayName}",
+                Context.ConnectionId,
+                userId,
+                sanitizedDisplayName);
+
+            return Task.CompletedTask;
+        }
+
         // ── Private (Tin riêng) ─────────────────────────────────────────────
 
         /// <summary>
@@ -182,7 +219,14 @@ namespace GameServerApi.Hubs
         private ChatUserSession GetSession()
         {
             if (_sessions.TryGetValue(Context.ConnectionId, out var s)) return s;
-            return new ChatUserSession { UserId = GetUserId(), Username = GetUsername() };
+
+            var fallbackName = GetUsername();
+            return new ChatUserSession
+            {
+                UserId = GetUserId(),
+                Username = fallbackName,
+                DisplayName = fallbackName
+            };
         }
 
         private string GetUserId()
@@ -200,13 +244,25 @@ namespace GameServerApi.Hubs
                 ?? GetUserId();
         }
 
+        private static string SanitizeDisplayName(string? displayName, string fallbackName)
+        {
+            var sanitized = string.IsNullOrWhiteSpace(displayName)
+                ? fallbackName
+                : displayName.Trim();
+
+            if (sanitized.Length > MaxDisplayNameLength)
+                sanitized = sanitized.Substring(0, MaxDisplayNameLength);
+
+            return string.IsNullOrWhiteSpace(sanitized) ? fallbackName : sanitized;
+        }
+
         private static ChatMessagePayload BuildMessage(
             ChatUserSession session, string channel, string message, string? targetId = null)
         {
             return new ChatMessagePayload
             {
                 senderId   = session.UserId,
-                senderName = session.Username,
+                senderName = string.IsNullOrWhiteSpace(session.DisplayName) ? session.Username : session.DisplayName,
                 channel    = channel,
                 targetId   = targetId ?? "",
                 message    = message,
@@ -395,7 +451,8 @@ namespace GameServerApi.Hubs
 
     public class ChatUserSession
     {
-        public string UserId   { get; set; } = "";
+        public string UserId { get; set; } = "";
         public string Username { get; set; } = "";
+        public string DisplayName { get; set; } = "";
     }
 }

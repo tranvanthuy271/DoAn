@@ -543,12 +543,12 @@ MonoBehaviour:
   reengageDelayAfterRetreat: 0.15
   postAttackRetreatSpeedMultiplier: 2
   postAttackRetreatMinDuration: 2.4
-  restrictGroundTraversalToChaseOrPostAttack: 1
+  restrictGroundTraversalToChaseOrPostAttack: 0
   groundTraversalCooldownMin: 2
   groundTraversalCooldownMax: 3
   groundTraversalBlockerMask:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 0
   evadeIncomingPlayerThreats: 1
   threatScanRadius: 6.5
   threatEvadeDuration: 0.9

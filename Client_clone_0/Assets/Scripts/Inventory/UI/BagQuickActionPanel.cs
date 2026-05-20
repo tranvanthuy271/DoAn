@@ -29,6 +29,7 @@ public class BagQuickActionPanel : MonoBehaviour
     private Button _viewButtonRuntime;
     private TMP_Text _viewLabel;
     private bool _builtRuntime;
+    private int _lastShownFrame = -1;
 
     private Action _onDetach;
     private Action _onView;
@@ -45,7 +46,7 @@ public class BagQuickActionPanel : MonoBehaviour
     {
         // Prefab mode: wire overlay close button
         if (overlayButton != null)
-            overlayButton.onClick.AddListener(Hide);
+            overlayButton.onClick.AddListener(HandleOverlayClick);
 
         if (dialogRect != null)
             UIDraggablePanel.Ensure(dialogRect.gameObject);
@@ -88,6 +89,7 @@ public class BagQuickActionPanel : MonoBehaviour
 
         gameObject.SetActive(true);
         transform.SetAsLastSibling();
+        _lastShownFrame = Time.frameCount;
 
         // Định vị dialog tại vị trí click
         if (DialogRect != null)
@@ -106,10 +108,20 @@ public class BagQuickActionPanel : MonoBehaviour
     /// </summary>
     private void EnsureUnderRootCanvas()
     {
-        // Nếu đang active trong hierarchy rồi thì không cần làm gì
-        if (transform.parent != null && transform.parent.gameObject.activeInHierarchy)
+        Canvas bestCanvas = ResolveBestRootCanvas();
+        if (bestCanvas == null)
             return;
 
+        if (transform.parent != bestCanvas.transform)
+        {
+            transform.SetParent(bestCanvas.transform, false);
+            transform.SetAsLastSibling();
+            Debug.Log($"[BagQuickActionPanel] Đã chuyển parent → '{bestCanvas.name}' để tránh lệch canvas/inactive parent.");
+        }
+    }
+
+    private static Canvas ResolveBestRootCanvas()
+    {
         Canvas bestCanvas = null;
         int bestOrder = int.MinValue;
         foreach (var c in FindObjectsOfType<Canvas>(true))
@@ -119,11 +131,7 @@ public class BagQuickActionPanel : MonoBehaviour
             if (c.sortingOrder > bestOrder) { bestOrder = c.sortingOrder; bestCanvas = c; }
         }
 
-        if (bestCanvas != null)
-        {
-            transform.SetParent(bestCanvas.transform, false);
-            Debug.Log($"[BagQuickActionPanel] Đã chuyển parent → '{bestCanvas.name}' để tránh inactive parent.");
-        }
+        return bestCanvas;
     }
 
 
@@ -131,7 +139,16 @@ public class BagQuickActionPanel : MonoBehaviour
     {
         _onDetach = null;
         _onView   = null;
+        _lastShownFrame = -1;
         gameObject.SetActive(false);
+    }
+
+    private void HandleOverlayClick()
+    {
+        if (Time.frameCount <= _lastShownFrame)
+            return;
+
+        Hide();
     }
 
     // ── Positioning ─────────────────────────────────────────────────────────
@@ -209,7 +226,7 @@ public class BagQuickActionPanel : MonoBehaviour
         _overlayButtonRuntime = GetComponent<Button>();
         _overlayButtonRuntime.targetGraphic = _overlayImage;
         _overlayButtonRuntime.onClick.RemoveAllListeners();
-        _overlayButtonRuntime.onClick.AddListener(Hide);
+        _overlayButtonRuntime.onClick.AddListener(HandleOverlayClick);
 
         GameObject dialog = new GameObject("Dialog",
             typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));

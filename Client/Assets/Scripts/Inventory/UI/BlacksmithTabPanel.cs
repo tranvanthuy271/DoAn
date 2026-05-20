@@ -108,6 +108,9 @@ public class BlacksmithTabPanel : MonoBehaviour
         UIPanelManager.CloseOthers(gameObject);
         ResolveReferences();
         gameObject.SetActive(true);
+        // Awake() có thể chạy lần đầu tiên (khi panel khởi đầu ở trạng thái inactive)
+        // và gọi SetActive(false) ở cuối. Gọi lại SetActive(true) để đảm bảo panel hiển thị.
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
         UIPanelManager.NotifyOpened(gameObject);
         BringNavigationToFront();
         _activeTab = -1; // force refresh
@@ -177,6 +180,16 @@ public class BlacksmithTabPanel : MonoBehaviour
         SetContentPanelActive(panelTrangBi,  tabIndex == 1 || keepTrangBiActiveForInventory, "PanelTrangBi");
         SetContentPanelActive(panelTui,      tabIndex == 2, "PanelTui");
 
+        // Child component Awake() (e.g. UpgradePanel.Awake) may fire on first activation
+        // and call gameObject.SetActive(false) as part of its own init pattern.
+        // Re-ensure the intended active state after all Awake() calls have settled.
+        if (tabIndex == 0 && panelCuongHoa != null && !panelCuongHoa.activeSelf)
+            panelCuongHoa.SetActive(true);
+        if ((tabIndex == 1 || keepTrangBiActiveForInventory) && panelTrangBi != null && !panelTrangBi.activeSelf)
+            panelTrangBi.SetActive(true);
+        if (tabIndex == 2 && panelTui != null && !panelTui.activeSelf)
+            panelTui.SetActive(true);
+
         SetTabStyle(btnCuongHoa, tabIndex == 0);
         SetTabStyle(btnTrangBi,  tabIndex == 1);
         SetTabStyle(btnTui,      tabIndex == 2);
@@ -228,14 +241,10 @@ public class BlacksmithTabPanel : MonoBehaviour
                         selPanel.Show();
                     else
                     {
-                        // Fallback cuối: mở CharacterPanel
+                        // Fallback cuối: mở InventoryPanel (không cần CharacterPanel)
                         if (informationPanel == null)
                             informationPanel = FindObjectOfType<InformationPanelController>(includeInactive: true);
-                        informationPanel?.ShowThongTin();
-                        var cp = informationPanel != null
-                            ? informationPanel.GetComponentInChildren<CharacterPanelController>(true)
-                            : FindObjectOfType<CharacterPanelController>(includeInactive: true);
-                        cp?.ShowEquipmentTab();
+                        informationPanel?.ShowTuiDo();
                     }
                 }
                 break;
@@ -337,6 +346,10 @@ public class BlacksmithTabPanel : MonoBehaviour
 
         if (externalInventoryPanel == null)
             externalInventoryPanel = GetComponentInPanel<InventoryUI>(panelTui);
+
+        // Khi người dùng nhấn nút đóng trữ tiếp trong external inventory, đóng luôn BlacksmithTabPanel
+        if (externalInventoryPanel != null)
+            externalInventoryPanel.OnCloseButtonClicked = Close;
 
         WireCloseButtons();
     }

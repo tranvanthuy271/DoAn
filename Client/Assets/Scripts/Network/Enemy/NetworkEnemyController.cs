@@ -125,18 +125,25 @@ public class NetworkEnemyController : NetworkBehaviour
         if (rb == null)
             return;
 
-        bool disableGravity = true;
-
-        if (bossAI != null && bossAI.UsesGroundPhysics)
+        bool isServerAuthoritative = NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
+        if (!isServerAuthoritative)
         {
-            disableGravity = false;
+            rb.gravityScale = 0f;
+            rb.velocity = Vector2.zero;
         }
-        else if (enemyAI != null)
+        else if (bossAI != null)
         {
-            disableGravity = enemyAI.canFly;
+            rb.gravityScale = bossAI.UsesGroundPhysics ? initialGravityScale : 0f;
         }
 
-        rb.gravityScale = disableGravity ? 0f : initialGravityScale;
+        bool usesGroundGravity = isServerAuthoritative && rb.gravityScale > 0.01f;
+
+        if (enemyAI != null && enemyAI.debugGroundMovement && !enemyAI.canFly)
+        {
+            Debug.Log(
+                $"[EnemyGravityDebug] name={gameObject.name} scene={gameObject.scene.name} isServerAuthoritative={isServerAuthoritative} usesGroundGravity={usesGroundGravity} initialGravity={initialGravityScale:F2} appliedGravity={rb.gravityScale:F2} bodyType={rb.bodyType} simulated={rb.simulated}",
+                this);
+        }
     }
 
     /// <summary>

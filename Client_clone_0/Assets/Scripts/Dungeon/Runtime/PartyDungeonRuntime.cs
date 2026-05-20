@@ -30,13 +30,24 @@ public class PartyDungeonRuntime : BaseDungeonInstance
         _bossSpawned = false;
         _completed = false;
 
+        SetEncounterLocation(config.mapId, 0);
+        Debug.Log($"[PartyDungeonRuntime] SpawnEnemies: dungeonId={config.dungeonId} mapId={config.mapId} enemyCount={config.enemySpawns?.Count ?? 0}");
+
         foreach (var enemyConfig in config.enemySpawns)
         {
             NetworkObject enemy = SpawnConfiguredEnemy(enemyConfig, 1f, false);
             RegisterEnemy(enemy, false);
         }
 
-        BroadcastStatus("Tiêu diệt toàn bộ quái vật để gọi Boss.");
+        if (_aliveEnemies.Count == 0)
+        {
+            Debug.Log("[PartyDungeonRuntime] Không có minion — spawn boss ngay.");
+            SpawnBoss();
+        }
+        else
+        {
+            BroadcastStatus("Tiêu diệt toàn bộ quái vật để gọi Boss.");
+        }
     }
 
     private void RegisterEnemy(NetworkObject networkObject, bool isBoss)
@@ -95,6 +106,8 @@ public class PartyDungeonRuntime : BaseDungeonInstance
     private void SpawnBoss()
     {
         _bossSpawned = true;
+        SetEncounterLocation(config.mapId, 0);
+        Debug.Log($"[PartyDungeonRuntime] SpawnBoss: dungeonId={config.dungeonId} mapId={config.mapId} bossEnemyId={config.bossSpawn?.enemyId}");
         NetworkObject boss = SpawnConfiguredEnemy(config.bossSpawn, 1f, true);
         RegisterEnemy(boss, true);
         BroadcastStatus("Boss đã xuất hiện.");

@@ -370,6 +370,12 @@ namespace GameServerApi.Controllers
                 .Select(CreateWaveSpawnPayload)
                 .FirstOrDefault();
 
+            int normalEnemyId = orderedSpawns.FirstOrDefault(s => !s.IsBoss)?.EnemyTypeId ?? 0;
+            int bossEnemyId = orderedSpawns.FirstOrDefault(s => s.IsBoss)?.EnemyTypeId ?? 0;
+            _logger?.LogInformation(
+                "[DungeonController][DIAG] GetWaveRuntimeConfig dungeonId={DungeonId} mapId={MapId} resolvedSpawnsTotal={Total} normalCount={NormalCount} normalEnemyId={NormalEnemyId} bossCount={BossCount} bossEnemyId={BossEnemyId}",
+                dungeonId, dungeon.map_id, orderedSpawns.Length, normalSpawns.Length, normalEnemyId, orderedSpawns.Count(s => s.IsBoss), bossEnemyId);
+
             return Ok(new
             {
                 dungeon_id = dungeon.dungeon_id,

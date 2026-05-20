@@ -306,6 +306,7 @@ MonoBehaviour:
   characterNameText: {fileID: 4142172401072308201}
   detailText: {fileID: 6985638578898180759}
   leaderBadge: {fileID: 0}
+  leaderBadgeRoot: {fileID: 0}
   offlineMask: {fileID: 1371726568856648412}
   elementIcon: {fileID: 0}
   elementIconConfig: {fileID: 11400000, guid: f6e0ca1e72534c94bbb1d649f39f0fd0, type: 2}
@@ -343,8 +344,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 300, y: 50}
+  m_AnchoredPosition: {x: -5.6875, y: 0}
+  m_SizeDelta: {x: 311.3749, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7741339240772858866
 CanvasRenderer:
@@ -407,7 +408,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -478,7 +479,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 350, y: 60}
+  m_SizeDelta: {x: 363.2708, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1771086376131384299
 CanvasRenderer:
@@ -541,7 +542,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -611,7 +612,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 740, y: -26}
+  m_AnchoredPosition: {x: 760.8541, y: -26}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &43034565942822850
@@ -687,7 +688,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 60}
+  m_SizeDelta: {x: 207.5833, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1441971456210968997
 CanvasRenderer:

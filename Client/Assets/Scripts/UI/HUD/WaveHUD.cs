@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// WaveHUD — Hiển thị thông tin vòng hiện tại và thời gian còn lại trên client.
@@ -42,7 +43,72 @@ public class WaveHUD : MonoBehaviour
                   $"roundText={(roundText != null ? roundText.name : "null")} " +
                   $"timerText={(timerText != null ? timerText.name : "null")}");
 
+        // Auto-create labels if not assigned in Inspector (e.g. when spawned programmatically)
+        if (roundText == null || timerText == null)
+            AutoCreateUI();
+
         SetHudVisible(false);
+    }
+
+    /// <summary>
+    /// Auto-creates a Canvas hierarchy and TMP_Text labels when WaveHUD is instantiated
+    /// without Inspector references (programmatic creation from DungeonManager).
+    /// </summary>
+    private void AutoCreateUI()
+    {
+        // Ensure we're under a Screen-Space Canvas
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null)
+        {
+            var canvasGo = new GameObject("WaveHUD_Canvas");
+            if (transform.parent == null)
+                UnityEngine.Object.DontDestroyOnLoad(canvasGo);
+            canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 50;
+            canvasGo.AddComponent<CanvasScaler>();
+            canvasGo.AddComponent<GraphicRaycaster>();
+            transform.SetParent(canvasGo.transform, false);
+        }
+
+        // Setup self as an anchored panel
+        if (GetComponent<RectTransform>() == null)
+            gameObject.AddComponent<RectTransform>();
+        var rect = GetComponent<RectTransform>();
+        rect.anchorMin        = new Vector2(0f, 1f);
+        rect.anchorMax        = new Vector2(0f, 1f);
+        rect.pivot            = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(16f, -16f);
+        rect.sizeDelta        = new Vector2(240f, 84f);
+
+        var bg = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.55f);
+
+        if (roundText == null)
+            roundText = CreateWaveLabel("RoundText", new Vector2(8f, -8f), new Vector2(224f, 32f), 20, "Vòng -/-");
+        if (timerText == null)
+            timerText = CreateWaveLabel("TimerText", new Vector2(8f, -44f), new Vector2(224f, 28f), 18, "00:00");
+
+        Debug.Log($"[WaveHUD] AutoCreateUI — created canvas+labels under '{canvas.gameObject.name}'");
+    }
+
+    private TMP_Text CreateWaveLabel(string goName, Vector2 anchorPos, Vector2 size, float fontSize, string defaultText)
+    {
+        var go = new GameObject(goName);
+        go.transform.SetParent(transform, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin        = new Vector2(0f, 1f);
+        r.anchorMax        = new Vector2(0f, 1f);
+        r.pivot            = new Vector2(0f, 1f);
+        r.anchoredPosition = anchorPos;
+        r.sizeDelta        = size;
+        var t = go.AddComponent<TextMeshProUGUI>();
+        t.text      = defaultText;
+        t.fontSize  = fontSize;
+        t.color     = Color.white;
+        t.alignment = TextAlignmentOptions.Left;
+        t.raycastTarget = false;
+        return t;
     }
 
     private void Update()

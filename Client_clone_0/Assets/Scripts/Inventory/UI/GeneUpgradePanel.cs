@@ -114,6 +114,8 @@ public class GeneUpgradePanel : MonoBehaviour
         // Bật cả canvas cha nếu đang bị tắt (HideOtherBlacksmithFlows dùng root.SetActive(false))
         var root = transform.root.gameObject;
         if (!root.activeSelf) root.SetActive(true);
+        gameObject.SetActive(true);
+        // Awake() may have fired on first activation and called SetActive(false); re-ensure visible.
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         StartCoroutine(LoadAndRefresh());
     }
@@ -124,6 +126,8 @@ public class GeneUpgradePanel : MonoBehaviour
         _isSecondary = true;
         var root = transform.root.gameObject;
         if (!root.activeSelf) root.SetActive(true);
+        gameObject.SetActive(true);
+        // Awake() may have fired on first activation and called SetActive(false); re-ensure visible.
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         StartCoroutine(LoadAndRefresh());
     }
@@ -326,6 +330,33 @@ public class GeneUpgradePanel : MonoBehaviour
         }
         if (geneExpText != null)
             geneExpText.text = $"{currentExp:N0} / {required:N0} exp";
+    }
+
+    /// <summary>
+    /// Cập nhật gene_exp hiển thị ngay từ GameManager (không cần RPC).
+    /// Gọi sau khi dùng item nâng gene exp.
+    /// </summary>
+    public void RefreshFromLocalCache()
+    {
+        if (!gameObject.activeSelf) return;
+        var pd = GameManager.Instance?.GetPlayerData();
+        if (pd == null) return;
+
+        // Cập nhật _playerData để goldText, slider, v.v. cũng dùng giá trị mới
+        _playerData = pd;
+
+        if (_config != null)
+        {
+            UpdateExpBar(pd.gene_exp, _config.geneExpRequired);
+            if (goldPlayerText != null)
+                goldPlayerText.text = $"Bạn có: {pd.gold:N0} vàng";
+        }
+        else
+        {
+            // Config chưa tải — chỉ cập nhật text exp tạm
+            if (geneExpText != null)
+                geneExpText.text = $"{pd.gene_exp:N0} exp";
+        }
     }
 
     private void SetElementIcon(string elementType)

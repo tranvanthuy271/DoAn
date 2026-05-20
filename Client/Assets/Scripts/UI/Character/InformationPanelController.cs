@@ -123,10 +123,8 @@ public class InformationPanelController : MonoBehaviour
         ResolveReferences();
         Debug.Log("[InformationPanelController] ShowPanel() được gọi");
 
-        if (characterPanel == null)
-            Debug.LogError("[InformationPanelController] characterPanel là NULL! Kiểm tra Inspector.");
-
-        SwitchTo(TopTab.ThongTin);
+        // Mở thẳng tab Túi Đồ — không cần bật CharacterPanel
+        SwitchTo(TopTab.TuiDo);
         UIPanelManager.NotifyOpened(gameObject);
     }
 
@@ -180,7 +178,7 @@ public class InformationPanelController : MonoBehaviour
         }
         else if (tuiDo)
         {
-            characterPanel?.HideContent();
+            characterPanel?.Hide();
             inventoryUI?.ShowInventory();
         }
 

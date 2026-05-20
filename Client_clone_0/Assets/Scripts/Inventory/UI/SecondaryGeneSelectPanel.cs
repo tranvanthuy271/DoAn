@@ -93,6 +93,8 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         var root = transform.root.gameObject;
         if (!root.activeSelf) root.SetActive(true);
         gameObject.SetActive(true);
+        // Awake() may have fired on first activation and called SetActive(false); re-ensure visible.
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
         confirmButton.interactable = false;
         SetStatus("", Color.white);
         if (previewPanel != null) previewPanel.SetActive(false);

@@ -57,8 +57,8 @@ public class CharacterPanelToggleButton : MonoBehaviour
             }
             else
             {
-                Debug.Log("[CharacterPanelToggleButton] Panel đang ẩn → mở");
-                informationPanel.ShowPanel();
+                Debug.Log("[CharacterPanelToggleButton] Panel đang ẩn → mở CharacterPanel tab Thông Tin");
+                informationPanel.ShowThongTin();
             }
             return;
         }

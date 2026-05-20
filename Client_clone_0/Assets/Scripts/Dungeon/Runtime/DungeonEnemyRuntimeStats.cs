@@ -39,9 +39,6 @@ public class DungeonEnemyRuntimeStats : MonoBehaviour
         var bossAi = GetComponent<BossAI>();
         if (bossAi != null)
             bossAi.ApplyRuntimeOverride(Attack, MoveSpeed);
-
-        if (config.canFly && TryGetComponent<Rigidbody2D>(out var rb))
-            rb.gravityScale = 0f;
     }
 
     public void ApplyDrops(List<DropItemEntry> drops)

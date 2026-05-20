@@ -215,13 +215,7 @@ public class ItemUseHandler : MonoBehaviour
 
     private Transform ResolveCanvasParent()
     {
-        // Chia sẻ parent với ItemDetailPanel nếu có
-        Transform panelParent = inventoryUI != null && inventoryUI.GetSharedItemDetailPanel() != null
-            ? inventoryUI.GetSharedItemDetailPanel().transform.parent
-            : null;
-
-        if (panelParent != null) return panelParent;
-
+        // BagQuickActionPanel là overlay độc lập, ưu tiên root canvas có sortingOrder cao nhất.
         Canvas bestCanvas = null;
         int bestOrder = int.MinValue;
         foreach (var canvas in FindObjectsOfType<Canvas>(true))
@@ -229,7 +223,15 @@ public class ItemUseHandler : MonoBehaviour
             if (!canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace) continue;
             if (canvas.sortingOrder > bestOrder) { bestOrder = canvas.sortingOrder; bestCanvas = canvas; }
         }
-        return bestCanvas != null ? bestCanvas.transform : transform.root;
+
+        if (bestCanvas != null)
+            return bestCanvas.transform;
+
+        Transform panelParent = inventoryUI != null && inventoryUI.GetSharedItemDetailPanel() != null
+            ? inventoryUI.GetSharedItemDetailPanel().transform.parent
+            : null;
+
+        return panelParent != null ? panelParent : transform.root;
     }
 
     // ── Public API: gọi từ ItemDetailPanel ────────────────────────────────
@@ -426,6 +428,8 @@ public class ItemUseHandler : MonoBehaviour
             {
                 pd.gene_exp = response.gene_exp;
                 GameManager.Instance.SetPlayerData(pd);
+                // Cập nhật GeneUpgradePanel ngay nếu đang mở (không cần RPC round-trip)
+                GeneUpgradePanel.Instance?.RefreshFromLocalCache();
             }
         }
 

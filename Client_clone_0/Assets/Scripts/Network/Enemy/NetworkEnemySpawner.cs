@@ -325,19 +325,27 @@ public class NetworkEnemySpawner : NetworkBehaviour
             }
 
             NetworkObject networkObj = enemyObj.GetComponent<NetworkObject>();
+            Rigidbody2D enemyRb = enemyObj.GetComponent<Rigidbody2D>();
+            EnemyAI spawnedEnemyAI = enemyObj.GetComponent<EnemyAI>();
             
             if (networkObj != null)
             {
-                // Server-side: dedicated server không có đủ ground collider cho mọi map
-                // (ServerGroundColliderDatabase chỉ baked vài map). Vì vậy LUÔN tắt gravity
-                // và để EnemyAI tự kẹp Y về _serverAnchorY (virtual ground) cho non-fly.
-                // Fly enemy đã tự tắt gravity trong EnemyAI.Awake.
-                var rb = enemyObj.GetComponent<Rigidbody2D>();
-                if (rb != null)
-                    rb.gravityScale = 0f;
+                if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
+                {
+                    Debug.Log(
+                        $"[EnemySpawnDebug] stage=PreMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} spawnPos={spawnPosition} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2} useVirtual={spawnedEnemyAI.useServerVirtualGround}",
+                        enemyObj);
+                }
 
                 // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
                 MapSceneManager.Instance?.MoveToMapScene(enemyObj, targetMapId);
+
+                if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
+                {
+                    Debug.Log(
+                        $"[EnemySpawnDebug] stage=PostMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2}",
+                        enemyObj);
+                }
 
                 // Map-based visibility: visible cho TẤT CẢ player cùng map
                 ApplyMapVisibility(enemyObj, targetMapId);
@@ -355,6 +363,13 @@ public class NetworkEnemySpawner : NetworkBehaviour
                     EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
                     Debug.LogWarning(
                         $"[BOSS25][NetworkEnemySpawner] After overrides spawn_id={spawnData.spawn_id} netSpawned={networkObj.IsSpawned} scene={enemyObj.scene.name} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
+                        enemyObj);
+                }
+
+                if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
+                {
+                    Debug.Log(
+                        $"[EnemySpawnDebug] stage=PostSpawn name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} netId={networkObj.NetworkObjectId} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2}",
                         enemyObj);
                 }
 
@@ -379,11 +394,14 @@ public class NetworkEnemySpawner : NetworkBehaviour
     private IEnumerator CheckRespawnLoop()
     {
         yield return new WaitForSeconds(10f); // chờ initial spawn xong
+        var pendingRespawn = new List<(int spawnId, EnemySpawnData spawnData, int mapId)>();
         while (true)
         {
             yield return new WaitForSeconds(5f);
             if (!IsServer) yield break;
 
+            // Snapshot keys để tránh "Collection was modified" khi SpawnEnemyAtPoint ghi vào _spawnDataCache.
+            pendingRespawn.Clear();
             foreach (var kvp in _spawnDataCache)
             {
                 int spawnId = kvp.Key;
@@ -393,6 +411,11 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 if (spawnedEnemies.TryGetValue(spawnId, out var go) && go != null)
                     continue; // vẫn còn sống
 
+                if (spawnedEnemies.TryGetValue(spawnId, out go) && go == null)
+                {
+                    Debug.LogWarning($"[EnemySpawnDebug] stage=RespawnCheck missingInstance spawnId={spawnId} enemyType={spawnData.enemy_type_id} lastRespawnTime={(lastRespawnTime.TryGetValue(spawnId, out float respawnAt) ? respawnAt : -1f):F2} now={Time.time:F2}");
+                }
+
                 // Enemy đã chết — kiểm tra respawn timer
                 if (!lastRespawnTime.TryGetValue(spawnId, out float lastTime)
                     || Time.time - lastTime < spawnData.respawn_time)
@@ -401,6 +424,12 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 if (!_spawnMapIdCache.TryGetValue(spawnId, out int cachedMapId))
                     continue;
 
+                pendingRespawn.Add((spawnId, spawnData, cachedMapId));
+            }
+
+            // Thực thi respawn ngoài vòng foreach để tránh sửa _spawnDataCache trong khi duyệt
+            foreach (var (spawnId, spawnData, cachedMapId) in pendingRespawn)
+            {
                 Debug.Log($"[NetworkEnemySpawner] Respawning spawn_id={spawnId} enemy_type_id={spawnData.enemy_type_id} map={cachedMapId} after {spawnData.respawn_time}s");
 
                 // Xóa dedup keys cũ để SpawnEnemyAtPoint không bị skip

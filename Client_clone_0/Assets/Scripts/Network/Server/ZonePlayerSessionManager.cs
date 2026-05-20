@@ -435,6 +435,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             filter.RefreshVisibility();
 
         StartCoroutine(RefreshVisibilityAfterClientReady(clientId));
+        SendInitialZoneSync(clientId, userInfo, spawnPos);
 
         // 7 — Đẩy skill data về client ngay lúc spawn (client cache, không cần request lại khi mở tab)
         if (GameplayCommandService.Instance != null && int.TryParse(userInfo.UserId, out int pushPlayerId))
@@ -449,6 +450,50 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
         Debug.Log($"[ZonePlayerSessionManager] ✓ Spawned player clientId={clientId} " +
                   $"userId={userInfo.UserId} at {spawnPos}");
+    }
+
+    private void SendInitialZoneSync(ulong clientId, ApprovedUserInfo userInfo, Vector3 spawnPos)
+    {
+        MapDefinition mapDef = _config?.GetMap(userInfo.MapId);
+        string sceneName = mapDef?.sceneName ?? string.Empty;
+
+        Debug.Log($"[ZonePlayerSessionManager] Initial zone sync queued for clientId={clientId} map={userInfo.MapId} zone={userInfo.ZoneId} scene='{sceneName}' pos={spawnPos}");
+
+        SendInitialZoneSyncClientRpc(
+            userInfo.MapId,
+            userInfo.ZoneId,
+            sceneName,
+            spawnPos.x,
+            spawnPos.y,
+            BuildSingleClientRpcParams(clientId));
+    }
+
+    private static ClientRpcParams BuildSingleClientRpcParams(ulong clientId)
+    {
+        return new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { clientId }
+            }
+        };
+    }
+
+    [ClientRpc]
+    private void SendInitialZoneSyncClientRpc(
+        int mapId,
+        int zoneId,
+        string sceneName,
+        float x,
+        float y,
+        ClientRpcParams rpcParams = default)
+    {
+        PlayerPrefs.SetInt("SelectedMapId", mapId);
+        PlayerPrefs.SetInt("PLAYER_ZONE_ID", zoneId);
+        PlayerPrefs.Save();
+
+        Debug.Log($"[ZonePlayerSessionManager] Initial zone sync received: map={mapId} zone={zoneId} scene='{sceneName}' pos=({x:F2}, {y:F2})");
+        ClientSceneController.Instance?.HandleZoneTeleport(sceneName, x, y, mapId, zoneId);
     }
 
     private void LogPlayerPrefabConfiguration()

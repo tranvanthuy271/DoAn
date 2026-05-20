@@ -71,10 +71,12 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     private static readonly HashSet<int> _claimedMapIds = new HashSet<int>();
     public static bool IsMapClaimed(int mapId) => _claimedMapIds.Contains(mapId);
 
-    // Respawn tracking: mỗi SpawnEntry → danh sách enemy GO + thời điểm spawn cuối.
+    // Respawn tracking: mỗi SpawnEntry → danh sách enemy GO + thời điểm chết.
     private readonly List<SpawnEntry> _spawnEntries = new List<SpawnEntry>();
     private readonly Dictionary<int, List<GameObject>> _spawnGroupInstances = new Dictionary<int, List<GameObject>>();
     private readonly Dictionary<int, float> _spawnGroupLastTime = new Dictionary<int, float>();
+    // Thời điểm TẤT CẢ enemy trong group đều chết (để đếm respawn_time từ lúc chết).
+    private readonly Dictionary<int, float> _spawnGroupDeathTime = new Dictionary<int, float>();
 
     // ─────────────────────────────────────────────────────────────────────
     //  Lifecycle
@@ -194,26 +196,68 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     /// </summary>
     private IEnumerator CheckRespawnLoop()
     {
+        Debug.Log($"[RESPAWN] CheckRespawnLoop STARTED — mapId={mapId} entries={_spawnEntries.Count}");
         yield return new WaitForSeconds(5f);
+        int loopTick = 0;
         while (true)
         {
             yield return new WaitForSeconds(5f);
-            if (!IsServer) yield break;
+            loopTick++;
+            if (!IsServer)
+            {
+                Debug.LogWarning("[RESPAWN] IsServer=false → LOOP EXIT");
+                yield break;
+            }
+
+            Debug.Log($"[RESPAWN] tick={loopTick} Time={Time.time:F1}s entries={_spawnEntries.Count}");
 
             for (int idx = 0; idx < _spawnEntries.Count; idx++)
             {
                 SpawnEntry entry = _spawnEntries[idx];
-                if (!_spawnGroupInstances.TryGetValue(idx, out var instances)) continue;
-
-                // Dọn enemy đã destroyed khỏi list
-                instances.RemoveAll(go => go == null);
-                if (instances.Count > 0) continue; // còn sống — chưa respawn
-
-                if (!_spawnGroupLastTime.TryGetValue(idx, out float lastTime)
-                    || Time.time - lastTime < entry.respawn_time)
+                if (!_spawnGroupInstances.TryGetValue(idx, out var instances))
+                {
+                    Debug.LogWarning($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — KHÔNG CÓ trong _spawnGroupInstances!");
                     continue;
+                }
 
-                Debug.Log($"[HostSpawnConfigLoader] Respawning group idx={idx} enemy_id={entry.enemy_id} count={entry.count} after {entry.respawn_time}s");
+                int beforeCount = instances.Count;
+                // Dọn enemy đã destroyed/despawned khỏi list
+                instances.RemoveAll(go => {
+                    if (go == null) return true;
+                    var no = go.GetComponent<NetworkObject>();
+                    return no == null || !no.IsSpawned;
+                });
+                int afterCount = instances.Count;
+
+                if (beforeCount != afterCount)
+                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — cleaned {beforeCount - afterCount} dead GO, remaining={afterCount}");
+
+                if (instances.Count > 0)
+                {
+                    // Còn sống — reset death timer
+                    _spawnGroupDeathTime.Remove(idx);
+                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — alive count={instances.Count}, skip");
+                    continue;
+                }
+
+                // Tất cả đã chết — ghi lại thời điểm chết lần đầu
+                if (!_spawnGroupDeathTime.TryGetValue(idx, out float deathTime))
+                {
+                    _spawnGroupDeathTime[idx] = Time.time;
+                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — ALL DEAD, death time recorded={Time.time:F1}s, respawn_time={entry.respawn_time}s");
+                    continue;
+                }
+
+                float waited = Time.time - deathTime;
+                // Chờ đủ respawn_time giây từ lúc chết
+                if (waited < entry.respawn_time)
+                {
+                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — waiting {waited:F1}/{entry.respawn_time}s after death");
+                    continue;
+                }
+
+                Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} count={entry.count} — SPAWNING NOW after {waited:F1}s");
+                _spawnGroupDeathTime.Remove(idx);
                 SpawnEnemyGroup(entry, idx);
             }
         }

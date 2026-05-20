@@ -507,6 +507,7 @@ INSERT INTO `item_effect_template` (`id`, `item_template_id`, `effect_type`, `va
 (1, 11, 'HpRestore', 200, 30, 531, 'Hồi máu', '+200 HP/s trong 30 giây', 1),
 (2, 12, 'HpRestore', 500, 30, 532, 'Hồi máu', '+500 HP/s trong 30 giây', 1),
 (3, 13, 'HpRestore', 1200, 30, 533, 'Hồi máu', '+1200 HP/s trong 30 giây', 1),
+(4, 21, 'GeneExpAdd', 500, 0, 289, 'Gene EXP +500', '+500 Gene EXP', 3),
 (5, 14, 'MpRestore', 150, 30, 538, 'Hồi linh', '+150 MP/s trong 30 giây', 2),
 (6, 15, 'MpRestore', 400, 3, 539, 'Hồi linh', '+400 MP/s trong 3 giây', 2),
 (7, 16, 'MpRestore', 1000, 3, 540, 'Hồi linh', '+1000 MP/s trong 3 giây', 2),

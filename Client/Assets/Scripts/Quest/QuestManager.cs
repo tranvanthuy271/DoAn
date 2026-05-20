@@ -110,7 +110,11 @@ public class QuestManager : MonoBehaviour
         bool ok = req.result == UnityWebRequest.Result.Success;
         string responseText = req.downloadHandler?.text ?? string.Empty;
         string msg = ExtractApiMessage(responseText, req.error);
-        if (ok) { StartCoroutine(LoadQuestListRoutine(0, null)); RefreshPlayerOverview(); }
+        if (ok)
+        {
+            StartCoroutine(LoadQuestListRoutine(0, null)); // background: cập nhật AllQuests
+            yield return StartCoroutine(LoadPlayerOverviewRoutine(null)); // chờ HintQuest cập nhật
+        }
         onDone?.Invoke(ok, msg);
     }
 
@@ -133,8 +137,8 @@ public class QuestManager : MonoBehaviour
         {
             ShowQuestCompletionNotification(ParseCompleteResponse(responseText));
             RefreshInventoryAfterQuestComplete();
-            StartCoroutine(LoadQuestListRoutine(0, null));
-            RefreshPlayerOverview();
+            StartCoroutine(LoadQuestListRoutine(0, null)); // background: cập nhật AllQuests
+            yield return StartCoroutine(LoadPlayerOverviewRoutine(null)); // chờ HintQuest cập nhật
         }
         onDone?.Invoke(ok, msg);
     }

@@ -90,7 +90,11 @@ public class ChatManager : MonoBehaviour
 
     // ── Connection ────────────────────────────────────────────────────────────
 
-    private void OnPlayerDataSet(PlayerDataResponse data) => AutoConnect();
+    private void OnPlayerDataSet(PlayerDataResponse data)
+    {
+        AutoConnect();
+        SyncDisplayName();
+    }
 
     private void AutoConnect()
     {
@@ -148,6 +152,7 @@ public class ChatManager : MonoBehaviour
         _isConnecting = false;
         Debug.Log("[Chat] Đã kết nối ChatHub");
         OnConnectionChanged?.Invoke(true);
+        SyncDisplayName();
 
         // Join các group hiện tại
         if (!string.IsNullOrEmpty(CurrentMapId))   JoinMap(CurrentMapId);
@@ -250,6 +255,18 @@ public class ChatManager : MonoBehaviour
         var list = _history[ch];
         list.Add(msg);
         if (list.Count > 100) list.RemoveAt(0);
+    }
+
+    private void SyncDisplayName()
+    {
+        if (!IsConnected || _client == null)
+            return;
+
+        string displayName = GameManager.Instance?.currentPlayerData?.character_name;
+        if (string.IsNullOrWhiteSpace(displayName))
+            return;
+
+        _client.Invoke("UpdateDisplayName", displayName.Trim());
     }
 
     // ── Send ──────────────────────────────────────────────────────────────────

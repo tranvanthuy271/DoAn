@@ -93,8 +93,21 @@ public class MapPortalTrigger : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[MapPortalTrigger] API lỗi: {req.error}");
-            ShowDenied("Không thể kết nối máy chủ.");
+            // Thử đọc message lỗi từ body (server trả HTTP 400 với JSON {"message":"..."})
+            string deniedMsg = "Không thể kết nối máy chủ.";
+            if (req.result == UnityWebRequest.Result.ProtocolError &&
+                !string.IsNullOrEmpty(req.downloadHandler.text))
+            {
+                try
+                {
+                    var errBody = JsonUtility.FromJson<TravelResponse>(req.downloadHandler.text);
+                    if (!string.IsNullOrEmpty(errBody?.message))
+                        deniedMsg = errBody.message;
+                }
+                catch { /* giữ message mặc định */ }
+            }
+            Debug.LogWarning($"[MapPortalTrigger] API lỗi: {req.error} | body: {req.downloadHandler.text}");
+            ShowDenied(deniedMsg);
             LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
             yield break;
@@ -136,6 +149,8 @@ public class MapPortalTrigger : MonoBehaviour
     private void ShowDenied(string msg)
     {
         Debug.Log($"[Portal] Không thể đi qua: {msg}");
+        // Hiển thị thông báo nổi bật cho người chơi
+        GlobalNotificationUI.Show(msg, "Không thể vào khu vực này", 3f);
         if (keyRequiredPrompt != null)
         {
             keyRequiredPrompt.SetActive(true);

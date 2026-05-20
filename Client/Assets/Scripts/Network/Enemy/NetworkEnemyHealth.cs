@@ -319,15 +319,20 @@ public class NetworkEnemyHealth : NetworkBehaviour
     private void DestroyEnemyServer()
     {
         if (!IsServer) return;
-        
-        // Despawn network object (chỉ nếu đã được spawn)
-        if (NetworkObject != null && NetworkObject.IsSpawned)
+        bool hasNet = NetworkObject != null;
+        bool isSpawned = hasNet && NetworkObject.IsSpawned;
+        Debug.Log($"[RESPAWN] DestroyEnemyServer name={gameObject.name} hasNet={hasNet} isSpawned={isSpawned}");
+        // Despawn network object (chỉ nếu đã được spawn) — true để Destroy luôn GameObject,
+        // đảm bảo go == null trong HostSpawnConfigLoader.CheckRespawnLoop hoạt động đúng.
+        if (hasNet && isSpawned)
         {
-            NetworkObject.Despawn();
+            NetworkObject.Despawn(true);
+            Debug.Log($"[RESPAWN] Despawn(true) called on {gameObject.name}");
         }
-        else if (NetworkObject == null || !NetworkObject.IsSpawned)
+        else
         {
             // Fallback: Destroy trực tiếp nếu không phải network object hoặc chưa spawn
+            Debug.LogWarning($"[RESPAWN] Fallback Destroy (no NetworkObject or not spawned) name={gameObject.name}");
             Destroy(gameObject);
         }
     }

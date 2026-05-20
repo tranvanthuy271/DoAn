@@ -179,3 +179,8 @@ unity-server/UnityPlayer.so
 # DB data
 db_data/
 
+
+# .NET build artifacts
+GameServerApi/artifacts/
+GameServerApi/bin/
+GameServerApi/obj/

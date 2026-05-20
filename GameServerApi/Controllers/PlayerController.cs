@@ -992,7 +992,30 @@ namespace GameServerApi.Controllers
                             foreach (var gb in geneExpBuffs)
                                 geneExpMult += gb.Value / 100.0;
                             int geneExpGain = (int)(eff.Value * geneExpMult);
-                            info.GeneExp += geneExpGain;
+
+                            // Nếu hệ chính đã Tier 5 (max) và có hệ phụ → tràn sang SecondaryGeneExp
+                            // Ngược lại luôn cộng vào GeneExp chính, không phụ thuộc element của item
+                            const int MaxGeneTier = 5;
+                            _logger.LogInformation(
+                                "[GeneExpAdd] playerId={PlayerId} gain={Gain} | GeneTier={GeneTier} SecondaryElement={SecElem} SecondaryGeneExp={SecExp} GeneExp={GeneExp}",
+                                targetPlayerId, geneExpGain,
+                                info.GeneTier, info.SecondaryElement ?? "(null)",
+                                info.SecondaryGeneExp, info.GeneExp);
+
+                            if (info.GeneTier >= MaxGeneTier && !string.IsNullOrEmpty(info.SecondaryElement))
+                            {
+                                info.SecondaryGeneExp = (info.SecondaryGeneExp ?? 0) + geneExpGain;
+                                _logger.LogInformation(
+                                    "[GeneExpAdd] → cộng vào SecondaryGeneExp, mới = {NewSecExp}",
+                                    info.SecondaryGeneExp);
+                            }
+                            else
+                            {
+                                info.GeneExp += geneExpGain;
+                                _logger.LogInformation(
+                                    "[GeneExpAdd] → cộng vào GeneExp chính, mới = {NewGeneExp} (GeneTier={Tier}, SecElem={SecElem})",
+                                    info.GeneExp, info.GeneTier, info.SecondaryElement ?? "(null)");
+                            }
                         }
                         else if (eff.DurationSec > 0)
                         {
@@ -1620,6 +1643,10 @@ namespace GameServerApi.Controllers
                 16 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
                 {
                     new() { ItemTemplateId = 16, EffectType = "MpRestore", Value = 1000, DurationSec = 3, IconId = 540, DisplayName = "Hồi linh", Detail = "+1000 MP/s trong 3 giây", SortOrder = 2 }
+                },
+                21 => new List<GameServerApi.Models.Entities.ItemEffectTemplate>
+                {
+                    new() { ItemTemplateId = 21, EffectType = "GeneExpAdd", Value = 500, DurationSec = 0, IconId = 289, DisplayName = "Gene EXP +500", Detail = "+500 Gene EXP", SortOrder = 3 }
                 },
                 _ => new List<GameServerApi.Models.Entities.ItemEffectTemplate>()
             };

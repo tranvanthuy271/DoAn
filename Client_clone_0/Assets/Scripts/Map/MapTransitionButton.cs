@@ -173,11 +173,16 @@ public class MapTransitionButton : MonoBehaviour
 
     private void ShowError(string message)
     {
-        if (errorText == null) { Debug.LogWarning($"[MapTransitionButton] {message}"); return; }
-        StopAllCoroutines();
-        errorText.text = message;
-        errorText.gameObject.SetActive(true);
-        StartCoroutine(HideErrorAfterDelay());
+        if (errorText == null) { Debug.LogWarning($"[MapTransitionButton] {message}"); }
+        else
+        {
+            StopAllCoroutines();
+            errorText.text = message;
+            errorText.gameObject.SetActive(true);
+            StartCoroutine(HideErrorAfterDelay());
+        }
+        // Hiển thị thêm thông báo nổi bật qua GlobalNotificationUI
+        GlobalNotificationUI.Show(message, "Không thể vào khu vực này", 3f);
     }
 
     private IEnumerator HideErrorAfterDelay()

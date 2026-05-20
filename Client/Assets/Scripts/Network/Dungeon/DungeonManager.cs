@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
+
 /// <summary>
 /// DungeonManager - Singleton quản lý TRẠNG THÁI phó bản phía CLIENT.
 ///
@@ -51,6 +52,7 @@ public class DungeonManager : MonoBehaviour
 
     private float _waveCountdownEndRealtime;
     private bool _waveCountdownActive;
+    private WaveHUD _waveHUD; // auto-created canvas HUD for wave dungeons
 
     public bool IsInDungeon        => _isInDungeon;
     public int  ActiveDungeonId    => _activeDungeonId;
@@ -191,6 +193,8 @@ public class DungeonManager : MonoBehaviour
         _currentDungeonStatusMessage = string.Empty;
         _waveCountdownEndRealtime = 0f;
         _waveCountdownActive = false;
+        // Reset WaveHUD ref so it gets re-validated on next entry
+        _waveHUD = null;
 
         Debug.Log("[DungeonManager] Exited dungeon", this);
         OnDungeonExited?.Invoke();
@@ -214,8 +218,38 @@ public class DungeonManager : MonoBehaviour
             _waveCountdownActive = false;
         }
 
+        if (_currentWaveRound > 0)
+            EnsureWaveHUD();
+
         Debug.Log($"[DungeonManager] Wave state updated | round={_currentWaveRound}/{_currentWaveMaxRounds} remaining={_currentWaveRemainingSeconds}s", this);
         OnWaveStateChanged?.Invoke(_currentWaveRound, _currentWaveMaxRounds, _currentWaveRemainingSeconds);
+    }
+
+    /// <summary>
+    /// Auto-creates a persistent WaveHUD canvas if no WaveHUD exists in the scene.
+    /// Called when the server sends the first wave state with round > 0.
+    /// </summary>
+    private void EnsureWaveHUD()
+    {
+        if (_waveHUD != null) return;
+        _waveHUD = FindObjectOfType<WaveHUD>();
+        if (_waveHUD != null) return;
+
+        // Create Canvas (DDOL — persists across scene loads with DungeonManager)
+        var canvasGo = new GameObject("WaveHUD_Canvas");
+        DontDestroyOnLoad(canvasGo);
+        var canvas = canvasGo.AddComponent<Canvas>();
+        canvas.renderMode  = UnityEngine.RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 50;
+        canvasGo.AddComponent<UnityEngine.UI.CanvasScaler>();
+        canvasGo.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        // WaveHUD panel (child of canvas)
+        var hudGo = new GameObject("WaveHUD");
+        hudGo.transform.SetParent(canvasGo.transform, false);
+        _waveHUD = hudGo.AddComponent<WaveHUD>();
+        // WaveHUD.Start() -> AutoCreateUI() will create the RectTransform + TMP labels
+        Debug.Log("[DungeonManager] Auto-created WaveHUD canvas for wave dungeon.");
     }
 
     public void OnDungeonRuntimeStatusUpdated(string message)

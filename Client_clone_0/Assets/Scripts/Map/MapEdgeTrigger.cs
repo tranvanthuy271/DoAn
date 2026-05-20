@@ -90,6 +90,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (portalReq.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning($"[MapEdgeTrigger] Bước 1 FAIL — portal '{direction}' map {mapId}: {portalReq.error} | HTTP={portalReq.responseCode}");
+            GlobalNotificationUI.Show("Không tìm thấy đường đi ở hướng này.", "Không thể chuyển map", 3f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
@@ -120,7 +121,21 @@ public class MapEdgeTrigger : MonoBehaviour
 
         if (travelReq.result != UnityWebRequest.Result.Success)
         {
+            // Đọc message lỗi từ body (server trả HTTP 400 với JSON {"message":"..."})
+            string deniedMsg = "Không thể chuyển map lúc này.";
+            if (!string.IsNullOrEmpty(travelReq.downloadHandler.text))
+            {
+                try
+                {
+                    var errBody = JsonUtility.FromJson<TravelResponse>(travelReq.downloadHandler.text);
+                    string parsed = errBody?.GetErrorMessage();
+                    if (!string.IsNullOrEmpty(parsed))
+                        deniedMsg = parsed;
+                }
+                catch { /* giữ message mặc định */ }
+            }
             Debug.LogWarning($"[MapEdgeTrigger] Bước 2 FAIL — Travel lỗi HTTP={travelReq.responseCode}: {travelReq.downloadHandler.text}");
+            GlobalNotificationUI.Show(deniedMsg, "Không thể vào khu vực này", 4f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
@@ -129,7 +144,9 @@ public class MapEdgeTrigger : MonoBehaviour
         var resp = JsonUtility.FromJson<TravelResponse>(travelReq.downloadHandler.text);
         if (!resp.success)
         {
-            Debug.LogWarning($"[MapEdgeTrigger] Bước 2 — Server từ chối: {resp.message}");
+            string errMsg = resp.GetErrorMessage() ?? "Server từ chối chuyển map.";
+            Debug.LogWarning($"[MapEdgeTrigger] Bước 2 — Server từ chối: {errMsg}");
+            GlobalNotificationUI.Show(errMsg, "Không thể vào khu vực này", 4f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
@@ -142,6 +159,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (transitionController == null)
         {
             Debug.LogWarning("[MapEdgeTrigger] Không tìm thấy ZoneTransitionController để chuyển map.");
+            GlobalNotificationUI.Show("Không thể chuyển map lúc này.", "Lỗi", 3f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
@@ -228,10 +246,19 @@ public class MapEdgeTrigger : MonoBehaviour
     private class TravelResponse
     {
         public bool   success;
-        public string message;
+        public string message;   // BadRequest 400: {"message":"..."}
+        public string error;     // Exception 500: {"error":"..."}
         public int    dest_map_id;
         public string dest_scene_name;
         public float  dest_x;
         public float  dest_y;
+
+        /// <summary>Lấy nội dung lỗi từ bất kỳ field nào có giá trị.</summary>
+        public string GetErrorMessage()
+        {
+            if (!string.IsNullOrEmpty(message)) return message;
+            if (!string.IsNullOrEmpty(error))   return error;
+            return null;
+        }
     }
 }

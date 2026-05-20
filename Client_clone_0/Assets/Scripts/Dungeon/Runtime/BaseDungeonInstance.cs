@@ -92,13 +92,69 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         }
 
         networkObject.Spawn();
-        Debug.Log($"[BaseDungeonInstance] Enemy spawned: NetworkObjectId={networkObject.NetworkObjectId}, layer={LayerMask.LayerToName(enemyObject.layer)}, HP={runtimeStats.MaxHp}");
 
-        // Sync tên, hệ, level cho tất cả client (NetworkVariable — replicated kể cả late joiner).
+        // Log v\u1ecb tr\u00ed/scene/gravity sau khi Spawn() \u0111\u1ec3 ch\u1ea9n \u0111o\u00e1n boss r\u01a1i
+        var rb = enemyObject.GetComponent<Rigidbody2D>();
+        var bossAI = enemyObject.GetComponent<BossAI>();
+        Debug.Log($"[BaseDungeonInstance] Enemy spawned: NetId={networkObject.NetworkObjectId}, name={enemyObject.name}, " +
+                  $"layer={LayerMask.LayerToName(enemyObject.layer)}, HP={runtimeStats.MaxHp}, " +
+                  $"scene={enemyObject.scene.name}, pos={enemyObject.transform.position}, " +
+                  $"gravity={(rb != null ? rb.gravityScale : -1f):F2}, body={(rb != null ? rb.bodyType.ToString() : "null")}, " +
+                  $"useGroundPhysics={(bossAI != null ? bossAI.UsesGroundPhysics : false)}, isBoss={isBoss}");
+
+        if (isBoss && rb != null && rb.gravityScale > 0.01f)
+        {
+            // Theo d\u00f5i v\u1ecb tr\u00ed Y trong 5s \u0111\u1ec3 ph\u00e1t hi\u1ec7n boss r\u01a1i kh\u00f4ng d\u1eebng
+            StartCoroutine(BossFallDiagnosticCoroutine(enemyObject, networkObject, currentMapId));
+        }
+
+        // Sync t\u00ean, h\u1ec7, level cho t\u1ea5t c\u1ea3 client (NetworkVariable \u2014 replicated k\u1ec3 c\u1ea3 late joiner).
         if (networkEnemyHealth != null)
             networkEnemyHealth.SetEnemyInfo(config.displayName, config.elementType, config.level);
 
         return networkObject;
+    }
+
+    private IEnumerator BossFallDiagnosticCoroutine(GameObject enemyObject, NetworkObject networkObject, int mapId)
+    {
+        if (enemyObject == null || networkObject == null)
+            yield break;
+
+        var rb = enemyObject.GetComponent<Rigidbody2D>();
+        if (rb == null)
+            yield break;
+
+        Vector3 startPos = enemyObject.transform.position;
+        float[] checkpointSeconds = { 0.25f, 0.5f, 1f, 2f, 3f, 5f };
+        float lastWaited = 0f;
+
+        for (int i = 0; i < checkpointSeconds.Length; i++)
+        {
+            float wait = checkpointSeconds[i] - lastWaited;
+            yield return new WaitForSeconds(wait);
+            lastWaited = checkpointSeconds[i];
+
+            if (enemyObject == null || !networkObject.IsSpawned)
+            {
+                Debug.Log($"[BossFallDiag] NetId={networkObject?.NetworkObjectId} despawned tr\u01b0\u1edbc t={checkpointSeconds[i]}s");
+                yield break;
+            }
+
+            Vector3 cur = enemyObject.transform.position;
+            float dy = cur.y - startPos.y;
+            float vy = rb.velocity.y;
+            string sceneName = enemyObject.scene.IsValid() ? enemyObject.scene.name : "<invalid>";
+            Debug.Log($"[BossFallDiag] NetId={networkObject.NetworkObjectId} t={checkpointSeconds[i]:F2}s scene='{sceneName}' map={mapId} " +
+                      $"pos=({cur.x:F2},{cur.y:F2}) deltaY={dy:F2} velocity=({rb.velocity.x:F2},{vy:F2}) gravity={rb.gravityScale:F2} " +
+                      $"isKinematic={(rb.bodyType == RigidbodyType2D.Kinematic)}");
+
+            if (cur.y < -100f)
+            {
+                Debug.LogError($"[BossFallDiag] NetId={networkObject.NetworkObjectId} \u0111\u00e3 r\u01a1i xu\u1ed1ng Y={cur.y:F2} \u2192 KH\u00d4NG VA CH\u1ea0M GROUND. " +
+                               $"Ki\u1ec3m tra: (1) physicsScene mapId={mapId} c\u00f3 ground proxy kh\u00f4ng, (2) layer collision matrix Enemy(7) vs Ground(6), (3) ground PlatformEffector2D oneWay c\u00f3 \u0111\u00fang h\u01b0\u1edbng kh\u00f4ng.");
+                yield break;
+            }
+        }
     }
 
     private static void SetLayerRecursively(GameObject go, int layer)

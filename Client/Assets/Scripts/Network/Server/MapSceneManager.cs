@@ -88,7 +88,21 @@ public class MapSceneManager : MonoBehaviour
 
         BuildGroundProxiesFromDatabase();
         RebuildGroundProxiesForLoadedScenes();
-        Debug.Log($"[MapSceneManager] Ready with {_mapScenes.Count} map physics scene(s).");
+
+        // Log layer collision matrix Enemy vs Ground \u0111\u1ec3 ch\u1ea9n \u0111o\u00e1n
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        int groundLayer = LayerMask.NameToLayer("Ground");
+        if (enemyLayer >= 0 && groundLayer >= 0)
+        {
+            bool ignored = Physics2D.GetIgnoreLayerCollision(enemyLayer, groundLayer);
+            Debug.Log($"[MapSceneManager] Layer collision Enemy({enemyLayer}) vs Ground({groundLayer}) = {(ignored ? "IGNORED \u26a0\ufe0f" : "ENABLED \u2713")}, gravity2D={Physics2D.gravity}");
+        }
+        else
+        {
+            Debug.LogError($"[MapSceneManager] Layer m\u1ea5t: Enemy={enemyLayer} Ground={groundLayer}");
+        }
+
+        Debug.Log($"[MapSceneManager] Ready with {_mapScenes.Count} map physics scene(s). proxiesBuilt={_groundProxyRoots.Count}");
     }
 
     /// <summary>
@@ -103,14 +117,27 @@ public class MapSceneManager : MonoBehaviour
         {
             ConfigureNetworkObjectForServerOnlyScene(obj.GetComponent<NetworkObject>());
 
-            if (obj.scene == scene)
-                return;
+            bool hasGroundProxy = _groundProxyRoots.TryGetValue(mapId, out var proxyRoot) && proxyRoot != null;
+            int proxyChildCount = hasGroundProxy ? proxyRoot.transform.childCount : 0;
 
+            if (obj.scene == scene)
+            {
+                Debug.Log($"[MapSceneManager][MoveToMapScene] obj='{obj.name}' đã ở physicsScene='{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount}");
+                return;
+            }
+
+            string oldSceneName = obj.scene.IsValid() ? obj.scene.name : "<invalid>";
             SceneManager.MoveGameObjectToScene(obj, scene);
+            Debug.Log($"[MapSceneManager][MoveToMapScene] obj='{obj.name}' từ '{oldSceneName}' → '{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount}");
+
+            if (!hasGroundProxy || proxyChildCount == 0)
+            {
+                Debug.LogError($"[MapSceneManager][MoveToMapScene] mapId={mapId} KHÔNG CÓ GROUND PROXY → boss/enemy sẽ rơi mãi mãi! Hãy chạy Tools/DoAn/Bake Server Ground Colliders.");
+            }
         }
         else
         {
-            Debug.LogWarning($"[MapSceneManager] Missing physics scene for map {mapId}. Object stays in main scene.");
+            Debug.LogWarning($"[MapSceneManager] Missing physics scene for map {mapId}. Object stays in main scene. (knownMaps=[{string.Join(",", _mapScenes.Keys)}])");
         }
     }
 
@@ -212,10 +239,27 @@ public class MapSceneManager : MonoBehaviour
         SceneManager.MoveGameObjectToScene(root, targetScene);
         _groundProxyRoots[mapId] = root;
 
+        int oneWayCount = 0;
         foreach (var colliderData in mapData.colliders)
+        {
             CloneGroundCollider(root.transform, colliderData);
+            if (colliderData.hasPlatformEffector && colliderData.useOneWay)
+                oneWayCount++;
+        }
 
-        Debug.Log($"[MapSceneManager] Built {mapData.colliders.Length} baked ground proxy collider(s) for map {mapId}.");
+        // Log full collider list để debug vị trí va chạm
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"[MapSceneManager][BuildGroundProxy] map={mapId} scene='{mapData.sceneName}' colliders={mapData.colliders.Length} oneWay={oneWayCount}");
+        for (int i = 0; i < mapData.colliders.Length; i++)
+        {
+            var c = mapData.colliders[i];
+            // Tính vị trí center thực tế của collider trong world (position + offset*scale)
+            float worldCenterX = c.position.x + c.offset.x * c.scale.x;
+            float worldCenterY = c.position.y + c.offset.y * c.scale.y;
+            float halfH = (c.size.y * c.scale.y) * 0.5f;
+            sb.AppendLine($"  [{i}] {c.name} pos=({c.position.x:F2},{c.position.y:F2}) scale=({c.scale.x:F2},{c.scale.y:F2}) offset=({c.offset.x:F2},{c.offset.y:F2}) size=({c.size.x:F2},{c.size.y:F2}) → worldCenter=({worldCenterX:F2},{worldCenterY:F2}) topY={worldCenterY + halfH:F2} bottomY={worldCenterY - halfH:F2} oneWay={c.useOneWay} trigger={c.isTrigger}");
+        }
+        Debug.Log(sb.ToString());
     }
 
     private void BuildGroundProxyForMap(int mapId, Scene sourceScene)

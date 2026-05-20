@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -338,6 +338,42 @@ namespace GameServerApi.Controllers
                 if (!hasItem)
                     return BadRequest(new { success = false, message = $"Cáº§n cÃ³ ChÃ¬a KhÃ³a (item #{portal.RequiredItemId}) Ä‘á»ƒ vÃ o Ä‘Ã¢y." });
             }
+            // Kiem tra yeu cau cua map dich (min_level + required_quest_id)
+            var destMap = await _db.MapConfigs.FindAsync(portal.DestMapId);
+            if (destMap != null && (destMap.MinLevel > 1 || destMap.RequiredQuestId.HasValue))
+            {
+                var player = await _db.PlayerData.FindAsync(req.PlayerId);
+                if (player == null)
+                    return BadRequest(new { success = false, message = "Player kh\u00f4ng t\u1ed3n t\u1ea1i." });
+
+                var info = player.GetInfoChar();
+
+                // Ki\u1ec3m tra level t\u1ed1i thi\u1ec3u
+                if (info.Level < destMap.MinLevel)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = $"B\u1ea1n c\u1ea7n \u0111\u1ea1t Level {destMap.MinLevel} \u0111\u1ec3 v\u00e0o {destMap.MapName}. (Level hi\u1ec7n t\u1ea1i: {info.Level})"
+                    });
+
+                // Ki\u1ec3m tra nhi\u1ec7m v\u1ee5 b\u1eaft bu\u1ed9c
+                if (destMap.RequiredQuestId.HasValue)
+                {
+                    bool hasQuest = info.CompletedQuests != null &&
+                                    info.CompletedQuests.Contains(destMap.RequiredQuestId.Value);
+
+                    if (!hasQuest)
+                    {
+                        var quest = await _db.QuestConfigs.FindAsync(destMap.RequiredQuestId.Value);
+                        string questName = quest?.Name ?? $"#{destMap.RequiredQuestId.Value}";
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = $"B\u1ea1n c\u1ea7n ho\u00e0n th\u00e0nh nhi\u1ec7m v\u1ee5 \"{questName}\" tr\u01b0\u1edbc khi v\u00e0o {destMap.MapName}."
+                        });
+                    }
+                }
+            }
 
             return Ok(new
             {
@@ -503,7 +539,9 @@ namespace GameServerApi.Controllers
             if (_cache.TryGetValue(cacheKey, out object? cached))
                 return Ok(cached);
 
-            var spawnRows = await EnemySpawnDataCompat.LoadResolvedSpawnsAsync(
+            // Prefer map_spawn_config (has correct ground-level cy positions from ground_spawns.sql).
+            // enemy_spawns.spawn_y often defaults to 0 which causes enemies to float mid-air on server.
+            var spawnRows = await EnemySpawnDataCompat.LoadResolvedSpawnsPreferLegacyAsync(
                 _db,
                 mapId,
                 _logger,

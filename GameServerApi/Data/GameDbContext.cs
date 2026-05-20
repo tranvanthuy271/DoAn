@@ -154,6 +154,7 @@ namespace GameServerApi.Data
                 entity.Property(m => m.SpawnPointsJson).HasColumnName("spawn_points_json");
                 entity.Property(m => m.MinLevel).HasColumnName("min_level");
                 entity.Property(m => m.MaxLevel).HasColumnName("max_level");
+                entity.Property(m => m.RequiredQuestId).HasColumnName("required_quest_id");
                 entity.Property(m => m.CreatedAt).HasColumnName("created_at");
                 entity.Property(m => m.UpdatedAt).HasColumnName("updated_at");
             });

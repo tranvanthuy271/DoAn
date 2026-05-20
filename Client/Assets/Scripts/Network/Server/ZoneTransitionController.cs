@@ -601,9 +601,11 @@ public class ZoneTransitionController : NetworkBehaviour
     [ClientRpc]
     private void SyncWaveStateClientRpc(int currentRound, int maxRounds, int remainingSeconds, ClientRpcParams rpcParams = default)
     {
-        Debug.Log($"[ZoneTransitionController] SyncWaveState | round={currentRound}/{maxRounds} remaining={remainingSeconds}s");
+        Debug.Log($"[ZoneTransitionController][CLIENT] SyncWaveStateClientRpc RECEIVED | round={currentRound}/{maxRounds} remaining={remainingSeconds}s dmInstance={(DungeonManager.Instance != null ? "OK" : "NULL")} ");
         if (DungeonManager.Instance != null)
             DungeonManager.Instance.OnWaveStateUpdated(currentRound, maxRounds, remainingSeconds);
+        else
+            Debug.LogError("[ZoneTransitionController][CLIENT] DungeonManager.Instance is NULL \u2014 HUD s\u1ebd kh\u00f4ng c\u1eadp nh\u1eadt!");
     }
 
     [ClientRpc]

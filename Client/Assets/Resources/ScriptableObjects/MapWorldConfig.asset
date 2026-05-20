@@ -51,14 +51,25 @@ MonoBehaviour:
     allowPlayerZoneSwitch: 1
     entryPoints:
     - {x: 2, y: 1}
-  - mapId: 1
-    mapName: CanhDong_Lua
-    sceneName: Map1
-    zoneTopology: 0
-    allowCustomZones: 0
+  - mapId: 110
+    mapName: PhoBan_SongWave
+    sceneName: DungeonWaveScene
+    zoneTopology: 1
+    allowCustomZones: 1
     publicZoneCountOverride: 0
     publicZoneMaxPlayersOverride: 0
     customZoneMaxPlayersOverride: 0
-    allowPlayerZoneSwitch: 1
+    allowPlayerZoneSwitch: 0
     entryPoints:
-    - {x: 2, y: 1}
+    - {x: 0, y: 0}
+  - mapId: 111
+    mapName: PhoBan_ToiDoi
+    sceneName: DungeonPartyScene
+    zoneTopology: 1
+    allowCustomZones: 1
+    publicZoneCountOverride: 0
+    publicZoneMaxPlayersOverride: 0
+    customZoneMaxPlayersOverride: 0
+    allowPlayerZoneSwitch: 0
+    entryPoints:
+    - {x: 0, y: 0}

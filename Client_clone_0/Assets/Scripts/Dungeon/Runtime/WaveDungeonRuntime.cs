@@ -83,6 +83,60 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         MapSceneManager.ConfigureNetworkObjectForServerOnlyScene(networkObject);
     }
 
+    private void Start()
+    {
+        // ServerScene chỉ load trên dedicated server (SpawnWithObservers=false →
+        // client không bao giờ có instance này). Vì vậy KHÔNG deactivate GameObject
+        // dựa vào IsServer — tại thời điểm Start() lần đầu, NetworkManager có thể
+        // chưa kịp StartServer, khiến IsServer=false và GameObject bị tắt vĩnh viễn,
+        // làm FindAnyObjectByType<WaveDungeonRuntime>() trả về null sau này.
+        Debug.Log($"[WaveDungeonRuntime] Start() scene={gameObject.scene.name} active={gameObject.activeInHierarchy} IsServer={(NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)}");
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+
+        var dm = DungeonManager.Instance;
+        if (dm == null) return;
+        dm.OnWaveStateChanged  -= ClientOnWaveStateChanged;
+        dm.OnDungeonEntered    -= ClientOnDungeonEntered;
+        dm.OnDungeonExited     -= ClientOnDungeonExited;
+    }
+
+    private void ClientOnWaveStateChanged(int round, int maxRounds, int remaining)
+    {
+        gameObject.SetActive(round > 0);
+        if (roundText != null)
+            roundText.text = $"Vòng {round} / {maxRounds}";
+        if (timerText != null)
+        {
+            int sec = Mathf.Max(0, remaining);
+            timerText.text  = $"{sec / 60:00}:{sec % 60:00}";
+            timerText.color = sec < 30 ? Color.red : Color.white;
+        }
+    }
+
+    private void ClientOnDungeonEntered() => gameObject.SetActive(false); // ẩn, chờ wave state
+
+    private void ClientOnDungeonExited()
+    {
+        gameObject.SetActive(false);
+        if (roundText  != null) roundText.text  = "Vòng -/-";
+        if (timerText  != null) timerText.text  = "00:00";
+    }
+
+    private void ClientRefreshDisplay()
+    {
+        var dm = DungeonManager.Instance;
+        if (dm == null || !dm.IsInDungeon || dm.CurrentWaveRound <= 0)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+        ClientOnWaveStateChanged(dm.CurrentWaveRound, dm.CurrentWaveMaxRounds, dm.CurrentWaveRemainingSeconds);
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -504,6 +558,23 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         state.Config = cfg;
         Debug.Log($"[WaveDungeonRuntime] zone={state.ZoneId} ApplyRuntimeResponseToZone dungeonId={dungeonId} mapId={state.MapId} " +
                   $"maxRounds={cfg.maxRounds} enemySpawns={cfg.enemySpawns.Count} bossId={cfg.bossSpawn?.enemyId ?? -1} milestones={cfg.milestoneRewards?.Count ?? 0}");
+
+        // Diagnostic: dump first few enemy spawns to verify the API actually returned them
+        if (cfg.enemySpawns.Count > 0)
+        {
+            int dumpCount = Mathf.Min(3, cfg.enemySpawns.Count);
+            for (int i = 0; i < dumpCount; i++)
+            {
+                var es = cfg.enemySpawns[i];
+                Debug.Log($"[WaveDungeonRuntime][DIAG] enemySpawn[{i}] enemyId={es.enemyId} pos={es.spawnPosition} hp={es.maxHp} level={es.level}");
+            }
+        }
+        else
+        {
+            Debug.LogError($"[WaveDungeonRuntime][DIAG] enemySpawns RỖNG cho dungeonId={dungeonId} mapId={state.MapId}! Kiểm tra API /dungeon/wave/{dungeonId}/config có trả về enemy_spawns không.");
+        }
+        if (cfg.bossSpawn != null)
+            Debug.Log($"[WaveDungeonRuntime][DIAG] bossSpawn enemyId={cfg.bossSpawn.enemyId} pos={cfg.bossSpawn.spawnPosition} hp={cfg.bossSpawn.maxHp}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -703,7 +774,11 @@ public class WaveDungeonRuntime : BaseDungeonInstance
     private NetworkObject SpawnEnemyForZone(ZoneEncounterState state, DungeonEnemyUnitConfig enemyConfig, float scale, bool isBoss)
     {
         SetEncounterLocation(state.MapId, state.ZoneId);
-        return SpawnConfiguredEnemy(enemyConfig, scale, isBoss);
+        Debug.Log($"[WaveDungeonRuntime][DIAG] SpawnEnemyForZone zone={state.ZoneId} map={state.MapId} enemyId={enemyConfig?.enemyId ?? -1} pos={enemyConfig?.spawnPosition} isBoss={isBoss}");
+        var no = SpawnConfiguredEnemy(enemyConfig, scale, isBoss);
+        if (no == null)
+            Debug.LogError($"[WaveDungeonRuntime][DIAG] SpawnConfiguredEnemy TRẢ VỀ NULL cho enemyId={enemyConfig?.enemyId ?? -1} (isBoss={isBoss}). Kiểm tra EnemyPrefabManager + map physics scene.");
+        return no;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -754,8 +829,9 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         if (!broadcastToZone)
             return;
 
-        FindAnyObjectByType<ZoneTransitionController>()
-            ?.BroadcastWaveStateToZone(state.MapId, state.ZoneId, state.CurrentRound, state.MaxRounds, state.RemainingSeconds);
+        var ztc = FindAnyObjectByType<ZoneTransitionController>();
+        Debug.Log($"[WaveDungeonRuntime][DIAG] SyncWaveStateToZone broadcast=true map={state.MapId} zone={state.ZoneId} round={state.CurrentRound}/{state.MaxRounds} remaining={state.RemainingSeconds} ztc={(ztc != null ? ztc.name : "NULL")}");
+        ztc?.BroadcastWaveStateToZone(state.MapId, state.ZoneId, state.CurrentRound, state.MaxRounds, state.RemainingSeconds);
     }
 
     private void BroadcastStatusToZone(ZoneEncounterState state, string message)

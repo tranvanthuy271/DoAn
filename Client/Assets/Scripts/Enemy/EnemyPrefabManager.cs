@@ -52,22 +52,24 @@ public class EnemyPrefabManager : MonoBehaviour
     private void BuildDictionary()
     {
         enemyPrefabDict.Clear();
+        Debug.Log($"[EnemyPrefabManager] BuildDictionary START — total entries in list: {enemyPrefabs.Count}");
         foreach (var enemyData in enemyPrefabs)
         {
             if (enemyData.enemyPrefab != null)
             {
                 if (enemyPrefabDict.ContainsKey(enemyData.enemyId))
                 {
-                    //Debug.LogWarning($"[EnemyPrefabManager] Duplicate Enemy ID: {enemyData.enemyId}. Overwriting previous entry.");
+                    Debug.LogWarning($"[EnemyPrefabManager] DUPLICATE Enemy ID: {enemyData.enemyId} (prefab='{enemyData.enemyPrefab.name}'). Overwriting previous entry.");
                 }
                 enemyPrefabDict[enemyData.enemyId] = enemyData.enemyPrefab;
-              //  Debug.Log($"[EnemyPrefabManager] Registered Enemy ID {enemyData.enemyId}: {enemyData.enemyName ?? enemyData.enemyPrefab.name}");
+                Debug.Log($"[EnemyPrefabManager] Registered enemyId={enemyData.enemyId} prefab='{enemyData.enemyPrefab.name}' label='{enemyData.enemyName}'");
             }
             else
             {
-              //  Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyData.enemyId} has null prefab!");
+                Debug.LogWarning($"[EnemyPrefabManager] enemyId={enemyData.enemyId} has NULL prefab — entry bị bỏ qua!");
             }
         }
+        Debug.Log($"[EnemyPrefabManager] BuildDictionary DONE — registered keys: [{string.Join(",", enemyPrefabDict.Keys)}]");
     }
 
     /// <summary>
@@ -85,11 +87,11 @@ public class EnemyPrefabManager : MonoBehaviour
             if (enemyData.enemyPrefab == null)
                 continue;
 
-           // Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found. Falling back to prefab '{enemyData.enemyPrefab.name}' from Enemy ID {enemyData.enemyId}.");
+            Debug.LogWarning($"[EnemyPrefabManager] enemyId={enemyId} KH\u00d4NG \u0110\u0102NG K\u00dd \u2192 fallback v\u1ec1 prefab '{enemyData.enemyPrefab.name}' (enemyId={enemyData.enemyId}). H\u00e3y th\u00eam mapping enemyId={enemyId} v\u00e0o EnemyPrefabManager trong ServerScene n\u1ebfu c\u1ea7n boss \u0111\u00fang.");
             return enemyData.enemyPrefab;
         }
 
-      //  Debug.LogWarning($"[EnemyPrefabManager] Enemy ID {enemyId} not found! Returning null.");
+        Debug.LogError($"[EnemyPrefabManager] enemyId={enemyId} KH\u00d4NG T\u00ccM TH\u1ea4Y v\u00e0 list r\u1ed7ng \u2192 tr\u1ea3 v\u1ec1 null.");
         return null;
     }
 

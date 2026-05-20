@@ -319,10 +319,13 @@ public class NpcMenuUI : MonoBehaviour
 
     private void ShowBagTab()
     {
-        if (shopPanel) shopPanel.SetActive(false);
-        if (bagPanel)  bagPanel.SetActive(true);
-        HideItemDetailPanelIfOpen();
-        // TODO: connect to inventory system to display player bag
+        // Đóng NPC menu và mở InventoryPanel độc lập
+        Close();
+        var infoPanel = UnityEngine.Object.FindObjectOfType<InformationPanelController>(true);
+        if (infoPanel != null)
+            infoPanel.ShowTuiDo();
+        else
+            UnityEngine.Object.FindObjectOfType<InventoryUI>(true)?.ShowInventory();
     }
 
     // ── Shop ──────────────────────────────────────────────────────────
@@ -533,7 +536,8 @@ public class NpcMenuUI : MonoBehaviour
             {
                 if (TryBuyShopItem(shopItem))
                     detailPanel.Hide();
-            });
+            },
+            requiredLevelOverride: shopItem.required_level);
     }
 
     private void HideItemDetailPanelIfOpen()

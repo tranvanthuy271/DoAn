@@ -63,6 +63,24 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("Trên dedicated server không có ground collider của mọi map. Non-fly enemy sẽ dùng spawn_y làm 'virtual ground' — khoá Y tại vị trí spawn để không rơi mãi.")]
     public bool useServerVirtualGround = true;
 
+    [Header("Ground Physics Fail-Safe")]
+    [Tooltip("Snap enemy xuống ground hiện có ngay sau khi spawn để bắt đầu đúng mặt đất.")]
+    public bool snapToGroundOnStart = true;
+    [Tooltip("Khoảng raycast tìm ground bên dưới khi vừa spawn hoặc khi recover khỏi fall.")]
+    public float spawnGroundSnapDistance = 12f;
+    [Tooltip("Offset nhỏ đẩy enemy lên trên mặt ground sau khi snap.")]
+    public float spawnGroundOffset = 0.02f;
+    [Tooltip("Nếu enemy rơi xa hơn mức này khỏi ground cuối cùng thì sẽ recover thay vì rơi vô hạn.")]
+    public float maxUnsupportedFallDistance = 8f;
+    [Tooltip("Nếu enemy rơi quá lâu mà không chạm ground thì sẽ recover.")]
+    public float maxUnsupportedFallTime = 1.25f;
+
+    [Header("Ground Debug")]
+    [Tooltip("Bật log debug cho movement/ground của enemy không bay trên server.")]
+    public bool debugGroundMovement = true;
+    [Tooltip("Throttle log ground để tránh spam quá dày.")]
+    public float debugGroundLogInterval = 0.5f;
+
     [Header("Fly Patrol (canFly)")]
     [Tooltip("Bán kính patrol trục X cho enemy bay khi chưa thấy player.")]
     public float flyPatrolRadiusX = 3f;
@@ -97,6 +115,17 @@ public class EnemyAI : MonoBehaviour
     private bool _serverAnchorSet;
     private Vector2 _flyPatrolTarget;
     private float _flyPatrolRetargetTimer;
+    private float _initialGravityScale = 1f;
+    private Vector2 _lastSupportedGroundPosition;
+    private bool _hasSupportedGroundPosition;
+    private float _unsupportedFallStartTime = -1f;
+    private float _nextGroundDebugLogTime;
+    private bool _lastGroundedEnough = true;
+    private bool _lastVirtualGroundMode;
+    // Bật khi raycast spawn không tìm thấy collider Ground nào trong scene
+    // (map server không có ground thật) — chuyển enemy sang chế độ virtual ground:
+    // tắt gravity và khóa Y theo anchor để vẫn di chuyển trục X bình thường.
+    private bool _forceVirtualGround;
 
     // Skill system — set bởi HostSpawnConfigLoader sau khi spawn
     private EnemySkillSet _skillSet;
@@ -121,6 +150,7 @@ public class EnemyAI : MonoBehaviour
         health = GetComponent<EnemyHealth>();
         networkController = GetComponent<NetworkEnemyController>();
         bodyCollider = GetComponent<Collider2D>();
+        _initialGravityScale = rb != null && rb.gravityScale > 0f ? rb.gravityScale : 1f;
         _originalMoveSpeed = moveSpeed;
         _skillSet = GetComponent<EnemySkillSet>(); // có thể null nếu chưa được gán
         _groundLayerMask = LayerMask.GetMask("Ground");
@@ -130,11 +160,10 @@ public class EnemyAI : MonoBehaviour
         if (networkAnimator != null && networkAnimator.Animator == null)
             networkAnimator.Animator = animator;
 
-        // ✅ FIX: Nếu cho phép bay (canFly), tắt gravity để không bị kéo xuống
-        if (canFly && rb != null)
+        // Preserve the rigidbody's configured gravity; canFly only changes movement behavior.
+        if (rb != null && !canFly)
         {
-            rb.gravityScale = 0f;
-            Debug.Log($"[EnemyAI] {gameObject.name}: canFly=true → gravityScale=0");
+            rb.gravityScale = _initialGravityScale;
         }
 
         ApplyFacing();
@@ -175,9 +204,14 @@ public class EnemyAI : MonoBehaviour
             _serverAnchorSet = true;
         }
 
+        if (!canFly)
+            LogGroundMovement("Start", $"anchorSet={_serverAnchorSet} anchorY={_serverAnchorY:F2}", true);
+
         // Mỗi enemy bay có một patrol target ban đầu khác nhau → mỗi con bay 1 hướng khác.
         if (canFly)
             RetargetFlyPatrol();
+        else if (UsesRealGroundPhysics() && snapToGroundOnStart)
+            StartCoroutine(SnapToGroundAfterSpawn());
     }
 
     public void ApplyRuntimeOverride(int attackDamage, float movementSpeed, bool enableFlight)
@@ -192,8 +226,11 @@ public class EnemyAI : MonoBehaviour
         }
 
         canFly = enableFlight;
-        if (enableFlight && rb != null)
-            rb.gravityScale = 0f;
+        if (rb != null && !enableFlight && !_forceVirtualGround)
+            rb.gravityScale = _initialGravityScale;
+
+        if (enableFlight)
+            _unsupportedFallStartTime = -1f;
     }
 
     // ── Freeze (DebuffManager gọi qua ClientRpc) ─────────────────────────────
@@ -658,10 +695,12 @@ public class EnemyAI : MonoBehaviour
     {
         if (rb == null) return;
         if (_isFrozen) { rb.velocity = Vector2.zero; return; }
-        // Server không có ground colliders đầy đủ → bỏ qua IsGroundedEnough.
-        // Non-fly sẽ được khoá Y về _serverAnchorY trong LateUpdate (xem ApplyServerVirtualGround).
-        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
-        if (!canFly && !isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
+        if (!canFly && !IsGroundedEnough())
+        {
+            LogGroundMovement("RunBlockedUngrounded", $"targetX={targetX:F2}");
+            rb.velocity = new Vector2(0f, rb.velocity.y);
+            return;
+        }
 
         float dir = Mathf.Sign(targetX - transform.position.x);
         float yVel = canFly ? 0f : rb.velocity.y;
@@ -680,6 +719,32 @@ public class EnemyAI : MonoBehaviour
     {
         var debuffMgr = GetComponent<DebuffManager>();
         return debuffMgr != null ? debuffMgr.GetSlowFactor() : 1f;
+    }
+
+    private bool ShouldUseServerVirtualGround()
+    {
+        return useServerVirtualGround
+            && !canFly
+            && rb != null
+            && _serverAnchorSet
+            && !UsesRealGroundPhysics();
+    }
+
+    private void LogGroundMovement(string eventName, string details = "", bool force = false)
+    {
+        if (!debugGroundMovement || canFly || rb == null)
+            return;
+
+        if (!force && Time.time < _nextGroundDebugLogTime)
+            return;
+
+        _nextGroundDebugLogTime = Time.time + Mathf.Max(0.05f, debugGroundLogInterval);
+
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        string ownerInfo = netObj != null ? netObj.OwnerClientId.ToString() : "none";
+        Debug.Log(
+            $"[EnemyGroundDebug] evt={eventName} name={gameObject.name} scene={gameObject.scene.name} map={GetMyMapId()} owner={ownerInfo} pos={rb.position} vel={rb.velocity} gravity={rb.gravityScale:F2} useVirtual={ShouldUseServerVirtualGround()} anchorY={_serverAnchorY:F2} {details}",
+            this);
     }
 
     private bool HasProjectileSkillConfigured()
@@ -798,8 +863,7 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
-        if (!isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
+        if (!IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
         float horizontalDirection = Mathf.Sign(horizontalDelta);
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
@@ -823,8 +887,7 @@ public class EnemyAI : MonoBehaviour
             ? Mathf.Sign(horizontalDelta)
             : (facingRight ? -1f : 1f);
 
-        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
-        if (!isServerCtx && !IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
+        if (!IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
         rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, rb.velocity.y);
@@ -1527,17 +1590,35 @@ public class EnemyAI : MonoBehaviour
     {
         if (canFly || bodyCollider == null || _groundLayerMask == 0) return true;
 
-        var physScene = gameObject.scene.GetPhysicsScene2D();
-        Bounds b = bodyCollider.bounds;
+        bool isServerCtx = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+        bool useVirtualGround = isServerCtx && ShouldUseServerVirtualGround();
+        bool grounded;
+        if (useVirtualGround)
+        {
+            grounded = Mathf.Abs(rb.position.y - _serverAnchorY) <= 0.5f;
+        }
+        else
+        {
+            var physScene = gameObject.scene.GetPhysicsScene2D();
+            Bounds b = bodyCollider.bounds;
 
-        float inset = Mathf.Min(b.extents.x * 0.5f, 0.2f);
-        float originY = Mathf.Max(transform.position.y, b.center.y);
-        float feetY = b.min.y;
-        float checkDist = Mathf.Max(0.75f, originY - feetY + 0.4f);
+            float inset = Mathf.Min(b.extents.x * 0.5f, 0.2f);
+            float originY = Mathf.Max(transform.position.y, b.center.y);
+            float feetY = b.min.y;
+            float checkDist = Mathf.Max(0.75f, originY - feetY + 0.4f);
 
-        return IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.center.x, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
-            || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.min.x + inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
-            || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.max.x - inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY);
+            grounded = IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.center.x, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
+                || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.min.x + inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY)
+                || IsGroundHitCloseToFeet(physScene.Raycast(new Vector2(b.max.x - inset, originY), Vector2.down, checkDist, _groundLayerMask), feetY);
+        }
+
+        if (grounded != _lastGroundedEnough)
+        {
+            _lastGroundedEnough = grounded;
+            LogGroundMovement("GroundedChanged", $"grounded={grounded} branch={(useVirtualGround ? "virtual" : "physics")}", true);
+        }
+
+        return grounded;
     }
 
     private bool IsGroundHitCloseToFeet(RaycastHit2D hit, float feetY)
@@ -1558,18 +1639,151 @@ public class EnemyAI : MonoBehaviour
             return;
         if (state == State.Dead) return;
 
-        // Server virtual ground cho non-fly: khoá Y tại _serverAnchorY để
-        // tránh rơi mãi (server không baked ground collider cho mọi map).
-        if (useServerVirtualGround && !canFly && rb != null && _serverAnchorSet)
+        bool useVirtualGround = ShouldUseServerVirtualGround();
+        if (useVirtualGround != _lastVirtualGroundMode)
+        {
+            _lastVirtualGroundMode = useVirtualGround;
+            LogGroundMovement("VirtualGroundModeChanged", $"enabled={useVirtualGround}", true);
+        }
+
+        if (useVirtualGround)
         {
             Vector2 p = rb.position;
             if (!Mathf.Approximately(p.y, _serverAnchorY))
+            {
+                LogGroundMovement("VirtualGroundReset", $"fromY={p.y:F2} toY={_serverAnchorY:F2}", true);
                 rb.position = new Vector2(p.x, _serverAnchorY);
+            }
             if (Mathf.Abs(rb.velocity.y) > 0.01f)
+            {
+                LogGroundMovement("VirtualGroundZeroVelocity", $"oldVy={rb.velocity.y:F2}", true);
                 rb.velocity = new Vector2(rb.velocity.x, 0f);
+            }
+        }
+        else
+        {
+            MaintainGroundFailSafe();
         }
 
         ClampToMapBounds();
+    }
+
+    private bool UsesRealGroundPhysics()
+    {
+        return !canFly
+            && !_forceVirtualGround
+            && rb != null
+            && bodyCollider != null
+            && _groundLayerMask != 0
+            && rb.gravityScale > 0.01f;
+    }
+
+    private IEnumerator SnapToGroundAfterSpawn()
+    {
+        yield return null;
+        bool snapped = TrySnapToGround();
+
+        if (!snapped && useServerVirtualGround && rb != null && _serverAnchorSet)
+        {
+            // Map không có collider Ground → bật virtual ground: tắt gravity,
+            // khóa Y về anchor để enemy không rơi và vẫn chạy trục X.
+            _forceVirtualGround = true;
+            rb.gravityScale = 0f;
+            rb.velocity = Vector2.zero;
+            rb.position = new Vector2(rb.position.x, _serverAnchorY);
+            CacheSupportedGroundPosition(rb.position);
+            LogGroundMovement("VirtualGroundFallback", $"anchorY={_serverAnchorY:F2}", true);
+            yield break;
+        }
+
+        if (IsGroundedEnough() && rb != null)
+            CacheSupportedGroundPosition(rb.position);
+    }
+
+    private bool TrySnapToGround()
+    {
+        if (!UsesRealGroundPhysics())
+            return false;
+
+        Bounds bounds = bodyCollider.bounds;
+        float rayDistance = Mathf.Max(0.5f, spawnGroundSnapDistance);
+        float topPadding = Mathf.Max(0.1f, bounds.extents.y + 0.1f);
+        Vector2 origin = new Vector2(bounds.center.x, transform.position.y + topPadding);
+        RaycastHit2D hit = RaycastInCurrentScene(origin, Vector2.down, rayDistance + topPadding, _groundLayerMask);
+        if (hit.collider == null)
+            return false;
+
+        float currentBottomOffset = bounds.min.y - transform.position.y;
+        float snappedY = hit.point.y - currentBottomOffset + Mathf.Max(0f, spawnGroundOffset);
+        rb.position = new Vector2(rb.position.x, snappedY);
+        rb.velocity = Vector2.zero;
+        CacheSupportedGroundPosition(rb.position);
+        return true;
+    }
+
+    private void MaintainGroundFailSafe()
+    {
+        if (!UsesRealGroundPhysics() || rb == null)
+        {
+            _unsupportedFallStartTime = -1f;
+            return;
+        }
+
+        if (IsGroundedEnough())
+        {
+            CacheSupportedGroundPosition(rb.position);
+            return;
+        }
+
+        if (rb.velocity.y >= -0.01f)
+        {
+            _unsupportedFallStartTime = -1f;
+            return;
+        }
+
+        if (_unsupportedFallStartTime < 0f)
+            _unsupportedFallStartTime = Time.time;
+
+        float referenceY = _hasSupportedGroundPosition
+            ? _lastSupportedGroundPosition.y
+            : (_serverAnchorSet ? _serverAnchorY : rb.position.y);
+        bool fellTooFar = referenceY - rb.position.y >= Mathf.Max(0.5f, maxUnsupportedFallDistance);
+        bool fellTooLong = Time.time - _unsupportedFallStartTime >= Mathf.Max(0.1f, maxUnsupportedFallTime);
+        if (!fellTooFar && !fellTooLong)
+            return;
+
+        bool snappedToGround = TrySnapToGround();
+        if (!snappedToGround)
+        {
+            Vector2 fallbackPosition = _hasSupportedGroundPosition
+                ? _lastSupportedGroundPosition
+                : new Vector2(rb.position.x, _serverAnchorSet ? _serverAnchorY : rb.position.y);
+            rb.position = fallbackPosition;
+            rb.velocity = Vector2.zero;
+            CacheSupportedGroundPosition(fallbackPosition);
+        }
+
+        _unsupportedFallStartTime = -1f;
+    }
+
+    private void CacheSupportedGroundPosition(Vector2 position)
+    {
+        _lastSupportedGroundPosition = position;
+        _hasSupportedGroundPosition = true;
+        _unsupportedFallStartTime = -1f;
+    }
+
+    private RaycastHit2D RaycastInCurrentScene(Vector2 origin, Vector2 direction, float distance, int layerMask)
+    {
+        var scene = gameObject.scene;
+        if (scene.IsValid())
+        {
+            var physicsScene = scene.GetPhysicsScene2D();
+            if (physicsScene.IsValid())
+                return physicsScene.Raycast(origin, direction, distance, layerMask);
+        }
+
+        return Physics2D.Raycast(origin, direction, distance, layerMask);
     }
 
     private void DetectMapBounds()
@@ -1649,11 +1863,13 @@ public class EnemyAI : MonoBehaviour
         {
             if (pos.y < _mapMinY)
             {
+                LogGroundMovement("ClampMapMinY", $"fromY={pos.y:F2} toY={_mapMinY:F2}", true);
                 newY = _mapMinY;
                 if (newVy < 0f) newVy = 0f;
             }
             else if (pos.y > _mapMaxY)
             {
+                LogGroundMovement("ClampMapMaxY", $"fromY={pos.y:F2} toY={_mapMaxY:F2}", true);
                 newY = _mapMaxY;
                 if (newVy > 0f) newVy = 0f;
             }

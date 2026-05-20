@@ -49,6 +49,7 @@ public class ItemDetailPanel : MonoBehaviour
     private ItemTemplateDto currentTemplate;
     private Vector2 itemIconMaxSize;
     private Action _primaryButtonActionOverride;
+    private int? _requiredLevelOverride;
     private bool _hasBeenShown;
     private Coroutine _refreshAfterOptionsRoutine;
 
@@ -103,7 +104,8 @@ public class ItemDetailPanel : MonoBehaviour
     }
 
     public void ShowItem(InventorySlotDto slotData, bool showUseButton = true,
-                         string buttonTextOverride = null, Action primaryButtonAction = null)
+                         string buttonTextOverride = null, Action primaryButtonAction = null,
+                         int? requiredLevelOverride = null)
     {
         if (slotData == null || slotData.quantity <= 0)
         {
@@ -115,6 +117,7 @@ public class ItemDetailPanel : MonoBehaviour
         currentEquipmentData = null;
         currentTemplate = ResolveTemplate(slotData.itemTemplateId, slotData.itemCode);
         _primaryButtonActionOverride = primaryButtonAction;
+        _requiredLevelOverride = requiredLevelOverride;
 
         SetIcon(slotData.iconId, currentTemplate);
 
@@ -150,6 +153,7 @@ public class ItemDetailPanel : MonoBehaviour
         currentEquipmentData = item;
         currentTemplate = ResolveTemplate(item.id, item.itemCode);
         _primaryButtonActionOverride = null;
+        _requiredLevelOverride = null;
 
         SetIcon(item.iconId, currentTemplate);
 
@@ -177,6 +181,7 @@ public class ItemDetailPanel : MonoBehaviour
         currentEquipmentData = null;
         currentTemplate = null;
         _primaryButtonActionOverride = null;
+        _requiredLevelOverride = null;
     }
 
     public bool IsVisible()
@@ -246,9 +251,10 @@ public class ItemDetailPanel : MonoBehaviour
             return "Không có thông tin.";
 
         var sb = new StringBuilder();
+        int requiredLevel = ResolveRequiredLevel(template);
 
-        if (template.levelNeed > 0)
-            AppendLine(sb, $"Yêu cầu cấp: {template.levelNeed}", White);
+        if (requiredLevel > 0)
+            AppendLine(sb, $"Yêu cầu cấp: {requiredLevel}", White);
 
         AppendLine(sb, ResolveLocked(slot, template) ? "Đã khóa" : "Không khóa", White);
         AppendLine(sb, template.isXepChong ? "Có thể xếp chồng" : "Không thể xếp chồng", White);
@@ -283,8 +289,9 @@ public class ItemDetailPanel : MonoBehaviour
 
         if (template != null)
         {
-            if (template.levelNeed > 0)
-                AppendLine(sb, $"Yêu cầu cấp: {template.levelNeed}", Red);
+            int requiredLevel = ResolveRequiredLevel(template);
+            if (requiredLevel > 0)
+                AppendLine(sb, $"Yêu cầu cấp: {requiredLevel}", Red);
 
             if (template.gioiTinh == 0)
                 AppendLine(sb, "Yêu cầu giới tính: Nam", Red);
@@ -342,6 +349,14 @@ public class ItemDetailPanel : MonoBehaviour
         sb.Append('>');
         sb.Append(text);
         sb.AppendLine("</color>");
+    }
+
+    private int ResolveRequiredLevel(ItemTemplateDto template)
+    {
+        if (_requiredLevelOverride.HasValue)
+            return Mathf.Max(0, _requiredLevelOverride.Value);
+
+        return template != null ? Mathf.Max(0, template.levelNeed) : 0;
     }
 
     private static string BuildSellPriceLine(InventorySlotDto slot, ItemTemplateDto template)
