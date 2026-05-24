@@ -15,7 +15,7 @@ using UnityEngine.Networking;
 ///   - Khi client ngắt kết nối → save vị trí cuối → xóa khỏi session
 ///   - UpdateZone() sau mỗi lần zone transfer
 ///
-/// Dependencies: ZoneConnectionApprovalV2 (RegisterSession), MapWorldConfig
+/// Dependencies: ZoneConnectionApproval (RegisterSession), MapWorldConfig
 /// </summary>
 [DisallowMultipleComponent]
 public class ZonePlayerSessionManager : NetworkBehaviour
@@ -97,7 +97,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     // ── Public API ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Gọi từ ZoneConnectionApprovalV2 khi client được approve.
+    /// Gọi từ ZoneConnectionApproval khi client được approve.
     /// </summary>
     public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null, int geneSlot = 1)
     {

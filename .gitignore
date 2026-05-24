@@ -184,3 +184,4 @@ db_data/
 GameServerApi/artifacts/
 GameServerApi/bin/
 GameServerApi/obj/
+GameServerApi/build_verify*/

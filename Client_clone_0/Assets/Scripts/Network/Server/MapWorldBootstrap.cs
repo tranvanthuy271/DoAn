@@ -16,7 +16,7 @@ using UnityEngine.Networking;
 ///   --apiUrl=http://...
 ///
 /// Gắn vào: "ServerBootstrap" GameObject trong ServerScene.
-/// Dependencies: MapWorldConfig (assign inspector), ZoneRoomRegistry, ZoneConnectionApprovalV2
+/// Dependencies: MapWorldConfig (assign inspector), ZoneRoomRegistry, ZoneConnectionApproval
 /// </summary>
 [DisallowMultipleComponent]
 public class MapWorldBootstrap : MonoBehaviour
@@ -210,8 +210,8 @@ public class MapWorldBootstrap : MonoBehaviour
         }
 
         // 4 — Setup Connection Approval
-        var approval = GetComponent<ZoneConnectionApprovalV2>()
-                    ?? gameObject.AddComponent<ZoneConnectionApprovalV2>();
+        var approval = GetComponent<ZoneConnectionApproval>()
+                    ?? gameObject.AddComponent<ZoneConnectionApproval>();
         approval.Initialize(_config);
 
         // 5 — Start Server
