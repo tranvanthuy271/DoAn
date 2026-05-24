@@ -1,26 +1,26 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
 /// <summary>
-/// QuestHudWidget â€” Panel nhá» á»Ÿ gÃ³c mÃ n hÃ¬nh hiá»ƒn thá»‹ nhiá»‡m vá»¥ hiá»‡n táº¡i.
+/// QuestHudWidget — Panel nhá» ở góc màn hình hiển thị nhiệm vụ hiện tại.
 ///
-/// Hiá»ƒn thá»‹:
-///   - "ChÃ­nh: [tÃªn quest]"
-///   - "- TÃ¬m [npc_name] Ä‘á»ƒ nháº­n nhiá»‡m vá»¥"   (náº¿u quest chÆ°a nháº­n)
-///   - "- [tÃªn bÆ°á»›c]: done/require"             (náº¿u Ä‘ang lÃ m)
-///   - "- âœ“ TÃ¬m [npc_name] Ä‘á»ƒ ná»™p nhiá»‡m vá»¥"   (náº¿u hoÃ n thÃ nh)
+/// Hiển thị:
+///   - "Chính: [tên quest]"
+///   - "- Tìm [npc_name] để nhận nhiệm vụ"   (nếu quest chưa nhận)
+///   - "- [tên bước]: done/require"             (nếu đang làm)
+///   - "- ✓ Tìm [npc_name] để nộp nhiệm vụ"   (nếu hoàn thành)
 ///
-/// Nháº¥n nÃºt "â†’" Ä‘á»ƒ tá»± Ä‘á»™ng di chuyá»ƒn Ä‘áº¿n má»¥c tiÃªu.
+/// Nhấn nút "→" để tự động di chuyển đến mục tiêu.
 ///
-/// Cáº¥u trÃºc GameObject khuyáº¿n nghá»‹:
+/// Cấu trúc GameObject khuyến nghị:
 ///   QuestHudWidget (MonoBehaviour)
-///   â””â”€â”€ Panel (Image â€“ ná»n má»)
-///       â”œâ”€â”€ QuestName  (TMP_Text â€“ "ChÃ­nh: ...")
-///       â”œâ”€â”€ QuestStep  (TMP_Text â€“ "- ...")
-///       â””â”€â”€ BtnNavigate (Button)
-///           â””â”€â”€ Label (TMP_Text â€“ "â†’")
+///   └── Panel (Image – ná»n má»)
+///       ├── QuestName  (TMP_Text – "Chính: ...")
+///       ├── QuestStep  (TMP_Text – "- ...")
+///       └── BtnNavigate (Button)
+///           └── Label (TMP_Text – "→")
 /// </summary>
 public class QuestHudWidget : MonoBehaviour
 {
@@ -31,14 +31,14 @@ public class QuestHudWidget : MonoBehaviour
     [SerializeField] private Button     btnNavigate;
     [SerializeField] private TMP_Text   btnNavigateLabel;
 
-    // â”€â”€â”€ Auto-move state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Auto-move state ──────────────────────────────────────────────────────
     private bool  _autoMoving;
     private float _autoMoveTargetX;
     private int   _autoMoveTargetMapId = -1;
 
     private const float ARRIVE_THRESHOLD = 0.8f;
 
-    // â”€â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -72,7 +72,7 @@ public class QuestHudWidget : MonoBehaviour
 
     private void Start()
     {
-        // Táº£i tráº¡ng thÃ¡i HUD ngay khi vÃ o scene
+        // Tải trạng thái HUD ngay khi vào scene
         if (QuestManager.Instance != null)
         {
             // Subscribe ở đây phòng trường hợp OnEnable() chạy trước QuestManager.Awake()
@@ -93,7 +93,7 @@ public class QuestHudWidget : MonoBehaviour
 
         int curMap = MapManager.Instance != null ? MapManager.Instance.mapId : -1;
 
-        // Äang chá» chuyá»ƒn sang map khÃ¡c â€” khÃ´ng inject input
+        // Äang chá» chuyển sang map khác — không inject input
         if (_autoMoveTargetMapId >= 0 && curMap >= 0 && curMap != _autoMoveTargetMapId) return;
 
         var player = GetLocalPlayer();
@@ -105,7 +105,7 @@ public class QuestHudWidget : MonoBehaviour
         InputManager.Instance?.SetAutoMoveInput(diff > 0 ? 1f : -1f);
     }
 
-    // â”€â”€â”€ Refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Refresh ──────────────────────────────────────────────────────────────
 
     public void Refresh()
     {
@@ -141,7 +141,7 @@ public class QuestHudWidget : MonoBehaviour
         if (btnNavigateLabel) btnNavigateLabel.text = "->";  // mui ten
     }
 
-    // â”€â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Navigation ───────────────────────────────────────────────────────────
 
     private void OnNavigateClicked()
     {
@@ -154,7 +154,7 @@ public class QuestHudWidget : MonoBehaviour
 
         if (quest.status == "available" || allDone)
         {
-            // Äáº¿n NPC nháº­n / ná»™p quest
+            // Äến NPC nhận / nộp quest
             NavigateTo(quest.npc_map_id, quest.npc_pos_x);
         }
         else if (steps != null && quest.current_step_index < steps.Count)
@@ -212,7 +212,7 @@ public class QuestHudWidget : MonoBehaviour
         if (_autoMoving) { InputManager.Instance?.CancelAutoMove(); _autoMoving = false; }
     }
 
-    // â”€â”€â”€ Step line builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Step line builder ────────────────────────────────────────────────────
 
     private static string BuildStepLine(QuestManager.QuestStatusDto q)
     {
@@ -310,7 +310,7 @@ public class QuestHudWidget : MonoBehaviour
         if (btnNavigate != null) btnNavigate.onClick.AddListener(OnNavigateClicked);
     }
 
-    // â”€â”€â”€ DTOs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── DTOs ─────────────────────────────────────────────────────────────────
 
     [System.Serializable]
     private class StepDto { public string name; public int require; public int idMap = -1; public int x; public int y; }

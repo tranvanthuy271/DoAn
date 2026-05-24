@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Text;
 using TMPro;
@@ -6,18 +6,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Overlay panel hiá»ƒn thá»‹ chi tiáº¿t ká»¹ nÄƒng Ä‘Æ°á»£c chá»n.
+/// Overlay panel hiển thị chi tiết kỹ năng được chá»n.
 ///
-/// Cáº¥u trÃºc tá»± build trong RebuildLayout():
+/// Cấu trúc tự build trong RebuildLayout():
 ///   Root (transparent, full-stretch)
-///   â”œâ”€â”€ Backdrop (dark semi-transparent, full-stretch, click â†’ Hide)
-///   â””â”€â”€ ContentBox (centered ~96% width/height)
-///       â”œâ”€â”€ Header  (HLG: IconFrame + TitleArea)
-///       â”œâ”€â”€ BtnClose (top-right, "âœ•")
-///       â”œâ”€â”€ SkillInfoScrollView
-///       â””â”€â”€ BtnUpgrade (bottom-right)
+///   ├── Backdrop (dark semi-transparent, full-stretch, click → Hide)
+///   └── ContentBox (centered ~96% width/height)
+///       ├── Header  (HLG: IconFrame + TitleArea)
+///       ├── BtnClose (top-right, "✕")
+///       ├── SkillInfoScrollView
+///       └── BtnUpgrade (bottom-right)
 ///
-/// Gá»i Show() khi chá»n skill, Hide() khi Ä‘Ã³ng hoáº·c tab bá»‹ táº¯t.
+/// Gá»i Show() khi chá»n skill, Hide() khi đóng hoặc tab bị tắt.
 /// </summary>
 public class SkillDetailPanelUI : MonoBehaviour
 {
@@ -58,14 +58,14 @@ public class SkillDetailPanelUI : MonoBehaviour
         UnbindButtons();
     }
 
-    // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Public API ──────────────────────────────────────────────────────────
 
     public void Show()
     {
         BindPrefabReferences();
         BindButtons();
         gameObject.SetActive(true);
-        transform.SetAsLastSibling();   // render trÃªn cÃ¹ng
+        transform.SetAsLastSibling();   // render trên cùng
     }
 
     public void Hide()
@@ -169,7 +169,7 @@ public class SkillDetailPanelUI : MonoBehaviour
             else DestroyImmediate(child);
         }
 
-        // Root: trong suá»‘t, khÃ´ng cháº·n click (backdrop sáº½ cháº·n)
+        // Root: trong suốt, không chặn click (backdrop sẽ chặn)
         var rootImg = GetComponent<Image>();
         if (rootImg == null) rootImg = gameObject.AddComponent<Image>();
         rootImg.color         = new Color(0f, 0f, 0f, 0f);
@@ -201,7 +201,7 @@ public class SkillDetailPanelUI : MonoBehaviour
 
         var boxImg = boxGo.GetComponent<Image>();
         boxImg.color         = new Color(0.20f, 0.09f, 0.03f, 0.97f);
-        boxImg.raycastTarget = true;   // cháº·n click xuyÃªn qua
+        boxImg.raycastTarget = true;   // chặn click xuyên qua
 
         var boxOutline = boxGo.AddComponent<Outline>();
         boxOutline.effectColor    = new Color(0.93f, 0.78f, 0.48f, 0.9f);
@@ -219,7 +219,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         headerRect.sizeDelta        = new Vector2(-14f, HeaderHeight);
 
         var headerLayout = header.gameObject.AddComponent<HorizontalLayoutGroup>();
-        headerLayout.padding              = new RectOffset(12, 60, 8, 8);  // right=60 Ä‘á»ƒ trÃ¡nh CloseBtn
+        headerLayout.padding              = new RectOffset(12, 60, 8, 8);  // right=60 để tránh CloseBtn
         headerLayout.spacing              = 12f;
         headerLayout.childAlignment       = TextAnchor.MiddleLeft;
         headerLayout.childControlWidth    = true;
@@ -254,7 +254,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         titleLe.minHeight     = 80f;
 
         
-        var closeBtnGo = CreateButtonGo(box, "BtnClose", "âœ•", new Color(0.65f, 0.15f, 0.10f, 0.95f));
+        var closeBtnGo = CreateButtonGo(box, "BtnClose", "✕", new Color(0.65f, 0.15f, 0.10f, 0.95f));
         var closeBtnRect = closeBtnGo.GetComponent<RectTransform>();
         closeBtnRect.anchorMin        = new Vector2(1f, 1f);
         closeBtnRect.anchorMax        = new Vector2(1f, 1f);
@@ -333,7 +333,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         scrollRect.verticalScrollbarSpacing     = -3f;
 
     
-        var upgradeGo  = CreateButtonGo(box, "BtnUpgrade", "NÃ¢ng cáº¥p", new Color(0.55f, 0.32f, 0.06f, 1f));
+        var upgradeGo  = CreateButtonGo(box, "BtnUpgrade", "Nâng cấp", new Color(0.55f, 0.32f, 0.06f, 1f));
         var upgradeRect = upgradeGo.GetComponent<RectTransform>();
         upgradeRect.anchorMin        = new Vector2(1f, 0f);
         upgradeRect.anchorMax        = new Vector2(1f, 0f);
@@ -354,8 +354,8 @@ public class SkillDetailPanelUI : MonoBehaviour
     {
         if (_info == null)
         {
-            if (txtTitle   != null) txtTitle.text = "Chá»n ká»¹ nÄƒng";
-            if (txtBody    != null) txtBody.text  = "Chá»n má»™t ká»¹ nÄƒng Ä‘á»ƒ xem chi tiáº¿t.";
+            if (txtTitle   != null) txtTitle.text = "Chá»n kỹ năng";
+            if (txtBody    != null) txtBody.text  = "Chá»n một kỹ năng để xem chi tiết.";
             if (btnUpgrade != null) btnUpgrade.gameObject.SetActive(false);
             if (iconImage  != null) iconImage.enabled = false;
             return;
@@ -375,7 +375,7 @@ public class SkillDetailPanelUI : MonoBehaviour
             iconImage.enabled = true;
 
             if (icon == null)
-                Debug.LogWarning($"[SkillDetail] KhÃ´ng tÃ¬m tháº¥y icon cho '{_info.skill_name}' " +
+                Debug.LogWarning($"[SkillDetail] Không tìm thấy icon cho '{_info.skill_name}' " +
                                  $"(icon_id='{_info.icon_id}', skill_code='{_info.skill_code}')");
         }
 
@@ -420,24 +420,24 @@ public class SkillDetailPanelUI : MonoBehaviour
         var sb    = new StringBuilder(512);
         bool maxed = info.current_level >= info.max_level && info.max_level > 0;
 
-        string description = string.IsNullOrWhiteSpace(info.description) ? "KhÃ´ng cÃ³ mÃ´ táº£." : info.description;
+        string description = string.IsNullOrWhiteSpace(info.description) ? "Không có mô tả." : info.description;
         sb.AppendLine(description);
         sb.AppendLine();
-        sb.AppendLine($"Cáº¥p hiá»‡n táº¡i:  {info.current_level} / {info.max_level}");
-        sb.AppendLine($"Level yÃªu cáº§u má»Ÿ: {Mathf.Max(1, info.level_to_unlock)}");
+        sb.AppendLine($"Cấp hiện tại:  {info.current_level} / {info.max_level}");
+        sb.AppendLine($"Level yêu cầu mở: {Mathf.Max(1, info.level_to_unlock)}");
         if (info.gene_tier_required > 0)
-            sb.AppendLine($"Gene yÃªu cáº§u: Tier {info.gene_tier_required}");
+            sb.AppendLine($"Gene yêu cầu: Tier {info.gene_tier_required}");
         sb.AppendLine(maxed
-            ? "<color=#FFE000>ÄÃ£ Ä‘áº¡t cáº¥p tá»‘i Ä‘a</color>"
-            : $"Cáº¥p tiáº¿p: cáº§n lv.{info.next_level_player_req}, {info.next_level_sp_cost} Ä‘iá»ƒm");
-        sb.AppendLine($"MP sá»­ dá»¥ng: {info.current_mp_cost}");
-        sb.AppendLine($"Há»“i chiÃªu: {FormatNumber(info.current_cooldown_sec)} giÃ¢y");
+            ? "<color=#FFE000>Äã đạt cấp tối đa</color>"
+            : $"Cấp tiếp: cần lv.{info.next_level_player_req}, {info.next_level_sp_cost} điểm");
+        sb.AppendLine($"MP sử dụng: {info.current_mp_cost}");
+        sb.AppendLine($"Hồi chiêu: {FormatNumber(info.current_cooldown_sec)} giây");
         sb.AppendLine();
-        sb.AppendLine("<color=#FFE000>â”€â”€â”€ Thuá»™c tÃ­nh theo cáº¥p â”€â”€â”€</color>");
+        sb.AppendLine("<color=#FFE000>─── Thuộc tính theo cấp ───</color>");
 
         if (info.level_details == null || info.level_details.Length == 0)
         {
-            sb.AppendLine("ChÆ°a cÃ³ cáº¥u hÃ¬nh level trong DB.");
+            sb.AppendLine("Chưa có cấu hình level trong DB.");
             return sb.ToString();
         }
 
@@ -445,10 +445,10 @@ public class SkillDetailPanelUI : MonoBehaviour
         string suffix = ResolveEffectSuffix(info.skill_code);
         foreach (var lv in info.level_details)
         {
-            string desc   = string.IsNullOrWhiteSpace(lv.desc) ? string.Empty : $" â€” {lv.desc}";
+            string desc   = string.IsNullOrWhiteSpace(lv.desc) ? string.Empty : $" — {lv.desc}";
             string effect = $"{label}: {FormatNumber(lv.effect_value)}{suffix}";
-            sb.AppendLine($"Lv.{lv.level}: {effect}, MP {lv.mp_cost}, há»“i {FormatNumber(lv.cooldown_sec)}s" +
-                          $", cáº§n lv.{lv.level_req}, {lv.sp_cost} Ä‘iá»ƒm{desc}");
+            sb.AppendLine($"Lv.{lv.level}: {effect}, MP {lv.mp_cost}, hồi {FormatNumber(lv.cooldown_sec)}s" +
+                          $", cần lv.{lv.level_req}, {lv.sp_cost} điểm{desc}");
         }
 
         return sb.ToString();
@@ -456,24 +456,24 @@ public class SkillDetailPanelUI : MonoBehaviour
 
     private static string ResolveEffectLabel(string skillCode)
     {
-        if (string.IsNullOrWhiteSpace(skillCode)) return "Hiá»‡u lá»±c";
+        if (string.IsNullOrWhiteSpace(skillCode)) return "Hiệu lực";
         string code = skillCode.ToUpperInvariant();
-        if (code.Contains("DASH") || code.Contains("STEP"))  return "Khoáº£ng cÃ¡ch";
-        if (code.Contains("VINE"))                            return "Thá»i gian trÃ³i";
-        if (code.Contains("HEAL"))                            return "Há»“i HP";
-        if (code.Contains("WATER_ARMOR") || code.Contains("EARTH_SHIELD")) return "GiÃ¡p cá»™ng";
-        if (code.Contains("METAL_SHIELD"))                    return "Báº¥t tá»­";
-        if (code.Contains("AURA"))                            return "TÄƒng táº¥n cÃ´ng";
-        if (code.Contains("BLINK"))                           return "SÃ¡t thÆ°Æ¡ng má»—i tick";
-        return "SÃ¡t thÆ°Æ¡ng";
+        if (code.Contains("DASH") || code.Contains("STEP"))  return "Khoảng cách";
+        if (code.Contains("VINE"))                            return "Thá»i gian trói";
+        if (code.Contains("HEAL"))                            return "Hồi HP";
+        if (code.Contains("WATER_ARMOR") || code.Contains("EARTH_SHIELD")) return "Giáp cộng";
+        if (code.Contains("METAL_SHIELD"))                    return "Bất tử";
+        if (code.Contains("AURA"))                            return "Tăng tấn công";
+        if (code.Contains("BLINK"))                           return "Sát thương mỗi tick";
+        return "Sát thương";
     }
 
     private static string ResolveEffectSuffix(string skillCode)
     {
         if (string.IsNullOrWhiteSpace(skillCode)) return string.Empty;
         string code = skillCode.ToUpperInvariant();
-        if (code.Contains("DASH") || code.Contains("STEP"))  return " Ã´";
-        if (code.Contains("VINE") || code.Contains("METAL_SHIELD")) return " giÃ¢y";
+        if (code.Contains("DASH") || code.Contains("STEP"))  return " ô";
+        if (code.Contains("VINE") || code.Contains("METAL_SHIELD")) return " giây";
         if (code.Contains("AURA"))                            return "%";
         return string.Empty;
     }
@@ -515,7 +515,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         return icon;
     }
 
-    // â”€â”€ UI factory helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── UI factory helpers ──────────────────────────────────────────────────
 
     /// <summary>Creates a button GO with centered text label. Returns the GO (not the button).</summary>
     private static GameObject CreateButtonGo(Transform parent, string name, string label, Color bgColor)
