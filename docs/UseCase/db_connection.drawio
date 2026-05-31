@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-25T00:00:00.000Z" agent="GitHub Copilot" version="24.7.17">
+  <diagram id="db-connection" name="Sơ đồ kết nối các bảng">
+    <mxGraphModel dx="1400" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="legend" value="Nét liền: khóa ngoại hoặc liên kết trực tiếp trong schema.&#xa;Nét đứt: liên kết logic qua JSON/runtime config nhưng vẫn quan trọng cho use case."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="22" y="16" width="420" height="54" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tUsers" value="users"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#d5e8d4;strokeColor=#82b366;"
+          vertex="1" parent="1">
+          <mxGeometry x="38" y="110" width="190" height="96" as="geometry"/>
+        </mxCell>
+        <mxCell id="tUsers1" value="+ user_id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tUsers">
+          <mxGeometry x="0" y="22" width="190" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tUsers2" value="+ username"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tUsers">
+          <mxGeometry x="0" y="46" width="190" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tUsers3" value="+ email"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tUsers">
+          <mxGeometry x="0" y="70" width="190" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tPlayer" value="player_data"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#d5e8d4;strokeColor=#82b366;"
+          vertex="1" parent="1">
+          <mxGeometry x="38" y="254" width="240" height="168" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer1" value="+ player_id (PK, FK → users)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="22" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer2" value="+ character_name"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="46" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer3" value="+ info_char (JSON)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="70" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer4" value="+ inventory (JSON)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="94" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer5" value="+ equipment (JSON)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="118" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tPlayer6" value="+ active_buffs (JSON)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tPlayer">
+          <mxGeometry x="0" y="142" width="240" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tFriend" value="friend_relations"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#f8cecc;strokeColor=#b85450;"
+          vertex="1" parent="1">
+          <mxGeometry x="38" y="470" width="220" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="tFriend1" value="+ id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tFriend">
+          <mxGeometry x="0" y="22" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tFriend2" value="+ user_id (FK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tFriend">
+          <mxGeometry x="0" y="46" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tFriend3" value="+ friend_id (FK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tFriend">
+          <mxGeometry x="0" y="70" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tFriend4" value="+ status"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tFriend">
+          <mxGeometry x="0" y="94" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tLeader" value="leaderboard_cache"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#f8cecc;strokeColor=#b85450;"
+          vertex="1" parent="1">
+          <mxGeometry x="38" y="636" width="220" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="tLeader1" value="+ id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tLeader">
+          <mxGeometry x="0" y="22" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tLeader2" value="+ name"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tLeader">
+          <mxGeometry x="0" y="46" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tLeader3" value="+ list / ListJson"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tLeader">
+          <mxGeometry x="0" y="70" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tLeader4" value="+ updated_at"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tLeader">
+          <mxGeometry x="0" y="94" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tGeneUp" value="gene_upgrade_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          vertex="1" parent="1">
+          <mxGeometry x="346" y="110" width="232" height="144" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneUp1" value="+ tier_from"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tGeneUp">
+          <mxGeometry x="0" y="22" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneUp2" value="+ element_type"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneUp">
+          <mxGeometry x="0" y="46" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneUp3" value="+ gene_exp_required"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneUp">
+          <mxGeometry x="0" y="70" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneUp4" value="+ silver_cost, stone_id"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneUp">
+          <mxGeometry x="0" y="94" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneUp5" value="+ base_success_rate"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneUp">
+          <mxGeometry x="0" y="118" width="232" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tGeneMulti" value="gene_multi_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          vertex="1" parent="1">
+          <mxGeometry x="346" y="286" width="232" height="144" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneMulti1" value="+ tier_from"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tGeneMulti">
+          <mxGeometry x="0" y="22" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneMulti2" value="+ element_type"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneMulti">
+          <mxGeometry x="0" y="46" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneMulti3" value="+ gene_exp_required"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneMulti">
+          <mxGeometry x="0" y="70" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneMulti4" value="+ silver_cost, stone_id"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneMulti">
+          <mxGeometry x="0" y="94" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneMulti5" value="+ base_success_rate"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneMulti">
+          <mxGeometry x="0" y="118" width="232" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tGeneTier" value="gene_tier_stat_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          vertex="1" parent="1">
+          <mxGeometry x="346" y="462" width="232" height="144" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneTier1" value="+ element_type"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tGeneTier">
+          <mxGeometry x="0" y="22" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneTier2" value="+ tier_to"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneTier">
+          <mxGeometry x="0" y="46" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneTier3" value="+ hp_bonus, mp_bonus"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneTier">
+          <mxGeometry x="0" y="70" width="232" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tGeneTier4" value="+ attack_bonus, defense_bonus"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tGeneTier">
+          <mxGeometry x="0" y="94" width="232" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tHybrid" value="gene_hybrid_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#e1d5e7;strokeColor=#9673a6;"
+          vertex="1" parent="1">
+          <mxGeometry x="654" y="110" width="250" height="168" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid1" value="+ hybrid_id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="22" width="250" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid2" value="+ element_a, element_b"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="46" width="250" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid3" value="+ hybrid_name"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="70" width="250" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid4" value="+ fusion_item_id, fusion_item_count"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="94" width="250" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid5" value="+ prefab_path"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="118" width="250" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybrid6" value="+ atk_bonus_percent"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybrid">
+          <mxGeometry x="0" y="142" width="250" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tHybridSkill" value="gene_hybrid_skill"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#e1d5e7;strokeColor=#9673a6;"
+          vertex="1" parent="1">
+          <mxGeometry x="654" y="322" width="220" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybridSkill1" value="+ id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tHybridSkill">
+          <mxGeometry x="0" y="22" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybridSkill2" value="+ hybrid_id (FK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybridSkill">
+          <mxGeometry x="0" y="46" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybridSkill3" value="+ skill_code (FK logic)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybridSkill">
+          <mxGeometry x="0" y="70" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tHybridSkill4" value="+ slot_priority"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tHybridSkill">
+          <mxGeometry x="0" y="94" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tSkill" value="skill_template"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#e1d5e7;strokeColor=#9673a6;"
+          vertex="1" parent="1">
+          <mxGeometry x="944" y="322" width="220" height="144" as="geometry"/>
+        </mxCell>
+        <mxCell id="tSkill1" value="+ skill_id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tSkill">
+          <mxGeometry x="0" y="22" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tSkill2" value="+ skill_code"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tSkill">
+          <mxGeometry x="0" y="46" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tSkill3" value="+ skill_name"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tSkill">
+          <mxGeometry x="0" y="70" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tSkill4" value="+ element_type"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tSkill">
+          <mxGeometry x="0" y="94" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tSkill5" value="+ levels_json"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tSkill">
+          <mxGeometry x="0" y="118" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tDungeon" value="dungeon_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#ffe6cc;strokeColor=#d79b00;"
+          vertex="1" parent="1">
+          <mxGeometry x="656" y="538" width="240" height="168" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon1" value="+ dungeon_id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="22" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon2" value="+ dungeon_type, map_id"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="46" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon3" value="+ max_players, min_level_required"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="70" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon4" value="+ boss_enemy_id (FK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="94" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon5" value="+ reward_json"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="118" width="240" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tDungeon6" value="+ is_active"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tDungeon">
+          <mxGeometry x="0" y="142" width="240" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tWave" value="dungeon_wave_config"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#ffe6cc;strokeColor=#d79b00;"
+          vertex="1" parent="1">
+          <mxGeometry x="940" y="538" width="234" height="168" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave1" value="+ dungeon_id (PK, FK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="22" width="234" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave2" value="+ max_waves"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="46" width="234" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave3" value="+ wave_time_seconds"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="70" width="234" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave4" value="+ enemy_scale_percent"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="94" width="234" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave5" value="+ milestone_reward_json"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="118" width="234" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tWave6" value="+ daily_entry_limit"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tWave">
+          <mxGeometry x="0" y="142" width="234" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tEnemy" value="enemy"
+          style="swimlane;fontStyle=1;align=center;startSize=22;fillColor=#ffe6cc;strokeColor=#d79b00;"
+          vertex="1" parent="1">
+          <mxGeometry x="940" y="110" width="220" height="168" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy1" value="+ enemy_id (PK)"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;fontStyle=1;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="22" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy2" value="+ enemy_name"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="46" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy3" value="+ element_type"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="70" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy4" value="+ base_hp"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="94" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy5" value="+ base_damage"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="118" width="220" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="tEnemy6" value="+ drop_items_json"
+          style="text;fillColor=none;strokeColor=#d6d6d6;align=left;spacingLeft=4;fontSize=11;" vertex="1" parent="tEnemy">
+          <mxGeometry x="0" y="142" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rUsersPlayer" value="1 : 1"
+          style="endArrow=none;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tUsers" target="tPlayer" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rUsersFriend" value="1 : n&#xa;user_id / friend_id"
+          style="endArrow=none;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tUsers" target="tFriend" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rPlayerLeader" value="xếp hạng tổng hợp"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tLeader" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rPlayerGeneUp" value="gene_tier, element_type"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tGeneUp" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rPlayerGeneMulti" value="secondary_gene_tier"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tGeneMulti" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rPlayerGeneTier" value="bonus chỉ số"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tGeneTier" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rPlayerHybrid" value="hybrid_id / prefab"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tHybrid" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rHybridSkill" value="1 : n"
+          style="endArrow=none;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tHybrid" target="tHybridSkill" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rSkillHybrid" value="skill_code"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tHybridSkill" target="tSkill" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rDungeonWave" value="1 : 1"
+          style="endArrow=none;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tDungeon" target="tWave" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rEnemyDungeon" value="boss_enemy_id"
+          style="endArrow=none;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tEnemy" target="tDungeon" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="rPlayerDungeon" value="daily_wave_entries / dungeon_best_waves"
+          style="endArrow=none;dashed=1;strokeColor=#4d4d4d;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" source="tPlayer" target="tDungeon" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="caption" value="Hình 2.x. Sơ đồ kết nối các bảng dữ liệu trọng tâm cho Gene, multiplayer và dungeon"
+          style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="182" y="822" width="860" height="24" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

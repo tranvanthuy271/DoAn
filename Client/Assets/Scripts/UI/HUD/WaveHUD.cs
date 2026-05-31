@@ -4,59 +4,53 @@ using UnityEngine.UI;
 
 /// <summary>
 /// WaveHUD — Hiển thị thông tin vòng hiện tại và thời gian còn lại trên client.
-///
-/// Cách dùng:
-///   1. Tạo một GameObject trong scene UI (ví dụ MainHUD hoặc GameHUD).
-///   2. Gắn component WaveHUD vào GameObject đó.
-///   3. Kéo 2 TMP_Text vào roundText và timerText trong Inspector.
-///   4. Script tự động tìm WaveDungeonRuntime khi dungeon được load.
-///
-/// Script này đọc giá trị trực tiếp từ NetworkVariable của WaveDungeonRuntime
-/// thông qua các public property CurrentRound / RemainingSeconds / MaxRounds.
+/// Vị trí: góc trên bên phải màn hình.
+/// Có nút "Thoát phó bản" bên dưới để exit và đóng dungeon.
 /// </summary>
 public class WaveHUD : MonoBehaviour
 {
     [Header("UI Labels (gán trong Inspector hoặc để trống để tự tạo)")]
     [SerializeField] private TMP_Text roundText;
     [SerializeField] private TMP_Text timerText;
+    [SerializeField] private Button   exitButton;
 
     [Header("Hiển thị")]
-    [SerializeField] private GameObject hudRoot;     // root panel — ẩn khi không ở dungeon
-    [SerializeField] private float pollInterval = 0.5f; // bao lâu tìm lại runtime một lần (giây)
+    [SerializeField] private GameObject hudRoot;
+    [SerializeField] private float pollInterval = 0.5f;
+
+    // Layout constants
+    private const float PanelW    = 220f;
+    private const float LabelH    = 30f;
+    private const float BtnH      = 36f;
+    private const float Padding   = 10f;
+    private const float PanelH    = Padding + LabelH + 6f + LabelH + 8f + BtnH + Padding; // ≈120
 
     private DungeonManager _dungeonManager;
     private float _pollTimer;
-    private int _lastRound = -1;
+    private int _lastRound     = -1;
     private int _lastRemaining = -1;
     private int _lastMaxRounds = -1;
+    private bool _exitRequested;
 
-    // ── Unity lifecycle ──────────────────────────────────────────────────────
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     private void Start()
     {
-        // CẢNH BÁO: nếu hudRoot trỏ vào chính GameObject này, SetActive(false)
-        // sẽ tắt luôn Update() → không bao giờ tìm được runtime.
-        // Chúng ta ẩn labels thay vì ẩn toàn bộ root.
         _dungeonManager = DungeonManager.Instance;
-        Debug.Log($"[WaveHUD] Start — hudRoot={(hudRoot != null ? hudRoot.name : "null")} " +
-                  $"selfName={gameObject.name} " +
-                  $"roundText={(roundText != null ? roundText.name : "null")} " +
-                  $"timerText={(timerText != null ? timerText.name : "null")}");
 
-        // Auto-create labels if not assigned in Inspector (e.g. when spawned programmatically)
-        if (roundText == null || timerText == null)
+        if (roundText == null || timerText == null || exitButton == null)
             AutoCreateUI();
+
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnExitClicked);
 
         SetHudVisible(false);
     }
 
-    /// <summary>
-    /// Auto-creates a Canvas hierarchy and TMP_Text labels when WaveHUD is instantiated
-    /// without Inspector references (programmatic creation from DungeonManager).
-    /// </summary>
+    // ── AutoCreateUI (programmatic) ───────────────────────────────────────────
+
     private void AutoCreateUI()
     {
-        // Ensure we're under a Screen-Space Canvas
         Canvas canvas = GetComponentInParent<Canvas>();
         if (canvas == null)
         {
@@ -64,95 +58,161 @@ public class WaveHUD : MonoBehaviour
             if (transform.parent == null)
                 UnityEngine.Object.DontDestroyOnLoad(canvasGo);
             canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 50;
             canvasGo.AddComponent<CanvasScaler>();
             canvasGo.AddComponent<GraphicRaycaster>();
             transform.SetParent(canvasGo.transform, false);
         }
 
-        // Setup self as an anchored panel
-        if (GetComponent<RectTransform>() == null)
-            gameObject.AddComponent<RectTransform>();
+        // Panel — neo góc trên phải
+        if (GetComponent<RectTransform>() == null) gameObject.AddComponent<RectTransform>();
         var rect = GetComponent<RectTransform>();
-        rect.anchorMin        = new Vector2(0f, 1f);
-        rect.anchorMax        = new Vector2(0f, 1f);
-        rect.pivot            = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(16f, -16f);
-        rect.sizeDelta        = new Vector2(240f, 84f);
+        rect.anchorMin        = new Vector2(1f, 1f);
+        rect.anchorMax        = new Vector2(1f, 1f);
+        rect.pivot            = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-16f, -16f);
+        rect.sizeDelta        = new Vector2(PanelW, PanelH);
 
         var bg = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
-        bg.color = new Color(0f, 0f, 0f, 0.55f);
+        bg.color = new Color(0f, 0f, 0f, 0.6f);
+
+        float y = -Padding;
 
         if (roundText == null)
-            roundText = CreateWaveLabel("RoundText", new Vector2(8f, -8f), new Vector2(224f, 32f), 20, "Vòng -/-");
-        if (timerText == null)
-            timerText = CreateWaveLabel("TimerText", new Vector2(8f, -44f), new Vector2(224f, 28f), 18, "00:00");
+        {
+            roundText = CreateLabel("RoundText", new Vector2(-Padding, y), new Vector2(PanelW - Padding * 2, LabelH), 18, "Vòng -/-", TextAlignmentOptions.Center);
+            y -= LabelH + 6f;
+        }
 
-        Debug.Log($"[WaveHUD] AutoCreateUI — created canvas+labels under '{canvas.gameObject.name}'");
+        if (timerText == null)
+        {
+            timerText = CreateLabel("TimerText", new Vector2(-Padding, y), new Vector2(PanelW - Padding * 2, LabelH), 16, "00:00", TextAlignmentOptions.Center);
+            y -= LabelH + 8f;
+        }
+
+        if (exitButton == null)
+            exitButton = CreateExitButton(new Vector2(0f, y));
+
+        Debug.Log($"[WaveHUD] AutoCreateUI — top-right panel created under '{canvas.gameObject.name}'");
     }
 
-    private TMP_Text CreateWaveLabel(string goName, Vector2 anchorPos, Vector2 size, float fontSize, string defaultText)
+    private TMP_Text CreateLabel(string goName, Vector2 anchorPos, Vector2 size, float fontSize, string defaultText, TextAlignmentOptions align)
     {
         var go = new GameObject(goName);
         go.transform.SetParent(transform, false);
         var r = go.AddComponent<RectTransform>();
-        r.anchorMin        = new Vector2(0f, 1f);
-        r.anchorMax        = new Vector2(0f, 1f);
-        r.pivot            = new Vector2(0f, 1f);
+        // Anchor top-right để cùng hệ tọa độ với panel
+        r.anchorMin        = new Vector2(1f, 1f);
+        r.anchorMax        = new Vector2(1f, 1f);
+        r.pivot            = new Vector2(1f, 1f);
         r.anchoredPosition = anchorPos;
         r.sizeDelta        = size;
         var t = go.AddComponent<TextMeshProUGUI>();
-        t.text      = defaultText;
-        t.fontSize  = fontSize;
-        t.color     = Color.white;
-        t.alignment = TextAlignmentOptions.Left;
-        t.raycastTarget = false;
+        t.text           = defaultText;
+        t.fontSize       = fontSize;
+        t.color          = Color.white;
+        t.alignment      = align;
+        t.raycastTarget  = false;
         return t;
     }
 
+    private Button CreateExitButton(Vector2 yOffset)
+    {
+        // Container
+        var btnGo = new GameObject("ExitButton");
+        btnGo.transform.SetParent(transform, false);
+        var r = btnGo.AddComponent<RectTransform>();
+        r.anchorMin        = new Vector2(0f, 1f);
+        r.anchorMax        = new Vector2(1f, 1f);
+        r.pivot            = new Vector2(0.5f, 1f);
+        r.offsetMin        = new Vector2(Padding, 0f);
+        r.offsetMax        = new Vector2(-Padding, 0f);
+        r.anchoredPosition = new Vector2(0f, yOffset.y);
+        r.sizeDelta        = new Vector2(0f, BtnH);
+
+        var img = btnGo.AddComponent<Image>();
+        img.color = new Color(0.75f, 0.12f, 0.12f, 0.92f);
+
+        var btn = btnGo.AddComponent<Button>();
+        var colors = btn.colors;
+        colors.highlightedColor = new Color(0.9f, 0.2f, 0.2f, 1f);
+        colors.pressedColor     = new Color(0.55f, 0.05f, 0.05f, 1f);
+        btn.colors = colors;
+
+        // Label
+        var labelGo = new GameObject("Label");
+        labelGo.transform.SetParent(btnGo.transform, false);
+        var lr = labelGo.AddComponent<RectTransform>();
+        lr.anchorMin = Vector2.zero;
+        lr.anchorMax = Vector2.one;
+        lr.offsetMin = Vector2.zero;
+        lr.offsetMax = Vector2.zero;
+        var t = labelGo.AddComponent<TextMeshProUGUI>();
+        t.text      = "Thoát phó bản";
+        t.fontSize  = 15;
+        t.color     = Color.white;
+        t.fontStyle = FontStyles.Bold;
+        t.alignment = TextAlignmentOptions.Center;
+
+        return btn;
+    }
+
+    // ── Exit handler ──────────────────────────────────────────────────────────
+
+    private void OnExitClicked()
+    {
+        if (_exitRequested) return;
+        _exitRequested = true;
+
+        var dm = _dungeonManager != null ? _dungeonManager : DungeonManager.Instance;
+        if (dm == null)
+        {
+            Debug.LogWarning("[WaveHUD] DungeonManager không tìm thấy khi Exit.");
+            _exitRequested = false;
+            return;
+        }
+
+        // returnMapId = 0 → server tự tìm zone ít người nhất trên map mặc định
+        dm.ExitDungeon(0);
+
+        // Tắt button để tránh double-click
+        if (exitButton != null) exitButton.interactable = false;
+    }
+
+    // ── Update ────────────────────────────────────────────────────────────────
+
     private void Update()
     {
-        // Tìm DungeonManager định kỳ (singleton persistent phía client)
         _pollTimer -= Time.deltaTime;
         if (_pollTimer <= 0f)
         {
             _pollTimer = pollInterval;
             if (_dungeonManager == null)
-            {
                 _dungeonManager = DungeonManager.Instance;
-                if (_dungeonManager != null)
-                    Debug.Log("[WaveHUD] DungeonManager found.");
-                else
-                    Debug.Log("[WaveHUD] DungeonManager NOT found.");
-            }
         }
 
-        if (_dungeonManager == null)
-        {
-            SetLabelsVisible(false);
-            return;
-        }
-
-        int round = _dungeonManager.CurrentWaveRound;
-        int maxRounds = _dungeonManager.CurrentWaveMaxRounds;
-        int remaining = _dungeonManager.CurrentWaveRemainingSeconds;
+        if (_dungeonManager == null) { SetLabelsVisible(false); return; }
 
         if (!_dungeonManager.IsInDungeon)
         {
             SetHudVisible(false);
+            _exitRequested = false;
+            if (exitButton != null) exitButton.interactable = true;
             return;
         }
 
-        // Chỉ update text khi giá trị thay đổi
+        int round     = _dungeonManager.CurrentWaveRound;
+        int maxRounds = _dungeonManager.CurrentWaveMaxRounds;
+        int remaining = _dungeonManager.CurrentWaveRemainingSeconds;
+
         if (round != _lastRound || remaining != _lastRemaining || maxRounds != _lastMaxRounds)
         {
             _lastRound     = round;
             _lastRemaining = remaining;
             _lastMaxRounds = maxRounds;
 
-            bool show = round > 0;
-            SetHudVisible(show);
+            SetHudVisible(round > 0);
 
             if (roundText != null)
                 roundText.text = $"Vòng {round} / {maxRounds}";
@@ -160,7 +220,7 @@ public class WaveHUD : MonoBehaviour
             if (timerText != null)
             {
                 int sec = Mathf.Max(0, remaining);
-                timerText.text = $"{sec / 60:00}:{sec % 60:00}";
+                timerText.text  = $"{sec / 60:00}:{sec % 60:00}";
                 timerText.color = sec < 30 ? Color.red : Color.white;
             }
         }
@@ -168,30 +228,28 @@ public class WaveHUD : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (exitButton != null) exitButton.onClick.RemoveListener(OnExitClicked);
         _dungeonManager = null;
     }
 
-    // ── Helper ───────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // BUG FIX: Không gọi SetActive trên hudRoot nếu nó là chính GameObject này,
-    // vì sẽ tắt script → Update() không chạy → không bao giờ tìm được runtime.
     private void SetHudVisible(bool visible)
     {
-        // Nếu hudRoot hợp lệ VÀ không phải chính mình → an toàn để SetActive
         if (hudRoot != null && hudRoot != gameObject)
         {
             hudRoot.SetActive(visible);
         }
         else
         {
-            // Chỉ ẩn/hiện các label con, giữ script GameObject luôn active
             SetLabelsVisible(visible);
         }
     }
 
     private void SetLabelsVisible(bool visible)
     {
-        if (roundText != null)  roundText.gameObject.SetActive(visible);
-        if (timerText != null)  timerText.gameObject.SetActive(visible);
+        if (roundText  != null) roundText.gameObject.SetActive(visible);
+        if (timerText  != null) timerText.gameObject.SetActive(visible);
+        if (exitButton != null) exitButton.gameObject.SetActive(visible);
     }
 }

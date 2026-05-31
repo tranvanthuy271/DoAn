@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-26T00:00:00.000Z" agent="GitHub Copilot" version="24.7.17">
+  <diagram id="seq-uc07-fusion" name="UC07 - Dung hợp Hybrid Gene">
+    <mxGraphModel dx="1200" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="1320" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="note_pre" value="Tiền điều kiện: Gene chính và Gene phụ đã được mở đúng dữ liệu nhân vật; người chơi đang ở trạng thái có thể thực hiện Fusion và chưa là Hybrid."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="32" y="6" width="900" height="38" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="title" value="Hình 2.x. Biểu đồ tuần tự Dung hợp Hybrid Gene"
+          style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="1260" width="900" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1" value="Người chơi"
+          style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=12;outlineConnect=0;"
+          vertex="1" parent="1">
+          <mxGeometry x="88" y="62" width="44" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2" value="Giao diện Hybrid"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="250" y="72" width="116" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3" value="Hệ thống xử lý"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="492" y="72" width="92" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4" value="CSDL"
+          style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="740" y="60" width="48" height="62" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ll1" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="146" as="sourcePoint"/>
+            <mxPoint x="110" y="1240" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll2" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="308" y="146" as="sourcePoint"/>
+            <mxPoint x="308" y="1240" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll3" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="146" as="sourcePoint"/>
+            <mxPoint x="538" y="1240" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll4" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="764" y="146" as="sourcePoint"/>
+            <mxPoint x="764" y="1240" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="act2a" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="302" y="176" width="12" height="548" as="geometry"/>
+        </mxCell>
+        <mxCell id="act3a" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="532" y="232" width="12" height="522" as="geometry"/>
+        </mxCell>
+        <mxCell id="act4a" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="758" y="282" width="12" height="432" as="geometry"/>
+        </mxCell>
+        <mxCell id="act2b" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="302" y="808" width="12" height="176" as="geometry"/>
+        </mxCell>
+        <mxCell id="act3b" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="532" y="852" width="12" height="154" as="geometry"/>
+        </mxCell>
+        <mxCell id="act4b" value="" style="shape=rect;rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="758" y="896" width="12" height="86" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="frame_success" value="Luồng dung hợp Hybrid thành công"
+          style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=#666666;fillColor=none;fontSize=11;align=left;verticalAlign=top;spacingTop=4;spacingLeft=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="52" y="166" width="812" height="594" as="geometry"/>
+        </mxCell>
+        <mxCell id="frame_failure" value="Tuần tự điều kiện thất bại của Fusion"
+          style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=#666666;fillColor=none;fontSize=11;align=left;verticalAlign=top;spacingTop=4;spacingLeft=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="52" y="778" width="812" height="252" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m1" value="1. Mở tab Hybrid Fusion"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="190" as="sourcePoint"/>
+            <mxPoint x="308" y="190" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2. Yêu cầu nạp điều kiện Fusion và trạng thái canFuse"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="308" y="238" as="sourcePoint"/>
+            <mxPoint x="538" y="238" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="3. Truy vấn player_data, gene_hybrid_config và gene_hybrid_skill"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="286" as="sourcePoint"/>
+            <mxPoint x="764" y="286" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4. Trả Fusion Core, gold cost, bonus, prefab và skill Hybrid"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="764" y="334" as="sourcePoint"/>
+            <mxPoint x="538" y="334" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5. Hiển thị công thức Fusion và điều kiện thực hiện"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="382" as="sourcePoint"/>
+            <mxPoint x="308" y="382" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="6. Xác nhận dung hợp Hybrid"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="430" as="sourcePoint"/>
+            <mxPoint x="308" y="430" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="7. Gửi POST /api/gene/hybrid/fuse"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="308" y="478" as="sourcePoint"/>
+            <mxPoint x="538" y="478" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8. Kiểm tra isHybrid, main/sub Tier 5, cặp hệ, Fusion Core và gold"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="526" as="sourcePoint"/>
+            <mxPoint x="764" y="526" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9. Trả trạng thái hợp lệ và dữ liệu Hybrid cần áp dụng"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="764" y="574" as="sourcePoint"/>
+            <mxPoint x="538" y="574" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="10. Lưu HybridId, prefab, immune elements, bonus và bộ skill mới"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="622" as="sourcePoint"/>
+            <mxPoint x="764" y="622" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="11. Xác nhận lưu player_data, prefab path và danh sách kỹ năng"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="764" y="670" as="sourcePoint"/>
+            <mxPoint x="538" y="670" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12. Đồng bộ UI Hybrid, prefab và final stats"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="718" as="sourcePoint"/>
+            <mxPoint x="308" y="718" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="m13" value="13. [Thất bại] Chưa đủ Tier 5 hoặc cặp hệ không hợp lệ"
+          style="endArrow=block;endFill=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="308" y="822" as="sourcePoint"/>
+            <mxPoint x="538" y="822" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="14. Trả lỗi điều kiện Fusion, giữ nguyên trạng thái Gene"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="870" as="sourcePoint"/>
+            <mxPoint x="308" y="870" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m15" value="15. [Thất bại] Thiếu Fusion Core / gold hoặc nhân vật đã là Hybrid"
+          style="endArrow=block;endFill=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="308" y="918" as="sourcePoint"/>
+            <mxPoint x="538" y="918" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m16" value="16. Từ chối Fusion, không đổi prefab, bonus hay bộ skill"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="538" y="966" as="sourcePoint"/>
+            <mxPoint x="308" y="966" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="alt_a" value="Luồng phụ a): Gene chính hoặc Gene phụ chưa đạt Tier 5, hoặc cặp hệ không thuộc công thức Hybrid hợp lệ. Hệ thống chỉ trả lỗi điều kiện Fusion."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="70" y="790" width="372" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="alt_b" value="Luồng phụ b): Thiếu Fusion Core, thiếu gold hoặc nhân vật đã là Hybrid. Hệ thống từ chối dung hợp và giữ nguyên toàn bộ cấu hình hiện có."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="482" y="884" width="382" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="note_post" value="Kết quả: Nhân vật được chuyển sang trạng thái Hybrid với bonus, prefab và kỹ năng mới; nếu thất bại, mọi dữ liệu Gene và bộ kỹ năng được giữ nguyên."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="140" y="1186" width="680" height="36" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

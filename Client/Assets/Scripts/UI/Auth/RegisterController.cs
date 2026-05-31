@@ -33,8 +33,8 @@ public class RegisterController : MonoBehaviour
 
     private void OnRegisterClicked()
     {
-        string username = usernameInput.text;
-        string email = emailInput.text;
+        string username = usernameInput.text.Trim();
+        string email = emailInput.text.Trim();
         string password = passwordInput.text;
         string confirmPassword = confirmPasswordInput.text;
 
@@ -43,6 +43,18 @@ public class RegisterController : MonoBehaviour
             string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
         {
             ShowError("Vui lòng nhập đầy đủ thông tin!");
+            return;
+        }
+
+        if (username.Length < 3 || username.Length > 30)
+        {
+            ShowError("Tên đăng nhập phải từ 3 đến 30 ký tự!");
+            return;
+        }
+
+        if (!Regex.IsMatch(username, @"^[a-zA-Z0-9_]+$"))
+        {
+            ShowError("Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới!");
             return;
         }
 

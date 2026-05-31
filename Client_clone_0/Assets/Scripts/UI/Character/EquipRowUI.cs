@@ -1,16 +1,16 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// EquipRowUI â€“ Má»™t dÃ²ng trang bá»‹ trong tab NhÃ¢n váº­t.
+/// EquipRowUI – Một dòng trang bị trong tab Nhân vật.
 ///
-/// Cáº¥u trÃºc GameObject gá»£i Ã½ (HorizontalLayoutGroup trÃªn root):
-/// â”Œâ”€ EquipRow   [Image bg + HLG + LayoutElement(prefH=45)]
-/// â”‚   â”œâ”€ TxtSlot      [TMP_Text] â€“ "VÅ© khÃ­"          (fixed 70px)
-/// â”‚   â”œâ”€ TxtItemName  [TMP_Text] â€“ "Kiáº¿m Lá»­a +3"     (flex)
-/// â”‚   â””â”€ BtnUpgrade   [Button]   â€“ "NÃ¢ng cáº¥p"         (hides when empty)
+/// Cấu trúc GameObject gợi ý (HorizontalLayoutGroup trên root):
+/// ┌─ EquipRow   [Image bg + HLG + LayoutElement(prefH=45)]
+/// │   ├─ TxtSlot      [TMP_Text] – "Vũ khí"          (fixed 70px)
+/// │   ├─ TxtItemName  [TMP_Text] – "Kiếm Lửa +3"     (flex)
+/// │   └─ BtnUpgrade   [Button]   – "Nâng cấp"         (hides when empty)
 /// </summary>
 public class EquipRowUI : MonoBehaviour
 {
@@ -23,7 +23,7 @@ public class EquipRowUI : MonoBehaviour
     private EquipmentItemDto  _item;
     private Action            _onUpgraded;
 
-    // â”€â”€ Basic row (from legacy EquipmentData, no upgrade level) â”€â”€â”€
+    // ── Basic row (from legacy EquipmentData, no upgrade level) ───
     public void SetData(string slotLabel, string itemName, int upgradeLevel,
                         int playerId, Action onUpgraded)
     {
@@ -36,7 +36,7 @@ public class EquipRowUI : MonoBehaviour
         RefreshUI(slotLabel, itemName, upgradeLevel, canUpgrade: false);
     }
 
-    // â”€â”€ Full row (from PlayerEquipmentDto, with slotKey for UpgradePanel) â”€â”€
+    // ── Full row (from PlayerEquipmentDto, with slotKey for UpgradePanel) ──
     public void SetData(string slotLabel, string itemName, int upgradeLevel,
                         int playerId, string slotKey, Action onUpgraded)
         => SetData(slotLabel, itemName, upgradeLevel, playerId, slotKey, item: null, onUpgraded);

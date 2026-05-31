@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-// â”€â”€ Dungeon System DTOs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Dungeon System DTOs ─────────────────────────────────────────────────────
 [System.Serializable]
 public class DungeonConfigData
 {
@@ -12,10 +12,10 @@ public class DungeonConfigData
     public string dungeon_type;       // "solo" | "multi"
     public int    map_id;
     public string map_name;
-    public string scene_name;         // TÃªn scene Unity cáº§n LoadScene()
+    public string scene_name;         // Tên scene Unity cần LoadScene()
     public int    max_players;
     public int    min_level_required;
-    public int    time_limit_seconds; // 0 = khÃ´ng giá»›i háº¡n
+    public int    time_limit_seconds; // 0 = không giới hạn
     public string description;
     public string thumbnail_icon_id;
     public int    boss_enemy_id;
@@ -54,7 +54,7 @@ public class CreateDungeonSessionRequest
     public string host_ip;
     public int    host_port;
 }
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ────────────────────────────────────────────────────────────────────────────
 
 [System.Serializable]
 public class LoginRequest
@@ -90,7 +90,7 @@ public class RegisterResponse
 [System.Serializable]
 public class PlayerDataResponse
 {
-    public int user_id; // ID cÃŸâ•—Âºa user sÃŸâ•—Æ’ hÃŸâ•—Â»u player data nâ”œÃ¡y
+    public int user_id; // ID cß╗Âºa user sß╗ƒ hß╗Â»u player data n├áy
     public int player_id;
     public int level;
     public int experience;
@@ -100,8 +100,8 @@ public class PlayerDataResponse
     public int silver;
     public int map_id;
     public int zone_id;
-    public float position_x; // VÃŸâ•—Ã¯ trâ”œÂ¡ X cuÃŸâ•—Ã¦i câ”œâ•£ng khi out game
-    public float position_y; // VÃŸâ•—Ã¯ trâ”œÂ¡ Y cuÃŸâ•—Ã¦i câ”œâ•£ng khi out game
+    public float position_x; // Vß╗ï tr├Â¡ X cuß╗æi c├╣ng khi out game
+    public float position_y; // Vß╗ï tr├Â¡ Y cuß╗æi c├╣ng khi out game
     public BaseStats base_stats;
     public EquipmentData equipment;
     public PotentialStat[] potential_stats;
@@ -116,7 +116,7 @@ public class PlayerDataResponse
     public bool is_hybrid;
     public string gender;
     public string character_name;
-    // â”€â”€ Hybrid Gene fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Hybrid Gene fields ──────────────────────────────────────────
     public string secondary_element;
     public int secondary_gene_tier;
     public int secondary_gene_exp;
@@ -127,7 +127,7 @@ public class PlayerDataResponse
     public string hybrid_immune_elements;  // CSV "Water,Metal"
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
-    public int bag_slots;                  // Sá»‘ Ã´ tÃºi Ä‘á»“ hiá»‡n táº¡i (máº·c Ä‘á»‹nh 20)
+    public int bag_slots;                  // Số ô túi đồ hiện tại (mặc định 20)
     public BagEquippedItemData[] bag_equipped_items;
     public int Length => inventory?.Length ?? 0;
 
@@ -242,8 +242,8 @@ public class InventoryItem
     public string itemCode;
     public string iconId;
     public bool isEquipped;
-    public bool isLocked;      // item instance bá»‹ khÃ³a
-    public int upgradeLevel;   // báº­c nÃ¢ng cáº¥p
+    public bool isLocked;      // item instance bị khóa
+    public int upgradeLevel;   // bậc nâng cấp
     public string strOptions;  // stat options
 }
 
@@ -270,7 +270,7 @@ public class ApiSkillData
     public bool unlocked;
 }
 
-// â”€â”€ Skill tab DTOs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skill tab DTOs ────────────────────────────────────────────────
 [System.Serializable]
 public class PlayerSkillInfo
 {
@@ -289,10 +289,10 @@ public class PlayerSkillInfo
     public string icon_id;
     public int    gene_tier_required;
     public SkillLevelInfo[] level_details;
-    // â”€â”€ Runtime stats â€” client dÃ¹ng Ä‘á»ƒ apply vÃ o SkillData khi load â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public float  current_cooldown_sec;   // cooldown (giÃ¢y) táº¡i level hiá»‡n táº¡i
-    public float  current_effect_value;   // sÃ¡t thÆ°Æ¡ng / heal / khoáº£ng cÃ¡ch
-    public int    current_mp_cost;        // MP tiÃªu khi dÃ¹ng skill
+    // ── Runtime stats — client dùng để apply vào SkillData khi load ─────────
+    public float  current_cooldown_sec;   // cooldown (giây) tại level hiện tại
+    public float  current_effect_value;   // sát thương / heal / khoảng cách
+    public int    current_mp_cost;        // MP tiêu khi dùng skill
 }
 
 [System.Serializable]
@@ -313,8 +313,8 @@ public class PlayerSkillsResponse
     public int              skill_points_available;
     public int              player_level;
     /// <summary>
-    /// Final attack stat cá»§a player (base + equipment + gene + potential).
-    /// SkillRuntimeLoader cá»™ng vÃ o current_effect_value cá»§a cÃ¡c skill gÃ¢y sÃ¡t thÆ°Æ¡ng.
+    /// Final attack stat của player (base + equipment + gene + potential).
+    /// SkillRuntimeLoader cộng vào current_effect_value của các skill gây sát thương.
     /// </summary>
     public int              player_final_attack;
     public PlayerSkillInfo[] skills;
@@ -389,7 +389,7 @@ public class APIClient : MonoBehaviour
 
         InitBaseUrl();
 
-        // Load token tá»« PlayerPrefs náº¿u cÃ³
+        // Load token từ PlayerPrefs nếu có
         jwtToken = PlayerPrefs.GetString("JWT_TOKEN", "");
     }
 
@@ -444,7 +444,7 @@ public class APIClient : MonoBehaviour
     }
     
     /// <summary>
-    /// Parse user_id tÃŸâ•—Â½ JWT token (base64 decode payload)
+    /// Parse user_id tß╗Â½ JWT token (base64 decode payload)
     /// </summary>
     private int ParseUserIdFromJWT(string token)
     {
@@ -457,10 +457,10 @@ public class APIClient : MonoBehaviour
                 return 0;
             }
             
-            // Decode payload (phÃŸâ•‘Âºn thÃŸâ•—âŒ 2)
+            // Decode payload (phß║Âºn thß╗âŒ 2)
             string payload = parts[1];
             
-            // Thâ”œÂ¬m padding nÃŸâ•‘â”u cÃŸâ•‘Âºn
+            // Th├Â¬m padding nß║â”u cß║Âºn
             int padding = 4 - (payload.Length % 4);
             if (padding != 4)
             {
@@ -473,11 +473,11 @@ public class APIClient : MonoBehaviour
             
             Debug.Log($"JWT Payload: {payloadJson}");
             
-            // Parse JSON â”€Ã¦ÃŸâ•—Ã¢ lÃŸâ•‘Ã‘y user_id
-            // JWT payload câ”œâ”‚ thÃŸâ•—Ã¢ câ”œâ”‚: {"sub":"1","unique_name":"1","user_id":"1",...}
+            // Parse JSON ─æß╗â lß║Ñy user_id
+            // JWT payload c├│ thß╗â c├│: {"sub":"1","unique_name":"1","user_id":"1",...}
             if (payloadJson.Contains("\"user_id\""))
             {
-                // Tâ”œÂ¼m "user_id":"X"
+                // T├Â¼m "user_id":"X"
                 int startIndex = payloadJson.IndexOf("\"user_id\"") + 9;
                 int endIndex = payloadJson.IndexOf(",", startIndex);
                 if (endIndex == -1)
@@ -495,7 +495,7 @@ public class APIClient : MonoBehaviour
                 }
             }
             
-            // ThÃŸâ•—Â¡ parse "sub" nÃŸâ•‘â”u khâ”œâ”¤ng câ”œâ”‚ "user_id"
+            // Thß╗Â¡ parse "sub" nß║â”u kh├┤ng c├│ "user_id"
             if (payloadJson.Contains("\"sub\""))
             {
                 int startIndex = payloadJson.IndexOf("\"sub\"") + 6;
@@ -555,18 +555,18 @@ public class APIClient : MonoBehaviour
                 
                 LoginResponse response = new LoginResponse();
                 
-                // Parse JSON thÃŸâ•—Âº câ”œâ”¤ng â”€Ã¦ÃŸâ•—Ã¢ â”€Ã¦ÃŸâ•‘Ãºm bÃŸâ•‘Ãºo lÃŸâ•‘Ã‘y â”€Ã¦â•žâ–‘ÃŸâ•—Ãºc user_id
+                // Parse JSON thß╗Âº c├┤ng ─æß╗â ─æß║úm bß║úo lß║Ñy ─æ╞â–‘ß╗úc user_id
                 try
                 {
-                    // ThÃŸâ•—Â¡ parse bÃŸâ•‘â–’ng JsonUtility trâ•žâ–‘ÃŸâ•—Â¢c
+                    // Thß╗Â¡ parse bß║â–’ng JsonUtility tr╞â–‘ß╗Â¢c
                     response = JsonUtility.FromJson<LoginResponse>(responseText);
                     
-                    // NÃŸâ•‘â”u user_id = 0, parse thÃŸâ•—Âº câ”œâ”¤ng tÃŸâ•—Â½ JSON string
+                    // Nß║â”u user_id = 0, parse thß╗Âº c├┤ng tß╗Â½ JSON string
                     if (response.user_id == 0)
                     {
                         Debug.LogWarning("user_id = 0 from JsonUtility, trying manual parse...");
                         
-                        // Parse thÃŸâ•—Âº câ”œâ”¤ng: tâ”œÂ¼m "user_id":X trong JSON
+                        // Parse thß╗Âº c├┤ng: t├Â¼m "user_id":X trong JSON
                         if (responseText.Contains("\"user_id\""))
                         {
                             int startIndex = responseText.IndexOf("\"user_id\"") + 9;
@@ -588,7 +588,7 @@ public class APIClient : MonoBehaviour
                         }
                     }
                     
-                    // NÃŸâ•‘â”u vÃŸâ•‘Â½n = 0, thÃŸâ•—Â¡ parse tÃŸâ•—Â½ JWT token
+                    // Nß║â”u vß║Â½n = 0, thß╗Â¡ parse tß╗Â½ JWT token
                     if (response.user_id == 0 && !string.IsNullOrEmpty(response.token))
                     {
                         int userIdFromToken = ParseUserIdFromJWT(response.token);
@@ -611,7 +611,7 @@ public class APIClient : MonoBehaviour
             }
             else
             {
-                    // â•žÂ»u tiâ”œÂ¬n hiÃŸâ•—Ã¢n thÃŸâ•—Ã¯ message tÃŸâ•—Â½ server (vâ”œÂ¡ dÃŸâ•—Ã‘: "Sai username hoÃŸâ•‘â•–c password.")
+                    // ╞Â»u ti├Â¬n hiß╗ân thß╗ï message tß╗Â½ server (v├Â¡ dß╗Ñ: "Sai username hoß║╖c password.")
                     string serverMessage = www.downloadHandler != null ? www.downloadHandler.text : null;
                     if (!string.IsNullOrEmpty(serverMessage))
                     {
@@ -659,7 +659,7 @@ public class APIClient : MonoBehaviour
             }
             else
             {
-                    // â•žÂ»u tiâ”œÂ¬n hiÃŸâ•—Ã¢n thÃŸâ•—Ã¯ message tÃŸâ•—Â½ server
+                    // ╞Â»u ti├Â¬n hiß╗ân thß╗ï message tß╗Â½ server
                     string serverMessage = www.downloadHandler != null ? www.downloadHandler.text : null;
                     if (!string.IsNullOrEmpty(serverMessage))
                     {
@@ -699,7 +699,7 @@ public class APIClient : MonoBehaviour
         }
     }
 
-    // Create Player (ChÃŸâ•—Ã¬n hÃŸâ•—Ã§ ban â”€Ã¦ÃŸâ•‘Âºu)
+    // Create Player (Chß╗ìn hß╗ç ban ─æß║Âºu)
     public void CreatePlayer(string elementType, string gender, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
     {
         StartCoroutine(CreatePlayerCoroutine(elementType, gender, characterName, onSuccess, onError));
@@ -707,7 +707,7 @@ public class APIClient : MonoBehaviour
 
     private IEnumerator CreatePlayerCoroutine(string elementType, string gender, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
     {
-        // gender Ä‘Æ°á»£c server tá»± suy ra tá»« elementType, nhÆ°ng váº«n gá»­i Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch ngÆ°á»£c
+        // gender được server tự suy ra từ elementType, nhưng vẫn gửi để tương thích ngược
         string escapedName = characterName.Replace("\"", "\\\"").Replace("\\", "\\\\");
         string json = $"{{\"element_type\":\"{elementType}\",\"character_name\":\"{escapedName}\"}}";
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);

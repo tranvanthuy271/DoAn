@@ -22,11 +22,14 @@ public static class ServerGroundColliderDatabaseBaker
         }
 
         int groundLayer = LayerMask.NameToLayer("Ground");
+        int maxMapLayer = LayerMask.NameToLayer("MaxMap");
         if (groundLayer < 0)
         {
             Debug.LogError("[ServerGroundColliderDatabaseBaker] Layer 'Ground' not found.");
             return;
         }
+        if (maxMapLayer < 0)
+            Debug.LogWarning("[ServerGroundColliderDatabaseBaker] Layer 'MaxMap' not found. Only Ground colliders will be baked.");
 
         var bakedMaps = new List<ServerGroundColliderDatabase.MapGroundData>();
         var bakedMapIds = new HashSet<int>();
@@ -37,7 +40,7 @@ public static class ServerGroundColliderDatabaseBaker
                 continue;
 
             bakedMapIds.Add(mapDef.mapId);
-            ServerGroundColliderDatabase.MapGroundData bakedMap = BakeMap(mapDef.mapId, mapDef.sceneName, groundLayer);
+            ServerGroundColliderDatabase.MapGroundData bakedMap = BakeMap(mapDef.mapId, mapDef.sceneName, groundLayer, maxMapLayer);
             if (bakedMap != null)
                 bakedMaps.Add(bakedMap);
         }
@@ -59,7 +62,7 @@ public static class ServerGroundColliderDatabaseBaker
         Debug.Log($"[ServerGroundColliderDatabaseBaker] Baked {bakedMaps.Count} map(s) into {OutputAssetPath}.");
     }
 
-    private static ServerGroundColliderDatabase.MapGroundData BakeMap(int mapId, string sceneName, int groundLayer)
+    private static ServerGroundColliderDatabase.MapGroundData BakeMap(int mapId, string sceneName, int groundLayer, int maxMapLayer)
     {
         if (string.IsNullOrWhiteSpace(sceneName))
         {
@@ -88,7 +91,7 @@ public static class ServerGroundColliderDatabaseBaker
             BoxCollider2D[] sourceColliders = root.GetComponentsInChildren<BoxCollider2D>(true);
             foreach (BoxCollider2D sourceCollider in sourceColliders)
             {
-                if (sourceCollider == null || sourceCollider.gameObject.layer != groundLayer)
+                if (sourceCollider == null || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
                     continue;
 
                 colliders.Add(ToGroundColliderData(sourceCollider));
@@ -113,6 +116,7 @@ public static class ServerGroundColliderDatabaseBaker
         return new ServerGroundColliderDatabase.GroundColliderData
         {
             name = sourceCollider.gameObject.name,
+            layerName = LayerMask.LayerToName(sourceCollider.gameObject.layer),
             position = sourceCollider.transform.position,
             rotationZ = sourceCollider.transform.eulerAngles.z,
             scale = sourceCollider.transform.lossyScale,
@@ -130,6 +134,11 @@ public static class ServerGroundColliderDatabaseBaker
             useSideFriction = effector != null && effector.useSideFriction,
             useSideBounce = effector != null && effector.useSideBounce
         };
+    }
+
+    private static bool IsServerObstacleLayer(int layer, int groundLayer, int maxMapLayer)
+    {
+        return layer == groundLayer || (maxMapLayer >= 0 && layer == maxMapLayer);
     }
 
     private static string ResolveScenePath(string sceneName)

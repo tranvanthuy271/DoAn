@@ -114,37 +114,108 @@ Nhận xét: PC-Mid duy trì ≥ 80 FPS trong mọi cảnh, Laptop-Low đáp ứ
 
 ### 4.2.3. Thực nghiệm hệ thống Gene và chiến đấu
 
-#### a) Test ma trận tương khắc
+#### a) Tổng quan hệ thống Gene
 
-**Bảng 4.5: Test case tương khắc nguyên tố**
+Hệ Gene là phần gameplay trọng tâm của project. Mỗi nhân vật có một Gene chính tương ứng hệ nguyên tố, có thể mở thêm Gene phụ và tiến hành dung hợp Hybrid khi đạt điều kiện. Toàn bộ cấu hình chi phí, tỉ lệ, vật phẩm, bonus stat và kỹ năng mở khoá được tải từ backend qua REST API, không hard-code trong Unity.
 
-| # | Attacker | Target | Base Dmg | Expected Multiplier | Final Dmg | Kết quả |
-|---|---|---|---|---|---|---|
-| TC-EL-01 | Kim | Mộc | 100 | ×1,5 | 150 ± R | Pass |
-| TC-EL-02 | Mộc | Kim | 100 | ×0,75 | 75 ± R | Pass |
-| TC-EL-03 | Thủy | Hỏa | 100 | ×1,5 | 150 ± R | Pass |
-| TC-EL-04 | Hỏa | Thủy | 100 | ×0,75 | 75 ± R | Pass |
-| TC-EL-05 | Phong | Thủy | 100 | ×1,5 | 150 ± R | Pass |
-| TC-EL-06 | Kim | Hỏa | 100 | ×1,0 | 100 ± R | Pass |
+- **Nâng cấp Gene chính**: UI Gene (GeneUpgradePanel) hiển thị tier hiện tại, EXP Gene, item yêu cầu, tỉ lệ thành công, bonus stat dự kiến và kỹ năng mở khoá. Khi người chơi xác nhận, UI không gọi API trực tiếp mà gửi lệnh qua `ServerRpc` để zone server kiểm tra phiên và gọi backend — đảm bảo không có client nào tự nâng Gene mà không qua kiểm tra server.
+- **Chọn và nâng Gene phụ**: Luồng Gene phụ sử dụng cấu hình `gene_multi_config` từ backend để xác định hệ phụ hợp lệ, chi phí, vật phẩm và tỉ lệ nâng cấp. Hệ phụ được cố định theo cặp Hybrid thiết kế sẵn trong `ElementHelper.GetFixedSecondary()` và `GeneController.PartnerMap`: Hỏa ↔ Thổ, Thủy ↔ Mộc, Kim ↔ Phong.
+- **Dung hợp Hybrid**: UI Hybrid hiển thị điều kiện fuse (Tier 5 cả hai), item yêu cầu, vàng, tên Hybrid, prefab path, hệ bị khắc và hệ được miễn/giảm khắc. Khi fuse thành công, backend cập nhật `IsHybrid`, `HybridElementA`, `HybridElementB`, `HybridBonusTargets`, `HybridImmuneElements`, `HybridAtkBonusPct`, `HybridId` và `HybridPrefabPath` trong `info_char`.
 
-(R: dao động ngẫu nhiên ±10% theo $R_\text{var}$ trong công thức damage 3.2.3.)
+#### b) Luồng nâng Gene qua server
 
-#### b) Test Gene Upgrade và Fusion
+Client không tự sửa dữ liệu Gene. UI gửi lệnh nâng cấp bằng `ServerRpc`, zone server lấy JWT của client từ session runtime, gọi API `POST /api/gene/upgrade`, sau đó trả kết quả về đúng client bằng targeted `ClientRpc`. Sau khi nhận kết quả, client cập nhật dữ liệu cục bộ và gửi yêu cầu đồng bộ chỉ số mới bằng `ServerRpc` để các `NetworkVariable` trong zone được cập nhật. Cơ chế này đảm bảo tính Server-Authoritative cho toàn bộ tiến trình phát triển nhân vật.
+
+#### c) Test case Gene system
 
 **Bảng 4.6: Test case Gene system**
 
 | # | Kịch bản | Bước | Kỳ vọng | Kết quả |
 |---|---|---|---|---|
-| TC-GN-01 | Upgrade Tier 1→2 | Có 50 Frag + 1000 Gold → bấm Upgrade | Tier 2, trừ tài nguyên | Pass |
-| TC-GN-02 | Upgrade thiếu vật liệu | Frag = 30 | Báo lỗi "Không đủ" | Pass |
-| TC-GN-03 | Upgrade Tier 3→4 thiếu Core | Mutant Core = 0 | Báo lỗi "Cần Mutant Core" | Pass |
-| TC-GN-04 | Fusion Kim+Hỏa | Có 2 Gene Tier 2 + 1 Core | Tạo Molten Metal Tier 2 | Pass |
-| TC-GN-05 | Stats sau Fusion | So sánh trước/sau | StatBlock = avg×1,1 | Pass |
-| TC-GN-06 | Hybrid chiếm slot | Trang bị Hybrid | Chỉ chiếm 1 slot phụ | Pass |
+| TC-GN-01 | Upgrade Tier 1→2 | Đủ vàng + stone → bấm Upgrade | Tier 2, trừ tài nguyên | Pass |
+| TC-GN-02 | Upgrade thiếu vật liệu | Stone không đủ stone_min | Báo lỗi "Không đủ" | Pass |
+| TC-GN-03 | Upgrade Tier 4→5 thiếu Core | itemCount = 0 | Báo lỗi thiếu item | Pass |
+| TC-GN-04 | Chọn Gene phụ — cặp cố định | Gene chính Hỏa → chọn phụ | Hệ phụ = Thổ (PartnerMap) | Pass |
+| TC-GN-05 | Nâng Gene phụ | Đủ vàng + stone → Upgrade | Tier phụ tăng, stat cộng 50% bonus chính | Pass |
+| TC-GN-06 | Fuse Hybrid yêu cầu Tier 5 | Gene chính Tier 4, phụ Tier 5 → bấm Fuse | Server từ chối: chưa đủ điều kiện | Pass |
+| TC-GN-07 | Fuse Hybrid thành công | Cả hai Tier 5 + đủ item + vàng | is_hybrid=1, hybrid_element ghi DB | Pass |
+| TC-GN-08 | Kết quả DB sau Fuse | Query `info_char` sau TC-GN-07 | hybrid_id, hybrid_prefab_path, bonus_targets, immune_elements có giá trị | Pass |
 
-#### c) Đo lường damage variance
+#### d) Phân tích công thức tính sát thương trong runtime
 
-Chạy 1000 lần đòn đánh cùng setup (Base=100, no crit, neutral), thu được trung bình 100,2; min 89,9; max 110,1; lệch chuẩn 5,8 — đúng kỳ vọng phân phối uniform [0,9; 1,1].
+Bảng sau tóm tắt toàn bộ các công thức tính sát thương có **bằng chứng mã nguồn trực tiếp** trong runtime hiện tại, phân biệt rõ với dữ liệu DB/API chưa được áp dụng vào combat.
+
+**Đòn đánh thường (PlayerCombat.PerformAttack)**
+
+```
+damage = stats.baseDamage
+if ActiveBuffManager.GetBonusPct("AttackBuff") > 0:
+    damage = Round(damage × (1 + attackBonusPct))
+```
+
+`ActiveBuffManager.GetBonusPct()` trả về dạng thập phân: value = 15 → trả 0.15. Công thức này đã được áp dụng nhất quán cho cả **đòn tay** (trong `PlayerCombat`) và **projectile** (trong `PlayerSkillManager.SpawnProjectile` qua `FireballDamage.SetAttackBonus()`).
+
+**Quái thường nhận sát thương nguyên tố (MobPatrolAI.TakeDamageWithElement)**
+
+```
+if evasionRate > 0 và Random(0,100) < evasionRate → "Miss!"
+
+actual = Max(1, Round(rawDamage × (1 − resist / 100)))
+if isWeakened:
+    actual = Round(actual × 1.3)
+
+if counterRate > 0 và Random(0,100) < counterRate:
+    counterDmg = Max(1, Round(baseDamage × 0.6))
+    gây phản đòn lên player
+```
+
+Element truyền vào là số nguyên: 1=Hỏa, 2=Thủy, 3=Thổ, 4=Mộc, 5=Kim, 6=Phong. Runtime lấy kháng từ các field `khangHoa/khangThuy/...` trực tiếp trên component, không đọc DB trong hàm này. Cột `counter_rate` trong bảng `enemy` hiện được backend map ra API nhưng **chưa được DTO spawn network gán vào `MobPatrolAI.counterRate`** — vì vậy phản đòn là cơ chế runtime của component chứ không tự động áp dụng cho mọi enemy có `counter_rate` trong DB.
+
+**Boss nhận sát thương nguyên tố (BossController.HandleBeforeTakeDamage)**
+
+```
+if TryDodge() = true:
+    finalDamage = 0  ← né hoàn toàn
+else:
+    finalDamage = Max(1, Round(rawDamage × (1 − resist / 100)))
+```
+
+Boss lấy kháng từ `BossData` theo `elementType` dạng chuỗi `"Hoa"`, `"Thuy"`, `"Tho"`, `"Moc"`, `"Kim"`, `"Phong"` (khác với kiểu số nguyên của `MobPatrolAI`).
+
+**Enemy trong dungeon nhận sát thương (NetworkEnemyHealth.TakeDamageInternal)**
+
+```
+if DungeonEnemyRuntimeStats != null:
+    damage = Max(1, rawDamage − Defense)
+```
+
+`TakeDamageInternal` chỉ nhận `damage` số, không nhận `element` — không có nhánh kháng nguyên tố ở đây.
+
+**Dữ liệu Hybrid (đã lưu, chưa áp dụng vào combat runtime)**
+
+- `HybridBonusTargets` + `HybridAtkBonusPct`: lưu trong `info_char`, trả về qua API và cập nhật UI. Qua rà soát, chưa thấy nhánh combat nào nhân `hybrid_atk_bonus_pct` vào damage. Công thức `hệ số = 1 + hybrid_atk_bonus_pct` có trong cấu hình nhưng **chưa được áp dụng ở runtime**.
+- `HybridImmuneElements`: `ElementHelper.IsImmuneToCounter()` đã có helper kiểm tra danh sách này, nhưng chưa thấy nơi gọi hàm này trong combat runtime. Báo cáo ghi nhận đây là dữ liệu và helper đã sẵn sàng, **chưa khẳng định sát thương nhận vào đã được giảm**.
+
+#### e) Test ma trận kháng nguyên tố
+
+**Bảng 4.5: Test case kháng nguyên tố (MobPatrolAI với resist = 40)**
+
+| # | Element | rawDamage | resist (%) | Expected actual | Kết quả |
+|---|---|---|---|---|---|
+| TC-EL-01 | Hỏa (1) | 100 | 40 | Max(1, Round(100×0.6)) = 60 | Pass |
+| TC-EL-02 | Thủy (2) | 100 | 0 | 100 | Pass |
+| TC-EL-03 | Phong (6) | 100 | 25 | 75 | Pass |
+| TC-EL-04 | Không nguyên tố (0) | 100 | — | 100 (GetResistance trả 0f) | Pass |
+| TC-EL-05 | Hỏa, isWeakened=true | 100 | 40 | Round(60×1.3) = 78 | Pass |
+| TC-EL-06 | Boss né đòn | 200 | — | 0 (TryDodge = true) | Pass |
+| TC-EL-07 | Dungeon enemy, Defense=20 | 100 | — | Max(1, 100−20) = 80 | Pass |
+
+#### f) Đo lường damage variance melee có AttackBuff
+
+Chạy 200 lần đòn đánh (`baseDamage = 100`, AttackBuff `value = 30` → `attackBonusPct = 0.30`):
+
+- `damage = Round(100 × 1.30) = 130` ở mọi lần đánh — không có dao động ngẫu nhiên trong nhánh này.
+- Xác nhận công thức áp dụng nhất quán cho cả melee và projectile sau khi thêm `SetAttackBonus()` call.
 
 ### 4.2.4. Thực nghiệm hệ thống AI quái vật
 

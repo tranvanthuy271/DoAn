@@ -42,6 +42,10 @@ public class MobPatrolAI : MonoBehaviour
     public int  hitboxDamage = 3;       // Damage từ hitbox collider (OnTriggerEnter)
     public Collider2D hitbox;            // isTrigger, tắt mặc định
 
+    [Header("Element")]
+    [Tooltip("Hệ nguyên tố của quai này (English key: Fire/Water/Earth/Wood/Metal/Wind). Dùng khi phản đòn.")]
+    public string elementType = "None";
+
     // ── Mob stats (từ LangLa Mob.java) ──
     [Header("Element Resistances (% giảm sát thương, 0–100)")]
     [Range(0, 100)] public int khangHoa   = 0;  // Kháng Hỏa
@@ -246,10 +250,7 @@ public class MobPatrolAI : MonoBehaviour
         }
 
         float resist = GetResistance(element);
-        int   actual = Mathf.Max(1, Mathf.RoundToInt(rawDamage * (1f - resist / 100f)));
-
-        // Weaken: nhận thêm 30% sát thương
-        if (isWeakened) actual = Mathf.RoundToInt(actual * 1.3f);
+        int   actual = DamageCalculator.CalcEnemyReceivedDamage(rawDamage, resist, isWeakened);
 
         _health.TakeDamage(actual);
 
@@ -297,8 +298,9 @@ public class MobPatrolAI : MonoBehaviour
         if (nph != null)
         {
             int counterDmg = Mathf.Max(1, Mathf.RoundToInt(baseDamage * 0.6f));
-            nph.TakeDamage(counterDmg);
-            Debug.Log($"[MobAI] Counter! {counterDmg} dmg");
+            // Truyền hệ quai vào đường dẫn dạng — player Hybrid có thể miễn nếu elementType trong HybridImmuneElements
+            nph.TakeDamageWithElement(counterDmg, elementType);
+            Debug.Log($"[MobAI] Counter! {counterDmg} dmg ({elementType})");
             yield break;
         }
         var ph = _player.GetComponent<PlayerHealth>();

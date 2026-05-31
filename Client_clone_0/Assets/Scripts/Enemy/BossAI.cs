@@ -113,6 +113,18 @@ public class BossAI : NetworkBehaviour
     public float threatDirectionRefreshInterval = 0.12f;
     public LayerMask threatLayerMask;
 
+    [Header("Advanced Dodge")]
+    public bool useAdvancedDodge = true;
+    [Range(0f, 1f)] public float dodgeJumpChance = 0.65f;
+    [Range(0f, 1f)] public float dodgeDropChance = 0.45f;
+    [Range(0f, 1f)] public float dodgeDirectionChangeChance = 0.35f;
+    public float dodgeBurstSpeedMultiplier = 2.8f;
+    public float dodgeBurstDuration = 0.35f;
+    public float dodgeDecisionCooldown = 0.28f;
+    public float dodgeObstacleProbeDistance = 0.85f;
+    public float dodgeEdgeProbeDistance = 1.35f;
+    public LayerMask dodgeObstacleMask;
+
     [Header("Debug")]
     public bool debugLogs = false;
     public float debugLogInterval = 0.6f;
@@ -164,6 +176,7 @@ public class BossAI : NetworkBehaviour
     private float _nextPlatformSearchFlipTime = -1f;
     private float _nextLifecycleLogTime = -1f;
     private float _nextGroundTraversalTime = -1f;
+    private float _nextAdvancedDodgeTime = -1f;
     private bool _currentRetreatAllowsGroundTraversal = true;
     private const string Boss25LogTag = "[BOSS25]";
 
@@ -199,6 +212,9 @@ public class BossAI : NetworkBehaviour
 
         if (threatLayerMask == 0)
             threatLayerMask = Physics2D.DefaultRaycastLayers;
+
+        if (dodgeObstacleMask == 0)
+            dodgeObstacleMask = BuildDefaultDodgeObstacleMask();
 
         _jumpsLeft = Mathf.Max(0, maxJumps);
 
@@ -861,7 +877,8 @@ public class BossAI : NetworkBehaviour
         if (Mathf.Abs(_retreatHorizontalDirection) <= 0.01f)
             _retreatHorizontalDirection = ResolveRetreatDirection();
 
-        float horizontalDirection = _retreatHorizontalDirection;
+        float horizontalDirection = ResolveSafeHorizontalDodgeDirection(_retreatHorizontalDirection);
+        _retreatHorizontalDirection = horizontalDirection;
         float activeRetreatMultiplier = _retreatSpeedMultiplierOverride > 0f
             ? _retreatSpeedMultiplierOverride
             : retreatSpeedMultiplier;
@@ -1157,6 +1174,7 @@ public class BossAI : NetworkBehaviour
             return;
 
         _retreatHorizontalDirection = ResolveHorizontalEvadeDirection(awayDirection);
+        TryAdvancedThreatDodge(awayDirection, false);
         _retreatUntilTime = Mathf.Max(_retreatUntilTime, Time.time + Mathf.Max(0.1f, threatEvadeDuration));
         _retreatMinUntilTime = Mathf.Max(_retreatMinUntilTime, Time.time + Mathf.Max(0f, postAttackRetreatMinDuration));
         _retreatSpeedMultiplierOverride = Mathf.Max(_retreatSpeedMultiplierOverride, postAttackRetreatSpeedMultiplier);
@@ -1168,6 +1186,7 @@ public class BossAI : NetworkBehaviour
         float horizontalDirection = ResolveHorizontalEvadeDirection(awayDirection);
         float distanceGoal = Mathf.Max(preferredRetreatDistance, meleeAttackRange + 2f);
         StartRetreat(distanceGoal, postAttackRetreatSpeedMultiplier, postAttackRetreatMinDuration, horizontalDirection, false);
+        TryAdvancedThreatDodge(awayDirection, true);
         TryThreatVerticalEvasion(awayDirection, true);
     }
 
@@ -1177,6 +1196,128 @@ public class BossAI : NetworkBehaviour
             return Mathf.Sign(awayDirection.x);
 
         return ResolveRetreatDirection();
+    }
+
+    private bool TryAdvancedThreatDodge(Vector2 awayDirection, bool forceDecision)
+    {
+        if (!useAdvancedDodge || _rb == null)
+            return false;
+
+        if (!forceDecision && Time.time < _nextAdvancedDodgeTime)
+            return false;
+
+        _nextAdvancedDodgeTime = Time.time + Mathf.Max(0.03f, dodgeDecisionCooldown);
+
+        float horizontalDirection = ResolveSafeHorizontalDodgeDirection(ResolveHorizontalEvadeDirection(awayDirection));
+        if (Mathf.Abs(horizontalDirection) > 0.01f
+            && UnityEngine.Random.value < dodgeDirectionChangeChance)
+        {
+            float alternateDirection = -horizontalDirection;
+            if (!IsHorizontalDodgeBlocked(alternateDirection) && DoesDirectionKeepDistanceFromPlayer(alternateDirection))
+                horizontalDirection = alternateDirection;
+        }
+
+        if (Mathf.Abs(horizontalDirection) > 0.01f)
+            _retreatHorizontalDirection = horizontalDirection;
+
+        _retreatSpeedMultiplierOverride = Mathf.Max(_retreatSpeedMultiplierOverride, dodgeBurstSpeedMultiplier);
+        _retreatUntilTime = Mathf.Max(_retreatUntilTime, Time.time + Mathf.Max(0.05f, dodgeBurstDuration));
+        _retreatMinUntilTime = Mathf.Max(_retreatMinUntilTime, Time.time + Mathf.Max(0.05f, dodgeBurstDuration * 0.5f));
+
+        bool verticalDodge = false;
+        if (useGroundPhysics && _isGrounded)
+        {
+            bool preferDrop = awayDirection.y < -0.2f || (Mathf.Abs(awayDirection.y) <= 0.2f && UnityEngine.Random.value < dodgeDropChance);
+            if (preferDrop && UnityEngine.Random.value < dodgeDropChance)
+                verticalDodge = TryFallThroughPlatform();
+
+            if (!verticalDodge && UnityEngine.Random.value < dodgeJumpChance)
+                verticalDodge = TryRetreatJump(true);
+
+            if (!verticalDodge && Mathf.Abs(horizontalDirection) <= 0.01f)
+                verticalDodge = TryRetreatJump(true) || TryFallThroughPlatform();
+        }
+
+        BossDebug(
+            "advanced-dodge",
+            $"Advanced dodge dir={_retreatHorizontalDirection:F0} away={awayDirection} vertical={verticalDodge} burst={_retreatSpeedMultiplierOverride:F1} blocked={IsHorizontalDodgeBlocked(_retreatHorizontalDirection)}",
+            0f);
+
+        return true;
+    }
+
+    private float ResolveSafeHorizontalDodgeDirection(float desiredDirection)
+    {
+        float direction = Mathf.Abs(desiredDirection) > 0.01f
+            ? Mathf.Sign(desiredDirection)
+            : ResolveRetreatDirection();
+
+        if (!IsHorizontalDodgeBlocked(direction))
+            return direction;
+
+        float oppositeDirection = -direction;
+        if (!IsHorizontalDodgeBlocked(oppositeDirection))
+        {
+            BossDebug("dodge-direction-switch", $"Switch dodge dir {direction:F0} -> {oppositeDirection:F0}: desired path blocked.", 0.1f);
+            return oppositeDirection;
+        }
+
+        BossDebug("dodge-direction-blocked", $"Both horizontal dodge paths blocked. dir={direction:F0}", 0.1f);
+        return 0f;
+    }
+
+    private bool DoesDirectionKeepDistanceFromPlayer(float direction)
+    {
+        if (playerTarget == null)
+            return true;
+
+        float currentDistance = Mathf.Abs(transform.position.x - playerTarget.position.x);
+        float projectedX = transform.position.x + Mathf.Sign(direction) * Mathf.Max(0.25f, dodgeObstacleProbeDistance);
+        float projectedDistance = Mathf.Abs(projectedX - playerTarget.position.x);
+        return projectedDistance >= currentDistance - 0.35f;
+    }
+
+    private bool IsHorizontalDodgeBlocked(float direction)
+    {
+        if (_bodyCollider == null || Mathf.Abs(direction) <= 0.01f)
+            return false;
+
+        Bounds bounds = _bodyCollider.bounds;
+        Vector2 rayDirection = direction > 0f ? Vector2.right : Vector2.left;
+        float originX = direction > 0f ? bounds.max.x + 0.03f : bounds.min.x - 0.03f;
+        float rayDistance = Mathf.Max(0.1f, dodgeObstacleProbeDistance);
+        int obstacleMask = dodgeObstacleMask.value != 0 ? dodgeObstacleMask.value : BuildDefaultDodgeObstacleMask().value;
+
+        if (obstacleMask != 0)
+        {
+            float highY = bounds.center.y + bounds.extents.y * 0.35f;
+            float lowY = bounds.center.y - bounds.extents.y * 0.25f;
+            if (RaycastInCurrentScene(new Vector2(originX, highY), rayDirection, rayDistance, obstacleMask).collider != null
+                || RaycastInCurrentScene(new Vector2(originX, lowY), rayDirection, rayDistance, obstacleMask).collider != null)
+            {
+                return true;
+            }
+        }
+
+        if (!useGroundPhysics || !_isGrounded || groundLayerMask == 0)
+            return false;
+
+        float edgeX = direction > 0f ? bounds.max.x + 0.25f : bounds.min.x - 0.25f;
+        float downDistance = bounds.extents.y + Mathf.Max(0.2f, dodgeEdgeProbeDistance);
+        RaycastHit2D groundHit = RaycastInCurrentScene(new Vector2(edgeX, bounds.center.y), Vector2.down, downDistance, groundLayerMask);
+        return !IsUsableGroundCollider(groundHit.collider);
+    }
+
+    private LayerMask BuildDefaultDodgeObstacleMask()
+    {
+        int mask = 0;
+        int maxMapLayer = LayerMask.NameToLayer("MaxMap");
+        int wallLayer = LayerMask.NameToLayer("Wall");
+        if (maxMapLayer >= 0)
+            mask |= 1 << maxMapLayer;
+        if (wallLayer >= 0)
+            mask |= 1 << wallLayer;
+        return mask;
     }
 
     private bool TryResolveIncomingThreat(out Vector2 awayDirection)

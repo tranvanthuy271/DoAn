@@ -218,8 +218,7 @@ public class QuestHudWidget : MonoBehaviour
     {
         if (q.status == "available")
         {
-            string npc = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
-            return $"- Tìm {npc} để nhận nhiệm vụ";
+            return $"- Tìm {BuildNpcTargetLabel(q)} để nhận nhiệm vụ";
         }
 
         var steps = ParseSteps(q.steps_json);
@@ -228,8 +227,7 @@ public class QuestHudWidget : MonoBehaviour
         bool allDone = AreAllDone(q, steps);
         if (allDone)
         {
-            string npc = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
-            return $"- ✓ Tìm {npc} để nộp nhiệm vụ";
+            return $"- ✓ Tìm {BuildNpcTargetLabel(q)} để nộp nhiệm vụ";
         }
 
         int idx = Mathf.Clamp(q.current_step_index, 0, steps.Count - 1);
@@ -242,6 +240,16 @@ public class QuestHudWidget : MonoBehaviour
 
         string extra = remaining > 1 ? $" (còn {remaining} việc)" : "";
         return $"- {step.name}: {done}/{step.require}{extra}";
+    }
+
+    private static string BuildNpcTargetLabel(QuestManager.QuestStatusDto q)
+    {
+        string npcName = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
+        if (!string.IsNullOrEmpty(q.npc_map_name))
+            return $"{npcName} ở {q.npc_map_name}";
+        if (q.npc_map_id >= 0)
+            return $"{npcName} ở map {q.npc_map_id}";
+        return npcName;
     }
 
     private static bool AreAllDone(QuestManager.QuestStatusDto q, List<StepDto> steps)

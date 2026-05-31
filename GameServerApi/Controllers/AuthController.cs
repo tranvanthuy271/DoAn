@@ -2,6 +2,7 @@ using GameServerApi.Data;
 using GameServerApi.Models;
 using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Controllers
@@ -63,6 +64,7 @@ namespace GameServerApi.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Username) ||

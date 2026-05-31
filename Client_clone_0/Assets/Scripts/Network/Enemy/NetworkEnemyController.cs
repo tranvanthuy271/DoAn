@@ -16,8 +16,10 @@ public class NetworkEnemyController : NetworkBehaviour
     private float initialGravityScale = 1f;
 
     [Header("Network Sync")]
-    private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    private NetworkVariable<Vector2> networkVelocity = new NetworkVariable<Vector2>(Vector2.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> networkScaleX = new NetworkVariable<float>(1f, 
+    NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<Vector2> networkVelocity = new NetworkVariable<Vector2>(Vector2.zero, 
+    NetworkVariableReadPermission.Everyone,  NetworkVariableWritePermission.Server);
 
     private void Awake()
     {

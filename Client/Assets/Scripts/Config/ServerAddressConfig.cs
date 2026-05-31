@@ -14,6 +14,8 @@ using UnityEngine;
 public class ServerAddressConfig : ScriptableObject
 {
     private const string DefaultApiBasePlaceholder = "http://localhost:5000";
+    private const string DefaultApiScheme = "http";
+    private const int DefaultApiPort = 5000;
 
     // ── Singleton (auto-load từ Resources/ServerAddressConfig) ─────────────────
     private static ServerAddressConfig _instance;
@@ -29,10 +31,16 @@ public class ServerAddressConfig : ScriptableObject
                     Debug.LogWarning("[ServerAddressConfig] Không tìm thấy asset trong Resources/ServerAddressConfig. Tạo default runtime.");
                     _instance = CreateInstance<ServerAddressConfig>();
                 }
-                _instance.ApplyRuntimeOverrides();
             }
+            _instance.ApplyRuntimeOverrides();
             return _instance;
         }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetCachedInstance()
+    {
+        _instance = null;
     }
 
     // ── API Server ────────────────────────────────────────────────────────────
@@ -72,18 +80,24 @@ public class ServerAddressConfig : ScriptableObject
 
     // ── Runtime JSON override ─────────────────────────────────────────────────
     private bool _overridesApplied;
+    private string _lastRuntimeConfigPath;
+    private long _lastRuntimeConfigTicks = -1;
 
     /// <summary>
     /// Đọc server_config.json từ StreamingAssets (hoặc cùng thư mục exe) và ghi đè giá trị.
-    /// Gọi tự động lần đầu khi truy cập Instance.
+    /// Tự reload khi file đổi để Editor không giữ IP cũ khi tắt domain reload.
     /// </summary>
     public void ApplyRuntimeOverrides()
     {
-        if (_overridesApplied) return;
-        _overridesApplied = true;
+        if (!ServerConfigFileReader.TryReadConfig(out string json, out string path, out long ticks))
+            return;
 
-        string json = ServerConfigFileReader.ReadConfigJson();
-        if (string.IsNullOrEmpty(json)) return;
+        if (_overridesApplied &&
+            ticks == _lastRuntimeConfigTicks &&
+            string.Equals(path, _lastRuntimeConfigPath, System.StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
         try
         {
@@ -97,7 +111,23 @@ public class ServerAddressConfig : ScriptableObject
             if (overrides.gameServerPort > 0)
                 gameServerPort = overrides.gameServerPort;
 
-            Debug.Log($"[ServerAddressConfig] Runtime override applied → API={apiBaseUrl} GameServer={gameServerIp}:{gameServerPort}");
+            string host = NormalizeHost(overrides.serverHost);
+            if (!string.IsNullOrEmpty(host))
+            {
+                string scheme = string.IsNullOrWhiteSpace(overrides.apiScheme)
+                    ? DefaultApiScheme
+                    : overrides.apiScheme.Trim().TrimEnd(':', '/');
+                int apiPort = overrides.apiPort > 0 ? overrides.apiPort : DefaultApiPort;
+
+                apiBaseUrl = BuildApiBaseUrl(scheme, host, apiPort);
+                gameServerIp = host;
+            }
+
+            _overridesApplied = true;
+            _lastRuntimeConfigPath = path;
+            _lastRuntimeConfigTicks = ticks;
+
+            Debug.Log($"[ServerAddressConfig] Runtime override applied ({path}) → API={apiBaseUrl} GameServer={gameServerIp}:{gameServerPort}");
         }
         catch (System.Exception ex)
         {
@@ -124,6 +154,36 @@ public class ServerAddressConfig : ScriptableObject
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().TrimEnd('/');
     }
 
+    private static string NormalizeHost(string value)
+    {
+        string host = NormalizeUrl(value);
+        if (string.IsNullOrEmpty(host)) return string.Empty;
+
+        int schemeIndex = host.IndexOf("://", System.StringComparison.Ordinal);
+        if (schemeIndex >= 0)
+            host = host.Substring(schemeIndex + 3);
+
+        int slashIndex = host.IndexOf('/');
+        if (slashIndex >= 0)
+            host = host.Substring(0, slashIndex);
+
+        int colonIndex = host.LastIndexOf(':');
+        if (colonIndex > 0 && host.IndexOf(':') == colonIndex)
+            host = host.Substring(0, colonIndex);
+
+        return host.Trim();
+    }
+
+    private static string BuildApiBaseUrl(string scheme, string host, int apiPort)
+    {
+        if (string.IsNullOrWhiteSpace(host)) return string.Empty;
+
+        string safeScheme = string.IsNullOrWhiteSpace(scheme)
+            ? DefaultApiScheme
+            : scheme.Trim().TrimEnd(':', '/');
+        return $"{safeScheme}://{host}:{apiPort}";
+    }
+
     private static bool ShouldUseRuntimeApiOverride(string configuredValue)
     {
         if (string.IsNullOrWhiteSpace(configuredValue)) return true;
@@ -134,6 +194,9 @@ public class ServerAddressConfig : ScriptableObject
     [System.Serializable]
     private class ServerAddressOverrides
     {
+        public string serverHost;
+        public string apiScheme;
+        public int apiPort;
         public string apiBaseUrl;
         public string gameServerIp;
         public ushort gameServerPort;

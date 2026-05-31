@@ -4,8 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Connection Approval v2 — dùng với kiến trúc 1-port (MapWorldBootstrap).
-/// Thay thế ZoneConnectionApproval cũ (per-process model).
+/// Connection Approval — dùng với kiến trúc 1-port (MapWorldBootstrap).
 ///
 /// Validate:
 ///   1. Payload tối thiểu (JWT token + mapId + zoneId)
@@ -19,7 +18,7 @@ using UnityEngine;
 /// Gắn vào: "ServerBootstrap" GameObject.
 /// </summary>
 [DisallowMultipleComponent]
-public class ZoneConnectionApprovalV2 : MonoBehaviour
+public class ZoneConnectionApproval : MonoBehaviour
 {
     private MapWorldConfig _config;
 
@@ -31,7 +30,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     {
         _config = config;
         NetworkManager.Singleton.ConnectionApprovalCallback = HandleApproval;
-        Debug.Log("[ZoneConnectionApprovalV2] Connection Approval đã đăng ký.");
+        Debug.Log("[ZoneConnectionApproval] Connection Approval đã đăng ký.");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -88,7 +87,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
 
         if (room.MapId != mapId || room.ZoneId != zoneId)
         {
-            Debug.Log($"[ZoneConnectionApprovalV2] Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback ({room.MapId},{room.ZoneId})");
+            Debug.Log($"[ZoneConnectionApproval] Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback ({room.MapId},{room.ZoneId})");
         }
 
         // 5 — Kiểm tra room đầy
@@ -108,11 +107,11 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         registry.AssignClientToRoom(clientId, room);
 
         // 7 — Lưu session (userId, username)
-        Debug.Log($"[ZoneConnectionApprovalV2] geneSlot={geneSlot} parsed from payload for client {clientId}");
+        Debug.Log($"[ZoneConnectionApproval] geneSlot={geneSlot} parsed from payload for client {clientId}");
         ZonePlayerSessionManager.RegisterSessionOrQueue(clientId, result.UserId, result.Username,
             room.MapId, room.ZoneId, token, geneSlot);
 
-        Debug.Log($"[ZoneConnectionApprovalV2] ✓ Client {clientId} ({result.Username}) " +
+        Debug.Log($"[ZoneConnectionApproval] ✓ Client {clientId} ({result.Username}) " +
                   $"→ map{room.MapId}_zone{room.ZoneId}");
 
         // 8 — Approve
@@ -128,7 +127,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     {
         response.Approved = false;
         response.Reason   = reason;
-        Debug.LogWarning($"[ZoneConnectionApprovalV2] Từ chối kết nối: {reason}");
+        Debug.LogWarning($"[ZoneConnectionApproval] Từ chối kết nối: {reason}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

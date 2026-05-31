@@ -1118,6 +1118,12 @@ public class PlayerSkillManager : NetworkBehaviour
                 fireballDmg.SetOwner(ownerId);
                 // Apply effectValue từ DB (nếu có) thay vì dùng Inspector default
                 if (skill.currentEffectValue > 0f) fireballDmg.SetDamage((int)skill.currentEffectValue);
+                // Apply AttackBuff của owner vào projectile (giống PlayerCombat.PerformAttack)
+                if (ActiveBuffManager.Instance != null)
+                {
+                    int atkBonusPct = Mathf.RoundToInt(ActiveBuffManager.Instance.GetBonusPct("AttackBuff") * 100f);
+                    if (atkBonusPct > 0) fireballDmg.SetAttackBonus(atkBonusPct);
+                }
             }
             var dotDmg = projectile.GetComponent<DotDamage>();
             if (dotDmg != null)

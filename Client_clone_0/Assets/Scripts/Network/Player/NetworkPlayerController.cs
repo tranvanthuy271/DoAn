@@ -141,7 +141,7 @@ public class NetworkPlayerController : NetworkBehaviour
     }
 
     private bool _moveDiagLogged = false;
-    private float _diagTimer = 0f;
+    private float _diagTimer;
 
     private void FixedUpdate()
     {
@@ -165,20 +165,6 @@ public class NetworkPlayerController : NetworkBehaviour
         bool down = verticalAxis < -0.1f || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
         bool jump = pendingJump;
         pendingJump = false; // consume flag
-
-        // === MOVEMENT DIAGNOSTICS — log chi tiết MỖI 2 giây để debug tại sao không di chuyển ===
-        _diagTimer += Time.fixedDeltaTime;
-        if (!_moveDiagLogged || _diagTimer >= 2f)
-        {
-            _moveDiagLogged = true;
-            _diagTimer = 0f;
-            bool statsOk = controller?.stats != null;
-           // Debug.Log($"[NPC-DIAG] owner={IsOwner} server={IsServer} | ctrl={controller != null} stats={statsOk} moveSpeed={controller?.stats?.moveSpeed ?? -1f} | mv={movement != null} rb={rb != null} simulated={rb?.simulated} bodyType={rb?.bodyType} | input={horizontalInput:F2} inputEnabled={im?.inputEnabled} | pos={transform.position} vel={rb?.velocity} | scene={gameObject.scene.name}");
-        }
-
-        // === CLIENT-SIDE PREDICTION ===
-        // Apply movement cục bộ ngay lập tức để owner thấy di chuyển không có độ trễ
-        // Server sẽ relay position cho non-owner clients qua syncPosition
         bool isGrounded = false;
         if (controller?.stats != null && movement != null && rb != null)
         {
@@ -284,13 +270,7 @@ public class NetworkPlayerController : NetworkBehaviour
 
         PlayerStats stats = controller.stats;
 
-        // ── 1. Basic anti-cheat: validate horizontal speed ──
-        // (tránh client hack speed, chỉ check cơ bản)
-        // Không block, chỉ clamp để tránh false-positive khi lag spike
-        // TODO: nâng cấp anti-cheat với accumulation & threshold
-
-        // ── 2. Update server transform từ client-reported position ──
-        // Server tin tưởng client position (có ground collider) thay vì simulate
+        // ── 1. Server nhận input + position từ client owner ──
         transform.position = new Vector3(clientPosition.x, clientPosition.y, 0f);
 
         // ── 3. Flip sprite (server → sync cho tất cả clients qua NetworkVariable) ──

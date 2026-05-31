@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-26T00:00:00.000Z" agent="GitHub Copilot" version="24.7.17">
+  <diagram id="seq-uc04-combat" name="UC04 - Chiến đấu và sử dụng kỹ năng">
+    <mxGraphModel dx="1200" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="1360" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="note_pre" value="Tiền điều kiện: Người chơi đã vào scene gameplay, còn sống, có quyền điều khiển và đang ở khu vực có mục tiêu chiến đấu hợp lệ."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="8" width="952" height="38" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="title" value="Hình 2.x. Biểu đồ tuần tự Chiến đấu và sử dụng kỹ năng"
+          style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="1300" width="960" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1" value="Người chơi"
+          style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=12;outlineConnect=0;"
+          vertex="1" parent="1">
+          <mxGeometry x="48" y="64" width="44" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2" value="Client chiến đấu"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="168" y="74" width="110" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3" value="Gameplay server"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="408" y="74" width="104" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4" value="CombatResolver / Enemy"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="626" y="74" width="130" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5" value="Client quan sát"
+          style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
+          vertex="1" parent="1">
+          <mxGeometry x="826" y="74" width="112" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ll1" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="148" as="sourcePoint"/>
+            <mxPoint x="70" y="1280" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll2" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="223" y="148" as="sourcePoint"/>
+            <mxPoint x="223" y="1280" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll3" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="148" as="sourcePoint"/>
+            <mxPoint x="460" y="1280" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll4" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="691" y="148" as="sourcePoint"/>
+            <mxPoint x="691" y="1280" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ll5" value="" style="endArrow=none;dashed=1;strokeColor=#000000;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="882" y="148" as="sourcePoint"/>
+            <mxPoint x="882" y="1280" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="act2a" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="217" y="184" width="12" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="act3a" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="454" y="230" width="12" height="660" as="geometry"/>
+        </mxCell>
+        <mxCell id="act4a" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="685" y="276" width="12" height="540" as="geometry"/>
+        </mxCell>
+        <mxCell id="act5a" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="876" y="420" width="12" height="452" as="geometry"/>
+        </mxCell>
+        <mxCell id="act2b" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="217" y="950" width="12" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="frame_action" value="Luồng yêu cầu đánh thường / dùng kỹ năng"
+          style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=#666666;fillColor=none;fontSize=11;align=left;verticalAlign=top;spacingTop=4;spacingLeft=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="166" width="934" height="278" as="geometry"/>
+        </mxCell>
+        <mxCell id="frame_sync" value="Luồng áp dụng sát thương và đồng bộ kết quả"
+          style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=#666666;fillColor=none;fontSize=11;align=left;verticalAlign=top;spacingTop=4;spacingLeft=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="456" width="934" height="456" as="geometry"/>
+        </mxCell>
+        <mxCell id="frame_failure" value="Tuần tự điều kiện thất bại"
+          style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=#666666;fillColor=none;fontSize=11;align=left;verticalAlign=top;spacingTop=4;spacingLeft=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="928" width="934" height="286" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m1" value="1. Chọn mục tiêu hoặc bấm đánh thường / QWER"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="190" as="sourcePoint"/>
+            <mxPoint x="223" y="190" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2. Gửi input tấn công / cast skill lên gameplay server"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="223" y="238" as="sourcePoint"/>
+            <mxPoint x="460" y="238" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="3. Kiểm tra cooldown, MP, hitbox và trạng thái khóa thao tác"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="286" as="sourcePoint"/>
+            <mxPoint x="691" y="286" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4. Trả DamageResult, hit hợp lệ và hiệu ứng nguyên tố"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="691" y="334" as="sourcePoint"/>
+            <mxPoint x="460" y="334" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5. Phát animation, áp dụng HP và buff / debuff lên mục tiêu"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="382" as="sourcePoint"/>
+            <mxPoint x="691" y="382" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="6. Broadcast HP, floating text, hướng mặt và trạng thái chiến đấu"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="430" as="sourcePoint"/>
+            <mxPoint x="882" y="430" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="m7" value="7. Đồng bộ kết quả chiến đấu cho client điều khiển"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="620" as="sourcePoint"/>
+            <mxPoint x="223" y="620" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8. Hiển thị sát thương, cooldown, HP mới và trạng thái mục tiêu"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="223" y="668" as="sourcePoint"/>
+            <mxPoint x="70" y="668" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9. Kiểm tra mục tiêu bị hạ gục và kích hoạt loot / EXP / quest hook"
+          style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="716" as="sourcePoint"/>
+            <mxPoint x="691" y="716" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="10. Trả drop, EXP và trạng thái tiêu diệt mục tiêu"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="691" y="764" as="sourcePoint"/>
+            <mxPoint x="460" y="764" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="11. Đồng bộ loot, EXP và mục tiêu bị hạ gục cho client điều khiển"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="812" as="sourcePoint"/>
+            <mxPoint x="223" y="812" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12. Đồng bộ trạng thái mục tiêu chết và VFX cho client quan sát"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#000000;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="860" as="sourcePoint"/>
+            <mxPoint x="882" y="860" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="m13" value="13. [Thất bại] Skill đang cooldown hoặc không đủ MP"
+          style="endArrow=block;endFill=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="223" y="952" as="sourcePoint"/>
+            <mxPoint x="460" y="952" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="14. Từ chối cast và hiển thị trạng thái không khả dụng"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="1000" as="sourcePoint"/>
+            <mxPoint x="223" y="1000" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m15" value="15. [Thất bại] Ngoài phạm vi, trượt hitbox hoặc nhân vật đã chết"
+          style="endArrow=block;endFill=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="223" y="1048" as="sourcePoint"/>
+            <mxPoint x="460" y="1048" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m16" value="16. Hủy thao tác và giữ nguyên trạng thái chiến đấu trên các client"
+          style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=bottom;labelBackgroundColor=#ffffff;fontColor=#b85450;"
+          edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="1096" as="sourcePoint"/>
+            <mxPoint x="223" y="1096" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="alt_a" value="Luồng phụ a): Skill bị chặn khi đang cooldown hoặc không đủ MP. Gameplay server trả về lỗi ngay, client chỉ cập nhật trạng thái icon và không phát sinh sát thương."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="60" y="950" width="404" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="alt_b" value="Luồng phụ b): Nếu mục tiêu ngoài phạm vi, hitbox trượt hoặc nhân vật đã chết, gameplay server hủy yêu cầu và giữ nguyên trạng thái combat của toàn bộ client."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="540" y="1038" width="404" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="note_post" value="Kết quả: Sát thương, buff / debuff, loot và EXP được xác nhận hoàn toàn ở server; nếu thao tác thất bại, toàn bộ trạng thái chiến đấu của các client vẫn nhất quán."
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacing=6;"
+          vertex="1" parent="1">
+          <mxGeometry x="150" y="1240" width="720" height="36" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

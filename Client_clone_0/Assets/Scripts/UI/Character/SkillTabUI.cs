@@ -1,15 +1,15 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Tab "Ká»¹ NÄƒng" trong CharacterPanel.
+/// Tab "Kỹ Năng" trong CharacterPanel.
 ///
 /// Layout:
-///   - Danh sÃ¡ch skill chiáº¿m toÃ n bá»™ chiá»u rá»™ng (ScrollView full-width).
-///   - Khi nháº¥n vÃ o má»™t dÃ²ng â†’ SkillDetailPanel hiá»‡n lÃªn nhÆ° overlay riÃªng
-///     (Ä‘Æ°á»£c Ä‘áº·t á»Ÿ cáº¥p parent cá»§a ContentSkill, khÃ´ng pháº£i bÃªn trong).
+///   - Danh sách skill chiếm toàn bộ chiá»u rộng (ScrollView full-width).
+///   - Khi nhấn vào một dòng → SkillDetailPanel hiện lên như overlay riêng
+///     (được đặt ở cấp parent của ContentSkill, không phải bên trong).
 /// </summary>
 public class SkillTabUI : MonoBehaviour
 {
@@ -36,7 +36,7 @@ public class SkillTabUI : MonoBehaviour
 
     private void OnDisable()
     {
-        // áº¨n overlay detail khi tab bá»‹ táº¯t (chuyá»ƒn sang tab khÃ¡c)
+        // Ẩn overlay detail khi tab bị tắt (chuyển sang tab khác)
         skillDetailPanel?.Hide();
     }
 
@@ -46,7 +46,7 @@ public class SkillTabUI : MonoBehaviour
         GameplayCommandService.OnSkillUpgraded  -= HandleSkillUpgraded;
     }
 
-    // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Public API ──────────────────────────────────────────────────────────
 
     public void SetPlayerId(int id) => _playerId = id;
 
@@ -78,14 +78,14 @@ public class SkillTabUI : MonoBehaviour
 
         if (_playerId <= 0)
         {
-            SetStatus("ChÆ°a cÃ³ playerId.");
+            SetStatus("Chưa có playerId.");
             return;
         }
 
-        // DÃ¹ng cache náº¿u server Ä‘Ã£ push lÃºc spawn
+        // Dùng cache nếu server đã push lúc spawn
         if (PlayerSkillCache.Instance != null && PlayerSkillCache.Instance.HasData)
         {
-            Debug.Log("[SkillTabUI] Load tá»« PlayerSkillCache.");
+            Debug.Log("[SkillTabUI] Load từ PlayerSkillCache.");
             PopulateSkills(PlayerSkillCache.Instance.CachedData);
             return;
         }
@@ -93,11 +93,11 @@ public class SkillTabUI : MonoBehaviour
         // Fallback: gá»i server RPC
         if (GameplayCommandService.Instance == null)
         {
-            SetStatus("Server chÆ°a sáºµn sÃ ng.");
+            SetStatus("Server chưa sẵn sàng.");
             return;
         }
 
-        SetStatus("Äang táº£i ká»¹ nÄƒng...");
+        SetStatus("Äang tải kỹ năng...");
         ClearRows();
 
         GameplayCommandService.OnSkillsReceived -= HandleSkillsReceived;
@@ -105,22 +105,22 @@ public class SkillTabUI : MonoBehaviour
         GameplayCommandService.Instance.GetPlayerSkillsServerRpc();
     }
 
-    // â”€â”€ Private helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Private helpers ─────────────────────────────────────────────────────
 
     private void HandleSkillsReceived(string json)
     {
         GameplayCommandService.OnSkillsReceived -= HandleSkillsReceived;
         try
         {
-            if (json.Contains("\"error\"")) { SetStatus($"Lá»—i: {json}"); return; }
+            if (json.Contains("\"error\"")) { SetStatus($"Lỗi: {json}"); return; }
             PlayerSkillsResponse response = JsonUtility.FromJson<PlayerSkillsResponse>(json);
-            if (response == null)            { SetStatus("Lá»—i: pháº£n há»“i null."); return; }
+            if (response == null)            { SetStatus("Lỗi: phản hồi null."); return; }
             PopulateSkills(response);
         }
         catch (System.Exception ex)
         {
             Debug.LogError($"[SkillTabUI] Parse error: {ex.Message}");
-            SetStatus($"Lá»—i: {ex.Message}");
+            SetStatus($"Lỗi: {ex.Message}");
         }
     }
 
@@ -131,11 +131,11 @@ public class SkillTabUI : MonoBehaviour
         _currentSkills = response.skills;
 
         if (txtSkillPoints != null)
-            txtSkillPoints.text = $"Äiá»ƒm ká»¹ nÄƒng: <b>{response.skill_points_available}</b>";
+            txtSkillPoints.text = $"Äiểm kỹ năng: <b>{response.skill_points_available}</b>";
 
         if (response.skills == null || response.skills.Length == 0)
         {
-            SetStatus("ChÆ°a cÃ³ skill nÃ o.");
+            SetStatus("Chưa có skill nào.");
             return;
         }
 
@@ -150,12 +150,12 @@ public class SkillTabUI : MonoBehaviour
 
         if (txtSkillPoints != null)
             txtSkillPoints.text = string.IsNullOrWhiteSpace(_externalCharacterName)
-                ? "Ká»¹ nÄƒng"
-                : $"Ká»¹ nÄƒng cá»§a {_externalCharacterName}";
+                ? "Kỹ năng"
+                : $"Kỹ năng của {_externalCharacterName}";
 
         if (_externalSkills == null || _externalSkills.Length == 0)
         {
-            SetStatus("NgÆ°á»i chÆ¡i nÃ y chÆ°a cÃ³ ká»¹ nÄƒng nÃ o.");
+            SetStatus("Ngưá»i chơi này chưa có kỹ năng nào.");
             return;
         }
 
@@ -166,7 +166,7 @@ public class SkillTabUI : MonoBehaviour
     {
         if (skillRowPrefab == null || skillListContainer == null)
         {
-            Debug.LogError("[SkillTabUI] Thiáº¿u skillRowPrefab hoáº·c skillListContainer.");
+            Debug.LogError("[SkillTabUI] Thiếu skillRowPrefab hoặc skillListContainer.");
             return;
         }
 
@@ -203,7 +203,7 @@ public class SkillTabUI : MonoBehaviour
         if (_isExternalProfileView || skill == null) return;
         bool maxed = skill.current_level >= skill.max_level && skill.max_level > 0;
         if (maxed || !skill.can_upgrade) return;
-        if (GameplayCommandService.Instance == null) { SetStatus("Server chÆ°a sáºµn sÃ ng."); return; }
+        if (GameplayCommandService.Instance == null) { SetStatus("Server chưa sẵn sàng."); return; }
 
         skillDetailPanel?.SetUpgradeInteractable(false);
         SetStatus("");
@@ -219,14 +219,14 @@ public class SkillTabUI : MonoBehaviour
 
         if (json.Contains("\"error\""))
         {
-            SetStatus($"Lá»—i: {json}");
+            SetStatus($"Lỗi: {json}");
             skillDetailPanel?.SetUpgradeInteractable(_selectedSkill != null && _selectedSkill.can_upgrade);
             return;
         }
 
         PlayerSkillCache.Instance?.Invalidate();
 
-        // ÄÃ³ng overlay, reload list
+        // Äóng overlay, reload list
         skillDetailPanel?.Hide();
         Load();
     }
@@ -249,7 +249,7 @@ public class SkillTabUI : MonoBehaviour
         txtStatus.enabled = !string.IsNullOrEmpty(msg);
     }
 
-    // â”€â”€ Layout bootstrap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Layout bootstrap ────────────────────────────────────────────────────
 
     private void EnsureRuntimeLayout()
     {
@@ -274,7 +274,7 @@ public class SkillTabUI : MonoBehaviour
                 skillListContainer = scroll.content;
         }
 
-        // Overlay panel vá»‘n lÃ  con cá»§a parent (sibling vá»›i ContentSkill), khÃ´ng pháº£i child trá»±c tiáº¿p
+        // Overlay panel vốn là con của parent (sibling với ContentSkill), không phải child trực tiếp
         if (skillDetailPanel == null)
         {
             Transform overlayParent = transform.parent ?? transform;
@@ -293,11 +293,11 @@ public class SkillTabUI : MonoBehaviour
         if (scrollRect == null)
             scrollRect = CreateSkillListScroll();
 
-        // Full-width â€“ chiáº¿m toÃ n bá»™ ContentSkill
+        // Full-width – chiếm toàn bộ ContentSkill
         RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
         scrollRt.anchorMin    = new Vector2(0f, 0f);
         scrollRt.anchorMax    = new Vector2(1f, 1f);
-        scrollRt.offsetMin    = new Vector2(6f, 42f);   // bottom: nhÆ°á»ng cho label Ä‘iá»ƒm
+        scrollRt.offsetMin    = new Vector2(6f, 42f);   // bottom: nhưá»ng cho label điểm
         scrollRt.offsetMax    = new Vector2(-6f, -6f);
         scrollRt.localScale   = Vector3.one;
 
@@ -339,7 +339,7 @@ public class SkillTabUI : MonoBehaviour
 
     private bool EnsureDetailPanel()
     {
-        // Panel Ä‘áº·t á»Ÿ cáº¥p parent (cÃ¹ng cáº¥p ContentSkill) Ä‘á»ƒ cÃ³ thá»ƒ overlay toÃ n bá»™ panel nhÃ¢n váº­t
+        // Panel đặt ở cấp parent (cùng cấp ContentSkill) để có thể overlay toàn bộ panel nhân vật
         Transform overlayParent = transform.parent ?? transform;
 
         if (skillDetailPanel == null)
@@ -362,7 +362,7 @@ public class SkillTabUI : MonoBehaviour
             SetLayerRecursively(skillDetailPanel.gameObject, gameObject.layer);
         }
 
-        // Phá»§ kÃ­n toÃ n bá»™ parent (= character panel content area)
+        // Phủ kín toàn bộ parent (= character panel content area)
         RectTransform rect = skillDetailPanel.GetComponent<RectTransform>();
         rect.anchorMin  = Vector2.zero;
         rect.anchorMax  = Vector2.one;
@@ -370,7 +370,7 @@ public class SkillTabUI : MonoBehaviour
         rect.offsetMax  = Vector2.zero;
         rect.localScale = Vector3.one;
 
-        // Render trÃªn cÃ¹ng
+        // Render trên cùng
         skillDetailPanel.transform.SetAsLastSibling();
         skillDetailPanel.gameObject.SetActive(false);
         return true;

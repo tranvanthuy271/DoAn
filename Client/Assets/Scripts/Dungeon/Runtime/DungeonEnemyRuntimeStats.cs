@@ -52,6 +52,6 @@ public class DungeonEnemyRuntimeStats : MonoBehaviour
 
     public int ResolveIncomingDamage(int rawDamage)
     {
-        return Mathf.Max(1, rawDamage - Mathf.Max(0, Defense));
+        return DamageCalculator.CalcDungeonEnemyReceivedDamage(rawDamage, Defense);
     }
 }

@@ -268,6 +268,7 @@ public class MapSceneManager : MonoBehaviour
             return;
 
         int groundLayer = LayerMask.NameToLayer("Ground");
+        int maxMapLayer = LayerMask.NameToLayer("MaxMap");
         if (groundLayer < 0)
         {
             Debug.LogWarning("[MapSceneManager] Layer 'Ground' not found. Skipping ground proxy build.");
@@ -287,7 +288,7 @@ public class MapSceneManager : MonoBehaviour
             BoxCollider2D[] groundColliders = sourceRoot.GetComponentsInChildren<BoxCollider2D>(true);
             foreach (BoxCollider2D sourceCollider in groundColliders)
             {
-                if (sourceCollider == null || sourceCollider.gameObject.layer != groundLayer)
+                if (sourceCollider == null || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
                     continue;
 
                 CloneGroundCollider(root.transform, sourceCollider);
@@ -297,11 +298,11 @@ public class MapSceneManager : MonoBehaviour
 
         if (clonedCount > 0)
         {
-            Debug.Log($"[MapSceneManager] Built {clonedCount} ground proxy collider(s) for map {mapId} from scene '{sourceScene.name}'.");
+            Debug.Log($"[MapSceneManager] Built {clonedCount} server obstacle proxy collider(s) for map {mapId} from scene '{sourceScene.name}'.");
         }
         else
         {
-            Debug.LogWarning($"[MapSceneManager] No Ground BoxCollider2D found in scene '{sourceScene.name}' for map {mapId}.");
+            Debug.LogWarning($"[MapSceneManager] No Ground/MaxMap BoxCollider2D found in scene '{sourceScene.name}' for map {mapId}.");
         }
     }
 
@@ -328,27 +329,15 @@ public class MapSceneManager : MonoBehaviour
         proxyTransform.rotation = sourceCollider.transform.rotation;
         proxyTransform.localScale = sourceCollider.transform.lossyScale;
 
-        PlatformEffector2D sourceEffector = sourceCollider.GetComponent<PlatformEffector2D>();
-        if (sourceEffector != null)
-        {
-            PlatformEffector2D proxyEffector = proxy.AddComponent<PlatformEffector2D>();
-            proxyEffector.useOneWay = sourceEffector.useOneWay;
-            proxyEffector.useOneWayGrouping = sourceEffector.useOneWayGrouping;
-            proxyEffector.surfaceArc = sourceEffector.surfaceArc;
-            proxyEffector.sideArc = sourceEffector.sideArc;
-            proxyEffector.rotationalOffset = sourceEffector.rotationalOffset;
-            proxyEffector.useSideFriction = sourceEffector.useSideFriction;
-            proxyEffector.useSideBounce = sourceEffector.useSideBounce;
-        }
-
+        // Server proxies are always solid — no one-way effector needed.
         BoxCollider2D proxyCollider = proxy.AddComponent<BoxCollider2D>();
         proxyCollider.enabled = sourceCollider.enabled;
-        proxyCollider.isTrigger = sourceCollider.isTrigger;
+        proxyCollider.isTrigger = false;
         proxyCollider.offset = sourceCollider.offset;
         proxyCollider.size = sourceCollider.size;
         proxyCollider.edgeRadius = sourceCollider.edgeRadius;
         proxyCollider.sharedMaterial = sourceCollider.sharedMaterial;
-        proxyCollider.usedByEffector = sourceCollider.usedByEffector;
+        proxyCollider.usedByEffector = false;
     }
 
     private static void CloneGroundCollider(
@@ -356,8 +345,8 @@ public class MapSceneManager : MonoBehaviour
         ServerGroundColliderDatabase.GroundColliderData colliderData)
     {
         GameObject proxy = new GameObject($"__GroundProxy_{colliderData.name}");
-        proxy.layer = LayerMask.NameToLayer("Ground");
-        proxy.tag = "Ground";
+        proxy.layer = ResolveProxyLayer(colliderData);
+        proxy.tag = proxy.layer == LayerMask.NameToLayer("Ground") ? "Ground" : "Untagged";
         proxy.hideFlags = HideFlags.HideAndDontSave;
 
         Transform proxyTransform = proxy.transform;
@@ -366,23 +355,31 @@ public class MapSceneManager : MonoBehaviour
         proxyTransform.rotation = Quaternion.Euler(0f, 0f, colliderData.rotationZ);
         proxyTransform.localScale = colliderData.scale;
 
-        if (colliderData.hasPlatformEffector)
-        {
-            PlatformEffector2D proxyEffector = proxy.AddComponent<PlatformEffector2D>();
-            proxyEffector.useOneWay = colliderData.useOneWay;
-            proxyEffector.useOneWayGrouping = colliderData.useOneWayGrouping;
-            proxyEffector.surfaceArc = colliderData.surfaceArc;
-            proxyEffector.sideArc = colliderData.sideArc;
-            proxyEffector.rotationalOffset = colliderData.rotationalOffset;
-            proxyEffector.useSideFriction = colliderData.useSideFriction;
-            proxyEffector.useSideBounce = colliderData.useSideBounce;
-        }
-
+        // Server proxies are always solid — no one-way effector needed.
+        // One-way platforms would require enemies to approach from the correct
+        // side, which causes pass-through issues in local physics scenes.
         BoxCollider2D proxyCollider = proxy.AddComponent<BoxCollider2D>();
-        proxyCollider.isTrigger = colliderData.isTrigger;
+        proxyCollider.isTrigger = false;
         proxyCollider.offset = colliderData.offset;
         proxyCollider.size = colliderData.size;
         proxyCollider.edgeRadius = colliderData.edgeRadius;
-        proxyCollider.usedByEffector = colliderData.usedByEffector;
+        proxyCollider.usedByEffector = false;
+        Debug.Log($"[GroundProxy] Created solid proxy '{colliderData.name}' layer={LayerMask.LayerToName(proxy.layer)} in scene '{parent.gameObject.scene.name}' pos={proxyTransform.position} scale={proxyTransform.localScale} offset={proxyCollider.offset} size={proxyCollider.size}");
+    }
+
+    private static bool IsServerObstacleLayer(int layer, int groundLayer, int maxMapLayer)
+    {
+        return layer == groundLayer || (maxMapLayer >= 0 && layer == maxMapLayer);
+    }
+
+    private static int ResolveProxyLayer(ServerGroundColliderDatabase.GroundColliderData colliderData)
+    {
+        string layerName = string.IsNullOrWhiteSpace(colliderData.layerName) ? "Ground" : colliderData.layerName;
+        int layer = LayerMask.NameToLayer(layerName);
+        if (layer >= 0)
+            return layer;
+
+        int groundLayer = LayerMask.NameToLayer("Ground");
+        return groundLayer >= 0 ? groundLayer : 0;
     }
 }

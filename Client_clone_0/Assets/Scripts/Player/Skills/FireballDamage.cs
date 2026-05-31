@@ -1,31 +1,31 @@
-﻿using UnityEngine;
+using UnityEngine;
 using Unity.Collections;
 using Unity.Netcode;
 
 /// <summary>
-/// Script xá»­ lÃ½ damage enemy khi fireball va cháº¡m.
-/// Há»— trá»£ cáº£ PvP: gÃ¢y damage cho player khÃ¡c khi trÃºng skill.
+/// Script xử lý damage enemy khi fireball va chạm.
+/// Hỗ trợ cả PvP: gây damage cho player khác khi trúng skill.
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public class FireballDamage : MonoBehaviour
 {
     [Header("Damage Settings")]
-    [Tooltip("SÃ¡t thÆ°Æ¡ng cá»§a fireball")]
+    [Tooltip("Sát thương của fireball")]
     [SerializeField] private int damage = 5;
 
-    // Attack bonus tá»« owner (EarthAura buff)
+    // Attack bonus từ owner (EarthAura buff)
     private int attackBonusPercent = 0;
 
     [Header("Collision Settings")]
-    [Tooltip("CÃ³ tá»± há»§y sau khi va cháº¡m vá»›i enemy khÃ´ng")]
+    [Tooltip("Có tự hủy sau khi va chạm với enemy không")]
     [SerializeField] private bool destroyOnHit = true;
 
-    [Tooltip("CÃ³ tá»± há»§y khi va cháº¡m vá»›i ground/wall khÃ´ng")]
+    [Tooltip("Có tự hủy khi va chạm với ground/wall không")]
     [SerializeField] private bool destroyOnGround = false;
 
     private bool hasHit = false;
 
-    // NetworkObjectId cá»§a player sá»­ dá»¥ng skill (Ä'á»ƒ trÃ¡nh tá»± bán)
+    // NetworkObjectId của player sử dụng skill (Ä'ể tránh tự bán)
     private ulong ownerNetworkObjectId = 0;
 
     /// <summary>Set owner NetworkObjectId để projectile không tự gây damage cho chính người bắn.</summary>
@@ -68,18 +68,18 @@ public class FireballDamage : MonoBehaviour
     }
     private void Start()
     {
-        // Äáº£m báº£o collider lÃ  trigger
+        // Äảm bảo collider là trigger
         Collider2D col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
         {
             col.isTrigger = true;
-            Debug.LogWarning("[FireballDamage] Collider Ä‘Ã£ Ä‘Æ°á»£c tá»± Ä‘á»™ng set thÃ nh trigger!");
+            Debug.LogWarning("[FireballDamage] Collider đã được tự động set thành trigger!");
         }
 
-        // Kiá»ƒm tra náº¿u khÃ´ng cÃ³ Collider2D
+        // Kiểm tra nếu không có Collider2D
         if (col == null)
         {
-            Debug.LogError("[FireballDamage] Fireball khÃ´ng cÃ³ Collider2D! Vui lÃ²ng thÃªm Collider2D vÃ o Prefab.");
+            Debug.LogError("[FireballDamage] Fireball không có Collider2D! Vui lòng thêm Collider2D vào Prefab.");
         }
     }
 
@@ -92,7 +92,8 @@ public class FireballDamage : MonoBehaviour
         // Chỉ xử lý một lần (tránh damage nhiều lần)
         if (hasHit) return;
 
-        int finalDamage = damage + damage * attackBonusPercent / 100;
+        // Sát thương gốc có AttackBuff (cho PvP và EnemyHealth fallback)
+        int baseFinalDamage = damage + damage * attackBonusPercent / 100;
 
         // Check enemy: component-based detection (khong phu thuoc tag)
         NetworkEnemyHealth networkEnemyHealth = collision.GetComponentInParent<NetworkEnemyHealth>();
@@ -108,6 +109,18 @@ public class FireballDamage : MonoBehaviour
                 Debug.LogWarning($"[FireballDamage] Bỏ qua cross-map: owner map={ownerMap}, enemy map={enemyZoneTag.MapId}");
                 return;
             }
+
+            // Tính sát thương qua DamageCalculator (AttackBuff + Hybrid Gene bonus)
+            Unity.Netcode.NetworkObject ownerNetObj = null;
+            Unity.Netcode.NetworkManager.Singleton?.SpawnManager?.SpawnedObjects
+                .TryGetValue(ownerNetworkObjectId, out ownerNetObj);
+            var attackerPd = ownerNetObj != null
+                ? ServerPlayerDataManager.Instance?.GetPlayerDataByClientId(ownerNetObj.OwnerClientId)
+                : null;
+            float atkBonusPct = attackBonusPercent / 100f;
+            int finalDamage = DamageCalculator.CalcPlayerAttackDamage(
+                damage, atkBonusPct, attackerPd, networkEnemyHealth.ElementType);
+
             networkEnemyHealth.TakeDamage(finalDamage, GetOwnerClientId());
             ApplyDebuffToTarget(networkEnemyHealth.gameObject);
             hasHit = true;
@@ -116,14 +129,14 @@ public class FireballDamage : MonoBehaviour
         }
         else if (enemyHealth != null)
         {
-            enemyHealth.TakeDamage(finalDamage);
+            enemyHealth.TakeDamage(baseFinalDamage);
             hasHit = true;
-            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage!");
+            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {baseFinalDamage} damage!");
             if (destroyOnHit) Destroy(gameObject);
-        }        // Check va cháº¡m vá»›i Player (PvP)
+        }        // Check va chạm với Player (PvP)
         else if (collision.CompareTag("Player"))
         {
-            // Bá» qua nÃ©u va cháº¡m vá»›i chÃ­nh ngÆ°á»i sá»­ dá»¥ng skill
+            // Bá» qua néu va chạm với chính ngưá»i sử dụng skill
             NetworkObject targetNetObj = collision.GetComponent<NetworkObject>();
             if (targetNetObj != null && ownerNetworkObjectId != 0 && targetNetObj.NetworkObjectId == ownerNetworkObjectId)
                 return;
@@ -132,27 +145,27 @@ public class FireballDamage : MonoBehaviour
             NetworkPlayerHealth networkPlayerHealth = collision.GetComponentInParent<NetworkPlayerHealth>();
             if (networkPlayerHealth != null)
             {
-                networkPlayerHealth.TakeDamage(finalDamage);
+                networkPlayerHealth.TakeDamage(baseFinalDamage);
                 ApplyDebuffToTarget(networkPlayerHealth.gameObject);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Hit player {collision.name} với {finalDamage} damage! (Network PvP)");
+                Debug.Log($"[FireballDamage] Hit player {collision.name} với {baseFinalDamage} damage! (Network PvP)");
                 if (destroyOnHit) Destroy(gameObject);
                 return;
             }
 
-            // Standalone mode: dÃ¹ng PlayerHealth
+            // Standalone mode: dùng PlayerHealth
             PlayerHealth playerHealth = collision.GetComponentInParent<PlayerHealth>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(finalDamage);
+                playerHealth.TakeDamage(baseFinalDamage);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Hit player {collision.name} vá»›i {finalDamage} damage! (Standalone PvP)");
+                Debug.Log($"[FireballDamage] Hit player {collision.name} với {baseFinalDamage} damage! (Standalone PvP)");
                 if (destroyOnHit) Destroy(gameObject);
             }
-        }        // Náº¿u va cháº¡m vá»›i ground/wall, há»§y fireball
+        }        // Nếu va chạm với ground/wall, hủy fireball
         else if (destroyOnGround && (collision.CompareTag("Ground") || collision.CompareTag("Wall")))
         {
-            Debug.Log("[FireballDamage] Fireball Ä‘Ã£ cháº¡m ground/wall, tá»± há»§y.");
+            Debug.Log("[FireballDamage] Fireball đã chạm ground/wall, tự hủy.");
             Destroy(gameObject);
         }
     }
@@ -188,7 +201,7 @@ public class FireballDamage : MonoBehaviour
     }
 
     /// <summary>
-    /// Get sÃ¡t thÆ°Æ¡ng hiá»‡n táº¡i
+    /// Get sát thương hiện tại
     /// </summary>
     public int GetDamage() => damage;
 }

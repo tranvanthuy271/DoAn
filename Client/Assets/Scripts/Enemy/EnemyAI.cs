@@ -136,6 +136,11 @@ public class EnemyAI : MonoBehaviour
     private int _groundLayerMask;
     private bool _hasMapBounds;
     private float _mapMinX, _mapMaxX, _mapMinY, _mapMaxY;
+    private bool _bodyColliderWasTrigger;
+    private int _wallLayerMask;
+    private float _patrolFlipCooldown;
+    private float _patrolStuckTimer;
+    private float _patrolLastX;
 
     private enum State { Run, MeleeAttack, Dead }
     private State state = State.Run;
@@ -150,10 +155,12 @@ public class EnemyAI : MonoBehaviour
         health = GetComponent<EnemyHealth>();
         networkController = GetComponent<NetworkEnemyController>();
         bodyCollider = GetComponent<Collider2D>();
+        _bodyColliderWasTrigger = bodyCollider != null && bodyCollider.isTrigger;
         _initialGravityScale = rb != null && rb.gravityScale > 0f ? rb.gravityScale : 1f;
         _originalMoveSpeed = moveSpeed;
         _skillSet = GetComponent<EnemySkillSet>(); // có thể null nếu chưa được gán
         _groundLayerMask = LayerMask.GetMask("Ground");
+        _wallLayerMask   = LayerMask.GetMask("Wall", "MaxMap");
         BuildProjectileLookup();
 
         // Đảm bảo NetworkAnimator luôn có Animator – tránh NullRef trong CheckParametersChanged
@@ -165,6 +172,8 @@ public class EnemyAI : MonoBehaviour
         {
             rb.gravityScale = _initialGravityScale;
         }
+
+        ConfigureGroundBodyCollider();
 
         ApplyFacing();
 
@@ -229,8 +238,30 @@ public class EnemyAI : MonoBehaviour
         if (rb != null && !enableFlight && !_forceVirtualGround)
             rb.gravityScale = _initialGravityScale;
 
+        ConfigureGroundBodyCollider();
+
         if (enableFlight)
             _unsupportedFallStartTime = -1f;
+    }
+
+    private void ConfigureGroundBodyCollider()
+    {
+        if (bodyCollider == null || bodyCollider == hitbox)
+            return;
+
+        bool isServerAuthoritative = NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
+        if (isServerAuthoritative && !canFly)
+        {
+            if (bodyCollider.isTrigger)
+            {
+                bodyCollider.isTrigger = false;
+                LogGroundMovement("BodyColliderSolid", $"collider={bodyCollider.name}", true);
+            }
+        }
+        else if (_bodyColliderWasTrigger && !bodyCollider.isTrigger)
+        {
+            bodyCollider.isTrigger = true;
+        }
     }
 
     // ── Freeze (DebuffManager gọi qua ClientRpc) ─────────────────────────────
@@ -646,7 +677,7 @@ public class EnemyAI : MonoBehaviour
                 if (wantRight != facingRight)
                 {
                     facingRight = wantRight;
-                    Flip();
+                    ApplyFacing();
                 }
             }
             return;
@@ -664,12 +695,69 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
+        _patrolFlipCooldown -= Time.deltaTime;
+
+        // ── Stuck detection: không di chuyển ≥ 0.4s → force flip ────────────────
+        if (Mathf.Abs(transform.position.x - _patrolLastX) > 0.04f)
+        {
+            _patrolStuckTimer = 0f;
+            _patrolLastX = transform.position.x;
+        }
+        else
+        {
+            _patrolStuckTimer += Time.deltaTime;
+            if (_patrolStuckTimer >= 0.4f)
+            {
+                _patrolStuckTimer = 0f;
+                _patrolLastX = transform.position.x;
+                if (_patrolFlipCooldown <= 0f)
+                {
+                    facingRight = !facingRight;
+                    ApplyFacing();
+                    _patrolFlipCooldown = 0.45f;
+                    if (rb != null && !_isFrozen)
+                    {
+                        float nd = facingRight ? 1f : -1f;
+                        rb.position = new Vector2(rb.position.x + nd * 0.12f, rb.position.y);
+                        rb.velocity = new Vector2(nd * moveSpeed * GetDebuffSlowFactor(), rb.velocity.y);
+                    }
+                }
+                return;
+            }
+        }
+
+        // ── Edge / wall detection ─────────────────────────────────────────────────
+        // Luôn kiểm tra mọi frame — nếu cooldown còn thì chỉ STOP (không flip),
+        // tránh enemy tiếp tục đi vào tường / rơi khỏi mép dù chưa được flip.
+        float patrolDir = facingRight ? 1f : -1f;
+        bool blockedAhead = IsHorizontalMoveBlocked(patrolDir);
+        if (blockedAhead)
+        {
+            TurnAroundFromBlockedMove(patrolDir, "PatrolBlocked");
+            if (rb != null && IsHorizontalMoveBlocked(facingRight ? 1f : -1f))
+            {
+                // Cooldown chưa hết — giữ yên, không đẩy thêm vào tường/mép
+                rb.velocity = new Vector2(0f, rb.velocity.y);
+            }
+            return;
+        }
+
+        // ── Di chuyển bình thường đến patrol point ────────────────────────────────
         Vector2 targetPos = facingRight ? (Vector2)rightPoint.position : (Vector2)leftPoint.position;
         RunTowards(targetPos.x);
         if (Mathf.Abs(transform.position.x - targetPos.x) < 0.1f)
         {
             facingRight = !facingRight;
-            Flip();
+            ApplyFacing();
+            _patrolFlipCooldown = 0.15f;
+            _patrolStuckTimer   = 0f;
+            _patrolLastX = transform.position.x;
+            // Đảo velocity ngay — tránh frame tiếp theo bị đẩy vượt qua mép
+            if (rb != null && !_isFrozen)
+            {
+                float nd = facingRight ? 1f : -1f;
+                rb.velocity = new Vector2(nd * moveSpeed * GetDebuffSlowFactor(), rb.velocity.y);
+            }
         }
     }
 
@@ -703,6 +791,12 @@ public class EnemyAI : MonoBehaviour
         }
 
         float dir = Mathf.Sign(targetX - transform.position.x);
+        if (!canFly && IsHorizontalMoveBlocked(dir))
+        {
+            TurnAroundFromBlockedMove(dir, "RunBlockedAhead");
+            return;
+        }
+
         float yVel = canFly ? 0f : rb.velocity.y;
         // Áp dụng SlowFactor từ DebuffManager nếu có
         float slow = GetDebuffSlowFactor();
@@ -863,8 +957,10 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        if (!IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
         float horizontalDirection = Mathf.Sign(horizontalDelta);
+        if (!IsGroundedEnough()) { TurnAroundFromBlockedMove(horizontalDirection, "GroundProjectileUngrounded"); return; }
+        if (IsHorizontalMoveBlocked(horizontalDirection)) { TurnAroundFromBlockedMove(horizontalDirection, "GroundProjectileBlocked"); return; }
+
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
         rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, rb.velocity.y);
@@ -887,7 +983,9 @@ public class EnemyAI : MonoBehaviour
             ? Mathf.Sign(horizontalDelta)
             : (facingRight ? -1f : 1f);
 
-        if (!IsGroundedEnough()) { rb.velocity = new Vector2(0f, rb.velocity.y); return; }
+        if (!IsGroundedEnough()) { TurnAroundFromBlockedMove(horizontalDirection, "GroundProjectileUngrounded"); return; }
+        if (IsHorizontalMoveBlocked(horizontalDirection)) { TurnAroundFromBlockedMove(horizontalDirection, "GroundProjectileBlocked"); return; }
+
         float slow = GetDebuffSlowFactor();
         if (_isFrozen) { HoldProjectileEnemyPosition(); return; }
         rb.velocity = new Vector2(horizontalDirection * moveSpeed * slow, rb.velocity.y);
@@ -936,6 +1034,38 @@ public class EnemyAI : MonoBehaviour
             facingRight = shouldFaceRight;
             ApplyFacing();
         }
+    }
+
+    private bool IsHorizontalMoveBlocked(float moveDir)
+    {
+        if (canFly || Mathf.Abs(moveDir) < 0.01f)
+            return false;
+
+        return IsWallAhead(moveDir) || !IsGroundAheadForPatrol(moveDir);
+    }
+
+    private void TurnAroundFromBlockedMove(float blockedDir, string reason)
+    {
+        if (rb == null)
+            return;
+
+        if (_isFrozen)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
+        float reverseDir = blockedDir >= 0f ? -1f : 1f;
+        facingRight = reverseDir > 0f;
+        ApplyFacing();
+
+        _patrolFlipCooldown = 0.2f;
+        _patrolStuckTimer = 0f;
+        _patrolLastX = transform.position.x;
+
+        rb.position = new Vector2(rb.position.x + reverseDir * 0.1f, rb.position.y);
+        rb.velocity = new Vector2(reverseDir * moveSpeed * GetDebuffSlowFactor(), rb.velocity.y);
+        LogGroundMovement("TurnAroundBlocked", $"reason={reason} blockedDir={blockedDir:F1} reverseDir={reverseDir:F1}", true);
     }
 
     private bool CanProjectileEnemyMoveDown()
@@ -1241,7 +1371,7 @@ public class EnemyAI : MonoBehaviour
 
     /// <summary>Shared helper: apply damage to player by checking NetworkPlayerHealth first.
     /// Kiểm tra cùng map trước khi gây damage — ngăn cross-map damage.</summary>
-    private void ApplyDamageToTarget(GameObject target, int dmg)
+    private void ApplyDamageToTarget(GameObject target, int dmg, string attackerElement = null)
     {
         // Kiểm tra cùng map: không được tấn công player ở map khác
         if (!IsSameMapAsTarget(target.transform))
@@ -1250,7 +1380,14 @@ public class EnemyAI : MonoBehaviour
             return;
         }
         var netHealth = target.GetComponentInParent<NetworkPlayerHealth>();
-        if (netHealth != null) { netHealth.TakeDamage(dmg); return; }
+        if (netHealth != null)
+        {
+            if (!string.IsNullOrEmpty(attackerElement) && attackerElement != "None")
+                netHealth.TakeDamageWithElement(dmg, attackerElement);
+            else
+                netHealth.TakeDamage(dmg);
+            return;
+        }
         var ph = target.GetComponentInParent<PlayerHealth>();
         if (ph != null) ph.TakeDamage(dmg);
     }
@@ -1621,6 +1758,40 @@ public class EnemyAI : MonoBehaviour
         return grounded;
     }
 
+    /// <summary>Returns true if there is a solid obstacle (Ground, Wall, or MaxMap) directly ahead in moveDir.</summary>
+    private bool IsWallAhead(float moveDir)
+    {
+        if (canFly || bodyCollider == null || (_groundLayerMask | _wallLayerMask) == 0) return false;
+        var physScene = gameObject.scene.GetPhysicsScene2D();
+        Bounds b = bodyCollider.bounds;
+        // Cast từ giữa thân, hướng ngang
+        float originX = moveDir > 0f ? b.max.x + 0.02f : b.min.x - 0.02f;
+        float checkDist = 0.15f;
+        int combinedMask = _groundLayerMask | _wallLayerMask;
+        var hitHigh = physScene.Raycast(new Vector2(originX, b.center.y + b.extents.y * 0.3f), new Vector2(moveDir, 0f), checkDist, combinedMask);
+        var hitLow  = physScene.Raycast(new Vector2(originX, b.center.y - b.extents.y * 0.3f), new Vector2(moveDir, 0f), checkDist, combinedMask);
+        return hitHigh.collider != null || hitLow.collider != null;
+    }
+
+    /// <summary>
+    /// Returns true if there is ground under the enemy's leading edge (no real cliff).
+    /// Casts from slightly INSIDE the collider edge — NOT ahead of it — so gaps between
+    /// adjacent tiles do not produce false positives.
+    /// </summary>
+    private bool IsGroundAheadForPatrol(float moveDir)
+    {
+        if (canFly || bodyCollider == null || _groundLayerMask == 0) return true;
+        var physScene = gameObject.scene.GetPhysicsScene2D();
+        Bounds b = bodyCollider.bounds;
+        // 0.05f inset: check right at the leading foot, not past it → immune to inter-tile gaps
+        float edgeX   = moveDir > 0f ? b.max.x - 0.05f : b.min.x + 0.05f;
+        // Cast from body center so tiles at different heights are still detected
+        float originY  = b.center.y;
+        float castDist = b.extents.y + 0.45f;
+        var hit = physScene.Raycast(new Vector2(edgeX, originY), Vector2.down, castDist, _groundLayerMask);
+        return hit.collider != null;
+    }
+
     private bool IsGroundHitCloseToFeet(RaycastHit2D hit, float feetY)
     {
         if (hit.collider == null)
@@ -1681,7 +1852,9 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator SnapToGroundAfterSpawn()
     {
         yield return null;
+        Debug.Log($"[SnapToGroundAfterSpawn] {gameObject.name} scene={gameObject.scene.name} pos={rb?.position} gravity={rb?.gravityScale} groundMask={_groundLayerMask}");
         bool snapped = TrySnapToGround();
+        Debug.Log($"[SnapToGroundAfterSpawn] {gameObject.name} snapped={snapped} posAfter={rb?.position}");
 
         if (!snapped && useServerVirtualGround && rb != null && _serverAnchorSet)
         {
@@ -1708,16 +1881,29 @@ public class EnemyAI : MonoBehaviour
         Bounds bounds = bodyCollider.bounds;
         float rayDistance = Mathf.Max(0.5f, spawnGroundSnapDistance);
         float topPadding = Mathf.Max(0.1f, bounds.extents.y + 0.1f);
-        Vector2 origin = new Vector2(bounds.center.x, transform.position.y + topPadding);
-        RaycastHit2D hit = RaycastInCurrentScene(origin, Vector2.down, rayDistance + topPadding, _groundLayerMask);
+        Vector2 downOrigin = new Vector2(bounds.center.x, transform.position.y + topPadding);
+        RaycastHit2D hit = RaycastInCurrentScene(downOrigin, Vector2.down, rayDistance + topPadding, _groundLayerMask);
+        bool hitFromBelow = false;
+
+        if (hit.collider == null)
+        {
+            Vector2 upOrigin = new Vector2(bounds.center.x, bounds.min.y - 0.05f);
+            hit = RaycastInCurrentScene(upOrigin, Vector2.up, rayDistance + bounds.size.y, _groundLayerMask);
+            hitFromBelow = hit.collider != null;
+        }
+
+        Debug.Log($"[TrySnapToGround] {gameObject.name} scene={gameObject.scene.name} downOrigin={downOrigin} dist={rayDistance+topPadding:F2} hit={(hit.collider != null ? $"{hit.collider.name} @ {hit.point}" : "NONE")} hitFromBelow={hitFromBelow} vel={rb.velocity} gravity={rb.gravityScale}");
+
         if (hit.collider == null)
             return false;
 
         float currentBottomOffset = bounds.min.y - transform.position.y;
-        float snappedY = hit.point.y - currentBottomOffset + Mathf.Max(0f, spawnGroundOffset);
+        float surfaceY = hitFromBelow ? hit.collider.bounds.max.y : hit.point.y;
+        float snappedY = surfaceY - currentBottomOffset + Mathf.Max(0f, spawnGroundOffset);
         rb.position = new Vector2(rb.position.x, snappedY);
         rb.velocity = Vector2.zero;
         CacheSupportedGroundPosition(rb.position);
+        Debug.Log($"[TrySnapToGround] SNAPPED {gameObject.name} → Y={snappedY:F2} (hitPointY={hit.point.y:F2} bottomOffset={currentBottomOffset:F2}) collider={hit.collider.name} isTrigger={hit.collider.isTrigger} usedByEffector={hit.collider.usedByEffector}");
         return true;
     }
 
@@ -1752,12 +1938,14 @@ public class EnemyAI : MonoBehaviour
         if (!fellTooFar && !fellTooLong)
             return;
 
+        Debug.Log($"[MaintainGroundFailSafe] TRIGGERED {gameObject.name} scene={gameObject.scene.name} pos={rb.position} vel={rb.velocity} referenceY={referenceY:F2} fell={referenceY - rb.position.y:F2} fellTooFar={fellTooFar} fellTooLong={fellTooLong} time={Time.time - _unsupportedFallStartTime:F2}s");
         bool snappedToGround = TrySnapToGround();
         if (!snappedToGround)
         {
             Vector2 fallbackPosition = _hasSupportedGroundPosition
                 ? _lastSupportedGroundPosition
                 : new Vector2(rb.position.x, _serverAnchorSet ? _serverAnchorY : rb.position.y);
+            Debug.Log($"[MaintainGroundFailSafe] TrySnap FAILED — fallback to {fallbackPosition}");
             rb.position = fallbackPosition;
             rb.velocity = Vector2.zero;
             CacheSupportedGroundPosition(fallbackPosition);

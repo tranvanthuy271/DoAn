@@ -1,5 +1,6 @@
 using GameServerApi.Data;
 using GameServerApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace GameServerApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class EnemyController : ControllerBase
     {
         private readonly GameDbContext _db;

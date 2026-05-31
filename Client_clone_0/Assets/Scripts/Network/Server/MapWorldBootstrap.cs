@@ -108,6 +108,7 @@ public class MapWorldBootstrap : MonoBehaviour
         {
             using var req = UnityWebRequest.Get(url);
             req.downloadHandler = new DownloadHandlerBuffer();
+            req.timeout = 8;
             req.SetRequestHeader("X-Zone-Api-Key", _config.GetZoneApiKey());
             yield return req.SendWebRequest();
 
@@ -267,7 +268,8 @@ public class MapWorldBootstrap : MonoBehaviour
             using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST")
             {
                 uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(Encoding.UTF8.GetBytes(body)),
-                downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer()
+                downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer(),
+                timeout         = 8
             };
             req.SetRequestHeader("Content-Type", "application/json");
             req.SetRequestHeader("X-Zone-Api-Key", apiKey);

@@ -85,7 +85,19 @@ public class LoginController : MonoBehaviour
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            ShowError("Vui l\u00f2ng nh\u1eadp \u0111\u1ea7y \u0111\u1ee7 th\u00f4ng tin!");
+            ShowError("Vui lòng nhập đầy đủ thông tin!");
+            return;
+        }
+
+        if (username.Length < 3 || username.Length > 30)
+        {
+            ShowError("Tên đăng nhập phải từ 3 đến 30 ký tự!");
+            return;
+        }
+
+        if (password.Length < 6)
+        {
+            ShowError("Mật khẩu phải có ít nhất 6 ký tự!");
             return;
         }
 

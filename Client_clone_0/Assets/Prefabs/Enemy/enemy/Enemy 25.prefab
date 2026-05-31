@@ -356,6 +356,7 @@ MonoBehaviour:
   projectileFallThroughDrop: 0.12
   projectileAimOvershoot: 0.45
   randomizeInitialPatrolDirection: 1
+  useServerVirtualGround: 0
 --- !u!114 &6609937226400778080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -556,6 +557,18 @@ MonoBehaviour:
   threatLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  useAdvancedDodge: 1
+  dodgeJumpChance: 0.85
+  dodgeDropChance: 0.55
+  dodgeDirectionChangeChance: 0.45
+  dodgeBurstSpeedMultiplier: 3.1
+  dodgeBurstDuration: 0.42
+  dodgeDecisionCooldown: 0.22
+  dodgeObstacleProbeDistance: 1.1
+  dodgeEdgeProbeDistance: 1.6
+  dodgeObstacleMask:
+    serializedVersion: 2
+    m_Bits: 1536
   debugLogs: 1
   debugLogInterval: 0.35
   skillBreathPrefab: {fileID: 0}

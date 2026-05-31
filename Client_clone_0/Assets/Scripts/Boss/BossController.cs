@@ -529,8 +529,7 @@ public class BossController : MonoBehaviour
 
         // Kháng nguyên tố
         int resist = GetResistance(elementType);
-        int finalDamage = Mathf.Max(1, Mathf.RoundToInt(rawDamage * (1f - resist / 100f)));
-        return finalDamage;
+        return DamageCalculator.CalcBossReceivedDamage(rawDamage, resist);
     }
 
     /// <summary>Gọi sau khi trừ máu — trả lại damage nếu có config.</summary>

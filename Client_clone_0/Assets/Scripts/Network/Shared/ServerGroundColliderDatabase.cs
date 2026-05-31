@@ -37,6 +37,7 @@ public class ServerGroundColliderDatabase : ScriptableObject
     public struct GroundColliderData
     {
         public string name;
+        public string layerName;
         public Vector2 position;
         public float rotationZ;
         public Vector2 scale;

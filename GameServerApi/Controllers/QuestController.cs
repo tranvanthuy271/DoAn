@@ -62,6 +62,11 @@ namespace GameServerApi.Controllers
                 .Where(n => npcIds.Contains(n.NpcId))
                 .ToDictionaryAsync(n => n.NpcId);
 
+            var mapIds = npcMap.Values.Select(n => n.MapId).Distinct().ToList();
+            var mapNameById = await _db.MapConfigs.AsNoTracking()
+                .Where(m => mapIds.Contains(m.MapId))
+                .ToDictionaryAsync(m => m.MapId, m => m.MapName);
+
             var result = quests.Select(q =>
             {
                 string status;
@@ -75,6 +80,9 @@ namespace GameServerApi.Controllers
                     : "{}";
 
                 npcMap.TryGetValue(q.NpcId, out var npcData);
+                string npcMapName = (npcData != null && mapNameById.TryGetValue(npcData.MapId, out var mapName))
+                    ? mapName
+                    : "";
                 return new
                 {
                     quest_id             = q.Id,
@@ -83,6 +91,7 @@ namespace GameServerApi.Controllers
                     npc_id               = q.NpcId,
                     npc_name             = npcData?.NpcName ?? "",
                     npc_map_id           = npcData?.MapId ?? -1,
+                    npc_map_name         = npcMapName,
                     npc_pos_x            = npcData?.PosX  ?? 0f,
                     npc_pos_y            = npcData?.PosY  ?? 0f,
                     str1                 = q.Str1,
@@ -576,7 +585,17 @@ namespace GameServerApi.Controllers
                 {
                     var npc = await _db.NpcConfigs.AsNoTracking()
                         .FirstOrDefaultAsync(n => n.NpcId == quest.NpcId);
-                    return Ok(BuildOverviewDto(quest, npc, "active", info));
+                    string npcMapName = "";
+                    if (npc != null)
+                    {
+                        npcMapName = await _db.MapConfigs.AsNoTracking()
+                            .Where(m => m.MapId == npc.MapId)
+                            .Select(m => m.MapName)
+                            .FirstOrDefaultAsync()
+                            ?? "";
+                    }
+
+                    return Ok(BuildOverviewDto(quest, npc, npcMapName, "active", info));
                 }
             }
 
@@ -593,14 +612,24 @@ namespace GameServerApi.Controllers
             {
                 var npc = await _db.NpcConfigs.AsNoTracking()
                     .FirstOrDefaultAsync(n => n.NpcId == available.NpcId);
-                return Ok(BuildOverviewDto(available, npc, "available", info));
+                string npcMapName = "";
+                if (npc != null)
+                {
+                    npcMapName = await _db.MapConfigs.AsNoTracking()
+                        .Where(m => m.MapId == npc.MapId)
+                        .Select(m => m.MapName)
+                        .FirstOrDefaultAsync()
+                        ?? "";
+                }
+
+                return Ok(BuildOverviewDto(available, npc, npcMapName, "available", info));
             }
 
             return Ok(null);
         }
 
         private static object BuildOverviewDto(
-            QuestConfig q, NpcConfig? npc, string status, InfoChar info)
+            QuestConfig q, NpcConfig? npc, string npcMapName, string status, InfoChar info)
         {
             return new
             {
@@ -610,6 +639,7 @@ namespace GameServerApi.Controllers
                 npc_id              = q.NpcId,
                 npc_name            = npc?.NpcName ?? "",
                 npc_map_id          = npc?.MapId   ?? -1,
+                npc_map_name        = npcMapName,
                 npc_pos_x           = npc?.PosX    ?? 0f,
                 npc_pos_y           = npc?.PosY    ?? 0f,
                 str1                = q.Str1,

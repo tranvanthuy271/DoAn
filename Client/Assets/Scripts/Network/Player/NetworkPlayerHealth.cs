@@ -422,6 +422,35 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
+    /// <summary>
+    /// Nhận sát thương có xét hệ nguyên tố của kẻ tấn công.
+    /// - Nếu attackerElement khắc hệ của người chơi bị tấn công → +30% sát thương.
+    /// - Nếu người chơi là Hybrid và attackerElement nằm trong HybridImmuneElements → bỏ qua bổ sung.
+    /// Gọi từ quái/enemy có elementType xác định (MobPatrolAI, EnemyAI…).
+    /// </summary>
+    public void TakeDamageWithElement(int rawDamage, string attackerElement)
+    {
+        if (IsServer)
+            TakeDamageWithElementInternal(rawDamage, attackerElement);
+        else
+            TakeDamageWithElementServerRpc(rawDamage, attackerElement);
+    }
+
+    private void TakeDamageWithElementInternal(int rawDamage, string attackerElement)
+    {
+        var pd = ServerPlayerDataManager.Instance?.GetPlayerDataByClientId(OwnerClientId);
+        int finalDamage = DamageCalculator.CalcPlayerReceivedElementDamage(rawDamage, attackerElement, pd);
+
+        TakeDamageInternal(finalDamage);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void TakeDamageWithElementServerRpc(int rawDamage, string attackerElement,
+                                                 ServerRpcParams rpc = default)
+    {
+        TakeDamageWithElementInternal(rawDamage, attackerElement);
+    }
+
     public void Heal(int amount)
     {
         if (IsServer)

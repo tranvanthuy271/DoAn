@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -6,23 +6,23 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// QuestNpcPanel â€” Panel danh sÃ¡ch nhiá»‡m vá»¥ theo phong cÃ¡ch menu NPC (giá»‘ng áº£nh chá»¥p mÃ n hÃ¬nh).
+/// QuestNpcPanel — Panel danh sách nhiệm vụ theo phong cách menu NPC (giống ảnh chụp màn hình).
 ///
 /// Flow:
-///   1. NpcMenuUI.Open(npc) vá»›i npc_type="quest" â†’ gá»i QuestNpcPanel.GetOrCreate().Open(npc)
-///   2. Panel hiá»‡n danh sÃ¡ch nhiá»‡m vá»¥ dÆ°á»›i dáº¡ng nÃºt báº¥m (? / â–¶ / âœ“ + tÃªn quest)
-///   3. Click quest â†’ QuestDialogueUI má»Ÿ há»™i thoáº¡i (str1 hoáº·c str2)
-///   4. Sau "Nháº­n" / "Nháº­n thÆ°á»Ÿng" â†’ gá»i API, Ä‘Ã³ng cáº£ hai panel
+///   1. NpcMenuUI.Open(npc) với npc_type="quest" → gá»i QuestNpcPanel.GetOrCreate().Open(npc)
+///   2. Panel hiện danh sách nhiệm vụ dưới dạng nút bấm (? / ▶ / ✓ + tên quest)
+///   3. Click quest → QuestDialogueUI mở hội thoại (str1 hoặc str2)
+///   4. Sau "Nhận" / "Nhận thưởng" → gá»i API, đóng cả hai panel
 ///
-/// Canvas hierarchy (táº¡o báº±ng menu DoAn > Quest > Create Quest NPC Panel):
+/// Canvas hierarchy (tạo bằng menu DoAn > Quest > Create Quest NPC Panel):
 ///   QuestNpcPanelCanvas [Canvas sortOrder=50]
-///   â””â”€â”€ QuestNpcPanelRoot [Image â€“ wood background, ~320Ã—480px]
-///       â”œâ”€â”€ Header [TMP_Text â€“ "Xin chÃ o {player}"]
-///       â”œâ”€â”€ BtnClose [Button â€“ nÃºt X gÃ³c pháº£i]
-///       â”œâ”€â”€ QuestListScroll [ScrollRect]
-///       â”‚   â””â”€â”€ Viewport > Content [VerticalLayoutGroup]
-///       â”‚       â””â”€â”€ (dynamic) QuestListItem prefab [Button + TMP_Text]
-///       â””â”€â”€ BtnCaoTu [Button â€“ "CÃ¡o tá»«"]
+///   └── QuestNpcPanelRoot [Image – wood background, ~320×480px]
+///       ├── Header [TMP_Text – "Xin chào {player}"]
+///       ├── BtnClose [Button – nút X góc phải]
+///       ├── QuestListScroll [ScrollRect]
+///       │   └── Viewport > Content [VerticalLayoutGroup]
+///       │       └── (dynamic) QuestListItem prefab [Button + TMP_Text]
+///       └── BtnCaoTu [Button – "Cáo từ"]
 /// </summary>
 public class QuestNpcPanel : MonoBehaviour
 {
@@ -31,26 +31,26 @@ public class QuestNpcPanel : MonoBehaviour
 
     public static QuestNpcPanel Instance { get; private set; }
 
-    // â”€â”€â”€ Inspector references â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Inspector references ────────────────────────────────────────────────
     [Header("Root")]
     [SerializeField] private GameObject rootPanel;
 
     [Header("Header")]
-    [SerializeField] private TMP_Text   headerText;         // "Xin chÃ o ..."
+    [SerializeField] private TMP_Text   headerText;         // "Xin chào ..."
 
     [Header("Quest List")]
     [SerializeField] private Transform  questListContent;   // VerticalLayoutGroup parent
     [SerializeField] private GameObject questItemPrefab;    // prefab: Button + TMP_Text
 
     [Header("Buttons")]
-    [SerializeField] private Button     btnClose;           // nÃºt X
-    [SerializeField] private Button     btnCaoTu;           // "CÃ¡o tá»«" á»Ÿ dÆ°á»›i
+    [SerializeField] private Button     btnClose;           // nút X
+    [SerializeField] private Button     btnCaoTu;           // "Cáo từ" ở dưới
 
-    // â”€â”€â”€ Runtime â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Runtime ─────────────────────────────────────────────────────────────
     private NpcData _currentNpc;
     private bool    _initialized;
 
-    // â”€â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -125,7 +125,7 @@ public class QuestNpcPanel : MonoBehaviour
         UIPanelManager.Register(rootPanel != null ? rootPanel : gameObject, Close);
     }
 
-    // â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Public API ──────────────────────────────────────────────────────────
 
     public static QuestNpcPanel GetOrCreate()
     {
@@ -140,7 +140,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
 
         if (Instance == null)
-            Debug.LogWarning($"{LogPrefix} KhÃ´ng tÃ¬m tháº¥y QuestNpcPanel trong scene hoáº·c Resources/{ResourcesPath}.");
+            Debug.LogWarning($"{LogPrefix} Không tìm thấy QuestNpcPanel trong scene hoặc Resources/{ResourcesPath}.");
 
         return Instance;
     }
@@ -199,7 +199,7 @@ public class QuestNpcPanel : MonoBehaviour
         UIPanelManager.NotifyClosed(rootPanel != null ? rootPanel : gameObject);
     }
 
-    // â”€â”€â”€ Internal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Internal ────────────────────────────────────────────────────────────
 
     private void LoadAndBuildList()
     {
@@ -290,7 +290,7 @@ public class QuestNpcPanel : MonoBehaviour
 
     private void OnQuestItemClicked(QuestManager.QuestStatusDto quest)
     {
-        // Táº¯t panel quest list trÆ°á»›c khi má»Ÿ dialogue
+        // Tắt panel quest list trước khi mở dialogue
         if (rootPanel) rootPanel.SetActive(false);
 
         var dialogueUI = QuestDialogueUI.GetOrCreate();
@@ -306,7 +306,7 @@ public class QuestNpcPanel : MonoBehaviour
 
         if (canSubmit)
         {
-            // Hiá»‡n há»™i thoáº¡i ná»™p quest
+            // Hiện hội thoại nộp quest
             dialogueUI.ShowComplete(quest, npcName, accepted =>
             {
                 if (accepted)
@@ -323,14 +323,14 @@ public class QuestNpcPanel : MonoBehaviour
                 }
                 else
                 {
-                    // NgÆ°á»i chÆ¡i Ä‘Ã³ng â†’ má»Ÿ láº¡i danh sÃ¡ch
+                    // Ngưá»i chơi đóng → mở lại danh sách
                     Open(_currentNpc);
                 }
             });
         }
         else if (quest.status == "available")
         {
-            // Hiá»‡n há»™i thoáº¡i nháº­n quest
+            // Hiện hội thoại nhận quest
             dialogueUI.ShowAccept(quest, npcName, accepted =>
             {
                 if (accepted)
@@ -349,14 +349,14 @@ public class QuestNpcPanel : MonoBehaviour
                 }
                 else
                 {
-                    // Tá»« chá»‘i â†’ má»Ÿ láº¡i danh sÃ¡ch
+                    // Từ chối → mở lại danh sách
                     Open(_currentNpc);
                 }
             });
         }
         else
         {
-            // Quest Ä‘ang lÃ m dá»Ÿ â€” hiá»‡n str3 (gá»£i Ã½) dÆ°á»›i dáº¡ng há»™i thoáº¡i giáº£n lÆ°á»£c
+            // Quest đang làm dở — hiện str3 (gợi ý) dưới dạng hội thoại giản lược
             string hint = !string.IsNullOrEmpty(quest.str3) ? quest.str3 : BuildProgressHint(quest);
             var tempDto = new QuestManager.QuestStatusDto
             {
@@ -367,7 +367,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
     }
 
-    // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private GameObject CreateListItem(string label)
     {
@@ -384,7 +384,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
         else
         {
-            // Fallback: táº¡o nÃºt Ä‘Æ¡n giáº£n
+            // Fallback: tạo nút đơn giản
             item = new GameObject("QuestItem", typeof(RectTransform), typeof(Button), typeof(Image));
             item.transform.SetParent(questListContent, false);
             var rt = item.GetComponent<RectTransform>();
@@ -482,8 +482,8 @@ public class QuestNpcPanel : MonoBehaviour
 
     private static string LocalizeStatus(string s) => s switch
     {
-        "available" => "CÃ³ thá»ƒ nháº­n", "active" => "Äang lÃ m",
-        "completed" => "ÄÃ£ xong",     "locked"  => "KhÃ³a",
+        "available" => "Có thể nhận", "active" => "Äang làm",
+        "completed" => "Äã xong",     "locked"  => "Khóa",
         _           => s
     };
 

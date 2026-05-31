@@ -298,6 +298,7 @@ public class QuestManager : MonoBehaviour
         public string steps_json;               // raw JSON array string
         public string quest_progress_json;      // {"0":3,"1":0} — tiến trình từng bước
         public int    npc_map_id;               // map của NPC nhận thưởng (-1 = không xác định)
+        public string npc_map_name;             // tên map của NPC nhận / nộp quest
         public float  npc_pos_x;               // toạ độ X của NPC
         public float  npc_pos_y;               // toạ độ Y của NPC
 

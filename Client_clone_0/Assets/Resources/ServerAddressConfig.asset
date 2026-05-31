@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57a94d5eb18b22b4abac653122a60403, type: 3}
   m_Name: ServerAddressConfig
   m_EditorClassIdentifier: 
-  apiBaseUrl: http://98.70.26.19:5000
-  gameServerIp: 98.70.26.19
+  apiBaseUrl: http://127.0.0.1:5000
+  gameServerIp: 127.0.0.1
   gameServerPort: 7777
   heartbeatInterval: 30

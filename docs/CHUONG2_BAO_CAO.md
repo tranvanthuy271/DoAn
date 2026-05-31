@@ -438,60 +438,61 @@ Bảng 2.7 Bảng đặc tả riêng nhóm chức năng Vận hành kỹ thuật
 
 ### 2.2.4. Thiết kế cơ sở dữ liệu
 
-Cơ sở dữ liệu MySQL được thiết kế theo mô hình quan hệ với 14 bảng chính, tổ chức xung quanh thực thể trung tâm là **characters** (nhân vật). Mỗi nhân vật thuộc một tài khoản người chơi và liên kết với các bảng con mô tả trang bị, Gene, nhiệm vụ và kỹ năng. Nguyên tắc thiết kế là chuẩn hóa đến mức đủ để đảm bảo toàn vẹn dữ liệu, đồng thời sử dụng JSON column cho các trường có cấu trúc linh hoạt thay đổi thường xuyên theo nội dung game. Sơ đồ ERD tổng quát được mô tả tại Hình 2.12.
+Cơ sở dữ liệu của hệ thống Mutants Arena được thiết kế theo hướng chuẩn hóa các bảng định danh, cấu hình và ánh xạ nghiệp vụ, đồng thời sử dụng các cột JSON ở những thành phần gameplay biến đổi nhanh. Cách tổ chức này giúp hệ thống vẫn bảo đảm tính toàn vẹn dữ liệu ở các quan hệ cốt lõi như tài khoản, vật phẩm, Gene, bản đồ, nhiệm vụ và phó bản, nhưng không làm tăng quá nhiều số lượng bảng phụ khi cần đồng bộ túi đồ, trang bị, kỹ năng, buff và tiến trình nhiệm vụ giữa Unity Client, gameplay server và GameServerApi.
 
-Hình 2.12: Biểu đồ ERD tổng quát cơ sở dữ liệu hệ thống Mutants Arena
+Đối chiếu trực tiếp với schema trong `gamedb.sql` và mã nguồn backend, mô hình dữ liệu của đề tài được tổ chức thành bốn cụm logic chính: cụm tài khoản và hồ sơ nhân vật, cụm vật phẩm và nâng cấp trang bị, cụm Gene - Hybrid - kỹ năng, và cụm thế giới game gồm quái vật, bản đồ, nhiệm vụ, boss và dungeon.
 
-a) Nhóm thực thể tài khoản và nhân vật
+#### 2.2.4.1. Sơ đồ kết nối các bảng
 
-▪ **players**: Lưu thông tin tài khoản — `id` (PK), `username` (UNIQUE), `password_hash`, `email`, `created_at`, `last_login`
-▪ **characters**: Thực thể trung tâm — `id` (PK), `player_id` (FK → players), `name`, `class` (ENUM: Hoa/Kim/Moc/Phong/Tho/Thuy), `level`, `exp`, `hp`, `max_hp`, `mp`, `max_mp`, `current_map_id`, `position_x`, `position_y`, `gold`
-▪ **character_stats**: Chỉ số chiến đấu tổng hợp — `character_id` (FK), `attack`, `defense`, `critical_rate`, `critical_damage`, `speed`, `element_bonus` (JSON — tăng cường nguyên tố theo Gene)
+Sơ đồ ERD dưới đây thể hiện mối liên kết giữa các bảng dữ liệu trọng tâm đang được sử dụng trực tiếp bởi hệ thống. Bố cục sơ đồ được nhóm theo đúng luồng xử lý thực tế của dự án, từ đăng nhập và hồ sơ nhân vật, sang vật phẩm và Gene, rồi tới nội dung PvE gồm bản đồ, quái vật, nhiệm vụ và phó bản.
 
-b) Nhóm thực thể trang bị và vật phẩm
+(Chèn hình từ file `docs/UseCase/erd_csdl_du_an_thuc_te.drawio` tại vị trí này)
 
-▪ **items**: Danh mục vật phẩm (định nghĩa tĩnh) — `id` (PK), `name`, `type` (ENUM: Weapon/Armor/Accessory/Consumable/Material), `rarity` (ENUM: Common/Uncommon/Rare/Epic/Legendary), `base_stats` (JSON), `description`
-▪ **character_equipment**: Trang bị đang mặc — `character_id` (FK), `slot` (ENUM: Weapon/Armor/Accessory), `item_id` (FK → items), `enhancement_level` (0–20)
-▪ **inventory**: Túi đồ nhân vật — `id` (PK), `character_id` (FK), `item_id` (FK → items), `quantity`, `slot_index`
+Hình 2.12. Sơ đồ cơ sở dữ liệu của hệ thống Mutants Arena
 
-c) Nhóm thực thể Gene
+#### 2.2.4.2. Cấu trúc các bảng chính
 
-▪ **genes**: Dữ liệu Gene của nhân vật — `id` (PK), `character_id` (FK), `gene_type` (ENUM: Kim/Moc/Thuy/Hoa/Tho/Phong), `tier` (1–5), `fragments`, `is_primary` (BOOLEAN), `is_equipped` (BOOLEAN)
-▪ **gene_definitions**: Bảng cấu hình tĩnh (nội dung game) — `gene_type`, `tier`, `required_fragments`, `required_gold`, `stat_bonuses` (JSON), `unlocked_skill_id` (FK → skills)
+Bảng 2.8. Nhóm bảng tài khoản, hồ sơ nhân vật và xã hội
 
-d) Nhóm thực thể nhiệm vụ
-
-▪ **quests**: Định nghĩa nhiệm vụ (nội dung game) — `id` (PK), `name`, `type` (ENUM: Main/Side), `min_level`, `objectives` (JSON — mảng mục tiêu với type, target, count), `reward_exp`, `reward_gold`, `reward_items` (JSON)
-▪ **player_quests**: Tiến trình nhiệm vụ theo nhân vật — `player_id` (FK), `quest_id` (FK), `status` (ENUM: Not_Started/In_Progress/Completed), `progress` (JSON — đếm từng mục tiêu), `completed_at`
-
-e) Nhóm thực thể bản đồ và quái vật
-
-▪ **maps**: Định nghĩa bản đồ — `id` (PK), `name`, `zone_type` (ENUM: Overworld/Dungeon/Town), `min_level`, `spawn_config` (JSON — danh sách spawn points, loại quái, số lượng)
-▪ **enemies**: Định nghĩa quái vật và boss — `id` (PK), `name`, `type` (ENUM: Normal/Elite/Boss), `element` (ENUM nguyên tố), `hp`, `attack`, `defense`, `exp_reward`, `phases_json` (JSON — chỉ áp dụng cho Boss, chứa ngưỡng HP và kỹ năng từng phase)
-▪ **skills**: Định nghĩa kỹ năng — `id` (PK), `name`, `element`, `damage_multiplier`, `cooldown`, `mp_cost`, `effect_type`, `effect_duration`, `description`
-
-f) Nhóm thực thể hệ thống nhóm
-
-▪ **parties**: Nhóm người chơi — `id` (PK), `leader_character_id` (FK → characters), `member_ids` (JSON — mảng characterId), `created_at`, `status` (ENUM: Active/Dissolved)
-
-Bảng 2.2: Tổng hợp cấu trúc cơ sở dữ liệu
-
-| Bảng | Mô tả | Ghi chú |
+| Bảng | Vai trò | Thuộc tính tiêu biểu |
 |---|---|---|
-| players | Tài khoản người dùng | Khóa chính cho toàn hệ thống |
-| characters | Nhân vật game | Thực thể trung tâm — liên kết hầu hết bảng khác |
-| character_stats | Chỉ số chiến đấu tổng hợp | Cập nhật mỗi khi Gene/trang bị thay đổi |
-| items | Danh mục vật phẩm | Bảng lookup tĩnh — không thay đổi thường xuyên |
-| character_equipment | Trang bị đang mặc | Tối đa 3 hàng mỗi nhân vật (3 slot) |
-| inventory | Túi đồ nhân vật | Tối đa 60 slot mỗi nhân vật |
-| genes | Gene nguyên tố nhân vật | Tối đa 3 Gene mỗi nhân vật (1 chính + 2 phụ) |
-| gene_definitions | Cấu hình nâng cấp Gene | Bảng lookup tĩnh — 6 loại × 5 Tier = 30 hàng |
-| quests | Định nghĩa nhiệm vụ | Bảng lookup tĩnh — nội dung game |
-| player_quests | Tiến trình nhiệm vụ | Theo dõi trạng thái từng nhiệm vụ mỗi nhân vật |
-| maps | Định nghĩa bản đồ | Cấu hình spawn qua JSON column |
-| enemies | Quái vật và boss | phases_json chỉ dùng cho Boss type |
-| skills | Định nghĩa kỹ năng | Liên kết với genes và characters |
-| parties | Nhóm người chơi | Xóa khi nhóm giải tán |
+| users | Lưu định danh tài khoản, phục vụ đăng ký, đăng nhập và phát hành JWT | user_id, username, email, password_hash, created_at, last_login |
+| player_data | Lưu hồ sơ gameplay chính của người chơi, gồm chỉ số, trang bị, túi đồ, kỹ năng, buff và tiến trình nhiệm vụ | player_id, character_name, info_char, equipment, inventory, skills, active_buffs |
+| player2_data | Lưu hồ sơ nhân vật hệ gene thứ hai, được backend sử dụng ở các luồng secondary gene và kỹ năng hệ phụ | player_id, character_name, info_char, skills, potential_stats, active_buffs |
+| friend_relations | Lưu quan hệ bạn bè và trạng thái chấp nhận lời mời giữa các tài khoản | id, user_id, friend_id, status, created_at |
+
+Bảng 2.9. Nhóm bảng vật phẩm, option và nâng cấp trang bị
+
+| Bảng | Vai trò | Thuộc tính tiêu biểu |
+|---|---|---|
+| item_template | Định nghĩa toàn bộ mẫu vật phẩm của game như trang bị, potion, đá cường hóa, nguyên liệu Gene, vé dungeon và túi mở rộng | id, name, type, idClass, idIcon, levelNeed, isLock, sellPrice |
+| item_effect_template | Cấu hình hiệu ứng phát sinh khi sử dụng item tiêu hao hoặc item buff | item_template_id, effect_type, value, duration_sec, icon_id, display_name |
+| option_template | Định nghĩa các dòng chỉ số trang bị và tiến trình tăng chỉ số theo cấp cường hóa | id, name, type, level, strOption |
+| equipment_upgrade_config | Cấu hình bạc tiêu hao, đá cần dùng, tỉ lệ thành công và chính sách thất bại khi cường hóa | upgrade_level, silver_cost, stone_id, stone_needed, base_success_rate, fail_policy |
+
+Bảng 2.10. Nhóm bảng Gene, Hybrid và kỹ năng
+
+| Bảng | Vai trò | Thuộc tính tiêu biểu |
+|---|---|---|
+| gene_upgrade_config | Cấu hình nâng Gene chính theo từng hệ nguyên tố và mốc tier | tier_from, element_type, gene_exp_required, silver_cost, stone_id, stone_needed, base_success_rate |
+| gene_multi_config | Cấu hình nâng Gene phụ, phục vụ cơ chế đa hệ và mở rộng Hybrid | tier_from, element_type, gene_exp_required, silver_cost, stone_id, stone_needed, base_success_rate |
+| gene_tier_stat_config | Quy định lượng HP, MP, tấn công và phòng thủ cộng thêm khi đạt tier mới | element_type, tier_to, hp_bonus, mp_bonus, attack_bonus, defense_bonus |
+| gene_hybrid_config | Định nghĩa các tổ hợp Hybrid, vật phẩm dung hợp, bonus chỉ số và prefab hiển thị trong Unity | hybrid_id, element_a, element_b, hybrid_name, fusion_item_id, fusion_item_count, atk_bonus_percent, prefab_path |
+| gene_hybrid_skill | Ánh xạ mỗi tổ hợp Hybrid với kỹ năng đặc biệt tương ứng | id, hybrid_id, skill_code, slot_priority |
+| skill_template | Lưu cấu hình kỹ năng tĩnh của game, bao gồm kỹ năng thường, kỹ năng nguyên tố và kỹ năng Hybrid | skill_id, skill_code, skill_name, element_type, levels_json, gene_tier_required, hybrid_id |
+
+Bảng 2.11. Nhóm bảng thế giới game, quái vật, nhiệm vụ và dungeon
+
+| Bảng | Vai trò | Thuộc tính tiêu biểu |
+|---|---|---|
+| enemy | Lưu dữ liệu quái thường, elite và boss, bao gồm chỉ số chiến đấu, kháng nguyên tố, skill và phần thưởng rơi | enemy_id, enemy_name, level, base_hp, base_damage, enemy_type, drop_items_json, skills_json |
+| boss_config | Cấu hình boss theo từng map với thời điểm spawn, vị trí và chu kỳ hồi sinh | boss_id, map_id, spawn_x, spawn_y, respawn_minutes, is_active |
+| map_config | Lưu thông tin bản đồ, scene Unity, ngưỡng cấp độ và điều kiện nhiệm vụ để mở khóa map | map_id, map_name, scene_name, min_level, max_level, required_quest_id |
+| quest_config | Lưu chuỗi nhiệm vụ, NPC liên quan, phần thưởng và các bước tiến trình dưới dạng JSON | id, name, npc_id, level_need, item_reward, step, is_active |
+| dungeon_config | Lưu cấu hình tổng quát của phó bản, gồm loại dungeon, map sử dụng, boss và reward tổng | dungeon_id, dungeon_name, dungeon_type, map_id, max_players, min_level_required, boss_enemy_id, reward_json |
+| dungeon_wave_config | Lưu cấu hình wave, giới hạn lượt vào và mốc thưởng theo tiến trình dungeon dạng sóng | dungeon_id, max_waves, wave_time_seconds, enemy_scale_percent, daily_entry_limit, milestone_reward_json |
+
+Thiết kế cơ sở dữ liệu trên phục vụ ba mục tiêu chính. Thứ nhất, dữ liệu định danh tài khoản được tách khỏi dữ liệu gameplay: `users` chỉ lưu thông tin đăng nhập và phát hành JWT, còn `player_data`, `player2_data` và `player_equipment` lưu trạng thái nhân vật, trang bị, túi đồ, kỹ năng, buff và tiến trình nhiệm vụ. Cách tổ chức này giúp bảo vệ thông tin tài khoản và giảm rủi ro khi thay đổi các logic gameplay như combat, Gene, inventory hoặc dungeon. Thứ hai, dữ liệu cấu hình tiến trình RPG được chia thành các cụm riêng gồm vật phẩm - nâng cấp trang bị (`item_template`, `item_effect_template`, `option_template`, `equipment_upgrade_config`), Gene - Hybrid - kỹ năng (`gene_upgrade_config`, `gene_multi_config`, `gene_tier_stat_config`, `gene_hybrid_config`, `gene_hybrid_skill`, `skill_template`) và nội dung PvE (`enemy`, `map_config`, `quest_config`, `boss_config`, `dungeon_config`, `dungeon_wave_config`). Nhờ vậy, hệ thống có thể truy vết và cân bằng đầy đủ vòng đời phát triển nhân vật từ nhận vật phẩm, nâng trang bị, tiến hóa Gene đến làm nhiệm vụ và hoàn thành phó bản mà không phải hard-code trực tiếp ở client. Thứ ba, dữ liệu bản đồ và vận hành được tách khỏi dữ liệu nhân vật thông qua các bảng như `map_portal`, `map_spawn_config`, `leaderboard_cache` và `player_action_log`, hỗ trợ điều hướng map, cấu hình spawn, xếp hạng, audit hành vi người chơi và theo dõi các luồng vận hành runtime của gameplay server qua các API host/heartbeat.
 
 ---
 

@@ -176,4 +176,38 @@ public static class ElementHelper
         "Wind"  => "Metal",
         _       => null
     };
+
+    /// <summary>
+    /// Nghịch đảo của GetCounteredElement:
+    /// trả về hệ KHẮC element đầu vào (tức là "ai khắc được element này").
+    ///   Wood  → Metal  (Kim khắc Mộc)
+    ///   Water → Wood   (Mộc khắc Thủy)
+    ///   Fire  → Water  (Thủy khắc Hỏa)
+    ///   Earth → Fire   (Hỏa khắc Thổ)
+    ///   Metal → Earth  (Thổ khắc Kim)
+    ///   Wind  → null   (Phong không có hệ khắc trong vòng chuẩn)
+    /// </summary>
+    public static string GetElementThatCounters(string englishKey) => englishKey switch
+    {
+        "Wood"  => "Metal",
+        "Water" => "Wood",
+        "Fire"  => "Water",
+        "Earth" => "Fire",
+        "Metal" => "Earth",
+        _       => null
+    };
+
+    /// <summary>
+    /// Kiểm tra xem một element string có nằm trong CSV list hay không.
+    /// Dùng để tra HybridBonusTargets hoặc HybridImmuneElements.
+    /// </summary>
+    public static bool IsInCsvList(string element, string csvList)
+    {
+        if (string.IsNullOrEmpty(element) || string.IsNullOrEmpty(csvList)) return false;
+        var parts = csvList.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+        foreach (var p in parts)
+            if (string.Equals(p.Trim(), element, System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
+    }
 }

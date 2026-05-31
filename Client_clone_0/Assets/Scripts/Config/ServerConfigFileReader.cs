@@ -14,32 +14,49 @@ public static class ServerConfigFileReader
     /// </summary>
     public static string ReadConfigJson()
     {
+        return TryReadConfig(out string json, out _, out _) ? json : null;
+    }
+
+    public static bool TryReadConfig(out string json, out string path, out long lastWriteUtcTicks)
+    {
+        json = null;
+        path = null;
+        lastWriteUtcTicks = 0;
+
         // 1 — StreamingAssets (hoạt động trên mọi platform)
         string streamingPath = System.IO.Path.Combine(Application.streamingAssetsPath, FileName);
-        if (TryRead(streamingPath, out string json))
-            return json;
+        if (TryRead(streamingPath, out json, out lastWriteUtcTicks))
+        {
+            path = streamingPath;
+            return true;
+        }
 
         // 2 — Cùng thư mục với executable (tiện cho server build)
         string exeDir = System.IO.Path.GetDirectoryName(Application.dataPath); // parent of _Data
         if (!string.IsNullOrEmpty(exeDir))
         {
             string exePath = System.IO.Path.Combine(exeDir, FileName);
-            if (TryRead(exePath, out json))
-                return json;
+            if (TryRead(exePath, out json, out lastWriteUtcTicks))
+            {
+                path = exePath;
+                return true;
+            }
         }
 
-        return null;
+        return false;
     }
 
-    private static bool TryRead(string path, out string content)
+    private static bool TryRead(string path, out string content, out long lastWriteUtcTicks)
     {
         content = null;
+        lastWriteUtcTicks = 0;
         try
         {
-            if (System.IO.File.Exists(path))
+            var fileInfo = new System.IO.FileInfo(path);
+            if (fileInfo.Exists)
             {
                 content = System.IO.File.ReadAllText(path);
-                Debug.Log($"[ServerConfigFileReader] Loaded config from: {path}");
+                lastWriteUtcTicks = fileInfo.LastWriteTimeUtc.Ticks;
                 return true;
             }
         }

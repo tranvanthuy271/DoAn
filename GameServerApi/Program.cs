@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using GameServerApi.Auth;
 using GameServerApi.Data;
 using GameServerApi.Hubs;
@@ -7,6 +8,7 @@ using GameServerApi.Services;
 using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -43,6 +45,18 @@ builder.Services.AddCors(options =>
 builder.Services.AddMemoryCache();
 
 builder.Services.AddAuthorization();
+
+// ── Rate Limiting: chống brute-force login ────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("login", opt =>
+    {
+        opt.Window       = TimeSpan.FromSeconds(60);
+        opt.PermitLimit  = 5;
+        opt.QueueLimit   = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // ── Application services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService,   AuthService>();
@@ -218,6 +232,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
