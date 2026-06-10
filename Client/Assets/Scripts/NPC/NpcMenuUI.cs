@@ -262,12 +262,14 @@ public class NpcMenuUI : MonoBehaviour
     {
         EnsureInitialized();
         _currentInteraction = interaction;
+        UIPanelManager.CloseOthers(gameObject);
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         mainPanel.SetActive(true);
         if (shopPanel) shopPanel.SetActive(true);
         if (bagPanel)  bagPanel.SetActive(false);
         HideItemDetailPanelIfOpen();
         ClearShopItems();
+        UIPanelManager.NotifyOpened(gameObject);
         Debug.Log($"{LogPrefix} OpenShopDirect called.", this);
     }
     /// <summary>
@@ -280,6 +282,7 @@ public class NpcMenuUI : MonoBehaviour
         _currentInteraction = null;
         GameplayCommandService.OnUtilityShopReceived  += ShowShop;
         GameplayCommandService.OnUtilityShopBuyResult += OnUtilityBuyResult;
+        UIPanelManager.CloseOthers(gameObject);
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         mainPanel.SetActive(true);
         if (shopPanel) shopPanel.SetActive(true);
@@ -288,6 +291,7 @@ public class NpcMenuUI : MonoBehaviour
         ClearShopItems();
         if (npcNameText)  npcNameText.text  = "Cửa Hàng Tiện Ích";
         if (dialogueText) dialogueText.text = "Mua sắm không nào?";
+        UIPanelManager.NotifyOpened(gameObject);
         GameplayCommandService.Instance?.LoadUtilityShopServerRpc();
         Debug.Log($"{LogPrefix} OpenUtilityMode called.", this);
     }

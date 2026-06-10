@@ -1,0 +1,37 @@
+=================================================================
+   GAME SERVER API – LOAD TEST REPORT
+   Thời điểm: 2026-06-02 23:33:09
+   Base URL:  http://localhost:5000
+=================================================================
+
+## Scenario 1 – Baseline login latency (serial, n=30)
+   min  = 240.7 ms
+   p50  = 257.6 ms
+   p95  = 288.0 ms
+   p99  = 288.0 ms
+   max  = 288.0 ms
+   mean = 257.9 ms
+   stdev= 21.3 ms
+
+## Scenario 2 & 4 – Concurrent login / Ramp-up
+   Users      n         p50         p95         p99         max       RPS
+  ---------------------------------------------------------------
+       1      0      0.0 ms      0.0 ms      0.0 ms      0.0 ms      0.0
+       5      0      0.0 ms      0.0 ms      0.0 ms      0.0 ms      0.0
+      10      0      0.0 ms      0.0 ms      0.0 ms      0.0 ms      0.0
+      20      0      0.0 ms      0.0 ms      0.0 ms      0.0 ms      0.0
+      50      0      0.0 ms      0.0 ms      0.0 ms      0.0 ms      0.0
+
+## Scenario 3 – Authenticated endpoints (concurrency=20)
+  [leaderboard]
+    n=20  p50=137.7 ms  p95=155.3 ms  max=155.3 ms
+  Aggregate throughput: 126.2 req/s
+
+## Ghi chú phương pháp đo
+  - Công cụ: Python 3 / aiohttp (async HTTP)
+  - Môi trường: localhost (loopback), không có network latency thực
+  - Database: MySQL/MariaDB chạy local
+  - Latency đo từ lúc gửi request đến khi nhận xong response body
+  - Baseline sử dụng BCrypt verify nên latency login cao hơn các API khác
+  - Kết quả thô lưu tại: C:\Hub\DoAn\Scripts\benchmark_results\load_test_results_20260602_233259.csv
+=================================================================

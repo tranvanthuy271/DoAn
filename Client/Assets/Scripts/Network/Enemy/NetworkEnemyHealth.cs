@@ -64,8 +64,10 @@ public class NetworkEnemyHealth : NetworkBehaviour
         public int    EnemyLevel   => _networkEnemyLevel.Value > 0 ? _networkEnemyLevel.Value : 1;
         public int    EnemyDbId    => _networkEnemyDbId.Value;
 
-        public bool IsHealBlocked => _healBlocked;
+        /// <summary>Máu tối đa của quái (dùng để tính EXP Gene Tối Thượng khi giết).</summary>
+        public int    MaxHealthValue => networkMaxHealth.Value > 0 ? networkMaxHealth.Value : maxHealth;
 
+        public bool IsHealBlocked => _healBlocked;
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -262,7 +264,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
             {
                 // Thưởng EXP
                 if (ExpReward > 0)
-                    killerSync.AwardExpOnServer(ExpReward);
+                    killerSync.AwardExpOnServer(ExpReward, MaxHealthValue);
 
                 // Quest kill hook: báo cáo tiến trình nhiệm vụ loại "kill"
                 int dbPlayerId = killerSync.networkPlayerId.Value;

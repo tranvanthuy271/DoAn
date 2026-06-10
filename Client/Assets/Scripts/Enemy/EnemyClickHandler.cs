@@ -23,6 +23,10 @@ public class EnemyClickHandler : MonoBehaviour
     [Tooltip("Child GameObject mũi tên/indicator, mặc định ẩn trong prefab")]
     public GameObject selectionIndicator;
 
+    [Header("Auto Hide")]
+    [SerializeField] private float panelHideDistance = 12f;
+    [SerializeField] private float panelIdleHideSeconds = 5f;
+
     // ─── Static: chỉ một enemy được chọn tại một thời điểm ───────────
     private static EnemyClickHandler _currentSelected;
 
@@ -30,6 +34,7 @@ public class EnemyClickHandler : MonoBehaviour
     private NetworkEnemyHealth _netHealth;
     private EnemySkillSet _skillSet;          // Chỉ có trên server/host
     private EnemyStatOverride _statOverride;  // Chỉ có trên server/host
+    private float _lastSelectedSkillTime;
 
     private void Awake()
     {
@@ -47,6 +52,26 @@ public class EnemyClickHandler : MonoBehaviour
     }
 
     private void OnHealthChangedRefresh(int cur, int max) => RefreshPanelIfSelected();
+
+    private void Update()
+    {
+        if (_currentSelected != this)
+            return;
+
+        if (panelIdleHideSeconds > 0f && Time.time - _lastSelectedSkillTime >= panelIdleHideSeconds)
+        {
+            DeselectCurrent();
+            return;
+        }
+
+        Transform localPlayer = FindLocalPlayerTransform();
+        if (localPlayer == null || panelHideDistance <= 0f)
+            return;
+
+        float sqrDistance = (localPlayer.position - transform.position).sqrMagnitude;
+        if (sqrDistance > panelHideDistance * panelHideDistance)
+            DeselectCurrent();
+    }
 
     // Unity gọi khi click chuột trên Collider2D (cần Collider2D non-trigger trên root)
     private void OnMouseDown()
@@ -73,12 +98,14 @@ public class EnemyClickHandler : MonoBehaviour
 
         // Bỏ chọn NPC đang được chọn (nếu có)
         NpcInteraction.DeselectCurrent();
+        PlayerClickHandler.DeselectCurrent();
 
         // Bỏ chọn enemy cũ
         if (_currentSelected != null && _currentSelected != this)
             _currentSelected.Deselect();
 
         _currentSelected = this;
+        _lastSelectedSkillTime = Time.time;
 
         if (selectionIndicator != null)
             selectionIndicator.SetActive(true);
@@ -107,6 +134,12 @@ public class EnemyClickHandler : MonoBehaviour
             EnemyInfoPanel.Instance?.Hide();
             _currentSelected = null;
         }
+    }
+
+    public static void NotifySkillUsedOnCurrentTarget()
+    {
+        if (_currentSelected != null)
+            _currentSelected._lastSelectedSkillTime = Time.time;
     }
 
     /// <summary>
@@ -175,5 +208,18 @@ public class EnemyClickHandler : MonoBehaviour
             EnemyInfoPanel.Instance?.Hide();
             TargetSelector.ClearTarget(transform);
         }
+    }
+
+    private static Transform FindLocalPlayerTransform()
+    {
+        var players = FindObjectsOfType<NetworkPlayerController>();
+        for (int i = 0; i < players.Length; i++)
+        {
+            var player = players[i];
+            if (player != null && player.IsOwner)
+                return player.transform;
+        }
+
+        return Camera.main != null ? Camera.main.transform : null;
     }
 }

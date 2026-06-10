@@ -13,7 +13,7 @@ using UnityEngine.Networking;
 /// </summary>
 public static class QuestProgressReporter
 {
-    public enum ProgressType { Kill, Collect, Talk }
+    public enum ProgressType { Kill, Collect, Talk, Reach }
 
     /// <summary>
     /// Báo cáo sự kiện lên /api/quest/progress.
@@ -52,7 +52,9 @@ public static class QuestProgressReporter
         req.SetRequestHeader("Content-Type", "application/json");
 
         // Zone API key (server-to-server auth)
-        string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey();
+        string apiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey()
+                        ?? System.Environment.GetEnvironmentVariable("ZONE_API_KEY")
+                        ?? "dev-zone-key";
         if (!string.IsNullOrWhiteSpace(apiKey))
             req.SetRequestHeader("X-Zone-Api-Key", apiKey);
 

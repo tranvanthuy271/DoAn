@@ -1,0 +1,46 @@
+Line 28: - Khái quát thể loại 2D Action RPG, khảo sát game tham chiếu (Hollow Knight, Dead Cells, Celeste, MapleStory, Làng Lá), cơ sở lý thuyết về di chuyển, AI quái vật (FSM) và kiến trúc mạng.
+Line 30: - Thiết kế kiến trúc tổng thể 3 tầng, đặc tả Use Case chi tiết, và thiết kế cơ sở dữ liệu vật lý (ERD).
+Line 32: - Chi tiết lập trình cơ chế di chuyển platformer (Coyote time, Jump buffer), ma trận tương khắc Ngũ Hành, hệ thống Gene 5 Tier & Hybrid Fusion, AI FSM quái vật, đồng bộ Client-side Prediction và Zone-based Server.
+Line 34: - Kết quả triển khai VPS Linux qua Docker Compose, cơ chế bảo mật (JWT, Connection Approval, API Key), giao diện thực tế và đánh giá hiệu năng mạng/FPS.
+Line 47: - *Gameplay*: Hệ thống di chuyển platformer và trí tuệ nhân tạo quái vật (FSM).
+Line 94: - **Vật lý di chuyển 2D (Box2D)**: Sử dụng các lực gia tốc, vận tốc ngang kết hợp điều chỉnh trọng lực rơi lớn hơn trọng lực bay lên (Variable Gravity Jump) tạo cảm giác điều khiển mượt mà, chân thực.
+Line 96: - **Finite State Machine (FSM) cho quái vật**:
+Line 97: - AI quái vật được mô hình hóa thành các trạng thái rời rạc: *Idle/Patrol* (tuần tra), *Chase* (đuổi theo người chơi), *Attack* (tấn công khi đủ gần), và *Hit/Dead* (nhận sát thương/chết giải phóng tài nguyên).
+Line 117: - **Cơ chế Multi-Gene**: Hỗ trợ khảm đồng thời 1 Gene chính (nhận 100% hiệu năng chỉ số và kỹ năng) cùng Gene phụ (nhận 30% chỉ số cộng thêm), tạo nên các hướng build cực kỳ đa dạng.
+Line 139: - *Unity Netcode for GameObjects (NGO)*: Chạy UDP với cơ chế tin cậy lựa chọn (reliable/unreliable) đồng bộ realtime vị trí, combat trễ thấp.
+Line 140: - *SignalR (WebSockets)*: Chạy TCP tin cậy cao cho meta-game (Chat, Party, Lobby).
+Line 141: - **Stack công nghệ**: Unity 2D (gameplay client), C# .NET 8, ASP.NET Core (REST API/SignalR), MySQL (Database), Docker Compose (VPS).
+Line 156: - Chương 2 tập trung đặc tả yêu cầu bài toán (yêu cầu chức năng và phi chức năng), thiết kế kiến trúc hệ thống 3 tầng tổng thể, xây dựng các biểu đồ Use Case chi tiết, và sơ đồ cơ sở dữ liệu vật lý (ERD).
+Line 166: - **Tầng Client (Unity Client)**: Xây dựng trên ngôn ngữ C#, chịu trách nhiệm render hình ảnh, hoạt ảnh nhân vật, xử lý các dự đoán di chuyển (Client-side prediction) và gửi input điều khiển mạng lên Server.
+Line 168: - *Dedicated Server (Unity Headless)*: Chạy logic vật lý, va chạm, AI FSM quái vật, tính toán sát thương thời gian thực.
+Line 169: - *API & SignalR Server (ASP.NET Core 8)*: Xác thực JWT, lưu trữ tiến trình qua EF Core, quản lý sảnh chờ, kênh chat và tổ đội.
+Line 170: - **Tầng Database (MySQL Database)**: Lưu trữ thông tin tài khoản, nhân vật, túi đồ, trang bị và cấu hình hệ thống.
+Line 188: - **Tác nhân chính (Actors)**:
+Line 189: - *Người chơi (Player)*: Đăng nhập, di chuyển, chiến đấu, nâng cấp Gene, tham gia tổ đội, trò chuyện và vượt phó bản.
+Line 190: - *Hệ thống máy chủ (Server)*: Xác thực tài khoản, kiểm duyệt di chuyển, đồng bộ quái vật và vật phẩm rớt.
+Line 209: - **Tác nhân kích hoạt**: Người chơi (Player).
+Line 210: - **Mục tiêu ca sử dụng**: Cho phép người chơi sử dụng đòn đánh thường hoặc các kỹ năng chủ động (Q, W, E, R) lên quái vật/đối thủ.
+Line 229: - **Tác nhân kích hoạt**: Người chơi (Player).
+Line 231: - **Quy trình vận hành**: Người chơi tương tác với NPC Tiến hóa, tiêu tốn nguyên liệu (bạc, vật phẩm tiến hóa); hệ thống cộng kinh nghiệm Gene, thăng Tier (tối đa Tier 5), tăng chỉ số nhân vật vĩnh viễn và mở khóa kỹ năng mới.
+Line 250: - **Mục tiêu ca sử dụng**: Tổ đội tham gia phó bản vượt ải, tiêu diệt quái vật theo đợt (Wave) và tiêu diệt Boss để nhận thưởng.
+Line 251: - **Quy trình vận hành**: Trưởng nhóm đăng ký tham gia phó bản; hệ thống khởi tạo thực thể bản đồ (Instance), spawn quái vật theo đợt dựa trên cấu hình wave; khi hoàn tất, hệ thống tính toán phần thưởng và đưa người chơi về sảnh chính.
+Line 263: # Slide 16: Sơ đồ Cơ sở dữ liệu vật lý (ERD)
+Line 270: - `users`: Thông tin tài khoản đăng nhập (mã hóa mật khẩu).
+Line 304: - **Dash I-Frames**: Lập trình trạng thái bất tử ngắn (0.2 giây) khi lướt nhanh bằng cách tắt tạm thời va chạm của nhân vật với các hitbox đòn đánh của quái vật.
+Line 319: - **Hitbox & Hurtbox**: Triển khai bằng Trigger Collider 2D trên Dedicated Server. Khi xảy ra va chạm, server thực hiện tính toán sát thương trực tiếp, client chỉ chịu trách nhiệm render hiệu ứng hoạt ảnh và text sát thương (damage pop-up).
+Line 322: - Hệ thứ 6 **Phong (Wind)** đóng vai trò là hệ trung lập đặc biệt, không khắc và không bị khắc bởi 5 hệ còn lại (nhân **x1.0**), giúp tăng tính cân bằng chiến thuật.
+Line 323: - **Công thức sát thương cuối**: `Damage = (ATK * skill_mult * element_mult) - DEF * red_factor`. Luôn đảm bảo tối thiểu gây 1 sát thương để tránh lỗi bất tử.
+Line 333: - **Cấu trúc Gene 5 Tier**: Thay thế lớp nhân vật (class) cố định. Nâng cấp Gene mở khóa kỹ năng chủ động, bị động tương ứng.
+Line 334: - **Multi-Gene**: Khi đạt Tier 5, người chơi khảm đồng thời 1 Gene chính (100% hiệu năng chỉ số) và 1 Gene phụ (30% chỉ số), cho phép tự do kết hợp tạo hơn 30 hướng build.
+Line 335: - **Hybrid Fusion**: Dung hợp 2 Gene hệ khác nhau ở Tier 5 (ví dụ: Kim + Phong) tạo class lai đặc biệt với kỹ năng lai độc nhất.
+Line 336: - **Gene Tối Thượng (Ultimate Gene)**: Mở khóa khi tích lũy đủ 1,000,000 EXP Tối Thượng ở cấp Hybrid, kích hoạt trạng thái nhân **x1.5** các chỉ số cơ bản (HP, MP, ATK, DEF) và hiển thị Aura hiệu ứng quanh người.
+Line 356: - Boss được cấu hình đa giai đoạn dựa trên phần trăm HP còn lại (ví dụ: Phase 1: 100% HP, Phase 2: <60% HP, Phase 3: <30% HP).
+Line 378: - Server gửi State chuẩn về; client so khớp, nếu sai lệch vượt ngưỡng, client tự động mượt mà lướt về vị trí chuẩn từ Server, loại bỏ hiện tượng giật lùi (rubber banding).
+Line 381: - Tạo động các phó bản (Dungeon Instance) riêng tư cho các tổ đội và tự giải phóng tài nguyên sau khi phó bản hoàn thành.
+Line 406: - **Môi trường Cloud**: Đóng gói toàn bộ hệ thống vào các container Docker độc lập chạy trên máy chủ ảo VPS Linux (Ubuntu Server).
+Line 409: - `web-api`: Container REST API & SignalR Hub (ASP.NET Core 8), mở cổng HTTP (80/443) nhận kết nối.
+Line 410: - `game-server`: Container Unity Dedicated Server headless, mở cổng UDP (7777) phục vụ realtime gameplay.
+Line 430: - **Bảo mật kết nối Game Server (Dedicated Server)**:
+Line 494: - **Phó bản Wave**: Giao diện HUD hiển thị số đợt quái (Wave 3/5), số quái còn lại, và thanh máu Boss ở đỉnh màn hình.
+Line 513: - **Thử nghiệm độ trễ (Latency)**: Kiểm thử kết nối client-server trong điều kiện mạng thực tế với RTT dao động từ 40ms đến 90ms. Cơ chế dự đoán di chuyển (Client-prediction) hoạt động ổn định, triệt tiêu hoàn toàn cảm giác khựng trễ di chuyển.
+Line 517: - **Đánh giá bảo mật**: Thực nghiệm sử dụng các công cụ thay đổi bộ nhớ tại Client (Cheat Engine) để hack vàng và HP; Dedicated Server phát hiện và từ chối ghi nhận, chứng minh mô hình Server-Authoritative chống gian lận thành công.

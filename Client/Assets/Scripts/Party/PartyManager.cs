@@ -291,32 +291,27 @@ public class PartyManager : MonoBehaviour
         _client.On("PartyStateUpdated", json =>
         {
             CurrentParty = PartyStatePayload.FromJson(json);
-            Debug.Log($"{LogPrefix} Event PartyStateUpdated | partyId={CurrentParty?.partyId} members={CurrentParty?.memberCount ?? 0} locked={CurrentParty?.isLocked} autoAccept={CurrentParty?.autoAccept} raw={json}", this);
             SyncChatGroup();
             OnPartyStateChanged?.Invoke(CurrentParty);
         });
         _client.On("PartyInviteReceived", json =>
         {
             var payload = PartyInvitePayload.FromJson(json);
-            Debug.Log($"{LogPrefix} Event PartyInviteReceived | leaderName={payload?.leaderName} partyId={payload?.partyId} raw={json}", this);
             OnInviteReceived?.Invoke(payload);
         });
         _client.On("PartyJoinRequestReceived", json =>
         {
             var payload = PartyJoinRequestPayload.FromJson(json);
-            Debug.Log($"{LogPrefix} Event PartyJoinRequestReceived | requester={payload?.requesterName} requesterUserId={payload?.requesterUserId} raw={json}", this);
             OnJoinRequestReceived?.Invoke(payload);
         });
         _client.On("PartySearchResults", json =>
         {
             LatestSearchResults = PartySearchResultPayload.FromJson(json) ?? new PartySearchResultPayload();
-            Debug.Log($"{LogPrefix} Event PartySearchResults | count={LatestSearchResults.parties?.Length ?? 0} raw={json}", this);
             OnSearchResultsUpdated?.Invoke(LatestSearchResults);
         });
         _client.On("NearbyPlayersUpdated", json =>
         {
             LatestNearbyPlayers = NearbyPlayersPayload.FromJson(json) ?? new NearbyPlayersPayload();
-            Debug.Log($"{LogPrefix} Event NearbyPlayersUpdated | count={LatestNearbyPlayers.players?.Length ?? 0} raw={json}", this);
             OnNearbyPlayersUpdated?.Invoke(LatestNearbyPlayers);
         });
         _client.On("PartyDisbanded", _ =>

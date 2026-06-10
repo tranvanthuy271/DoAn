@@ -148,6 +148,8 @@ crashlytics-build.properties
 *.bak
 *.swp
 *~
+__pycache__/
+*.pyc
 
 # OS generated files
 .DS_Store

@@ -155,6 +155,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         // Bỏ chọn enemy đang được chọn
         EnemyClickHandler.DeselectCurrent();
+        PlayerClickHandler.DeselectCurrent();
 
         // Bỏ chọn NPC cũ
         if (_currentSelected != null && _currentSelected != this)

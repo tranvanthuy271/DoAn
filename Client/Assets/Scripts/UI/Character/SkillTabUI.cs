@@ -225,10 +225,33 @@ public class SkillTabUI : MonoBehaviour
         }
 
         PlayerSkillCache.Instance?.Invalidate();
+        ReloadRuntimeSkillsAndHotbar();
 
         // Äóng overlay, reload list
         skillDetailPanel?.Hide();
         Load();
+    }
+
+    private static void ReloadRuntimeSkillsAndHotbar()
+    {
+        SkillRuntimeLoader ownerLoader = null;
+        SkillRuntimeLoader[] loaders = FindObjectsByType<SkillRuntimeLoader>(FindObjectsSortMode.None);
+        foreach (var loader in loaders)
+        {
+            if (loader != null && loader.IsOwner)
+            {
+                ownerLoader = loader;
+                break;
+            }
+        }
+
+        if (ownerLoader == null && loaders.Length > 0)
+            ownerLoader = loaders[0];
+
+        if (ownerLoader != null)
+            ownerLoader.ReloadNow();
+        else
+            FindObjectOfType<SkillHotbarUI>()?.ForceRebind();
     }
 
     private void ClearRows()
@@ -353,13 +376,17 @@ public class SkillTabUI : MonoBehaviour
         {
             if (skillDetailPanelPrefab == null)
             {
-                Debug.LogError("[SkillTabUI] Chua gan SkillDetailOverlay prefab. Hay gan SkillDetailOverlay.prefab vao skillDetailPanelPrefab.");
-                return false;
+                var go = new GameObject("SkillDetailOverlay", typeof(RectTransform), typeof(Image), typeof(SkillDetailPanelUI));
+                go.transform.SetParent(overlayParent, false);
+                go.layer = gameObject.layer;
+                skillDetailPanel = go.GetComponent<SkillDetailPanelUI>();
             }
-
-            skillDetailPanel = Instantiate(skillDetailPanelPrefab, overlayParent);
-            skillDetailPanel.name = "SkillDetailOverlay";
-            SetLayerRecursively(skillDetailPanel.gameObject, gameObject.layer);
+            else
+            {
+                skillDetailPanel = Instantiate(skillDetailPanelPrefab, overlayParent);
+                skillDetailPanel.name = "SkillDetailOverlay";
+                SetLayerRecursively(skillDetailPanel.gameObject, gameObject.layer);
+            }
         }
 
         // Phủ kín toàn bộ parent (= character panel content area)

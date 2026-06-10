@@ -58,6 +58,30 @@ public class SkillRuntimeLoader : NetworkBehaviour
     //  Load logic
     // ════════════════════════════════════════════════════════════════════════
 
+    public void ReloadNow()
+    {
+        var networkManager = NetworkManager.Singleton;
+        bool networkActive = networkManager != null
+            && (networkManager.IsHost || networkManager.IsClient || networkManager.IsServer);
+        if (networkActive && !IsOwner) return;
+
+        if (skillManager == null)
+            skillManager = GetComponent<PlayerSkillManager>();
+        if (windStepSkill == null)
+            windStepSkill = GetComponent<WindStepSkill>() ?? GetComponentInParent<WindStepSkill>();
+        if (teleportSkill == null)
+            teleportSkill = GetComponent<TeleportSkill>() ?? GetComponentInParent<TeleportSkill>();
+
+        if (skillManager == null)
+        {
+            Debug.LogWarning("[SkillRuntimeLoader] ReloadNow: skillManager null, cannot reload hotbar.");
+            return;
+        }
+
+        loaded = false;
+        StartCoroutine(LoadWithRetry());
+    }
+
     private IEnumerator WaitAndLoad()
     {
         // Đợi APIClient sẵn sàng (có thể chưa init ngay khi spawn)
@@ -168,6 +192,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         }
 
         int matched = 0;
+        var matchedSkillCodes = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
         // Duyệt SkillData trong PlayerSkillManager
         for (int i = 0; i < skillManager.GetSkillCount(); i++)
@@ -175,7 +200,18 @@ public class SkillRuntimeLoader : NetworkBehaviour
             SkillData sd = skillManager.GetSkill(i);
             if (sd == null || string.IsNullOrEmpty(sd.skillCode)) continue;
 
-            if (!TryGetPlayerSkillInfo(lookup, sd.skillCode, out PlayerSkillInfo info)) continue;
+            if (!TryGetPlayerSkillInfo(lookup, sd.skillCode, out PlayerSkillInfo info))
+            {
+                sd.SetUnlockState(false, 999);
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(info.skill_code))
+                matchedSkillCodes.Add(info.skill_code);
+            matchedSkillCodes.Add(sd.skillCode);
+
+            bool unlocked = response.player_level >= Mathf.Max(1, info.level_to_unlock) && info.current_level > 0;
+            sd.SetUnlockState(unlocked, info.level_to_unlock);
 
             // Apply stats từ DB — kể cả khi current_level=0 (dùng stats level 1 làm base)
             sd.cooldown      = info.current_cooldown_sec > 0 ? info.current_cooldown_sec : sd.cooldown;
@@ -220,6 +256,17 @@ public class SkillRuntimeLoader : NetworkBehaviour
             matched++;
             Debug.Log($"[SkillRuntimeLoader] Applied '{sd.skillCode}' lv{info.current_level}: CD={sd.cooldown}s base_EV={info.current_effect_value} atkBonus={playerFinalAtk} totalEV={effectValue} MP={sd.currentMpCost}");
         }
+
+        foreach (var info in response.skills)
+        {
+            if (info == null || info.current_level <= 0 || string.IsNullOrEmpty(info.skill_code)) continue;
+            if (matchedSkillCodes.Contains(info.skill_code)) continue;
+
+            Debug.LogWarning($"[SkillRuntimeLoader] Skill '{info.skill_code}' lv{info.current_level} is unlocked on server but current prefab '{gameObject.name}' has no matching SkillData. Hotbar cannot show/use it until the spawned prefab or SkillData is fixed.");
+        }
+
+        skillManager.SortSkillsForHotbar();
+        FindObjectOfType<SkillHotbarUI>()?.ForceRebind();
 
         loaded = true;
         Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill, player_final_attack={playerFinalAtk}");

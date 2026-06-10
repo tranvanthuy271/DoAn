@@ -91,7 +91,10 @@ public static class ServerGroundColliderDatabaseBaker
             BoxCollider2D[] sourceColliders = root.GetComponentsInChildren<BoxCollider2D>(true);
             foreach (BoxCollider2D sourceCollider in sourceColliders)
             {
-                if (sourceCollider == null || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
+                if (sourceCollider == null
+                    || !sourceCollider.enabled
+                    || sourceCollider.isTrigger
+                    || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
                     continue;
 
                 colliders.Add(ToGroundColliderData(sourceCollider));
@@ -143,24 +146,51 @@ public static class ServerGroundColliderDatabaseBaker
 
     private static string ResolveScenePath(string sceneName)
     {
-        foreach (EditorBuildSettingsScene buildScene in EditorBuildSettings.scenes)
-        {
-            if (string.IsNullOrWhiteSpace(buildScene.path))
-                continue;
+        string[] sceneNameCandidates = BuildSceneNameCandidates(sceneName);
 
-            if (Path.GetFileNameWithoutExtension(buildScene.path) == sceneName)
-                return buildScene.path;
+        foreach (string candidate in sceneNameCandidates)
+        {
+            foreach (EditorBuildSettingsScene buildScene in EditorBuildSettings.scenes)
+            {
+                if (string.IsNullOrWhiteSpace(buildScene.path))
+                    continue;
+
+                if (Path.GetFileNameWithoutExtension(buildScene.path) == candidate)
+                    return buildScene.path;
+            }
         }
 
-        string[] guids = AssetDatabase.FindAssets($"{sceneName} t:Scene");
-        foreach (string guid in guids)
+        foreach (string candidate in sceneNameCandidates)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (Path.GetFileNameWithoutExtension(path) == sceneName)
-                return path;
+            string[] guids = AssetDatabase.FindAssets($"{candidate} t:Scene");
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (Path.GetFileNameWithoutExtension(path) == candidate)
+                    return path;
+            }
         }
 
         return null;
+    }
+
+    private static string[] BuildSceneNameCandidates(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return new string[0];
+
+        if (!string.IsNullOrWhiteSpace(sceneName)
+            && sceneName.StartsWith("Map")
+            && int.TryParse(sceneName.Substring(3), out int numericMapId))
+        {
+            return new[]
+            {
+                sceneName,
+                numericMapId.ToString()
+            };
+        }
+
+        return new[] { sceneName };
     }
 }
 #endif

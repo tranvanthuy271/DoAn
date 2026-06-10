@@ -2,39 +2,50 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 /// <summary>
-/// QuestHudWidget — Panel nhá» ở góc màn hình hiển thị nhiệm vụ hiện tại.
+/// HUD nhiem vu nho o goc man hinh.
 ///
-/// Hiển thị:
-///   - "Chính: [tên quest]"
-///   - "- Tìm [npc_name] để nhận nhiệm vụ"   (nếu quest chưa nhận)
-///   - "- [tên bước]: done/require"             (nếu đang làm)
-///   - "- ✓ Tìm [npc_name] để nộp nhiệm vụ"   (nếu hoàn thành)
+/// Hien thi:
+///   - "Chinh: [ten quest]"
+///   - "- Tim [npc_name] de nhan nhiem vu" khi quest chua nhan.
+///   - "- [ten buoc]: done/require" khi quest dang lam.
+///   - "- [x] Tim [npc_name] de nop nhiem vu" khi da hoan thanh.
 ///
-/// Nhấn nút "→" để tự động di chuyển đến mục tiêu.
-///
-/// Cấu trúc GameObject khuyến nghị:
-///   QuestHudWidget (MonoBehaviour)
-///   └── Panel (Image – ná»n má»)
-///       ├── QuestName  (TMP_Text – "Chính: ...")
-///       ├── QuestStep  (TMP_Text – "- ...")
-///       └── BtnNavigate (Button)
-///           └── Label (TMP_Text – "→")
+/// Nut dieu huong tu dong dua player toi NPC hoac muc tieu cua buoc hien tai.
 /// </summary>
 public class QuestHudWidget : MonoBehaviour
 {
+    private static QuestHudWidget _instance;
+
+    private static readonly Vector2 HudPanelSize = new Vector2(360f, 104f);
+    private static readonly Vector2 HudPanelPosition = new Vector2(12f, -336.2f);
+    private static readonly Vector2 NavigateButtonSize = new Vector2(44f, 86f);
+    private static readonly Vector2 PerfStatsSize = new Vector2(320f, 30f);
+    private static readonly Vector2 PerfStatsPosition = new Vector2(-12f, HudPanelPosition.y);
+    private static readonly Vector4 HudTextMargin = new Vector4(2f, 0f, 2f, 0f);
+    private const float PerfStatsUpdateInterval = 5f;
+
     [Header("UI References")]
     [SerializeField] private GameObject rootWidget;
     [SerializeField] private TMP_Text   questNameText;
     [SerializeField] private TMP_Text   questStepText;
     [SerializeField] private Button     btnNavigate;
     [SerializeField] private TMP_Text   btnNavigateLabel;
+    [SerializeField] private TMP_Text   perfStatsText;
 
     // ─── Auto-move state ──────────────────────────────────────────────────────
     private bool  _autoMoving;
     private float _autoMoveTargetX;
     private int   _autoMoveTargetMapId = -1;
+    private float _perfTimer;
+    private float _perfElapsed;
+    private int   _perfFrames;
+    private float _rttTotalMs;
+    private int   _rttSamples;
+    private bool  _isGameplayScene;
 
     private const float ARRIVE_THRESHOLD = 0.8f;
 
@@ -42,25 +53,49 @@ public class QuestHudWidget : MonoBehaviour
 
     private void Awake()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+
         // Tách khỏi parent Canvas nếu có (giống QuestNpcPanel) để sortOrder=30 hoạt động đúng
         if (transform.parent != null)
             transform.SetParent(null, false);
         DontDestroyOnLoad(gameObject);
         AutoWire();
+        _isGameplayScene = IsGameplayScene(SceneManager.GetActiveScene().name);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        EnsureHudLayout();
+        ApplySceneVisibility();
         // Đăng ký rootWidget làm HUD: ẩn khi có panel mở, hiện khi hết panel
         UIPanelManager.RegisterHud(rootWidget != null ? rootWidget : gameObject);
+        if (perfStatsText != null)
+            UIPanelManager.RegisterHud(perfStatsText.gameObject);
+        ApplySceneVisibility();
     }
 
     private void OnDestroy()
     {
+        if (_instance == this)
+            _instance = null;
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
         UIPanelManager.UnregisterHud(rootWidget != null ? rootWidget : gameObject);
+        if (perfStatsText != null)
+            UIPanelManager.UnregisterHud(perfStatsText.gameObject);
     }
 
     private void OnEnable()
     {
         if (QuestManager.Instance != null)
             QuestManager.Instance.OnQuestListChanged += Refresh;
-        Refresh();
+        if (_isGameplayScene)
+            Refresh();
+        else
+            ApplySceneVisibility();
     }
 
     private void OnDisable()
@@ -72,6 +107,12 @@ public class QuestHudWidget : MonoBehaviour
 
     private void Start()
     {
+        if (!_isGameplayScene)
+        {
+            ApplySceneVisibility();
+            return;
+        }
+
         // Tải trạng thái HUD ngay khi vào scene
         if (QuestManager.Instance != null)
         {
@@ -87,6 +128,14 @@ public class QuestHudWidget : MonoBehaviour
 
     private void Update()
     {
+        if (!_isGameplayScene)
+        {
+            ApplySceneVisibility();
+            return;
+        }
+
+        UpdatePerfStats();
+
         if (!_autoMoving) return;
 
         if (Input.GetKeyDown(KeyCode.Escape)) { StopAutoMove(); return; }
@@ -109,21 +158,29 @@ public class QuestHudWidget : MonoBehaviour
 
     public void Refresh()
     {
+        if (!_isGameplayScene)
+        {
+            ApplySceneVisibility();
+            return;
+        }
+
         var quest = QuestManager.Instance?.HintQuest
                  ?? QuestManager.Instance?.ActiveQuest;
 
         Debug.Log($"[QuestHudWidget] Refresh() — QuestManager={QuestManager.Instance != null} HintQuest={QuestManager.Instance?.HintQuest?.name} ActiveQuest={QuestManager.Instance?.ActiveQuest?.name} rootWidget={rootWidget?.name} active={rootWidget?.activeSelf}");
 
         // Luôn hiện widget (ẩn chỉ khi rootWidget = null)
-        if (rootWidget) rootWidget.SetActive(true);
+        EnsureHudLayout();
+        if (rootWidget) UIPanelManager.ApplyHudVisibility(rootWidget);
+        if (perfStatsText != null) UIPanelManager.ApplyHudVisibility(perfStatsText.gameObject);
 
         if (quest == null)
         {
             StopAutoMove();
-            if (questNameText) questNameText.text = "Nhiệm vụ: Chưa có";
-            if (questStepText)  questStepText.text  = "- Tìm NPC nhiệm vụ để bắt đầu";
+            if (questNameText) questNameText.text = "Nhiem vu: Chua co";
+            if (questStepText)  questStepText.text  = "- Tim NPC nhiem vu de bat dau";
             if (btnNavigate)    btnNavigate.gameObject.SetActive(false);
-            Debug.Log("[QuestHudWidget] quest=null → hiển thị 'Chưa có'");
+            Debug.Log("[QuestHudWidget] quest=null -> hien thi Chua co");
             return;
         }
 
@@ -131,8 +188,8 @@ public class QuestHudWidget : MonoBehaviour
 
         StopAutoMove();
 
-        // "Chính: [name]"
-        if (questNameText) questNameText.text = $"Chính: {quest.name}";
+        // "Chinh: [name]"
+        if (questNameText) questNameText.text = $"Chinh: {quest.name}";
 
         // Step line
         if (questStepText) questStepText.text = BuildStepLine(quest);
@@ -212,13 +269,43 @@ public class QuestHudWidget : MonoBehaviour
         if (_autoMoving) { InputManager.Instance?.CancelAutoMove(); _autoMoving = false; }
     }
 
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        _isGameplayScene = IsGameplayScene(scene.name);
+        ApplySceneVisibility();
+
+        if (_isGameplayScene)
+            Refresh();
+        else
+            StopAutoMove();
+    }
+
+    private static bool IsGameplayScene(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return false;
+
+        return sceneName == "GameScene"
+            || sceneName.StartsWith("Map")
+            || sceneName.StartsWith("Dungeon");
+    }
+
+    private void ApplySceneVisibility()
+    {
+        bool visible = _isGameplayScene;
+        if (rootWidget != null && rootWidget.activeSelf != visible)
+            rootWidget.SetActive(visible);
+        if (perfStatsText != null && perfStatsText.gameObject.activeSelf != visible)
+            perfStatsText.gameObject.SetActive(visible);
+    }
+
     // ─── Step line builder ────────────────────────────────────────────────────
 
     private static string BuildStepLine(QuestManager.QuestStatusDto q)
     {
         if (q.status == "available")
         {
-            return $"- Tìm {BuildNpcTargetLabel(q)} để nhận nhiệm vụ";
+            return $"- Tim {BuildNpcTargetLabel(q)} de nhan nhiem vu";
         }
 
         var steps = ParseSteps(q.steps_json);
@@ -227,7 +314,7 @@ public class QuestHudWidget : MonoBehaviour
         bool allDone = AreAllDone(q, steps);
         if (allDone)
         {
-            return $"- ✓ Tìm {BuildNpcTargetLabel(q)} để nộp nhiệm vụ";
+            return $"- [x] Tim {BuildNpcTargetLabel(q)} de nop nhiem vu";
         }
 
         int idx = Mathf.Clamp(q.current_step_index, 0, steps.Count - 1);
@@ -238,7 +325,7 @@ public class QuestHudWidget : MonoBehaviour
         for (int i = 0; i < steps.Count; i++)
             if (GetProgress(q, i) < steps[i].require) remaining++;
 
-        string extra = remaining > 1 ? $" (còn {remaining} việc)" : "";
+        string extra = remaining > 1 ? $" (con {remaining} viec)" : "";
         return $"- {step.name}: {done}/{step.require}{extra}";
     }
 
@@ -246,9 +333,9 @@ public class QuestHudWidget : MonoBehaviour
     {
         string npcName = string.IsNullOrEmpty(q.npc_name) ? "NPC" : q.npc_name;
         if (!string.IsNullOrEmpty(q.npc_map_name))
-            return $"{npcName} ở {q.npc_map_name}";
+            return $"{npcName} o {q.npc_map_name}";
         if (q.npc_map_id >= 0)
-            return $"{npcName} ở map {q.npc_map_id}";
+            return $"{npcName} o map {q.npc_map_id}";
         return npcName;
     }
 
@@ -314,11 +401,179 @@ public class QuestHudWidget : MonoBehaviour
                                                         ?? root.Find("BtnOpen")?.GetComponent<Button>();
         if (btnNavigateLabel == null && btnNavigate != null)
             btnNavigateLabel = btnNavigate.GetComponentInChildren<TMP_Text>();
+        if (perfStatsText == null)
+            perfStatsText = transform.Find("PerfStatsText")?.GetComponent<TMP_Text>();
 
         if (btnNavigate != null) btnNavigate.onClick.AddListener(OnNavigateClicked);
     }
 
     // ─── DTOs ─────────────────────────────────────────────────────────────────
+
+    private void EnsureHudLayout()
+    {
+        if (rootWidget != null && rootWidget.TryGetComponent(out RectTransform panelRect))
+        {
+            panelRect.anchorMin = new Vector2(0f, 1f);
+            panelRect.anchorMax = new Vector2(0f, 1f);
+            panelRect.pivot = new Vector2(0f, 1f);
+            panelRect.anchoredPosition = HudPanelPosition;
+            panelRect.sizeDelta = HudPanelSize;
+        }
+
+        ApplyQuestTextLayout(questNameText, 0.52f, 1f, 14f, 4f, -56f, -6f, 18f, FontStyles.Bold);
+        ApplyQuestTextLayout(questStepText, 0f, 0.52f, 14f, 8f, -56f, -2f, 16f, FontStyles.Normal);
+
+        if (btnNavigate != null && btnNavigate.TryGetComponent(out RectTransform navRect))
+        {
+            navRect.anchorMin = new Vector2(1f, 0.5f);
+            navRect.anchorMax = new Vector2(1f, 0.5f);
+            navRect.pivot = new Vector2(1f, 0.5f);
+            navRect.anchoredPosition = new Vector2(-4f, 0f);
+            navRect.sizeDelta = NavigateButtonSize;
+        }
+
+        if (btnNavigateLabel != null)
+        {
+            btnNavigateLabel.fontSize = 22f;
+            btnNavigateLabel.enableWordWrapping = false;
+            btnNavigateLabel.overflowMode = TextOverflowModes.Overflow;
+            btnNavigateLabel.alignment = TextAlignmentOptions.Center;
+        }
+
+        EnsurePerfStatsText();
+    }
+
+    private void EnsurePerfStatsText()
+    {
+        if (perfStatsText == null)
+        {
+            var go = new GameObject("PerfStatsText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.layer = gameObject.layer;
+            go.transform.SetParent(transform, false);
+            perfStatsText = go.GetComponent<TextMeshProUGUI>();
+            perfStatsText.text = "FPS -- | Ping --ms";
+            UIRuntimeAssetHelper.ApplyNotoSans(perfStatsText);
+            UIPanelManager.RegisterHud(go);
+        }
+
+        perfStatsText.fontSize = 16f;
+        perfStatsText.fontStyle = FontStyles.Normal;
+        perfStatsText.color = Color.white;
+        perfStatsText.enableWordWrapping = false;
+        perfStatsText.overflowMode = TextOverflowModes.Overflow;
+        perfStatsText.alignment = TextAlignmentOptions.MidlineRight;
+        perfStatsText.raycastTarget = false;
+        perfStatsText.fontMaterial.DisableKeyword("OUTLINE_ON");
+
+        var outline = perfStatsText.GetComponent<Outline>();
+        if (outline != null)
+        {
+            if (Application.isPlaying)
+                Destroy(outline);
+            else
+                DestroyImmediate(outline);
+        }
+
+        RectTransform rect = perfStatsText.rectTransform;
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = PerfStatsPosition;
+        rect.sizeDelta = PerfStatsSize;
+        rect.localScale = Vector3.one;
+    }
+
+    private void UpdatePerfStats()
+    {
+        if (perfStatsText == null)
+            EnsurePerfStatsText();
+
+        float delta = Time.unscaledDeltaTime;
+        if (delta <= 0f)
+            return;
+
+        _perfTimer += delta;
+        _perfElapsed += delta;
+        _perfFrames++;
+
+        float rttMs = GetCurrentRttMs();
+        if (rttMs >= 0f)
+        {
+            _rttTotalMs += rttMs;
+            _rttSamples++;
+        }
+
+        if (_perfTimer < PerfStatsUpdateInterval)
+            return;
+
+        float fps = _perfElapsed > 0f ? Mathf.Min(60f, _perfFrames / _perfElapsed) : 0f;
+        string pingText = _rttSamples > 0 ? $"{Mathf.RoundToInt(_rttTotalMs / _rttSamples)}ms" : "--ms";
+        if (perfStatsText != null)
+            perfStatsText.text = $"FPS {Mathf.RoundToInt(fps)} | Ping {pingText}";
+
+        _perfTimer = 0f;
+        _perfElapsed = 0f;
+        _perfFrames = 0;
+        _rttTotalMs = 0f;
+        _rttSamples = 0;
+    }
+
+    private static float GetCurrentRttMs()
+    {
+        var networkManager = NetworkManager.Singleton;
+        var transport = networkManager != null ? networkManager.NetworkConfig?.NetworkTransport : null;
+        if (networkManager == null || transport == null || !networkManager.IsListening)
+            return -1f;
+
+        if (networkManager.IsClient)
+            return transport.GetCurrentRtt(NetworkManager.ServerClientId);
+
+        if (networkManager.IsServer && networkManager.ConnectedClientsIds != null)
+        {
+            float total = 0f;
+            int count = 0;
+            foreach (ulong clientId in networkManager.ConnectedClientsIds)
+            {
+                if (clientId == NetworkManager.ServerClientId)
+                    continue;
+
+                total += transport.GetCurrentRtt(clientId);
+                count++;
+            }
+
+            return count > 0 ? total / count : 0f;
+        }
+
+        return -1f;
+    }
+
+    private static void ApplyQuestTextLayout(
+        TMP_Text text,
+        float minY,
+        float maxY,
+        float left,
+        float bottom,
+        float right,
+        float top,
+        float fontSize,
+        FontStyles fontStyle)
+    {
+        if (text == null) return;
+
+        text.fontSize = fontSize;
+        text.fontStyle = fontStyle;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.margin = HudTextMargin;
+        text.alignment = TextAlignmentOptions.TopLeft;
+
+        if (!text.TryGetComponent(out RectTransform rect)) return;
+
+        rect.anchorMin = new Vector2(0f, minY);
+        rect.anchorMax = new Vector2(1f, maxY);
+        rect.offsetMin = new Vector2(left, bottom);
+        rect.offsetMax = new Vector2(right, top);
+    }
 
     [System.Serializable]
     private class StepDto { public string name; public int require; public int idMap = -1; public int x; public int y; }

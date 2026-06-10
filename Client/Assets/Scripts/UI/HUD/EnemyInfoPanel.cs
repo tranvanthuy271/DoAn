@@ -40,12 +40,16 @@ public class EnemyInfoPanel : MonoBehaviour
     [Header("Level & EXP")]
     public TextMeshProUGUI levelExpText;  // "Lv: 52 + 28045 Exp"
 
+    [Header("Stacking")]
+    [SerializeField] private int sortingOrder = 1;
+
     // ─────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        ConfigureStacking();
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 
@@ -56,7 +60,9 @@ public class EnemyInfoPanel : MonoBehaviour
     public void Show(EnemyStats stats)
     {
         if (panelRoot == null || stats == null) return;
+        ConfigureStacking();
         panelRoot.SetActive(true);
+        panelRoot.transform.SetAsFirstSibling();
 
         if (nameText != null)
             nameText.text = stats.enemyName;
@@ -67,7 +73,11 @@ public class EnemyInfoPanel : MonoBehaviour
         UpdateHP(stats.currentHp, stats.maxHp);
 
         if (levelExpText != null)
-            levelExpText.text = $"Lv: {stats.level} + {stats.expReward} Exp";
+        {
+            levelExpText.text = stats.expReward > 0
+                ? $"Lv: {stats.level} + {stats.expReward} Exp"
+                : $"Lv: {stats.level}";
+        }
     }
 
     /// <summary>Cập nhật HP realtime khi enemy bị đánh (gọi từ EnemyClickHandler.RefreshPanelIfSelected).</summary>
@@ -83,6 +93,23 @@ public class EnemyInfoPanel : MonoBehaviour
     public void Hide()
     {
         if (panelRoot != null) panelRoot.SetActive(false);
+    }
+
+    private void ConfigureStacking()
+    {
+        var canvas = GetComponent<Canvas>();
+        if (canvas != null)
+        {
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = sortingOrder;
+        }
+
+        var group = GetComponent<CanvasGroup>();
+        if (group == null)
+            group = gameObject.AddComponent<CanvasGroup>();
+
+        group.blocksRaycasts = false;
+        group.interactable = false;
     }
 
     // ─────────────────────────────────────────────────────────────────

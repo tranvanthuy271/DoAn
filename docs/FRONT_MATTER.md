@@ -100,85 +100,121 @@ Em xin chân thành cảm ơn!
 
 | Số hiệu | Tên hình | Vị trí |
 |---|---|---|
-| Hình 1.1 | Lịch sử phát triển game 2D Action RPG | Chương 1 |
-| Hình 1.2 | Sơ đồ phân loại thể loại 2D Action RPG | Chương 1 |
-| Hình 1.3 | Biểu đồ doanh thu thị trường game thế giới | Chương 1 |
-| Hình 1.4 | Mockup gameplay Hollow Knight (tham chiếu) | Chương 1 |
-| Hình 1.5 | Sơ đồ vòng tương khắc Ngũ Hành | Chương 1 |
-| Hình 1.6 | Kiến trúc Server Authoritative tổng quát | Chương 1 |
-| Hình 2.1 | Kiến trúc ba tầng tổng thể hệ thống | Chương 2 |
-| Hình 2.2 | Use Case Diagram tổng quát | Chương 2 |
-| Hình 2.3 | Sơ đồ ERD cơ sở dữ liệu | Chương 2 |
-| Hình 2.4 | Activity Diagram đăng nhập | Chương 2 |
-| Hình 2.5 | Activity Diagram chiến đấu | Chương 2 |
-| Hình 2.6 | Component Diagram client – server – DB | Chương 2 |
-| Hình 3.1 | Class Diagram module di chuyển | Chương 3 |
-| Hình 3.2 | State Diagram di chuyển nhân vật | Chương 3 |
-| Hình 3.3 | Sequence Diagram đồng bộ di chuyển multiplayer | Chương 3 |
-| Hình 3.4 | Sequence Diagram phóng skill projectile | Chương 3 |
-| Hình 3.5 | Mockup UI Gene Forge | Chương 3 |
-| Hình 3.6 | Activity Diagram quy trình nhiệm vụ | Chương 3 |
-| Hình 3.7 | Flowchart Boss Phase System | Chương 3 |
-| Hình 3.8 | Wireframe UI hội thoại NPC | Chương 3 |
-| Hình 3.9 | Sequence Diagram giao dịch mua hàng | Chương 3 |
-| Hình 3.10 | Mockup UI Cường hoá + Ghép đá | Chương 3 |
-| Hình 3.11 | Sơ đồ Zone-based Server Architecture | Chương 3 |
-| Hình 3.12 | UI HUD Wave và Boss Phase | Chương 3 |
-| Hình 4.1 | Ảnh tổng quan giao diện game in-game | Chương 4 |
-| Hình 4.2 | Biểu đồ FPS theo thời gian | Chương 4 |
-| Hình 4.3 | Biểu đồ RTT theo số client | Chương 4 |
-| Hình 4.4 | Ảnh debug system in-game | Chương 4 |
-| Hình 4.5 | Biểu đồ CPU/RAM server | Chương 4 |
+| Hình 1.1 | Sơ đồ trạng thái Animator Controller của nhân vật 2D (Idle → Run → Jump → Fall → Dash → Attack → Die) | Chương 1 |
+| Hình 1.2 | Luồng loot và nâng cấp trang bị (Drop → Inventory → Equip → Enhance → Sell/Discard) | Chương 1 |
+| Hình 1.3 | Sơ đồ chuyển trạng thái của quái vật trong game 2D (Idle → Patrol → Chase → Attack → Dead) | Chương 1 |
+| Hình 1.4 | Boss Phase System — thay đổi hành vi theo ngưỡng HP (giai đoạn 1 → 2 → 3) | Chương 1 |
+| Hình 1.5 | Luồng Server Authoritative — Client gửi input, Server xử lý và xác nhận, broadcast kết quả cho tất cả clients | Chương 1 |
+| Hình 1.6 | Kiến trúc Zone-based Server — một server process quản lý nhiều zone (bản đồ chung và instance phó bản) | Chương 1 |
+| Hình 1.7 | Luồng xác thực JWT từ đăng nhập REST API đến kết nối Game Server (NGO Connection Approval) | Chương 1 |
+| Hình 1.8 | Luồng Wave-based Dungeon (Wave 1 → ... → Wave N → Boss → Clear → Reward) | Chương 1 |
+| Hình 1.9 | Sơ đồ ERD tổng quát của hệ thống game (users, player_data, enemy, item, skill, map, dungeon) | Chương 1 |
+| Hình 1.10 | Kiến trúc Docker Compose — MySQL + REST API + Game Server trên Linux VPS | Chương 1 |
+| Hình 2.1 | Sơ đồ kiến trúc tổng thể hệ thống Mutants Arena (Unity Client — Game Server/API Server — MySQL) | Chương 2 |
+| Hình 2.2 | Biểu đồ ca sử dụng mức tổng quát hệ thống Mutants Arena | Chương 2 |
+| Hình 2.3 | Biểu đồ ca sử dụng cho mô-đun Đăng ký tài khoản | Chương 2 |
+| Hình 2.4 | Biểu đồ ca sử dụng cho mô-đun Đăng nhập và vào game | Chương 2 |
+| Hình 2.5 | Biểu đồ ca sử dụng cho mô-đun Di chuyển và chuyển map | Chương 2 |
+| Hình 2.6 | Biểu đồ ca sử dụng cho mô-đun Chiến đấu và sử dụng kỹ năng | Chương 2 |
+| Hình 2.7 | Biểu đồ ca sử dụng cho mô-đun Quản lý túi đồ và trang bị | Chương 2 |
+| Hình 2.8 | Biểu đồ ca sử dụng cho mô-đun Nâng cấp trang bị | Chương 2 |
+| Hình 2.9 | Biểu đồ ca sử dụng cho mô-đun Phát triển Gene và Hybrid | Chương 2 |
+| Hình 2.10 | Biểu đồ ca sử dụng cho mô-đun Phân bổ tiềm năng và kỹ năng | Chương 2 |
+| Hình 2.11 | Biểu đồ ca sử dụng cho mô-đun Tương tác NPC và mua vật phẩm | Chương 2 |
+| Hình 2.12 | Biểu đồ ca sử dụng cho mô-đun Quản lý nhiệm vụ | Chương 2 |
+| Hình 2.13 | Biểu đồ ca sử dụng cho mô-đun Quản lý bạn bè | Chương 2 |
+| Hình 2.14 | Biểu đồ ca sử dụng cho mô-đun Quản lý tổ đội và chat | Chương 2 |
+| Hình 2.15 | Biểu đồ ca sử dụng cho mô-đun Tham gia và hoàn tất phó bản | Chương 2 |
+| Hình 2.16 | Biểu đồ ca sử dụng cho mô-đun Xem leaderboard | Chương 2 |
+| Hình 2.17 | Biểu đồ ca sử dụng cho mô-đun Quản lý gameplay server | Chương 2 |
+| Hình 2.18 | Biểu đồ ca sử dụng cho mô-đun Host map và phát thưởng phó bản | Chương 2 |
+| Hình 2.19 | Biểu đồ tuần tự đặc tả ca sử dụng Chiến đấu và sử dụng kỹ năng | Chương 2 |
+| Hình 2.20 | Biểu đồ tuần tự đặc tả ca sử dụng Nâng cấp trang bị tại Blacksmith | Chương 2 |
+| Hình 2.21 | Biểu đồ tuần tự đặc tả ca sử dụng Nâng Gene chính và Gene phụ | Chương 2 |
+| Hình 2.22 | Biểu đồ tuần tự đặc tả ca sử dụng Dung hợp Hybrid Gene | Chương 2 |
+| Hình 2.22a | Biểu đồ tuần tự đặc tả ca sử dụng Kích hoạt Gene Tối Thượng | Chương 2 |
+| Hình 2.23 | Biểu đồ tuần tự đặc tả ca sử dụng Tham gia và hoàn tất phó bản | Chương 2 |
+| Hình 2.24 | Sơ đồ cơ sở dữ liệu của hệ thống Mutants Arena | Chương 2 |
+| Hình 3.1 | Mô hình bảo mật nhiều lớp của hệ thống Mutants Arena | Chương 3 |
+| Hình 3.2 | Luồng xác thực nội bộ Zone Server bằng Zone API Key | Chương 3 |
+| Hình 3.3 | Luồng kiểm duyệt kết nối NGO Dedicated Server | Chương 3 |
+| Hình 3.4 | Kiến trúc triển khai Docker Compose của hệ thống | Chương 3 |
+| Hình 3.5 | Giao diện đăng nhập | Chương 3 |
+| Hình 3.6 | Giao diện đăng ký | Chương 3 |
+| Hình 3.7 | Giao diện chọn hệ nguyên tố | Chương 3 |
+| Hình 3.7 | Giao diện sảnh chính | Chương 3 |
+| Hình 3.8 | Giao diện chọn nhân vật (SelectGene) | Chương 3 |
+| Hình 3.9 | Giao diện tạo nhân vật Gene 2 mới | Chương 3 |
+| Hình 3.10 | Giao diện thanh trạng thái nhân vật (HealthBar / MpBar / PlayerInfoUI) | Chương 3 |
+| Hình 3.11 | Giao diện thanh kỹ năng và Buff (SkillHotbarUI / BuffHudPanel) | Chương 3 |
+| Hình 3.12 | Giao diện thông tin quái (EnemyInfoPanel) | Chương 3 |
+| Hình 3.13 | Giao diện thông báo hệ thống (GlobalNotificationUI) | Chương 3 |
+| Hình 3.14 | Giao diện nâng cấp Gene chính (GeneUpgradePanel) | Chương 3 |
+| Hình 3.15 | Giao diện xác nhận Gene phụ cố định (SecondaryGeneSelectPanel) | Chương 3 |
+| Hình 3.16 | Giao diện nâng cấp Gene phụ (SecondaryGeneUpgradePanel) | Chương 3 |
+| Hình 3.17 | Giao diện dung hợp Hybrid (HybridFusionPanel) | Chương 3 |
+| Hình 3.18 | Giao diện bảng tóm tắt nhân vật (CharacterMenuPanelUI) | Chương 3 |
+| Hình 3.19 | Giao diện tab Chỉ số và Trang bị (StatsTabUI) | Chương 3 |
+| Hình 3.20 | Giao diện tab Kỹ năng (SkillTabUI / SkillDetailPanelUI) | Chương 3 |
+| Hình 3.21 | Giao diện tab Tiềm Năng (PotentialTabUI) | Chương 3 |
+| Hình 3.22 | Giao diện chat đa kênh (ChatPanelUI) | Chương 3 |
+| Hình 3.23 | Giao diện danh sách bạn bè (FriendListUI) | Chương 3 |
+| Hình 3.24 | Giao diện tổ đội (PartyPanelUI) | Chương 3 |
+| Hình 3.25 | Giao diện bảng xếp hạng (LeaderboardPanelUI) | Chương 3 |
+| Hình 3.26 | Giao diện chọn phó bản (DungeonListUI) | Chương 3 |
+| Hình 3.26 | Giao diện NPC trong phó bản (DungeonNpcMenuUI) | Chương 3 |
+| Hình 3.27 | Giao diện HUD phó bản wave (WaveHUD) | Chương 3 |
+| Hình 3.28 | Giao diện widget nhiệm vụ góc màn hình (QuestHudWidget) | Chương 3 |
+| Hình 3.28 | Giao diện tương tác NPC nhiệm vụ (QuestNpcPanel) | Chương 3 |
+| Hình 3.29 | Giao diện menu NPC động và cửa hàng (NpcDynamicMenuUI / NpcMenuUI) | Chương 3 |
+| Hình 3.30 | Giao diện chuyển map qua biên (MapEdgeTrigger / MapTransitionButton) | Chương 3 |
+| Hình 3.31 | Cổng dịch chuyển phòng trong bản đồ và phó bản (MapPortalTrigger) | Chương 3 |
 
 ## DANH MỤC BẢNG
 
 | Số hiệu | Tên bảng | Vị trí |
 |---|---|---|
-| Bảng 1.1 | So sánh các game 2D Action RPG tiêu biểu | Chương 1 |
-| Bảng 1.2 | Ánh xạ bài học khảo sát vào Mutants Arena | Chương 1 |
-| Bảng 1.3 | So sánh game engine 2D phổ biến | Chương 1 |
+| Bảng 1.0 | So sánh các mô hình mạng trong game multiplayer | Chương 1 |
+| Bảng 1.1 | Tổng hợp stack công nghệ của đề tài | Chương 1 |
+| Bảng 1.2 | Ánh xạ bài học khảo sát vào thiết kế Mutants Arena | Chương 1 |
+| Bảng 1.3 | trình bày đầy đủ ma trận hệ số nhân sát thương của 6 nguyên tố trong Mutants Arena — nền tảng cho toàn bộ thiết kế class và chiến thuật chiến đấu: | Chương 1 |
+| Bảng 1.3 | Ma trận tương khắc 6 nguyên tố (hàng = nguyên tố tấn công, cột = nguyên tố bị tấn công) | Chương 1 |
+| Bảng 1.4 | Cấu trúc 5 Tier của hệ thống Gene trong Mutants Arena | Chương 1 |
+| Bảng 1.5 | So sánh ba cơ chế phát triển nhân vật | Chương 1 |
+| Bảng 1.6 | So sánh các giải pháp multiplayer cho game Unity | Chương 1 |
+| Bảng 2.0b | So sánh ba mô hình đồng bộ multiplayer cho game RPG online | Chương 2 |
 | Bảng 2.1 | Các tác nhân tham gia hệ thống | Chương 2 |
-| Bảng 2.2 | Danh sách Use Case | Chương 2 |
-| Bảng 2.3 | Đặc tả Use Case Đăng nhập | Chương 2 |
-| Bảng 2.4 | Đặc tả Use Case Chiến đấu | Chương 2 |
-| Bảng 2.5 | Đặc tả Use Case Nâng cấp Gene | Chương 2 |
-| Bảng 2.6 | Lược đồ bảng `players` | Chương 2 |
-| Bảng 2.7 | Lược đồ bảng `characters` | Chương 2 |
-| Bảng 2.8 | Lược đồ bảng `gene_inventory` | Chương 2 |
-| Bảng 2.9 | Lược đồ bảng `bosses` (phases_json) | Chương 2 |
-| Bảng 2.10 | API endpoints chính | Chương 2 |
-| Bảng 3.1 | State machine di chuyển | Chương 3 |
-| Bảng 3.2 | Ma trận tương khắc 6 nguyên tố | Chương 3 |
-| Bảng 3.3 | Bonus chỉ số theo Tier Gene | Chương 3 |
-| Bảng 3.4 | Các công thức Fusion tiêu biểu | Chương 3 |
-| Bảng 3.5 | Cấu hình AI cho 3 lớp quái | Chương 3 |
-| Bảng 3.6 | Action điển hình của NPC | Chương 3 |
-| Bảng 3.7 | Bảng cường hoá trang bị | Chương 3 |
-| Bảng 3.8 | Cấu hình dungeon 5 wave + Boss | Chương 3 |
+| Bảng 2.1a | Phân nhóm chức năng theo module triển khai thực tế | Chương 2 |
+| Bảng 2.1b | Danh mục use case toàn hệ thống Mutants Arena | Chương 2 |
+| Bảng 2.18 | Nhóm bảng tài khoản, hồ sơ nhân vật và xã hội | Chương 2 |
+| Bảng 2.19 | Nhóm bảng vật phẩm, option và nâng cấp trang bị | Chương 2 |
+| Bảng 2.20 | Nhóm bảng Gene, Hybrid và kỹ năng | Chương 2 |
+| Bảng 2.21 | Nhóm bảng thế giới game, quái vật, nhiệm vụ và dungeon | Chương 2 |
 | Bảng 4.0 | Tổng hợp chức năng đã hoàn thành | Chương 4 |
 | Bảng 4.1 | Cấu hình máy client thử nghiệm | Chương 4 |
 | Bảng 4.2 | Cấu hình server thử nghiệm | Chương 4 |
-| Bảng 4.3 | Test case di chuyển | Chương 4 |
+| Bảng 4.2b | Test case Xác thực tài khoản và JWT | Chương 4 |
+| Bảng 4.3 | Test case di chuyển nhân vật | Chương 4 |
 | Bảng 4.4 | FPS trung bình theo cảnh | Chương 4 |
-| Bảng 4.5 | Test case tương khắc nguyên tố | Chương 4 |
+| Bảng 4.5 | Test case kháng nguyên tố (MobPatrolAI với resist = 40) | Chương 4 |
 | Bảng 4.6 | Test case Gene system | Chương 4 |
-| Bảng 4.7 | Test case AI quái và Boss | Chương 4 |
+| Bảng 4.7 | Test case AI quái + Boss | Chương 4 |
 | Bảng 4.8 | Test case multiplayer | Chương 4 |
-| Bảng 4.9 | RTT trung bình theo tải | Chương 4 |
-| Bảng 4.10 | Stress test REST API | Chương 4 |
-| Bảng 4.11 | Test case NPC/Shop/Equip/Map | Chương 4 |
-| Bảng 4.12 | Đánh giá yêu cầu chức năng | Chương 4 |
+| Bảng 4.9 | RTT trung bình (ms) theo tải | Chương 4 |
+| Bảng 4.10 | Stress test REST API (JMeter) | Chương 4 |
+| Bảng 4.10b | Bằng chứng đính kèm cho từng nhóm thực nghiệm | Chương 4 |
+| Bảng 4.11 | Test case NPC – Shop – Equipment – Map/Dungeon | Chương 4 |
+| Bảng 4.12 | Đánh giá đáp ứng yêu cầu chức năng | Chương 4 |
 | Bảng 4.13 | Đánh giá yêu cầu phi chức năng | Chương 4 |
 | Bảng 4.14 | Tải server theo số client | Chương 4 |
-| Bảng 4.15 | Kết quả khảo sát UX | Chương 4 |
-
----
+| Bảng 4.15 | Kết quả khảo sát UX (n = 12) | Chương 4 |
 
 ## DANH MỤC TỪ VIẾT TẮT
 
 | Viết tắt | Nghĩa tiếng Anh | Nghĩa tiếng Việt |
 |---|---|---|
 | RPG | Role-Playing Game | Game nhập vai |
+| UC | Use Case (hoặc Ca sử dụng) | Ca sử dụng |
 | FSM | Finite State Machine | Máy trạng thái hữu hạn |
 | AI | Artificial Intelligence | Trí tuệ nhân tạo |
 | NGO | Unity Netcode for GameObjects | Bộ thư viện đồng bộ Unity |

@@ -23,6 +23,14 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public NetworkVariable<float> networkMoveSpeed = new NetworkVariable<float>(5f);
     public NetworkVariable<int> networkGeneTier = new NetworkVariable<int>(1);
 
+    // ── Gene Tối Thượng (Ultimate Gene) ─────────────────────────────────
+    /// <summary>True khi player đã kích hoạt Gene Tối Thượng (hiển thị aura sau lưng).</summary>
+    public NetworkVariable<bool> networkIsUltimate = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>Resources path của aura prefab gắn sau lưng khi Ultimate kích hoạt.</summary>
+    public NetworkVariable<FixedString128Bytes> networkUltimateAuraPath = new NetworkVariable<FixedString128Bytes>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     // ── Buff stat modifiers (set by server from ActiveBuff) ──────────────
     /// <summary>% bonus EXP gene nạp vào (e.g. 20 = +20%). Set bởi server khi dùng GeneExpBuff item.</summary>
     public NetworkVariable<int> networkGeneExpBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -45,6 +53,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     [Header("References")]
     private PlayerController playerController;
     private NetworkPlayerHealth playerHealth;
+    private UltimateAuraVisual ultimateAura;
 
     public override void OnNetworkSpawn()
     {
@@ -82,7 +91,11 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkMp.OnValueChanged += OnMpChanged;
         networkMaxMp.OnValueChanged += OnMaxMpChanged;
 
-        // Sync party ID khi owner thay đổi party (chỉ owner client mới subscribe PartyManager)
+        // Gene Tối Thượng: hiển thị / ẩn aura khi cờ thay đổi
+        networkIsUltimate.OnValueChanged += OnUltimateChanged;
+        networkUltimateAuraPath.OnValueChanged += OnUltimateAuraPathChanged;
+        // Apply trạng thái ban đầu (trường hợp player đã là Ultimate khi vừa spawn)
+        RefreshUltimateAura();
         if (IsOwner)
         {
             var pm = PartyManager.Instance;
@@ -224,6 +237,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             networkMoveSpeed.Value = 5f;
         }
         networkGeneTier.Value = playerData.gene_tier;
+        networkIsUltimate.Value = playerData.is_ultimate;
+        networkUltimateAuraPath.Value = (FixedString128Bytes)(playerData.ultimate_aura_path ?? "");
 
         Debug.Log($"[NetworkPlayerDataSync] ✓ Loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
     }
@@ -246,7 +261,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkMp.OnValueChanged -= OnMpChanged;
         networkMaxMp.OnValueChanged -= OnMaxMpChanged;
 
-        // Unsubscribe party sync
+        // Gene Tối Thượng
+        networkIsUltimate.OnValueChanged -= OnUltimateChanged;
+        networkUltimateAuraPath.OnValueChanged -= OnUltimateAuraPathChanged;
         if (IsOwner)
         {
             var pm = PartyManager.Instance;
@@ -319,6 +336,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             networkMoveSpeed.Value = 5f;
         }
         networkGeneTier.Value = playerData.gene_tier;
+        networkIsUltimate.Value = playerData.is_ultimate;
+        networkUltimateAuraPath.Value = (FixedString128Bytes)(playerData.ultimate_aura_path ?? "");
 
         Debug.Log($"[NetworkPlayerDataSync] Server loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
     }
@@ -349,6 +368,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkCharacterName.Value = (Unity.Collections.FixedString64Bytes)(data.character_name ?? "");
         networkLevel.Value         = data.level;
         networkGeneTier.Value      = data.gene_tier;
+        networkIsUltimate.Value    = data.is_ultimate;
+        networkUltimateAuraPath.Value = (Unity.Collections.FixedString128Bytes)(data.ultimate_aura_path ?? "");
 
         // Stats — ưu tiên final_stats (đã có buff), fallback flat fields
         networkMaxHp.Value     = data.GetMaxHp();
@@ -420,6 +441,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         Debug.Log($"[NetworkPlayerDataSync] Element type changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
         ApplyVisuals();
+        // Đổi hệ → cập nhật aura Tối Thượng theo hệ mới
+        RefreshUltimateAura();
     }
 
     private void OnGenderChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
@@ -527,6 +550,42 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             if (pd != null) pd.gene_tier = newValue;
             SyncStatToGameManagerAndUI();
         }
+    }
+
+    // ── Gene Tối Thượng handlers ─────────────────────────────────────────
+    private void OnUltimateChanged(bool oldValue, bool newValue)
+    {
+        RefreshUltimateAura();
+
+        // Owner: cập nhật GameManager để UI hiển thị trạng thái Tối Thượng
+        if (IsOwner)
+        {
+            var pd = GameManager.Instance?.currentPlayerData;
+            if (pd != null) pd.is_ultimate = newValue;
+        }
+    }
+
+    private void OnUltimateAuraPathChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
+    {
+        RefreshUltimateAura();
+    }
+
+    /// <summary>
+    /// Bật/tắt aura Gene Tối Thượng dựa trên NetworkVariable hiện tại.
+    /// Chạy trên mọi client (host + remote) nên ai cũng thấy aura.
+    /// </summary>
+    private void RefreshUltimateAura()
+    {
+        if (ultimateAura == null)
+            ultimateAura = GetComponent<UltimateAuraVisual>();
+
+        if (ultimateAura == null)
+            return; // Prefab chưa gắn UltimateAuraVisual
+
+        ultimateAura.Apply(
+            networkIsUltimate.Value,
+            networkElementType.Value.ToString(),
+            networkUltimateAuraPath.Value.ToString());
     }
 
     /// <summary>
@@ -645,14 +704,15 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     /// Server-only: Cộng EXP cho player này và lưu vào DB.
     /// Được gọi bởi NetworkEnemyHealth.HandleDeath() khi player kill quái.
     /// </summary>
-    public void AwardExpOnServer(int expAmount)
+    public void AwardExpOnServer(int expAmount, int enemyMaxHp = 0)
     {
         if (!IsServer) return;
         int playerId = networkPlayerId.Value;
         if (playerId <= 0 || expAmount <= 0) return;
 
-        Debug.Log($"[NetworkPlayerDataSync] AwardExp +{expAmount} EXP cho playerId={playerId} (clientId={OwnerClientId})");
-        StartCoroutine(GainExpCoroutine(playerId, expAmount));
+        int ultimateExp = enemyMaxHp > 0 ? enemyMaxHp : expAmount;
+        Debug.Log($"[NetworkPlayerDataSync] AwardExp +{expAmount} EXP, ultimateExp={ultimateExp} cho playerId={playerId} (clientId={OwnerClientId})");
+        StartCoroutine(GainExpCoroutine(playerId, expAmount, ultimateExp));
     }
 
     [System.Serializable]
@@ -662,9 +722,13 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         public int experience;
         public int level;
         public bool leveled_up;
+        // ── Gene Tối Thượng ──
+        public int  ultimate_gene_exp;
+        public bool is_ultimate;
+        public bool ultimate_activated;
     }
 
-    private System.Collections.IEnumerator GainExpCoroutine(int playerId, int expAmount)
+    private System.Collections.IEnumerator GainExpCoroutine(int playerId, int expAmount, int ultimateExp)
     {
         // Áp dụng ExpBuff + PhucBuff trước khi gửi lên REST API
         float expPct  = networkExpBonusPct.Value  / 100f;
@@ -674,12 +738,17 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
         string url = $"{baseUrl}/player/{playerId}/gain-exp";
-        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount}}}");
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes($"{{\"amount\":{expAmount},\"ultimate_exp\":{Mathf.Max(0, ultimateExp)}}}");
 
         using var req = new UnityEngine.Networking.UnityWebRequest(url, "POST");
         req.uploadHandler   = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
         req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
+        string zoneApiKey = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey()
+                            ?? System.Environment.GetEnvironmentVariable("ZONE_API_KEY")
+                            ?? "dev-zone-key";
+        if (!string.IsNullOrWhiteSpace(zoneApiKey))
+            req.SetRequestHeader("X-Zone-Api-Key", zoneApiKey);
 
         yield return req.SendWebRequest();
 
@@ -695,6 +764,15 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             {
                 networkLevel.Value = resp.level;
                 Debug.Log($"[NetworkPlayerDataSync] networkLevel cập nhật → {resp.level}");
+            }
+
+            // Gene Tối Thượng vừa kích hoạt từ việc giết quái → bật aura ngay cho mọi client
+            if (resp != null && resp.ultimate_activated && !networkIsUltimate.Value)
+            {
+                networkIsUltimate.Value = true;
+                if (networkUltimateAuraPath.Value.Length == 0)
+                    networkUltimateAuraPath.Value = (FixedString128Bytes)"Prefabs/Player/Aura/UltimateAura";
+                Debug.Log($"[NetworkPlayerDataSync] ✨ Gene Tối Thượng KÍCH HOẠT cho playerId={playerId}!");
             }
 
             int newLevel  = resp != null ? resp.level : networkLevel.Value;

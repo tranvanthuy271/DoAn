@@ -9,6 +9,13 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    private const float CanvasEdgePadding = 8f;
+
+    private static readonly Vector3[] PanelWorldCorners = new Vector3[4];
+    private static readonly Vector3[] CanvasWorldCorners = new Vector3[4];
+    private static readonly Vector3[] PanelCanvasCorners = new Vector3[4];
+    private static readonly Vector3[] CanvasLocalCorners = new Vector3[4];
+
     private RectTransform _rectTransform;
     private RectTransform _rootCanvasRect;
     private Vector2 _dragOffsetInCanvasSpace;
@@ -23,6 +30,17 @@ public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHa
     private void OnEnable()
     {
         ClampToRootCanvas(_rectTransform);
+    }
+
+    private void LateUpdate()
+    {
+        if (_rectTransform == null || !_rectTransform.gameObject.activeInHierarchy)
+            return;
+
+        if (_rootCanvasRect == null && !CacheRootCanvas())
+            return;
+
+        ClampToRootCanvas(_rectTransform, _rootCanvasRect);
     }
 
     public static UIDraggablePanel Ensure(GameObject target)
@@ -66,6 +84,9 @@ public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHa
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (_rectTransform != null && _rootCanvasRect != null)
+            ClampToRootCanvas(_rectTransform, _rootCanvasRect);
+
         _canDragCurrentGesture = false;
     }
 
@@ -102,34 +123,57 @@ public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHa
 
         Canvas.ForceUpdateCanvases();
 
-        Bounds panelBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(rootCanvasRect, rectTransform);
-        Rect canvasRect = rootCanvasRect.rect;
+        rectTransform.GetWorldCorners(PanelWorldCorners);
+        rootCanvasRect.GetWorldCorners(CanvasWorldCorners);
+
+        for (int i = 0; i < 4; i++)
+        {
+            PanelCanvasCorners[i] = rootCanvasRect.InverseTransformPoint(PanelWorldCorners[i]);
+            CanvasLocalCorners[i] = rootCanvasRect.InverseTransformPoint(CanvasWorldCorners[i]);
+        }
+
+        float panelMinX = MinX(PanelCanvasCorners);
+        float panelMaxX = MaxX(PanelCanvasCorners);
+        float panelMinY = MinY(PanelCanvasCorners);
+        float panelMaxY = MaxY(PanelCanvasCorners);
+        float canvasMinX = MinX(CanvasLocalCorners) + CanvasEdgePadding;
+        float canvasMaxX = MaxX(CanvasLocalCorners) - CanvasEdgePadding;
+        float canvasMinY = MinY(CanvasLocalCorners) + CanvasEdgePadding;
+        float canvasMaxY = MaxY(CanvasLocalCorners) - CanvasEdgePadding;
+
+        if (canvasMaxX <= canvasMinX || canvasMaxY <= canvasMinY)
+            return false;
+
         Vector2 adjustment = Vector2.zero;
+        float panelWidth = panelMaxX - panelMinX;
+        float panelHeight = panelMaxY - panelMinY;
+        float canvasWidth = canvasMaxX - canvasMinX;
+        float canvasHeight = canvasMaxY - canvasMinY;
 
-        if (panelBounds.size.x >= canvasRect.width)
+        if (panelWidth >= canvasWidth)
         {
-            adjustment.x = canvasRect.center.x - panelBounds.center.x;
+            adjustment.x = (canvasMinX + canvasMaxX - panelMinX - panelMaxX) * 0.5f;
         }
-        else if (panelBounds.min.x < canvasRect.xMin)
+        else if (panelMinX < canvasMinX)
         {
-            adjustment.x = canvasRect.xMin - panelBounds.min.x;
+            adjustment.x = canvasMinX - panelMinX;
         }
-        else if (panelBounds.max.x > canvasRect.xMax)
+        else if (panelMaxX > canvasMaxX)
         {
-            adjustment.x = canvasRect.xMax - panelBounds.max.x;
+            adjustment.x = canvasMaxX - panelMaxX;
         }
 
-        if (panelBounds.size.y >= canvasRect.height)
+        if (panelHeight >= canvasHeight)
         {
-            adjustment.y = canvasRect.center.y - panelBounds.center.y;
+            adjustment.y = (canvasMinY + canvasMaxY - panelMinY - panelMaxY) * 0.5f;
         }
-        else if (panelBounds.min.y < canvasRect.yMin)
+        else if (panelMinY < canvasMinY)
         {
-            adjustment.y = canvasRect.yMin - panelBounds.min.y;
+            adjustment.y = canvasMinY - panelMinY;
         }
-        else if (panelBounds.max.y > canvasRect.yMax)
+        else if (panelMaxY > canvasMaxY)
         {
-            adjustment.y = canvasRect.yMax - panelBounds.max.y;
+            adjustment.y = canvasMaxY - panelMaxY;
         }
 
         if (adjustment.sqrMagnitude <= 0.0001f)
@@ -142,6 +186,38 @@ public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHa
 
         SetPivotPositionInCanvasSpace(rectTransform, rootCanvasRect, targetCanvasPosition);
         return true;
+    }
+
+    private static float MinX(Vector3[] corners)
+    {
+        float value = corners[0].x;
+        for (int i = 1; i < corners.Length; i++)
+            value = Mathf.Min(value, corners[i].x);
+        return value;
+    }
+
+    private static float MaxX(Vector3[] corners)
+    {
+        float value = corners[0].x;
+        for (int i = 1; i < corners.Length; i++)
+            value = Mathf.Max(value, corners[i].x);
+        return value;
+    }
+
+    private static float MinY(Vector3[] corners)
+    {
+        float value = corners[0].y;
+        for (int i = 1; i < corners.Length; i++)
+            value = Mathf.Min(value, corners[i].y);
+        return value;
+    }
+
+    private static float MaxY(Vector3[] corners)
+    {
+        float value = corners[0].y;
+        for (int i = 1; i < corners.Length; i++)
+            value = Mathf.Max(value, corners[i].y);
+        return value;
     }
 
     private bool TryStartDrag(PointerEventData eventData)
@@ -233,10 +309,12 @@ public class UIDraggablePanel : MonoBehaviour, IPointerDownHandler, IBeginDragHa
 [DefaultExecutionOrder(-9000)]
 public sealed class UIPanelDragRuntimeInstaller : MonoBehaviour
 {
+    private static readonly Vector2 ReferenceResolution = new(1920f, 1080f);
     private const float RescanIntervalSeconds = 0.5f;
 
     private static bool _installed;
     private float _nextRescanAt;
+    private Vector2Int _lastScreenSize;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Install()
@@ -260,6 +338,7 @@ public sealed class UIPanelDragRuntimeInstaller : MonoBehaviour
 
     private void Awake()
     {
+        _lastScreenSize = new Vector2Int(Screen.width, Screen.height);
         ApplyToKnownPanels();
         _nextRescanAt = Time.unscaledTime + RescanIntervalSeconds;
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -273,9 +352,11 @@ public sealed class UIPanelDragRuntimeInstaller : MonoBehaviour
 
     private void Update()
     {
-        if (Time.unscaledTime < _nextRescanAt)
+        bool screenSizeChanged = _lastScreenSize.x != Screen.width || _lastScreenSize.y != Screen.height;
+        if (!screenSizeChanged && Time.unscaledTime < _nextRescanAt)
             return;
 
+        _lastScreenSize = new Vector2Int(Screen.width, Screen.height);
         _nextRescanAt = Time.unscaledTime + RescanIntervalSeconds;
         ApplyToKnownPanels();
     }
@@ -288,6 +369,8 @@ public sealed class UIPanelDragRuntimeInstaller : MonoBehaviour
 
     private static void ApplyToKnownPanels()
     {
+        NormalizeCanvasScalers();
+
         RectTransform[] rectTransforms = Resources.FindObjectsOfTypeAll<RectTransform>();
         List<RectTransform> candidates = new();
 
@@ -305,6 +388,48 @@ public sealed class UIPanelDragRuntimeInstaller : MonoBehaviour
                 continue;
 
             UIDraggablePanel.Ensure(candidate.gameObject);
+        }
+
+        ClampVisiblePanels(candidates);
+    }
+
+    private static void NormalizeCanvasScalers()
+    {
+        foreach (Canvas canvas in Resources.FindObjectsOfTypeAll<Canvas>())
+        {
+            if (!ShouldNormalizeCanvas(canvas))
+                continue;
+
+            CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler == null)
+                scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = ReferenceResolution;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = 100f;
+            scaler.dynamicPixelsPerUnit = 1f;
+        }
+    }
+
+    private static bool ShouldNormalizeCanvas(Canvas canvas)
+    {
+        if (canvas == null || !canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace)
+            return false;
+
+        GameObject go = canvas.gameObject;
+        return go.scene.IsValid() && go.hideFlags == HideFlags.None;
+    }
+
+    private static void ClampVisiblePanels(List<RectTransform> candidates)
+    {
+        foreach (RectTransform candidate in candidates)
+        {
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+                continue;
+
+            UIDraggablePanel.ClampToRootCanvas(candidate);
         }
     }
 

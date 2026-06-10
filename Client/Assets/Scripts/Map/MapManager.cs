@@ -104,6 +104,13 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ResolveMapConfig(string sceneName)
     {
+        // After a scene transfer, PlayerData.map_id can still be stale for a moment.
+        // Resolve by the active scene first so Map00 maps to map_id=99, not the previous map_id=0.
+        bool loadedByScene = false;
+        yield return StartCoroutine(FetchMapConfigByScene(sceneName, success => loadedByScene = success));
+        if (loadedByScene)
+            yield break;
+
         if (TryResolveKnownMapId(out int knownMapId))
         {
             bool loadedById = false;
@@ -111,10 +118,8 @@ public class MapManager : MonoBehaviour
             if (loadedById)
                 yield break;
 
-            Debug.LogWarning($"[MapManager] Không load được mapId={knownMapId} từ runtime state, fallback sang by-scene cho '{sceneName}'.");
+            Debug.LogWarning($"[MapManager] Không load được mapId={knownMapId} từ runtime state cho scene '{sceneName}'.");
         }
-
-        yield return StartCoroutine(FetchMapConfigByScene(sceneName));
     }
 
     private IEnumerator FetchMapConfigById(int targetMapId, Action<bool> onCompleted)
@@ -139,7 +144,7 @@ public class MapManager : MonoBehaviour
         onCompleted?.Invoke(false);
     }
 
-    private IEnumerator FetchMapConfigByScene(string sceneName)
+    private IEnumerator FetchMapConfigByScene(string sceneName, Action<bool> onCompleted = null)
     {
         string url = $"{apiBase}/api/map/by-scene?scene={UnityWebRequest.EscapeURL(sceneName)}";
         using var req = UnityWebRequest.Get(url);
@@ -151,6 +156,7 @@ public class MapManager : MonoBehaviour
             mapId   = resp.map_id;
             mapName = resp.map_name;
             Debug.Log($"[MapManager] Map loaded via API: {mapName} (id={mapId})");
+            onCompleted?.Invoke(true);
         }
         else
         {
@@ -158,6 +164,7 @@ public class MapManager : MonoBehaviour
             if (int.TryParse(sceneName, out int parsed))
                 mapId = parsed;
             Debug.LogWarning($"[MapManager] API thất bại cho scene '{sceneName}', dùng mapId={mapId}");
+            onCompleted?.Invoke(false);
         }
     }
 

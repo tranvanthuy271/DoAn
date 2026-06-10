@@ -180,7 +180,9 @@ public class SkillRowUI : MonoBehaviour
         bool maxed = _info.current_level >= _info.max_level && _info.max_level > 0;
         if (txtLevel != null)
         {
-            txtLevel.text = maxed
+            txtLevel.text = _info.current_level <= 0
+                ? $"Khóa - mở ở Lv {Mathf.Max(1, _info.level_to_unlock)}"
+                : maxed
                 ? "<color=#FFE000>Đã đạt cấp tối đa</color>"
                 : $"Lv {_info.current_level}/{_info.max_level}";
             txtLevel.enableWordWrapping = false;

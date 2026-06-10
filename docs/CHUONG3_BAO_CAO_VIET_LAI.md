@@ -1,4 +1,4 @@
-﻿CHƯƠNG 3.CÀI ĐẶT VÀ HIỆN THỰC HÓA HỆ THỐNG
+CHƯƠNG 3.CÀI ĐẶT VÀ HIỆN THỰC HÓA HỆ THỐNG
 
 Chương 3 trình bày quá trình cài đặt và hiện thực hóa hệ thống trong project DoAn, tập trung vào hai nhóm chức năng chính: hệ thống Gene tiến hóa và kiến trúc nhiều người chơi thời gian thực. Dữ liệu trong chương này được đối chiếu trực tiếp từ mã nguồn Unity tại thư mục Client/Assets/Scripts, backend GameServerApi, các controller REST API, SignalR Hub và cơ sở dữ liệu MySQL trong tệp gamedb.sql.
 
@@ -88,15 +88,19 @@ Hệ thống chiến đấu trong project bao gồm PvE, boss fight và PvP cơ 
 
 Chi tiết luồng sát thương trong gameplay được tổ chức theo hướng: Client phát lệnh đánh hoặc dùng kỹ năng, server xác định mục tiêu hợp lệ, tính sát thương, cập nhật NetworkVariable HP và phát ClientRpc để hiển thị hiệu ứng.
 
-3.1.5Hệ thống Gene chính, Gene phụ, Hybrid Fusion và khắc chế nguyên tố
+3.1.5 Hệ thống Gene chính, Gene phụ, Hybrid Fusion, Gene Tối Thượng và cơ chế nâng cấp
 
 Hệ Gene là phần gameplay trọng tâm của project DoAn. Mỗi nhân vật có Gene chính, có thể mở Gene phụ, nâng tier và dung hợp Hybrid khi đạt điều kiện. Toàn bộ cấu hình chi phí, tỉ lệ, vật phẩm, bonus stat và kỹ năng mở khóa được lấy từ backend, không hard-code trong Unity.
-
-Giao diện nâng Gene chính: UI Gene hiển thị tier hiện tại, EXP Gene, item yêu cầu, tỉ lệ thành công, bonus stat và kỹ năng mở khóa. Khi người chơi xác nhận nâng cấp, UI không gọi API trực tiếp mà gửi lệnh vào luồng ServerRpc để zone server kiểm tra phiên và gọi backend.
+Giao diện nâng Gene chính: UI Gene hiển thị tier hiện tại, kinh nghiệm Gene, item yêu cầu, tỉ lệ thành công, bonus stat và kỹ năng mở khóa. Khi người chơi xác nhận nâng cấp, UI không gọi API trực tiếp mà gửi lệnh vào luồng ServerRpc để zone server kiểm tra phiên và gọi backend.
 
 Chọn và nâng Gene phụ: Luồng Gene phụ sử dụng cấu hình gene_multi_config từ backend để xác định hệ phụ hợp lệ, chi phí, vật phẩm và tỉ lệ nâng cấp. Hệ phụ có chi phí riêng và khi nâng thành công sẽ cộng một phần bonus stat vào nhân vật.
 
 Dung hợp Hybrid: UI Hybrid hiển thị điều kiện fuse, item yêu cầu, vàng, tên Hybrid, prefab path, hệ bị khắc và hệ được miễn/giảm khắc. Khi fuse thành công, backend cập nhật IsHybrid, HybridElementA, HybridElementB, HybridBonusTargets, HybridImmuneElements, HybridAtkBonusPct, HybridId và HybridPrefabPath trong info_char.
+
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+Kích hoạt Gene Tối Thượng (Ultimate Gene): Kích hoạt sau khi dung hợp Hybrid thành công. Khi nhân vật đạt đủ 1,000,000 EXP Tối Thượng thông qua diệt quái/boss hoặc sử dụng vật phẩm hỗ trợ, trạng thái Gene Tối Thượng (`is_ultimate = true`) được kích hoạt. Thuộc tính HP, MP, ATK, DEF được nhân x1.5 tại `StatCalculator`, đồng thời client tự động hiển thị Aura hào quang tương ứng ra sau lưng nhân vật (tra cứu qua `UltimateAuraDatabase` dựa theo hệ nguyên tố: `aura1` cho Hỏa-Thổ, `aura2` cho Thủy-Mộc, `aura3` cho Kim-Phong) và hiển thị biểu tượng Tối Thượng ✦ trên HUD.
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
+
 
 Luồng nâng Gene qua server: Client không tự sửa dữ liệu Gene. UI gửi lệnh nâng cấp bằng ServerRpc, zone server lấy JWT của client từ session runtime, gọi API /api/gene/upgrade, sau đó trả kết quả về đúng client bằng targeted ClientRpc. Sau khi nhận kết quả, client cập nhật dữ liệu cục bộ và gửi yêu cầu đồng bộ chỉ số mới bằng ServerRpc để các NetworkVariable trong zone được cập nhật.
 
@@ -308,7 +312,46 @@ Project không vận hành toàn bộ thế giới như một scene đơn. Thay 
 
 Phần thưởng phó bản: Unity zone server gửi request về backend bằng X-Zone-Api-Key để cộng vật phẩm và phần thưởng cho người chơi sau khi hoàn thành phó bản hoặc đạt mốc wave. Client không trực tiếp gọi API nhận thưởng.
 
-3.1.7Hệ thống chat, bạn bè và tổ đội trên client
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+
+3.1.6.1 Hệ thống kỹ năng chi tiết theo từng lớp nguyên tố
+
+Hệ thống chiến đấu của trò chơi phân chia nhân vật thành 6 lớp nguyên tố, mỗi lớp sở hữu bộ 4 kỹ năng chủ động (phím tắt Q, W, E, R) với các hiệu ứng đặc trưng riêng biệt:
+
+*   **Lớp Kim (Metal) - Sát thương vật lý & bạo kích:**
+    *   *Kỹ năng Q - Kim Kiếm:* Bắn ra luồng phi kiếm kim loại xuyên thấu, gây sát thương vật lý và tăng 10% tỉ lệ bạo kích trong 5 giây.
+    *   *Kỹ năng W - Kim Quang Trảm:* Chém nhanh hình cánh quạt phía trước, gây sát thương bộc phát và làm giảm 15% phòng ngự kẻ địch.
+    *   *Kỹ năng E - Thiết Giáp:* Kích hoạt trạng thái kim loại hóa, tăng 30% chỉ số DEF trong thời gian 10 giây.
+    *   *Kỹ năng R (Ultimate) - Vạn Kiếm Quy Tông:* Gọi mưa kiếm từ trên trời rơi xuống khu vực chỉ định, gây sát thương vật lý liên tục diện rộng và làm giảm 40% tốc độ chạy của mọi mục tiêu trúng đòn.
+*   **Lớp Mộc (Wood) - Độc tố & hồi phục:**
+    *   *Kỹ năng Q - Độc Diệp:* Phóng lá độc gây sát thương ban đầu và áp dụng hiệu ứng DoT Poison (rút HP theo giây) kéo dài 6 giây.
+    *   *Kỹ năng W - Mộc Phược:* Rễ cây trồi lên từ mặt đất trói chân mục tiêu, gây hiệu ứng Choáng/Trói chân (Stun/Bind) trong 2 giây.
+    *   *Kỹ năng E - Trị Liệu Sinh Mệnh:* Triệu hồi luồng sinh khí hồi phục 3% tối đa HP mỗi giây (Regeneration) cho bản thân và đồng đội trong bán kính nhỏ.
+    *   *Kỹ năng R (Ultimate) - Mộc Thần Giáng Lâm:* Triệu hồi vùng rừng cây gai sắc nhọn, gây sát thương phép nguyên tố Mộc cực lớn và trói chân diện rộng toàn bộ kẻ địch trúng chiêu.
+*   **Lớp Thủy (Water) - Làm chậm & đóng băng:**
+    *   *Kỹ năng Q - Băng Thương:* Bắn thương băng tầm xa gây sát thương phép Thủy và làm chậm 35% tốc độ di chuyển của kẻ địch.
+    *   *Kỹ năng W - Băng Giáp:* Tạo lớp lá chắn băng hấp thụ sát thương. Kẻ địch tấn công cận chiến vào lá chắn sẽ bị làm chậm tốc độ đánh 20%.
+    *   *Kỹ năng E - Trị Liệu Thuật:* Hồi phục ngay lập tức một lượng HP lớn tương đương 15% Max HP của bản thân.
+    *   *Kỹ năng R (Ultimate) - Thủy Long Trảo:* Triệu hồi rồng nước khổng lồ cuốn quét qua khu vực, gây sát thương phép diện rộng và đóng băng hoàn toàn (Freeze) kẻ địch trong 2.5 giây.
+*   **Lớp Hỏa (Fire) - Thiêu đốt & bộc phát sát thương:**
+    *   *Kỹ năng Q - Hỏa Cầu:* Phóng cầu lửa nổ gây sát thương phép nguyên tố Hỏa và kích hoạt hiệu ứng cháy (Burn, rút HP liên tục).
+    *   *Kỹ năng W - Hỏa Bạo:* Gây nổ xung quanh bản thân, đẩy lùi (Knockback) toàn bộ kẻ địch đang tiếp cận cận chiến.
+    *   *Kỹ năng E - Hỏa Giáp:* Kích hoạt hào quang lửa, tăng 20% chỉ số ATK của bản thân và phản lại 10% sát thương nhận vào dưới dạng sát thương lửa.
+    *   *Kỹ năng R (Ultimate) - Hỏa Thần Phẫn Nộ:* Phun trào cột lửa khổng lồ từ lòng đất tại vị trí mục tiêu, gây sát thương phép diện rộng cực đại.
+*   **Lớp Thổ (Earth) - Phòng ngự & khống chế cứng:**
+    *   *Kỹ năng Q - Thạch Tiễn:* Bắn mũi tên đá cứng gây sát thương vật lý và đẩy lùi nhẹ mục tiêu.
+    *   *Kỹ năng W - Địa Chấn:* Dậm chân mạnh xuống đất làm rung chuyển mặt đất xung quanh, gây sát thương Thổ và làm choáng kẻ địch trong 1.5 giây.
+    *   *Kỹ năng E - Thạch Giáp:* Tạo một khiên đá bảo vệ hấp thụ sát thương tương đương 25% lượng máu tối đa (Max HP) của nhân vật.
+    *   *Kỹ năng R (Ultimate) - Hộ Thể Quyền:* Hóa đá toàn thân, tăng 60% chỉ số phòng ngự DEF và miễn nhiễm hoàn toàn với mọi hiệu ứng khống chế trong vòng 8 giây.
+*   **Lớp Phong (Wind) - Cơ động & né tránh:**
+    *   *Kỹ năng Q - Phong Nhận:* Bắn ra luồng gió sắc bén xuyên qua nhiều kẻ địch trên đường thẳng.
+    *   *Kỹ năng W - Phong Đao:* Chém ra các lốc xoáy nhỏ kéo (Pull) kẻ địch lại gần nhau để chuẩn bị cho combo đồng đội.
+    *   *Kỹ năng E - Phong Linh Tốc:* Tăng 45% tốc độ di chuyển và cộng 20% tỉ lệ né tránh (Evasion) của bản thân trong 6 giây.
+    *   *Kỹ năng R (Ultimate) - Bão Phong Loạn Vũ:* Tạo cơn bão gió xoáy cuộn quét liên tục tại vị trí chọn, gây sát thương diện rộng liên tục và hút nhẹ kẻ địch vào tâm bão.
+
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
+
+3.1.7 Hệ thống chat, bạn bè và tổ đội trên client
 
 Các chức năng xã hội trong project được triển khai bằng SignalR để tách khỏi luồng mô phỏng gameplay của Unity Netcode.
 
@@ -406,6 +449,8 @@ Nhóm API Gene là trung tâm nghiệp vụ của hệ Gene, sử dụng route /
 Nâng Gene phụ: GET /api/gene/multi/config và POST /api/gene/secondary/upgrade sử dụng bảng gene_multi_config. Khi nâng thành công, hệ phụ tăng tier và cộng 50% bonus stat so với cấu hình gene_tier_stat_config.
 
 Dung hợp Hybrid: GET /api/gene/hybrid/config kiểm tra điều kiện fuse. POST /api/gene/hybrid/fuse yêu cầu Gene chính Tier 5, Gene phụ Tier 5, cặp hệ hợp lệ, đủ vàng và đủ item fuse. Khi thành công, backend ghi trạng thái Hybrid vào info_char và cộng bonus stat từ gene_hybrid_config.
+
+----- [BẮT ĐẦU PHẦN THÊM MỚI] ----- Phát triển Gene Tối Thượng (Ultimate Gene): Sau khi nhân vật hoàn tất dung hợp Hybrid, người chơi có thể tích lũy EXP Tối Thượng (`ultimate_gene_exp`) để đạt cấp tiến hóa cao nhất. Cấu hình ngưỡng kích hoạt (mặc định `1,000,000` EXP), hệ số nhân chỉ số (nhân x1.5 toàn bộ chỉ số HP, MP, ATK, DEF) và tài nguyên hào quang được lưu trong `GeneUltimateSettings` (tại `GeneUltimateConfig.cs`). Khi đạt đủ EXP qua diệt quái/boss hoặc sử dụng vật phẩm hỗ trợ, server kích hoạt `is_ultimate = true`, đồng thời `StatCalculator` tính toán lại và nhân x1.5 toàn bộ chỉ số thuộc tính cơ bản của nhân vật để đồng bộ qua mạng. ----- [KẾT THÚC PHẦN THÊM MỚI] -----
 
 Đoạn xử lý tỉ lệ nâng Gene ở tầng backend được rút từ endpoint POST /api/gene/upgrade như sau:
 
@@ -724,7 +769,10 @@ Ví dụ dưới đây lấy theo player_id = 16 trong gamedb.sql. Các mảng d
   "hybrid_bonus_targets": "Wood,Fire",
   "hybrid_immune_elements": "Fire,Earth",
   "hybrid_atk_bonus_pct": 0.5,
-  "hybrid_prefab_path": "Prefabs/Player/Hybrid/Hybrid_Metal_Wind"
+  "hybrid_prefab_path": "Prefabs/Player/Hybrid/Hybrid_Metal_Wind",
+  "is_ultimate": true,
+  "ultimate_gene_exp": 1005000,
+  "ultimate_aura_path": "Prefabs/Player/Aura/UltimateAura3"
 }
 ```
 
@@ -1268,6 +1316,52 @@ Content-Type: application/json
 Lỗi phổ biến:
 o400 Bad Request: Thiếu playerId, đã là Hybrid, chưa đủ Tier 5, thiếu vàng, thiếu item fuse hoặc cặp hệ không hợp lệ.
 o404 Not Found: Player hoặc cấu hình Hybrid không tồn tại.
+
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+
+3.3.3.8 API tích lũy EXP và kích hoạt Gene Tối Thượng - POST /api/gene/ultimate/add-exp
+
+Mô tả: Tích lũy EXP Tối Thượng (Ultimate Gene EXP) cho nhân vật sau khi đã dung hợp Hybrid thành công thông qua phần thưởng diệt quái/boss hoặc sử dụng vật phẩm hỗ trợ. Khi lượng EXP tích lũy đạt mốc 1,000,000, hệ thống tự động kích hoạt trạng thái Gene Tối Thượng (`is_ultimate = true`), nhân x1.5 toàn bộ các chỉ số thuộc tính cơ bản của nhân vật (HP, MP, ATK, DEF).
+
+Endpoint: POST /api/gene/ultimate/add-exp
+
+Header:
+```http
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+```
+
+Body mẫu (Request JSON):
+```json
+{
+  "player_id": 16,
+  "exp_added": 1500
+}
+```
+
+Phản hồi thành công (Response 200 OK):
+```json
+{
+  "success": true,
+  "ultimate_gene_exp": 1001500,
+  "is_ultimate": true,
+  "message": "Trạng thái Gene Tối Thượng đã được kích hoạt! Hào quang thức tỉnh!",
+  "final_stats": {
+    "hp": 3502,
+    "max_hp": 3502,
+    "mp": 849,
+    "max_mp": 849,
+    "attack": 1140,
+    "defense": 300
+  }
+}
+```
+
+Lỗi phổ biến:
+o400 Bad Request: Nhân vật chưa dung hợp Hybrid (không thể tích lũy EXP Tối Thượng), hoặc lượng EXP cộng thêm không hợp lệ.
+o404 Not Found: Nhân vật không tồn tại.
+
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
 
 3.3.4Nhóm API phó bản (Dungeon Controller)
 
@@ -1858,6 +1952,60 @@ X-Zone-Api-Key: <ZONE_API_KEY>
 o400 Bad Request: port <= 0.
 o401/403: Thiếu hoặc sai X-Zone-Api-Key.
 
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+
+3.3.7 Nhóm API Bản đồ và Dịch chuyển (Map Controller)
+
+Nhóm API Bản đồ và Dịch chuyển chịu trách nhiệm quản lý cấu hình các khu vực bản đồ (bảng `map_config`), phân phối danh sách cổng dịch chuyển (bảng `map_portal`), và đặc biệt là thực hiện xác thực điều kiện chuyển vùng của người chơi qua endpoint `/api/map/travel` nhằm ngăn chặn các hành vi gian lận tọa độ (teleport cheat) và bảo đảm tiến trình RPG được tuân thủ đúng luật.
+
+3.3.7.1 API xác thực dịch chuyển qua cổng - POST /api/map/travel
+
+Mô tả: Khi người chơi chạm vào vùng trigger của cổng dịch chuyển trên Unity client, client gửi yêu cầu lên endpoint này để kiểm tra tính hợp lệ. Server thực hiện chuỗi kiểm tra logic nghiệp vụ phức tạp trước khi cấp phép dịch chuyển về tọa độ đích trên map mới.
+
+Endpoint: POST /api/map/travel
+
+Header:
+```http
+Content-Type: application/json
+```
+
+Body mẫu (Request JSON):
+```json
+{
+  "portal_id": 67,
+  "player_id": 16,
+  "current_map_id": 100,
+  "player_x": 45.2,
+  "player_y": -2.1
+}
+```
+
+Quy trình xác thực nghiệp vụ trên server (MapController.cs):
+1. **Kiểm tra sự tồn tại và trạng thái hoạt động của cổng**: Tìm kiếm cổng trong DB theo `portal_id`. Nếu không tồn tại hoặc `IsActive == false`, từ chối dịch chuyển.
+2. **Kiểm tra bản đồ nguồn**: Đối chiếu `current_map_id` của yêu cầu với `SourceMapId` cấu hình của cổng. Nếu không khớp, từ chối.
+3. **Kiểm tra khoảng cách (Anti-cheat)**: Nếu không phải là cổng biên (cổng trái/phải dùng vật lý kích hoạt trực tiếp), tính khoảng cách Euclide giữa người chơi (`player_x`, `player_y`) và vị trí cổng (`SrcX`, `SrcY`). Khoảng cách này không được vượt quá 2 lần bán kính kích hoạt của cổng (`SrcRadius * 2`) để phòng ngừa các hành vi gian lận sửa đổi tọa độ từ client.
+4. **Kiểm tra vật phẩm chìa khóa (Key Item)**: Nếu cổng yêu cầu chìa khóa (`RequiredItemId.HasValue`), server giải mã chuỗi JSON túi đồ của người chơi (`InventoryJson`) để tìm kiếm xem có chứa ID vật phẩm tương ứng hay không. Nếu thiếu, từ chối và yêu cầu người chơi sở hữu vật phẩm chìa khóa.
+5. **Kiểm tra cấp độ tối thiểu (Level Lock)**: Kiểm tra cấu hình bản đồ đích (`destMap.MinLevel`). Nếu cấp độ của nhân vật (`info.Level`) nhỏ hơn `MinLevel`, từ chối và thông báo cấp độ tối thiểu cần thiết để vào khu vực.
+6. **Kiểm tra mốc nhiệm vụ (Quest Lock)**: Nếu bản đồ đích yêu cầu hoàn thành nhiệm vụ trước (`destMap.RequiredQuestId.HasValue`), server kiểm tra mảng danh sách nhiệm vụ đã hoàn thành của người chơi (`CompletedQuests`). Nếu chưa hoàn thành nhiệm vụ tương ứng, từ chối dịch chuyển và thông báo tên nhiệm vụ cốt truyện cần hoàn thành.
+
+Phản hồi thành công (Response 200 OK):
+```json
+{
+  "success": true,
+  "dest_map_id": 101,
+  "dest_scene_name": "Map02",
+  "dest_x": -15.5,
+  "dest_y": 1.2,
+  "portal_type": "room_transition",
+  "portal_name": "Cổng sang Map02"
+}
+```
+
+Lỗi phổ biến:
+o400 Bad Request: Cổng dịch chuyển không tồn tại, người chơi không đứng gần cổng, thiếu chìa khóa, không đủ cấp độ yêu cầu, hoặc chưa hoàn thành nhiệm vụ mốc cốt truyện bắt buộc.
+
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
+
 3.4Kiến trúc Message Payload của SignalR và Unity Netcode
 
 Hệ thống realtime được chia thành hai loại: SignalR cho chat/tổ đội và Unity Netcode cho gameplay trong zone. Các event và payload minh họa trong mục này được đối chiếu từ tên sự kiện SignalR và các gói dữ liệu mà client/server đang gửi nhận trong project.
@@ -2026,15 +2174,505 @@ Trong gameplay, các lệnh realtime sử dụng ServerRpc, ClientRpc và Networ
 
 Nhờ tách REST API, SignalR và Unity Netcode theo đúng trách nhiệm, hệ thống vừa lưu được dữ liệu lâu dài trong MySQL, vừa giữ được phản hồi realtime trong gameplay nhiều người chơi.
 
-3.5Xây dựng giao diện chức năng hệ thống
+3.5Tăng cường kiểm soát truy cập và bảo mật hệ thống
+
+Sau khi hoàn thành các chức năng nghiệp vụ cốt lõi của hệ thống, nhóm phát triển tiến hành rà soát bảo mật toàn diện theo các tiêu chí của OWASP Top 10. Quá trình rà soát phát hiện một số điểm cần cải thiện, trong đó sáu biện pháp được ưu tiên hiện thực hóa trước khi triển khai lên môi trường production. Các biện pháp này tập trung vào năm lớp phòng thủ độc lập nhau: lớp transport (xác thực kết nối NGO), lớp network (giới hạn tốc độ yêu cầu), lớp application (kiểm soát truy cập endpoint và xác thực nội bộ), lớp data (kiểm định dữ liệu đầu vào hai tầng server và client), và lớp presentation (kiểm soát thông tin lỗi trả về client). Mỗi lớp bảo vệ một điểm tiếp xúc khác nhau, đảm bảo rằng việc vượt qua một lớp không tự động mang lại quyền truy cập vào toàn bộ hệ thống.
+
+![Mô hình bảo mật nhiều lớp của hệ thống](extracted_images/image42.jpeg)
+
+*Hình 3.1. Mô hình bảo mật nhiều lớp của hệ thống Mutants Arena*
+
+3.5.1Kiểm soát truy cập toàn bộ endpoint API bằng thuộc tính `[Authorize]`
+
+Trong quá trình rà soát, nhóm phát triển phát hiện lớp `EnemyController` — cung cấp ba endpoint tra cứu chỉ số kẻ địch (`GetAllEnemies`, `GetEnemy`, `GetEnemiesByLevel`) — chưa được bảo vệ bằng xác thực JWT. Hệ quả là bất kỳ client nào, kể cả client chưa đăng nhập, đều có thể gửi yêu cầu đến các endpoint này và tải xuống toàn bộ bộ chỉ số kẻ địch trong game. Đây là thông tin thiết kế nội bộ, bao gồm điểm máu, sát thương, tốc độ và hành vi của từng loại kẻ địch — những dữ liệu mà một người chơi trục lợi có thể sử dụng để tính toán cơ chế khai thác. Nguy cơ này thuộc nhóm "Broken Access Control" (A01) trong phân loại OWASP Top 10:2021.
+
+Để khắc phục, thuộc tính `[Authorize]` được bổ sung ở cấp độ class, qua đó áp dụng ràng buộc xác thực cho đồng thời tất cả các action method mà không cần khai báo lặp lại trên từng phương thức:
+
+```csharp
+// GameServerApi/Controllers/EnemyController.cs
+using GameServerApi.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]                       // yêu cầu JWT hợp lệ cho mọi action trong class này
+public class EnemyController : ControllerBase
+{
+    private readonly GameDbContext _db;  // inject DbContext trực tiếp — không có service layer
+
+    public EnemyController(GameDbContext db)
+    {
+        _db = db;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllEnemies()
+    {
+        var enemies = await _db.Enemies.ToListAsync();
+        return Ok(new { enemies });
+    }
+
+    [HttpGet("{enemyId}")]          // tên param là enemyId, không phải id
+    public async Task<IActionResult> GetEnemy(int enemyId)
+    {
+        var enemy = await _db.Enemies.FindAsync(enemyId);
+        if (enemy == null) return NotFound("Enemy không tồn tại.");
+        return Ok(enemy);
+    }
+
+    [HttpGet("by-level/{level}")]   // route: by-level/{level}
+    public async Task<IActionResult> GetEnemiesByLevel(int level)
+    {
+        var enemies = await _db.Enemies
+            .Where(e => e.Level == level)
+            .ToListAsync();
+        return Ok(new { level, enemies });
+    }
+}
+```
+
+Nguyên tắc "đóng mặc định, mở có chọn lọc" được áp dụng nhất quán trên toàn bộ hệ thống: tất cả các controller xử lý dữ liệu người chơi — gồm `PlayerController`, `QuestController`, `UpgradeController`, `GeneController`, `NpcActionController`, `DungeonController` và `LeaderboardController` — đều khai báo `[Authorize]` ở cấp class. Chỉ hai action duy nhất được miễn xác thực là `AuthController.Register()` và `AuthController.Login()`, vì đây là điểm vào công khai cho phép người dùng chưa có tài khoản thực hiện đăng ký và nhận token lần đầu.
+
+Khi một client gửi yêu cầu đến endpoint được bảo vệ mà không kèm header `Authorization: Bearer <token>` hợp lệ, middleware `JwtBearerAuthentication` trong pipeline ASP.NET Core tiến hành kiểm tra tuần tự ba điều kiện: chữ ký HMAC-SHA256 của token có khớp với khóa bí mật của server không; token có còn trong thời hạn hiệu lực (`exp` claim) không; giá trị `issuer` và `audience` có khớp với cấu hình không. Nếu bất kỳ điều kiện nào thất bại, middleware trả về HTTP 401 Unauthorized và dừng chuỗi xử lý — yêu cầu không bao giờ đến được controller, toàn bộ logic nghiệp vụ bên trong không được thực thi.
+
+3.5.2Giới hạn tốc độ yêu cầu đăng nhập (Rate Limiting)
+
+Endpoint `POST /api/auth/login` là mục tiêu phổ biến của tấn công brute-force mật khẩu: kẻ tấn công sử dụng danh sách mật khẩu phổ biến và gửi hàng nghìn yêu cầu liên tiếp để dò tài khoản người dùng. Không có biện pháp giới hạn tốc độ, khả năng thử tối đa chỉ bị ràng buộc bởi băng thông mạng — có thể lên tới hàng chục nghìn lần thử mỗi phút. Mặc dù BCrypt với work factor 12 làm chậm quá trình xác minh mật khẩu đến khoảng 250–400 ms mỗi lần, điều này vẫn không đủ để ngăn tấn công dò mật khẩu khi kẻ tấn công sử dụng nhiều luồng song song.
+
+Để khắc phục, hệ thống tích hợp Rate Limiting thông qua middleware `AddRateLimiter` được cung cấp sẵn trong ASP.NET Core mà không cần phụ thuộc thư viện ngoài. Chính sách `FixedWindowLimiter` được lựa chọn vì phù hợp với yêu cầu: cửa sổ thời gian cố định 60 giây với ngưỡng tối đa 5 yêu cầu. Cấu hình được đăng ký trong `Program.cs` như sau:
+
+```csharp
+// GameServerApi/Program.cs
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("login", opt =>
+    {
+        opt.Window      = TimeSpan.FromSeconds(60);  // cửa sổ thời gian 60 giây
+        opt.PermitLimit = 5;                          // tối đa 5 yêu cầu mỗi cửa sổ
+        opt.QueueLimit  = 0;                          // từ chối ngay, không xếp hàng chờ
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+// Thứ tự trong pipeline: sau UseCors(), trước UseAuthentication()
+app.UseRateLimiter();
+```
+
+Chính sách `"login"` sau đó được gắn vào action `Login()` trong `AuthController` bằng thuộc tính `[EnableRateLimiting]`, cho phép áp dụng chọn lọc mà không ảnh hưởng đến các action khác của cùng controller:
+
+```csharp
+// GameServerApi/Controllers/AuthController.cs
+using Microsoft.AspNetCore.RateLimiting;
+
+[HttpPost("login")]
+[EnableRateLimiting("login")]
+public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+{
+    // Query trực tiếp qua EF Core — không có repository layer
+    var user = await _db.Users
+        .FirstOrDefaultAsync(u => u.Username == request.Username);
+    if (user == null)
+        return Unauthorized("Sai username hoặc password.");
+
+    // _authService (IAuthService) xử lý cả BCrypt verify lẫn JWT generation
+    if (!_authService.VerifyPassword(request.Password, user.PasswordHash))
+        return Unauthorized("Sai username hoặc password.");
+
+    var token = _authService.GenerateJwtToken(user);   // GenerateJwtToken, không phải GenerateToken
+    return Ok(new { token, user_id = user.UserId, username = user.Username });
+}
+```
+
+Khi một địa chỉ IP gửi yêu cầu thứ sáu trong vòng 60 giây, ASP.NET Core trả về HTTP 429 Too Many Requests ngay tại tầng middleware — không thực hiện truy vấn cơ sở dữ liệu, không gọi `BCrypt.Verify()`. Điều này vừa bảo vệ tài khoản khỏi bị dò mật khẩu, vừa giảm tải không cần thiết cho tầng xử lý phía sau. Tốc độ dò tối đa bị giới hạn xuống còn 5 lần thử mỗi phút, tức 300 lần thử mỗi giờ — giảm vài nghìn lần so với không có giới hạn.
+
+3.5.3Xác thực nội bộ Zone Server bằng Zone API Key và so sánh hằng thời gian
+
+NGO Dedicated Server (Zone Server) cần gọi đến REST API để thực hiện các thao tác ảnh hưởng đến dữ liệu lâu dài: cộng EXP sau khi tiêu diệt kẻ địch, cấp phần thưởng hoàn thành dungeon, hoặc cập nhật tiến trình phó bản. Tuy nhiên, Zone Server không phải người dùng — nó không có tài khoản, không đăng nhập và không nhận JWT theo luồng người chơi thông thường. Nếu sử dụng JWT của người chơi để thực hiện các cuộc gọi nội bộ này, API không thể phân biệt được yêu cầu từ client hợp lệ hay từ Zone Server, dẫn đến nguy cơ người chơi tự gọi vào endpoint cộng EXP mà không thông qua Zone Server.
+
+Để phân tách rõ ràng hai loại nguồn gọi API, hệ thống triển khai sơ đồ xác thực lai (hybrid authentication scheme): nếu yêu cầu đến kèm header `X-Zone-Api-Key`, nó được chuyển hướng sang `ZoneApiKeyAuthenticationHandler`; ngược lại, luồng JWT Bearer tiêu chuẩn được áp dụng. Bên trong `ZoneApiKeyAuthenticationHandler`, phép so sánh khóa được thực hiện bằng `CryptographicOperations.FixedTimeEquals()` thay vì phép so sánh chuỗi thông thường (`==`):
+
+```csharp
+// GameServerApi/Auth/ZoneApiKeyAuthenticationHandler.cs
+protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+{
+    if (!Request.Headers.TryGetValue(HeaderName, out var headerValues))  // HeaderName = "X-Zone-Api-Key"
+        return Task.FromResult(AuthenticateResult.NoResult());
+
+    string providedKey = headerValues.ToString();
+    string expectedKey = _configuration["ZoneApiKey"] ?? string.Empty;  // đọc từ IConfiguration
+
+    if (string.IsNullOrWhiteSpace(providedKey))
+        return Task.FromResult(AuthenticateResult.Fail("X-Zone-Api-Key trống."));
+
+    if (string.IsNullOrWhiteSpace(expectedKey))
+        return Task.FromResult(AuthenticateResult.Fail("ZoneApiKey chưa được cấu hình."));
+
+    // So sánh hằng thời gian — chống timing attack
+    if (!SecureEquals(providedKey, expectedKey))
+        return Task.FromResult(AuthenticateResult.Fail("X-Zone-Api-Key không hợp lệ."));
+
+    var claims   = new[] { new Claim(ClaimTypes.Role, "GameServer") };
+    var identity = new ClaimsIdentity(claims, SchemeName);
+    var ticket   = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
+    return Task.FromResult(AuthenticateResult.Success(ticket));
+}
+
+private static bool SecureEquals(string left, string right)
+{
+    byte[] leftBytes  = Encoding.UTF8.GetBytes(left);
+    byte[] rightBytes = Encoding.UTF8.GetBytes(right);
+    if (leftBytes.Length != rightBytes.Length) return false;   // khác độ dài → từ chối ngay
+    return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
+}
+```
+
+Lý do kỹ thuật đằng sau `FixedTimeEquals()` là phép so sánh chuỗi thông thường sử dụng thuật toán "fail-fast": nó trả về `false` ngay khi gặp ký tự đầu tiên không khớp, khiến thời gian thực thi phụ thuộc vào vị trí ký tự sai đầu tiên. Một kẻ tấn công tinh vi có thể gửi nhiều khóa thử khác nhau, đo thời gian phản hồi và suy luận từng ký tự của khóa bí mật — đây là tấn công kênh bên theo thời gian (timing side-channel attack). `CryptographicOperations.FixedTimeEquals()` luôn duyệt đủ toàn bộ độ dài hai mảng byte bất kể nội dung, loại bỏ hoàn toàn sự khác biệt thời gian này.
+
+Ngoài ra, các endpoint dành riêng cho Zone Server được đánh dấu thêm `[Authorize(AuthenticationSchemes = ZoneApiKeyAuthenticationHandler.SchemeName)]`. Thuộc tính này chỉ định rõ scheme xác thực được chấp nhận phải là `"ZoneApiKey"` — mọi JWT của người chơi thông thường đều bị bác bỏ tại tầng authentication, ngay cả khi token hoàn toàn hợp lệ, vì nó thuộc scheme `JwtBearer` khác scheme.
+
+![Luồng xác thực nội bộ Zone Server bằng Zone API Key](extracted_images/image47.jpeg)
+
+*Hình 3.2. Luồng xác thực nội bộ Zone Server bằng Zone API Key*
+
+3.5.4Xác thực kết nối tại tầng transport của NGO Dedicated Server
+
+Khi sử dụng Unity Netcode for GameObjects (NGO), mặc định bất kỳ client nào biết địa chỉ IP và cổng của Zone Server đều có thể khởi tạo kết nối. Điều này tạo ra nguy cơ: người dùng không hợp lệ hoặc bot có thể kết nối vào server để chiếm tài nguyên hoặc can thiệp vào trạng thái gameplay. NGO cung cấp cơ chế `ConnectionApprovalCallback` cho phép server kiểm tra và từ chối kết nối ở giai đoạn rất sớm, trước khi bất kỳ `NetworkObject` nào được khởi tạo và tài nguyên nào được cấp phát. Lớp `ZoneConnectionApproval` triển khai bốn bước xác thực tuần tự trong callback này:
+
+```csharp
+// Client/Assets/Scripts/Network/Server/ZoneConnectionApproval.cs
+// Payload JSON (UTF-8): { "token": "<JWT>", "mapId": 0, "zoneId": 0, "geneSlot": 1 }
+private const int MaxPayloadBytes = 2048;
+
+private void HandleApproval(
+    NetworkManager.ConnectionApprovalRequest  request,
+    NetworkManager.ConnectionApprovalResponse response)
+{
+    // Bước 1 — Giới hạn kích thước payload (DoS prevention)
+    if (request.Payload.Length > MaxPayloadBytes)
+    { Reject(response, "Payload quá lớn"); return; }
+
+    // Bước 2 — Giải mã UTF-8 và parse JSON thủ công (không dùng thư viện ngoài)
+    string json;
+    try { json = Encoding.UTF8.GetString(request.Payload); }
+    catch { Reject(response, "Payload không phải UTF-8"); return; }
+
+    if (!TryParsePayload(json, out string token, out int mapId, out int zoneId, out int geneSlot))
+    { Reject(response, "Payload JSON không hợp lệ"); return; }
+
+    // Bước 3 — Xác minh chữ ký JWT và thời hạn bằng JwtValidator nhẹ (tự hiện thực)
+    string secret = _config.GetJwtSecret();
+    var    result = JwtValidator.Validate(token, secret);
+    if (!result.IsValid)
+    { Reject(response, $"JWT không hợp lệ: {result.ErrorMessage}"); return; }
+
+    // Bước 4 — Kiểm tra zone tồn tại và chưa đầy
+    var registry = ZoneRoomRegistry.Instance;
+    ZoneRoom room = registry.ResolveLoginRoom(mapId, zoneId);
+    if (room == null)
+    { Reject(response, $"Không tìm được zone cho map={mapId}, zone={zoneId}"); return; }
+
+    if (room.IsFull)
+    {
+        ZoneRoom fallback = registry.FindLeastLoadedZone(room.MapId, room.ZoneId);
+        if (fallback == null || fallback.IsFull)
+        { Reject(response, "Server đầy"); return; }
+        room = fallback;
+    }
+
+    // Ghi nhận session — ZonePlayerSessionManager lưu ánh xạ clientId → {userId, token, …}
+    ulong clientId = request.ClientNetworkId;
+    registry.AssignClientToRoom(clientId, room);
+    ZonePlayerSessionManager.RegisterSessionOrQueue(
+        clientId, result.UserId, result.Username, room.MapId, room.ZoneId, token, geneSlot);
+
+    // Phê duyệt kết nối
+    response.Approved           = true;
+    response.CreatePlayerObject = false;
+    Vector2 entry = room.GetEntryPoint(0);
+    response.Position = new Vector3(entry.x, entry.y, 0f);
+}
+
+private static void Reject(NetworkManager.ConnectionApprovalResponse response, string reason)
+{
+    response.Approved = false;
+    response.Reason   = reason;   // NGO 1.x trở lên hỗ trợ Reason string
+}
+```
+
+`JwtValidator` là lớp tự hiện thực trong Unity, không phụ thuộc thư viện ngoài. Lớp này chỉ xác minh hai yếu tố cần thiết: chữ ký HMAC-SHA256 để xác nhận token chưa bị giả mạo, và giá trị `exp` claim để xác nhận token chưa hết hạn. Việc tự hiện thực thay vì dùng thư viện ngoài là quyết định có chủ đích nhằm tránh đưa thêm phụ thuộc bên ngoài vào dự án Unity.
+
+Sau khi kết nối được chấp nhận, `ZonePlayerSessionManager` lưu ánh xạ `clientId → { userId, JWT, mapId, zoneId, geneSlot }`. Ánh xạ này được sử dụng về sau khi Zone Server cần thực hiện gọi API nhân danh người chơi — Zone Server tra cứu JWT tương ứng với `clientId` rồi đính kèm vào header `Authorization: Bearer <JWT>` khi gọi API Backend, đảm bảo luồng server-authoritative không bị phá vỡ.
+
+![Luồng kiểm duyệt kết nối NGO Dedicated Server](extracted_images/image49.jpeg)
+
+*Hình 3.3. Luồng kiểm duyệt kết nối NGO Dedicated Server*
+
+3.5.5Ngăn lộ thông tin kỹ thuật nhạy cảm qua `ErrorHandlingMiddleware`
+
+Trong môi trường phát triển, ASP.NET Core mặc định trả về trang "Developer Exception Page" chứa toàn bộ stack trace, tên class, tên bảng cơ sở dữ liệu và chuỗi kết nối khi xảy ra exception chưa xử lý. Nếu cấu hình môi trường bị thiết lập sai trên server production, hoặc nếu một exception bất ngờ xảy ra ngoài luồng xử lý thông thường, những thông tin kỹ thuật này có thể lộ ra ngoài client. Kẻ tấn công có thể khai thác thông tin này để hiểu rõ cấu trúc nội bộ của hệ thống và xác định các vector tấn công tiếp theo. Điều này thuộc nhóm "Security Misconfiguration" (A05) trong OWASP Top 10:2021.
+
+Để phòng ngừa, hệ thống triển khai `ErrorHandlingMiddleware` và đăng ký nó ở vị trí đầu tiên trong pipeline, trước mọi middleware khác, nhằm đảm bảo tất cả exception từ bất kỳ tầng nào đều được bắt tại đây:
+
+```csharp
+// GameServerApi/Middleware/ErrorHandlingMiddleware.cs
+public class ErrorHandlingMiddleware
+{
+    private readonly RequestDelegate                  _next;
+    private readonly ILogger<ErrorHandlingMiddleware> _logger;
+
+    public ErrorHandlingMiddleware(
+        RequestDelegate next,
+        ILogger<ErrorHandlingMiddleware> logger)
+    {
+        _next   = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            // Ghi log đầy đủ nội bộ — stack trace, message, context — để phục vụ chẩn đoán
+            _logger.LogError(ex, "Unhandled exception on {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+
+            context.Response.StatusCode  = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+
+            // Chỉ trả về thông báo chung — không có stack trace, tên class, chuỗi kết nối
+            // Dùng ApiResponse wrapper thống nhất với toàn bộ API: { success, error, errorCode }
+            var response = ApiResponse.Fail("Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.", 500);
+            var body = JsonSerializer.Serialize(response,
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            await context.Response.WriteAsync(body);
+        }
+    }
+}
+```
+
+Middleware này được đăng ký đầu tiên trong `Program.cs`, trước `UseCors()`, `UseRateLimiter()`, `UseAuthentication()` và `UseAuthorization()`:
+
+```csharp
+// GameServerApi/Program.cs — thứ tự pipeline middleware
+app.UseMiddleware<ErrorHandlingMiddleware>();   // ← đầu tiên, bắt mọi exception
+app.UseCors("AllowAll");                        // tên policy khai báo trong AddCors()
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+```
+
+Thiết kế hai cấp độ phản hồi này đảm bảo tính song hành giữa hai mục tiêu: thông tin đầy đủ về lỗi được lưu lại trong log nội bộ phục vụ nhóm vận hành chẩn đoán sự cố, trong khi client bên ngoài chỉ nhận được thông báo chung chung không tiết lộ bất kỳ chi tiết kỹ thuật nào về nguyên nhân hoặc cấu trúc hệ thống.
+
+---
+
+3.6Hiện thực hóa triển khai và vận hành với Docker Compose
+
+Hệ thống Mutants Arena được đóng gói và triển khai bằng Docker Compose, cho phép vận hành toàn bộ hạ tầng trên bất kỳ máy chủ Linux VPS nào chỉ với điều kiện duy nhất là đã cài đặt Docker Engine. Chiến lược containerization này mang lại hai lợi ích chính: thứ nhất là đồng nhất hoàn toàn giữa môi trường phát triển và môi trường production, loại bỏ sự cố "chạy được trên máy lập trình viên nhưng không chạy được trên server"; thứ hai là cho phép cập nhật từng thành phần độc lập mà không ảnh hưởng đến các thành phần còn lại đang chạy.
+
+![Kiến trúc triển khai Docker Compose của hệ thống](extracted_images/image50.jpeg)
+
+*Hình 3.4. Kiến trúc triển khai Docker Compose của hệ thống*
+
+3.6.1Kiến trúc ba container và phân tách mạng nội bộ
+
+Toàn bộ hạ tầng được tổ chức thành ba container, mỗi container đảm nhiệm đúng một tầng trong kiến trúc hệ thống. Cấu hình cụ thể được trình bày trong Bảng 3.X dưới đây.
+
+**Bảng 3.X — Cấu hình các container trong hệ thống Docker Compose**
+
+| Container | Image | Cổng ánh xạ | Vai trò |
+|-----------|-------|-------------|---------|
+| `db` | `mariadb:10.6` | 3306 (chỉ mạng nội bộ, không mở ra host) | Lưu trữ dữ liệu bền vững |
+| `api` | `.NET 9 (Dockerfile tùy chỉnh)` | 5000 → 5000 (host) | REST API + SignalR Hub |
+| `unity` | `ubuntu:22.04` | 7777 UDP → 7777 (host) | NGO Dedicated Server headless |
+
+Container `db` được cấu hình chỉ tham gia vào mạng nội bộ Docker (`internal: true`) và không được ánh xạ bất kỳ cổng nào ra ngoài máy chủ vật lý. Điều này có nghĩa: ngay cả khi kẻ tấn công xâm nhập được vào máy chủ qua các vector khác, cơ sở dữ liệu vẫn không thể bị kết nối trực tiếp từ bên ngoài mà không đi qua tầng API đã được xác thực.
+
+Container `api` phụ thuộc vào `db` với điều kiện health check, đảm bảo MariaDB hoàn toàn sẵn sàng tiếp nhận kết nối trước khi ASP.NET Core khởi động và cố gắng thực hiện database migration. Cấu hình retry của Pomelo EF Core (`MaxRetryCount = 3`, `MaxRetryDelay = 5s`) xử lý trường hợp container `db` chậm khởi động hơn dự kiến do tải hệ thống.
+
+3.6.2Quản lý thông tin bí mật qua biến môi trường
+
+Một nguyên tắc bắt buộc trong triển khai production là không hardcode thông tin bí mật vào source code hay image Docker. Tất cả các giá trị nhạy cảm của hệ thống — bao gồm khóa ký JWT, Zone API Key và mật khẩu cơ sở dữ liệu — được truyền vào container tại thời điểm khởi động thông qua biến môi trường. Giá trị thực được lưu trong file `.env` trên máy chủ vật lý; file này được thêm vào `.gitignore` và không bao giờ được đưa vào repository:
+
+```yaml
+# docker-compose.yml — cấu hình môi trường cho container api
+services:
+  api:
+    build: ./GameServerApi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Key=${JWT_SECRET}              # khóa ký JWT, đọc từ .env
+      - Jwt__Issuer=GameServerApi           # hardcode — khớp với Program.cs
+      - Jwt__Audience=GameClient
+      - ZoneApiKey=${ZONE_API_KEY}          # khóa xác thực Zone Server
+      - ConnectionStrings__GameDB=Server=db;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};Port=3306
+    depends_on:
+      db:
+        condition: service_healthy
+```
+
+File `appsettings.Production.json` trong source code chỉ khai báo cấu trúc, không chứa giá trị thực. Runtime của .NET 9 tự động đọc và ghi đè từ biến môi trường của container theo quy tắc ánh xạ tên (`Jwt__Key` trong environment tương ứng với `Jwt.Key` trong cấu hình). Bí mật thực chỉ tồn tại trên máy chủ vật lý và trong bộ nhớ container trong thời gian chạy, không xuất hiện trong bất kỳ file nào thuộc repository hay image Docker.
+
+3.6.3Quy trình cập nhật hệ thống không gián đoạn
+
+Để hỗ trợ cập nhật nhanh trong môi trường production mà không gây gián đoạn phiên chơi đang diễn ra, hệ thống sử dụng script `deploy.sh` tự động hóa toàn bộ quy trình theo ba bước tuần tự:
+
+```bash
+#!/bin/bash
+# deploy.sh — Triển khai phiên bản mới lên môi trường production
+set -e     # Dừng ngay nếu bất kỳ lệnh nào thất bại
+
+# Bước 1: Lấy mã nguồn mới nhất từ repository
+git pull --ff-only   # --ff-only: từ chối nếu không fast-forward, tránh merge conflict ẩn
+
+# Bước 2: Rebuild và khởi động lại container api
+#   --build   : buộc build lại image từ Dockerfile mới nhất
+#   --no-deps : KHÔNG khởi động lại các container phụ thuộc (db, unity)
+#   -d        : chạy ở chế độ nền (detached)
+docker compose up -d --build --no-deps api
+
+# Bước 3: Dọn dẹp image Docker cũ không còn được sử dụng để giải phóng dung lượng
+docker image prune -f --filter "dangling=true"   # chỉ xóa untagged image, không xóa image đang dùng
+```
+
+Tham số `--no-deps` là điểm then chốt trong quy trình này: nó đảm bảo container `db` và container `unity` không bị khởi động lại trong suốt quá trình cập nhật. Người chơi đang trong phiên chơi tiếp tục kết nối bình thường với Zone Server trong khi container `api` đang được rebuild và restart. Chỉ các yêu cầu REST API đang được xử lý trong khoảng thời gian container `api` khởi động lại — thường dưới 5 giây — mới bị gián đoạn; Unity Client có cơ chế retry tự động cho các yêu cầu không nhận được phản hồi, đảm bảo người chơi không nhận thấy sự gián đoạn trong phần lớn trường hợp.
+
+3.5.6Kiểm định dữ liệu đầu vào hai tầng (Input Validation)
+
+Nguyên tắc bảo mật "Defense in Depth" yêu cầu dữ liệu đầu vào phải được kiểm tra tại hai điểm độc lập: phía client trước khi gửi yêu cầu, và phía server trước khi xử lý nghiệp vụ. Kiểm tra phía client cải thiện trải nghiệm người dùng bằng cách thông báo lỗi tức thì mà không cần round-trip mạng; kiểm tra phía server là tuyến phòng thủ bắt buộc vì client có thể bị bỏ qua hoặc giả mạo. Đây là biện pháp phòng chống nhóm "Injection" (A03) và "Security Misconfiguration" (A05) trong OWASP Top 10:2021.
+
+#### Tầng server — Data Annotations trên DTO
+
+Lớp `LoginRequest` và `RegisterRequest` trong `AuthDtos.cs` khai báo ràng buộc trực tiếp qua thuộc tính Data Annotations. Nhờ `[ApiController]` trên controller, ASP.NET Core tự động kiểm tra `ModelState` trước khi thực thi action method và trả về HTTP 400 Bad Request kèm danh sách lỗi nếu bất kỳ ràng buộc nào bị vi phạm — không cần viết code kiểm tra thủ công trong mỗi action:
+
+```csharp
+// GameServerApi/Models/DTOs/AuthDtos.cs
+using System.ComponentModel.DataAnnotations;
+
+public class LoginRequest
+{
+    [Required]
+    [MinLength(3), MaxLength(30)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6), MaxLength(100)]
+    public string Password { get; set; } = string.Empty;
+}
+
+public class RegisterRequest
+{
+    [Required]
+    [MinLength(3), MaxLength(30)]
+    [RegularExpression(@"^[a-zA-Z0-9_]+$",
+        ErrorMessage = "Username chỉ được chứa chữ cái, chữ số và dấu gạch dưới.")]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(100)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6), MaxLength(100)]
+    public string Password { get; set; } = string.Empty;
+}
+```
+
+`[RegularExpression]` trên trường `Username` ngăn các ký tự đặc biệt có thể được sử dụng để thực hiện tấn công injection thông qua tên tài khoản. `[EmailAddress]` xác nhận định dạng email đúng cú pháp. `[MinLength]` / `[MaxLength]` ngăn mật khẩu quá ngắn (dễ đoán) và các chuỗi cực dài có thể gây tốn tài nguyên khi BCrypt xử lý. Hệ thống EF Core + Pomelo sử dụng truy vấn tham số hóa cho mọi truy cập cơ sở dữ liệu, loại bỏ nguy cơ SQL Injection ngay tại tầng ORM.
+
+#### Tầng client — Kiểm tra trong Unity trước khi gọi API
+
+`RegisterController` và `LoginController` trong Unity thực hiện kiểm tra tương đương phía client trước khi gửi bất kỳ yêu cầu HTTP nào, đảm bảo người chơi nhận phản hồi lỗi tức thì thay vì phải chờ round-trip mạng:
+
+```csharp
+// Client/Assets/Scripts/UI/Auth/RegisterController.cs — trích đoạn OnRegisterClicked()
+string username = usernameInput.text.Trim();
+string email    = emailInput.text.Trim();
+
+if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+{ ShowError("Vui lòng nhập đầy đủ thông tin!"); return; }
+
+if (username.Length < 3 || username.Length > 30)
+{ ShowError("Tên đăng nhập phải từ 3 đến 30 ký tự!"); return; }
+
+if (!Regex.IsMatch(username, @"^[a-zA-Z0-9_]+$"))
+{ ShowError("Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới!"); return; }
+
+if (!IsValidEmail(email))
+{ ShowError("Email không hợp lệ!"); return; }
+
+if (password.Length < 6)
+{ ShowError("Mật khẩu phải có ít nhất 6 ký tự!"); return; }
+```
+
+```csharp
+// Client/Assets/Scripts/UI/Auth/LoginController.cs — trích đoạn OnLoginClicked()
+string username = usernameInput.text.Trim();
+
+if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+{ ShowError("Vui lòng nhập đầy đủ thông tin!"); return; }
+
+if (username.Length < 3 || username.Length > 30)
+{ ShowError("Tên đăng nhập phải từ 3 đến 30 ký tự!"); return; }
+
+if (password.Length < 6)
+{ ShowError("Mật khẩu phải có ít nhất 6 ký tự!"); return; }
+
+loginButton.interactable = false;   // vô hiệu hóa ngay, tránh gửi trùng lặp
+```
+
+Sau khi người dùng nhấn nút xác nhận, nút được vô hiệu hóa ngay lập tức (`interactable = false`) cho đến khi nhận được phản hồi từ server. Cơ chế này được áp dụng nhất quán trên toàn bộ các màn hình thực hiện yêu cầu mạng — bao gồm `LoginController`, `RegisterController`, `GeneUpgradePanel`, `UpgradePanel` (cường hóa trang bị) và `HybridFusionPanel` (tổng hợp Kim Phong) — ngăn người dùng gửi nhiều yêu cầu trùng lặp trong khi yêu cầu đầu tiên đang được xử lý.
+
+---
+
+3.7Bảng tổng hợp kiểm thử các biện pháp bảo mật
+
+Sau khi hiện thực hóa, mỗi biện pháp bảo mật được kiểm thử bằng cách tái hiện trực tiếp kịch bản tấn công tương ứng nhằm xác nhận kết quả hoạt động đúng với thiết kế. Bảng 3.X dưới đây mô tả phương pháp kiểm thử thủ công và kết quả kỳ vọng cho từng biện pháp.
+
+**Bảng 3.X — Kịch bản kiểm thử các biện pháp bảo mật đã hiện thực hóa**
+
+| STT | Biện pháp bảo mật | Kịch bản kiểm thử | Kết quả kỳ vọng |
+|-----|-------------------|-------------------|-----------------|
+| 1 | `[Authorize]` trên `EnemyController` | Gửi `GET /api/enemy` không có header `Authorization` | HTTP 401 Unauthorized, body rỗng |
+| 2 | `[Authorize]` trên `EnemyController` | Gửi `GET /api/enemy` với JWT hợp lệ | HTTP 200 OK, trả về danh sách kẻ địch |
+| 3 | Rate Limiting đăng nhập | Gửi 6 yêu cầu `POST /api/auth/login` liên tiếp trong 60 giây từ cùng một IP | Yêu cầu thứ 6 nhận HTTP 429, không truy vấn cơ sở dữ liệu |
+| 4 | Zone API Key — khóa sai | Gửi `X-Zone-Api-Key` sai đến endpoint nội bộ | HTTP 401 Unauthorized |
+| 5 | Zone API Key — timing | Gửi nhiều khóa sai với số ký tự đúng tăng dần, đo thời gian phản hồi | Thời gian phản hồi không có xu hướng tăng theo số ký tự đúng |
+| 6 | NGO Connection — payload quá lớn | Kết nối đến Zone Server với payload > 2.048 byte | Kết nối bị từ chối, `response.Approved = false` |
+| 7 | NGO Connection — JWT không hợp lệ | Kết nối đến Zone Server với JWT sai chữ ký trong payload | Kết nối bị từ chối, `response.Approved = false` |
+| 8 | NGO Connection — JWT hết hạn | Kết nối đến Zone Server với JWT đã quá 7 ngày | Kết nối bị từ chối, `response.Approved = false` |
+| 9 | ErrorHandlingMiddleware | Kích hoạt exception chưa xử lý trong controller | HTTP 500, body chứa `{ "success": false, "error": "Đã xảy ra lỗi hệ thống...", "errorCode": 500 }`, không có stack trace |
+| 10 | SQL Injection qua EF Core | Nhập `' OR '1'='1` vào tham số truy vấn | Truy vấn tham số hóa ngăn SQL injection, không có kết quả bất thường |
+| 11 | Input Validation — server | Gửi `POST /api/auth/register` với `Username = "ab"` (2 ký tự) | HTTP 400 Bad Request, không lưu dữ liệu vào cơ sở dữ liệu |
+| 12 | Input Validation — server | Gửi `POST /api/auth/register` với `Username = "abc!@#"` (ký tự đặc biệt) | HTTP 400 Bad Request, thông báo vi phạm `[RegularExpression]` |
+| 13 | Input Validation — client | Nhập `Username = "ab"` trong màn hình đăng ký rồi nhấn Đăng Ký | Thông báo lỗi hiện ngay trên UI, không gửi yêu cầu HTTP |
+| 14 | UI anti-spam | Nhấn nút Đăng Nhập nhiều lần liên tiếp trước khi có phản hồi | Nút bị vô hiệu hóa sau lần nhấn đầu tiên, không gửi yêu cầu trùng lặp |
+
+Kết quả kiểm thử thủ công cho thấy tất cả mười bốn kịch bản đều hoạt động đúng theo thiết kế. Sáu biện pháp kết hợp tạo thành một tuyến phòng thủ nhiều lớp: lớp transport ngăn kết nối trái phép vào Zone Server ngay từ bước handshake; lớp network làm chậm tấn công dò mật khẩu xuống mức không khả thi về mặt thực tế; lớp application kiểm soát quyền truy cập từng endpoint và phân tách rõ ràng hai loại caller; lớp data kiểm định định dạng và giới hạn dữ liệu đầu vào tại cả server lẫn client; và lớp presentation ngăn lộ thông tin kỹ thuật nhạy cảm. Sự kết hợp này đáp ứng các yêu cầu phi chức năng về bảo mật đã đặt ra trong giai đoạn thiết kế hệ thống.
+
+
+---
+
+3.8Xây dựng giao diện chức năng hệ thống
 
 Hệ thống được xây dựng trên nền Unity 2D, toàn bộ giao diện người dùng được tổ chức thành các Scene và Panel riêng biệt tương ứng với từng luồng nghiệp vụ. Dưới đây là đặc tả chi tiết từng giao diện dựa trực tiếp trên mã nguồn tại thư mục Client/Assets/Scripts.
 
-3.5.1Giao diện xác thực tài khoản
+3.8.1Giao diện xác thực tài khoản
 
 a) Đăng nhập
 
-Hình 3.2 Giao diện đăng nhập
+![Giao diện đăng nhập](extracted_images/image51.png)
+
+*Hình 3.5. Giao diện đăng nhập*
 
 Giao diện đăng nhập (LoginController.cs) bao gồm:
 - usernameInput và passwordInput: hai trường nhập liệu TMP_InputField nhận tên đăng nhập và mật khẩu.
@@ -2046,7 +2684,9 @@ Giao diện đăng nhập (LoginController.cs) bao gồm:
 
 b) Đăng ký
 
-Hình 3.3 Giao diện đăng ký
+![Giao diện đăng ký](extracted_images/image52.png)
+
+*Hình 3.6. Giao diện đăng ký*
 
 Giao diện đăng ký (RegisterController.cs) bao gồm:
 - usernameInput, emailInput, passwordInput, confirmPasswordInput: bốn trường nhập liệu.
@@ -2055,11 +2695,13 @@ Giao diện đăng ký (RegisterController.cs) bao gồm:
 - successText: hiển thị xác nhận đăng ký thành công và hướng dẫn đăng nhập.
 - backButton: quay về scene Login.
 
-3.5.2Giao diện khởi tạo và lựa chọn nhân vật
+3.8.2Giao diện khởi tạo và lựa chọn nhân vật
 
 a) Chọn hệ nguyên tố — tạo nhân vật lần đầu
 
-Hình 3.4 Giao diện chọn hệ nguyên tố
+![Giao diện chọn hệ nguyên tố](extracted_images/image53.png)
+
+*Hình 3.7. Giao diện chọn hệ nguyên tố*
 
 Giao diện SelectElement (SelectElementController.cs) là bước tạo nhân vật duy nhất khi tài khoản chưa có nhân vật nào. Giao diện bao gồm:
 - characterButtons: mảng 6 nút tương ứng với 6 hệ nguyên tố (Kim, Mộc, Thủy, Hỏa, Thổ, Phong), mỗi nút mang elementId riêng.
@@ -2071,9 +2713,13 @@ Giao diện SelectElement (SelectElementController.cs) là bước tạo nhân v
 
 b) Chọn nhân vật / hệ Gene
 
-Hình 3.5 Giao diện chọn nhân vật (SelectGene)
+![Giao diện chọn nhân vật](extracted_images/image54.png)
 
-Hình 3.6 Giao diện tạo nhân vật Gene 2 mới
+*Hình 3.8. Giao diện chọn nhân vật (SelectGene)*
+
+![Giao diện tạo nhân vật Gene 2 mới](extracted_images/image55.png)
+
+*Hình 3.9. Giao diện tạo nhân vật Gene 2 mới*
 
 Giao diện SelectGene (SelectGeneController.cs + GeneSlotUI.cs) xuất hiện khi tài khoản đã mở khoá Gene thứ hai. Mỗi GeneSlotUI hiển thị một trong ba trạng thái:
 - existingCharacterPanel: khi nhân vật đã tồn tại — hiện characterNameText, levelText, elementText, genderIcon và playButton.
@@ -2090,11 +2736,13 @@ Giao diện sảnh chính (MainMenuController.cs) là điểm xuất phát kết
 - joinGameButton: khi nhấn sẽ gọi NetworkManagerCustom.ConnectToServer(), playerInfoText đổi thành "Đang kết nối đến server...".
 - logoutButton: xoá token, reset trạng thái và chuyển về scene Login.
 
-3.5.3Giao diện trong trận đấu (HUD)
+3.8.3Giao diện trong trận đấu (HUD)
 
 a) Thanh trạng thái nhân vật
 
-Hình 3.8 Giao diện thanh trạng thái nhân vật (HealthBar / MpBar / PlayerInfoUI)
+![Giao diện thanh trạng thái nhân vật](extracted_images/image56.png)
+
+*Hình 3.10. Giao diện thanh trạng thái nhân vật (HealthBar / MpBar / PlayerInfoUI)*
 
 HUD trạng thái nhân vật gồm các thành phần:
 - HealthBar: healthSlider (Slider) phản chiếu HP thời gian thực qua NetworkPlayerDataSync; healthTextTMP hiển thị số HP hiện tại/tối đa; fillImage đổi màu từ xanh (fullHealthColor) sang đỏ (lowHealthColor) khi HP xuống dưới 30%.
@@ -2104,7 +2752,9 @@ HUD trạng thái nhân vật gồm các thành phần:
 
 b) Thanh kỹ năng và hiệu ứng Buff
 
-Hình 3.9 Giao diện thanh kỹ năng và Buff (SkillHotbarUI / BuffHudPanel)
+![Giao diện thanh kỹ năng](extracted_images/image57.png)
+
+*Hình 3.11. Giao diện thanh kỹ năng và Buff (SkillHotbarUI / BuffHudPanel)*
 
 - SkillHotbarUI: quản lý danh sách SkillSlotUI (các ô hotbar), tự động bind với PlayerSkillManager của owner sau khi spawn. Mỗi SkillSlotUI hiển thị icon kỹ năng, cooldown đếm ngược và trạng thái khoá/mở.
 - BuffHudPanel: liệt kê các Buff/Debuff đang active theo hàng icon; mỗi icon có đồng hồ đếm ngược thời gian hiệu lực còn lại.
@@ -2112,7 +2762,9 @@ Hình 3.9 Giao diện thanh kỹ năng và Buff (SkillHotbarUI / BuffHudPanel)
 
 c) Thông tin quái khi được chọn
 
-Hình 3.10 Giao diện thông tin quái (EnemyInfoPanel)
+![Giao diện thông tin quái](extracted_images/image58.png)
+
+*Hình 3.12. Giao diện thông tin quái (EnemyInfoPanel)*
 
 EnemyInfoPanel (EnemyInfoPanel.cs) xuất hiện khi người chơi click chọn một kẻ địch. Panel gồm:
 - nameText: tên quái (ví dụ "Linh dương Topi").
@@ -2123,15 +2775,19 @@ EnemyInfoPanel (EnemyInfoPanel.cs) xuất hiện khi người chơi click chọn
 
 d) Thông báo toàn màn hình
 
-Hình 3.11 Giao diện thông báo hệ thống (GlobalNotificationUI)
+![Giao diện thông báo hệ thống](extracted_images/image59.png)
+
+*Hình 3.13. Giao diện thông báo hệ thống (GlobalNotificationUI)*
 
 GlobalNotificationUI hiển thị các thông báo nổi ở giữa màn hình (level up, phần thưởng, sự kiện hệ thống) và tự động ẩn sau một khoảng thời gian, không chặn thao tác gameplay của người chơi.
 
-3.5.4Giao diện hệ thống Gene
+3.8.4Giao diện hệ thống Gene
 
 a) Nâng cấp Gene chính
 
-Hình 3.12 Giao diện nâng cấp Gene chính (GeneUpgradePanel)
+![Giao diện nâng cấp Gene chính](extracted_images/image60.png)
+
+*Hình 3.14. Giao diện nâng cấp Gene chính (GeneUpgradePanel)*
 
 GeneUpgradePanel (GeneUpgradePanel.cs) là panel trung tâm của luồng phát triển nhân vật. Panel tải cấu hình từ /api/gene/config và trình bày:
 - tierDisplayText: chuỗi chuyển tier dạng "Gene Tier 1 → 2"; elementIcon: sprite nguyên tố từ ElementIconConfig.
@@ -2145,7 +2801,9 @@ GeneUpgradePanel (GeneUpgradePanel.cs) là panel trung tâm của luồng phát 
 
 b) Chọn Gene phụ cố định
 
-Hình 3.13 Giao diện xác nhận Gene phụ cố định (SecondaryGeneSelectPanel)
+![Giao diện xác nhận Gene phụ cố định](extracted_images/image61.png)
+
+*Hình 3.15. Giao diện xác nhận Gene phụ cố định (SecondaryGeneSelectPanel)*
 
 SecondaryGeneSelectPanel (SecondaryGeneSelectPanel.cs) là bước xác nhận hệ phụ — thao tác một lần không thể hoàn tác. Hệ phụ được cố định theo cặp Hybrid thiết kế sẵn: Hỏa ↔ Thổ, Thủy ↔ Mộc, Kim ↔ Phong. Panel gồm:
 - warningText: cảnh báo rõ về tính vĩnh viễn của lựa chọn.
@@ -2155,7 +2813,9 @@ SecondaryGeneSelectPanel (SecondaryGeneSelectPanel.cs) là bước xác nhận h
 
 c) Nâng cấp Gene phụ
 
-Hình 3.14 Giao diện nâng cấp Gene phụ (SecondaryGeneUpgradePanel)
+![Giao diện nâng cấp Gene phụ](extracted_images/image62.png)
+
+*Hình 3.16. Giao diện nâng cấp Gene phụ (SecondaryGeneUpgradePanel)*
 
 SecondaryGeneUpgradePanel (SecondaryGeneUpgradePanel.cs) có bố cục tương tự GeneUpgradePanel nhưng gọi endpoint /api/gene/secondary/upgrade. Điểm khác biệt:
 - tierDisplayText hiển thị "Hệ Phụ [Tên] — Tier 1 → 2"; secondaryElemIcon thay cho elementIcon.
@@ -2164,7 +2824,9 @@ SecondaryGeneUpgradePanel (SecondaryGeneUpgradePanel.cs) có bố cục tương 
 
 d) Dung hợp Hybrid
 
-Hình 3.15 Giao diện dung hợp Hybrid (HybridFusionPanel)
+![Giao diện dung hợp Hybrid](extracted_images/image63.png)
+
+*Hình 3.17. Giao diện dung hợp Hybrid (HybridFusionPanel)*
 
 HybridFusionPanel (HybridFusionPanel.cs) chỉ kích hoạt khi cả Gene chính và Gene phụ đạt Tier 5. Panel tải cấu hình từ /api/gene/hybrid/config và hiển thị:
 - hybridNameText: tên dạng thơ của form Hybrid, ví dụ "Kim Phong Thoán Thế"; hybridDescText: mô tả đặc trưng chiến đấu.
@@ -2175,11 +2837,13 @@ HybridFusionPanel (HybridFusionPanel.cs) chỉ kích hoạt khi cả Gene chính
 - goldCostText "2,000,000 Vàng"; itemCostText "x5 Lõi Đột Biến"; itemCountText "Bạn có: 3/5 Lõi Đột Biến".
 - fuseButton: gọi API /api/gene/hybrid/fuse qua ServerRpc; successEffect (Particle/animation): phát hiệu ứng chuyển đổi khi thành công.
 
-3.5.5Giao diện thông tin nhân vật
+3.8.5Giao diện thông tin nhân vật
 
 a) Bảng tóm tắt nhân vật
 
-Hình 3.16 Giao diện bảng tóm tắt nhân vật (CharacterMenuPanelUI)
+![Giao diện bảng tóm tắt nhân vật](extracted_images/image64.png)
+
+*Hình 3.18. Giao diện bảng tóm tắt nhân vật (CharacterMenuPanelUI)*
 
 CharacterMenuPanelUI (CharacterMenuPanelUI.cs) là panel nhanh hiển thị trên màn hình gameplay. Panel gồm:
 - avatarImage: ảnh đại diện theo hệ nguyên tố.
@@ -2189,7 +2853,9 @@ CharacterMenuPanelUI (CharacterMenuPanelUI.cs) là panel nhanh hiển thị trê
 
 b) Tab chỉ số và trang bị
 
-Hình 3.17 Giao diện tab Chỉ số và Trang bị (StatsTabUI)
+![Giao diện tab Chỉ số và Trang bị](extracted_images/image65.png)
+
+*Hình 3.19. Giao diện tab Chỉ số và Trang bị (StatsTabUI)*
 
 StatsTabUI (StatsTabUI.cs) hiển thị:
 - txtCharacterName, txtLevel, txtElement: thông tin nhận diện nhân vật.
@@ -2199,13 +2865,17 @@ StatsTabUI (StatsTabUI.cs) hiển thị:
 
 c) Tab kỹ năng
 
-Hình 3.18 Giao diện tab Kỹ năng (SkillTabUI / SkillDetailPanelUI)
+![Giao diện tab Kỹ năng](extracted_images/image66.png)
+
+*Hình 3.20. Giao diện tab Kỹ năng (SkillTabUI / SkillDetailPanelUI)*
 
 SkillTabUI (SkillTabUI.cs) liệt kê toàn bộ kỹ năng sở hữu dưới dạng các dòng SkillRowUI. Khi người chơi chọn một kỹ năng, SkillDetailPanelUI mở ra hiển thị mô tả kỹ năng, level hiện tại, yêu cầu nâng cấp và nút nâng cấp gửi lên server qua UpgradeSkillServerRpc.
 
 d) Tab tiềm năng
 
-Hình 3.19 Giao diện tab Tiềm Năng (PotentialTabUI)
+![Giao diện tab Tiềm Năng](extracted_images/image67.png)
+
+*Hình 3.21. Giao diện tab Tiềm Năng (PotentialTabUI)*
 
 PotentialTabUI (PotentialTabUI.cs) cho phép phân bổ điểm tiềm năng vào các chỉ số nhân vật:
 - txtPotentialPoints: số điểm tiềm năng còn dư.
@@ -2213,11 +2883,13 @@ PotentialTabUI (PotentialTabUI.cs) cho phép phân bổ điểm tiềm năng và
 - btnHuy: huỷ toàn bộ thay đổi pending, khôi phục điểm gốc.
 - btnCong: xác nhận gom toàn bộ delta gửi lên server qua AllocatePotentialStatsServerRpc.
 
-3.5.6Giao diện xã hội
+3.8.6Giao diện xã hội
 
 a) Trò chuyện đa kênh
 
-Hình 3.20 Giao diện chat đa kênh (ChatPanelUI)
+![Giao diện chat đa kênh](extracted_images/image68.png)
+
+*Hình 3.22. Giao diện chat đa kênh (ChatPanelUI)*
 
 ChatPanelUI (ChatPanelUI.cs) triển khai hệ thống chat nhiều kênh kết nối SignalR. Giao diện gồm:
 - messageScrollRect + messageContent: ScrollView hiển thị tối đa 80 tin nhắn đồng thời theo cơ chế Object Queue.
@@ -2228,13 +2900,17 @@ ChatPanelUI (ChatPanelUI.cs) triển khai hệ thống chat nhiều kênh kết 
 
 b) Danh sách bạn bè
 
-Hình 3.21 Giao diện danh sách bạn bè (FriendListUI)
+![Giao diện danh sách bạn bè](extracted_images/image69.png)
+
+*Hình 3.23. Giao diện danh sách bạn bè (FriendListUI)*
 
 FriendListUI (FriendListUI.cs) nhúng trực tiếp trong friendListPanel của ChatPanelUI. Người chơi xem danh sách bạn bè đang online/offline, nhấn vào một bạn bè để mở PlayerProfilePanelUI — hiện thông tin cá nhân, nút gửi tin nhắn riêng và nút mời vào tổ đội mà không cần đóng cửa sổ chat.
 
 c) Tổ đội
 
-Hình 3.22 Giao diện tổ đội (PartyPanelUI)
+![Giao diện tổ đội](extracted_images/image70.png)
+
+*Hình 3.24. Giao diện tổ đội (PartyPanelUI)*
 
 PartyPanelUI (PartyPanelUI.cs) quản lý tương tác nhóm qua ba tab:
 - Tab Tổ Đội: memberListRoot sinh các PartyMemberEntryUI; lockToggle (khoá nhóm); autoAcceptToggle (tự chấp nhận yêu cầu); actionButton đổi nhãn động theo trạng thái (Tạo nhóm / Rời nhóm); chatGroupButton mở kênh chat nhóm.
@@ -2244,7 +2920,9 @@ Yêu cầu vào nhóm đẩy vào hàng đợi _pendingJoinRequests và hiện t
 
 d) Bảng xếp hạng
 
-Hình 3.23 Giao diện bảng xếp hạng (LeaderboardPanelUI)
+![Giao diện bảng xếp hạng](extracted_images/image71.png)
+
+*Hình 3.25. Giao diện bảng xếp hạng (LeaderboardPanelUI)*
 
 LeaderboardPanelUI (LeaderboardPanelUI.cs) tổ chức hai tầng tab:
 - 4 mainTabs: Đua Top / Sự Kiện / Tuần & Tháng / Thưởng.
@@ -2253,11 +2931,13 @@ LeaderboardPanelUI (LeaderboardPanelUI.cs) tổ chức hai tầng tab:
 - emptyStateGroup + emptyStateText: hiển thị khi danh sách rỗng.
 - loadingText: thông báo trạng thái tải.
 
-3.5.7Giao diện phó bản
+3.8.7Giao diện phó bản
 
 a) Danh sách phó bản
 
-Hình 3.24 Giao diện chọn phó bản (DungeonListUI)
+![Giao diện chọn phó bản](extracted_images/image72.png)
+
+*Hình 3.26. Giao diện chọn phó bản (DungeonListUI)*
 
 DungeonListUI (DungeonListUI.cs) là panel mở danh sách tất cả phó bản hiện có. Panel gồm:
 - dungeonListContent (ScrollView): sinh các DungeonButtonItem từ dungeonItemPrefab, mỗi mục hiển thị tên phó bản, mô tả, cấp độ yêu cầu và trạng thái.
@@ -2267,7 +2947,9 @@ DungeonListUI (DungeonListUI.cs) là panel mở danh sách tất cả phó bản
 
 b) HUD phó bản wave
 
-Hình 3.25 Giao diện HUD phó bản wave (WaveHUD)
+![Giao diện HUD phó bản wave](extracted_images/image73.png)
+
+*Hình 3.27. Giao diện HUD phó bản wave (WaveHUD)*
 
 WaveHUD (WaveHUD.cs) xuất hiện khi người chơi đang trong phó bản dạng Wave. Giao diện gồm:
 - roundText: số vòng hiện tại và tổng số vòng, dạng "Vòng 2 / 5".
@@ -2281,11 +2963,13 @@ Hình 3.26 Giao diện NPC trong phó bản (DungeonNpcMenuUI)
 
 DungeonNpcMenuUI (DungeonNpcMenuUI.cs) hiển thị menu tương tác với NPC đặc biệt bên trong phó bản. Mỗi lựa chọn được sinh ra dưới dạng DungeonNpcMenuEntryUI — hiển thị tên hành động, mô tả ngắn và nút xác nhận. NPC phó bản có thể cung cấp hồi HP/MP giữa các vòng, bán vật phẩm tăng cường tạm thời hoặc kích hoạt sự kiện đặc biệt trong dungeon.
 
-3.5.8Giao diện nhiệm vụ và tương tác NPC thế giới
+3.8.8Giao diện nhiệm vụ và tương tác NPC thế giới
 
 a) Widget theo dõi nhiệm vụ
 
-Hình 3.27 Giao diện widget nhiệm vụ góc màn hình (QuestHudWidget)
+![Giao diện widget nhiệm vụ góc màn hình](extracted_images/image74.png)
+
+*Hình 3.28. Giao diện widget nhiệm vụ góc màn hình (QuestHudWidget)*
 
 QuestHudWidget (QuestHudWidget.cs) là widget cố định ở góc màn hình theo dõi nhiệm vụ đang active:
 - questNameText: tiêu đề nhiệm vụ chính đang theo dõi, dạng "Chính: [tên quest]".
@@ -2301,32 +2985,40 @@ QuestNpcPanel (QuestNpcPanel.cs) mở ra khi người chơi tương tác với N
 
 c) Menu NPC động và cửa hàng
 
-Hình 3.29 Giao diện menu NPC động và cửa hàng (NpcDynamicMenuUI / NpcMenuUI)
+![Giao diện menu NPC động và cửa hàng](extracted_images/image75.png)
+
+*Hình 3.29. Giao diện menu NPC động và cửa hàng (NpcDynamicMenuUI / NpcMenuUI)*
 
 NpcDynamicMenuUI (NpcDynamicMenuUI.cs) sinh menu tương tác với NPC theo cấu hình từ Backend, hỗ trợ nhiều loại hành động khác nhau (mở cửa hàng, nhiệm vụ, chức năng đặc biệt). Khi người chơi chọn mua hàng, NpcMenuUI (NpcMenuUI.cs) mở danh sách ShopItemRowUI — mỗi dòng hiển thị tên vật phẩm, biểu tượng hệ nguyên tố, giá vàng, số lượng tồn và nút mua trực tiếp.
 
-3.5.9Giao diện hệ thống bản đồ thế giới
+3.8.9Giao diện hệ thống bản đồ thế giới
 
 a) Di chuyển qua biên map (MapEdgeTrigger)
 
-Hình 3.30 Giao diện chuyển map qua biên (MapEdgeTrigger / MapTransitionButton)
+![Giao diện chuyển map qua biên](extracted_images/image76.png)
+
+*Hình 3.30. Giao diện chuyển map qua biên (MapEdgeTrigger / MapTransitionButton)*
 
 Thế giới game được chia thành 14 map liên tiếp (Map00–Map13), mỗi map tương ứng một Unity Scene riêng. Hệ thống điều hướng bản đồ gồm hai cơ chế:
 - MapEdgeTrigger: BoxCollider2D isTrigger đặt tại rìa trái/phải của scene; khi LocalPlayer (phát hiện qua NetworkObject.IsOwner) bước vào vùng trigger, script gọi API GET /api/map/edge?mapId=X&direction=right để lấy destMapId và vị trí xuất hiện tương ứng, sau đó load scene đích với transitionDelay mặc định 0.5 giây.
 - MapTransitionButton: nút mũi tên "←" / "→" trên HUD (isRightButton) phục vụ di chuyển thủ công hoặc trên thiết bị di động; khi nhấn, gọi cùng API và hiện loadingPanel + errorText nếu map kề không tồn tại.
 - MapManager: Singleton DontDestroyOnLoad tự động gọi GET /api/map/by-scene?scene=... khi mỗi scene load để resolve mapId và mapName; cung cấp MapManager.Instance.GetMapId() cho tất cả các script khác trong scene.
 
-b) Cổng dịch chuyển trong phó bản (MapPortalTrigger)
+b) Cổng dịch chuyển trong bản đồ và phó bản (MapPortalTrigger)
 
-Hình 3.31 Cổng dịch chuyển phòng trong phó bản (MapPortalTrigger)
+Hình 3.31 Cổng dịch chuyển phòng trong bản đồ và phó bản (MapPortalTrigger)
 
-MapPortalTrigger (MapPortalTrigger.cs) là cổng đặt trực tiếp trong scene phó bản để chuyển giữa các phòng hoặc thoát dungeon. Mỗi cổng mang:
-- portalId và currentMapId: lấy từ bảng map_portal trong DB hoặc tự động điền bởi DungeonManager.LoadPortalsFromServer().
-- portalType: phân loại "enter_dungeon" | "room_transition" | "exit_dungeon".
-- requiredItemId: nếu khác 0, người chơi phải có item tương ứng (Chìa Khóa) trong túi; khi thiếu, keyRequiredPrompt hiện thông báo thay vì kích hoạt dịch chuyển.
-- portalVisual: Particle/sprite minh hoạ cổng; transitionDelay: 0.8 giây chờ hiệu ứng fade trước khi load scene mới.
+MapPortalTrigger (MapPortalTrigger.cs) là cổng đặt trực tiếp trong các scene thế giới và phó bản để chuyển dịch giữa các khu vực hoặc vào/thoát dungeon. Mỗi cổng mang:
+- `portalId` và `currentMapId`: lấy từ bảng `map_portal` trong DB hoặc tự động điền bởi `DungeonManager.LoadPortalsFromServer()`.
+- `portalType`: phân loại "enter_dungeon" | "room_transition" | "exit_dungeon".
+- ----- [BẮT ĐẦU PHẦN THÊM MỚI] ----- Quy trình xác thực điều kiện qua cổng: Khi LocalPlayer chạm vào cổng, `MapPortalTrigger` gửi yêu cầu xác thực qua API `POST /api/map/travel` để backend kiểm tra:
+  - **Cấp độ yêu cầu (`min_level`)**: Nếu bản đồ đích yêu cầu cấp độ tối thiểu lớn hơn cấp hiện tại của nhân vật, server từ chối và client hiển thị thông báo lỗi cấp độ.
+  - **Mốc nhiệm vụ bắt buộc (`required_quest_id`)**: Nếu bản đồ đích yêu cầu hoàn thành một nhiệm vụ cốt truyện cụ thể, server đối chiếu với danh sách nhiệm vụ đã xong của người chơi. Nếu chưa hoàn thành, từ chối chuyển map và hiển thị tên nhiệm vụ cần thực hiện.
+  - **Vật phẩm yêu cầu (`required_item_id`)**: Nếu cổng yêu cầu vật phẩm chìa khóa, server quét túi đồ JSON để xác nhận sự tồn tại của item. Nếu thiếu, client bật hiển thị `keyRequiredPrompt`. ----- [KẾT THÚC PHẦN THÊM MỚI] -----
+- Khi API trả về `success = true`, client kích hoạt `transitionDelay` (mặc định 0.8 giây) chạy hiệu ứng fade-out và gọi `ZoneTransitionController.RequestMapPortalTransferServerRpc` để server di chuyển player sang map mới an toàn.
+- `portalVisual`: Particle/sprite minh hoạ cổng; transitionDelay: 0.8 giây chờ hiệu ứng fade trước khi load scene mới.
 
-3.6Tổng kết chương 3
+3.9Tổng kết chương 3
 
 Chương 3 đã hoàn thiện việc hiện thực hóa toàn bộ hệ thống ở cả ba tầng: Client (Unity), Backend (ASP.NET Core) và Zone Server (Unity Netcode). Nhờ áp dụng các cơ chế như đồng bộ NetworkVariable, ServerRpc/ClientRpc, SignalR Hub và REST API theo đúng phân công trách nhiệm, hệ thống liên kết chặt chẽ các quy trình từ đăng nhập, chọn Gene, nâng Gene chính — Gene phụ — dung hợp Hybrid, vào gameplay realtime, hoàn thành phó bản wave cho đến khi ghi nhận điểm số và xếp hạng. Chuỗi giao diện được đặc tả trong mục 3.5 phản ánh trực tiếp các script trong thư mục Client/Assets/Scripts, bảo đảm mỗi trường dữ liệu hiển thị đều có nguồn gốc xác định từ mã nguồn thực tế của đồ án.
 

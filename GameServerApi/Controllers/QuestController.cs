@@ -72,6 +72,7 @@ namespace GameServerApi.Controllers
                 string status;
                 if      (info.CompletedQuests.Contains(q.Id))   status = "completed";
                 else if (info.ActiveQuestId == q.Id)            status = "active";
+                else if (info.ActiveQuestId >= 0)               status = "locked";
                 else if (playerLevel < q.LevelNeed)             status = "locked";
                 else                                            status = "available";
 

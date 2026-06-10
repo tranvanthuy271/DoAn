@@ -33,6 +33,9 @@ public class SkillSlotUI : MonoBehaviour
     [Tooltip("Màu icon khi skill đang cooldown")]
     public Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
+    [Tooltip("Mau icon khi skill chua mo khoa")]
+    public Color lockedColor = new Color(0.18f, 0.18f, 0.18f, 0.9f);
+
     // ── Internal state ───────────────────────────────────────────────────────
     private SkillData boundSkill;
     private PlayerSkillManager skillManager;
@@ -48,6 +51,8 @@ public class SkillSlotUI : MonoBehaviour
     /// </summary>
     public void Bind(SkillData skill, PlayerSkillManager manager, int index, Sprite icon = null)
     {
+        gameObject.SetActive(skill == null || skill.isUnlocked);
+
         boundSkill = skill;
         skillManager = manager;
         slotIndex = index;
@@ -107,6 +112,17 @@ public class SkillSlotUI : MonoBehaviour
     private void Update()
     {
         if (boundSkill == null) return;
+
+        bool locked = !boundSkill.isUnlocked;
+        if (locked)
+        {
+            if (iconImage != null) iconImage.enabled = false;
+            if (cooldownOverlay != null) cooldownOverlay.gameObject.SetActive(false);
+            if (cooldownText != null) cooldownText.gameObject.SetActive(false);
+            if (skillButton != null) skillButton.interactable = false;
+            gameObject.SetActive(false);
+            return;
+        }
 
         bool onCooldown = !boundSkill.CanUse();
         float remaining = boundSkill.GetCooldownRemaining();

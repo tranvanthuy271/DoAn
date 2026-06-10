@@ -10,6 +10,9 @@ namespace GameServerApi.Models
         public string PasswordHash { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastLogin { get; set; }
+        /// <summary>Role: "Player" | "Admin" | "GameServer"</summary>
+        public string Role { get; set; } = "Player";
+
     }
 }
 

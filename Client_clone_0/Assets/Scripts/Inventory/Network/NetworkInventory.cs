@@ -11,9 +11,14 @@ using UnityEngine.Events;
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkInventory : NetworkBehaviour
 {
+    private const int PickupTraceItemId = 27;
+
     [Header("Inventory Settings")]
     [Tooltip("Số lượng slot tối đa trong inventory")]
     [SerializeField] private int maxSlots = 20;
+
+    [Header("Debug")]
+    [SerializeField] private bool verboseInventoryLogs = false;
     
     [Header("Events")]
     public UnityEvent<int, ItemData, int> OnItemAdded; // slotIndex, itemData, quantity
@@ -32,12 +37,25 @@ public class NetworkInventory : NetworkBehaviour
     // Local cache để truy cập nhanh (không cần parse NetworkVariable mỗi lần)
     private Dictionary<int, InventorySlot> localInventory = new Dictionary<int, InventorySlot>();
 
+    private static bool ShouldTracePickupItem(int itemID) => itemID == PickupTraceItemId;
+
+    private static void TracePickup(int itemID, string message)
+    {
+        if (ShouldTracePickupItem(itemID))
+            Debug.Log($"[PickupTrace][NetworkInventory] {message}");
+    }
+
+    private void VerboseLog(string message)
+    {
+        if (verboseInventoryLogs)
+            Debug.Log(message);
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
         
-        Debug.Log($"[NetworkInventory] ===== OnNetworkSpawn CALLED! =====");
-        Debug.Log($"[NetworkInventory] IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}, OwnerClientId={OwnerClientId}");
+        VerboseLog($"[NetworkInventory] OnNetworkSpawn IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}, OwnerClientId={OwnerClientId}");
         
         // Subscribe to network data changes
         networkInventoryData.OnValueChanged += OnInventoryDataChanged;
@@ -58,7 +76,7 @@ public class NetworkInventory : NetworkBehaviour
             
             // ✅ LOAD INVENTORY FROM DB
             // Server load inventory cho owner của object này
-            Debug.Log($"[NetworkInventory] Server: Bắt đầu load inventory từ DB... (OwnerClientId={OwnerClientId})");
+            VerboseLog($"[NetworkInventory] Server loading inventory from DB. OwnerClientId={OwnerClientId}");
             StartCoroutine(LoadInventoryFromDBDelayed());
         }
         
@@ -66,13 +84,13 @@ public class NetworkInventory : NetworkBehaviour
         if (networkInventoryData.Value.slotData != null)
         {
             DeserializeInventory(networkInventoryData.Value);
-            Debug.Log($"[NetworkInventory] Deserialized inventory on spawn. UsedSlots={GetUsedSlots()}");
+            VerboseLog($"[NetworkInventory] Deserialized inventory on spawn. UsedSlots={GetUsedSlots()}");
         }
         
         // 🔥 CLIENT: Trigger OnInventoryChanged sau một delay để đảm bảo Bridge đã subscribe
         if (IsClient && !IsServer)
         {
-            Debug.Log("[NetworkInventory] Client: Scheduling delayed OnInventoryChanged trigger...");
+            VerboseLog("[NetworkInventory] Client scheduling delayed OnInventoryChanged trigger.");
             StartCoroutine(TriggerInventoryChangedDelayed());
         }
     }
@@ -89,7 +107,7 @@ public class NetworkInventory : NetworkBehaviour
         // Đợi 2 giây để Bridge có thời gian subscribe
         yield return new WaitForSeconds(2f);
         
-        Debug.Log("[NetworkInventory] ===== MANUAL TRIGGER OnInventoryChanged (Client) =====");
+        VerboseLog("[NetworkInventory] Manual OnInventoryChanged trigger on client.");
         OnInventoryChanged?.Invoke();
     }
 
@@ -114,7 +132,7 @@ public class NetworkInventory : NetworkBehaviour
         if (!IsServer) return;
 
         ulong senderClientId = rpcParams.Receive.SenderClientId;
-        Debug.Log($"[NetworkInventory] RequestInventoryDataServerRpc từ clientId={senderClientId}");
+        VerboseLog($"[NetworkInventory] RequestInventoryDataServerRpc clientId={senderClientId}");
 
         int playerId = ResolveInventoryApiPlayerId(senderClientId);
 
@@ -125,7 +143,7 @@ public class NetworkInventory : NetworkBehaviour
         }
 
         ulong capturedClientId = senderClientId;
-        Debug.Log("[NetworkInventory] RequestInventoryDataServerRpc: fetch inventory trực tiếp từ DB.");
+        VerboseLog("[NetworkInventory] RequestInventoryDataServerRpc fetch inventory from DB.");
         StartCoroutine(PushInventoryDataToClientDirect(playerId, capturedClientId));
     }
 
@@ -139,7 +157,7 @@ public class NetworkInventory : NetworkBehaviour
         if (!IsServer) return;
 
         ulong senderClientId = rpcParams.Receive.SenderClientId;
-        Debug.Log($"[NetworkInventory] RequestSortInventoryServerRpc từ clientId={senderClientId}");
+        VerboseLog($"[NetworkInventory] RequestSortInventoryServerRpc clientId={senderClientId}");
 
         int playerId = ResolveInventoryApiPlayerId(senderClientId);
 
@@ -160,7 +178,7 @@ public class NetworkInventory : NetworkBehaviour
     [ClientRpc]
     public void SendInventoryDataClientRpc(string inventoryJson, ClientRpcParams rpcParams = default)
     {
-        Debug.Log($"[NetworkInventory] 📦 Client nhận inventory data từ host ({inventoryJson?.Length ?? 0} chars)");
+        VerboseLog($"[NetworkInventory] Client received inventory data from host ({inventoryJson?.Length ?? 0} chars)");
         var bridge = FindObjectOfType<InventoryNetworkBridge>(true);
         if (bridge != null)
             bridge.OnReceivedInventoryDataFromHost(inventoryJson);
@@ -179,8 +197,7 @@ public class NetworkInventory : NetworkBehaviour
     /// </summary>
     private void OnInventoryDataChanged(NetworkInventoryData oldData, NetworkInventoryData newData)
     {
-        Debug.Log($"[NetworkInventory] ===== OnInventoryDataChanged TRIGGERED! =====");
-        Debug.Log($"[NetworkInventory] IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}");
+        VerboseLog($"[NetworkInventory] OnInventoryDataChanged IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}");
         
         int itemCount = 0;
         if (newData.slotData != null)
@@ -190,14 +207,12 @@ public class NetworkInventory : NetworkBehaviour
                 if (slot.itemID > 0) itemCount++;
             }
         }
-        Debug.Log($"[NetworkInventory] New data has {itemCount} items");
+        VerboseLog($"[NetworkInventory] Network data item count={itemCount}");
         
         DeserializeInventory(newData);
         
-        Debug.Log($"[NetworkInventory] Calling OnInventoryChanged?.Invoke()...");
         OnInventoryChanged?.Invoke();
-        
-        Debug.Log($"[NetworkInventory] ✓ OnInventoryChanged event invoked!");
+        VerboseLog("[NetworkInventory] OnInventoryChanged invoked.");
     }
 
     /// <summary>
@@ -277,18 +292,15 @@ public class NetworkInventory : NetworkBehaviour
 
         int remainingQuantity = quantity;
 
-        // Đảm bảo slotData được khởi tạo
+        // Keep Netcode slot capacity aligned with the player's current bag size.
         var currentData = networkInventoryData.Value;
-        if (currentData.slotData == null || currentData.slotData.Length == 0)
-        {
-            currentData.slotData = new InventorySlotData[maxSlots];
-            for (int i = 0; i < maxSlots; i++)
-            {
-                currentData.slotData[i] = new InventorySlotData { itemID = 0, quantity = 0 };
-            }
-        }
+        currentData.slotData = EnsureSlotCapacity(currentData.slotData, maxSlots);
 
-        // Nếu item có thể stack, tìm slot đã có item đó
+        TracePickup(
+            itemID,
+            $"NetAddStart item={itemID} qty={quantity} stackable={template.stackable} maxStack={template.max_stack} maxSlots={maxSlots} slotDataLen={currentData.slotData.Length} usedSlots={CountUsedSlots(currentData.slotData)} stacks={BuildItemSlotSummary(currentData.slotData, itemID)}");
+
+        // Fill existing stacks first, capped by max_stack.
         if (template.stackable)
         {
             for (int i = 0; i < currentData.slotData.Length && remainingQuantity > 0; i++)
@@ -297,33 +309,38 @@ public class NetworkInventory : NetworkBehaviour
                 if (slot.itemID == itemID)
                 {
                     int spaceAvailable = template.max_stack - slot.quantity;
-                    if (spaceAvailable > 0)
+                    if (spaceAvailable <= 0)
                     {
-                        int addAmount = Mathf.Min(remainingQuantity, spaceAvailable);
-                        slot.quantity += addAmount;
-                        remainingQuantity -= addAmount;
-                        currentData.slotData[i] = slot;
+                        TracePickup(itemID, $"StackFull slot={i} qty={slot.quantity} maxStack={template.max_stack}");
+                        continue;
                     }
+
+                    int addAmount = Mathf.Min(remainingQuantity, spaceAvailable);
+                    slot.quantity += addAmount;
+                    remainingQuantity -= addAmount;
+                    currentData.slotData[i] = slot;
+                    TracePickup(itemID, $"FillStack slot={i} add={addAmount} newQty={slot.quantity} remaining={remainingQuantity}");
                 }
             }
         }
 
-        // Thêm vào slot trống nếu còn dư
+        // Put any remainder into empty slots.
         if (remainingQuantity > 0)
         {
-            for (int i = 0; i < maxSlots && remainingQuantity > 0; i++)
+            for (int i = 0; i < currentData.slotData.Length && remainingQuantity > 0; i++)
             {
                 var slot = currentData.slotData[i];
-                if (slot.itemID == 0) // Slot trống
+                if (slot.itemID == 0)
                 {
-                    int addAmount = template.stackable 
-                        ? Mathf.Min(remainingQuantity, template.max_stack) 
+                    int addAmount = template.stackable
+                        ? Mathf.Min(remainingQuantity, template.max_stack)
                         : 1;
-                    
+
                     slot.itemID = itemID;
                     slot.quantity = addAmount;
                     remainingQuantity -= addAmount;
                     currentData.slotData[i] = slot;
+                    TracePickup(itemID, $"UseEmptySlot slot={i} add={addAmount} remaining={remainingQuantity}");
                 }
             }
         }
@@ -333,17 +350,17 @@ public class NetworkInventory : NetworkBehaviour
             addedQuantity = quantity - remainingQuantity;
             networkInventoryData.Value = currentData;
             OnItemAddedClientRpc(itemID, addedQuantity);
-            Debug.Log($"[NetworkInventory] Added {addedQuantity}x {template.name} to inventory");
+            TracePickup(itemID, $"NetAddSuccess added={addedQuantity} remaining={remainingQuantity} usedSlots={CountUsedSlots(currentData.slotData)} stacks={BuildItemSlotSummary(currentData.slotData, itemID)}");
 
-            // ✅ Persist to DB sau khi update NetworkVariable
+            // Persist the accepted quantity to DB after the NetworkVariable update.
             SyncInventoryToDB(itemID, template.code, template.icon_id, addedQuantity);
             return true;
         }
 
-        // Nếu còn dư và không thể thêm được nữa
+        // Nothing could be added; report the capacity state once.
         if (remainingQuantity > 0)
         {
-            Debug.LogWarning($"[NetworkInventory] Inventory đầy! Không thể thêm {remainingQuantity}x {template.name}");
+            Debug.LogWarning($"[PickupTrace][NetworkInventory] NetAddFail item={itemID} remaining={remainingQuantity} maxSlots={maxSlots} slotDataLen={currentData.slotData.Length} usedSlots={CountUsedSlots(currentData.slotData)} stacks={BuildItemSlotSummary(currentData.slotData, itemID)}");
         }
 
         return false;
@@ -594,9 +611,9 @@ public class NetworkInventory : NetworkBehaviour
     {
         var template = GetItemTemplate(itemID);
         string itemName = template?.name ?? $"item_id={itemID}";
-        Debug.Log($"[NetworkInventory] Client: Nhận được {quantity}x {itemName}");
+        TracePickup(itemID, $"ClientItemAdded item={itemID} qty={quantity} name={itemName}");
 
-        // Force refresh UI — đảm bảo inventory hiển thị mới nhất dù OnValueChanged chưa kịp fire
+        // Force refresh UI in case OnValueChanged has not fired yet.
         DeserializeInventory(networkInventoryData.Value);
         OnInventoryChanged?.Invoke();
     }
@@ -707,6 +724,65 @@ public class NetworkInventory : NetworkBehaviour
 
     public int GetMaxSlots() => maxSlots;
     public int GetUsedSlots() => localInventory.Count;
+
+    private int CountUsedSlots(InventorySlotData[] slots)
+    {
+        if (slots == null) return 0;
+        int count = 0;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i].itemID > 0 && slots[i].quantity > 0)
+                count++;
+        }
+        return count;
+    }
+
+    private string BuildItemSlotSummary(InventorySlotData[] slots, int itemID)
+    {
+        if (slots == null || slots.Length == 0)
+            return "none";
+
+        var parts = new List<string>();
+        for (int i = 0; i < slots.Length; i++)
+        {
+            var slot = slots[i];
+            if (slot.itemID == itemID && slot.quantity > 0)
+                parts.Add($"slot={i},qty={slot.quantity}");
+        }
+
+        return parts.Count > 0 ? string.Join(" | ", parts) : "none";
+    }
+
+    private void ApplyBagSlotLimit(int bagSlots)
+    {
+        if (bagSlots > maxSlots)
+        {
+            int oldMaxSlots = maxSlots;
+            maxSlots = bagSlots;
+            Debug.Log($"[PickupTrace][NetworkInventory] Apply bag_slots from DB: {oldMaxSlots} -> {maxSlots}");
+        }
+    }
+
+    private InventorySlotData[] CreateEmptySlotArray(int slotCount)
+    {
+        var slots = new InventorySlotData[slotCount];
+        for (int i = 0; i < slotCount; i++)
+            slots[i] = new InventorySlotData { itemID = 0, quantity = 0 };
+        return slots;
+    }
+
+    private InventorySlotData[] EnsureSlotCapacity(InventorySlotData[] slots, int slotCount)
+    {
+        if (slots == null || slots.Length == 0)
+            return CreateEmptySlotArray(slotCount);
+        if (slots.Length >= slotCount)
+            return slots;
+
+        var expanded = CreateEmptySlotArray(slotCount);
+        for (int i = 0; i < slots.Length; i++)
+            expanded[i] = slots[i];
+        return expanded;
+    }
 
     /// <summary>
     /// Lấy raw slot data từ NetworkVariable (không cần ItemData ScriptableObject)
@@ -819,7 +895,7 @@ public class NetworkInventory : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"[NetworkInventory] SyncInventoryToDB: owner={OwnerClientId}, playerId={playerId}, itemTemplateId={itemTemplateId}, quantity={quantity}");
+        TracePickup(itemTemplateId, $"DbSyncStart owner={OwnerClientId} playerId={playerId} qty={quantity}");
 
         // Chỉ gửi itemTemplateId + quantity — server tự tra item_template
         var item = new APIClient.AddInventoryItemRequest
@@ -839,7 +915,6 @@ public class NetworkInventory : NetworkBehaviour
             return;
         }
 
-        Debug.Log("[NetworkInventory] sync inventory qua UnityWebRequest trực tiếp.");
         StartCoroutine(SyncInventoryToApiDirect(playerId, items, clientJwt, OwnerClientId));
     }
 
@@ -862,9 +937,7 @@ public class NetworkInventory : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"[NetworkInventory] Đang load inventory từ DB cho player {playerId} (OwnerClientId={OwnerClientId})...");
-
-        // Dedicated server: gọi API trực tiếp bằng ZoneApiKey
+        TracePickup(PickupTraceItemId, $"DBLoadStart playerId={playerId} owner={OwnerClientId}");
         StartCoroutine(LoadInventoryFromApiDirect(playerId));
     }
 
@@ -928,6 +1001,7 @@ public class NetworkInventory : NetworkBehaviour
     {
         string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/inventory/add";
+        int traceItemId = items != null && items.Length > 0 ? items[0].itemTemplateId : 0;
 
         var requestBody = new APIClient.AddInventoryItemsRequest
         {
@@ -949,11 +1023,11 @@ public class NetworkInventory : NetworkBehaviour
             string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
                 ? req.downloadHandler.text
                 : req.error;
-            Debug.LogError($"[NetworkInventory] ❌ Direct sync inventory failed: {errorMessage}");
+            Debug.LogError($"[PickupTrace][NetworkInventory] DbSyncFail item={traceItemId} playerId={playerId} targetClient={targetClientId} error={errorMessage}");
             yield break;
         }
 
-        Debug.Log($"[NetworkInventory] ✅ Direct sync inventory thành công: {req.downloadHandler.text}");
+        TracePickup(traceItemId, $"DbSyncSuccess playerId={playerId} response={req.downloadHandler.text}");
         yield return PushInventoryDataToClientDirect(playerId, targetClientId);
     }
 
@@ -1053,57 +1127,40 @@ public class NetworkInventory : NetworkBehaviour
     /// </summary>
     private IEnumerator LoadInventoryFromApiDirect(int playerId)
     {
-        yield return FetchInventoryFromApiDirect(
+        yield return FetchPlayerDataFromApiDirect(
             playerId,
-            items =>
+            response =>
             {
-                if (items != null && items.Length > 0)
-                {
-                    Debug.Log($"[NetworkInventory] ✅ Load thành công {items.Length} items từ API (direct)!");
-                    PopulateInventoryFromDB(items);
-                }
-                else
-                {
-                    Debug.Log("[NetworkInventory] Inventory trong DB trống (player mới) — direct API.");
-                }
+                InventoryItem[] items = response?.inventory ?? System.Array.Empty<InventoryItem>();
+                int bagSlots = response != null && response.bag_slots > 0 ? response.bag_slots : maxSlots;
+                PopulateInventoryFromDB(items, bagSlots);
             },
             error => Debug.LogWarning($"[NetworkInventory] Direct API load failed: {error}")
         );
     }
 
     /// <summary>
-    /// Populate NetworkInventoryData từ DB data
+    /// Rebuild Netcode inventory from DB data using the player's current bag slot limit.
     /// </summary>
-    private void PopulateInventoryFromDB(InventoryItem[] dbItems)
+    private void PopulateInventoryFromDB(InventoryItem[] dbItems, int bagSlots)
     {
         if (!IsServer) return;
 
-        Debug.Log($"[NetworkInventory] PopulateInventoryFromDB: Đang populate {dbItems.Length} items...");
+        ApplyBagSlotLimit(bagSlots);
 
         var currentData = networkInventoryData.Value;
-        
-        // Đảm bảo slotData đã được khởi tạo
-        if (currentData.slotData == null || currentData.slotData.Length == 0)
-        {
-            currentData.slotData = new InventorySlotData[maxSlots];
-            for (int i = 0; i < maxSlots; i++)
-            {
-                currentData.slotData[i] = new InventorySlotData { itemID = 0, quantity = 0 };
-            }
-        }
+        currentData.slotData = CreateEmptySlotArray(maxSlots);
 
-        // Populate từ DB data
         foreach (var dbItem in dbItems)
         {
             int slotIndex = dbItem.slotIndex;
             
             if (slotIndex < 0 || slotIndex >= maxSlots)
             {
-                Debug.LogWarning($"[NetworkInventory] Invalid slotIndex {slotIndex}, skipping...");
+                Debug.LogWarning($"[PickupTrace][NetworkInventory] DBLoadSkipSlot item={dbItem.itemTemplateId} slot={slotIndex} qty={dbItem.quantity} maxSlots={maxSlots}");
                 continue;
             }
 
-            // Dùng itemTemplateId làm itemID
             int itemID = dbItem.itemTemplateId;
             
             if (itemID > 0 && dbItem.quantity > 0)
@@ -1113,21 +1170,14 @@ public class NetworkInventory : NetworkBehaviour
                     itemID = itemID,
                     quantity = dbItem.quantity
                 };
-                
-                Debug.Log($"[NetworkInventory] Loaded slot {slotIndex}: itemID={itemID}, qty={dbItem.quantity}");
             }
         }
 
-        // Update NetworkVariable
         networkInventoryData.Value = currentData;
         
-        // IMPORTANT: Force deserialize vào localInventory ngay lập tức
-        // Vì OnInventoryDataChanged callback có thể không được trigger kịp thời
+        // Keep local cache in sync immediately; the NetworkVariable callback may arrive later.
         DeserializeInventory(currentData);
-        
-        Debug.Log($"[NetworkInventory] ✅ Đã populate inventory từ DB, triggering OnInventoryChanged event...");
-        
-        // Trigger OnInventoryChanged manually để refresh UI
+        TracePickup(PickupTraceItemId, $"DBLoadDone bagSlots={bagSlots} maxSlots={maxSlots} usedSlots={CountUsedSlots(currentData.slotData)} item27={BuildItemSlotSummary(currentData.slotData, PickupTraceItemId)}");
         OnInventoryChanged?.Invoke();
     }
 }

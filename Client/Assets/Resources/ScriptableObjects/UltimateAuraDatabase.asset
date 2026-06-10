@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30d0bb718b827724e958864bf2618c31, type: 3}
+  m_Name: UltimateAuraDatabase
+  m_EditorClassIdentifier: 
+  auras:
+  - elementKeys:
+    - Fire
+    - Earth
+    auraPrefab: {fileID: 274691497199811437, guid: 02c0cba87152f674ead2616d12e2b2d8, type: 3}
+  - elementKeys:
+    - Water
+    - Wood
+    auraPrefab: {fileID: 10396553867567118, guid: eec63b7d369adba4297b334a0be401ca, type: 3}
+  - elementKeys:
+    - Metal
+    - Wind
+    auraPrefab: {fileID: 2921750611553520823, guid: f3ddb1157695ebe45b0d8a1e4a771939, type: 3}
+  defaultAuraPrefab: {fileID: 0}

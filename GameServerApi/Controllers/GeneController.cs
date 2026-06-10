@@ -100,7 +100,8 @@ namespace GameServerApi.Controllers
                 if (!body.TryGetProperty("playerId", out var pidProp))
                     return BadRequest("Thiếu playerId.");
 
-                int playerId  = pidProp.GetInt32();
+                if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
+                    return authError;
                 int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 1;
 
                 var player = await _db.PlayerData.FindAsync(playerId);
@@ -149,7 +150,7 @@ namespace GameServerApi.Controllers
                 // Tỉ lệ thành công
                 float successRate = cfg.BaseSuccessRate * Math.Min((float)itemCount / cfg.ItemsNeeded, 1f);
                 successRate = Math.Clamp(successRate, 0f, 1f);
-                bool success = new Random().NextDouble() < successRate;
+                bool success = Random.Shared.NextDouble() < successRate;
 
                 // Trừ vàng
                 info.Gold -= cfg.GoldCost;
@@ -289,6 +290,9 @@ namespace GameServerApi.Controllers
         [HttpGet("list")]
         public async System.Threading.Tasks.Task<IActionResult> GetGeneList([FromQuery] int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -331,7 +335,8 @@ namespace GameServerApi.Controllers
                 if (!body.TryGetProperty("secondaryElement", out var elProp))
                     return BadRequest("Thiếu secondaryElement.");
 
-                int    playerId  = pidProp.GetInt32();
+                if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
+                    return authError;
                 string secondary = elProp.GetString() ?? "";
 
                 var player = await _db.PlayerData.FindAsync(playerId);
@@ -435,7 +440,8 @@ namespace GameServerApi.Controllers
                 if (!body.TryGetProperty("playerId", out var pidProp))
                     return BadRequest("Thiếu playerId.");
 
-                int playerId  = pidProp.GetInt32();
+                if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
+                    return authError;
                 int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 1;
 
                 var player = await _db.PlayerData.FindAsync(playerId);
@@ -480,7 +486,7 @@ namespace GameServerApi.Controllers
 
                 float successRate = cfg.BaseSuccessRate * Math.Min((float)itemCount / cfg.ItemsNeeded, 1f);
                 successRate = Math.Clamp(successRate, 0f, 1f);
-                bool  success = new Random().NextDouble() < successRate;
+                bool  success = Random.Shared.NextDouble() < successRate;
 
                 info.Gold         -= cfg.GoldCost;
                 info.SecondaryGeneExp = Math.Max(0, currentExp - cfg.GeneExpRequired);
@@ -575,6 +581,9 @@ namespace GameServerApi.Controllers
         [HttpGet("hybrid/config")]
         public async System.Threading.Tasks.Task<IActionResult> GetHybridConfig([FromQuery] int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -656,7 +665,8 @@ namespace GameServerApi.Controllers
                 if (!body.TryGetProperty("playerId", out var pidProp))
                     return BadRequest("Thiếu playerId.");
 
-                int playerId  = pidProp.GetInt32();
+                if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
+                    return authError;
                 int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 0;
 
                 var player = await _db.PlayerData.FindAsync(playerId);
@@ -823,6 +833,47 @@ namespace GameServerApi.Controllers
             }
         }
 
+        // ══════════════════════════════════════════════════════════════
+        //  GET /api/gene/ultimate/config?elementType=Fire&playerId=1
+        //  Trả về config Gene Tối Thượng + tiến trình hiện tại của player (nếu có playerId).
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet("ultimate/config")]
+        public async System.Threading.Tasks.Task<IActionResult> GetUltimateConfig(
+            [FromQuery] string? elementType,
+            [FromQuery] int?    playerId)
+        {
+            var cfg = GameServerApi.Models.Services.GeneUltimateService
+                .GetConfig(elementType);
+
+            int  currentExp = 0;
+            bool isUltimate = false;
+            bool isHybrid   = false;
+            if (playerId.HasValue)
+            {
+                if (ResolveAuthorizedPlayerId(playerId.Value, out int authorizedPlayerId) is { } authError)
+                    return authError;
+
+                var player = await _db.PlayerData.FindAsync(authorizedPlayerId);
+                if (player != null)
+                {
+                    var info = player.GetInfoChar();
+                    currentExp = info.UltimateGeneExp;
+                    isUltimate = info.IsUltimate;
+                    isHybrid   = info.IsHybrid;
+                }
+            }
+
+            return Ok(new
+            {
+                ultimateExpRequired = cfg.UltimateExpRequired,
+                statMultiplier      = cfg.StatMultiplier,
+                auraPrefabPath      = cfg.AuraPrefabPath,
+                currentUltimateExp  = currentExp,
+                isUltimate,
+                isHybrid,
+            });
+        }
+
         // ──────────────────────────────────────────────────────────────
         //  HELPERS
         // ──────────────────────────────────────────────────────────────
@@ -831,6 +882,24 @@ namespace GameServerApi.Controllers
         /// Bảng cặp kết hợp hợp lệ (bidirectional): chỉ 3 cặp được phép Hybrid Fusion.
         /// Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong
         /// </summary>
+        private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
+        {
+            playerId = requestedPlayerId;
+
+            if (User.IsInRole("GameServer"))
+                return null;
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id")?.Value;
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            if (requestedPlayerId != userId)
+                return Forbid();
+
+            playerId = userId;
+            return null;
+        }
+
         private static readonly Dictionary<string, string> PartnerMap
             = new(StringComparer.OrdinalIgnoreCase)
         {

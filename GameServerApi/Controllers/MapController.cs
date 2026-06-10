@@ -107,7 +107,7 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// GET /api/map/{mapId}/config
-        /// Láº¥y thÃ´ng tin cáº¥u hÃ¬nh map (spawn points, scene name, level range)
+        /// Lấy thông tin cấu hình map: spawn points, scene name, level range và yêu cầu nhiệm vụ.
         /// </summary>
         [HttpGet("{mapId}/config")]
         public async Task<IActionResult> GetMapConfig(int mapId)
@@ -130,7 +130,8 @@ namespace GameServerApi.Controllers
                     scene_name     = mapConfig.SceneName,
                     spawn_points   = spawnPoints,
                     min_level      = mapConfig.MinLevel,
-                    max_level      = mapConfig.MaxLevel
+                    max_level      = mapConfig.MaxLevel,
+                    required_quest_id = NormalizeRequiredQuestId(mapConfig.RequiredQuestId)
                 });
             }
             catch (JsonException)
@@ -247,8 +248,8 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// GET /api/map/{mapId}/portals
-        /// Láº¥y danh sÃ¡ch cÃ¡c cá»•ng dá»‹ch chuyá»ƒn trÃªn map nÃ y
-        /// Client dÃ¹ng Ä‘á»ƒ spawn MapPortalTrigger Ä‘Ãºng vá»‹ trÃ­
+        /// Lấy danh sách cổng dịch chuyển đang hoạt động trên map.
+        /// Client dùng dữ liệu này để spawn MapPortalTrigger đúng vị trí.
         /// </summary>
         [HttpGet("{mapId}/portals")]
         public async Task<IActionResult> GetMapPortals(int mapId)
@@ -273,6 +274,8 @@ namespace GameServerApi.Controllers
                     dest_y           = p.DestY,
                     portal_type      = p.PortalType,
                     required_item_id = p.RequiredItemId,
+                    required_level   = NormalizeRequiredLevel(p.RequiredLevel),
+                    required_quest_id = NormalizeRequiredQuestId(p.RequiredQuestId),
                     dungeon_id       = p.DungeonId
                 })
             });
@@ -280,8 +283,8 @@ namespace GameServerApi.Controllers
 
         /// <summary>
         /// POST /api/map/travel
-        /// Server validate vÃ  cáº¥p phÃ©p dá»‹ch chuyá»ƒn.
-        /// Client gá»i khi player cháº¡m trigger zone cá»§a portal.
+        /// Server validate và cấp phép dịch chuyển.
+        /// Client gọi khi player chạm trigger zone của portal.
         /// Body: { portal_id, player_id, current_map_id, player_x, player_y }
         /// </summary>
         [HttpPost("travel")]
@@ -289,11 +292,11 @@ namespace GameServerApi.Controllers
         {
             var portal = await _db.MapPortals.FindAsync(req.PortalId);
             if (portal == null || !portal.IsActive)
-                return BadRequest(new { success = false, message = "Cá»•ng dá»‹ch chuyá»ƒn khÃ´ng tá»“n táº¡i hoáº·c Ä‘Ã£ bá»‹ khoÃ¡." });
+                return BadRequest(new { success = false, message = "Cổng dịch chuyển không tồn tại hoặc đã bị khoá." });
 
-            // Validate player Ä‘ang á»Ÿ Ä‘Ãºng source map
+            // Player phải đang ở đúng map nguồn của portal.
             if (portal.SourceMapId != req.CurrentMapId)
-                return BadRequest(new { success = false, message = "Vá»‹ trÃ­ khÃ´ng há»£p lá»‡." });
+                return BadRequest(new { success = false, message = "Vị trí không hợp lệ." });
 
             // Validate khoảng cách giữa player và portal (chống teleport hack)
             // Biên map (left/right) dùng BoxCollider2D vật lý làm validator — bỏ qua dist check.
@@ -308,14 +311,14 @@ namespace GameServerApi.Controllers
                     return BadRequest(new { success = false, message = "Bạn không ở gần cổng." });
             }
 
-            // Kiá»ƒm tra item cáº§n thiáº¿t (náº¿u cÃ³)
+            // Kiểm tra item bắt buộc nếu portal yêu cầu.
             if (portal.RequiredItemId.HasValue)
             {
                 var player = await _db.PlayerData.FindAsync(req.PlayerId);
                 if (player == null)
-                    return BadRequest(new { success = false, message = "Player khÃ´ng tá»“n táº¡i." });
+                    return BadRequest(new { success = false, message = "Player không tồn tại." });
 
-                // Kiá»ƒm tra inventory JSON cÃ³ chá»©a required_item_id khÃ´ng
+                // InventoryJson là mảng slot; chỉ cần có required_item_id trong một slot là hợp lệ.
                 bool hasItem = false;
                 if (!string.IsNullOrEmpty(player.InventoryJson))
                 {
@@ -336,40 +339,51 @@ namespace GameServerApi.Controllers
                 }
 
                 if (!hasItem)
-                    return BadRequest(new { success = false, message = $"Cáº§n cÃ³ ChÃ¬a KhÃ³a (item #{portal.RequiredItemId}) Ä‘á»ƒ vÃ o Ä‘Ã¢y." });
+                    return BadRequest(new { success = false, message = $"Cần có Chìa Khóa (item #{portal.RequiredItemId}) để vào đây." });
             }
-            // Kiem tra yeu cau cua map dich (min_level + required_quest_id)
+            // Kiểm tra yêu cầu của portal và map đích (level + required_quest_id).
+            // required_quest_id = 0 là seed cũ, coi như NULL để tránh khóa map vĩnh viễn.
             var destMap = await _db.MapConfigs.FindAsync(portal.DestMapId);
-            if (destMap != null && (destMap.MinLevel > 1 || destMap.RequiredQuestId.HasValue))
+            int requiredLevel = Math.Max(
+                NormalizeRequiredLevel(portal.RequiredLevel),
+                destMap?.MinLevel ?? 1);
+            int? portalRequiredQuestId = NormalizeRequiredQuestId(portal.RequiredQuestId);
+            int? mapRequiredQuestId = NormalizeRequiredQuestId(destMap?.RequiredQuestId);
+            bool hasAccessRequirement = requiredLevel > 1
+                                     || portalRequiredQuestId.HasValue
+                                     || mapRequiredQuestId.HasValue;
+
+            if (hasAccessRequirement)
             {
                 var player = await _db.PlayerData.FindAsync(req.PlayerId);
                 if (player == null)
                     return BadRequest(new { success = false, message = "Player kh\u00f4ng t\u1ed3n t\u1ea1i." });
 
                 var info = player.GetInfoChar();
+                string destName = destMap?.MapName ?? portal.PortalName;
 
                 // Ki\u1ec3m tra level t\u1ed1i thi\u1ec3u
-                if (info.Level < destMap.MinLevel)
+                if (info.Level < requiredLevel)
                     return BadRequest(new
                     {
                         success = false,
-                        message = $"B\u1ea1n c\u1ea7n \u0111\u1ea1t Level {destMap.MinLevel} \u0111\u1ec3 v\u00e0o {destMap.MapName}. (Level hi\u1ec7n t\u1ea1i: {info.Level})"
+                        message = $"B\u1ea1n c\u1ea7n \u0111\u1ea1t Level {requiredLevel} \u0111\u1ec3 v\u00e0o {destName}. (Level hi\u1ec7n t\u1ea1i: {info.Level})"
                     });
 
                 // Ki\u1ec3m tra nhi\u1ec7m v\u1ee5 b\u1eaft bu\u1ed9c
-                if (destMap.RequiredQuestId.HasValue)
+                foreach (int requiredQuestId in BuildRequiredQuestIds(portalRequiredQuestId, mapRequiredQuestId))
                 {
                     bool hasQuest = info.CompletedQuests != null &&
-                                    info.CompletedQuests.Contains(destMap.RequiredQuestId.Value);
+                                    info.CompletedQuests.Contains(requiredQuestId);
 
                     if (!hasQuest)
                     {
-                        var quest = await _db.QuestConfigs.FindAsync(destMap.RequiredQuestId.Value);
-                        string questName = quest?.Name ?? $"#{destMap.RequiredQuestId.Value}";
+                        var quest = await _db.QuestConfigs.FindAsync(requiredQuestId);
+                        string questName = quest?.Name ?? $"#{requiredQuestId}";
                         return BadRequest(new
                         {
                             success = false,
-                            message = $"B\u1ea1n c\u1ea7n ho\u00e0n th\u00e0nh nhi\u1ec7m v\u1ee5 \"{questName}\" tr\u01b0\u1edbc khi v\u00e0o {destMap.MapName}."
+                            message = $"B\u1ea1n c\u1ea7n ho\u00e0n th\u00e0nh nhi\u1ec7m v\u1ee5 \"{questName}\" tr\u01b0\u1edbc khi v\u00e0o {destName}."
                         });
                     }
                 }
@@ -441,7 +455,9 @@ namespace GameServerApi.Controllers
                 dest_map_id     = portal.DestMapId,
                 dest_scene_name = portal.DestSceneName,
                 dest_x          = portal.DestX,
-                dest_y          = portal.DestY
+                dest_y          = portal.DestY,
+                required_level  = NormalizeRequiredLevel(portal.RequiredLevel),
+                required_quest_id = NormalizeRequiredQuestId(portal.RequiredQuestId)
             });
         }
 
@@ -651,6 +667,17 @@ namespace GameServerApi.Controllers
             try { return JsonSerializer.Deserialize<object>(json) ?? Array.Empty<object>(); }
             catch (JsonException) { return Array.Empty<object>(); }
         }
+
+        private static int NormalizeRequiredLevel(int? requiredLevel) =>
+            requiredLevel.HasValue && requiredLevel.Value > 1 ? requiredLevel.Value : 1;
+
+        private static int? NormalizeRequiredQuestId(int? requiredQuestId) =>
+            requiredQuestId.HasValue && requiredQuestId.Value > 0 ? requiredQuestId.Value : null;
+
+        private static IEnumerable<int> BuildRequiredQuestIds(params int?[] questIds) =>
+            questIds.Where(id => id.HasValue && id.Value > 0)
+                    .Select(id => id!.Value)
+                    .Distinct();
 
         private static int GetIntValueOrDefault(JsonElement element, string propertyName, int defaultValue)
         {

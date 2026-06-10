@@ -54,6 +54,7 @@ public class GameplayCommandService : NetworkBehaviour
     public static event Action<string> OnEquipmentUpgraded;       // UpgradeEquipmentServerRpc
 
     public static event Action<string> OnUseItemResult;           // UseInventoryItemServerRpc
+    public static event Action<string> OnRemoveItemResult;        // RemoveInventoryItemServerRpc
     public static event Action<string> OnActiveBuffsReceived;     // GetActiveBuffsServerRpc
     public static event Action<string> OnDungeonListReceived;     // GetDungeonListServerRpc
     public static event Action<string> OnInventoryReceived;       // GetPlayerInventoryServerRpc
@@ -140,8 +141,10 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ZonePlayerSessionManager.Instance != null ? ZonePlayerSessionManager.Instance.GetClientGeneSlot(cid) : 1;
+        string endpoint = geneSlot == 2 ? $"{ApiBase}/player/{pid}/skills2/upgrade" : $"{ApiBase}/player/{pid}/skills/upgrade";
         StartCoroutine(DoPost(
-            $"{ApiBase}/player/{pid}/skills/upgrade",
+            endpoint,
             $"{{\"skill_id\":{skillId}}}", jwt,
             json => UpgradeSkillResultClientRpc(json, Target(cid)),
             err  => UpgradeSkillResultClientRpc(ErrorJson(err), Target(cid))
@@ -416,6 +419,25 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void UseItemResultClientRpc(string json, ClientRpcParams p = default)
         => OnUseItemResult?.Invoke(json);
 
+    /// <summary>Remove/drop item from one inventory slot.</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RemoveInventoryItemServerRpc(int slotIndex, int quantity, ServerRpcParams rpcParams = default)
+    {
+        if (!IsServer) return;
+        ulong cid = rpcParams.Receive.SenderClientId;
+        int pid = ResolveClientUserId(cid);
+        string jwt = ResolveClientJwt(cid);
+        StartCoroutine(DoPost(
+            $"{ApiBase}/player/{pid}/inventory/remove",
+            $"{{\"slotIndex\":{slotIndex},\"quantity\":{quantity}}}", jwt,
+            json => RemoveItemResultClientRpc(json, Target(cid)),
+            err  => RemoveItemResultClientRpc(ErrorJson(err), Target(cid))
+        ));
+    }
+
+    [ClientRpc] private void RemoveItemResultClientRpc(string json, ClientRpcParams p = default)
+        => OnRemoveItemResult?.Invoke(json);
+
     private void TryApplyWaveTicketBonus(ulong clientId, string json)
     {
         if (string.IsNullOrWhiteSpace(json) || json.Contains("\"error\""))
@@ -559,7 +581,17 @@ public class GameplayCommandService : NetworkBehaviour
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>API base URL (có /api ở cuối) từ ServerAddressConfig.</summary>
-    private string ApiBase => ServerAddressConfig.Instance.ApiUrl;
+    private string ApiBase
+    {
+        get
+        {
+            string fromZoneConfig = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl;
+            if (!string.IsNullOrWhiteSpace(fromZoneConfig))
+                return NormalizeApiBaseUrl(fromZoneConfig);
+
+            return NormalizeApiBaseUrl(ServerAddressConfig.Instance.ApiUrl);
+        }
+    }
 
     private static ClientRpcParams Target(ulong clientId) => new()
     {
@@ -601,13 +633,14 @@ public class GameplayCommandService : NetworkBehaviour
     private IEnumerator DoGet(string url, string jwt, Action<string> onOk, Action<string> onErr)
     {
         using var req = UnityWebRequest.Get(url);
+        req.timeout = 10;
         if (!string.IsNullOrEmpty(jwt))
             req.SetRequestHeader("Authorization", $"Bearer {jwt}");
         yield return req.SendWebRequest();
         if (req.result == UnityWebRequest.Result.Success)
             onOk?.Invoke(req.downloadHandler.text);
         else
-            onErr?.Invoke(req.downloadHandler?.text ?? req.error);
+            onErr?.Invoke(DownloadError(req));
     }
 
     private IEnumerator DoPost(string url, string body, string jwt, Action<string> onOk, Action<string> onErr)
@@ -616,6 +649,7 @@ public class GameplayCommandService : NetworkBehaviour
         using var req = new UnityWebRequest(url, "POST");
         req.uploadHandler   = new UploadHandlerRaw(bytes);
         req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
         req.SetRequestHeader("Content-Type", "application/json");
         if (!string.IsNullOrEmpty(jwt))
             req.SetRequestHeader("Authorization", $"Bearer {jwt}");
@@ -623,7 +657,25 @@ public class GameplayCommandService : NetworkBehaviour
         if (req.result == UnityWebRequest.Result.Success)
             onOk?.Invoke(req.downloadHandler.text);
         else
-            onErr?.Invoke(req.downloadHandler?.text ?? req.error);
+            onErr?.Invoke(DownloadError(req));
+    }
+
+    private static string NormalizeApiBaseUrl(string value)
+    {
+        string normalized = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().TrimEnd('/');
+        if (normalized.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+            return normalized;
+        return string.IsNullOrEmpty(normalized) ? normalized : $"{normalized}/api";
+    }
+
+    private static string DownloadError(UnityWebRequest req)
+    {
+        string body = req.downloadHandler?.text;
+        if (!string.IsNullOrWhiteSpace(body))
+            return body;
+
+        string transportError = string.IsNullOrWhiteSpace(req.error) ? "HTTP request failed" : req.error;
+        return $"HTTP {(long)req.responseCode}: {transportError}";
     }
 
     /// <summary>Tạo JSON error payload từ error message.</summary>

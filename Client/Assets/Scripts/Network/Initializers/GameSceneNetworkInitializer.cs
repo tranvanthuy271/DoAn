@@ -680,6 +680,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
     private void OnNetworkClientDisconnected(ulong clientId)
     {
         if (_connectionErrorShown) return;
+        if (GameErrorNotifier.IsDisconnectNotificationSuppressed) return;
 
         var nm = NetworkManager.Singleton;
         if (nm == null) return;

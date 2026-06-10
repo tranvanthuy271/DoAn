@@ -397,6 +397,31 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
         // Đảm bảo enemy ở đúng physics world, tránh cross-map collision
         MapSceneManager.Instance?.MoveToMapScene(enemyObj, mapId);
+        EnemyAI spawnEnemyAI = enemyObj.GetComponent<EnemyAI>();
+        if (spawnEnemyAI != null)
+        {
+            bool snapped = spawnEnemyAI.SnapToGroundForServerSpawn();
+            if (!snapped)
+            {
+                Debug.LogWarning(
+                    $"[HostSpawnConfigLoader] enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                    enemyObj);
+            }
+        }
+        else
+        {
+            BossAI spawnBossAI = enemyObj.GetComponent<BossAI>();
+            if (spawnBossAI != null && spawnBossAI.UsesGroundPhysics)
+            {
+                bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
+                if (!snapped)
+                {
+                    Debug.LogWarning(
+                        $"[HostSpawnConfigLoader] boss enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                        enemyObj);
+                }
+            }
+        }
 
         // Map-based visibility: enemy chỉ visible cho player cùng map
         ApplyMapVisibility(enemyObj, mapId);
@@ -429,6 +454,16 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             entry.level,
             skillsEntry != null ? skillsEntry.enemy_name : ""
         );
+
+        var netHealth = enemyObj.GetComponent<NetworkEnemyHealth>();
+        if (netHealth != null)
+        {
+            netHealth.SetEnemyInfo(
+                skillsEntry != null ? skillsEntry.enemy_name : enemyObj.name,
+                skillsEntry != null ? skillsEntry.element_type : "None",
+                entry.level > 0 ? entry.level : 1,
+                entry.enemy_id);
+        }
 
         if (watchBoss25)
         {

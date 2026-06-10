@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Overlay panel hiển thị chi tiết kỹ năng được chá»n.
+/// Overlay panel hiển thị chi tiết kỹ năng được chọn.
 ///
 /// Cấu trúc tự build trong RebuildLayout():
 ///   Root (transparent, full-stretch)
@@ -17,7 +17,7 @@ using UnityEngine.UI;
 ///       ├── SkillInfoScrollView
 ///       └── BtnUpgrade (bottom-right)
 ///
-/// Gá»i Show() khi chá»n skill, Hide() khi đóng hoặc tab bị tắt.
+/// Gọi Show() khi chọn skill, Hide() khi đóng hoặc tab bị tắt.
 /// </summary>
 public class SkillDetailPanelUI : MonoBehaviour
 {
@@ -65,6 +65,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         BindPrefabReferences();
         BindButtons();
         gameObject.SetActive(true);
+        Refresh();
         transform.SetAsLastSibling();   // render trên cùng
     }
 
@@ -106,6 +107,15 @@ public class SkillDetailPanelUI : MonoBehaviour
 
         if (txtUpgrade == null && btnUpgrade != null)
             txtUpgrade = btnUpgrade.GetComponentInChildren<TMP_Text>(true);
+
+        if (iconImage == null || txtTitle == null || txtBody == null || btnUpgrade == null)
+        {
+            RebuildLayout();
+            if (txtUpgrade == null && btnUpgrade != null)
+                txtUpgrade = btnUpgrade.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        EnsureScrollLayout();
     }
 
     private void BindButtons()
@@ -156,6 +166,88 @@ public class SkillDetailPanelUI : MonoBehaviour
         }
 
         return null;
+    }
+
+    private Transform FindChildTransform(string childName)
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            Transform child = children[i];
+            if (child != null && child.name == childName)
+                return child;
+        }
+
+        return null;
+    }
+
+    private static T GetOrAdd<T>(GameObject target) where T : Component
+    {
+        T component = target.GetComponent<T>();
+        return component != null ? component : target.AddComponent<T>();
+    }
+
+    private void EnsureScrollLayout()
+    {
+        Transform scrollRoot = FindChildTransform("SkillInfoScrollView");
+        Transform viewport = FindChildTransform("Viewport");
+        Transform content = FindChildTransform("Content");
+
+        if (txtBody != null && content != null && txtBody.transform.parent != content)
+            txtBody.transform.SetParent(content, false);
+
+        if (scrollRoot != null)
+        {
+            var scrollRect = GetOrAdd<ScrollRect>(scrollRoot.gameObject);
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.scrollSensitivity = 30f;
+            if (viewport is RectTransform viewportRect)
+                scrollRect.viewport = viewportRect;
+            if (content is RectTransform contentRect)
+                scrollRect.content = contentRect;
+        }
+
+        if (viewport != null)
+        {
+            var viewportRect = viewport.GetComponent<RectTransform>();
+            if (viewportRect != null)
+                Stretch(viewportRect);
+
+            var viewportImage = GetOrAdd<Image>(viewport.gameObject);
+            viewportImage.color = Color.white;
+            viewportImage.raycastTarget = true;
+
+            var mask = GetOrAdd<Mask>(viewport.gameObject);
+            mask.showMaskGraphic = false;
+        }
+
+        if (content != null)
+        {
+            var contentRect = content.GetComponent<RectTransform>();
+            if (contentRect != null)
+            {
+                contentRect.anchorMin = new Vector2(0f, 1f);
+                contentRect.anchorMax = new Vector2(1f, 1f);
+                contentRect.pivot = new Vector2(0.5f, 1f);
+                contentRect.anchoredPosition = Vector2.zero;
+                contentRect.localScale = Vector3.one;
+            }
+
+            var contentLayout = GetOrAdd<VerticalLayoutGroup>(content.gameObject);
+            contentLayout.padding = new RectOffset(12, 12, 8, 8);
+            contentLayout.childControlWidth = true;
+            contentLayout.childControlHeight = true;
+            contentLayout.childForceExpandWidth = true;
+            contentLayout.childForceExpandHeight = false;
+
+            var fitter = GetOrAdd<ContentSizeFitter>(content.gameObject);
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+
+        EnsureBodyTextVisible();
     }
 
     private void RebuildLayout()
@@ -277,7 +369,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         scrollRect.movementType    = ScrollRect.MovementType.Clamped;
         scrollRect.scrollSensitivity = 30f;
 
-        Transform viewport = CreatePanel(scrollRoot, "Viewport", new Color(0f, 0f, 0f, 0f));
+        Transform viewport = CreatePanel(scrollRoot, "Viewport", Color.white);
         Stretch(viewport.GetComponent<RectTransform>());
         viewport.GetComponent<Image>().raycastTarget = true;
         var mask = viewport.gameObject.AddComponent<Mask>();
@@ -303,6 +395,7 @@ public class SkillDetailPanelUI : MonoBehaviour
 
         txtBody = CreateLabel(content, "TxtBody", DetailBodyFont, FontStyles.Normal, Color.white);
         txtBody.enableWordWrapping = true;
+        txtBody.richText = true;
         txtBody.overflowMode       = TextOverflowModes.Overflow;
         txtBody.lineSpacing        = 6f;
         txtBody.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
@@ -354,8 +447,8 @@ public class SkillDetailPanelUI : MonoBehaviour
     {
         if (_info == null)
         {
-            if (txtTitle   != null) txtTitle.text = "Chá»n kỹ năng";
-            if (txtBody    != null) txtBody.text  = "Chá»n một kỹ năng để xem chi tiết.";
+            if (txtTitle   != null) txtTitle.text = "Chọn kỹ năng";
+            if (txtBody    != null) txtBody.text  = "Chọn một kỹ năng để xem chi tiết.";
             if (btnUpgrade != null) btnUpgrade.gameObject.SetActive(false);
             if (iconImage  != null) iconImage.enabled = false;
             return;
@@ -382,15 +475,21 @@ public class SkillDetailPanelUI : MonoBehaviour
         // Body
         if (txtBody != null)
         {
+            EnsureBodyTextVisible();
             txtBody.text = BuildBody(_info);
+            UpdateBodyTextLayout();
 
             var contentRect = txtBody.transform.parent.GetComponent<RectTransform>();
             if (contentRect != null)
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+                Canvas.ForceUpdateCanvases();
                 var scrollRectComp = contentRect.GetComponentInParent<ScrollRect>();
                 if (scrollRectComp != null)
+                {
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(scrollRectComp.GetComponent<RectTransform>());
                     scrollRectComp.verticalNormalizedPosition = 1f;
+                }
             }
         }
 
@@ -413,6 +512,60 @@ public class SkillDetailPanelUI : MonoBehaviour
         _onUpgrade?.Invoke(_info);
     }
 
+    private void EnsureBodyTextVisible()
+    {
+        if (txtBody == null)
+            return;
+
+        txtBody.gameObject.SetActive(true);
+        txtBody.enabled = true;
+        txtBody.color = Color.white;
+        txtBody.alpha = 1f;
+        txtBody.fontSize = DetailBodyFont;
+        txtBody.enableWordWrapping = true;
+        txtBody.richText = true;
+        txtBody.overflowMode = TextOverflowModes.Overflow;
+        txtBody.alignment = TextAlignmentOptions.TopLeft;
+        txtBody.raycastTarget = false;
+        txtBody.canvasRenderer.SetAlpha(1f);
+        UIRuntimeAssetHelper.ApplyNotoSans(txtBody);
+
+        RectTransform rect = txtBody.rectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.localScale = Vector3.one;
+
+        var layoutElement = txtBody.GetComponent<LayoutElement>();
+        if (layoutElement == null)
+            layoutElement = txtBody.gameObject.AddComponent<LayoutElement>();
+        layoutElement.flexibleWidth = 1f;
+        layoutElement.minHeight = 120f;
+    }
+
+    private void UpdateBodyTextLayout()
+    {
+        if (txtBody == null)
+            return;
+
+        txtBody.ForceMeshUpdate();
+        float preferredHeight = Mathf.Max(120f, txtBody.preferredHeight + 24f);
+
+        var layoutElement = txtBody.GetComponent<LayoutElement>();
+        if (layoutElement == null)
+            layoutElement = txtBody.gameObject.AddComponent<LayoutElement>();
+        layoutElement.flexibleWidth = 1f;
+        layoutElement.minHeight = preferredHeight;
+        layoutElement.preferredHeight = preferredHeight;
+
+        var bodyRect = txtBody.rectTransform;
+        bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, preferredHeight);
+
+        var contentRect = txtBody.transform.parent as RectTransform;
+        if (contentRect != null)
+            contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, preferredHeight + 16f);
+    }
+
   
 
     private static string BuildBody(PlayerSkillInfo info)
@@ -428,14 +581,18 @@ public class SkillDetailPanelUI : MonoBehaviour
         if (info.gene_tier_required > 0)
             sb.AppendLine($"Gene yêu cầu: Tier {info.gene_tier_required}");
         sb.AppendLine(maxed
-            ? "<color=#FFE000>Äã đạt cấp tối đa</color>"
+            ? "<color=#FFE000>Đã đạt cấp tối đa</color>"
             : $"Cấp tiếp: cần lv.{info.next_level_player_req}, {info.next_level_sp_cost} điểm");
         sb.AppendLine($"MP sử dụng: {info.current_mp_cost}");
         sb.AppendLine($"Hồi chiêu: {FormatNumber(info.current_cooldown_sec)} giây");
         sb.AppendLine();
+        sb.AppendLine("<color=#FFE000>Chỉ số hiện tại</color>");
+        AppendCurrentStats(sb, info);
+        sb.AppendLine();
         sb.AppendLine("<color=#FFE000>─── Thuộc tính theo cấp ───</color>");
 
-        if (info.level_details == null || info.level_details.Length == 0)
+        SkillLevelInfo[] levelDetails = ResolveLevelDetails(info);
+        if (levelDetails == null || levelDetails.Length == 0)
         {
             sb.AppendLine("Chưa có cấu hình level trong DB.");
             return sb.ToString();
@@ -443,7 +600,7 @@ public class SkillDetailPanelUI : MonoBehaviour
 
         string label  = ResolveEffectLabel(info.skill_code);
         string suffix = ResolveEffectSuffix(info.skill_code);
-        foreach (var lv in info.level_details)
+        foreach (var lv in levelDetails)
         {
             string desc   = string.IsNullOrWhiteSpace(lv.desc) ? string.Empty : $" — {lv.desc}";
             string effect = $"{label}: {FormatNumber(lv.effect_value)}{suffix}";
@@ -454,12 +611,78 @@ public class SkillDetailPanelUI : MonoBehaviour
         return sb.ToString();
     }
 
+    private static SkillLevelInfo[] ResolveLevelDetails(PlayerSkillInfo info)
+    {
+        if (info == null)
+            return Array.Empty<SkillLevelInfo>();
+
+        if (info.level_details != null && info.level_details.Length > 0)
+            return info.level_details;
+
+        return new[]
+        {
+            new SkillLevelInfo
+            {
+                level = Mathf.Max(1, info.current_level),
+                level_req = Mathf.Max(1, info.level_to_unlock),
+                sp_cost = Mathf.Max(0, info.next_level_sp_cost),
+                effect_value = info.current_effect_value,
+                mp_cost = info.current_mp_cost,
+                cooldown_sec = info.current_cooldown_sec,
+                desc = string.IsNullOrWhiteSpace(info.next_level_desc) ? "Dữ liệu từ chỉ số hiện tại" : info.next_level_desc
+            }
+        };
+    }
+
+    private static void AppendCurrentStats(StringBuilder sb, PlayerSkillInfo info)
+    {
+        float baseEffect = info.current_effect_value;
+        float totalEffect = info.current_total_effect_value > 0f
+            ? info.current_total_effect_value
+            : baseEffect + Mathf.Max(0f, info.current_attack_bonus);
+
+        string label = ResolveEffectLabel(info.skill_code);
+        string suffix = ResolveEffectSuffix(info.skill_code);
+        string attackSuffix = IsPercentAttackBuff(info.skill_code) ? "%" : string.Empty;
+
+        sb.AppendLine($"Loại hiệu ứng: {label}");
+        AppendStatLine(sb, $"{label} cơ bản", baseEffect, suffix, false);
+        AppendStatLine(sb, "Cộng tấn công", info.current_attack_bonus, attackSuffix, true);
+        AppendStatLine(sb, "Cộng / hồi HP", info.current_hp_bonus, string.Empty, true);
+        AppendStatLine(sb, "Cộng / hồi MP", info.current_mp_bonus, string.Empty, true);
+        AppendStatLine(sb, "Cộng phòng thủ", info.current_defense_bonus, string.Empty, true);
+        AppendStatLine(sb, "Né tránh / di chuyển", info.current_evasion_bonus, suffix, true);
+        AppendStatLine(sb, "Tổng hiệu lực", totalEffect, suffix, false);
+    }
+
+    private static void AppendStatLine(StringBuilder sb, string label, float value, string suffix, bool signed)
+    {
+        string sign = signed && value > 0.001f ? "+" : string.Empty;
+        sb.AppendLine($"{label}: {sign}{FormatNumber(value)}{suffix}");
+    }
+
+    private static void AppendNonZero(StringBuilder sb, string label, float value, string suffix)
+    {
+        if (Mathf.Abs(value) <= 0.001f)
+            return;
+
+        sb.AppendLine($"{label}: +{FormatNumber(value)}{suffix}");
+    }
+
+    private static bool IsPercentAttackBuff(string skillCode)
+    {
+        if (string.IsNullOrWhiteSpace(skillCode))
+            return false;
+
+        return skillCode.ToUpperInvariant().Contains("AURA");
+    }
+
     private static string ResolveEffectLabel(string skillCode)
     {
         if (string.IsNullOrWhiteSpace(skillCode)) return "Hiệu lực";
         string code = skillCode.ToUpperInvariant();
         if (code.Contains("DASH") || code.Contains("STEP"))  return "Khoảng cách";
-        if (code.Contains("VINE"))                            return "Thá»i gian trói";
+        if (code.Contains("VINE"))                            return "Thời gian trói";
         if (code.Contains("HEAL"))                            return "Hồi HP";
         if (code.Contains("WATER_ARMOR") || code.Contains("EARTH_SHIELD")) return "Giáp cộng";
         if (code.Contains("METAL_SHIELD"))                    return "Bất tử";
@@ -608,6 +831,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         text.color         = color;
         text.alignment     = TextAlignmentOptions.Left;
         text.enableWordWrapping = false;
+        text.richText      = true;
         text.overflowMode  = TextOverflowModes.Ellipsis;
         text.raycastTarget = false;
         UIRuntimeAssetHelper.ApplyNotoSans(text);

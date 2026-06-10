@@ -127,6 +127,10 @@ public class PlayerDataResponse
     public string hybrid_immune_elements;  // CSV "Water,Metal"
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
+    // ── Gene Tối Thượng (Ultimate Gene) fields ──────────────────────
+    public bool is_ultimate;               // Đã kích hoạt Gene Tối Thượng chưa
+    public int ultimate_gene_exp;          // EXP tích lũy cho Gene Tối Thượng
+    public string ultimate_aura_path;      // Resources path cho aura sau lưng
     public int bag_slots;                  // Số ô túi đồ hiện tại (mặc định 20)
     public BagEquippedItemData[] bag_equipped_items;
     public int Length => inventory?.Length ?? 0;
@@ -293,6 +297,12 @@ public class PlayerSkillInfo
     public float  current_cooldown_sec;   // cooldown (giây) tại level hiện tại
     public float  current_effect_value;   // sát thương / heal / khoảng cách
     public int    current_mp_cost;        // MP tiêu khi dùng skill
+    public float  current_total_effect_value;
+    public float  current_attack_bonus;
+    public float  current_hp_bonus;
+    public float  current_mp_bonus;
+    public float  current_defense_bonus;
+    public float  current_evasion_bonus;
 }
 
 [System.Serializable]

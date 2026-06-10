@@ -17,6 +17,7 @@ using TMPro;
 public static class CreateDungeonUIPrefabs
 {
     private const string PrefabFolder = "Assets/Prefabs/UI";
+    private const string ResourcesUiPrefabFolder = "Assets/Resources/Prefabs/UI";
 
     // Màu gỗ (panel 1 & 2) — khớp ảnh mẫu
     private static readonly Color WoodOuter   = new Color(0.36f, 0.20f, 0.07f, 1f); // viền ngoài tối
@@ -38,6 +39,7 @@ public static class CreateDungeonUIPrefabs
     public static void CreateAll()
     {
         EnsureFolder(PrefabFolder);
+        EnsureFolder(ResourcesUiPrefabFolder);
 
         bool any = false;
         any |= CreateDungeonNpcMenuPanel();
@@ -201,7 +203,7 @@ public static class CreateDungeonUIPrefabs
     // ═══════════════════════════════════════════════════════════════════
     private static bool CreateGlobalNotificationPanel()
     {
-        const string path = PrefabFolder + "/GlobalNotificationPanel.prefab";
+        const string path = ResourcesUiPrefabFolder + "/GlobalNotificationPanel.prefab";
         if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
         { Debug.Log("[CreateDungeonUI] GlobalNotificationPanel đã tồn tại → bỏ qua."); return false; }
 

@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using Unity.Netcode;
+using UnityEngine.Networking;
 
 /// <summary>
 /// ItemUseHandler — Xử lý toàn bộ logic sử dụng item trong túi đồ.
@@ -161,6 +164,8 @@ public class ItemUseHandler : MonoBehaviour
         Debug.Log($"[ItemUseHandler] BagSlot clicked: quickSlotIndex={quickSlotIndex}");
         Debug.Log($"[ItemUseHandler] _equippedBagItems count={_equippedBagItemsByQuickSlot.Count}");
 
+        SyncBagQuickSlotsFromPlayerDataIfNeeded();
+
         if (!_equippedBagItemsByQuickSlot.TryGetValue(quickSlotIndex, out var bagItem) || bagItem == null)
         {
             Debug.LogWarning($"[ItemUseHandler] Không tiìm thấy bagItem tại slot {quickSlotIndex} — bỏ qua.");
@@ -221,6 +226,7 @@ public class ItemUseHandler : MonoBehaviour
         foreach (var canvas in FindObjectsOfType<Canvas>(true))
         {
             if (!canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace) continue;
+            if (!canvas.gameObject.activeInHierarchy) continue;
             if (canvas.sortingOrder > bestOrder) { bestOrder = canvas.sortingOrder; bestCanvas = canvas; }
         }
 
@@ -308,6 +314,7 @@ public class ItemUseHandler : MonoBehaviour
         {
             Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
                            "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
+            UseItemDirectFromApi(slot, isBagItem: false, "GameplayCommandService unavailable");
             return;
         }
 
@@ -319,7 +326,7 @@ public class ItemUseHandler : MonoBehaviour
         void HandleUseResult(string json)
         {
             GameplayCommandService.OnUseItemResult -= HandleUseResult;
-            HandleUseItemResponse(json, isBagItem: false);
+            HandleUseItemResponse(json, isBagItem: false, sourceSlot: slot, allowDirectFallback: true);
         }
         GameplayCommandService.OnUseItemResult -= HandleUseResult;
         GameplayCommandService.OnUseItemResult += HandleUseResult;
@@ -334,13 +341,14 @@ public class ItemUseHandler : MonoBehaviour
         {
             Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
                            "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
+            UseItemDirectFromApi(slot, isBagItem: true, "GameplayCommandService unavailable");
             return;
         }
 
         void HandleBagResult(string json)
         {
             GameplayCommandService.OnUseItemResult -= HandleBagResult;
-            HandleUseItemResponse(json, isBagItem: true);
+            HandleUseItemResponse(json, isBagItem: true, sourceSlot: slot, allowDirectFallback: true);
         }
         GameplayCommandService.OnUseItemResult -= HandleBagResult;
         GameplayCommandService.OnUseItemResult += HandleBagResult;
@@ -352,7 +360,11 @@ public class ItemUseHandler : MonoBehaviour
         return GameplayCommandService.Instance != null && GameplayCommandService.Instance.IsSpawned;
     }
 
-    private void HandleUseItemResponse(string json, bool isBagItem)
+    private void HandleUseItemResponse(
+        string json,
+        bool isBagItem,
+        InventorySlotDto sourceSlot = null,
+        bool allowDirectFallback = false)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -366,6 +378,12 @@ public class ItemUseHandler : MonoBehaviour
             Debug.LogError(isBagItem
                 ? $"[ItemUseHandler] ❌ Mở túi thất bại: {json}"
                 : $"[ItemUseHandler] ❌ UseItem thất bại: {json}");
+
+            if (allowDirectFallback && sourceSlot != null && ShouldUseDirectFallback(errorMessage))
+            {
+                UseItemDirectFromApi(sourceSlot, isBagItem, errorMessage);
+                return;
+            }
 
             GlobalNotificationUI.Show(
                 errorMessage,
@@ -453,6 +471,85 @@ public class ItemUseHandler : MonoBehaviour
 
         ActiveBuffManager.Instance?.LoadFromServer();
         RefreshInventory();
+    }
+
+    private void UseItemDirectFromApi(InventorySlotDto slot, bool isBagItem, string reason)
+    {
+        if (slot == null)
+            return;
+
+        int playerId = GetCurrentPlayerId();
+        if (playerId <= 0)
+        {
+            string errorJson = BuildErrorJson("Khong xac dinh duoc playerId de dung vat pham.");
+            HandleUseItemResponse(errorJson, isBagItem);
+            return;
+        }
+
+        Debug.LogWarning($"[ItemUseHandler] UseItem direct REST fallback. slot={slot.slotIndex}, playerId={playerId}, reason={reason}");
+        StartCoroutine(UseItemDirectFromApiCoroutine(playerId, slot.slotIndex, isBagItem));
+    }
+
+    private IEnumerator UseItemDirectFromApiCoroutine(int playerId, int slotIndex, bool isBagItem)
+    {
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/inventory/use-item";
+        string body = $"{{\"slotIndex\":{slotIndex}}}";
+        byte[] bytes = Encoding.UTF8.GetBytes(body);
+
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler = new UploadHandlerRaw(bytes);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            HandleUseItemResponse(req.downloadHandler.text, isBagItem);
+            inventoryBridge?.RefreshInventoryDirectFromAPI();
+            yield break;
+        }
+
+        string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+            ? req.downloadHandler.text
+            : $"HTTP {(long)req.responseCode}: {req.error}";
+        HandleUseItemResponse(BuildErrorJson(error), isBagItem);
+    }
+
+    private static bool ShouldUseDirectFallback(string errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(errorMessage))
+            return true;
+
+        string e = errorMessage.ToLowerInvariant();
+        return e.Contains("http 0")
+            || e.Contains("http 401")
+            || e.Contains("unauthorized")
+            || e.Contains("unavailable")
+            || e.Contains("connection")
+            || e.Contains("connect")
+            || e.Contains("timeout")
+            || e.Contains("network")
+            || e.Contains("name resolution")
+            || e.Contains("dns")
+            || e.Contains("refused")
+            || e.Contains("localhost");
+    }
+
+    private static string BuildErrorJson(string message)
+    {
+        return $"{{\"error\":\"{EscapeJson(message)}\"}}";
+    }
+
+    private static string EscapeJson(string value)
+    {
+        return (value ?? string.Empty)
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\r", " ")
+            .Replace("\n", " ");
     }
 
     private bool TryUseItemInBlacksmith(InventorySlotDto slot)
@@ -631,17 +728,127 @@ public class ItemUseHandler : MonoBehaviour
 
     private void RequestUnequipBagQuickSlot(int quickSlotIndex)
     {
-        inventoryBridge?.RequestUnequipBagItem(quickSlotIndex, json =>
+        if (inventoryBridge == null)
+        {
+            Debug.LogWarning("[ItemUseHandler] RequestUnequipBagQuickSlot: inventoryBridge null, using direct REST fallback.");
+            StartCoroutine(UnequipBagDirectFromApiCoroutine(quickSlotIndex));
+            return;
+        }
+
+        inventoryBridge.RequestUnequipBagItem(quickSlotIndex, json =>
         {
             if (!string.IsNullOrEmpty(json) && json.Contains("\"error\""))
             {
-                GlobalNotificationUI.Show(
-                    "Khong the thao tui mo rong. Hay kiem tra lai cho trong trong tui.",
-                    "Tui Do",
-                    3f,
-                    "OK");
+                string errorMessage = ExtractErrorMessage(json);
+                if (ShouldUseDirectFallback(errorMessage))
+                {
+                    Debug.LogWarning($"[ItemUseHandler] Unequip bag direct REST fallback. quickSlot={quickSlotIndex}, reason={errorMessage}");
+                    StartCoroutine(UnequipBagDirectFromApiCoroutine(quickSlotIndex));
+                    return;
+                }
+
+                ShowUnequipBagError(errorMessage);
+                return;
             }
+
+            HandleUnequipBagSuccess(json);
         });
+    }
+
+    private void HandleUnequipBagSuccess(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        var response = JsonUtility.FromJson<UseItemResult>(json);
+        if (response == null)
+        {
+            Debug.LogWarning($"[ItemUseHandler] Khong parse duoc UnequipBag response. Raw={json}");
+            RefreshInventory();
+            return;
+        }
+
+        if (response.bag_slots > 0)
+        {
+            currentBagSlots = response.bag_slots;
+            inventoryUI?.SetVisibleSlotCount(currentBagSlots);
+        }
+
+        if (response.bag_equipped_items != null)
+            UpdateBagQuickSlots(response.bag_equipped_items);
+
+        var playerData = GameManager.Instance?.GetPlayerData();
+        if (playerData != null)
+        {
+            if (response.bag_slots > 0)
+                playerData.bag_slots = response.bag_slots;
+            if (response.bag_equipped_items != null)
+                playerData.bag_equipped_items = response.bag_equipped_items;
+            GameManager.Instance.SetPlayerData(playerData);
+        }
+
+        UpdateBagSlotCountText();
+        RefreshInventory();
+    }
+
+    private IEnumerator UnequipBagDirectFromApiCoroutine(int quickSlotIndex)
+    {
+        int playerId = GetCurrentPlayerId();
+        if (playerId <= 0)
+        {
+            ShowUnequipBagError("Khong xac dinh duoc playerId de thao tui.");
+            yield break;
+        }
+
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/bag/unequip";
+        string body = $"{{\"quickSlotIndex\":{quickSlotIndex}}}";
+        byte[] bytes = Encoding.UTF8.GetBytes(body);
+
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler = new UploadHandlerRaw(bytes);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            HandleUnequipBagSuccess(req.downloadHandler.text);
+            inventoryBridge?.InvalidateInventoryCache();
+            inventoryBridge?.RefreshInventoryDirectFromAPI();
+            yield break;
+        }
+
+        string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+            ? req.downloadHandler.text
+            : $"HTTP {(long)req.responseCode}: {req.error}";
+        ShowUnequipBagError(ExtractErrorMessage(BuildErrorJson(error)));
+    }
+
+    private static void ShowUnequipBagError(string errorMessage)
+    {
+        GlobalNotificationUI.Show(
+            string.IsNullOrWhiteSpace(errorMessage)
+                ? "Khong the thao tui mo rong. Hay kiem tra lai cho trong trong tui."
+                : errorMessage,
+            "Tui Do",
+            3f,
+            "OK");
+    }
+
+    private void SyncBagQuickSlotsFromPlayerDataIfNeeded()
+    {
+        if (_equippedBagItemsByQuickSlot.Count > 0)
+            return;
+
+        var playerData = GameManager.Instance != null && GameManager.Instance.HasPlayerData()
+            ? GameManager.Instance.GetPlayerData()
+            : null;
+
+        if (playerData?.bag_equipped_items != null && playerData.bag_equipped_items.Length > 0)
+            UpdateBagQuickSlots(playerData.bag_equipped_items);
     }
 
     private static string ResolveBagItemIconId(int itemTemplateId)

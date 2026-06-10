@@ -339,6 +339,30 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
                 // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
                 MapSceneManager.Instance?.MoveToMapScene(enemyObj, targetMapId);
+                if (spawnedEnemyAI != null)
+                {
+                    bool snapped = spawnedEnemyAI.SnapToGroundForServerSpawn();
+                    if (!snapped)
+                    {
+                        Debug.LogWarning(
+                            $"[NetworkEnemySpawner] spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                            enemyObj);
+                    }
+                }
+                else
+                {
+                    BossAI spawnBossAI = enemyObj.GetComponent<BossAI>();
+                    if (spawnBossAI != null && spawnBossAI.UsesGroundPhysics)
+                    {
+                        bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
+                        if (!snapped)
+                        {
+                            Debug.LogWarning(
+                                $"[NetworkEnemySpawner] boss spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                                enemyObj);
+                        }
+                    }
+                }
 
                 if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
                 {

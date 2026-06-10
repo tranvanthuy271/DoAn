@@ -10,7 +10,7 @@ using UnityEngine.UI;
 ///   GlobalNotificationUI.Show("Cần phải có nhóm mới có thể tham gia phó bản này.");
 ///   GlobalNotificationUI.Show("Tin nhắn", "Nhắc nhở", autoHideSeconds: 3f);
 ///
-/// Prefab: Assets/Prefabs/UI/GlobalNotificationPanel.prefab
+/// Prefab: Assets/Resources/Prefabs/UI/GlobalNotificationPanel.prefab
 /// — Tạo tự động bằng menu: Tools ▸ Create Dungeon UI Prefabs
 /// </summary>
 public class GlobalNotificationUI : MonoBehaviour
@@ -96,16 +96,16 @@ public class GlobalNotificationUI : MonoBehaviour
         GameObject prefab = Resources.Load<GameObject>(PrefabResourcesPath);
         if (prefab != null)
         {
-            GameObject runtimeRoot = CreateRuntimeCanvasRoot();
+            GameObject runtimeRoot = CreateRuntimeCanvasRoot("GlobalNotificationCanvasFromPrefab");
             DontDestroyOnLoad(runtimeRoot);
 
             GameObject prefabInstance = Instantiate(prefab, runtimeRoot.transform, false);
-            prefabInstance.name = "GlobalNotificationPanel";
+            prefabInstance.name = "GlobalNotificationPanel_FromResourcesPrefab";
 
             Instance = prefabInstance.GetComponent<GlobalNotificationUI>();
             if (Instance != null)
             {
-                Debug.Log($"{LogPrefix} Instantiated prefab notification UI from Resources/{PrefabResourcesPath}.");
+                Debug.Log($"{LogPrefix} Using prefab from Resources/{PrefabResourcesPath}.");
                 return Instance;
             }
 
@@ -113,7 +113,7 @@ public class GlobalNotificationUI : MonoBehaviour
             Destroy(runtimeRoot);
         }
 
-        GameObject root = CreateRuntimeCanvasRoot();
+        GameObject root = CreateRuntimeCanvasRoot("GlobalNotificationFallbackCanvas");
 
         Instance = root.AddComponent<GlobalNotificationUI>();
         return Instance;
@@ -275,8 +275,6 @@ public class GlobalNotificationUI : MonoBehaviour
         if (panel == null)
             panel = FindChild("Panel");
 
-        EnsurePanelLayout();
-
         if (titleText == null)
             titleText = FindChildComponent<TMP_Text>("TitleText");
 
@@ -291,28 +289,6 @@ public class GlobalNotificationUI : MonoBehaviour
 
         if (panel != null)
             UIRuntimeAssetHelper.ApplyNotoSans(panel.GetComponentsInChildren<TMP_Text>(true));
-    }
-
-    private void EnsurePanelLayout()
-    {
-        if (panel == null)
-            return;
-
-        var panelRect = panel.GetComponent<RectTransform>();
-        if (panelRect == null)
-            return;
-
-        bool hasStandaloneCanvas = GetComponent<Canvas>() != null;
-        bool hasStretchRoot = transform is RectTransform rootRect
-            && rootRect.anchorMin == Vector2.zero
-            && rootRect.anchorMax == Vector2.one
-            && rootRect.sizeDelta == Vector2.zero;
-
-        bool shouldNormalizePanel = panelRect.parent == transform && (hasStandaloneCanvas || hasStretchRoot);
-        if (!shouldNormalizePanel)
-            return;
-
-        CenterRect(panelRect, DefaultPanelSize);
     }
 
     private GameObject FindChild(string childName)
@@ -362,10 +338,10 @@ public class GlobalNotificationUI : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
-    private static GameObject CreateRuntimeCanvasRoot()
+    private static GameObject CreateRuntimeCanvasRoot(string rootName)
     {
         GameObject root = new(
-            "GlobalNotificationUIRuntime",
+            rootName,
             typeof(RectTransform),
             typeof(Canvas),
             typeof(CanvasScaler),

@@ -32,7 +32,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
     private float healBlockTimer = 0f;
 
     [Header("Respawn")]
-    [SerializeField] private float respawnDelay = 3f;
+    [SerializeField] private float respawnDelay = 5f;
     [SerializeField] private Vector3[] spawnPoints; // Spawn points khi respawn
     private bool isDead = false;
 
@@ -339,6 +339,13 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [ClientRpc]
     private void OnDeathClientRpc()
     {
+        var playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInChildren<PlayerAnimator>();
+        playerAnimator?.TriggerDie();
+
+        var rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+            rb.velocity = Vector2.zero;
+
         OnDeath?.Invoke();
     }
 
@@ -349,12 +356,20 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // Chọn spawn point ngẫu nhiên
         Vector3 spawnPosition = Vector3.zero;
-        if (spawnPoints != null && spawnPoints.Length > 0)
-            spawnPosition = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        else
-            Debug.LogWarning("[NetworkPlayerHealth] spawnPoints trống — respawn tại (0,0,0)");
+        bool zoneRespawnHandled = false;
+        var zoneTransition = FindAnyObjectByType<ZoneTransitionController>();
+        if (zoneTransition != null)
+            zoneRespawnHandled = zoneTransition.TryRespawnClientAfterDeath(OwnerClientId, NetworkObject, out spawnPosition);
+
+        if (!zoneRespawnHandled)
+        {
+            // Chọn spawn point ngẫu nhiên
+            if (spawnPoints != null && spawnPoints.Length > 0)
+                spawnPosition = spawnPoints[Random.Range(0, spawnPoints.Length)];
+            else
+                Debug.LogWarning("[NetworkPlayerHealth] spawnPoints trống — respawn tại (0,0,0)");
+        }
 
         // Lấy HP/MP max thực tế từ NetworkPlayerDataSync (authoritative stats từ API)
         var dataSync = GetComponent<NetworkPlayerDataSync>();
@@ -391,11 +406,20 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [ClientRpc]
     private void OnRespawnClientRpc(Vector3 spawnPosition)
     {
-        // Teleport player (nếu là owner, camera sẽ tự follow)
-        if (IsOwner)
+        isDead = false;
+        isInvincible = false;
+
+        var rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
         {
-            transform.position = spawnPosition;
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
         }
+
+        var playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInChildren<PlayerAnimator>();
+        playerAnimator?.ResetToIdleAfterRespawn();
+
+        transform.position = spawnPosition;
 
         OnRespawn?.Invoke();
     }

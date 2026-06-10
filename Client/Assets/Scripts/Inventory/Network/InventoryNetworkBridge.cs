@@ -209,6 +209,19 @@ public class InventoryNetworkBridge : MonoBehaviour
         }
     }
 
+    public void RefreshInventoryDirectFromAPI()
+    {
+        int playerId = GetCurrentPlayerId();
+        if (playerId <= 0)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] RefreshInventoryDirectFromAPI: playerId = 0!");
+            return;
+        }
+
+        InvalidateInventoryCache();
+        StartCoroutine(FetchInventoryJwtDirect(playerId));
+    }
+
     private void FetchInventoryDirectFromAPI()
     {
         // ✅ FIX: Lấy playerId từ GameManager (in-memory) thay vì PlayerPrefs
@@ -908,6 +921,71 @@ public class InventoryNetworkBridge : MonoBehaviour
         RefreshInventoryFromDB();
     }
 
+    private IEnumerator UseItemDirectCoroutine(int playerId, int slotIndex)
+    {
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/inventory/use-item";
+        string body = $"{{\"slotIndex\":{slotIndex}}}";
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(body);
+
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler = new UploadHandlerRaw(bytes);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.downloadHandler.text
+                : $"HTTP {(long)req.responseCode}: {req.error}";
+            Debug.LogError($"[InventoryNetworkBridge] Direct use-item fallback failed: {error}");
+            GlobalNotificationUI.Show(error, "Vat Pham", 3.5f, "OK");
+            yield break;
+        }
+
+        Debug.Log($"[InventoryNetworkBridge] Direct use-item fallback OK: {req.downloadHandler.text}");
+        HandleDirectUseItemResponse(req.downloadHandler.text);
+        InvalidateInventoryCache();
+        StartCoroutine(FetchInventoryJwtDirect(playerId));
+    }
+
+    private void HandleDirectUseItemResponse(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        var response = JsonUtility.FromJson<UseItemResult>(json);
+        if (response == null)
+        {
+            Debug.LogWarning($"[InventoryNetworkBridge] UseItem response parse failed. Raw={json}");
+            ActiveBuffManager.Instance?.LoadFromServer();
+            return;
+        }
+
+        if (response.hp_restore > 0 || response.mp_restore > 0)
+            RequestSyncHpMp(response.current_hp, response.current_mp);
+
+        bool changedBuffs = false;
+        if (response.active_buffs != null && response.active_buffs.Length > 0)
+        {
+            ActiveBuffManager.Instance?.OnBuffsReceived(response.active_buffs);
+            changedBuffs = true;
+        }
+        else if (response.new_buffs != null && response.new_buffs.Length > 0)
+        {
+            ActiveBuffManager.Instance?.OnBuffsAdded(response.new_buffs);
+            changedBuffs = true;
+        }
+
+        if (changedBuffs)
+            RequestSyncBuffBonuses();
+
+        ActiveBuffManager.Instance?.LoadFromServer();
+    }
+
     /// <summary>
     /// Lấy iconId từ ItemData
     /// Ưu tiên: dùng sprite.name làm iconId (nếu sprite.name trùng với iconId trong DB)
@@ -1029,8 +1107,89 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        Debug.Log("[InventoryNetworkBridge] Fallback: refresh inventory (ItemUseHandler không tìm thấy).");
-        RefreshInventoryFromDB();
+        Debug.Log("[InventoryNetworkBridge] ItemUseHandler unavailable, using direct REST use-item fallback.");
+        StartCoroutine(UseItemDirectCoroutine(playerId, slotIndex));
+    }
+
+    public void RequestRemoveItem(int slotIndex, int quantity)
+    {
+        int playerId = GetCurrentPlayerId();
+        if (playerId == 0)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] RequestRemoveItem: playerId = 0!");
+            return;
+        }
+
+        if (GameplayCommandService.Instance == null || !GameplayCommandService.Instance.IsSpawned)
+        {
+            Debug.LogWarning("[InventoryNetworkBridge] RequestRemoveItem: GameplayCommandService unavailable, using direct REST fallback.");
+            StartCoroutine(RemoveItemDirectCoroutine(playerId, slotIndex, quantity));
+            return;
+        }
+
+        void HandleRemoveResult(string json)
+        {
+            GameplayCommandService.OnRemoveItemResult -= HandleRemoveResult;
+            if (string.IsNullOrWhiteSpace(json) || json.Contains("\"error\""))
+            {
+                Debug.LogError($"[InventoryNetworkBridge] Remove item failed: {json}");
+                GlobalNotificationUI.Show(ExtractErrorMessage(json, "Khong the vut bo item."), "Vat Pham", 3.5f, "Dong");
+                return;
+            }
+
+            Debug.Log($"[InventoryNetworkBridge] Remove item OK: {json}");
+            InvalidateInventoryCache();
+            RefreshInventoryFromDB();
+        }
+
+        GameplayCommandService.OnRemoveItemResult -= HandleRemoveResult;
+        GameplayCommandService.OnRemoveItemResult += HandleRemoveResult;
+        GameplayCommandService.Instance.RemoveInventoryItemServerRpc(slotIndex, quantity);
+    }
+
+    private IEnumerator RemoveItemDirectCoroutine(int playerId, int slotIndex, int quantity)
+    {
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/inventory/remove";
+        string body = $"{{\"slotIndex\":{slotIndex},\"quantity\":{quantity}}}";
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(body);
+
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler = new UploadHandlerRaw(bytes);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.downloadHandler.text
+                : $"HTTP {(long)req.responseCode}: {req.error}";
+            Debug.LogError($"[InventoryNetworkBridge] Direct remove-item fallback failed: {error}");
+            GlobalNotificationUI.Show(ExtractErrorMessage(error, "Khong the vut bo item."), "Vat Pham", 3.5f, "Dong");
+            yield break;
+        }
+
+        Debug.Log($"[InventoryNetworkBridge] Direct remove-item fallback OK: {req.downloadHandler.text}");
+        InvalidateInventoryCache();
+        StartCoroutine(FetchInventoryJwtDirect(playerId));
+    }
+
+    private static string ExtractErrorMessage(string jsonOrText, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(jsonOrText))
+            return fallback;
+
+        const string marker = "\"error\":\"";
+        int start = jsonOrText.IndexOf(marker, System.StringComparison.OrdinalIgnoreCase);
+        if (start < 0)
+            return jsonOrText;
+
+        start += marker.Length;
+        int end = jsonOrText.IndexOf('"', start);
+        return end > start ? jsonOrText.Substring(start, end - start) : fallback;
     }
 
     /// <summary>
@@ -1117,9 +1276,10 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        if (GameplayCommandService.Instance == null)
+        if (GameplayCommandService.Instance == null || !GameplayCommandService.Instance.IsSpawned)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RequestEquipItem: GameplayCommandService.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] RequestEquipItem: GameplayCommandService unavailable, using direct REST fallback.");
+            StartCoroutine(EquipItemDirectCoroutine(playerId, inventorySlotIndex));
             return;
         }
 
@@ -1131,6 +1291,8 @@ public class InventoryNetworkBridge : MonoBehaviour
             if (json.Contains("\"error\""))
             {
                 Debug.LogError($"[InventoryNetworkBridge] ❌ Equip thất bại: {json}");
+                if (ShouldUseDirectEquipFallback(json))
+                    StartCoroutine(EquipItemDirectCoroutine(playerId, inventorySlotIndex));
                 return;
             }
             Debug.Log($"[InventoryNetworkBridge] ✅ Equip thành công!");
@@ -1151,6 +1313,55 @@ public class InventoryNetworkBridge : MonoBehaviour
         GameplayCommandService.OnEquipResult -= HandleEquipResult;
         GameplayCommandService.OnEquipResult += HandleEquipResult;
         GameplayCommandService.Instance.EquipItemServerRpc(inventorySlotIndex);
+    }
+
+    private IEnumerator EquipItemDirectCoroutine(int playerId, int inventorySlotIndex)
+    {
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/equipment/equip";
+        string body = $"{{\"inventorySlotIndex\":{inventorySlotIndex}}}";
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(body);
+
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler = new UploadHandlerRaw(bytes);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.timeout = 10;
+        req.SetRequestHeader("Content-Type", "application/json");
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.downloadHandler.text
+                : $"HTTP {(long)req.responseCode}: {req.error}";
+            Debug.LogError($"[InventoryNetworkBridge] Direct equip fallback failed: {error}");
+            yield break;
+        }
+
+        Debug.Log("[InventoryNetworkBridge] Direct equip fallback succeeded.");
+        InvalidateInventoryCache();
+        StartCoroutine(FetchInventoryJwtDirect(playerId));
+        StartCoroutine(FetchEquipmentDirectCoroutine(playerId));
+    }
+
+    private static bool ShouldUseDirectEquipFallback(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return true;
+
+        string e = json.ToLowerInvariant();
+        return e.Contains("http 0")
+            || e.Contains("http 401")
+            || e.Contains("unauthorized")
+            || e.Contains("connection")
+            || e.Contains("connect")
+            || e.Contains("timeout")
+            || e.Contains("network")
+            || e.Contains("name resolution")
+            || e.Contains("dns")
+            || e.Contains("refused")
+            || e.Contains("localhost");
     }
 
     /// <summary>
@@ -1289,9 +1500,10 @@ public class InventoryNetworkBridge : MonoBehaviour
             return;
         }
 
-        if (GameplayCommandService.Instance == null)
+        if (GameplayCommandService.Instance == null || !GameplayCommandService.Instance.IsSpawned)
         {
-            Debug.LogWarning("[InventoryNetworkBridge] RefreshEquipmentFromDB: GameplayCommandService.Instance is null!");
+            Debug.LogWarning("[InventoryNetworkBridge] RefreshEquipmentFromDB: GameplayCommandService unavailable, using direct REST fallback.");
+            StartCoroutine(FetchEquipmentDirectCoroutine(playerId));
             return;
         }
 
@@ -1319,6 +1531,39 @@ public class InventoryNetworkBridge : MonoBehaviour
         GameplayCommandService.OnEquipmentReceived -= HandleEquipment;
         GameplayCommandService.OnEquipmentReceived += HandleEquipment;
         GameplayCommandService.Instance.GetPlayerEquipmentServerRpc();
+    }
+
+    private IEnumerator FetchEquipmentDirectCoroutine(int playerId)
+    {
+        if (equipmentPanelUI == null)
+            equipmentPanelUI = FindObjectOfType<EquipmentPanelUI>(true);
+
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/equipment";
+        using var req = UnityWebRequest.Get(url);
+        req.timeout = 10;
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.downloadHandler.text
+                : $"HTTP {(long)req.responseCode}: {req.error}";
+            Debug.LogError($"[InventoryNetworkBridge] Direct equipment fetch failed: {error}");
+            yield break;
+        }
+
+        var equipment = EquipmentPayloadParser.Parse(req.downloadHandler.text);
+        if (equipment != null)
+        {
+            Debug.Log("[InventoryNetworkBridge] Equipment loaded via direct REST fallback.");
+            equipmentPanelUI?.SetEquipmentData(equipment);
+        }
+        else
+        {
+            Debug.LogError("[InventoryNetworkBridge] Failed to parse direct equipment JSON.");
+        }
     }
 
     private IEnumerator RebindAfterSceneLoad()

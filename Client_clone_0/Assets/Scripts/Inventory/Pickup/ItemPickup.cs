@@ -9,6 +9,8 @@ using Unity.Netcode;
 [RequireComponent(typeof(Collider2D))]
 public class ItemPickup : NetworkBehaviour
 {
+    private const int PickupTraceItemId = 27;
+
     [Header("Item Settings")]
     [Tooltip("ItemData của item này")]
     [SerializeField] private ItemData itemData;
@@ -34,6 +36,14 @@ public class ItemPickup : NetworkBehaviour
     
     [Tooltip("Có thể nhặt được không")]
     private NetworkVariable<bool> canPickup = new NetworkVariable<bool>(true);
+
+    private static bool ShouldTracePickup(int itemId) => itemId == PickupTraceItemId;
+
+    private static void TracePickup(int itemId, string message)
+    {
+        if (ShouldTracePickup(itemId))
+            Debug.Log($"[PickupTrace][ItemPickup] {message}");
+    }
 
     [Header("Visual")]
     [Tooltip("SpriteRenderer để hiển thị item")]
@@ -191,11 +201,11 @@ public class ItemPickup : NetworkBehaviour
     {
         if (!canPickup.Value)
         {
-            Debug.Log("[ItemPickup] Click ignored: item đang được xử lý nhặt hoặc đã bị khóa.");
+            TracePickup(networkItemId.Value, "ClickIgnored reason=locked_or_processing");
             return;
         }
 
-        Debug.Log($"[ItemPickup] Click: gửi PickupByClickServerRpc item_id={networkItemId.Value}");
+        TracePickup(networkItemId.Value, $"ClickSendRpc item={networkItemId.Value} qty={networkQuantity.Value}");
         PickupByClickServerRpc();
     }
 
@@ -220,7 +230,7 @@ public class ItemPickup : NetworkBehaviour
         var inv = netObj.GetComponent<NetworkInventory>();
         if (inv == null) return;
 
-        Debug.Log($"[ItemPickup] Auto-pickup trigger by player={netObj.NetworkObjectId} item_id={networkItemId.Value} canPickup={canPickup.Value}");
+        TracePickup(idToPickup, $"AutoPickupTrigger playerNetObj={netObj.NetworkObjectId} item={idToPickup} qty={networkQuantity.Value}");
 
         ExecutePickup(netObj);
     }
@@ -273,7 +283,7 @@ public class ItemPickup : NetworkBehaviour
     private void PickupByClickServerRpc(ServerRpcParams rpcParams = default)
     {
         ulong senderClientId = rpcParams.Receive.SenderClientId;
-        Debug.Log($"[ItemPickup][Server] PickupByClick: sender={senderClientId}, item_id={networkItemId.Value}, canPickup={canPickup.Value}");
+        TracePickup(networkItemId.Value, $"ServerClickRpc sender={senderClientId} item={networkItemId.Value} canPickup={canPickup.Value}");
 
         if (!canPickup.Value) return;
 
@@ -308,7 +318,7 @@ public class ItemPickup : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void TryPickupItemServerRpc(ulong playerNetworkObjectId)
     {
-        Debug.Log($"[ItemPickup][Server] TryPickup: item_id={networkItemId.Value}, canPickup={canPickup.Value}, playerObjId={playerNetworkObjectId}");
+        TracePickup(networkItemId.Value, $"ServerTryPickup item={networkItemId.Value} canPickup={canPickup.Value} playerObjId={playerNetworkObjectId}");
 
         if (!canPickup.Value) return;
 
@@ -344,15 +354,14 @@ public class ItemPickup : NetworkBehaviour
         if (!inventory.TryAddItemOnServer(itemIdToPickup, networkQuantity.Value))
         {
             canPickup.Value = true;
-            Debug.LogWarning($"[ItemPickup][Server] Không thể thêm item_id={itemIdToPickup} vào inventory của player {playerObject.NetworkObjectId}. Hủy pickup.");
+            Debug.LogWarning($"[PickupTrace][ItemPickup] PickupFail item={itemIdToPickup} qty={networkQuantity.Value} playerNetObj={playerObject.NetworkObjectId} reason=network_inventory_rejected");
             return;
         }
 
-        // Dedicated server không chạy ClientRpc trên chính server process,
-        // nên phải tự schedule despawn local ở đây.
+        // Dedicated server does not play its own ClientRpc, so schedule local despawn too.
         DespawnItemClientRpc();
         Invoke(nameof(DespawnItem), 0.3f);
-        Debug.Log($"[ItemPickup][Server] Nhặt thành công: player {playerObject.NetworkObjectId} lấy {networkQuantity.Value}x item_id={itemIdToPickup}");
+        TracePickup(itemIdToPickup, $"PickupSuccess item={itemIdToPickup} qty={networkQuantity.Value} playerNetObj={playerObject.NetworkObjectId}");
     }
 
     /// <summary>

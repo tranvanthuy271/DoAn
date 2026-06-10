@@ -1,0 +1,40 @@
+=================================================================
+   GAME SERVER API – LOAD TEST REPORT
+   Thời điểm : 2026-06-02 23:37:32
+   Base URL   : http://localhost:5000
+=================================================================
+
+## S1 – Baseline login latency (serial, BCrypt cost 12)
+   n     = 5
+   min   = 236.1 ms
+   mean  = 244.2 ms
+   max   = 250.5 ms
+   stdev = 5.4 ms
+   Ghi chú: 200-350 ms là bình thường với BCrypt cost 12.
+   Login bị giới hạn 5 req/60s/IP (chống brute-force).
+
+## S3 – Ramp-up: authenticated endpoints (leaderboard + player_data + gene)
+   Users   Requests         p50         p95         p99         max       RPS
+  --------------------------------------------------------------------
+       1          2     33.1 ms     33.1 ms     33.1 ms     33.1 ms     37.1
+       5         10     16.0 ms     20.0 ms     20.0 ms     20.0 ms    406.3
+      10         20     26.0 ms     32.6 ms     32.6 ms     32.6 ms    553.3
+      20         40     19.4 ms     36.1 ms     37.0 ms     37.0 ms    988.3
+      50        100     37.4 ms    105.9 ms    108.0 ms    108.0 ms    891.5
+
+## S4 – Sustained load (50 users × 5 vòng, /api/leaderboard)
+   n    = 250
+   p50  = 37.1 ms
+   p95  = 71.1 ms
+   p99  = 76.9 ms
+   max  = 79.1 ms
+   RPS  = 743.6 req/s
+
+## Phương pháp đo
+  - Công cụ    : Python 3.14 / aiohttp (async HTTP)
+  - Môi trường : localhost loopback (không có WAN latency)
+  - Database   : MySQL/MariaDB local
+  - Đo         : kể từ khi gửi request đến khi nhận xong response body
+  - Rate-limit login 5/60s/IP là tính năng bảo mật, không phải giới hạn HN
+  - CSV thô    : C:\Hub\DoAn\Scripts\benchmark_results\load_test_results_20260602_233726.csv
+=================================================================

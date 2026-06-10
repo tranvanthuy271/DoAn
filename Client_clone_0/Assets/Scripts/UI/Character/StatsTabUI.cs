@@ -49,6 +49,9 @@ public class StatsTabUI : MonoBehaviour
     [Header("Trạng thái")]
     [SerializeField] private TMP_Text txtStatus;
 
+    // EXP cần để tự lên Gene Tối Thượng — khớp GeneUltimateSettings.DefaultExpRequired bên server.
+    private const int GeneUltimateExpRequired = 1_000_000;
+
     // ── Runtime ──────────────────────────────────────────────
     private int   _playerId = -1;
     private int   _maxHp;
@@ -130,7 +133,8 @@ public class StatsTabUI : MonoBehaviour
         {
             string stars  = new string('★', pd.gene_tier) + new string('☆', Mathf.Max(0, 5 - pd.gene_tier));
             string hybrid = pd.is_hybrid ? " (Hybrid)" : "";
-            txtElement.text = $"Hệ {pd.element_type}{hybrid}  {stars}  (Gene Tier {pd.gene_tier})";
+            string ultimate = BuildUltimateSuffix(pd.is_hybrid, pd.is_ultimate, pd.ultimate_gene_exp);
+            txtElement.text = $"Hệ {pd.element_type}{hybrid}  {stars}  (Gene Tier {pd.gene_tier}){ultimate}";
         }
 
         // ─── Stats ────────────────────────────────────────────
@@ -349,6 +353,25 @@ public class StatsTabUI : MonoBehaviour
     }
 
     // ── UI helpers ────────────────────────────────────────────
+
+    /// <summary>
+    /// Gợi tiến độ Gene Tối Thượng để gắn vào cuối dòng Hệ/Gene trong bảng thông số.
+    /// Chỉ nhân vật Hybrid mới tích lũy; khi đạt mốc sẽ tự động kích hoạt.
+    /// Trả về chuỗi rỗng nếu chưa Hybrid.
+    /// </summary>
+    private string BuildUltimateSuffix(bool isHybrid, bool isUltimate, int ultimateExp)
+    {
+        if (!isHybrid)
+            return string.Empty; // Chưa Hybrid thì chưa mở khóa Gene Tối Thượng
+
+        if (isUltimate)
+            return "  • Tối Thượng ✦ (chỉ số ×1.5)";
+
+        int max = Mathf.Max(1, GeneUltimateExpRequired);
+        int cur = Mathf.Clamp(ultimateExp, 0, max);
+        float pct = (float)cur / max * 100f;
+        return $"  • Tối Thượng {cur:N0}/{max:N0} ({pct:F1}%)";
+    }
 
     private void UpdateHpBar(int current, int max)
     {

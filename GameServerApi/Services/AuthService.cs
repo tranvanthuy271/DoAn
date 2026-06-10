@@ -38,7 +38,8 @@ namespace GameServerApi.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub,        user.UserId.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim("user_id",                          user.UserId.ToString())
+                new Claim("user_id",                          user.UserId.ToString()),
+                new Claim(System.Security.Claims.ClaimTypes.Role, user.Role ?? "Player")
             };
 
             var signingKey     = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));

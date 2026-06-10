@@ -31,10 +31,10 @@ public class FixInformationCanvasLayout
         if (scaler != null)
         {
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1024, 768);
+            scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
-            Debug.Log("[FixLayout] CanvasScaler → ScaleWithScreenSize 1024×768");
+            Debug.Log("[FixLayout] CanvasScaler -> ScaleWithScreenSize 1920x1080");
         }
 
         // ── CharacterPanel → stretch fill canvas ───────────────────

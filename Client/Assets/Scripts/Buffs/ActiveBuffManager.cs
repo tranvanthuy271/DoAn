@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Networking;
 
 /// <summary>
 /// ActiveBuffManager – Singleton quản lý danh sách buff đang active trên client local.
@@ -132,7 +133,11 @@ public class ActiveBuffManager : MonoBehaviour
     /// </summary>
     public void LoadFromServer()
     {
-        if (GameplayCommandService.Instance == null) return;
+        if (GameplayCommandService.Instance == null || !GameplayCommandService.Instance.IsSpawned)
+        {
+            StartCoroutine(LoadFromServerDirectCoroutine());
+            return;
+        }
 
         GameplayCommandService.OnActiveBuffsReceived -= HandleBuffsReceived;
         GameplayCommandService.OnActiveBuffsReceived += HandleBuffsReceived;
@@ -147,8 +152,38 @@ public class ActiveBuffManager : MonoBehaviour
                 if (wrapper?.active_buffs != null) OnBuffsReceived(wrapper.active_buffs);
             }
             else
+            {
                 Debug.LogWarning($"[ActiveBuffManager] Không load được buff: {json}");
+                StartCoroutine(LoadFromServerDirectCoroutine());
+            }
         }
+    }
+
+    private IEnumerator LoadFromServerDirectCoroutine()
+    {
+        int playerId = GetPlayerId();
+        if (playerId <= 0)
+            yield break;
+
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/active-buffs";
+        using var req = UnityWebRequest.Get(url);
+        req.timeout = 10;
+        AuthHelper.AddAuthHeader(req);
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
+                ? req.downloadHandler.text
+                : $"HTTP {(long)req.responseCode}: {req.error}";
+            Debug.LogWarning($"[ActiveBuffManager] Direct buff load failed: {error}");
+            yield break;
+        }
+
+        var wrapper = JsonUtility.FromJson<ActiveBuffsResponse>(req.downloadHandler.text);
+        if (wrapper?.active_buffs != null)
+            OnBuffsReceived(wrapper.active_buffs);
     }
 
     // ── Internal ──────────────────────────────────────────────────────────

@@ -21,6 +21,8 @@ namespace GameServerApi.Controllers
         private const int DefaultBagSlots = 20;
         private const int BagExpandBy = 5;
         private const int MaxEquippedBagQuickSlots = 3;
+        private const int InventoryMaxStackSize = 99;
+        private const int PickupTraceItemId = 27;
 
         private readonly GameDbContext _db;
         private readonly ILogger<PlayerController> _logger;
@@ -29,6 +31,24 @@ namespace GameServerApi.Controllers
         {
             _db = db;
             _logger = logger;
+        }
+
+        private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
+        {
+            playerId = requestedPlayerId;
+
+            if (User.IsInRole("GameServer"))
+                return null;
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id")?.Value;
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            if (requestedPlayerId != userId)
+                return Forbid();
+
+            playerId = userId;
+            return null;
         }
 
         /// <summary>
@@ -198,6 +218,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/data")]
         public async Task<IActionResult> GetPlayerData(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FirstOrDefaultAsync(p => p.PlayerId == playerId);
             if (player == null)
             {
@@ -295,7 +318,11 @@ namespace GameServerApi.Controllers
                 hybrid_bonus_targets   = info.HybridBonusTargets,
                 hybrid_immune_elements = info.HybridImmuneElements,
                 hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
-                hybrid_prefab_path     = info.HybridPrefabPath
+                hybrid_prefab_path     = info.HybridPrefabPath,
+                // ── Gene Tối Thượng fields ──────────────────────────
+                is_ultimate            = info.IsUltimate,
+                ultimate_gene_exp      = info.UltimateGeneExp,
+                ultimate_aura_path     = info.UltimateAuraPath
             };
 
             return Ok(response);
@@ -624,58 +651,124 @@ namespace GameServerApi.Controllers
                     var itemTemplate = await _db.ItemTemplates.FindAsync(itemTemplateId);
                     bool isStackable = itemTemplate != null &&
                         string.Equals(itemTemplate.IsXepChong, "True", StringComparison.OrdinalIgnoreCase);
+                    bool tracePickupItem = itemTemplateId == PickupTraceItemId;
+                    if (tracePickupItem)
+                    {
+                        _logger.LogInformation(
+                            "[PickupTrace][InventoryAdd] Start playerId={PlayerId} item={ItemId} qty={Qty} maxSlots={MaxSlots} usedSlots={UsedSlots} stacks={Stacks}",
+                            targetPlayerId, itemTemplateId, quantity, maxSlots,
+                            CountInventoryUsedSlots(inventory),
+                            BuildInventorySlotSummary(inventory, itemTemplateId));
+                    }
 
                     // Nếu stackable: thử gộp vào slot đã có
+                    int remainingQuantity = quantity;
+
                     if (isStackable && addUpgradeLevel == 0)
                     {
-                        var existingSlot = inventory.FirstOrDefault(s =>
-                            s.ContainsKey("itemTemplateId") &&
-                            Convert.ToInt32(s["itemTemplateId"]) == itemTemplateId);
+                        var existingSlots = inventory
+                            .Where(s =>
+                                s.ContainsKey("itemTemplateId") &&
+                                Convert.ToInt32(s["itemTemplateId"]) == itemTemplateId &&
+                                (!s.ContainsKey("upgradeLevel") || Convert.ToInt32(s["upgradeLevel"]) == 0) &&
+                                (!s.ContainsKey("strOptions") || string.Equals(s["strOptions"]?.ToString() ?? "", addStrOptions, StringComparison.Ordinal)))
+                            .OrderBy(s => s.ContainsKey("slotIndex") ? Convert.ToInt32(s["slotIndex"]) : int.MaxValue);
 
-                        if (existingSlot != null)
+                        foreach (var existingSlot in existingSlots)
                         {
                             int currentQty = existingSlot.ContainsKey("quantity")
                                 ? Convert.ToInt32(existingSlot["quantity"]) : 0;
-                            existingSlot["quantity"] = currentQty + quantity;
-                            addedCount++;
-                            continue; // Không cần tạo slot mới
+                            int freeSpace = InventoryMaxStackSize - currentQty;
+                            if (freeSpace <= 0)
+                            {
+                                if (tracePickupItem)
+                                {
+                                    _logger.LogInformation(
+                                        "[PickupTrace][InventoryAdd] StackFull playerId={PlayerId} item={ItemId} slot={Slot} qty={Qty}",
+                                        targetPlayerId, itemTemplateId,
+                                        existingSlot.ContainsKey("slotIndex") ? Convert.ToInt32(existingSlot["slotIndex"]) : -1,
+                                        currentQty);
+                                }
+                                continue;
+                            }
+
+                            int addAmount = Math.Min(remainingQuantity, freeSpace);
+                            existingSlot["quantity"] = currentQty + addAmount;
+                            remainingQuantity -= addAmount;
+                            addedCount += addAmount;
+                            if (tracePickupItem)
+                            {
+                                _logger.LogInformation(
+                                    "[PickupTrace][InventoryAdd] FillStack playerId={PlayerId} item={ItemId} slot={Slot} add={Add} newQty={NewQty} remaining={Remaining}",
+                                    targetPlayerId, itemTemplateId,
+                                    existingSlot.ContainsKey("slotIndex") ? Convert.ToInt32(existingSlot["slotIndex"]) : -1,
+                                    addAmount, currentQty + addAmount, remainingQuantity);
+                            }
+
+                            if (remainingQuantity <= 0)
+                                break;
                         }
                     }
 
-                    // Tìm slot trống
-                    int emptySlotIndex = -1;
-                    for (int i = 0; i < maxSlots; i++)
+                    while (remainingQuantity > 0)
                     {
-                        var existingSlot = inventory.FirstOrDefault(s =>
-                            s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == i);
-
-                        if (existingSlot == null || !existingSlot.ContainsKey("quantity") || Convert.ToInt32(existingSlot["quantity"]) == 0)
+                        int emptySlotIndex = -1;
+                        for (int i = 0; i < maxSlots; i++)
                         {
-                            emptySlotIndex = i;
+                            var existingSlot = inventory.FirstOrDefault(s =>
+                                s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == i);
+
+                            if (existingSlot == null || !existingSlot.ContainsKey("quantity") || Convert.ToInt32(existingSlot["quantity"]) == 0)
+                            {
+                                emptySlotIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (emptySlotIndex == -1)
+                        {
+                            if (tracePickupItem)
+                            {
+                                _logger.LogWarning(
+                                    "[PickupTrace][InventoryAdd] NoEmptySlot playerId={PlayerId} item={ItemId} remaining={Remaining} maxSlots={MaxSlots} usedSlots={UsedSlots}",
+                                    targetPlayerId, itemTemplateId, remainingQuantity, maxSlots, CountInventoryUsedSlots(inventory));
+                            }
                             break;
                         }
+
+                        int addAmount = isStackable && addUpgradeLevel == 0
+                            ? Math.Min(remainingQuantity, InventoryMaxStackSize)
+                            : 1;
+
+                        var newSlot = new Dictionary<string, object>
+                        {
+                            ["slotIndex"]      = emptySlotIndex,
+                            ["itemTemplateId"] = itemTemplateId,
+                            ["quantity"]       = addAmount,
+                            ["upgradeLevel"]   = addUpgradeLevel,
+                            ["strOptions"]     = addStrOptions
+                        };
+
+                        inventory.RemoveAll(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == emptySlotIndex);
+                        inventory.Add(newSlot);
+                        remainingQuantity -= addAmount;
+                        addedCount += addAmount;
+                        if (tracePickupItem)
+                        {
+                            _logger.LogInformation(
+                                "[PickupTrace][InventoryAdd] UseEmptySlot playerId={PlayerId} item={ItemId} slot={Slot} add={Add} remaining={Remaining}",
+                                targetPlayerId, itemTemplateId, emptySlotIndex, addAmount, remainingQuantity);
+                        }
                     }
 
-                    if (emptySlotIndex == -1)
+                    if (tracePickupItem)
                     {
-                        // Inventory đầy
-                        continue;
+                        _logger.LogInformation(
+                            "[PickupTrace][InventoryAdd] Result playerId={PlayerId} item={ItemId} requested={Requested} added={Added} remaining={Remaining} usedSlots={UsedSlots} stacks={Stacks}",
+                            targetPlayerId, itemTemplateId, quantity, quantity - remainingQuantity, remainingQuantity,
+                            CountInventoryUsedSlots(inventory),
+                            BuildInventorySlotSummary(inventory, itemTemplateId));
                     }
-
-                    // Thêm item vào slot mới — chỉ lưu các field cần thiết, không lưu isEquipped/iconId
-                    var newSlot = new Dictionary<string, object>
-                    {
-                        ["slotIndex"]      = emptySlotIndex,
-                        ["itemTemplateId"] = itemTemplateId,
-                        ["quantity"]       = quantity,
-                        ["upgradeLevel"]   = addUpgradeLevel,
-                        ["strOptions"]     = addStrOptions
-                    };
-
-                    // Xóa slot cũ nếu có
-                    inventory.RemoveAll(s => s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == emptySlotIndex);
-                    inventory.Add(newSlot);
-                    addedCount++;
                 }
 
                 // Serialize và lưu lại
@@ -687,6 +780,7 @@ namespace GameServerApi.Controllers
                 return Ok(new
                 {
                     message = $"Đã thêm {addedCount} item(s) vào inventory",
+                    added_count = addedCount,
                     player_id = playerId,
                     inventory = inventory,
                     updated_at = player.UpdatedAt
@@ -699,6 +793,84 @@ namespace GameServerApi.Controllers
         }
 
         /// <summary>
+        /// POST /api/player/{playerId}/inventory/remove
+        /// Body: { "slotIndex": 0, "quantity": 99 }
+        /// Removes quantity from one inventory slot. If quantity is omitted or exceeds the stack, the slot is removed.
+        /// </summary>
+        [HttpPost("{playerId}/inventory/remove")]
+        public async Task<IActionResult> RemoveInventoryItem(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
+                if (!body.TryGetProperty("slotIndex", out var slotProp))
+                    return BadRequest("Thiếu field 'slotIndex'.");
+
+                int slotIndex = slotProp.GetInt32();
+                int removeQuantity = 0;
+                if (body.TryGetProperty("quantity", out var qtyProp))
+                    removeQuantity = qtyProp.TryGetInt32(out var q) ? q : 0;
+
+                var player = await _db.PlayerData.FindAsync(playerId);
+                if (player == null)
+                    return NotFound($"Player với ID {playerId} không tồn tại.");
+
+                var inventory = ParseMutableInventory(player.InventoryJson);
+                var targetSlot = inventory.FirstOrDefault(s =>
+                    s.ContainsKey("slotIndex") && Convert.ToInt32(s["slotIndex"]) == slotIndex);
+
+                if (targetSlot == null)
+                    return BadRequest($"Không tìm thấy item ở slot {slotIndex}.");
+
+                int currentQuantity = targetSlot.TryGetValue("quantity", out var rawQuantity)
+                    ? Convert.ToInt32(rawQuantity)
+                    : 0;
+                if (currentQuantity <= 0)
+                    return BadRequest($"Slot {slotIndex} không có item hợp lệ.");
+
+                int itemTemplateId = targetSlot.TryGetValue("itemTemplateId", out var rawTemplateId)
+                    ? Convert.ToInt32(rawTemplateId)
+                    : 0;
+
+                bool instanceLocked = targetSlot.TryGetValue("isLocked", out var rawLocked) && IsTruthy(rawLocked);
+                var itemTemplate = itemTemplateId > 0 ? await _db.ItemTemplates.FindAsync(itemTemplateId) : null;
+                if (instanceLocked || (itemTemplate?.IsLock ?? false))
+                    return BadRequest("Item này đang khóa, không thể vứt bỏ.");
+
+                if (removeQuantity <= 0 || removeQuantity >= currentQuantity)
+                {
+                    inventory.Remove(targetSlot);
+                    removeQuantity = currentQuantity;
+                }
+                else
+                {
+                    targetSlot["quantity"] = currentQuantity - removeQuantity;
+                }
+
+                player.InventoryJson = JsonSerializer.Serialize(inventory);
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = $"Đã vứt bỏ {removeQuantity} item(s).",
+                    player_id = playerId,
+                    slot_index = slotIndex,
+                    item_template_id = itemTemplateId,
+                    removed_quantity = removeQuantity,
+                    inventory,
+                    updated_at = player.UpdatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi vứt bỏ item: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// POST /api/player/{playerId}/inventory/clear
         /// Xóa toàn bộ inventory và equipment của player (dùng cho debug/reset)
         /// </summary>
@@ -707,6 +879,9 @@ namespace GameServerApi.Controllers
         {
             try
             {
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null)
                     return NotFound($"Player với ID {playerId} không tồn tại.");
@@ -733,6 +908,9 @@ namespace GameServerApi.Controllers
         {
             try
             {
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null)
                     return NotFound($"Player với ID {playerId} không tồn tại.");
@@ -1002,7 +1180,16 @@ namespace GameServerApi.Controllers
                                 info.GeneTier, info.SecondaryElement ?? "(null)",
                                 info.SecondaryGeneExp, info.GeneExp);
 
-                            if (info.GeneTier >= MaxGeneTier && !string.IsNullOrEmpty(info.SecondaryElement))
+                            // Ưu tiên cao nhất: player đã Dung hợp Hybrid và chưa tối thượng → dồn vào Gene Tối Thượng
+                            if (info.IsHybrid && !info.IsUltimate)
+                            {
+                                var ultCfg = GeneUltimateService.GetConfig(info.ElementType);
+                                bool activated = GeneUltimateService.TryAccumulateAndActivate(info, geneExpGain, ultCfg);
+                                _logger.LogInformation(
+                                    "[GeneExpAdd] → cộng vào UltimateGeneExp, mới = {NewUltExp} (activated={Activated})",
+                                    info.UltimateGeneExp, activated);
+                            }
+                            else if (info.GeneTier >= MaxGeneTier && !string.IsNullOrEmpty(info.SecondaryElement))
                             {
                                 info.SecondaryGeneExp = (info.SecondaryGeneExp ?? 0) + geneExpGain;
                                 _logger.LogInformation(
@@ -1226,6 +1413,9 @@ namespace GameServerApi.Controllers
 
                 int inventorySlotIndex = slotIndexProp.GetInt32();
 
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null)
                 {
@@ -1447,6 +1637,9 @@ namespace GameServerApi.Controllers
                 }
 
                 string equipSlotName = slotProp.GetString() ?? "";
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 string[] validSlots = { "weapon", "helmet", "armor", "pants", "boots", "accessory" };
                 if (!validSlots.Contains(equipSlotName))
                 {
@@ -1598,6 +1791,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/active-buffs")]
         public async Task<IActionResult> GetActiveBuffs(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -1659,6 +1855,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/equipment")]
         public async Task<IActionResult> GetEquipment(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null)
             {
@@ -1817,6 +2016,45 @@ namespace GameServerApi.Controllers
             return inventory;
         }
 
+        private static bool IsTruthy(object? value)
+        {
+            if (value == null) return false;
+            if (value is bool b) return b;
+            if (value is int i) return i != 0;
+            if (value is long l) return l != 0;
+            if (bool.TryParse(value.ToString(), out bool parsedBool)) return parsedBool;
+            if (int.TryParse(value.ToString(), out int parsedInt)) return parsedInt != 0;
+            return false;
+        }
+
+        private static int CountInventoryUsedSlots(List<Dictionary<string, object>> inventory)
+        {
+            int count = 0;
+            foreach (var slot in inventory)
+            {
+                if (slot.TryGetValue("quantity", out var rawQuantity) && Convert.ToInt32(rawQuantity) > 0)
+                    count++;
+            }
+            return count;
+        }
+
+        private static string BuildInventorySlotSummary(List<Dictionary<string, object>> inventory, int itemTemplateId)
+        {
+            var parts = new List<string>();
+            foreach (var slot in inventory.OrderBy(s => s.TryGetValue("slotIndex", out var rawSlot) ? Convert.ToInt32(rawSlot) : int.MaxValue))
+            {
+                if (!slot.TryGetValue("itemTemplateId", out var rawTemplateId) ||
+                    Convert.ToInt32(rawTemplateId) != itemTemplateId)
+                    continue;
+
+                int slotIndex = slot.TryGetValue("slotIndex", out var rawSlotIndex) ? Convert.ToInt32(rawSlotIndex) : -1;
+                int quantity = slot.TryGetValue("quantity", out var rawQuantity) ? Convert.ToInt32(rawQuantity) : 0;
+                if (quantity > 0)
+                    parts.Add($"slot={slotIndex},qty={quantity}");
+            }
+            return parts.Count > 0 ? string.Join(" | ", parts) : "none";
+        }
+
         private static bool TryStoreBagItemBackToInventory(
             List<Dictionary<string, object>> inventory,
             BagEquippedItemInfo bagItem,
@@ -1896,39 +2134,142 @@ namespace GameServerApi.Controllers
             public string Desc { get; set; } = "";
         }
 
-        private static List<SkillLevelRow> ParseSkillLevels(string? levelsJson)
+        private static List<SkillLevelRow> ParseSkillLevels(string? levelsJson, string? skillCode = null, int maxLevel = 5, int unlockLevel = 1)
         {
             var result = new List<SkillLevelRow>();
-            if (string.IsNullOrWhiteSpace(levelsJson))
-                return result;
-
-            try
+            if (!string.IsNullOrWhiteSpace(levelsJson))
             {
-                using JsonDocument doc = JsonDocument.Parse(levelsJson);
-                if (doc.RootElement.ValueKind != JsonValueKind.Array)
-                    return result;
-
-                int level = 1;
-                foreach (JsonElement item in doc.RootElement.EnumerateArray())
+                try
                 {
-                    result.Add(new SkillLevelRow
+                    using JsonDocument doc = JsonDocument.Parse(levelsJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
                     {
-                        Level = level++,
-                        LevelReq = ReadInt(item, "level_req", 1),
-                        SpCost = ReadInt(item, "sp_cost", 1),
-                        EffectValue = ReadFloat(item, "effect_value", 0f),
-                        MpCost = ReadInt(item, "mp_cost", 0),
-                        CooldownSec = ReadFloat(item, "cooldown_sec", 3f),
-                        Desc = ReadString(item, "desc", "")
-                    });
+                        int level = 1;
+                        foreach (JsonElement item in doc.RootElement.EnumerateArray())
+                        {
+                            result.Add(new SkillLevelRow
+                            {
+                                Level = level++,
+                                LevelReq = ReadInt(item, "level_req", 1),
+                                SpCost = ReadInt(item, "sp_cost", 1),
+                                EffectValue = ReadFloat(item, "effect_value", 0f),
+                                MpCost = ReadInt(item, "mp_cost", 0),
+                                CooldownSec = ReadFloat(item, "cooldown_sec", 3f),
+                                Desc = ReadString(item, "desc", "")
+                            });
+                        }
+                    }
+                }
+                catch
+                {
+                    // Bad skill rows should not break the character panel.
                 }
             }
-            catch
+
+            return result.Count > 0 ? result : BuildFallbackSkillLevels(skillCode, maxLevel, unlockLevel);
+        }
+
+        private static List<SkillLevelRow> BuildFallbackSkillLevels(string? skillCode, int maxLevel, int unlockLevel)
+        {
+            string code = (skillCode ?? string.Empty).Trim().ToUpperInvariant();
+            int levels = Math.Max(1, maxLevel);
+            int firstReq = Math.Max(1, unlockLevel);
+            float baseEffect = ResolveFallbackEffectValue(code);
+            float step = ResolveFallbackEffectStep(code);
+            int baseMp = ResolveFallbackMpCost(code);
+            float baseCooldown = ResolveFallbackCooldown(code);
+            bool freeSkill = code == "NORMAL_ATTACK" || code.StartsWith("HYBRID_", StringComparison.OrdinalIgnoreCase);
+
+            var result = new List<SkillLevelRow>(levels);
+            for (int i = 1; i <= levels; i++)
             {
-                // Bad skill rows should not break the character panel.
+                float effect = baseEffect + step * (i - 1);
+                result.Add(new SkillLevelRow
+                {
+                    Level = i,
+                    LevelReq = i == 1 ? firstReq : firstReq + (i - 1) * 3,
+                    SpCost = freeSkill ? 0 : Math.Max(1, (i + 1) / 2),
+                    EffectValue = effect,
+                    MpCost = freeSkill && code == "NORMAL_ATTACK" ? 0 : baseMp + Math.Max(0, i - 1) * 4,
+                    CooldownSec = Math.Max(0.5f, baseCooldown - Math.Max(0, i - 1) * 0.25f),
+                    Desc = BuildFallbackLevelDesc(code, effect)
+                });
             }
 
             return result;
+        }
+
+        private static float ResolveFallbackEffectValue(string code)
+        {
+            if (code == "NORMAL_ATTACK") return 10f;
+            if (code == "DASH") return 1f;
+            if (code.Contains("STEP")) return 3f;
+            if (code.Contains("VINE")) return 1f;
+            if (code.Contains("HEAL")) return 50f;
+            if (code.Contains("ARMOR")) return 15f;
+            if (code.Contains("SHIELD")) return 3f;
+            if (code.Contains("AURA")) return 15f;
+            if (code.Contains("BLINK")) return 5f;
+            if (code.Contains("LAVA")) return 280f;
+            if (code.Contains("VENOM")) return 250f;
+            if (code.Contains("BARRAGE") || code.Contains("GALE")) return 295f;
+            return 20f;
+        }
+
+        private static float ResolveFallbackEffectStep(string code)
+        {
+            if (code == "DASH" || code.Contains("STEP") || code.Contains("VINE") || code.Contains("SHIELD")) return 1f;
+            if (code.Contains("HEAL")) return 35f;
+            if (code.Contains("ARMOR") || code.Contains("AURA")) return 8f;
+            if (code.StartsWith("HYBRID_", StringComparison.OrdinalIgnoreCase)) return 0f;
+            return 18f;
+        }
+
+        private static int ResolveFallbackMpCost(string code)
+        {
+            if (code == "NORMAL_ATTACK") return 0;
+            if (code == "DASH") return 8;
+            if (code.StartsWith("HYBRID_", StringComparison.OrdinalIgnoreCase)) return 50;
+            if (code.Contains("HEAL") || code.Contains("ARMOR") || code.Contains("SHIELD") || code.Contains("AURA")) return 20;
+            return 10;
+        }
+
+        private static float ResolveFallbackCooldown(string code)
+        {
+            if (code == "NORMAL_ATTACK") return 0.8f;
+            if (code == "DASH") return 4f;
+            if (code.Contains("HEAL") || code.Contains("ARMOR") || code.Contains("SHIELD") || code.Contains("AURA")) return 12f;
+            if (code.StartsWith("HYBRID_", StringComparison.OrdinalIgnoreCase)) return 14f;
+            return 3f;
+        }
+
+        private static string BuildFallbackLevelDesc(string code, float effect)
+        {
+            if (code == "DASH" || code.Contains("STEP")) return $"Di chuyen {effect:0.#} o";
+            if (code.Contains("VINE")) return $"Troi {effect:0.#} giay";
+            if (code.Contains("HEAL")) return $"Hoi {effect:0.#} HP";
+            if (code.Contains("ARMOR")) return $"Tang {effect:0.#} phong thu";
+            if (code.Contains("SHIELD")) return $"Bat tu {effect:0.#} giay";
+            if (code.Contains("AURA")) return $"Tang {effect:0.#}% tan cong";
+            return $"Gay {effect:0.#} sat thuong";
+        }
+
+        private static string ResolveSkillDescription(string? skillCode, string? dbDescription)
+        {
+            if (!string.IsNullOrWhiteSpace(dbDescription))
+                return dbDescription;
+
+            string code = (skillCode ?? string.Empty).Trim().ToUpperInvariant();
+            if (code == "NORMAL_ATTACK") return "Don danh co ban, luon mo san va khong ton MP.";
+            if (code == "DASH") return "Luot nhanh de ne don hoac rut ngan khoang cach.";
+            if (code.Contains("STEP")) return "Di chuyen nhanh theo huong dang nhin.";
+            if (code.Contains("VINE")) return "Khong che muc tieu trong thoi gian ngan.";
+            if (code.Contains("HEAL")) return "Hoi HP cho ban than.";
+            if (code.Contains("ARMOR")) return "Tang phong thu tam thoi.";
+            if (code.Contains("SHIELD")) return "Tao trang thai bao ve trong thoi gian ngan.";
+            if (code.Contains("AURA")) return "Tang suc tan cong tam thoi.";
+            if (code.StartsWith("HYBRID_", StringComparison.OrdinalIgnoreCase)) return "Ky nang dung hop gene, mo khi nhan vat da fusion dung he.";
+            return "Ky nang chien dau gay sat thuong len muc tieu.";
         }
 
         private static int ReadInt(JsonElement item, string propertyName, int fallback)
@@ -1972,6 +2313,40 @@ namespace GameServerApi.Controllers
             desc = row.Desc
         };
 
+        private static bool IsDamageSkillCode(string? skillCode)
+        {
+            if (string.IsNullOrWhiteSpace(skillCode))
+                return true;
+
+            string code = skillCode.Trim().ToUpperInvariant();
+            if (code.Contains("DASH") || code.Contains("STEP") || code.Contains("HEAL")
+                || code.Contains("ARMOR") || code.Contains("SHIELD") || code.Contains("AURA"))
+                return false;
+
+            return true;
+        }
+
+        private static (
+            float TotalEffect,
+            float AttackBonus,
+            float HpBonus,
+            float MpBonus,
+            float DefenseBonus,
+            float EvasionBonus) BuildCurrentSkillStats(string? skillCode, float effectValue, int playerFinalAtk)
+        {
+            string code = (skillCode ?? string.Empty).Trim().ToUpperInvariant();
+            bool damageSkill = IsDamageSkillCode(code);
+            float attackBonus = damageSkill && playerFinalAtk > 0 ? playerFinalAtk : 0f;
+
+            return (
+                effectValue + attackBonus,
+                code.Contains("AURA") ? effectValue : attackBonus,
+                code.Contains("HEAL") ? effectValue : 0f,
+                0f,
+                code.Contains("ARMOR") ? effectValue : 0f,
+                (code.Contains("DASH") || code.Contains("STEP")) ? effectValue : 0f);
+        }
+
         private static int SkillSortGroup(SkillTemplate skill)
         {
             if (skill.HybridId != null)
@@ -1985,7 +2360,7 @@ namespace GameServerApi.Controllers
             if (string.Equals(skill.SkillCode, "NORMAL_ATTACK", StringComparison.OrdinalIgnoreCase))
                 return 0;
             if (string.Equals(skill.SkillCode, "DASH", StringComparison.OrdinalIgnoreCase))
-                return 1;
+                return 9000;
 
             return 10 + Math.Max(0, skill.LevelToUnlock);
         }
@@ -1997,6 +2372,148 @@ namespace GameServerApi.Controllers
 
             return string.IsNullOrEmpty(skill.ElementType)
                 || string.Equals(skill.ElementType, info.ElementType, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<int, int> BuildSkillUnlockLevels(IReadOnlyList<SkillTemplate> orderedTemplates)
+        {
+            var result = new Dictionary<int, int>();
+            int combatSkillIndex = 0;
+
+            foreach (var skill in orderedTemplates)
+            {
+                if (string.Equals(skill.SkillCode, "NORMAL_ATTACK", StringComparison.OrdinalIgnoreCase))
+                {
+                    result[skill.SkillId] = 1;
+                    continue;
+                }
+
+                if (string.Equals(skill.SkillCode, "DASH", StringComparison.OrdinalIgnoreCase))
+                {
+                    result[skill.SkillId] = 1;
+                    continue;
+                }
+
+                if (skill.HybridId != null)
+                {
+                    result[skill.SkillId] = 1;
+                    continue;
+                }
+
+                combatSkillIndex++;
+                result[skill.SkillId] = Math.Max(5, combatSkillIndex * 5);
+            }
+
+            return result;
+        }
+
+        private static bool EnsureLevelUnlockedSkills(
+            string? currentSkillsJson,
+            InfoChar info,
+            IReadOnlyList<SkillTemplate> templates,
+            IReadOnlyDictionary<int, int> unlockLevels,
+            Dictionary<int, int> playerSkillLevels,
+            Dictionary<string, int> playerSkillLevelsByCode,
+            out string updatedSkillsJson)
+        {
+            var skills = ParseSkillDictionaries(currentSkillsJson);
+            bool changed = false;
+
+            foreach (var template in templates)
+            {
+                int unlockLevel = unlockLevels.TryGetValue(template.SkillId, out int configuredUnlock)
+                    ? configuredUnlock
+                    : Math.Max(1, template.LevelToUnlock);
+
+                if (info.Level < unlockLevel || info.GeneTier < template.GeneTierRequired)
+                    continue;
+
+                var existing = skills.FirstOrDefault(s => SkillEntryMatchesTemplate(s, template));
+                if (existing == null)
+                {
+                    skills.Add(new Dictionary<string, object?>
+                    {
+                        ["skill_id"] = template.SkillId,
+                        ["skill_code"] = template.SkillCode,
+                        ["current_level"] = 1
+                    });
+                    changed = true;
+                }
+                else
+                {
+                    int level = ReadSkillEntryLevel(existing);
+                    if (level < 1)
+                    {
+                        existing["current_level"] = 1;
+                        changed = true;
+                    }
+                }
+
+                playerSkillLevels[template.SkillId] = Math.Max(1,
+                    playerSkillLevels.TryGetValue(template.SkillId, out int existingLevel) ? existingLevel : 1);
+                playerSkillLevelsByCode[NormalizeSkillCode(template.SkillCode)] = playerSkillLevels[template.SkillId];
+            }
+
+            updatedSkillsJson = changed
+                ? JsonSerializer.Serialize(skills)
+                : currentSkillsJson ?? "[]";
+            return changed;
+        }
+
+        private static List<Dictionary<string, object?>> ParseSkillDictionaries(string? skillsJson)
+        {
+            var result = new List<Dictionary<string, object?>>();
+            if (string.IsNullOrWhiteSpace(skillsJson) || skillsJson == "[]")
+                return result;
+
+            try
+            {
+                var rawArr = JsonSerializer.Deserialize<List<JsonElement>>(skillsJson);
+                if (rawArr == null) return result;
+
+                foreach (var elem in rawArr)
+                {
+                    var row = new Dictionary<string, object?>();
+                    foreach (var prop in elem.EnumerateObject())
+                    {
+                        row[prop.Name] = prop.Value.ValueKind switch
+                        {
+                            JsonValueKind.Number => prop.Value.TryGetInt32(out int iv) ? iv : prop.Value.GetDouble(),
+                            JsonValueKind.String => prop.Value.GetString(),
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            _ => prop.Value.ToString()
+                        };
+                    }
+                    result.Add(row);
+                }
+            }
+            catch
+            {
+                // Keep an empty list and let unlock seeding rebuild the usable skill rows.
+            }
+
+            return result;
+        }
+
+        private static bool SkillEntryMatchesTemplate(Dictionary<string, object?> entry, SkillTemplate template)
+        {
+            if (entry.TryGetValue("skill_id", out object? idObj) && Convert.ToInt32(idObj) == template.SkillId)
+                return true;
+
+            if (entry.TryGetValue("skillCode", out object? codeObj)
+                && string.Equals(NormalizeSkillCode(Convert.ToString(codeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return entry.TryGetValue("skill_code", out object? snakeCodeObj)
+                && string.Equals(NormalizeSkillCode(Convert.ToString(snakeCodeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int ReadSkillEntryLevel(Dictionary<string, object?> entry)
+        {
+            if (entry.TryGetValue("current_level", out object? currentLevelObj)) return Convert.ToInt32(currentLevelObj);
+            if (entry.TryGetValue("currentLevel", out object? legacyLevelObj)) return Convert.ToInt32(legacyLevelObj);
+            if (entry.TryGetValue("level", out object? levelObj)) return Convert.ToInt32(levelObj);
+            return 0;
         }
 
         private static string NormalizeSkillCode(string? skillCode)
@@ -2021,6 +2538,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/skills")]
         public async Task<IActionResult> GetPlayerSkills(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -2088,11 +2608,25 @@ namespace GameServerApi.Controllers
                 .ThenBy(s => s.SkillId)
                 .ToList();
 
+            var unlockLevels = BuildSkillUnlockLevels(templates);
+            if (EnsureLevelUnlockedSkills(player.SkillsJson, info, templates, unlockLevels,
+                    playerSkillLevels, playerSkillLevelsByCode, out string updatedSkillsJson))
+            {
+                player.SkillsJson = updatedSkillsJson;
+                player.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
             var skillList = templates.Select(t =>
             {
                 int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl)
                     ? lvl
                     : playerSkillLevelsByCode.TryGetValue(NormalizeSkillCode(t.SkillCode), out var legacyLvl) ? legacyLvl : 0;
+                int unlockLevel = unlockLevels.TryGetValue(t.SkillId, out int configuredUnlock)
+                    ? configuredUnlock
+                    : Math.Max(1, t.LevelToUnlock);
+                if (info.Level < unlockLevel)
+                    curLevel = 0;
                 int nextLevelPlayerReq = 0;
                 int nextSpCost = 1;
                 float nextEffectValue = 0;
@@ -2103,7 +2637,7 @@ namespace GameServerApi.Controllers
                 float currentCooldownSec = 3f;
                 float currentEffectValue = 0f;
                 int   currentMpCost      = 0;
-                var levelDetails = ParseSkillLevels(t.LevelsJson);
+                var levelDetails = ParseSkillLevels(t.LevelsJson, t.SkillCode, t.MaxLevel, unlockLevel);
 
                 if (!string.IsNullOrEmpty(t.LevelsJson))
                 {
@@ -2132,6 +2666,7 @@ namespace GameServerApi.Controllers
                                 if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
                                 canUpgrade = info.Level >= nextLevelPlayerReq
                                           && info.SkillPoints >= nextSpCost
+                                          && curLevel > 0
                                           && info.GeneTier >= t.GeneTierRequired;
                             }
                         }
@@ -2139,21 +2674,51 @@ namespace GameServerApi.Controllers
                     catch { }
                 }
 
+                if (levelDetails.Count > 0)
+                {
+                    int curIdx = Math.Clamp(curLevel > 0 ? curLevel - 1 : 0, 0, levelDetails.Count - 1);
+                    var curData = levelDetails[curIdx];
+                    currentCooldownSec = curData.CooldownSec;
+                    currentEffectValue = curData.EffectValue;
+                    currentMpCost = curData.MpCost;
+
+                    if (curLevel < t.MaxLevel && curLevel < levelDetails.Count)
+                    {
+                        var nextData = levelDetails[curLevel];
+                        nextLevelPlayerReq = nextData.LevelReq;
+                        nextSpCost = nextData.SpCost;
+                        nextEffectValue = nextData.EffectValue;
+                        nextDesc = nextData.Desc;
+                        canUpgrade = info.Level >= nextLevelPlayerReq
+                                  && info.SkillPoints >= nextSpCost
+                                  && curLevel > 0
+                                  && info.GeneTier >= t.GeneTierRequired;
+                    }
+                }
+
+                var currentStats = BuildCurrentSkillStats(t.SkillCode, currentEffectValue, playerFinalAtk);
+
                 return new
                 {
                     skill_id              = t.SkillId,
                     skill_code            = t.SkillCode,
                     skill_name            = t.SkillName,
-                    description           = t.Description,
+                    description           = ResolveSkillDescription(t.SkillCode, t.Description),
                     element_type          = t.ElementType,
                     max_level             = t.MaxLevel,
-                    level_to_unlock       = t.LevelToUnlock,
+                    level_to_unlock       = unlockLevel,
                     gene_tier_required    = t.GeneTierRequired,
                     current_level         = curLevel,
                     // Runtime stats cho client apply vào SkillData
                     current_cooldown_sec  = currentCooldownSec,
                     current_effect_value  = currentEffectValue,
                     current_mp_cost       = currentMpCost,
+                    current_total_effect_value = currentStats.TotalEffect,
+                    current_attack_bonus       = currentStats.AttackBonus,
+                    current_hp_bonus           = currentStats.HpBonus,
+                    current_mp_bonus           = currentStats.MpBonus,
+                    current_defense_bonus      = currentStats.DefenseBonus,
+                    current_evasion_bonus      = currentStats.EvasionBonus,
                     can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
                     next_level_player_req = nextLevelPlayerReq,
                     next_level_sp_cost    = nextSpCost,
@@ -2187,6 +2752,9 @@ namespace GameServerApi.Controllers
 
                 int skillId = skillIdProp.GetInt32();
 
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null) return NotFound("Player không tồn tại.");
 
@@ -2196,6 +2764,23 @@ namespace GameServerApi.Controllers
                 var info = player.GetInfoChar();
                 if (!IsSkillVisibleForPlayer(template, info))
                     return BadRequest($"{template.SkillName} không thuộc hệ/gene hiện tại của nhân vật.");
+
+                var visibleTemplates = await _db.SkillTemplates
+                    .Where(s =>
+                        (s.HybridId == null && (s.ElementType == null || s.ElementType == info.ElementType)) ||
+                        (s.HybridId != null && info.IsHybrid && s.HybridId == info.HybridId))
+                    .ToListAsync();
+
+                visibleTemplates = visibleTemplates
+                    .OrderBy(SkillSortGroup)
+                    .ThenBy(SkillSortOrder)
+                    .ThenBy(s => s.SkillId)
+                    .ToList();
+
+                var unlockLevels = BuildSkillUnlockLevels(visibleTemplates);
+                int unlockLevel = unlockLevels.TryGetValue(template.SkillId, out int configuredUnlock)
+                    ? configuredUnlock
+                    : Math.Max(1, template.LevelToUnlock);
 
                 // Parse player's skills list
                 var playerSkills = new List<Dictionary<string, object>>();
@@ -2242,6 +2827,26 @@ namespace GameServerApi.Controllers
                         curLevel = Convert.ToInt32(levelObj);
                 }
 
+                if (curLevel <= 0)
+                {
+                    if (info.Level < unlockLevel)
+                        return BadRequest($"Cần level nhân vật {unlockLevel} để mở {template.SkillName}. Hiện tại: {info.Level}.");
+
+                    curLevel = 1;
+                    if (existing != null)
+                        existing["current_level"] = curLevel;
+                    else
+                    {
+                        existing = new Dictionary<string, object>
+                        {
+                            ["skill_id"] = skillId,
+                            ["skill_code"] = template.SkillCode,
+                            ["current_level"] = curLevel
+                        };
+                        playerSkills.Add(existing);
+                    }
+                }
+
                 if (curLevel >= template.MaxLevel)
                     return BadRequest($"{template.SkillName} đã đạt level tối đa ({template.MaxLevel}).");
 
@@ -2262,7 +2867,8 @@ namespace GameServerApi.Controllers
                     catch { }
                 }
 
-                if (info.Level < nextLevelPlayerReq)
+                int requiredPlayerLevel = Math.Max(unlockLevel, nextLevelPlayerReq);
+                if (info.Level < requiredPlayerLevel)
                     return BadRequest($"Cần level nhân vật {nextLevelPlayerReq} để nâng {template.SkillName}. Hiện tại: {info.Level}.");
 
                 if (info.SkillPoints < spCost)
@@ -2301,6 +2907,171 @@ namespace GameServerApi.Controllers
             }
         }
 
+        /// <summary>
+        /// POST /api/player/{playerId}/skills2/upgrade
+        /// Upgrade skill for active gene slot 2. Same rules as /skills/upgrade, but writes player2_data.
+        /// </summary>
+        [HttpPost("{playerId}/skills2/upgrade")]
+        public async Task<IActionResult> UpgradePlayer2Skill(int playerId, [FromBody] JsonElement body)
+        {
+            try
+            {
+                if (!body.TryGetProperty("skill_id", out var skillIdProp))
+                    return BadRequest("Thieu field 'skill_id'.");
+
+                int skillId = skillIdProp.GetInt32();
+
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
+                var player2 = await _db.Player2Data.FindAsync(playerId);
+                if (player2 == null) return NotFound("Nhan vat he gene 2 chua duoc tao.");
+
+                var template = await _db.SkillTemplates.FindAsync(skillId);
+                if (template == null) return BadRequest($"Skill ID {skillId} khong ton tai.");
+
+                var info = player2.GetInfoChar();
+                if (!IsSkillVisibleForPlayer(template, info))
+                    return BadRequest($"{template.SkillName} khong thuoc he/gene hien tai cua nhan vat.");
+
+                var visibleTemplates = await _db.SkillTemplates
+                    .Where(s =>
+                        (s.HybridId == null && (s.ElementType == null || s.ElementType == info.ElementType)) ||
+                        (s.HybridId != null && info.IsHybrid && s.HybridId == info.HybridId))
+                    .ToListAsync();
+
+                visibleTemplates = visibleTemplates
+                    .OrderBy(SkillSortGroup)
+                    .ThenBy(SkillSortOrder)
+                    .ThenBy(s => s.SkillId)
+                    .ToList();
+
+                var unlockLevels = BuildSkillUnlockLevels(visibleTemplates);
+                int unlockLevel = unlockLevels.TryGetValue(template.SkillId, out int configuredUnlock)
+                    ? configuredUnlock
+                    : Math.Max(1, template.LevelToUnlock);
+
+                var playerSkills = new List<Dictionary<string, object>>();
+                if (!string.IsNullOrEmpty(player2.SkillsJson) && player2.SkillsJson != "[]")
+                {
+                    try
+                    {
+                        var rawArr = JsonSerializer.Deserialize<List<JsonElement>>(player2.SkillsJson);
+                        if (rawArr != null)
+                            foreach (var elem in rawArr)
+                            {
+                                var d = new Dictionary<string, object>();
+                                foreach (var prop in elem.EnumerateObject())
+                                    d[prop.Name] = prop.Value.ValueKind switch
+                                    {
+                                        JsonValueKind.Number => prop.Value.TryGetInt32(out var iv) ? iv : (object)prop.Value.GetDouble(),
+                                        JsonValueKind.String => prop.Value.GetString()!,
+                                        JsonValueKind.True   => true,
+                                        JsonValueKind.False  => false,
+                                        _ => prop.Value.ToString()
+                                    };
+                                playerSkills.Add(d);
+                            }
+                    }
+                    catch { }
+                }
+
+                var existing = playerSkills.FirstOrDefault(s =>
+                    (s.ContainsKey("skill_id") && Convert.ToInt32(s["skill_id"]) == skillId) ||
+                    (s.TryGetValue("skillCode", out var codeObj) &&
+                     string.Equals(NormalizeSkillCode(Convert.ToString(codeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase)) ||
+                    (s.TryGetValue("skill_code", out var snakeCodeObj) &&
+                     string.Equals(NormalizeSkillCode(Convert.ToString(snakeCodeObj)), NormalizeSkillCode(template.SkillCode), StringComparison.OrdinalIgnoreCase)));
+
+                int curLevel = 0;
+                if (existing != null)
+                {
+                    if (existing.TryGetValue("current_level", out var currentLevelObj))
+                        curLevel = Convert.ToInt32(currentLevelObj);
+                    else if (existing.TryGetValue("currentLevel", out var legacyLevelObj))
+                        curLevel = Convert.ToInt32(legacyLevelObj);
+                    else if (existing.TryGetValue("level", out var levelObj))
+                        curLevel = Convert.ToInt32(levelObj);
+                }
+
+                if (curLevel <= 0)
+                {
+                    if (info.Level < unlockLevel)
+                        return BadRequest($"Can level nhan vat {unlockLevel} de mo {template.SkillName}. Hien tai: {info.Level}.");
+
+                    curLevel = 1;
+                    if (existing != null)
+                        existing["current_level"] = curLevel;
+                    else
+                    {
+                        existing = new Dictionary<string, object>
+                        {
+                            ["skill_id"] = skillId,
+                            ["skill_code"] = template.SkillCode,
+                            ["current_level"] = curLevel
+                        };
+                        playerSkills.Add(existing);
+                    }
+                }
+
+                if (curLevel >= template.MaxLevel)
+                    return BadRequest($"{template.SkillName} da dat level toi da ({template.MaxLevel}).");
+
+                int nextLevelPlayerReq = 0;
+                int spCost = 1;
+                if (!string.IsNullOrEmpty(template.LevelsJson))
+                {
+                    try
+                    {
+                        var levels = JsonSerializer.Deserialize<List<JsonElement>>(template.LevelsJson);
+                        if (levels != null && curLevel < levels.Count)
+                        {
+                            if (levels[curLevel].TryGetProperty("level_req", out var lr)) nextLevelPlayerReq = lr.GetInt32();
+                            if (levels[curLevel].TryGetProperty("sp_cost",   out var sc)) spCost             = sc.GetInt32();
+                        }
+                    }
+                    catch { }
+                }
+
+                int requiredPlayerLevel = Math.Max(unlockLevel, nextLevelPlayerReq);
+                if (info.Level < requiredPlayerLevel)
+                    return BadRequest($"Can level nhan vat {nextLevelPlayerReq} de nang {template.SkillName}. Hien tai: {info.Level}.");
+
+                if (info.SkillPoints < spCost)
+                    return BadRequest($"Khong du skill points. Can {spCost}, co {info.SkillPoints}.");
+
+                if (info.GeneTier < template.GeneTierRequired)
+                    return BadRequest($"Can Gene Tier {template.GeneTierRequired} de nang {template.SkillName}. Hien tai: {info.GeneTier}.");
+
+                int newLevel = curLevel + 1;
+                if (existing != null)
+                    existing["current_level"] = newLevel;
+                else
+                    playerSkills.Add(new Dictionary<string, object> { ["skill_id"] = skillId, ["skill_code"] = template.SkillCode, ["current_level"] = newLevel });
+
+                info.SkillPoints -= spCost;
+                player2.SetInfoChar(info);
+                player2.SkillsJson = JsonSerializer.Serialize(playerSkills);
+                player2.UpdatedAt  = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message                = $"Da nang {template.SkillName} len Lv.{newLevel}",
+                    skill_id               = skillId,
+                    skill_name             = template.SkillName,
+                    new_level              = newLevel,
+                    max_level              = template.MaxLevel,
+                    skill_points_remaining = info.SkillPoints
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Loi khi nang cap skill gene 2: {ex.Message}");
+            }
+        }
+
         // ================================================================
         //  POTENTIAL ENDPOINTS
         // ================================================================
@@ -2322,6 +3093,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/potential")]
         public async Task<IActionResult> GetPlayerPotential(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -2375,6 +3149,9 @@ namespace GameServerApi.Controllers
                     return BadRequest("Thiếu field 'stat_name'.");
 
                 string statName = statProp.GetString() ?? "";
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 if (!PotentialStatConfig.ContainsKey(statName))
                     return BadRequest($"Chỉ số '{statName}' không hợp lệ. Hợp lệ: {string.Join(", ", PotentialStatConfig.Keys)}");
 
@@ -2470,6 +3247,9 @@ namespace GameServerApi.Controllers
 
                 int totalNeeded = requested.Values.Sum();
 
+                if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                    return authError;
+
                 var player = await _db.PlayerData.FindAsync(playerId);
                 if (player == null) return NotFound("Player không tồn tại.");
 
@@ -2545,6 +3325,18 @@ namespace GameServerApi.Controllers
             if (!amtProp.TryGetInt32(out int amount) || amount <= 0)
                 return BadRequest("'amount' phải là số nguyên dương.");
 
+            // Lượng EXP Gene Tối Thượng riêng (tính theo máu của quái vừa giết).
+            // Nếu client không gửi, fallback dùng chính 'amount' để giữ tương thích ngược.
+            int ultimateExp = amount;
+            if (body.TryGetProperty("ultimate_exp", out var ultProp) &&
+                ultProp.TryGetInt32(out int ultVal) && ultVal > 0)
+            {
+                ultimateExp = ultVal;
+            }
+
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player = await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
@@ -2553,12 +3345,21 @@ namespace GameServerApi.Controllers
 
             var (leveledUp, expAtCurrent, expForNext) = await ProcessLevelUpAsync(info);
 
+            // Gene Tối Thượng: player đã Hybrid và chưa tối thượng thì mỗi lần kill quái
+            // cũng tích lũy ultimate_gene_exp (theo máu của quái — ultimateExp).
+            bool ultimateActivated = false;
+            if (info.IsHybrid && !info.IsUltimate)
+            {
+                var ultCfg = GeneUltimateService.GetConfig(info.ElementType);
+                ultimateActivated = GeneUltimateService.TryAccumulateAndActivate(info, ultimateExp, ultCfg);
+            }
+
             player.SetInfoChar(info);
             player.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            _logger.LogDebug("[PlayerCtrl] GainExp playerId={PlayerId} amount={Amount} totalExp={TotalExp} level={Level} leveledUp={LeveledUp}",
-                playerId, amount, info.Experience, info.Level, leveledUp);
+            _logger.LogDebug("[PlayerCtrl] GainExp playerId={PlayerId} amount={Amount} totalExp={TotalExp} level={Level} leveledUp={LeveledUp} ultExp={UltExp} ultActivated={UltActivated}",
+                playerId, amount, info.Experience, info.Level, leveledUp, info.UltimateGeneExp, ultimateActivated);
 
             return Ok(new
             {
@@ -2567,7 +3368,10 @@ namespace GameServerApi.Controllers
                 level       = info.Level,
                 leveled_up  = leveledUp,
                 exp_at_current_level = expAtCurrent,
-                exp_for_next_level   = expForNext
+                exp_for_next_level   = expForNext,
+                ultimate_gene_exp    = info.UltimateGeneExp,
+                is_ultimate          = info.IsUltimate,
+                ultimate_activated   = ultimateActivated
             });
         }
 
@@ -2619,7 +3423,7 @@ namespace GameServerApi.Controllers
                 float currentEffectValue = 0f;
                 int currentMpCost = 0;
                 string currentDesc = row.template.Description ?? string.Empty;
-                var levelDetails = ParseSkillLevels(row.template.LevelsJson);
+                var levelDetails = ParseSkillLevels(row.template.LevelsJson, row.template.SkillCode, row.template.MaxLevel, row.template.LevelToUnlock);
 
                 if (!string.IsNullOrEmpty(row.template.LevelsJson))
                 {
@@ -2649,12 +3453,24 @@ namespace GameServerApi.Controllers
                     }
                 }
 
+                if (levelDetails.Count > 0)
+                {
+                    int index = Math.Clamp(row.record.SkillLevel - 1, 0, levelDetails.Count - 1);
+                    var current = levelDetails[index];
+                    currentCooldownSec = current.CooldownSec;
+                    currentEffectValue = current.EffectValue;
+                    currentMpCost = current.MpCost;
+                    currentDesc = string.IsNullOrWhiteSpace(current.Desc) ? currentDesc : current.Desc;
+                }
+
+                var currentStats = BuildCurrentSkillStats(row.template.SkillCode, currentEffectValue, finalStats.Attack);
+
                 return new
                 {
                     skill_id = row.template.SkillId,
                     skill_code = row.template.SkillCode,
                     skill_name = row.template.SkillName,
-                    description = row.template.Description,
+                    description = ResolveSkillDescription(row.template.SkillCode, row.template.Description),
                     element_type = row.template.ElementType,
                     max_level = row.template.MaxLevel,
                     level_to_unlock = row.template.LevelToUnlock,
@@ -2663,6 +3479,12 @@ namespace GameServerApi.Controllers
                     current_cooldown_sec = currentCooldownSec,
                     current_effect_value = currentEffectValue,
                     current_mp_cost = currentMpCost,
+                    current_total_effect_value = currentStats.TotalEffect,
+                    current_attack_bonus = currentStats.AttackBonus,
+                    current_hp_bonus = currentStats.HpBonus,
+                    current_mp_bonus = currentStats.MpBonus,
+                    current_defense_bonus = currentStats.DefenseBonus,
+                    current_evasion_bonus = currentStats.EvasionBonus,
                     can_upgrade = false,
                     next_level_player_req = 0,
                     next_level_sp_cost = 0,
@@ -2935,6 +3757,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/data2")]
         public async Task<IActionResult> GetPlayer2Data(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player2 = await _db.Player2Data.FindAsync(playerId);
             if (player2 == null) return NotFound("Nhân vật hệ gene 2 chưa được tạo.");
 
@@ -3001,6 +3826,10 @@ namespace GameServerApi.Controllers
                 hybrid_immune_elements = info.HybridImmuneElements,
                 hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
                 hybrid_prefab_path     = info.HybridPrefabPath,
+                // ── Gene Tối Thượng fields ──────────────────────────
+                is_ultimate            = info.IsUltimate,
+                ultimate_gene_exp      = info.UltimateGeneExp,
+                ultimate_aura_path     = info.UltimateAuraPath,
                 // Đánh dấu đây là gene slot 2
                 gene_slot = 2
             };
@@ -3015,6 +3844,9 @@ namespace GameServerApi.Controllers
         [HttpGet("{playerId}/skills2")]
         public async Task<IActionResult> GetPlayer2Skills(int playerId)
         {
+            if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
+                return authError;
+
             var player2 = await _db.Player2Data.FindAsync(playerId);
             if (player2 == null) return NotFound("Nhân vật hệ gene 2 chưa được tạo.");
 
@@ -3062,11 +3894,25 @@ namespace GameServerApi.Controllers
                 .ThenBy(s => s.SkillId)
                 .ToList();
 
+            var unlockLevels = BuildSkillUnlockLevels(templates);
+            if (EnsureLevelUnlockedSkills(player2.SkillsJson, info, templates, unlockLevels,
+                    playerSkillLevels, playerSkillLevelsByCode, out string updatedSkillsJson))
+            {
+                player2.SkillsJson = updatedSkillsJson;
+                player2.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
             var skillList = templates.Select(t =>
             {
                 int curLevel = playerSkillLevels.TryGetValue(t.SkillId, out var lvl)
                     ? lvl
                     : playerSkillLevelsByCode.TryGetValue(NormalizeSkillCode(t.SkillCode), out var legacyLvl) ? legacyLvl : 0;
+                int unlockLevel = unlockLevels.TryGetValue(t.SkillId, out int configuredUnlock)
+                    ? configuredUnlock
+                    : Math.Max(1, t.LevelToUnlock);
+                if (info.Level < unlockLevel)
+                    curLevel = 0;
                 int nextLevelPlayerReq = 0;
                 int nextSpCost = 1;
                 string nextDesc = "";
@@ -3075,7 +3921,7 @@ namespace GameServerApi.Controllers
                 float currentCooldownSec = 3f;
                 float currentEffectValue = 0f;
                 int   currentMpCost      = 0;
-                var levelDetails = ParseSkillLevels(t.LevelsJson);
+                var levelDetails = ParseSkillLevels(t.LevelsJson, t.SkillCode, t.MaxLevel, unlockLevel);
 
                 if (!string.IsNullOrEmpty(t.LevelsJson))
                 {
@@ -3101,6 +3947,7 @@ namespace GameServerApi.Controllers
                                 if (nextData.TryGetProperty("desc",         out var dc)) nextDesc           = dc.GetString() ?? "";
                                 canUpgrade = info.Level >= nextLevelPlayerReq
                                           && info.SkillPoints >= nextSpCost
+                                          && curLevel > 0
                                           && info.GeneTier >= t.GeneTierRequired;
                             }
                         }
@@ -3108,20 +3955,49 @@ namespace GameServerApi.Controllers
                     catch { }
                 }
 
+                if (levelDetails.Count > 0)
+                {
+                    int curIdx = Math.Clamp(curLevel > 0 ? curLevel - 1 : 0, 0, levelDetails.Count - 1);
+                    var curData = levelDetails[curIdx];
+                    currentCooldownSec = curData.CooldownSec;
+                    currentEffectValue = curData.EffectValue;
+                    currentMpCost = curData.MpCost;
+
+                    if (curLevel < t.MaxLevel && curLevel < levelDetails.Count)
+                    {
+                        var nextData = levelDetails[curLevel];
+                        nextLevelPlayerReq = nextData.LevelReq;
+                        nextSpCost = nextData.SpCost;
+                        nextDesc = nextData.Desc;
+                        canUpgrade = info.Level >= nextLevelPlayerReq
+                                  && info.SkillPoints >= nextSpCost
+                                  && curLevel > 0
+                                  && info.GeneTier >= t.GeneTierRequired;
+                    }
+                }
+
+                var currentStats = BuildCurrentSkillStats(t.SkillCode, currentEffectValue, playerFinalAtk);
+
                 return new
                 {
                     skill_id              = t.SkillId,
                     skill_code            = t.SkillCode,
                     skill_name            = t.SkillName,
-                    description           = t.Description,
+                    description           = ResolveSkillDescription(t.SkillCode, t.Description),
                     element_type          = t.ElementType,
                     max_level             = t.MaxLevel,
-                    level_to_unlock       = t.LevelToUnlock,
+                    level_to_unlock       = unlockLevel,
                     gene_tier_required    = t.GeneTierRequired,
                     current_level         = curLevel,
                     current_cooldown_sec  = currentCooldownSec,
                     current_effect_value  = currentEffectValue,
                     current_mp_cost       = currentMpCost,
+                    current_total_effect_value = currentStats.TotalEffect,
+                    current_attack_bonus       = currentStats.AttackBonus,
+                    current_hp_bonus           = currentStats.HpBonus,
+                    current_mp_bonus           = currentStats.MpBonus,
+                    current_defense_bonus      = currentStats.DefenseBonus,
+                    current_evasion_bonus      = currentStats.EvasionBonus,
                     can_upgrade           = canUpgrade && curLevel < t.MaxLevel,
                     next_level_player_req = nextLevelPlayerReq,
                     next_level_sp_cost    = nextSpCost,

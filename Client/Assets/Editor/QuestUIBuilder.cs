@@ -80,7 +80,7 @@ public static class QuestUIBuilder
 
         var scaler = root.AddComponent<CanvasScaler>();
         scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280, 720);
+        scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight  = 0.5f;
         root.AddComponent<GraphicRaycaster>();
 
@@ -182,7 +182,7 @@ public static class QuestUIBuilder
 
         var scaler = root.AddComponent<CanvasScaler>();
         scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280, 720);
+        scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight  = 0.5f;
         root.AddComponent<GraphicRaycaster>();
 
@@ -296,7 +296,7 @@ public static class QuestUIBuilder
 
         var scaler = root.AddComponent<CanvasScaler>();
         scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280, 720);
+        scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight  = 0.5f;
         root.AddComponent<GraphicRaycaster>();
         root.AddComponent<QuestHudWidget>();
@@ -307,8 +307,8 @@ public static class QuestUIBuilder
         panelRect.anchorMin        = new Vector2(0, 1);
         panelRect.anchorMax        = new Vector2(0, 1);
         panelRect.pivot            = new Vector2(0, 1);
-        panelRect.anchoredPosition = new Vector2(10, -220); // below health bars area
-        panelRect.sizeDelta        = new Vector2(240, 72);
+        panelRect.anchoredPosition = new Vector2(12, -214); // below health bars area
+        panelRect.sizeDelta        = new Vector2(360, 104);
 
         // Left gold border line
         var border = MakeImage(panel, "BorderLeft", new Color(0.85f, 0.70f, 0.10f));
@@ -317,31 +317,32 @@ public static class QuestUIBuilder
         bRect.offsetMin = new Vector2(0, 2); bRect.offsetMax = new Vector2(4, -2);
 
         // QuestName text — "Chính: ..."
-        var nameGO = MakeTMPText(panel, "QuestName", "Chính: ...", 13, new Color(1f, 0.9f, 0.3f));
+        var nameGO = MakeTMPText(panel, "QuestName", "Chính: ...", 18, new Color(1f, 0.9f, 0.3f));
         nameGO.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
         nameGO.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.TopLeft;
         var nameRect = nameGO.GetComponent<RectTransform>();
-        nameRect.anchorMin = new Vector2(0, 0.5f);
+        nameRect.anchorMin = new Vector2(0, 0.52f);
         nameRect.anchorMax = new Vector2(1, 1);
-        nameRect.offsetMin = new Vector2(10, 2);
-        nameRect.offsetMax = new Vector2(-36, -4);
+        nameRect.offsetMin = new Vector2(14, 4);
+        nameRect.offsetMax = new Vector2(-56, -6);
 
         // QuestStep text — "- ..."
-        var stepGO = MakeTMPText(panel, "QuestStep", "- ...", 12, Color.white);
+        var stepGO = MakeTMPText(panel, "QuestStep", "- ...", 16, Color.white);
         stepGO.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.TopLeft;
         var stepRect = stepGO.GetComponent<RectTransform>();
         stepRect.anchorMin = new Vector2(0, 0);
-        stepRect.anchorMax = new Vector2(1, 0.5f);
-        stepRect.offsetMin = new Vector2(10, 4);
-        stepRect.offsetMax = new Vector2(-36, -2);
+        stepRect.anchorMax = new Vector2(1, 0.52f);
+        stepRect.offsetMin = new Vector2(14, 8);
+        stepRect.offsetMax = new Vector2(-56, -2);
 
         // BtnNavigate — right side "→"
-        var navBtn  = MakeButton(panel, "BtnNavigate", "→", new Color(0.85f, 0.55f, 0.10f), 30, 60);
+        var navBtn  = MakeButton(panel, "BtnNavigate", "→", new Color(0.85f, 0.55f, 0.10f), 44, 86);
         var navRect = navBtn.GetComponent<RectTransform>();
         navRect.anchorMin = new Vector2(1, 0.5f);
         navRect.anchorMax = new Vector2(1, 0.5f);
         navRect.pivot     = new Vector2(1, 0.5f);
-        navRect.anchoredPosition = new Vector2(-2, 0);
+        navRect.anchoredPosition = new Vector2(-4, 0);
+        navBtn.GetComponentInChildren<TextMeshProUGUI>().fontSize = 22;
 
         return root;
     }

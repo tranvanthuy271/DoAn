@@ -51,6 +51,7 @@ public class MapWorldBootstrap : MonoBehaviour
         _publicIp  = _config.publicIp;
         _apiBaseUrl = _config.apiBaseUrl;
         ParseCliArgs();
+        ApplyRuntimeOverridesToConfig();
     }
 
     private void Start()
@@ -72,6 +73,23 @@ public class MapWorldBootstrap : MonoBehaviour
             ReadArg(arg, "--apiUrl=",  v => _apiBaseUrl = v);
         }
         Debug.Log($"[MapWorldBootstrap] Config → port={_port} publicIp={_publicIp} api={_apiBaseUrl}");
+    }
+
+    private void ApplyRuntimeOverridesToConfig()
+    {
+        if (_config == null) return;
+
+        _config.port = _port;
+        _config.publicIp = _publicIp;
+        _config.apiBaseUrl = NormalizeApiBaseUrl(_apiBaseUrl);
+    }
+
+    private static string NormalizeApiBaseUrl(string value)
+    {
+        string normalized = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().TrimEnd('/');
+        if (normalized.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+            return normalized;
+        return string.IsNullOrEmpty(normalized) ? normalized : $"{normalized}/api";
     }
 
     private static void ReadArg(string arg, string prefix, Action<string> setter)

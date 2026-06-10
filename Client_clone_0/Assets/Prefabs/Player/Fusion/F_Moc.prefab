@@ -122,7 +122,7 @@ Animator:
   m_GameObject: {fileID: 580626100454965037}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 1866b9350400d454ca64473e404ffba1, type: 2}
+  m_Controller: {fileID: 22100000, guid: 22df206480379d4449f27e3fa52c5c1b, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -415,7 +415,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   invincibilityDuration: 1
-  respawnDelay: 3
+  respawnDelay: 5
   spawnPoints: []
   OnHealthChanged:
     m_PersistentCalls:

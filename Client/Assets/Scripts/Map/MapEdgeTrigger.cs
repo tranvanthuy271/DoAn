@@ -79,6 +79,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (loadingPanel) loadingPanel.SetActive(false);
 
         int mapId = ResolveMapId();
+        yield return StartCoroutine(ResolveMapIdByActiveScene(mapId, resolved => mapId = resolved));
 
         // ── Bước 1: tìm portal theo direction ──
         string url = $"{apiBase}/api/map/portal/direction?mapId={mapId}&direction={direction}";
@@ -222,6 +223,31 @@ public class MapEdgeTrigger : MonoBehaviour
         return pd != null ? pd.PlayerId : PlayerPrefs.GetInt("USER_ID", -1);
     }
 
+    private IEnumerator ResolveMapIdByActiveScene(int fallbackMapId, Action<int> onResolved)
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+        string url = $"{apiBase}/api/map/by-scene?scene={UnityWebRequest.EscapeURL(sceneName)}";
+
+        using var req = UnityWebRequest.Get(url);
+        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var map = JsonUtility.FromJson<MapConfigInfo>(req.downloadHandler.text);
+            if (map != null && map.map_id >= 0)
+            {
+                if (map.map_id != fallbackMapId)
+                    Debug.Log($"[MapEdgeTrigger] Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id}");
+                onResolved?.Invoke(map.map_id);
+                yield break;
+            }
+        }
+
+        Debug.LogWarning($"[MapEdgeTrigger] Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error}");
+        onResolved?.Invoke(fallbackMapId);
+    }
+
     // ── DTOs ──
 
     [Serializable]
@@ -230,6 +256,14 @@ public class MapEdgeTrigger : MonoBehaviour
         public int portal_id;
         public float src_x;
         public float src_y;
+    }
+
+    [Serializable]
+    private class MapConfigInfo
+    {
+        public int map_id;
+        public string map_name;
+        public string scene_name;
     }
 
     [Serializable]

@@ -90,6 +90,12 @@ public class SkillData
     [Tooltip("MP tiêu tốn khi dùng skill tại level hiện tại. Được set bởi SkillRuntimeLoader sau StartHost.")]
     public int currentMpCost = 0;
 
+    [Tooltip("Runtime: skill da mo khoa theo level nhan vat hay chua.")]
+    public bool isUnlocked = true;
+
+    [Tooltip("Runtime: level nhan vat can de mo skill nay.")]
+    public int requiredPlayerLevel = 1;
+
     [Header("Internal State (Không chỉnh sửa)")]
     [SerializeField] private float cooldownTimer = 0f;
     [SerializeField] private bool canUse = true;
@@ -98,7 +104,7 @@ public class SkillData
     /// <summary>
     /// Kiểm tra xem skill có thể sử dụng không
     /// </summary>
-    public bool CanUse() => canUse;
+    public bool CanUse() => isUnlocked && canUse;
     
     /// <summary>
     /// Kiểm tra xem skill đang được sử dụng không
@@ -155,7 +161,23 @@ public class SkillData
     public void Reset()
     {
         isUsing = false;
-        canUse = true;
+        canUse = isUnlocked;
         cooldownTimer = 0f;
+    }
+
+    public void SetUnlockState(bool unlocked, int requiredLevel)
+    {
+        isUnlocked = unlocked;
+        requiredPlayerLevel = Mathf.Max(1, requiredLevel);
+        if (!isUnlocked)
+        {
+            isUsing = false;
+            canUse = false;
+            cooldownTimer = 0f;
+        }
+        else if (cooldownTimer <= 0f)
+        {
+            canUse = true;
+        }
     }
 }

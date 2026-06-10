@@ -4,6 +4,7 @@ using GameServerApi.Auth;
 using GameServerApi.Data;
 using GameServerApi.Hubs;
 using GameServerApi.Middleware;
+using GameServerApi.Models;
 using GameServerApi.Services;
 using GameServerApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
@@ -30,14 +31,29 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, GameUserIdProvider>();
 
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()?
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .ToArray() ?? Array.Empty<string>();
+
 // ── CORS: cho phép Unity client gọi API từ bất kỳ origin ─────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (builder.Environment.IsDevelopment() && allowedOrigins.Length == 0)
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
     });
 });
 
@@ -49,12 +65,16 @@ builder.Services.AddAuthorization();
 // ── Rate Limiting: chống brute-force login ────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("login", opt =>
-    {
-        opt.Window       = TimeSpan.FromSeconds(60);
-        opt.PermitLimit  = 5;
-        opt.QueueLimit   = 0;
-    });
+    options.AddPolicy("login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window       = TimeSpan.FromSeconds(60),
+                PermitLimit  = 5,
+                QueueLimit   = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
@@ -93,9 +113,38 @@ builder.Services.AddDbContext<GameDbContext>(options =>
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSection["Key"] ?? "DEV_KEY_CHANGE_ME";
+var jwtKey = jwtSection["Key"];
 var jwtIssuer = jwtSection["Issuer"] ?? "GameServerApi";
 var jwtAudience = jwtSection["Audience"] ?? "GameClient";
+var unsafeJwtKeys = new HashSet<string>(StringComparer.Ordinal)
+{
+    "DEV_KEY_CHANGE_ME",
+    "OVERRIDE_VIA_ENVIRONMENT_VARIABLE",
+    "THIS_IS_A_DEVELOPMENT_SECRET_KEY_CHANGE_IN_PRODUCTION"
+};
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    if (!builder.Environment.IsDevelopment())
+        throw new InvalidOperationException("Production JWT key is missing. Set Jwt__Key/JWT_SECRET.");
+
+    jwtKey = "DEV_ONLY_LOCAL_JWT_KEY_CHANGE_ME_32_CHARS_MIN";
+}
+
+if (!builder.Environment.IsDevelopment()
+    && (unsafeJwtKeys.Contains(jwtKey) || jwtKey.Length < 32))
+{
+    throw new InvalidOperationException("Production JWT key is missing, unsafe, or shorter than 32 characters.");
+}
+
+var zoneApiKey = builder.Configuration["ZoneApiKey"];
+if (!builder.Environment.IsDevelopment()
+    && (string.IsNullOrWhiteSpace(zoneApiKey)
+        || zoneApiKey == "OVERRIDE_VIA_ENVIRONMENT_VARIABLE"
+        || zoneApiKey.Length < 32))
+{
+    throw new InvalidOperationException("Production ZoneApiKey is missing, unsafe, or shorter than 32 characters.");
+}
 
 builder.Services
     .AddAuthentication(options =>
@@ -112,7 +161,7 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -151,8 +200,49 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<GameDbContext>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
+        var logger    = services.GetRequiredService<ILogger<Program>>();
+        var config    = services.GetRequiredService<IConfiguration>();
         dbContext.Database.EnsureCreated();
+
+        // ── Thêm cột role vào bảng users nếu chưa có (upgrade existing DB) ──
+        dbContext.Database.ExecuteSqlRaw(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'Player'");
+
+        // ── Seed admin user từ config / env vars ──────────────────────────────
+        var adminUsername = config["Admin:Username"];
+        var adminPassword = config["Admin:Password"];
+        var adminEmail    = config["Admin:Email"];
+        bool adminExists  = dbContext.Users.Any(u => u.Role == "Admin");
+        if (!adminExists)
+        {
+            if (app.Environment.IsDevelopment())
+            {
+                adminUsername = string.IsNullOrWhiteSpace(adminUsername) ? "admin" : adminUsername;
+                adminPassword = string.IsNullOrWhiteSpace(adminPassword) ? "Admin@123!" : adminPassword;
+                adminEmail    = string.IsNullOrWhiteSpace(adminEmail)    ? "admin@mutantsarena.local" : adminEmail;
+            }
+            else if (string.IsNullOrWhiteSpace(adminUsername)
+                     || string.IsNullOrWhiteSpace(adminPassword)
+                     || string.IsNullOrWhiteSpace(adminEmail)
+                     || adminUsername == "OVERRIDE_VIA_ENVIRONMENT_VARIABLE"
+                     || adminPassword == "OVERRIDE_VIA_ENVIRONMENT_VARIABLE"
+                     || adminEmail == "OVERRIDE_VIA_ENVIRONMENT_VARIABLE")
+            {
+                throw new InvalidOperationException("Production admin seed requires Admin__Username, Admin__Password, and Admin__Email.");
+            }
+
+            var authSvc = services.GetRequiredService<IAuthService>();
+            dbContext.Users.Add(new User
+            {
+                Username     = adminUsername,
+                Email        = adminEmail,
+                PasswordHash = authSvc.HashPassword(adminPassword),
+                Role         = "Admin",
+                CreatedAt    = DateTime.UtcNow
+            });
+            dbContext.SaveChanges();
+            logger.LogInformation("Admin user '{Username}' seeded.", adminUsername);
+        }
 
         // Normalize legacy NULL string data so older rows do not crash EF string materialization.
         var repairStatements = new (string Label, string Sql)[]
@@ -224,6 +314,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Static files + Admin dashboard at /admin/
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 // Bỏ HTTPS redirect khi chạy production HTTP (nếu cần HTTPS thì dùng reverse proxy)
 if (app.Environment.IsDevelopment())

@@ -551,7 +551,23 @@ public class ItemDetailPanel : MonoBehaviour
 
     private void OnDropButtonPressed()
     {
-        Debug.Log("[ItemDetailPanel] Nút Vứt bỏ đã được hiển thị. Chưa có API vứt bỏ item trong client hiện tại.");
+        if (currentSlotData == null)
+        {
+            Debug.LogWarning("[ItemDetailPanel] OnDropButtonPressed: khong co item dang chon.");
+            return;
+        }
+
+        var bridge = InventoryNetworkBridge.GetExisting(true);
+        if (bridge == null)
+        {
+            Debug.LogWarning("[ItemDetailPanel] Khong tim thay InventoryNetworkBridge de vut bo item.");
+            return;
+        }
+
+        int quantity = currentSlotData.quantity > 0 ? currentSlotData.quantity : 0;
+        Debug.Log($"[ItemDetailPanel] Vut bo item slot={currentSlotData.slotIndex}, templateId={currentSlotData.itemTemplateId}, quantity={quantity}");
+        bridge.RequestRemoveItem(currentSlotData.slotIndex, quantity);
+        Hide();
     }
 
     private void OnUseManyButtonPressed()

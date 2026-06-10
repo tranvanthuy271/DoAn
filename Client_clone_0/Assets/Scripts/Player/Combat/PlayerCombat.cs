@@ -143,11 +143,13 @@ public class PlayerCombat : MonoBehaviour
         PlayerStats stats = controller.stats;
         if (stats == null) return;
 
-        // ── Cache dữ liệu cần thiết một lần cho toàn bộ vòng lặp ──────────
-        // Tham khảo: Effect.setEff() id=61 (TanCong ±= value) trong LangLaServer
-        float attackBonusPct = ActiveBuffManager.Instance != null
-            ? ActiveBuffManager.Instance.GetBonusPct("AttackBuff") : 0f;
-        var myPlayerData = GameManager.Instance?.GetPlayerData();
+        int damage = stats.baseDamage;
+        if (ActiveBuffManager.Instance != null)
+        {
+            float attackBonusPct = ActiveBuffManager.Instance.GetBonusPct("AttackBuff");
+            if (attackBonusPct > 0f)
+                damage = Mathf.RoundToInt(damage * (1f + attackBonusPct));
+        }
         // ──────────────────────────────────────────────────────────────────
 
         Debug.Log("Player attacks!");
@@ -170,20 +172,16 @@ public class PlayerCombat : MonoBehaviour
             // Bỏ qua chính mình — enemyLayers mask có thể bao gồm Player layer
             if (enemy.transform.root == transform.root) continue;
 
-            // Tính sát thương cho từng enemy (AttackBuff + Hybrid bonus) qua DamageCalculator
+            Debug.Log($"Hit {enemy.name} for {damage} damage");
+            // Dùng GetComponentInParent để tìm được khi collider nằm ở child object
             var networkEnemyHealth = enemy.GetComponentInParent<NetworkEnemyHealth>();
-            string targetElement = networkEnemyHealth?.ElementType ?? "None";
-            int finalDamage = DamageCalculator.CalcPlayerAttackDamage(
-                stats.baseDamage, attackBonusPct, myPlayerData, targetElement);
-
-            Debug.Log($"Hit {enemy.name} for {finalDamage} damage");
             if (networkEnemyHealth != null)
             {
                 // Lấy clientId của người tấn công (quan trọng cho quest kill tracking)
                 ulong attackerId = GetComponent<NetworkObject>()?.OwnerClientId ?? ulong.MaxValue;
                 // Gây damage từ baseDamage trong PlayerStats (tự động gọi ServerRpc)
-                networkEnemyHealth.TakeDamage(finalDamage, attackerId);
-                Debug.Log($"[PlayerCombat] Dealt {finalDamage} damage to {enemy.transform.root.name} (NetworkEnemyHealth)");
+                networkEnemyHealth.TakeDamage(damage, attackerId);
+                Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (NetworkEnemyHealth)");
             }
             else
             {
@@ -191,8 +189,8 @@ public class PlayerCombat : MonoBehaviour
                 var enemyHealth = enemy.GetComponentInParent<EnemyHealth>();
                 if (enemyHealth != null)
                 {
-                    enemyHealth.TakeDamage(finalDamage);
-                    Debug.Log($"[PlayerCombat] Dealt {finalDamage} damage to {enemy.transform.root.name} (EnemyHealth - fallback)");
+                    enemyHealth.TakeDamage(damage);
+                    Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (EnemyHealth - fallback)");
                 }
             }
         }
@@ -213,9 +211,8 @@ public class PlayerCombat : MonoBehaviour
             var netPlayer = hit.GetComponentInParent<NetworkPlayerHealth>();
             if (netPlayer != null)
             {
-                int pvpDamage = DamageCalculator.CalcPlayerAttackDamage(stats.baseDamage, attackBonusPct, myPlayerData, "None");
-                netPlayer.TakeDamage(pvpDamage);
-                Debug.Log($"[PlayerCombat] Dealt {pvpDamage} PvP damage to {hit.name}");
+                netPlayer.TakeDamage(damage);
+                Debug.Log($"[PlayerCombat] Dealt {damage} PvP damage to {hit.name}");
             }
         }
     }

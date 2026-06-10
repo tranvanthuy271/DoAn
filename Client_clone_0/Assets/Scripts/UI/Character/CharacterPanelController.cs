@@ -61,6 +61,7 @@ public class CharacterPanelController : MonoBehaviour
         
         if (contentRoot == null) contentRoot = panelRoot; // fallback nếu chưa gán
         CachePanelRootGraphics();
+        UIPanelManager.Register(gameObject, Hide);
 
         btnStats     ?.onClick.AddListener(() => SwitchTab(0));
         btnEquipment ?.onClick.AddListener(() => SwitchTab(1));
@@ -90,6 +91,7 @@ public class CharacterPanelController : MonoBehaviour
 
     private void OnDestroy()
     {
+        UIPanelManager.Unregister(gameObject);
         btnStats     ?.onClick.RemoveAllListeners();
         btnEquipment ?.onClick.RemoveAllListeners();
         btnSkill     ?.onClick.RemoveAllListeners();
@@ -137,6 +139,7 @@ public class CharacterPanelController : MonoBehaviour
             return;
         }
 
+        UIPanelManager.CloseOthers(gameObject);
         panelRoot.SetActive(true);
         SetPanelRootGraphicsVisible(true);
         if (contentRoot != null)
@@ -144,6 +147,7 @@ public class CharacterPanelController : MonoBehaviour
 
         activeTab = 0;
         SwitchTab(activeTab);
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     public void ExitExternalProfileView()
@@ -181,6 +185,7 @@ public class CharacterPanelController : MonoBehaviour
             return;
         }
         
+        UIPanelManager.CloseOthers(gameObject);
         Debug.Log($"[CharacterPanelController] Show() - Active panelRoot: {panelRoot.name}");
         panelRoot.SetActive(true);
         SetPanelRootGraphicsVisible(true);
@@ -192,6 +197,7 @@ public class CharacterPanelController : MonoBehaviour
         }
         
         SwitchTab(activeTab);
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     /// <summary>Tắt toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
@@ -202,6 +208,7 @@ public class CharacterPanelController : MonoBehaviour
 
         SetPanelRootGraphicsVisible(true);
         ExitExternalProfileView();
+        UIPanelManager.NotifyClosed(gameObject);
     }
 
     /// <summary>
@@ -215,6 +222,7 @@ public class CharacterPanelController : MonoBehaviour
         SetPanelRootGraphicsVisible(true);
         if (contentRoot != null && contentRoot != panelRoot) contentRoot.SetActive(true);
         SwitchTab(1);
+        UIPanelManager.NotifyOpened(gameObject);
     }
 
     /// <summary>

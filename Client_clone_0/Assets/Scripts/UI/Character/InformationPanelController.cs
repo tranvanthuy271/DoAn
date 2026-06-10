@@ -94,7 +94,12 @@ public class InformationPanelController : MonoBehaviour
     #region Public API
 
     /// <summary>Mở panel nhân vật (tab Thông Tin). Cũng ẩn túi đồ nếu đang mở.</summary>
-    public void ShowThongTin() => SwitchTo(TopTab.ThongTin);
+    public void ShowThongTin()
+    {
+        UIPanelManager.CloseOthers(gameObject);
+        SwitchTo(TopTab.ThongTin);
+        UIPanelManager.NotifyOpened(gameObject);
+    }
 
     /// <summary>Mở túi đồ (tab Túi Đồ). Cũng ẩn thông tin nếu đang mở.</summary>
     public void ShowTuiDo() => SwitchTo(TopTab.TuiDo);

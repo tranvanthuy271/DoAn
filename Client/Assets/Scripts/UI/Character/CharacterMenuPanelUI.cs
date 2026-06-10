@@ -54,7 +54,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     // ── Login scene name (có thể override trong Inspector) ───────────────────
     [Header("Scene Names")]
-    [SerializeField] private string loginSceneName = "LoginScene";
+    [SerializeField] private string loginSceneName = "Login";
 
     // ── Internal ─────────────────────────────────────────────────────────────
     private PlayerDataResponse _cachedData;
@@ -226,22 +226,47 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     private void OnChangeCharClicked()
     {
-        // Đổi nhân vật → xoá session + về màn hình login
+        StartCoroutine(ChangeCharRoutine());
+    }
+
+    private System.Collections.IEnumerator ChangeCharRoutine()
+    {
+        // Đóng block input trước
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, false);
+
+        // Chặn popup mất kết nối khi chủ động ngắt kết nối mạng
+        GameErrorNotifier.SuppressDisconnectNotifications(10f);
+
+        // Hiển thị panel xoay "Đang đăng xuất..."
+        LoginLoadingManager.ShowLoadingStatic("\u0110ang \u0111\u0103ng xu\u1ea5t...");
+
+        // Xoá session (giữ USERNAME để autofill login)
         PlayerPrefs.DeleteKey("AUTH_TOKEN");
         PlayerPrefs.DeleteKey("JWT_TOKEN");
         PlayerPrefs.DeleteKey("USER_ID");
         PlayerPrefs.DeleteKey("PLAYER_ID");
-        // USERNAME giữ lại để autofill login
+        PlayerPrefs.DeleteKey("PLAYER_ZONE_ID");
+        PlayerPrefs.DeleteKey("SelectedMapId");
+        PlayerPrefs.DeleteKey("CONNECT_TO_SERVER");
         PlayerPrefs.Save();
 
+        // Xoá dữ liệu player và zone
         GameManager.Instance?.ClearPlayerData();
+        ClientSceneController.Instance?.ResetZoneState();
+        if (MapManager.Instance != null)
+        {
+            MapManager.Instance.ResetRuntimeState();
+        }
 
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening)
             nm.Shutdown();
 
-        SceneManager.LoadScene(loginSceneName);
+        // Chờ 3 giây để đảm bảo dữ liệu nhân vật được lưu trữ thành công lên máy chủ trước khi thoát hoàn toàn
+        yield return new WaitForSecondsRealtime(3f);
+
+        string targetScene = string.IsNullOrEmpty(loginSceneName) || loginSceneName == "LoginScene" ? "Login" : loginSceneName;
+        SceneManager.LoadScene(targetScene);
     }
 
     private void OnQuitClicked()

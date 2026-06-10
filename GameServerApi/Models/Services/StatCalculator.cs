@@ -1,6 +1,5 @@
 using System;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace GameServerApi.Models.Services
 {
@@ -39,11 +38,11 @@ namespace GameServerApi.Models.Services
     /// </summary>
     public static class StatCalculator
     {
-        private static readonly ILogger _logger =
-            LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug))
-                         .CreateLogger(nameof(StatCalculator));
+        /// <summary>Hệ số nhân mặc định cho Gene Tối Thượng khi không truyền giá trị từ config.</summary>
+        public const float DefaultUltimateMultiplier = 1.5f;
 
-        public static FinalStats Compute(InfoChar baseInfo, string equipmentJson, string potentialStatsJson)
+        public static FinalStats Compute(InfoChar baseInfo, string equipmentJson, string potentialStatsJson,
+            float ultimateMultiplier = DefaultUltimateMultiplier)
         {
             var (eqHp, eqMp, eqAtk, eqDef, eqSpd) = ParseEquipBonus(equipmentJson);
             var (ptHp, ptMp, ptAtk, ptDef, ptSpd)  = ParsePotentialBonus(potentialStatsJson);
@@ -54,12 +53,14 @@ namespace GameServerApi.Models.Services
             int def    = baseInfo.Defense + eqDef + ptDef;
             float spd  = 5f              + eqSpd + ptSpd;
 
-            // ─── DEBUG LOG ────────────────────────────────────
-            _logger.LogDebug("[StatCalc] baseAtk={BaseAtk} eqAtk={EqAtk} ptAtk={PtAtk} finalAtk={Attack}", baseInfo.Attack, eqAtk, ptAtk, attack);
-            _logger.LogDebug("[StatCalc] baseHp={BaseHp} eqHp={EqHp} ptHp={PtHp} maxHp={MaxHp}", baseInfo.MaxHp, eqHp, ptHp, maxHp);
-            _logger.LogDebug("[StatCalc] baseMp={BaseMp} ptMp={PtMp} maxMp={MaxMp}", baseInfo.MaxMp, ptMp, maxMp);
-            _logger.LogDebug("[StatCalc] eqSpd={EqSpd} ptSpd={PtSpd} spd={Spd}", eqSpd, ptSpd, spd);
-            // ────────────────────────────────────────────────────────
+            // ── Gene Tối Thượng: nhân toàn bộ final_stats (HP/MP/ATK/DEF) một lần ──
+            if (baseInfo.IsUltimate && ultimateMultiplier > 0f)
+            {
+                maxHp  = (int)MathF.Round(maxHp  * ultimateMultiplier);
+                maxMp  = (int)MathF.Round(maxMp  * ultimateMultiplier);
+                attack = (int)MathF.Round(attack * ultimateMultiplier);
+                def    = (int)MathF.Round(def    * ultimateMultiplier);
+            }
 
             return new FinalStats
             {

@@ -84,6 +84,32 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         if (currentMapId >= 0)
         {
             MapSceneManager.Instance?.MoveToMapScene(enemyObject, currentMapId);
+            EnemyAI enemyAI = enemyObject.GetComponent<EnemyAI>();
+            if (enemyAI != null)
+            {
+                bool snapped = enemyAI.SnapToGroundForServerSpawn();
+                if (!snapped)
+                {
+                    Debug.LogWarning(
+                        $"[BaseDungeonInstance] enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                        enemyObject);
+                }
+            }
+            else
+            {
+                BossAI spawnBossAI = enemyObject.GetComponent<BossAI>();
+                if (spawnBossAI != null && spawnBossAI.UsesGroundPhysics)
+                {
+                    bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
+                    if (!snapped)
+                    {
+                        Debug.LogWarning(
+                            $"[BaseDungeonInstance] boss enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
+                            enemyObject);
+                    }
+                }
+            }
+
             ApplyMapVisibility(enemyObject, currentMapId, currentZoneId);
         }
         else

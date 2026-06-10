@@ -11,6 +11,7 @@ public class NetworkPlayerController : NetworkBehaviour
     private Rigidbody2D rb;
     private Animator animator;
     private NetworkTransform networkTransform;
+    private NetworkPlayerHealth health;
 
     // Lưu prefab Y scale gốc để không bị reset thành 1 khi flip/sync
     private float _prefabScaleY = 1f;
@@ -36,7 +37,11 @@ public class NetworkPlayerController : NetworkBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         networkTransform = GetComponent<NetworkTransform>();
+        health = GetComponent<NetworkPlayerHealth>();
         _prefabScaleY = Mathf.Abs(transform.localScale.y); // cache trước khi bị ghi đè
+
+        if (GetComponent<PlayerClickHandler>() == null)
+            gameObject.AddComponent<PlayerClickHandler>();
     }
 
     public override void OnNetworkSpawn()
@@ -128,6 +133,7 @@ public class NetworkPlayerController : NetworkBehaviour
     {
         // Chỉ owner mới xử lý input
         if (!IsOwner) return;
+        if (health != null && health.IsDead()) return;
 
         // Detect jump trong Update để không bị miss giữa 2 FixedUpdate
         var im = InputManager.Instance;
@@ -154,6 +160,15 @@ public class NetworkPlayerController : NetworkBehaviour
                 Vector2 target = new Vector2(syncPosition.Value.x, syncPosition.Value.y);
                 rb.MovePosition(Vector2.Lerp(rb.position, target, Time.fixedDeltaTime * 20f));
             }
+            return;
+        }
+
+        if (health != null && health.IsDead())
+        {
+            if (rb != null)
+                rb.velocity = Vector2.zero;
+            pendingJump = false;
+            pendingFallThrough = false;
             return;
         }
 
@@ -247,6 +262,9 @@ public class NetworkPlayerController : NetworkBehaviour
         // Update animation trên owner (non-owner client dùng UpdateAnimationClientRpc)
         if (IsOwner && rb != null && movement != null)
         {
+            if (health != null && health.IsDead())
+                return;
+
             PlayerAnimator playerAnimator = movement.GetComponent<PlayerAnimator>();
             if (playerAnimator != null)
             {

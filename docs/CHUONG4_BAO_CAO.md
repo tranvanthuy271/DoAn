@@ -68,6 +68,23 @@ Mô tả render: ghép 4 ảnh chụp gameplay theo lưới 2×2. Ảnh A — Ma
 | .NET | 7.0 SDK | Game Server + API Server |
 | Network | Public IPv4, băng thông 100 Mbps | Test ping 30–60 ms |
 
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+
+**Bảng 4.2b: Test case Xác thực tài khoản và JWT**
+
+| # | Kịch bản | Bước thực hiện | Kỳ vọng | Kết quả |
+|---|---|---|---|---|
+| TC-AU-01 | Đăng ký tài khoản mới | POST `/api/auth/register` với username, email và password hợp lệ | Trả về 200 OK, password băm BCrypt trong database | Pass |
+| TC-AU-02 | Đăng ký username đã tồn tại | POST `/api/auth/register` với username trùng lặp | Trả về 400 Bad Request, thông báo "Username đã tồn tại" | Pass |
+| TC-AU-03 | Đăng ký email đã tồn tại | POST `/api/auth/register` với email trùng lặp | Trả về 400 Bad Request, thông báo "Email đã tồn tại" | Pass |
+| TC-AU-04 | Đăng nhập sai mật khẩu | POST `/api/auth/login` với username đúng, password sai | Trả về 401 Unauthorized, thông báo "Mật khẩu không chính xác" | Pass |
+| TC-AU-05 | Đăng nhập đúng thông tin | POST `/api/auth/login` với username/password đúng | Trả về 200 OK, cấp token JWT (chữ ký HS256, hạn 24h) + cập nhật `last_login` | Pass |
+| TC-AU-06 | Truy cập API không có JWT | Gửi GET `/api/player/16/data` mà không truyền Authorization Header | Trả về 401 Unauthorized | Pass |
+| TC-AU-07 | Truy cập API với JWT hỏng | Gửi GET `/api/player/16/data` kèm JWT bị sửa đổi chữ ký | Trả về 401 Unauthorized | Pass |
+| TC-AU-08 | Connection Approval của NGO | Client kết nối đến Dedicated Server gửi token JWT hợp lệ / không hợp lệ | Đưa vào game thành công (nếu hợp lệ) hoặc từ chối kết nối (nếu không hợp lệ) | Pass |
+
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
+
 Công cụ đo lường:
 - **Unity Profiler** + **Frame Debugger** cho FPS, CPU, GPU client.
 - **Unity Stats Window** cho draw call, batch, set pass.
@@ -140,6 +157,11 @@ Client không tự sửa dữ liệu Gene. UI gửi lệnh nâng cấp bằng `S
 | TC-GN-06 | Fuse Hybrid yêu cầu Tier 5 | Gene chính Tier 4, phụ Tier 5 → bấm Fuse | Server từ chối: chưa đủ điều kiện | Pass |
 | TC-GN-07 | Fuse Hybrid thành công | Cả hai Tier 5 + đủ item + vàng | is_hybrid=1, hybrid_element ghi DB | Pass |
 | TC-GN-08 | Kết quả DB sau Fuse | Query `info_char` sau TC-GN-07 | hybrid_id, hybrid_prefab_path, bonus_targets, immune_elements có giá trị | Pass |
+
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+| TC-GN-09 | Tích lũy EXP Tối Thượng dưới ngưỡng | Tiêu diệt quái hoặc sử dụng vật phẩm hỗ trợ tăng EXP Tối Thượng dưới 1.000.000 | Trạng thái Tối Thượng chưa kích hoạt (`is_ultimate = false`), giao diện Stats HUD cập nhật tiến trình % EXP | Pass |
+| TC-GN-10 | Kích hoạt Gene Tối Thượng thành công | Điểm `ultimate_gene_exp` đạt hoặc vượt 1.000.000 | `is_ultimate = true`, server ClientRpc báo client sinh hào quang Aura tương ứng hệ Hybrid, Stats HUD hiện ký hiệu ✦, chỉ số nhân x1.5 | Pass |
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
 
 #### d) Phân tích công thức tính sát thương trong runtime
 
@@ -338,6 +360,70 @@ API server đáp ứng > 100 RPS yêu cầu phi chức năng cho mọi endpoint.
 | Bảo mật JWT (§4.3.3) | Postman test gửi token hỏng → 401; gửi token đúng → 200 | Postman collection lưu kèm phụ lục |
 
 Bộ artifact đầy đủ (ảnh chụp + log + dump SQL) được nén kèm khi nộp đồ án để hội đồng phản biện có thể đối chiếu thay vì phải tin các con số trong bảng.
+
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+
+### 4.2.5d. Hướng dẫn thực hiện kiểm thử thực nghiệm
+
+Để người dùng hoặc hội đồng phản biện có thể tái lập các thực nghiệm và đo lường trực quan các chỉ số hiệu năng cũng như kiểm chứng các chức năng bảo mật, dưới đây là hướng dẫn chi tiết từng bước cho từng nhóm kiểm thử.
+
+#### 1. Hướng dẫn đo lường FPS và FrameTime (Client)
+- **Kiểm thử nhanh bằng Stats View**: Trong cửa sổ làm việc của Unity Editor, chọn tab **Game**, click chọn nút **Stats** ở góc phải phía trên. Bảng thống kê hiển thị thời gian thực FPS (Graphics), FrameTime (ms), số lượng Batches và SetPass calls.
+- **Kiểm thử chi tiết bằng Unity Profiler**:
+  1. Trong Unity, mở `Window -> Analysis -> Profiler` (phím tắt `Ctrl+7`).
+  2. Bật cờ `Deep Profile` (nếu cần phân tích chi tiết hàm gọi) và nhấn `Record`.
+  3. Chạy game, di chuyển nhân vật và thực hiện combat ở các vùng bản đồ khác nhau (Làng, Phó bản).
+  4. Xem biểu đồ `CPU Usage` và `Rendering` để kiểm tra độ trễ của frame. Để xuất dữ liệu, chọn biểu tượng bánh răng ở góc phải Profiler -> chọn `Export CSV` để lưu lại bảng dữ liệu hiệu năng phục vụ việc vẽ biểu đồ so sánh.
+
+#### 2. Hướng dẫn đo lường Độ trễ mạng RTT (Network Latency)
+- **Nguyên lý thu thập**: Sử dụng API được Netcode for GameObjects cung cấp để truy vấn RTT từ client tới máy chủ Dedicated: `NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetCurrentRtt(clientId)`.
+- **Các bước cấu hình và đo**:
+  1. Bật tính năng log độ trễ trong file `Assets/Scripts/Network/Player/NetworkPlayerDataSync.cs` hoặc đính kèm script `NetworkLatencyMonitor` vào camera/HUD.
+  2. Đoạn code mẫu thực thi đo RTT mỗi giây và ghi nhận log:
+     ```csharp
+     private IEnumerator MeasureRttCoroutine()
+     {
+         while (true)
+         {
+             if (NetworkManager.Singleton.IsClient)
+             {
+                 ulong myId = NetworkManager.Singleton.LocalClientId;
+                 float rtt = NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetCurrentRtt(myId);
+                 Debug.Log($"[NETWORK_RTT] Client ID {myId} - Current RTT: {rtt} ms");
+             }
+             yield return new WaitForSeconds(1.0f);
+         }
+     }
+     ```
+  3. File log sẽ tự động xuất ra thư mục dữ liệu ứng dụng: `C:\Users\<Tên_User>\AppData\LocalLow\<Tên_Studio>\<Tên_Game>\Player.log` trên Windows. Lọc các dòng có nhãn `[NETWORK_RTT]` để thống kê độ trễ trung bình.
+
+#### 3. Hướng dẫn kiểm thử Xác thực Đăng ký/Đăng nhập và JWT
+- **Chuẩn bị công cụ**: Cài đặt phần mềm Postman hoặc sử dụng CLI curl/httpie.
+- **Quy trình kiểm thử**:
+  1. **Đăng ký tài khoản (Register)**: Gửi request POST tới URL `http://<server_ip>:<port>/api/auth/register` với JSON body:
+     ```json
+     {
+       "username": "testuser",
+       "email": "testuser@gmail.com",
+       "password": "Password123"
+     }
+     ```
+     Xác nhận nhận về mã phản hồi `200 OK`. Kiểm tra trực tiếp bảng `users` trong cơ sở dữ liệu để đảm bảo mật khẩu được băm (hash) bằng BCrypt và không hiển thị dưới dạng văn bản thuần túy.
+  2. **Đăng nhập (Login)**: Gửi request POST tới URL `http://<server_ip>:<port>/api/auth/login` với cùng thông tin đăng nhập. Xác nhận server trả về status `200 OK` với JSON payload chứa `token` (chuỗi JWT).
+  3. **Xác thực JWT (Auth Validation)**: Gửi request GET tới endpoint bảo mật `/api/player/16/data` mà không truyền token. Xác nhận nhận về mã lỗi `401 Unauthorized`. Thêm header `Authorization: Bearer <mã_JWT_ở_bước_2>` và gửi lại request. Xác nhận phản hồi thành công `200 OK` kèm theo dữ liệu nhân vật.
+
+#### 4. Hướng dẫn thực hiện Kiểm thử tải hiệu năng (Load Testing) qua JMeter
+- **Chuẩn bị công cụ**: Tải và cài đặt Apache JMeter 5.6.
+- **Thiết lập kịch bản thử nghiệm**:
+  1. Khởi động JMeter, tạo một `Thread Group` mới. Thiết lập số lượng người dùng mô phỏng (`Number of Threads` = 100) và thời gian tăng dần (`Ramp-Up Period` = 10 giây), lặp lại liên tục trong 60 giây.
+  2. Thêm một `HTTP Request Default`, điền IP và Port của máy chủ API Server.
+  3. Thêm một `HTTP Header Manager` để truyền header mặc định: `Content-Type: application/json`.
+  4. Thêm một `HTTP Request Sampler` cho hành vi Đăng nhập (POST `/api/auth/login`) với body JSON mẫu chứa tài khoản test.
+  5. Thêm một `HTTP Request Sampler` thứ hai cho hành vi tải hồ sơ (GET `/api/player/${id}/data`) dùng token JWT trích xuất từ phản hồi của bước đăng nhập qua `JSON Extractor`.
+  6. Thêm listener `Summary Report` và `Response Times Over Time` để quan sát đồ thị trực quan.
+  7. Nhấn nút xanh `Start` để bắt đầu chạy kiểm thử. Theo dõi cột `Throughput` (RPS) và `Error %` (tỷ lệ lỗi phải duy trì ở mức 0.0%) để đánh giá năng lực chịu tải của API Server.
+
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
 
 ### 4.2.6. Thực nghiệm NPC, cửa hàng, nâng cấp trang bị, bản đồ/phó bản
 

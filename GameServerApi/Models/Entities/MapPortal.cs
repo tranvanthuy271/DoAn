@@ -39,6 +39,10 @@ namespace GameServerApi.Models.Entities
         /// <summary>Cần item này trong túi đồ (NULL = không cần)</summary>
         public int? RequiredItemId { get; set; }
 
+        public int? RequiredLevel { get; set; }
+
+        public int? RequiredQuestId { get; set; }
+
         /// <summary>Phó bản sở hữu cổng này (NULL = open world)</summary>
         public int? DungeonId { get; set; }
 

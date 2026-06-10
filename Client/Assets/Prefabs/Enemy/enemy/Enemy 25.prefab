@@ -518,9 +518,14 @@ MonoBehaviour:
     retreatAfterUse: 1
   useGroundPhysics: 1
   canJump: 1
-  jumpForce: 12
-  maxJumps: 2
-  verticalTargetThreshold: 0.85
+  jumpForce: 17
+  minCalculatedJumpForce: 7
+  jumpHeightPadding: 0.45
+  obstacleJumpHeightPadding: 0.7
+  requireGroundedToJump: 1
+  allowUntargetedJumps: 0
+  maxJumps: 1
+  verticalTargetThreshold: 0.55
   preferredRetreatDistance: 6.5
   retreatDuration: 1.7
   retreatSpeedMultiplier: 2
@@ -534,19 +539,22 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   groundSearchDistance: 60
+  upperPlatformSearchHorizontalRange: 7
+  upperPlatformSearchVerticalRange: 10
+  upperPlatformJumpEdgeDistance: 2
   fallThroughDuration: 0.5
   fallThroughDrop: 0.18
   projectileAimOvershoot: 0.45
   alwaysRetreatAfterMelee: 1
   retreatEvasionInterval: 0.25
   retreatFallThroughChance: 0.7
-  approachJumpChance: 1
+  approachJumpChance: 0
   reengageDelayAfterRetreat: 0.15
   postAttackRetreatSpeedMultiplier: 2
   postAttackRetreatMinDuration: 2.4
   restrictGroundTraversalToChaseOrPostAttack: 0
-  groundTraversalCooldownMin: 2
-  groundTraversalCooldownMax: 3
+  groundTraversalCooldownMin: 0.45
+  groundTraversalCooldownMax: 0.9
   groundTraversalBlockerMask:
     serializedVersion: 2
     m_Bits: 0
@@ -568,7 +576,12 @@ MonoBehaviour:
   dodgeEdgeProbeDistance: 1.6
   dodgeObstacleMask:
     serializedVersion: 2
-    m_Bits: 1536
+    m_Bits: 1600
+  climbObstaclesWhileChasing: 1
+  obstacleProbeDistance: 0.75
+  obstacleJumpHorizontalBoost: 2.1
+  obstacleJumpCooldown: 0.25
+  stuckTimeBeforeRetreat: 0.8
   debugLogs: 1
   debugLogInterval: 0.35
   skillBreathPrefab: {fileID: 0}

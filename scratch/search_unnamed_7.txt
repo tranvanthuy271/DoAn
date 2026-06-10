@@ -1,0 +1,21 @@
+Line 194:
+  184: 
+  185: - **Tầng Client Unity Client**: Xây dựng trên ngôn ngữ C#, chịu trách nhiệm render hình ảnh, hoạt ảnh nhân vật, xử lý các dự đoán di chuyển Client-side prediction và gửi input điều khiển mạng lên Server.
+  186: - **Tầng Server**:
+  187: - *Dedicated Server Unity Headless*: Chạy logic vật lý, va chạm, AI FSM quái vật, tính toán sát thương thời gian thực.
+  188: - *API & SignalR Server ASP.NET Core 8*: Xác thực JWT, lưu trữ tiến trình qua EF Core, quản lý sảnh chờ, kênh chat và tổ đội.
+  189: - **Tầng Database MySQL Database**: Lưu trữ thông tin tài khoản, nhân vật, túi đồ, trang bị và cấu hình hệ thống.
+  190: 
+  191: </div>
+  192: <div style="flex: 0.8; text-align: center;">
+  193: 
+  194: ![image_unnamed_7.png](../extracted_images/image_unnamed_7.png)
+  195: 
+  196: </div>
+  197: </div>
+  198: 
+  199: 
+  200: ---
+  201: 
+  202: # Slide 13: Biểu đồ Use Case mức tổng quát
+  203: ## Tác nhân và Ca sử dụng

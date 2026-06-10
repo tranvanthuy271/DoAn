@@ -509,7 +509,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   invincibilityDuration: 1
-  respawnDelay: 3
+  respawnDelay: 5
   spawnPoints: []
   OnHealthChanged:
     m_PersistentCalls:

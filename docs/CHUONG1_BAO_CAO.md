@@ -180,7 +180,7 @@ Theo hình thức tác động: Melee (tác động gần), Projectile (đạn b
 
 b) Hệ thống tương khắc nguyên tố (Elemental Interaction)
 
-Hệ thống tương khắc nguyên tố là cơ chế chiến lược dựa trên triết lý Ngũ Hành của phương Đông — Kim, Mộc, Thủy, Hỏa, Thổ — định nghĩa mối quan hệ tương sinh và tương khắc giữa các nguyên tố. Trong bối cảnh game, vòng tương khắc được đơn giản hóa để dễ học nhưng vẫn đủ phức tạp để tạo chiều sâu chiến thuật: Kim khắc Mộc, Mộc khắc Thổ, Thổ khắc Thủy, Thủy khắc Hỏa, Hỏa khắc Kim.
+Hệ thống tương khắc nguyên tố là cơ chế chiến lược dựa trên triết lý Ngũ Hành của phương Đông được tùy biến lại trong mã nguồn hệ thống để tối ưu cân bằng game, định nghĩa mối quan hệ tương khắc giữa các nguyên tố cơ bản. Trong bối cảnh game, vòng tương khắc hoạt động theo thứ tự: Kim (Metal) khắc Mộc (Wood), Mộc (Wood) khắc Thủy (Water), Thủy (Water) khắc Hỏa (Fire), Hỏa (Fire) khắc Thổ (Earth), Thổ (Earth) khắc Kim (Metal).
 
 Cơ chế tính toán tương khắc trong game thường hoạt động theo mô hình hệ số nhân (multiplier):
 
@@ -194,16 +194,16 @@ Bảng 1.3 trình bày đầy đủ ma trận hệ số nhân sát thương củ
 
 | ↓ Tấn công / Bị tấn công → | Kim | Mộc | Thủy | Hỏa | Thổ | Phong |
 |---|---|---|---|---|---|---|
-| **Kim** | 1.0 | **1.5** | 1.0 | 1.0 | 1.0 | 0.75 |
-| **Mộc** | 0.75 | 1.0 | 1.0 | 1.0 | **1.5** | 1.0 |
-| **Thủy** | 1.0 | 1.0 | 1.0 | **1.5** | 0.75 | 1.0 |
-| **Hỏa** | 1.0 | 1.0 | 0.75 | 1.0 | 1.0 | **1.5** |
-| **Thổ** | 1.0 | 0.75 | **1.5** | 1.0 | 1.0 | 1.0 |
-| **Phong** | **1.5** | 1.0 | 1.0 | 0.75 | 1.0 | 1.0 |
+| **Kim** | 1.0 | **1.5** | 1.0 | 1.0 | 0.75 | 1.0 |
+| **Mộc** | 0.75 | 1.0 | **1.5** | 1.0 | 1.0 | 1.0 |
+| **Thủy** | 1.0 | 0.75 | 1.0 | **1.5** | 1.0 | 1.0 |
+| **Hỏa** | 1.0 | 1.0 | 0.75 | 1.0 | **1.5** | 1.0 |
+| **Thổ** | **1.5** | 1.0 | 1.0 | 0.75 | 1.0 | 1.0 |
+| **Phong** | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
 
-Vòng tương khắc 6 chiều: Kim → Mộc → Thổ → Thủy → Hỏa → Phong → Kim (ký hiệu → nghĩa là "khắc", gây ×1.5; chiều ngược lại chịu ×0.75). Đây là cấu trúc lục giác đối xứng — mỗi nguyên tố khắc đúng một nguyên tố và bị khắc bởi đúng một nguyên tố, đảm bảo cân bằng game.
+Vòng tương khắc 5 chiều chuẩn hệ thống: Kim (Metal) → Mộc (Wood) → Thủy (Water) → Hỏa (Fire) → Thổ (Earth) → Kim (Metal) (ký hiệu → nghĩa là "khắc", gây ×1.5; chiều ngược lại chịu ×0.75). Đây là cấu trúc vòng khép kín đối xứng cho 5 nguyên tố cơ bản. Nguyên tố thứ sáu Phong (Wind) là hệ trung lập đặc biệt, không nằm trong vòng khắc chế chuẩn này (trả về null) nhằm đem lại trải nghiệm chiến đấu độc lập chiến thuật và cân bằng game.
 
-Ngoài Ngũ Hành truyền thống, nguyên tố thứ sáu Phong (Wind) được bổ sung thêm để tạo ra 6 class nhân vật đa dạng hơn, đồng thời phá vỡ tính đối xứng tuyến tính của vòng Ngũ Hành, tạo ra cấu trúc tương khắc phức tạp và thú vị hơn. Việc thêm nguyên tố này cũng tạo ra các tổ hợp mới thú vị trong hệ thống Gene Fusion (tổng hợp gene) của đề tài.
+Ngoài các nguyên tố cơ bản, nguyên tố thứ sáu Phong (Wind) được bổ sung thêm để tạo ra 6 class nhân vật đa dạng hơn, đồng thời đóng vai trò là mảnh ghép trung lập, tạo ra các tổ hợp mới thú vị trong hệ thống Gene Fusion (tổng hợp gene) của đề tài. Đặc biệt, Phong được thiết kế để kết hợp với Kim tạo thành cặp Hybrid Kim - Phong độc đáo.
 
 c) Hệ thống hiệu ứng trạng thái (Status Effect)
 
@@ -237,9 +237,29 @@ Gene có 5 bậc nâng cấp (Tier), mỗi bậc yêu cầu tài nguyên đặc 
 | Tier 4 — Tinh anh | Gene Core × 15 | +20% ATK, +15% HP, +10% DEF | Passive đặc biệt nguyên tố |
 | Tier 5 — Tối thượng | Gene Core × 30 + Gene Essence | +30% toàn bộ chỉ số nguyên tố | Mở khóa Multi-Gene và Hybrid Fusion |
 
-Tính năng **Multi-Gene** (Đa gene) cho phép nhân vật đạt Tier 5 trang bị thêm tối đa 2 Gene phụ từ nguyên tố khác, cấu trúc: 1 Gene chính (100% hiệu quả) + 2 Gene phụ (mỗi Gene phụ khoảng 30% hiệu quả). Ví dụ: Gene chính Hỏa + Gene phụ Phong + Gene phụ Kim tạo nhân vật thiên về sát thương Hỏa nhưng có thêm tốc độ từ Phong và chỉ số vật lý từ Kim. Với 6 nguyên tố, số tổ hợp Multi-Gene lên tới 6 × C(5,2) = **60 tổ hợp** khác nhau, đảm bảo mỗi người chơi có hướng xây dựng nhân vật riêng biệt.
+#### Multi-Gene
+*   Multi-Gene được mở khóa khi Gene đạt Tier 5. 
+*   Người chơi có thể sử dụng một Gene chính và tối đa hai Gene phụ (quy định hiệu quả Gene chính là 100%, mỗi Gene phụ bổ sung thêm khoảng 30% chỉ số hoặc hiệu ứng). 
+*   Gene chính quyết định hướng phát triển chính của nhân vật. 
+*   Gene phụ bổ sung thêm chỉ số hoặc hiệu ứng phụ. 
+*   Cơ chế này giúp người chơi tạo ra nhiều hướng build khác nhau (với 6 nguyên tố, hỗ trợ tổng cộng 60 tổ hợp Multi-Gene khác biệt). 
 
-**Hybrid Fusion** (Dung hợp gene) là cơ chế cao nhất — tiêu thụ 2 Gene Tier 5 của 2 nguyên tố khác nhau để tổng hợp thành Gene Hybrid với bộ kỹ năng kết hợp độc nhất, không thể có bằng cách nào khác. Gene Hybrid không nâng cấp thêm nhưng là đích đến cuối cùng của hành trình tiến hóa nhân vật trong Mutants Arena. Toàn bộ dữ liệu Gene lưu trong cơ sở dữ liệu và đồng bộ về client qua REST API — chi tiết triển khai tại Chương 3.
+#### Hybrid Fusion
+*   Hybrid Fusion là cơ chế dung hợp Gene cấp cao. 
+*   Người chơi cần hai Gene Tier 5 thuộc hai nguyên tố khác nhau (theo các cặp cố định hợp lệ). 
+*   Sau khi dung hợp thành công, nhân vật nhận được Gene Hybrid. 
+*   Gene Hybrid mở khóa bộ kỹ năng đặc biệt và các chỉ số cộng thêm độc nhất. 
+*   Đây là mục tiêu phát triển cuối game của hệ thống Gene nhằm gia tăng tính chiến thuật.
+
+#### Gene Tối Thượng (Ultimate Gene)
+----- [BẮT ĐẦU PHẦN THÊM MỚI] -----
+*   Gene Tối Thượng là cấp tiến hóa tối cao của nhân vật, được mở khóa sau khi đã dung hợp thành công Hybrid Gene.
+*   Người chơi tích lũy EXP Tối Thượng thông qua các hoạt động trong game như tiêu diệt quái vật dã ngoại, Boss phó bản hoặc sử dụng vật phẩm hỗ trợ.
+*   Khi tích lũy đạt mốc 1,000,000 EXP Tối Thượng, hệ thống tự động kích hoạt trạng thái Gene Tối Thượng (`is_ultimate = true`).
+*   Trạng thái này nhân x1.5 toàn bộ các chỉ số thuộc tính cơ bản của nhân vật (gồm HP, MP, ATK, DEF).
+*   Đồng thời hiển thị hào quang Tối Thượng rực rỡ phía sau lưng nhân vật (theo 3 loại Aura dựa trên hệ nguyên tố lai) và cập nhật ký hiệu ✦ trên giao diện HUD.
+----- [KẾT THÚC PHẦN THÊM MỚI] -----
+
 
 ### 1.3.7. Trọng tâm đề tài: Gene Evolution và Multiplayer là hai trục chính
 

@@ -11,6 +11,8 @@ using UnityEngine.UI;
 /// </summary>
 public class BagQuickActionPanel : MonoBehaviour
 {
+    private const string OverlayCanvasName = "[BagQuickActionOverlayCanvas]";
+    private const int OverlaySortingOrder = 500;
     // ── Prefab-mode references (gán trong Inspector trên prefab) ──────────────
     [Header("Prefab References (leave null if using Create())")]
     [SerializeField] private Button overlayButton;
@@ -110,7 +112,7 @@ public class BagQuickActionPanel : MonoBehaviour
     {
         Canvas bestCanvas = ResolveBestRootCanvas();
         if (bestCanvas == null)
-            return;
+            bestCanvas = CreateOverlayCanvas();
 
         if (transform.parent != bestCanvas.transform)
         {
@@ -128,10 +130,46 @@ public class BagQuickActionPanel : MonoBehaviour
         {
             if (!c.isRootCanvas) continue;
             if (c.renderMode == RenderMode.WorldSpace) continue;
+            if (!c.gameObject.activeInHierarchy) continue;
             if (c.sortingOrder > bestOrder) { bestOrder = c.sortingOrder; bestCanvas = c; }
         }
 
         return bestCanvas;
+    }
+
+    private static Canvas CreateOverlayCanvas()
+    {
+        GameObject existing = GameObject.Find(OverlayCanvasName);
+        if (existing != null && existing.TryGetComponent(out Canvas existingCanvas))
+            return existingCanvas;
+
+        GameObject canvasGo = new GameObject(
+            OverlayCanvasName,
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
+
+        DontDestroyOnLoad(canvasGo);
+
+        RectTransform rectTransform = canvasGo.GetComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+
+        Canvas canvas = canvasGo.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = OverlaySortingOrder;
+
+        CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        return canvas;
     }
 
 

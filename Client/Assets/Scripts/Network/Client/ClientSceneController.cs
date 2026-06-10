@@ -153,7 +153,12 @@ public class ClientSceneController : MonoBehaviour
 
     public static bool IsTransferTriggerBlocked()
     {
-        return Instance != null && Time.unscaledTime < Instance._triggerGraceUntil;
+        if (Instance == null)
+            return false;
+
+        return Instance._isTransitioning ||
+               Instance._hasPendingTransferRequest ||
+               Time.unscaledTime < Instance._triggerGraceUntil;
     }
 
     private void HandlePlayerDataSet(PlayerDataResponse data)

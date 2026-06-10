@@ -15,6 +15,7 @@ public class PlayerAnimator : MonoBehaviour
     private static readonly int IsDead     = Animator.StringToHash("IsDead");
     private static readonly int Attack     = Animator.StringToHash("Attack");
     private static readonly int AttackLower = Animator.StringToHash("attack");
+    private bool _isDead;
 
     private void Awake()
     {
@@ -44,6 +45,14 @@ public class PlayerAnimator : MonoBehaviour
     public void UpdateAnimation(float speed, float velocityY, bool isGrounded, bool isFlying)
     {
         if (animator == null) return;
+
+        if (_isDead)
+        {
+            animator.SetFloat(Speed, 0f);
+            animator.SetFloat(VelocityY, 0f);
+            SetBoolIfExists("IsDead", true);
+            return;
+        }
 
         // QUAN TRỌNG: Khi đang ở mặt đất, force VelocityY = 0 để tránh animation Jump chạy liên tục
         // Vì physics engine có thể tạo ra velocityY nhỏ dù đang ở mặt đất
@@ -105,8 +114,157 @@ public class PlayerAnimator : MonoBehaviour
 
     public void SetDead(bool dead)
     {
-        if (animator != null)
-            animator.SetBool(IsDead, dead);
+        _isDead = dead;
+        if (animator == null) return;
+
+        if (dead)
+        {
+            TriggerDie();
+            return;
+        }
+
+        ResetToIdleAfterRespawn();
+    }
+
+    public void ResetToIdleAfterRespawn()
+    {
+        _isDead = false;
+        if (animator == null) return;
+
+        animator.enabled = true;
+        animator.speed = 1f;
+
+        SetBoolIfExists("IsDead", false);
+        SetBoolIfExists("IsGrounded", true);
+        SetBoolIfExists("IsFlying", false);
+        SetFloatIfExists("Speed", 0f);
+        SetFloatIfExists("VelocityY", 0f);
+        ResetTriggerIfExists("Die", "die", "Death", "death", "Attack", "attack");
+
+        if (!PlayStateIfExists("idle", "Idle"))
+        {
+            animator.Rebind();
+            SetBoolIfExists("IsDead", false);
+            SetBoolIfExists("IsGrounded", true);
+            SetBoolIfExists("IsFlying", false);
+            SetFloatIfExists("Speed", 0f);
+            SetFloatIfExists("VelocityY", 0f);
+        }
+
+        animator.Update(0f);
+        ResetDeathTint();
+    }
+
+    public void TriggerDie()
+    {
+        if (animator == null) return;
+
+        _isDead = true;
+        animator.SetFloat(Speed, 0f);
+        animator.SetFloat(VelocityY, 0f);
+        SetBoolIfExists("IsDead", true);
+
+        foreach (var p in animator.parameters)
+        {
+            if (p.type != AnimatorControllerParameterType.Trigger) continue;
+            if (p.name == "Die" || p.name == "die" || p.name == "Death" || p.name == "death")
+            {
+                animator.SetTrigger(p.name);
+                return;
+            }
+        }
+
+        if (HasState("Die")) animator.CrossFade("Die", 0.05f);
+        else if (HasState("die")) animator.CrossFade("die", 0.05f);
+        else if (HasState("Death")) animator.CrossFade("Death", 0.05f);
+        else if (HasState("death")) animator.CrossFade("death", 0.05f);
+    }
+
+    private bool HasState(string stateName)
+    {
+        return animator != null
+               && (animator.HasState(0, Animator.StringToHash(stateName))
+                   || animator.HasState(0, Animator.StringToHash("Base Layer." + stateName)));
+    }
+
+    private void SetBoolIfExists(string parameterName, bool value)
+    {
+        if (animator == null) return;
+        foreach (var p in animator.parameters)
+        {
+            if (p.type == AnimatorControllerParameterType.Bool && p.name == parameterName)
+            {
+                animator.SetBool(p.name, value);
+                return;
+            }
+        }
+    }
+
+    private void SetFloatIfExists(string parameterName, float value)
+    {
+        if (animator == null) return;
+        foreach (var p in animator.parameters)
+        {
+            if (p.type == AnimatorControllerParameterType.Float && p.name == parameterName)
+            {
+                animator.SetFloat(p.name, value);
+                return;
+            }
+        }
+    }
+
+    private void ResetTriggerIfExists(params string[] parameterNames)
+    {
+        if (animator == null) return;
+        foreach (var p in animator.parameters)
+        {
+            if (p.type != AnimatorControllerParameterType.Trigger) continue;
+            foreach (var name in parameterNames)
+            {
+                if (p.name == name)
+                {
+                    animator.ResetTrigger(p.name);
+                    break;
+                }
+            }
+        }
+    }
+
+    private bool PlayStateIfExists(params string[] stateNames)
+    {
+        if (animator == null) return false;
+        foreach (var stateName in stateNames)
+        {
+            if (animator.HasState(0, Animator.StringToHash(stateName)))
+            {
+                animator.Play(stateName, 0, 0f);
+                return true;
+            }
+
+            string baseLayerStateName = "Base Layer." + stateName;
+            if (animator.HasState(0, Animator.StringToHash(baseLayerStateName)))
+            {
+                animator.Play(baseLayerStateName, 0, 0f);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void ResetDeathTint()
+    {
+        var renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (var renderer in renderers)
+        {
+            Color color = renderer.color;
+            bool looksLikeDeathTint = Mathf.Abs(color.r - color.g) < 0.03f
+                                      && Mathf.Abs(color.g - color.b) < 0.03f
+                                      && color.r < 0.95f;
+
+            if (renderer == spriteRenderer || looksLikeDeathTint)
+                renderer.color = new Color(1f, 1f, 1f, color.a);
+        }
     }
 
     public void TriggerAttack()

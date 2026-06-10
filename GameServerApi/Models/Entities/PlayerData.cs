@@ -66,6 +66,14 @@ namespace GameServerApi.Models
         [JsonPropertyName("hybrid_id")]              public int?          HybridId              { get; set; } = null;
         [JsonPropertyName("hybrid_prefab_path")]     public string?       HybridPrefabPath      { get; set; } = null;
 
+        // ---- Gene Tối Thượng (Ultimate Gene) ----
+        // Kích hoạt sau khi đã Dung hợp Hybrid. Khi tích đủ ultimate_gene_exp, server bật
+        // is_ultimate = true → toàn bộ final_stats được nhân hệ số (mặc định x1.5) và spawn aura sau lưng.
+        [JsonPropertyName("is_ultimate")]            public bool          IsUltimate            { get; set; } = false;
+        [JsonPropertyName("ultimate_gene_exp")]      public int           UltimateGeneExp       { get; set; } = 0;
+        // Resources path cho prefab aura (ví dụ "Prefabs/Player/Aura/UltimateAura"), lấy từ gene_ultimate_config.
+        [JsonPropertyName("ultimate_aura_path")]     public string?       UltimateAuraPath      { get; set; } = null;
+
         // ---- HP / MP / Combat ----
         [JsonPropertyName("hp")]      public int Hp      { get; set; } = 100;
         [JsonPropertyName("max_hp")]  public int MaxHp   { get; set; } = 100;

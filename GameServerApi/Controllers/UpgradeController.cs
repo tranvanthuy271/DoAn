@@ -143,7 +143,8 @@ namespace GameServerApi.Controllers
                 if (!body.TryGetProperty("slotKey",         out var slotKeyProp)) return BadRequest("Thiếu slotKey.");
                 if (!body.TryGetProperty("isFromInventory", out var fromInvProp)) return BadRequest("Thiếu isFromInventory.");
 
-                int    playerId       = pidProp.GetInt32();
+                if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
+                    return authError;
                 string slotKey        = slotKeyProp.GetString() ?? "";
                 bool   isFromInventory = fromInvProp.GetBoolean();
                 int clientRatePercent = body.TryGetProperty("clientRatePercent", out var rateProp)
@@ -263,7 +264,7 @@ namespace GameServerApi.Controllers
                 if (clientRatePercent >= 0 && Math.Abs(clientRatePercent - serverRatePercent) > 1)
                     return BadRequest($"Tỉ lệ client không khớp server. Client={clientRatePercent}% | Server={serverRatePercent}%.");
 
-                bool success    = new Random().NextDouble() < rate;
+                bool success    = Random.Shared.NextDouble() < rate;
                 bool downgraded = false;
                 int  newLevel   = currentLevel;
                 bool hasProtection = protectionStoneCount > 0;
@@ -391,7 +392,25 @@ namespace GameServerApi.Controllers
         // ──────────────────────────────────────────────────────────────
         //  HELPERS
         // ──────────────────────────────────────────────────────────────
-        private static int GetOptionValueAt(Dictionary<string, object> opt, int upgradeLevel)
+        private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
+        {
+            playerId = requestedPlayerId;
+
+            if (User.IsInRole("GameServer"))
+                return null;
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "user_id")?.Value;
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            if (requestedPlayerId != userId)
+                return Forbid();
+
+            playerId = userId;
+            return null;
+        }
+
+        internal static int GetOptionValueAt(Dictionary<string, object> opt, int upgradeLevel)
         {
             string strOpt = opt.ContainsKey("strOption") ? opt["strOption"]?.ToString() ?? "" : "";
             var parts = strOpt.Split(';');
@@ -399,7 +418,7 @@ namespace GameServerApi.Controllers
             return int.TryParse(parts[idx], out int v) ? v : 0;
         }
 
-        private static string RecalcStrOptions(string currentStrOptions, int newLevel)
+        internal static string RecalcStrOptions(string currentStrOptions, int newLevel)
         {
             if (string.IsNullOrEmpty(currentStrOptions)) return "";
             var pairs  = currentStrOptions.Split(';');

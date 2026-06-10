@@ -62,6 +62,7 @@ public class MapTransitionButton : MonoBehaviour
 
         // 1. Lấy portal trái hoặc phải của map hiện tại
         string direction = isRightButton ? "right" : "left";
+        yield return StartCoroutine(ResolveMapIdByActiveScene(currentMapId, resolved => currentMapId = resolved));
         string url = $"{apiBase}/api/map/portal/direction?mapId={currentMapId}&direction={direction}";
 
         using var portalReq = UnityWebRequest.Get(url);
@@ -185,6 +186,31 @@ public class MapTransitionButton : MonoBehaviour
         GlobalNotificationUI.Show(message, "Không thể vào khu vực này", 3f);
     }
 
+    private IEnumerator ResolveMapIdByActiveScene(int fallbackMapId, System.Action<int> onResolved)
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        string url = $"{apiBase}/api/map/by-scene?scene={UnityWebRequest.EscapeURL(sceneName)}";
+
+        using var req = UnityWebRequest.Get(url);
+        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            var map = JsonUtility.FromJson<MapConfigData>(req.downloadHandler.text);
+            if (map != null && map.map_id >= 0)
+            {
+                if (map.map_id != fallbackMapId)
+                    Debug.Log($"[MapTransitionButton] Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id}");
+                onResolved?.Invoke(map.map_id);
+                yield break;
+            }
+        }
+
+        Debug.LogWarning($"[MapTransitionButton] Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error}");
+        onResolved?.Invoke(fallbackMapId);
+    }
+
     private IEnumerator HideErrorAfterDelay()
     {
         yield return new WaitForSeconds(errorDisplayTime);
@@ -229,6 +255,14 @@ public class MapTransitionButton : MonoBehaviour
         public string dest_scene_name;
         public float  dest_x;
         public float  dest_y;
+    }
+
+    [System.Serializable]
+    private class MapConfigData
+    {
+        public int map_id;
+        public string map_name;
+        public string scene_name;
     }
 
     [System.Serializable]

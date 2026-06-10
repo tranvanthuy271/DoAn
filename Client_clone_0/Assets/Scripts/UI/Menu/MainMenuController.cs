@@ -111,7 +111,11 @@ public class MainMenuController : MonoBehaviour
         logoutButton.interactable = false;
 
         int playerId = GameManager.Instance?.GetPlayerData()?.player_id ?? PlayerPrefs.GetInt("USER_ID", 0);
-        playerInfoText.text = "Đang đăng xuất...";
+        string logoutMessage = "\u0110ang \u0111\u0103ng xu\u1ea5t...";
+        GameErrorNotifier.SuppressDisconnectNotifications();
+        if (playerInfoText != null)
+            playerInfoText.text = logoutMessage;
+        LoginLoadingManager.ShowLoadingStatic(logoutMessage);
 
         if (apiClient != null && playerId > 0 && !string.IsNullOrEmpty(apiClient.GetToken()))
         {
@@ -127,6 +131,12 @@ public class MainMenuController : MonoBehaviour
 
     private void CompleteLogout()
     {
+        StartCoroutine(CompleteLogoutRoutine());
+    }
+
+    private System.Collections.IEnumerator CompleteLogoutRoutine()
+    {
+        GameErrorNotifier.SuppressDisconnectNotifications();
         DisconnectNetwork();
         ResetLocalSessionState();
 
@@ -142,6 +152,8 @@ public class MainMenuController : MonoBehaviour
         PlayerPrefs.Save();
 
         Time.timeScale = 1f;
+        LoginLoadingManager.ShowLoadingStatic("\u0110ang \u0111\u0103ng xu\u1ea5t...");
+        yield return null;
         SceneManager.LoadScene("Login");
     }
 

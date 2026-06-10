@@ -288,7 +288,10 @@ public class MapSceneManager : MonoBehaviour
             BoxCollider2D[] groundColliders = sourceRoot.GetComponentsInChildren<BoxCollider2D>(true);
             foreach (BoxCollider2D sourceCollider in groundColliders)
             {
-                if (sourceCollider == null || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
+                if (sourceCollider == null
+                    || !sourceCollider.enabled
+                    || sourceCollider.isTrigger
+                    || !IsServerObstacleLayer(sourceCollider.gameObject.layer, groundLayer, maxMapLayer))
                     continue;
 
                 CloneGroundCollider(root.transform, sourceCollider);

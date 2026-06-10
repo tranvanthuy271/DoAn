@@ -10,6 +10,8 @@ using UnityEngine.SceneManagement;
 public class GameErrorNotifier : MonoBehaviour
 {
     public static GameErrorNotifier Instance { get; private set; }
+    private const string IntentionalLogoutStatus = "\u0110ang \u0111\u0103ng xu\u1ea5t...";
+    private static float _suppressDisconnectNotificationsUntil = -1f;
 
     public enum ErrorType
     {
@@ -97,12 +99,24 @@ public class GameErrorNotifier : MonoBehaviour
     public static void Show(ErrorType type, System.Action onDismiss = null)
     {
         EnsureReady();
+        if (IsDisconnectNotificationSuppressed)
+        {
+            LoginLoadingManager.ShowLoadingStatic(IntentionalLogoutStatus);
+            return;
+        }
+
         Instance.ShowInternal(MessageForType(type), onDismiss);
     }
 
     public static void Show(string rawMessage, System.Action onDismiss = null)
     {
         EnsureReady();
+        if (IsDisconnectNotificationSuppressed)
+        {
+            LoginLoadingManager.ShowLoadingStatic(IntentionalLogoutStatus);
+            return;
+        }
+
         Instance.ShowInternal(rawMessage, onDismiss);
     }
 
@@ -129,6 +143,23 @@ public class GameErrorNotifier : MonoBehaviour
         }
     }
 
+    public static bool IsDisconnectNotificationSuppressed =>
+        Time.realtimeSinceStartup < _suppressDisconnectNotificationsUntil;
+
+    public static void SuppressDisconnectNotifications(float seconds = 10f)
+    {
+        _suppressDisconnectNotificationsUntil = Mathf.Max(
+            _suppressDisconnectNotificationsUntil,
+            Time.realtimeSinceStartup + Mathf.Max(0.1f, seconds));
+
+        LoginLoadingManager.ShowLoadingStatic(IntentionalLogoutStatus);
+
+        if (Instance != null)
+        {
+            Instance.CancelConnectionWatchInternal();
+        }
+    }
+
     public static void Reset()
     {
         if (Instance == null)
@@ -143,6 +174,12 @@ public class GameErrorNotifier : MonoBehaviour
 
     private void ShowInternal(string message, System.Action onDismiss)
     {
+        if (IsDisconnectNotificationSuppressed)
+        {
+            LoginLoadingManager.ShowLoadingStatic(IntentionalLogoutStatus);
+            return;
+        }
+
         if (_shown)
         {
             return;
@@ -318,6 +355,14 @@ public class GameErrorNotifier : MonoBehaviour
             return;
         }
 
+        if (IsDisconnectNotificationSuppressed)
+        {
+            CancelConnectionWatchInternal();
+            _localClientConnected = false;
+            Debug.Log("[GameErrorNotifier] Local client disconnect ignored because logout is intentional.");
+            return;
+        }
+
         bool wasConnected = _localClientConnected && !_isWatchingConnection;
         CancelConnectionWatchInternal();
 
@@ -339,6 +384,15 @@ public class GameErrorNotifier : MonoBehaviour
         }
 
         bool wasConnected = _localClientConnected && !_isWatchingConnection;
+
+        if (IsDisconnectNotificationSuppressed)
+        {
+            CancelConnectionWatchInternal();
+            _localClientConnected = false;
+            Debug.Log("[GameErrorNotifier] Transport failure ignored because logout is intentional.");
+            return;
+        }
+
         CancelConnectionWatchInternal();
         Debug.LogWarning("[GameErrorNotifier] NetworkManager.OnTransportFailure fired.");
 

@@ -1,0 +1,32 @@
+Slide 1: # Slide 1: PHÁT TRIỂN TRÒ CHƠI MUTANTS ARENA VỚI HỆ THỐNG TIẾN HÓA GENE BẰNG UNITY
+Slide 2: # Slide 2: Thách thức, Giải pháp & Kết quả
+Slide 3: # Slide 3: Nội dung báo cáo
+Slide 4: # Slide 4: Chương 1: Tổng quan và Cơ sở lý thuyết
+Slide 5: # Slide 5: Khái niệm 2D Side-Scrolling Action RPG
+Slide 6: # Slide 6: Khảo sát game tham chiếu và Bài học thiết kế
+Slide 7: # Slide 7: Cơ sở lý thuyết di chuyển Platformer & AI FSM
+Slide 8: # Slide 8: Phát triển nhân vật & Tiến hóa Gene
+Slide 9: # Slide 9: Kiến trúc mạng Server-Authoritative
+Slide 10: # Slide 10: Cơ sở lý thuyết kiến trúc mạng Game & Công nghệ
+Slide 11: # Slide 11: Chương 2: Phân tích và Thiết kế hệ thống
+Slide 12: # Slide 12: Mô hình kiến trúc tổng thể hệ thống
+Slide 13: # Slide 13: Biểu đồ Use Case mức tổng quát
+Slide 14: # Slide 14: Use Case chi tiết: Chiến đấu & Kỹ năng
+Slide 15: # Slide 15: Use Case chi tiết: Tiến hóa Gene Ngũ Hành
+Slide 16: # Slide 16: Use Case chi tiết: Tham gia phó bản Wave
+Slide 17: # Slide 17: Sơ đồ Cơ sở dữ liệu vật lý ERD
+Slide 18: # Slide 18: Chương 3: Xây dựng các cơ chế game
+Slide 19: # Slide 19: Xây dựng hệ thống điều khiển & di chuyển
+Slide 20: # Slide 20: Xây dựng cơ chế chiến đấu & Tương khắc Ngũ hành
+Slide 21: # Slide 21: Xây dựng hệ thống Gene & Dung hợp Hybrid Gene
+Slide 22: # Slide 22: Xây dựng hệ thống AI quái vật & Boss đa giai đoạn
+Slide 23: # Slide 23: Triển khai cơ chế đồng bộ di chuyển & Zone Server
+Slide 24: # Slide 24: Chương 4: Kết quả triển khai và Đánh giá hệ thống
+Slide 25: # Slide 25: Kiến trúc triển khai Docker Compose trên VPS Linux
+Slide 26: # Slide 26: Cơ chế bảo mật hệ thống nhiều lớp
+Slide 27: # Slide 27: Giao diện Đăng ký, Chọn hệ, Sảnh chính & NPC
+Slide 28: # Slide 28: Giao diện Nâng cấp, Dung hợp Gene & Trang bị
+Slide 29: # Slide 29: Giao diện Phó bản Wave, Chat & Tổ đội
+Slide 30: # Slide 30: Thực nghiệm & Đánh giá hiệu năng hệ thống
+Slide 31: # Slide 31: Kết luận & Định hướng phát triển
+Slide 32: # Slide 32: CẢM ƠN QUÝ THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE!

@@ -272,6 +272,8 @@ public class PlayerSkillManager : NetworkBehaviour
             Debug.Log("[PlayerSkillManager] Detected PlayerCombat component (NormalAttack).");
         }
 
+        SortSkillsForHotbar();
+
         // Initialize skill dictionary
         skillByKey.Clear();
         foreach (var skill in skills)
@@ -296,6 +298,23 @@ public class PlayerSkillManager : NetworkBehaviour
         }
         
         Debug.Log($"[PlayerSkillManager] Đã khởi tạo {skillByKey.Count} skill(s) (bao gồm Teleport nếu có)");
+    }
+
+    public void SortSkillsForHotbar()
+    {
+        skills.Sort((a, b) => GetSkillHotbarOrder(a).CompareTo(GetSkillHotbarOrder(b)));
+    }
+
+    private static int GetSkillHotbarOrder(SkillData skill)
+    {
+        if (skill == null) return int.MaxValue;
+        if (skill.skillType == SkillType.NormalAttack || string.Equals(skill.skillCode, "NORMAL_ATTACK", System.StringComparison.OrdinalIgnoreCase))
+            return 0;
+        if (skill.skillType == SkillType.Dash || string.Equals(skill.skillCode, "DASH", System.StringComparison.OrdinalIgnoreCase))
+            return 9000;
+        if (skill.skillType.ToString().StartsWith("Hybrid"))
+            return 5000 + Mathf.Max(0, skill.requiredPlayerLevel);
+        return 100 + Mathf.Max(0, skill.requiredPlayerLevel);
     }
     
     private void InitializeSkillEffect(SkillData skill)
@@ -453,11 +472,13 @@ public class PlayerSkillManager : NetworkBehaviour
     private void UseSkill(SkillData skill)
     {
         if (skill == null) return;
+        if (!skill.CanUse() || skill.IsUsing()) return;
 
         Debug.Log("[PlayerSkillManager] UseSkill: " + skill.skillName + " | IsOwner=" + IsOwner + " | IsServer=" + IsServer + " | MP=" + dataSync?.networkMp.Value + "/" + dataSync?.networkMaxMp.Value + " | Cost=" + skill.currentMpCost);
 
         // ── Kiểm tra và trừ MP ─────────────────────────────────────────────
         if (!TryConsumeMP(skill.currentMpCost)) return;
+        EnemyClickHandler.NotifySkillUsedOnCurrentTarget();
 
         // Xử lý Teleport skill
         if (skill.skillType == SkillType.Teleport)

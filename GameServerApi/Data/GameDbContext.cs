@@ -73,6 +73,7 @@ namespace GameServerApi.Data
                 entity.Property(u => u.PasswordHash).HasColumnName("password_hash");
                 entity.Property(u => u.CreatedAt).HasColumnName("created_at");
                 entity.Property(u => u.LastLogin).HasColumnName("last_login");
+                entity.Property(u => u.Role).HasColumnName("role").HasMaxLength(32);
 
                 entity.HasIndex(u => u.Username).IsUnique();
                 entity.HasIndex(u => u.Email).IsUnique();
@@ -428,6 +429,8 @@ namespace GameServerApi.Data
                 entity.Property(p => p.PortalType).HasColumnName("portal_type").HasMaxLength(30);
                 entity.Property(p => p.PortalDirection).HasColumnName("portal_direction").HasMaxLength(10);
                 entity.Property(p => p.RequiredItemId).HasColumnName("required_item_id");
+                entity.Property(p => p.RequiredLevel).HasColumnName("required_level");
+                entity.Property(p => p.RequiredQuestId).HasColumnName("required_quest_id");
                 entity.Property(p => p.DungeonId).HasColumnName("dungeon_id");
                 entity.Property(p => p.IsActive).HasColumnName("is_active");
             });

@@ -115,6 +115,56 @@ public class ZoneTransitionController : NetworkBehaviour
         ExecuteTransferToRoom(clientId, _registry?.GetRoom(targetMapId, targetZoneId), entryPointId);
     }
 
+    public bool TryRespawnClientAfterDeath(ulong clientId, NetworkObject playerObject, out Vector3 spawnPosition)
+    {
+        spawnPosition = Vector3.zero;
+
+        if (!IsServer || _registry == null)
+            return false;
+
+        ZoneRoom currentRoom = _registry.GetClientRoom(clientId);
+        ZoneRoom targetRoom = currentRoom != null && currentRoom.IsCustom
+            ? currentRoom
+            : _registry.GetFallbackRoom();
+
+        if (targetRoom == null)
+            targetRoom = currentRoom;
+
+        if (targetRoom == null)
+            return false;
+
+        Vector2 entry = targetRoom.GetEntryPoint(0);
+        spawnPosition = new Vector3(entry.x, entry.y, 0f);
+
+        bool changedRoom = currentRoom == null || currentRoom.ZoneKey != targetRoom.ZoneKey;
+        if (changedRoom)
+            _registry.AssignClientToRoom(clientId, targetRoom);
+
+        ZonePlayerSessionManager.Instance?.UpdateZone(clientId, targetRoom.MapId, targetRoom.ZoneId);
+
+        if (playerObject != null)
+        {
+            playerObject.transform.position = spawnPosition;
+            MapSceneManager.Instance?.MoveToMapScene(playerObject.gameObject, targetRoom.MapId);
+        }
+
+        RefreshVisibilityForClient(clientId);
+
+        MapDefinition mapDef = _config?.GetMap(targetRoom.MapId);
+        string sceneName = mapDef?.sceneName ?? targetRoom.SceneName ?? string.Empty;
+        TeleportToZoneClientRpc(
+            targetRoom.MapId,
+            targetRoom.ZoneId,
+            sceneName,
+            entry.x,
+            entry.y,
+            BuildSingleClientRpcParams(clientId));
+
+        StartCoroutine(SavePositionFireAndForget(clientId, targetRoom, entry));
+        Debug.Log($"[ZoneTransitionController] Death respawn client {clientId} -> {targetRoom.ZoneKey} ({entry}) custom={targetRoom.IsCustom}");
+        return true;
+    }
+
     /// <summary>
     /// Tạo custom/private zone runtime và đưa client vào đó.
     /// Dùng cho phó bản/party-room thay vì để client tự chọn zone.
@@ -521,6 +571,45 @@ public class ZoneTransitionController : NetworkBehaviour
 
         // 10. Save vị trí mới vào API (fire-and-forget, không block)
         StartCoroutine(SavePositionFireAndForget(clientId, targetRoom, entry));
+        ReportReachQuestProgress(clientId, targetRoom.MapId);
+    }
+
+    private void ReportReachQuestProgress(ulong clientId, int mapId)
+    {
+        int playerId = 0;
+        string playerIdText = ZonePlayerSessionManager.Instance?.GetPlayerId(clientId);
+        if (!string.IsNullOrWhiteSpace(playerIdText))
+            int.TryParse(playerIdText, out playerId);
+
+        if (playerId <= 0 && ServerPlayerDataManager.Instance != null)
+            playerId = ServerPlayerDataManager.Instance.GetUserIdFromClientId(clientId);
+
+        if (playerId <= 0)
+            return;
+
+        QuestProgressReporter.Report(
+            this,
+            playerId,
+            QuestProgressReporter.ProgressType.Reach,
+            mapId,
+            1,
+            () => NotifyQuestProgressClient(clientId, "reach"));
+    }
+
+    private void NotifyQuestProgressClient(ulong clientId, string source)
+    {
+        foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
+        {
+            if (kvp.Value.OwnerClientId != clientId)
+                continue;
+
+            var sync = kvp.Value.GetComponent<NetworkPlayerDataSync>();
+            if (sync != null)
+            {
+                sync.NotifyQuestProgressOnServer(source);
+                return;
+            }
+        }
     }
 
     private bool CanProcessTransferRequest(ulong clientId)
@@ -643,13 +732,16 @@ public class ZoneTransitionController : NetworkBehaviour
         Debug.LogWarning($"[ZoneTransitionController] Zone transfer thất bại: {reason}");
         bool suppressCooldownFeedback = reason == "TRANSFER_COOLDOWN" &&
                                         ClientSceneController.ShouldSuppressTransferCooldownFeedback();
-        ClientSceneController.MarkTransferRequestFinished();
-        LoginLoadingManager.HideLoadingStatic();
         if (suppressCooldownFeedback)
         {
+            ClientSceneController.MarkTransferRequestStarted();
+            LoginLoadingManager.ShowLoadingStatic();
             Debug.Log("[ZoneTransitionController] Suppressed duplicate cooldown feedback while a valid transfer is already in-flight.");
             return;
         }
+
+        ClientSceneController.MarkTransferRequestFinished();
+        LoginLoadingManager.HideLoadingStatic();
         GlobalNotificationUI.Show(MapTransferFailureMessage(reason), "Không thể chuyển map", 2.5f, "Đóng");
     }
 

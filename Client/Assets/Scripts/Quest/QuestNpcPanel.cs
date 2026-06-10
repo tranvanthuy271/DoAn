@@ -6,23 +6,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// QuestNpcPanel — Panel danh sách nhiệm vụ theo phong cách menu NPC (giống ảnh chụp màn hình).
+/// Panel danh sach nhiem vu theo phong cach menu NPC.
 ///
 /// Flow:
-///   1. NpcMenuUI.Open(npc) với npc_type="quest" → gá»i QuestNpcPanel.GetOrCreate().Open(npc)
-///   2. Panel hiện danh sách nhiệm vụ dưới dạng nút bấm (? / ▶ / ✓ + tên quest)
-///   3. Click quest → QuestDialogueUI mở hội thoại (str1 hoặc str2)
-///   4. Sau "Nhận" / "Nhận thưởng" → gá»i API, đóng cả hai panel
+///   1. NpcMenuUI.Open(npc) voi npc_type="quest" goi QuestNpcPanel.GetOrCreate().Open(npc).
+///   2. Panel hien thi danh sach nhiem vu duoi dang button.
+///   3. Click quest mo QuestDialogueUI de nhan, xem tien do hoac nop nhiem vu.
+///   4. Sau thao tac nhan/nop, panel refresh hoac dong theo ket qua API.
 ///
-/// Canvas hierarchy (tạo bằng menu DoAn > Quest > Create Quest NPC Panel):
+/// Hierarchy de xuat:
 ///   QuestNpcPanelCanvas [Canvas sortOrder=50]
-///   └── QuestNpcPanelRoot [Image – wood background, ~320×480px]
-///       ├── Header [TMP_Text – "Xin chào {player}"]
-///       ├── BtnClose [Button – nút X góc phải]
-///       ├── QuestListScroll [ScrollRect]
-///       │   └── Viewport > Content [VerticalLayoutGroup]
-///       │       └── (dynamic) QuestListItem prefab [Button + TMP_Text]
-///       └── BtnCaoTu [Button – "Cáo từ"]
+///   QuestNpcPanelRoot [Image wood background]
+///   Header, BtnClose, QuestListScroll/Viewport/Content, BtnCaoTu
 /// </summary>
 public class QuestNpcPanel : MonoBehaviour
 {
@@ -238,19 +233,25 @@ public class QuestNpcPanel : MonoBehaviour
             return;
         }
 
-        foreach (var q in quests)
+        var visibleQuests = BuildVisibleQuestList(quests);
+        if (visibleQuests.Count == 0)
+        {
+            var empty = CreateListItem("NPC nay hien khong co nhiem vu phu hop.");
+            empty.GetComponent<Button>().interactable = false;
+            return;
+        }
+
+        foreach (var q in visibleQuests)
         {
             // Chỉ hiện: available, active, completed-but-submittable
             // Locked: hiện mờ, không bấm được
             bool submittable = q.status == "active" && IsAllDone(q);
-            bool locked      = q.status == "locked";
 
             string icon = q.status switch
             {
                 "available"  => "?",
                 "active"     => submittable ? "(*)" : "(>)",
                 "completed"  => "[v]",
-                "locked"     => "[X]",
                 _            => "?"
             };
             string label = $"  {icon}  {q.name}";
@@ -258,14 +259,6 @@ public class QuestNpcPanel : MonoBehaviour
             var item = CreateListItem(label);
             Debug.Log($"{LogPrefix} item '{q.name}' created | active={item.activeSelf} parent={item.transform.parent?.name}");
             var btn  = item.GetComponent<Button>();
-
-            if (locked)
-            {
-                btn.interactable = false;
-                var txt = item.GetComponentInChildren<TMP_Text>();
-                if (txt) txt.color = new Color(0.5f, 0.5f, 0.5f);
-                continue;
-            }
 
             var captured = q;
             btn.onClick.AddListener(() => OnQuestItemClicked(captured));
@@ -421,6 +414,35 @@ public class QuestNpcPanel : MonoBehaviour
         return item;
     }
 
+    private static List<QuestManager.QuestStatusDto> BuildVisibleQuestList(List<QuestManager.QuestStatusDto> quests)
+    {
+        var active = new List<QuestManager.QuestStatusDto>();
+        QuestManager.QuestStatusDto nextAvailable = null;
+
+        foreach (var q in quests)
+        {
+            if (q == null) continue;
+
+            switch (q.status)
+            {
+                case "active":
+                    active.Add(q);
+                    break;
+                case "available":
+                    if (nextAvailable == null)
+                        nextAvailable = q;
+                    break;
+            }
+        }
+
+        if (active.Count > 0)
+            return active;
+
+        return nextAvailable != null
+            ? new List<QuestManager.QuestStatusDto> { nextAvailable }
+            : new List<QuestManager.QuestStatusDto>();
+    }
+
     private static string BuildProgressHint(QuestManager.QuestStatusDto q)
     {
         if (string.IsNullOrEmpty(q.steps_json)) return "Đang thực hiện...";
@@ -482,8 +504,8 @@ public class QuestNpcPanel : MonoBehaviour
 
     private static string LocalizeStatus(string s) => s switch
     {
-        "available" => "Có thể nhận", "active" => "Äang làm",
-        "completed" => "Äã xong",     "locked"  => "Khóa",
+        "available" => "Co the nhan", "active" => "Dang lam",
+        "completed" => "Da xong",      "locked" => "Khoa",
         _           => s
     };
 

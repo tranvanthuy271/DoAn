@@ -223,6 +223,30 @@ public class EnemyAI : MonoBehaviour
             StartCoroutine(SnapToGroundAfterSpawn());
     }
 
+    public bool SnapToGroundForServerSpawn()
+    {
+        if (canFly || rb == null || bodyCollider == null)
+            return false;
+
+        ConfigureGroundBodyCollider();
+
+        if (_groundLayerMask == 0)
+            _groundLayerMask = LayerMask.GetMask("Ground");
+
+        bool snapped = TrySnapToGround();
+        if (snapped)
+        {
+            ResetServerGroundAnchor(rb.position);
+            LogGroundMovement("ServerSpawnSnap", $"snappedY={rb.position.y:F2}", true);
+        }
+        else if (!_serverAnchorSet)
+        {
+            ResetServerGroundAnchor(rb.position);
+        }
+
+        return snapped;
+    }
+
     public void ApplyRuntimeOverride(int attackDamage, float movementSpeed, bool enableFlight)
     {
         if (attackDamage > 0)
@@ -257,11 +281,49 @@ public class EnemyAI : MonoBehaviour
                 bodyCollider.isTrigger = false;
                 LogGroundMovement("BodyColliderSolid", $"collider={bodyCollider.name}", true);
             }
+
+            AlignServerBodyColliderToVisualFeet();
         }
         else if (_bodyColliderWasTrigger && !bodyCollider.isTrigger)
         {
             bodyCollider.isTrigger = true;
         }
+    }
+
+    private void AlignServerBodyColliderToVisualFeet()
+    {
+        if (bodyCollider is not BoxCollider2D boxCollider)
+            return;
+
+        SpriteRenderer visualRenderer = GetComponent<SpriteRenderer>();
+        if (visualRenderer == null || visualRenderer.sprite == null)
+            return;
+
+        Bounds bodyBounds = boxCollider.bounds;
+        Bounds visualBounds = visualRenderer.bounds;
+        float missingFeetHeight = bodyBounds.min.y - visualBounds.min.y;
+        if (missingFeetHeight <= 0.03f)
+            return;
+
+        float scaleY = Mathf.Abs(transform.lossyScale.y);
+        if (scaleY <= 0.0001f)
+            return;
+
+        float extendLocal = missingFeetHeight / scaleY;
+        Vector2 size = boxCollider.size;
+        Vector2 offset = boxCollider.offset;
+        float localTop = offset.y + size.y * 0.5f;
+        float localBottom = offset.y - size.y * 0.5f - extendLocal;
+
+        size.y = Mathf.Max(0.01f, localTop - localBottom);
+        offset.y = (localTop + localBottom) * 0.5f;
+        boxCollider.size = size;
+        boxCollider.offset = offset;
+
+        LogGroundMovement(
+            "BodyColliderFeetAligned",
+            $"extend={missingFeetHeight:F2} visualBottom={visualBounds.min.y:F2} colliderBottom={bodyBounds.min.y:F2}",
+            true);
     }
 
     // ── Freeze (DebuffManager gọi qua ClientRpc) ─────────────────────────────
@@ -1903,6 +1965,7 @@ public class EnemyAI : MonoBehaviour
         rb.position = new Vector2(rb.position.x, snappedY);
         rb.velocity = Vector2.zero;
         CacheSupportedGroundPosition(rb.position);
+        ResetServerGroundAnchor(rb.position);
         Debug.Log($"[TrySnapToGround] SNAPPED {gameObject.name} → Y={snappedY:F2} (hitPointY={hit.point.y:F2} bottomOffset={currentBottomOffset:F2}) collider={hit.collider.name} isTrigger={hit.collider.isTrigger} usedByEffector={hit.collider.usedByEffector}");
         return true;
     }
@@ -1952,6 +2015,13 @@ public class EnemyAI : MonoBehaviour
         }
 
         _unsupportedFallStartTime = -1f;
+    }
+
+    private void ResetServerGroundAnchor(Vector2 position)
+    {
+        _serverAnchorX = position.x;
+        _serverAnchorY = position.y;
+        _serverAnchorSet = true;
     }
 
     private void CacheSupportedGroundPosition(Vector2 position)

@@ -72,6 +72,11 @@ public class BossAI : NetworkBehaviour
     public bool useGroundPhysics = false;
     public bool canJump = false;
     public float jumpForce = 8f;
+    public float minCalculatedJumpForce = 6f;
+    public float jumpHeightPadding = 0.45f;
+    public float obstacleJumpHeightPadding = 0.75f;
+    public bool requireGroundedToJump = true;
+    public bool allowUntargetedJumps = true;
     public int maxJumps = 1;
     public float verticalTargetThreshold = 0.85f;
     public float preferredRetreatDistance = 4.5f;
@@ -85,6 +90,9 @@ public class BossAI : NetworkBehaviour
     public float groundCheckRadius = 0.18f;
     public LayerMask groundLayerMask;
     public float groundSearchDistance = 14f;
+    public float upperPlatformSearchHorizontalRange = 5f;
+    public float upperPlatformSearchVerticalRange = 8f;
+    public float upperPlatformJumpEdgeDistance = 1.25f;
     public float fallThroughDuration = 0.35f;
     public float fallThroughDrop = 0.12f;
     public float projectileAimOvershoot = 0.45f;
@@ -124,6 +132,13 @@ public class BossAI : NetworkBehaviour
     public float dodgeObstacleProbeDistance = 0.85f;
     public float dodgeEdgeProbeDistance = 1.35f;
     public LayerMask dodgeObstacleMask;
+
+    [Header("Obstacle Climb / Unstuck")]
+    public bool climbObstaclesWhileChasing = true;
+    public float obstacleProbeDistance = 0.55f;
+    public float obstacleJumpHorizontalBoost = 1.35f;
+    public float obstacleJumpCooldown = 0.35f;
+    public float stuckTimeBeforeRetreat = 1.1f;
 
     [Header("Debug")]
     public bool debugLogs = false;
@@ -172,13 +187,22 @@ public class BossAI : NetworkBehaviour
     private string _activeAttackBoolParameter;
     private Coroutine _fallThroughCoroutine;
     private Collider2D _ignoredGroundCollider;
+    private Coroutine _jumpThroughCoroutine;
+    private Collider2D _jumpThroughGroundCollider;
+    private Collider2D _lastHigherPlatformCollider;
+    private float _lastHigherPlatformTopY;
+    private bool _lastHigherPlatformCloseEnough;
     private float _platformSearchDirection = 0f;
     private float _nextPlatformSearchFlipTime = -1f;
     private float _nextLifecycleLogTime = -1f;
     private float _nextGroundTraversalTime = -1f;
     private float _nextAdvancedDodgeTime = -1f;
+    private float _lastObstacleJumpTime = -10f;
+    private float _chaseBlockedSince = -1f;
+    private int _boss25MeleeComboCount = 0;
     private bool _currentRetreatAllowsGroundTraversal = true;
     private const string Boss25LogTag = "[BOSS25]";
+    private const string Boss25JumpLogTag = "[BOSS25_JUMP]";
 
     private enum BossState
     {
@@ -200,6 +224,8 @@ public class BossAI : NetworkBehaviour
         _rb = GetComponent<Rigidbody2D>();
         _anim = GetComponent<Animator>();
         _bodyCollider = GetComponent<Collider2D>();
+
+        ApplyBoss25JumpDefaults();
 
         if (_rb != null)
         {
@@ -233,6 +259,24 @@ public class BossAI : NetworkBehaviour
         LogBossLifecycle("Awake");
     }
 
+    private void ApplyBoss25JumpDefaults()
+    {
+        if (!UsesBoss25JumpRules())
+            return;
+
+        allowUntargetedJumps = false;
+        requireGroundedToJump = true;
+        maxJumps = 1;
+        approachJumpChance = 0f;
+        upperPlatformJumpEdgeDistance = Mathf.Max(upperPlatformJumpEdgeDistance, 2f);
+        obstacleJumpHorizontalBoost = Mathf.Max(obstacleJumpHorizontalBoost, 2.1f);
+    }
+
+    private bool UsesBoss25JumpRules()
+    {
+        return bossId == 13 || gameObject.name.Contains("Enemy 25");
+    }
+
     private void OnEnable()
     {
         ApplyMovementPhysics();
@@ -249,6 +293,7 @@ public class BossAI : NetworkBehaviour
     private void OnDisable()
     {
         RestoreIgnoredGroundCollision();
+        RestoreJumpThroughGroundCollision();
         ResetAttackAnimation();
     }
 
@@ -277,6 +322,21 @@ public class BossAI : NetworkBehaviour
             StartCoroutine(SnapToGroundAfterSpawn());
 
         LogBossLifecycle("Start");
+    }
+
+    public bool SnapToGroundForServerSpawn()
+    {
+        if (!useGroundPhysics)
+            return false;
+
+        if (groundLayerMask == 0)
+            groundLayerMask = LayerMask.GetMask("Ground");
+
+        bool snapped = TrySnapToGround();
+        if (snapped)
+            UpdateGroundState();
+
+        return snapped;
     }
 
     public void ApplyRuntimeOverride(int baseDamage, float runtimeChaseSpeed)
@@ -443,6 +503,7 @@ public class BossAI : NetworkBehaviour
     {
         LocalBossSkillConfig retreatSkill = null;
         LocalBossSkillConfig approachSkill = null;
+        LocalBossSkillConfig readyApproachSkill = null;
 
         foreach (var skill in localSkills)
         {
@@ -453,6 +514,8 @@ public class BossAI : NetworkBehaviour
 
             if (!IsLocalSkillReady(skill))
                 continue;
+
+            readyApproachSkill ??= skill;
 
             float minDistance = Mathf.Max(0f, skill.minDistance);
             if (dist < minDistance)
@@ -495,8 +558,23 @@ public class BossAI : NetworkBehaviour
             return true;
         }
 
+        if (readyApproachSkill != null)
+        {
+            ChasePlayer(GetApproachStopDistance(readyApproachSkill));
+            return true;
+        }
+
         if (approachSkill != null)
         {
+            if (UsesBoss25JumpRules())
+            {
+                BossDebug(
+                    "local-skill-cooldown-chase",
+                    $"Local skill dang cooldown, fallback chase/basic melee. dist={dist:F2} skill='{ResolveLocalSkillId(approachSkill)}'",
+                    0.25f);
+                return false;
+            }
+
             ChasePlayer(GetApproachStopDistance(approachSkill));
             return true;
         }
@@ -506,10 +584,16 @@ public class BossAI : NetworkBehaviour
 
     private IEnumerator CastBasicMelee()
     {
-        StopMovement();
+        bool useBoss25Rush = UsesBoss25JumpRules();
+        if (useBoss25Rush)
+            RushTowardPlayerForAttack(meleeAttackRange);
+        else
+            StopMovement();
         PlayAttackAnimation(DefaultAttackBoolParameter);
 
         yield return new WaitForSeconds(0.25f);
+        if (useBoss25Rush)
+            StopMovement();
 
         if (_state == BossState.Dead)
             yield break;
@@ -526,15 +610,24 @@ public class BossAI : NetworkBehaviour
         if (_state == BossState.Dead)
             yield break;
 
-        StartRetreat(preferredRetreatDistance, postAttackRetreatSpeedMultiplier, postAttackRetreatMinDuration, 0f, true);
+        if (ShouldRetreatAfterBoss25MeleeCombo())
+            StartRetreat(preferredRetreatDistance, postAttackRetreatSpeedMultiplier, postAttackRetreatMinDuration, 0f, true);
+        else
+            _state = BossState.Chase;
     }
 
     private IEnumerator CastLocalSkill(LocalBossSkillConfig skill, int skillIndex)
     {
-        StopMovement();
+        bool useBoss25Rush = UsesBoss25JumpRules() && skill.skillType == LocalBossSkillType.Melee;
+        if (useBoss25Rush)
+            RushTowardPlayerForAttack(skill.range);
+        else
+            StopMovement();
         PlayAttackAnimation(skill.animationParameter);
 
         yield return new WaitForSeconds(Mathf.Max(0f, skill.castDelay));
+        if (useBoss25Rush)
+            StopMovement();
 
         if (_state == BossState.Dead)
             yield break;
@@ -573,7 +666,19 @@ public class BossAI : NetworkBehaviour
         if (_state == BossState.Dead)
             yield break;
 
-        if (skill.retreatAfterUse || (alwaysRetreatAfterMelee && skill.skillType == LocalBossSkillType.Melee))
+        if (UsesBoss25JumpRules() && skill.skillType == LocalBossSkillType.Melee)
+        {
+            if (ShouldRetreatAfterBoss25MeleeCombo())
+                StartRetreat(
+                    Mathf.Max(preferredRetreatDistance, skill.minDistance),
+                    postAttackRetreatSpeedMultiplier,
+                    postAttackRetreatMinDuration,
+                    0f,
+                    true);
+            else
+                _state = BossState.Chase;
+        }
+        else if (skill.retreatAfterUse || (alwaysRetreatAfterMelee && skill.skillType == LocalBossSkillType.Melee))
             StartRetreat(
                 Mathf.Max(preferredRetreatDistance, skill.minDistance),
                 postAttackRetreatSpeedMultiplier,
@@ -582,6 +687,52 @@ public class BossAI : NetworkBehaviour
                 true);
         else
             _state = BossState.Chase;
+    }
+
+    private void RushTowardPlayerForAttack(float desiredRange)
+    {
+        if (_rb == null || playerTarget == null)
+            return;
+
+        float deltaX = playerTarget.position.x - transform.position.x;
+        if (Mathf.Abs(deltaX) <= Mathf.Max(0.2f, desiredRange * 0.45f))
+        {
+            StopMovement();
+            return;
+        }
+
+        float direction = Mathf.Sign(deltaX);
+        float speed = chaseSpeed * _speedMultiplier * Mathf.Max(1.5f, postAttackRetreatSpeedMultiplier);
+        _rb.velocity = new Vector2(direction * speed, useGroundPhysics ? _rb.velocity.y : 0f);
+        UpdateFacing(direction);
+        SetMovingState(true);
+        BossDebug(
+            "attack-rush",
+            $"Attack rush dir={direction:F0} speed={speed:F2} distX={Mathf.Abs(deltaX):F2} desiredRange={desiredRange:F2}",
+            0.1f);
+    }
+
+    private bool ShouldRetreatAfterBoss25MeleeCombo()
+    {
+        if (!UsesBoss25JumpRules())
+            return true;
+
+        _boss25MeleeComboCount++;
+        int comboLimit = 3;
+        bool shouldRetreat = _boss25MeleeComboCount >= comboLimit;
+        BossDebug(
+            "boss25-melee-combo",
+            $"Boss25 melee combo {_boss25MeleeComboCount}/{comboLimit} retreat={shouldRetreat}",
+            0f);
+
+        if (shouldRetreat)
+        {
+            _boss25MeleeComboCount = 0;
+            return true;
+        }
+
+        _reengageLockedUntil = Mathf.Min(_reengageLockedUntil, Time.time + 0.05f);
+        return false;
     }
 
     private void SpawnProjectileSkill(LocalBossSkillConfig skill, int damage, Vector2 aimDirection)
@@ -803,11 +954,15 @@ public class BossAI : NetworkBehaviour
         float speed = chaseSpeed * _speedMultiplier;
         float yVelocity = useGroundPhysics ? _rb.velocity.y : 0f;
 
+        if (TryHandleChaseObstacle(horizontalDirection, speed, needsVerticalTraversal))
+            return;
+
         _rb.velocity = new Vector2(horizontalDirection * speed, yVelocity);
         UpdateFacing(horizontalDirection);
         SetMovingState(true);
         HandleVerticalMovement(true);
-        TryApproachHop();
+        if (!needsVerticalTraversal)
+            TryApproachHop();
     }
 
     private void StopMovement()
@@ -826,6 +981,8 @@ public class BossAI : NetworkBehaviour
         bool allowGroundTraversal = true)
     {
         _state = BossState.Retreat;
+        if (UsesBoss25JumpRules())
+            _boss25MeleeComboCount = 0;
         _currentRetreatAllowsGroundTraversal = allowGroundTraversal || !restrictGroundTraversalToChaseOrPostAttack;
         _retreatDistanceGoal = Mathf.Max(distanceGoal, preferredRetreatDistance, meleeAttackRange + 0.5f);
         float minRetreatDuration = Mathf.Max(0f, minDuration);
@@ -848,6 +1005,206 @@ public class BossAI : NetworkBehaviour
             $"StartRetreat goal={_retreatDistanceGoal:F2} dir={_retreatHorizontalDirection:F0} allowGroundTraversal={_currentRetreatAllowsGroundTraversal} until={_retreatUntilTime - Time.time:F2}s min={_retreatMinUntilTime - Time.time:F2}s distToPlayer={(playerTarget != null ? Vector2.Distance(transform.position, playerTarget.position) : -1f):F2}",
             0f);
         TryRetreatEvasion(true);
+    }
+
+    private bool TryHandleChaseObstacle(float horizontalDirection, float speed, bool needsVerticalTraversal)
+    {
+        if (!climbObstaclesWhileChasing
+            || !useGroundPhysics
+            || !canJump
+            || _rb == null
+            || _bodyCollider == null
+            || Mathf.Abs(horizontalDirection) <= 0.01f)
+        {
+            _chaseBlockedSince = -1f;
+            return false;
+        }
+
+        bool blockedAhead = IsChaseObstacleAhead(horizontalDirection, out RaycastHit2D obstacleHit);
+        bool missingGroundAhead = _isGrounded && IsGroundMissingAhead(horizontalDirection);
+        bool ignoreSameLevelGround = ShouldIgnoreSameLevelGroundObstacle(obstacleHit, needsVerticalTraversal);
+        if (ignoreSameLevelGround)
+            blockedAhead = false;
+
+        bool shouldClimb = UsesBoss25JumpRules()
+            ? (blockedAhead || (missingGroundAhead && needsVerticalTraversal))
+            : (blockedAhead || (missingGroundAhead && (needsVerticalTraversal || IsTargetAboveOrSameLevel())));
+
+        if (!shouldClimb)
+        {
+            _chaseBlockedSince = -1f;
+            return false;
+        }
+
+        if (_chaseBlockedSince < 0f)
+            _chaseBlockedSince = Time.time;
+
+        if (_isGrounded && Time.time - _lastObstacleJumpTime >= Mathf.Max(0.05f, obstacleJumpCooldown))
+        {
+            float targetY = ResolveObstacleJumpTargetY(blockedAhead, obstacleHit);
+            Collider2D jumpThroughPlatform = _lastHigherPlatformCloseEnough ? _lastHigherPlatformCollider : null;
+            float jumpThroughTopY = _lastHigherPlatformTopY;
+            BeginJumpThroughHigherPlatform(jumpThroughPlatform, jumpThroughTopY);
+            bool jumped = TryJump(true, targetY);
+            if (!jumped && jumpThroughPlatform != null)
+                RestoreJumpThroughGroundCollision(jumpThroughPlatform);
+            if (jumped)
+            {
+                _lastObstacleJumpTime = Time.time;
+                float boostedSpeed = speed * Mathf.Max(1f, obstacleJumpHorizontalBoost);
+                _rb.velocity = new Vector2(horizontalDirection * boostedSpeed, _rb.velocity.y);
+                UpdateFacing(horizontalDirection);
+                SetMovingState(true);
+                BossDebug(
+                    "chase-obstacle-jump",
+                    $"dir={horizontalDirection:F0} speed={boostedSpeed:F2} blocked={blockedAhead} missingGround={missingGroundAhead} hit={(obstacleHit.collider != null ? obstacleHit.collider.name : "none")}",
+                    0.05f);
+                return true;
+            }
+        }
+
+        if (Time.time - _chaseBlockedSince >= Mathf.Max(0.2f, stuckTimeBeforeRetreat))
+        {
+            BossDebug(
+                "chase-obstacle-retreat",
+                $"Obstacle stuck for {Time.time - _chaseBlockedSince:F2}s. Start short reposition. hit={(obstacleHit.collider != null ? obstacleHit.collider.name : "none")}",
+                0.05f);
+            StartRetreat(
+                Mathf.Max(preferredRetreatDistance * 0.5f, meleeAttackRange + 0.75f),
+                postAttackRetreatSpeedMultiplier,
+                Mathf.Min(0.6f, postAttackRetreatMinDuration),
+                -horizontalDirection,
+                true);
+            _chaseBlockedSince = -1f;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool ShouldIgnoreSameLevelGroundObstacle(RaycastHit2D obstacleHit, bool needsVerticalTraversal)
+    {
+        if (!UsesBoss25JumpRules()
+            || needsVerticalTraversal
+            || !_isGrounded
+            || _bodyCollider == null
+            || obstacleHit.collider == null
+            || !IsUsableGroundCollider(obstacleHit.collider))
+        {
+            return false;
+        }
+
+        Bounds bodyBounds = _bodyCollider.bounds;
+        Bounds obstacleBounds = obstacleHit.collider.bounds;
+        float floorTolerance = Mathf.Max(0.25f, groundCheckRadius * 2.5f);
+        bool sameFloorTop = obstacleBounds.max.y <= bodyBounds.min.y + floorTolerance;
+        bool playerIsSameLevel = playerTarget == null || Mathf.Abs(playerTarget.position.y - transform.position.y) <= verticalTargetThreshold;
+        if (!sameFloorTop || !playerIsSameLevel)
+            return false;
+
+        BossJumpDebug(
+            "same-level-ground-ignore",
+            $"Ignore same-level ground obstacle collider={obstacleHit.collider.name} hit={obstacleHit.point} bossFeet={bodyBounds.min.y:F2} groundTop={obstacleBounds.max.y:F2} playerPos={(playerTarget != null ? playerTarget.position : Vector3.zero)}",
+            0.25f);
+        return true;
+    }
+
+    private bool IsTargetAboveOrSameLevel()
+    {
+        return playerTarget == null || playerTarget.position.y >= transform.position.y - verticalTargetThreshold;
+    }
+
+    private bool IsChaseObstacleAhead(float horizontalDirection, out RaycastHit2D hit)
+    {
+        hit = default;
+        if (_bodyCollider == null)
+            return false;
+
+        int obstacleMask = BuildChaseObstacleMask();
+        if (obstacleMask == 0)
+            return false;
+
+        Bounds bounds = _bodyCollider.bounds;
+        Vector2 direction = horizontalDirection > 0f ? Vector2.right : Vector2.left;
+        float originX = horizontalDirection > 0f ? bounds.max.x + 0.03f : bounds.min.x - 0.03f;
+        float distance = Mathf.Max(0.1f, obstacleProbeDistance);
+        Vector2[] origins =
+        {
+            new Vector2(originX, bounds.center.y + bounds.extents.y * 0.2f),
+            new Vector2(originX, bounds.center.y - bounds.extents.y * 0.25f),
+            new Vector2(originX, bounds.min.y + 0.12f)
+        };
+
+        foreach (Vector2 origin in origins)
+        {
+            RaycastHit2D candidate = RaycastInCurrentScene(origin, direction, distance, obstacleMask);
+            if (candidate.collider == null || IsTemporarilyIgnoredGround(candidate.collider))
+                continue;
+
+            if (!IsUsableTraversalBlocker(candidate.collider))
+                continue;
+
+            hit = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsGroundMissingAhead(float horizontalDirection)
+    {
+        if (_bodyCollider == null || groundLayerMask == 0)
+            return false;
+
+        Bounds bounds = _bodyCollider.bounds;
+        float edgeX = horizontalDirection > 0f
+            ? bounds.max.x + Mathf.Max(0.2f, obstacleProbeDistance * 0.8f)
+            : bounds.min.x - Mathf.Max(0.2f, obstacleProbeDistance * 0.8f);
+        float originY = bounds.center.y + bounds.extents.y * 0.15f;
+        float distance = bounds.extents.y + Mathf.Max(0.35f, dodgeEdgeProbeDistance);
+        RaycastHit2D groundHit = RaycastInCurrentScene(new Vector2(edgeX, originY), Vector2.down, distance, groundLayerMask);
+        return !IsUsableGroundCollider(groundHit.collider);
+    }
+
+    private float ResolveObstacleJumpTargetY(bool blockedAhead, RaycastHit2D obstacleHit)
+    {
+        float targetY = float.NaN;
+        bool foundPlatform = TryResolveHigherPlatformTarget(out float platformTargetY, out _, out bool closeEnoughToPlatform);
+        if (foundPlatform && (!UsesBoss25JumpRules() || closeEnoughToPlatform))
+            targetY = platformTargetY;
+
+        if (blockedAhead && obstacleHit.collider != null)
+        {
+            float obstacleTopY = obstacleHit.point.y + Mathf.Max(0f, obstacleJumpHeightPadding);
+            targetY = float.IsNaN(targetY) ? obstacleTopY : Mathf.Max(targetY, obstacleTopY);
+        }
+
+        if (playerTarget != null && playerTarget.position.y > transform.position.y + verticalTargetThreshold)
+        {
+            float playerTargetY = playerTarget.position.y + Mathf.Max(0f, jumpHeightPadding);
+            if (!UsesBoss25JumpRules() || closeEnoughToPlatform || blockedAhead)
+                targetY = float.IsNaN(targetY) ? playerTargetY : Mathf.Max(targetY, playerTargetY);
+        }
+
+        return targetY;
+    }
+
+    private int BuildChaseObstacleMask()
+    {
+        int mask = 0;
+        if (groundLayerMask.value != 0)
+            mask |= groundLayerMask.value;
+        if (dodgeObstacleMask.value != 0)
+            mask |= dodgeObstacleMask.value;
+
+        int wallLayer = LayerMask.NameToLayer("Wall");
+        int maxMapLayer = LayerMask.NameToLayer("MaxMap");
+        if (wallLayer >= 0)
+            mask |= 1 << wallLayer;
+        if (maxMapLayer >= 0)
+            mask |= 1 << maxMapLayer;
+
+        return mask;
     }
 
     private bool IsRetreating()
@@ -911,8 +1268,7 @@ public class BossAI : NetworkBehaviour
         float heightDelta = playerTarget.position.y - transform.position.y;
         if (heightDelta > verticalTargetThreshold)
         {
-            if (!TryJump())
-                SearchForHigherPlatformEntry();
+            SearchForHigherPlatformEntry();
             return;
         }
 
@@ -934,7 +1290,7 @@ public class BossAI : NetworkBehaviour
             && Mathf.Abs(playerTarget.position.y - transform.position.y) > verticalTargetThreshold;
     }
 
-    private bool CanStartGroundTraversal()
+    private bool CanStartGroundTraversal(bool ignoreCooldown = false)
     {
         if (restrictGroundTraversalToChaseOrPostAttack)
         {
@@ -947,7 +1303,7 @@ public class BossAI : NetworkBehaviour
             }
         }
 
-        if (UsesGroundTraversalCooldown() && Time.time < _nextGroundTraversalTime)
+        if (!ignoreCooldown && UsesGroundTraversalCooldown() && Time.time < _nextGroundTraversalTime)
         {
             BossDebug("ground-traversal-cooldown", $"Ground traversal cooldown remain={_nextGroundTraversalTime - Time.time:F2}s");
             return false;
@@ -1106,7 +1462,13 @@ public class BossAI : NetworkBehaviour
     private void SearchForHigherPlatformEntry()
     {
         if (!useGroundPhysics || _rb == null || playerTarget == null)
+        {
+            BossJumpDebug(
+                "search-up-disabled",
+                $"SearchUp disabled useGroundPhysics={useGroundPhysics} rb={(_rb != null)} target={(playerTarget != null ? playerTarget.name : "null")}",
+                0.2f);
             return;
+        }
 
         float deltaX = playerTarget.position.x - transform.position.x;
         if (Mathf.Abs(deltaX) > 0.3f)
@@ -1128,13 +1490,176 @@ public class BossAI : NetworkBehaviour
             }
         }
 
-        bool jumped = TryJump();
+        float targetY = float.NaN;
+        bool foundPlatformTarget = false;
+        bool closeEnoughToJump = false;
+        if (TryResolveHigherPlatformTarget(out float platformTargetY, out float platformDirection, out bool resolvedCloseEnoughToJump))
+        {
+            foundPlatformTarget = true;
+            closeEnoughToJump = resolvedCloseEnoughToJump;
+            targetY = platformTargetY;
+            _platformSearchDirection = platformDirection;
+            if (!closeEnoughToJump)
+                _nextPlatformSearchFlipTime = Time.time + 1.2f;
+        }
+
+        bool jumped = false;
+        string jumpDecision = "not-grounded";
+        if (_isGrounded && foundPlatformTarget && Mathf.Abs(playerTarget.position.y - transform.position.y) > verticalTargetThreshold)
+        {
+            bool canJumpNow = closeEnoughToJump;
+            if (canJumpNow)
+            {
+                Collider2D jumpThroughPlatform = _lastHigherPlatformCollider;
+                float jumpThroughTopY = _lastHigherPlatformTopY;
+                BeginJumpThroughHigherPlatform(jumpThroughPlatform, jumpThroughTopY);
+                jumped = TryJump(true, targetY);
+                if (!jumped && jumpThroughPlatform != null)
+                    RestoreJumpThroughGroundCollision(jumpThroughPlatform);
+                jumpDecision = jumped ? "jumped" : "try-jump-failed";
+            }
+            else
+            {
+                jumpDecision = "move-to-platform-edge";
+            }
+        }
+        else if (_isGrounded && !foundPlatformTarget)
+        {
+            jumpDecision = "searching-no-platform-target";
+        }
+        else if (_isGrounded)
+        {
+            jumpDecision = "height-delta-too-small";
+        }
+
         float speed = chaseSpeed * _speedMultiplier;
+        float activeSpeed = jumped ? speed * Mathf.Max(1f, obstacleJumpHorizontalBoost) : speed;
         float yVelocity = useGroundPhysics ? _rb.velocity.y : 0f;
-        _rb.velocity = new Vector2(_platformSearchDirection * speed, yVelocity);
+        _rb.velocity = new Vector2(_platformSearchDirection * activeSpeed, yVelocity);
         UpdateFacing(_platformSearchDirection);
         SetMovingState(true);
-        BossDebug("search-up", $"Search higher platform dir={_platformSearchDirection:F0} jumped={jumped} heightDelta={(playerTarget.position.y - transform.position.y):F2}");
+        BossDebug("search-up", $"Search higher platform dir={_platformSearchDirection:F0} jumped={jumped} targetY={(float.IsNaN(targetY) ? -999f : targetY):F2} heightDelta={(playerTarget.position.y - transform.position.y):F2}");
+        BossJumpDebug(
+            "search-up-decision",
+            $"SearchUp decision={jumpDecision} foundPlatform={foundPlatformTarget} close={closeEnoughToJump} grounded={_isGrounded} jumpsLeft={_jumpsLeft} dir={_platformSearchDirection:F0} speed={activeSpeed:F2} bossPos={transform.position} playerPos={playerTarget.position} targetY={(float.IsNaN(targetY) ? -999f : targetY):F2} vel={(_rb != null ? _rb.velocity : Vector2.zero)} nextTraversal={Mathf.Max(0f, _nextGroundTraversalTime - Time.time):F2}s",
+            0.15f);
+    }
+
+    private bool TryResolveHigherPlatformTarget(out float targetY, out float horizontalDirection, out bool closeEnoughToJump)
+    {
+        targetY = float.NaN;
+        horizontalDirection = 0f;
+        closeEnoughToJump = false;
+        _lastHigherPlatformCollider = null;
+        _lastHigherPlatformTopY = 0f;
+        _lastHigherPlatformCloseEnough = false;
+
+        if (_bodyCollider == null || playerTarget == null || groundLayerMask == 0)
+        {
+            BossJumpDebug(
+                "scan-up-disabled",
+                $"ScanUp disabled body={(_bodyCollider != null)} target={(playerTarget != null ? playerTarget.name : "null")} groundMask={groundLayerMask.value}",
+                0.25f);
+            return false;
+        }
+
+        Bounds bodyBounds = _bodyCollider.bounds;
+        float currentFeetY = bodyBounds.min.y;
+        float scanHalfWidth = Mathf.Max(0.5f, upperPlatformSearchHorizontalRange) * 0.5f;
+        float minX = Mathf.Min(transform.position.x, playerTarget.position.x) - scanHalfWidth;
+        float maxX = Mathf.Max(transform.position.x, playerTarget.position.x) + scanHalfWidth;
+        float scanTopY = Mathf.Max(playerTarget.position.y + Mathf.Max(1f, upperPlatformSearchVerticalRange * 0.5f), currentFeetY + Mathf.Max(2f, upperPlatformSearchVerticalRange));
+        float scanDistance = Mathf.Max(2f, scanTopY - currentFeetY + 1f);
+        int sampleCount = 9;
+
+        bool found = false;
+        float bestScore = float.MaxValue;
+        RaycastHit2D bestHit = default;
+        RaycastHit2D[] hits = new RaycastHit2D[16];
+        int usableCandidateCount = 0;
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = sampleCount <= 1 ? 0.5f : i / (float)(sampleCount - 1);
+            float sampleX = Mathf.Lerp(minX, maxX, t);
+            int hitCount = RaycastAllInCurrentScene(new Vector2(sampleX, scanTopY), Vector2.down, scanDistance, groundLayerMask, hits);
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                RaycastHit2D hit = hits[hitIndex];
+                if (!IsUsableGroundCollider(hit.collider) || IsTemporarilyIgnoredGround(hit.collider))
+                    continue;
+
+                if (hit.point.y <= currentFeetY + Mathf.Max(0.1f, verticalTargetThreshold * 0.5f))
+                    continue;
+
+                usableCandidateCount++;
+                float playerYScore = Mathf.Abs(hit.point.y - playerTarget.position.y) * 2.5f;
+                float playerXScore = Mathf.Abs(hit.point.x - playerTarget.position.x) * 0.6f;
+                float bossXScore = Mathf.Abs(hit.point.x - transform.position.x) * 0.15f;
+                float score = playerYScore + playerXScore + bossXScore;
+                if (score >= bestScore)
+                    continue;
+
+                bestScore = score;
+                bestHit = hit;
+                found = true;
+            }
+        }
+
+        if (!found)
+        {
+            BossJumpDebug(
+                "scan-up-none",
+                $"ScanUp no platform candidates={usableCandidateCount} bossFeetY={currentFeetY:F2} playerPos={playerTarget.position} scanX={minX:F2}->{maxX:F2} scanTopY={scanTopY:F2} distance={scanDistance:F2} groundMask={groundLayerMask.value}",
+                0.25f);
+            return false;
+        }
+
+        targetY = bestHit.point.y + Mathf.Max(0f, jumpHeightPadding);
+        _lastHigherPlatformCollider = bestHit.collider;
+        _lastHigherPlatformTopY = bestHit.point.y;
+        Bounds platformBounds = bestHit.collider.bounds;
+        float bodyHalfWidth = Mathf.Max(0.1f, bodyBounds.extents.x);
+        float entryPadding = bodyHalfWidth + 0.18f;
+        float leftEdgeEntryX = platformBounds.min.x - bodyHalfWidth - 0.08f;
+        float rightEdgeEntryX = platformBounds.max.x + bodyHalfWidth + 0.08f;
+        bool bossIsLeftOfPlatform = transform.position.x < platformBounds.min.x;
+        bool bossIsRightOfPlatform = transform.position.x > platformBounds.max.x;
+        bool useLeftEdge = bossIsLeftOfPlatform || (!bossIsRightOfPlatform && Mathf.Abs(leftEdgeEntryX - bestHit.point.x) <= Mathf.Abs(rightEdgeEntryX - bestHit.point.x));
+        float localEntrySide = transform.position.x <= bestHit.point.x ? -1f : 1f;
+        float localEntryX = bestHit.point.x + localEntrySide * entryPadding;
+        float nearestEdgeEntryX = useLeftEdge ? leftEdgeEntryX : rightEdgeEntryX;
+        float nearestEdgeGapFromHit = Mathf.Abs(nearestEdgeEntryX - bestHit.point.x);
+        float nearestEdgeGapFromBoss = Mathf.Abs(nearestEdgeEntryX - transform.position.x);
+        float maxReasonableEdgeGap = Mathf.Max(2f, upperPlatformSearchHorizontalRange * 0.65f);
+        bool bossOutsidePlatform = bossIsLeftOfPlatform || bossIsRightOfPlatform;
+        bool usePlatformEdgeEntry = UsesBoss25JumpRules()
+            ? bossOutsidePlatform && nearestEdgeGapFromBoss <= Mathf.Max(2f, upperPlatformSearchHorizontalRange)
+            : nearestEdgeGapFromHit <= maxReasonableEdgeGap;
+        float entryX = usePlatformEdgeEntry ? nearestEdgeEntryX : localEntryX;
+        string entryMode = usePlatformEdgeEntry ? "edge" : "local";
+
+        float desiredX = entryX;
+        float deltaX = desiredX - transform.position.x;
+        float jumpEntryDistance = Mathf.Max(0.25f, upperPlatformJumpEdgeDistance);
+        if (UsesBoss25JumpRules())
+            jumpEntryDistance = Mathf.Max(jumpEntryDistance, bodyHalfWidth + 1.6f);
+        bool isNearEntry = Mathf.Abs(deltaX) <= jumpEntryDistance;
+        if (Mathf.Abs(deltaX) <= 0.05f)
+            deltaX = bestHit.point.x - transform.position.x;
+        if (Mathf.Abs(deltaX) <= 0.05f)
+            deltaX = playerTarget.position.x - transform.position.x;
+        if (Mathf.Abs(deltaX) <= 0.05f)
+            deltaX = GetFacingSign();
+
+        horizontalDirection = Mathf.Sign(deltaX);
+        closeEnoughToJump = isNearEntry;
+        _lastHigherPlatformCloseEnough = closeEnoughToJump;
+        BossJumpDebug(
+            "scan-up-found",
+            $"ScanUp found collider={bestHit.collider.name} hitPoint={bestHit.point} targetY={targetY:F2} candidates={usableCandidateCount} score={bestScore:F2} dir={horizontalDirection:F0} close={closeEnoughToJump} bossX={transform.position.x:F2} entryX={entryX:F2} entryDist={Mathf.Abs(entryX - transform.position.x):F2}/{jumpEntryDistance:F2} bounds=({platformBounds.min.x:F2},{platformBounds.max.x:F2}) entryMode={entryMode} edgeGap={nearestEdgeGapFromHit:F2}/{maxReasonableEdgeGap:F2} edgeBossGap={nearestEdgeGapFromBoss:F2}",
+            0.15f);
+        return true;
     }
 
     private float ResolveRetreatDirection()
@@ -1509,10 +2034,11 @@ public class BossAI : NetworkBehaviour
             Mathf.Max(0.01f, groundCheckRadius),
             groundLayerMask);
 
+        bool canUseGroundContact = _rb == null || _rb.velocity.y <= 0.05f;
         _isGrounded = false;
         foreach (Collider2D groundHit in groundHits)
         {
-            if (IsUsableGroundCollider(groundHit) && groundHit != _ignoredGroundCollider)
+            if (canUseGroundContact && IsUsableGroundCollider(groundHit) && !IsTemporarilyIgnoredGround(groundHit))
             {
                 _isGrounded = true;
                 break;
@@ -1521,6 +2047,14 @@ public class BossAI : NetworkBehaviour
 
         if (_isGrounded && !wasGrounded)
             _jumpsLeft = Mathf.Max(0, maxJumps);
+
+        if (_isGrounded != wasGrounded)
+        {
+            BossJumpDebug(
+                "ground-state-change",
+                $"GroundState {wasGrounded}->{_isGrounded} canUseContact={canUseGroundContact} origin={checkOrigin} radius={groundCheckRadius:F2} hits={groundHits.Length} vel={(_rb != null ? _rb.velocity : Vector2.zero)} jumpsLeft={_jumpsLeft}/{maxJumps}",
+                0f);
+        }
 
         if (_anim != null && HasAnimatorParameter(DefaultGroundedBoolParameter, AnimatorControllerParameterType.Bool))
             _anim.SetBool(AnimIsGrounded, _isGrounded);
@@ -1533,10 +2067,10 @@ public class BossAI : NetworkBehaviour
         UpdateGroundState();
     }
 
-    private void TrySnapToGround()
+    private bool TrySnapToGround()
     {
         if (!useGroundPhysics || _rb == null || _bodyCollider == null || groundLayerMask == 0)
-            return;
+            return false;
 
         Bounds bounds = _bodyCollider.bounds;
         float rayDistance = Mathf.Max(0.5f, spawnGroundSnapDistance);
@@ -1545,12 +2079,13 @@ public class BossAI : NetworkBehaviour
         RaycastHit2D hit = RaycastInCurrentScene(origin, Vector2.down, rayDistance + topPadding, groundLayerMask);
 
         if (hit.collider == null)
-            return;
+            return false;
 
         float currentBottomOffset = bounds.min.y - transform.position.y;
         float snappedY = hit.point.y - currentBottomOffset + Mathf.Max(0f, spawnGroundOffset);
         _rb.position = new Vector2(_rb.position.x, snappedY);
         _rb.velocity = Vector2.zero;
+        return true;
     }
 
     private Vector2 GetGroundCheckOrigin()
@@ -1561,26 +2096,96 @@ public class BossAI : NetworkBehaviour
         return (Vector2)transform.position + Vector2.down * 0.6f;
     }
 
-    private bool TryJump()
+    private bool TryJump(bool ignoreTraversalCooldown = false, float targetWorldY = float.NaN)
     {
         if (!useGroundPhysics || !canJump || _rb == null || _jumpsLeft <= 0)
+        {
+            BossJumpDebug(
+                "try-jump-disabled",
+                $"TryJump blocked basic useGroundPhysics={useGroundPhysics} canJump={canJump} rb={(_rb != null)} jumpsLeft={_jumpsLeft} grounded={_isGrounded} targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2}",
+                0.2f);
             return false;
+        }
 
-        if (!CanStartGroundTraversal())
+        if (requireGroundedToJump && !_isGrounded)
+        {
+            BossJumpDebug(
+                "try-jump-air",
+                $"TryJump blocked air-jump requireGrounded={requireGroundedToJump} grounded={_isGrounded} vel={_rb.velocity} jumpsLeft={_jumpsLeft} targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2}",
+                0.15f);
             return false;
+        }
+
+        if (!allowUntargetedJumps && float.IsNaN(targetWorldY))
+        {
+            BossJumpDebug(
+                "try-jump-untargeted",
+                $"TryJump blocked untargeted allowUntargeted={allowUntargetedJumps} state={_state} grounded={_isGrounded} jumpsLeft={_jumpsLeft} playerPos={(playerTarget != null ? playerTarget.position : Vector3.zero)}",
+                0.15f);
+            return false;
+        }
+
+        if (!CanStartGroundTraversal(ignoreTraversalCooldown))
+        {
+            BossJumpDebug(
+                "try-jump-traversal-block",
+                $"TryJump blocked traversal ignoreCooldown={ignoreTraversalCooldown} state={_state} nextTraversal={Mathf.Max(0f, _nextGroundTraversalTime - Time.time):F2}s targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2}",
+                0.15f);
+            return false;
+        }
 
         if (IsJumpBlockedByGroundTraversalMask())
+        {
+            BossJumpDebug(
+                "try-jump-mask-block",
+                $"TryJump blocked by traversal mask mask={groundTraversalBlockerMask.value} pos={transform.position} targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2}",
+                0.15f);
             return false;
+        }
 
+        float resolvedJumpForce = ResolveJumpVelocity(targetWorldY);
         _jumpsLeft--;
-        _rb.velocity = new Vector2(_rb.velocity.x, jumpForce);
+        _rb.velocity = new Vector2(_rb.velocity.x, resolvedJumpForce);
+        _isGrounded = false;
         MarkGroundTraversalUsed();
-        BossDebug("jump", $"Jump force={jumpForce:F1} jumpsLeft={_jumpsLeft} heightDelta={(playerTarget != null ? playerTarget.position.y - transform.position.y : 0f):F2}", 0.2f);
+        BossDebug(
+            "jump",
+            $"Jump force={resolvedJumpForce:F1}/{jumpForce:F1} targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2} jumpsLeft={_jumpsLeft} heightDelta={(playerTarget != null ? playerTarget.position.y - transform.position.y : 0f):F2}",
+            0.2f);
+        BossJumpDebug(
+            "try-jump-success",
+            $"TryJump success force={resolvedJumpForce:F2}/{jumpForce:F2} targetY={(float.IsNaN(targetWorldY) ? -999f : targetWorldY):F2} bossPos={transform.position} playerPos={(playerTarget != null ? playerTarget.position : Vector3.zero)} vel={_rb.velocity} jumpsLeft={_jumpsLeft}",
+            0.05f);
 
         if (_anim != null && HasAnimatorParameter(DefaultJumpTriggerParameter, AnimatorControllerParameterType.Trigger))
             _anim.SetTrigger(DefaultJumpTriggerParameter);
 
         return true;
+    }
+
+    private float ResolveJumpVelocity(float targetWorldY)
+    {
+        float maxForce = Mathf.Max(0.1f, jumpForce);
+        float minForce = Mathf.Clamp(minCalculatedJumpForce, 0.1f, maxForce);
+        float resolvedTargetY = targetWorldY;
+
+        if (float.IsNaN(resolvedTargetY)
+            && playerTarget != null
+            && playerTarget.position.y > transform.position.y + verticalTargetThreshold)
+        {
+            resolvedTargetY = playerTarget.position.y + Mathf.Max(0f, jumpHeightPadding);
+        }
+
+        if (float.IsNaN(resolvedTargetY) || _bodyCollider == null)
+            return Mathf.Clamp(maxForce * 0.7f, minForce, maxForce);
+
+        float currentFeetY = _bodyCollider.bounds.min.y;
+        float requiredHeight = Mathf.Max(0.1f, resolvedTargetY - currentFeetY);
+        float gravity = Mathf.Abs(Physics2D.gravity.y) * Mathf.Max(0.01f, _rb.gravityScale);
+        if (UsesBoss25JumpRules() && requiredHeight < 1.5f)
+            minForce = Mathf.Min(minForce, 5f);
+        float calculated = Mathf.Sqrt(2f * gravity * requiredHeight);
+        return Mathf.Clamp(calculated, minForce, maxForce);
     }
 
     private bool TryRetreatJump(bool force = false)
@@ -1698,6 +2303,51 @@ public class BossAI : NetworkBehaviour
         return OverlapCurrentGroundForFallThrough();
     }
 
+    private bool IsTemporarilyIgnoredGround(Collider2D collider)
+    {
+        return collider != null && (collider == _ignoredGroundCollider || collider == _jumpThroughGroundCollider);
+    }
+
+    private void BeginJumpThroughHigherPlatform(Collider2D platform, float platformTopY)
+    {
+        if (!UsesBoss25JumpRules() || platform == null || _bodyCollider == null || _rb == null)
+            return;
+
+        if (!IsUsableGroundCollider(platform))
+            return;
+
+        if (_jumpThroughGroundCollider != null && _jumpThroughGroundCollider != platform)
+            RestoreJumpThroughGroundCollision();
+
+        _jumpThroughGroundCollider = platform;
+        Physics2D.IgnoreCollision(_bodyCollider, platform, true);
+        if (_jumpThroughCoroutine != null)
+            StopCoroutine(_jumpThroughCoroutine);
+
+        _jumpThroughCoroutine = StartCoroutine(RestoreJumpThroughHigherPlatformCoroutine(platform, platformTopY));
+        BossJumpDebug(
+            "jump-through-start",
+            $"JumpThrough start platform={platform.name} topY={platformTopY:F2} bossFeet={_bodyCollider.bounds.min.y:F2} vel={_rb.velocity}",
+            0.05f);
+    }
+
+    private IEnumerator RestoreJumpThroughHigherPlatformCoroutine(Collider2D platform, float platformTopY)
+    {
+        float timeoutAt = Time.time + 2.2f;
+        while (_bodyCollider != null && _rb != null && platform != null && Time.time < timeoutAt)
+        {
+            float feetY = _bodyCollider.bounds.min.y;
+            bool feetReachedTop = feetY >= platformTopY - 0.04f;
+            bool isFallingOrPeaking = _rb.velocity.y <= 0.05f;
+            if (feetReachedTop && isFallingOrPeaking)
+                break;
+
+            yield return null;
+        }
+
+        RestoreJumpThroughGroundCollision(platform, false);
+    }
+
     private Collider2D RaycastGroundForFallThrough(Vector2 origin, float distance)
     {
         RaycastHit2D[] hits = new RaycastHit2D[8];
@@ -1729,7 +2379,7 @@ public class BossAI : NetworkBehaviour
         Collider2D fallback = null;
         foreach (Collider2D hit in groundHits)
         {
-            if (!IsUsableGroundCollider(hit) || hit == _ignoredGroundCollider)
+            if (!IsUsableGroundCollider(hit) || IsTemporarilyIgnoredGround(hit))
                 continue;
 
             if (IsOneWayGround(hit))
@@ -1875,6 +2525,33 @@ public class BossAI : NetworkBehaviour
             Physics2D.IgnoreCollision(_bodyCollider, _ignoredGroundCollider, false);
 
         _ignoredGroundCollider = null;
+    }
+
+    private void RestoreJumpThroughGroundCollision(Collider2D expectedPlatform = null, bool stopCoroutine = true)
+    {
+        if (expectedPlatform != null && _jumpThroughGroundCollider != expectedPlatform)
+            return;
+
+        if (stopCoroutine && _jumpThroughCoroutine != null)
+        {
+            StopCoroutine(_jumpThroughCoroutine);
+            _jumpThroughCoroutine = null;
+        }
+        else if (!stopCoroutine)
+        {
+            _jumpThroughCoroutine = null;
+        }
+
+        if (_bodyCollider != null && _jumpThroughGroundCollider != null)
+        {
+            Physics2D.IgnoreCollision(_bodyCollider, _jumpThroughGroundCollider, false);
+            BossJumpDebug(
+                "jump-through-restore",
+                $"JumpThrough restore platform={_jumpThroughGroundCollider.name} bossFeet={_bodyCollider.bounds.min.y:F2} vel={(_rb != null ? _rb.velocity : Vector2.zero)}",
+                0.05f);
+        }
+
+        _jumpThroughGroundCollider = null;
     }
 
     private void CheckPhases()
@@ -2551,6 +3228,14 @@ public class BossAI : NetworkBehaviour
         MirrorBossServerLog(message);
     }
 
+    private void BossJumpDebug(string key, string message, float interval = -1f)
+    {
+        BossDebug(
+            $"jump-{key}",
+            $"{Boss25JumpLogTag} {message}",
+            interval);
+    }
+
     private bool ShouldEmitBoss25Logs()
     {
         return debugLogs
@@ -2643,6 +3328,7 @@ public class BossAI : NetworkBehaviour
 
         StopAllCoroutines();
         RestoreIgnoredGroundCollision();
+        RestoreJumpThroughGroundCollision();
         ResetAttackAnimation();
 
         _state = BossState.Dead;

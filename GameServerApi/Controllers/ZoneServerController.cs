@@ -74,6 +74,9 @@ namespace GameServerApi.Controllers
         }
 
         public static bool Deregister(int port) => Servers.TryRemove(port, out _);
+
+        public static IReadOnlyList<ZoneServerEntry> GetAll() =>
+            Servers.Values.ToList().AsReadOnly();
     }
 
     [ApiController]

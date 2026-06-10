@@ -1,0 +1,32 @@
+=== Slide 30 ===
+  Shape 0 (TextBox 1) text:
+    Kết quả: Giao diện Phó bản Wave & NPC
+  Shape 1 (TextBox 2) text:
+    • Giao diện Phó bản Wave: HUD hiển thị số đợt quái vật hiện tại (ví dụ: Wave 3/5), số lượng quái còn lại, và thanh máu của Boss cuối.
+    • Giao diện tương tác NPC & Nhiệm vụ: Menu động hiển thị danh sách nhiệm vụ từ NPC, cửa hàng bán trang bị, và widget theo dõi mục tiêu nhiệm vụ ở góc màn hình.
+  Shape 2 (Picture 3) is image
+  Shape 3 (Picture 4) is image
+
+=== Slide 31 ===
+  Shape 0 (TextBox 1) text:
+    Kết luận & Định hướng phát triển
+  Shape 1 (TextBox 2) text:
+    • Kết quả đạt được:
+      - Hoàn thiện game nhập vai 2D đa người chơi Mutants Arena hoạt động mượt mà, ổn định.
+      - Xây dựng thành công cơ chế Gene Ngũ Hành và Hybrid Fusion tạo chiều sâu chiến thuật.
+      - Triển khai Dedicated Server Server-Authoritative chống hack/cheat hiệu quả.
+    • Hạn chế của đề tài: Số lượng bản đồ và quái vật còn ít; giao diện đồ họa 2D pixel art cần được chăm chút bóng bẩy hơn.
+    • Định hướng tương lai:
+      - Phát triển tính năng PvP đấu trường thời gian thực đồng bộ cao.
+      - Bổ sung phó bản bang hội, quái vật boss thế giới và tính năng giao dịch vật phẩm giữa người chơi.
+  Shape 2 (Picture 3) is image
+
+=== Slide 32 ===
+  Shape 0 (TextBox 1) text:
+    CẢM ƠN QUÝ THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE!
+  Shape 1 (TextBox 2) text:
+    Sinh viên thực hiện: Trần Văn Thủy
+    Mã sinh viên: CT060439
+    Người hướng dẫn khoa học: TS. Nguyễn Đức Hiếu
+    Khoa Công nghệ thông tin – Học viện Kỹ thuật Mật mã
+

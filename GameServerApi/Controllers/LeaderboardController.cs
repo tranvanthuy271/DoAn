@@ -66,8 +66,9 @@ namespace GameServerApi.Controllers
             return Ok(rows.Select(r => new { id = r.Id, name = r.Name, list = r.ListJson }));
         }
 
-        // ── POST /api/leaderboard/refresh ─────────────────────────────────────
+        // ── POST /api/leaderboard/refresh (Admin only) ────────────────────────
         [HttpPost("refresh")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> Refresh()
         {
             await RefreshAllAsync();

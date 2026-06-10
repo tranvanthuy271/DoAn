@@ -34,6 +34,7 @@ public static class UIPanelManager
 
     // Prevents NotifyClosed (called inside close-actions) from prematurely showing HUDs
     private static bool _isBatchClosing;
+    private static bool _hudsHiddenByPanel;
 
     // ── Panel registration ────────────────────────────────────────────────
 
@@ -52,7 +53,8 @@ public static class UIPanelManager
         if (go == null) return;
         for (int i = _panels.Count - 1; i >= 0; i--)
             if (_panels[i].Go == go) { _panels.RemoveAt(i); break; }
-        _open.Remove(go);
+        if (_open.Remove(go))
+            RefreshHudVisibilityFromOpenPanels();
     }
 
     // ── HUD registration ─────────────────────────────────────────────────
@@ -62,9 +64,30 @@ public static class UIPanelManager
     {
         if (go == null || _huds.Contains(go)) return;
         _huds.Add(go);
+        ApplyHudVisibility(go);
     }
 
     public static void UnregisterHud(GameObject go) => _huds.Remove(go);
+
+    public static void ApplyHudVisibility(GameObject go)
+    {
+        if (go != null)
+            go.SetActive(!_hudsHiddenByPanel);
+    }
+
+    private static void RefreshHudVisibility()
+    {
+        foreach (var h in _huds)
+            ApplyHudVisibility(h);
+    }
+
+    private static void RefreshHudVisibilityFromOpenPanels()
+    {
+        if (_isBatchClosing) return;
+
+        _hudsHiddenByPanel = _open.Count > 0;
+        RefreshHudVisibility();
+    }
 
     // ── Panel lifecycle ───────────────────────────────────────────────────
 
@@ -90,8 +113,8 @@ public static class UIPanelManager
         }
 
         // Ẩn HUD sau khi panel khác đã đóng
-        foreach (var h in _huds)
-            if (h != null) h.SetActive(false);
+        _hudsHiddenByPanel = true;
+        RefreshHudVisibility();
     }
 
     /// <summary>
@@ -101,6 +124,8 @@ public static class UIPanelManager
     public static void NotifyOpened(GameObject go)
     {
         if (go != null) _open.Add(go);
+        _hudsHiddenByPanel = true;
+        RefreshHudVisibility();
     }
 
     /// <summary>
@@ -109,12 +134,9 @@ public static class UIPanelManager
     /// </summary>
     public static void NotifyClosed(GameObject go)
     {
-        if (_isBatchClosing) return;
         _open.Remove(go);
-        if (_open.Count > 0) return;
+        RefreshHudVisibilityFromOpenPanels();
 
         // Không còn panel nào → hiện lại HUD
-        foreach (var h in _huds)
-            if (h != null) h.SetActive(true);
     }
 }
