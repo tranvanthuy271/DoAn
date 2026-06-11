@@ -2695,7 +2695,7 @@ public class BossAI : NetworkBehaviour
                     {
                         int bossMaxHp = _health != null ? _health.GetMaxHealth() : 1000;
                         int minionMaxHp = Mathf.Max(100, Mathf.RoundToInt(bossMaxHp * 0.2f));
-                        normalHealth.maxHealth = minionMaxHp;
+                        normalHealth.InitHealth(minionMaxHp);
                     }
                 }
             }
