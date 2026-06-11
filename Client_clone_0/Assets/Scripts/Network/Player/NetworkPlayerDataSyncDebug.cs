@@ -9,26 +9,26 @@ public class NetworkPlayerDataSyncDebug : NetworkBehaviour
     {
         base.OnNetworkSpawn();
         
-        Debug.Log("=================================================");
-        Debug.Log($"[DEBUG] NetworkPlayerDataSyncDebug.OnNetworkSpawn()");
-        Debug.Log($"[DEBUG] IsServer: {IsServer}");
-        Debug.Log($"[DEBUG] IsClient: {IsClient}");
-        Debug.Log($"[DEBUG] IsOwner: {IsOwner}");
-        Debug.Log($"[DEBUG] OwnerClientId: {OwnerClientId}");
-        Debug.Log($"[DEBUG] LocalClientId: {NetworkManager.Singleton.LocalClientId}");
+        { /* ================================================= */ }
+        { /* NetworkPlayerDataSyncDebug.OnNetworkSpawn() */ }
+        { /* IsServer: {IsServer} */ }
+        { /* IsClient: {IsClient} */ }
+        { /* IsOwner: {IsOwner} */ }
+        { /* OwnerClientId: {OwnerClientId} */ }
+        { /* LocalClientId: {NetworkManager.Singleton.LocalClientId} */ }
         
         // Check if NetworkPlayerDataSync exists
         var dataSync = GetComponent<NetworkPlayerDataSync>();
         if (dataSync != null)
         {
-            Debug.Log($"[DEBUG] ✓ NetworkPlayerDataSync component found!");
+            { /* ✓ NetworkPlayerDataSync component found */ }
         }
         else
         {
-            Debug.LogError($"[DEBUG] ✗ NetworkPlayerDataSync component NOT FOUND!");
+            { /* Lỗi: ✗ NetworkPlayerDataSync component NOT FOUND */ }
         }
         
-        Debug.Log("=================================================");
+        { /* ================================================= */ }
     }
 }
 

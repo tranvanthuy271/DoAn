@@ -42,7 +42,7 @@ public class DungeonNpcMenuEntryUI : MonoBehaviour
     private void OnClicked()
     {
         if (_config == null || _owner == null) return;
-        Debug.Log($"{LogPrefix} Click | dungeonId={_config.dungeon_id} name='{_config.dungeon_name}' type='{_config.dungeon_type}'", this);
+        { /* {LogPrefix} Click | dungeonId={_config.dungeon_id} name='{_config.dungeon_name}' type='{_config.dungeon_type}' */ }
         _owner.ShowConfirm(_config);
     }
 

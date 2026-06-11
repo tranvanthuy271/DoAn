@@ -53,8 +53,7 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
     {
         if (bulletPrefab == null)
         {
-            Debug.LogWarning($"[{nameof(HybridMetalWindBarrageSkill)}] "
-                           + "bulletPrefab chưa được gán trong Inspector!");
+            { /* Cảnh báo: Thực hiện ghi log */ }
             return;
         }
 
@@ -75,7 +74,7 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
 
         if (projectileMapId < 0)
         {
-            Debug.LogWarning($"[{nameof(HybridMetalWindBarrageSkill)}] Không resolve được mapId cho barrage bullet. Projectile sẽ dùng physics scene mặc định.");
+            { /* Cảnh báo: Không resolve được mapId cho barrage bullet. Projectile sẽ dùng physics scene mặc định */ }
         }
 
         for (int i = 0; i < bulletCount; i++)

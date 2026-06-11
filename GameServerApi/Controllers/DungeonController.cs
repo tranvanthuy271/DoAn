@@ -690,7 +690,7 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("[Dungeon] Không thể cập nhật kỷ lục cho characterId={Id}: {Msg}", characterId, ex.Message);
+                { /* Cảnh báo: Không thể cập nhật kỷ lục cho characterId={Id}: {Msg} */ }
             }
         }
 

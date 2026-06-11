@@ -40,8 +40,7 @@ public class ZoneServerRegistrar : MonoBehaviour
         bool ok = request.result == UnityWebRequest.Result.Success;
         if (!ok)
         {
-            Debug.LogWarning($"[ZoneServerRegistrar] Register thất bại: " +
-                             $"HTTP {request.responseCode} — {request.error}");
+            { /* Cảnh báo: Register thất bại */ }
         }
         callback?.Invoke(ok);
     }
@@ -59,11 +58,11 @@ public class ZoneServerRegistrar : MonoBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[ZoneServerRegistrar] Deregister thất bại: {request.error}");
+            { /* Cảnh báo: Deregister thất bại: {request.error} */ }
         }
         else
         {
-            Debug.Log($"[ZoneServerRegistrar] ✓ Đã hủy đăng ký zone map={mapId} zone={zoneId}");
+            { /* ✓ Đã hủy đăng ký zone map={mapId} zone={zoneId} */ }
         }
     }
 

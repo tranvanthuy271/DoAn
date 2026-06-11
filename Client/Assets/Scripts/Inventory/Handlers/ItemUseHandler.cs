@@ -157,27 +157,27 @@ public class ItemUseHandler : MonoBehaviour
 
     private void OnBagQuickSlotClicked(int quickSlotIndex)
     {
-        Debug.Log($"[ItemUseHandler] BagSlot clicked: quickSlotIndex={quickSlotIndex}");
-        Debug.Log($"[ItemUseHandler] _equippedBagItems count={_equippedBagItemsByQuickSlot.Count}");
+        { /* BagSlot clicked: quickSlotIndex={quickSlotIndex} */ }
+        { /* _equippedBagItems count={_equippedBagItemsByQuickSlot.Count} */ }
 
         SyncBagQuickSlotsFromPlayerDataIfNeeded();
 
         if (!_equippedBagItemsByQuickSlot.TryGetValue(quickSlotIndex, out var bagItem) || bagItem == null)
         {
-            Debug.LogWarning($"[ItemUseHandler] Không tiìm thấy bagItem tại slot {quickSlotIndex} — bỏ qua.");
+            { /* Cảnh báo: Không tiìm thấy bagItem tại slot {quickSlotIndex}  bỏ qua */ }
             return;
         }
 
         var actionPanel = GetOrCreateBagQuickActionPanel();
         if (actionPanel == null)
         {
-            Debug.LogError("[ItemUseHandler] actionPanel null!");
+            { /* Lỗi: actionPanel null */ }
             return;
         }
 
         inventoryUI?.HideItemDetail();
 
-        Debug.Log($"[ItemUseHandler] actionPanel='{actionPanel.gameObject.name}' active={actionPanel.gameObject.activeInHierarchy}");
+        { /* actionPanel='{actionPanel.gameObject.name}' active={actionPanel.gameObject.activeInHierarchy} */ }
 
         // Lấy RectTransform của slot vừa click để định vị panel
         RectTransform slotRect = null;
@@ -185,7 +185,7 @@ public class ItemUseHandler : MonoBehaviour
             slotRect = _bagQuickSlotButtons[quickSlotIndex].transform as RectTransform;
 
         string itemName = BuildBagItemDisplayName(bagItem);
-        Debug.Log($"[ItemUseHandler] Gọi Show(): itemName='{itemName}' slotRect={slotRect?.name}");
+        { /* Gọi Show(): itemName='{itemName}' slotRect={slotRect?.name} */ }
         actionPanel.Show(
             itemName,
             () => RequestUnequipBagQuickSlot(quickSlotIndex),
@@ -204,12 +204,12 @@ public class ItemUseHandler : MonoBehaviour
         {
             Transform canvasRoot = ResolveCanvasParent();
             _bagQuickActionPanel = Instantiate(bagQuickActionPanelPrefab, canvasRoot);
-            Debug.Log($"[ItemUseHandler] Instantiated BagQuickActionPanel prefab dưới '{canvasRoot.name}'");
+            { /* Instantiated BagQuickActionPanel prefab dưới '{canvasRoot.name}' */ }
             return _bagQuickActionPanel;
         }
 
         // Fallback runtime
-        Debug.LogWarning("[ItemUseHandler] Chưa gán Prefab — dùng Create() runtime.");
+        { /* Cảnh báo: Chưa gán Prefab  dùng Create() runtime */ }
         _bagQuickActionPanel = BagQuickActionPanel.Create(ResolveCanvasParent());
         return _bagQuickActionPanel;
     }
@@ -244,7 +244,7 @@ public class ItemUseHandler : MonoBehaviour
     {
         if (slot == null || slot.quantity <= 0)
         {
-            Debug.LogWarning("[ItemUseHandler] RequestUseItem: slot null hoặc quantity = 0.");
+            { /* Cảnh báo: RequestUseItem: slot null hoặc quantity = 0 */ }
             return;
         }
 
@@ -259,7 +259,7 @@ public class ItemUseHandler : MonoBehaviour
         }
 
         int itemType = template?.type ?? -1;
-        Debug.Log($"[ItemUseHandler] RequestUseItem: slot={slot.slotIndex}, templateId={slot.itemTemplateId}, type={itemType}");
+        { /* RequestUseItem: slot={slot.slotIndex}, templateId={slot.itemTemplateId}, type={itemType} */ }
 
         if (TryUseItemInBlacksmith(slot))
             return;
@@ -286,7 +286,7 @@ public class ItemUseHandler : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[ItemUseHandler] Không xác định được loại item (type={itemType}), thử dùng như consumable.");
+            { /* Cảnh báo: Không xác định được loại item (type={itemType}), thử dùng như consumable */ }
             DoUseConsumableItem(slot);
         }
     }
@@ -296,18 +296,17 @@ public class ItemUseHandler : MonoBehaviour
     // Trang bị item (equipment type 0-5) qua bridge.
     private void DoEquipItem(InventorySlotDto slot, ItemTemplateDto template)
     {
-        Debug.Log($"[ItemUseHandler] ⚔️ Trang bị item: slot={slot.slotIndex}, code={slot.itemCode}");
+        { /* ⚔️ Trang bị item: slot={slot.slotIndex}, code={slot.itemCode} */ }
         inventoryBridge?.RequestEquipItem(slot.slotIndex, slot.itemCode);
     }
 
     // Sử dụng item tiêu thụ (type 21-29): gọi GameplayCommandService → áp dụng HP/MP qua NGO → cập nhật buff HUD.
     private void DoUseConsumableItem(InventorySlotDto slot)
     {
-        Debug.Log($"[ItemUseHandler] 🍶 Sử dụng consumable: slot={slot.slotIndex}");
+        { /* 🍶 Sử dụng consumable: slot={slot.slotIndex} */ }
         if (!CanUseGameplayCommandService())
         {
-            Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
-                           "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
+            { /* Lỗi: GameplayCommandService chưa spawn */ }
             UseItemDirectFromApi(slot, isBagItem: false, "GameplayCommandService unavailable");
             return;
         }
@@ -330,11 +329,10 @@ public class ItemUseHandler : MonoBehaviour
     // Sử dụng item mở rộng túi (type 30): gọi GameplayCommandService use-item + cập nhật bag count.
     private void DoUseBagItem(InventorySlotDto slot)
     {
-        Debug.Log($"[ItemUseHandler] 🎒 Mở rộng túi đồ: slot={slot.slotIndex}");
+        { /* 🎒 Mở rộng túi đồ: slot={slot.slotIndex} */ }
         if (!CanUseGameplayCommandService())
         {
-            Debug.LogError("[ItemUseHandler] GameplayCommandService chưa spawn. " +
-                           "Kiểm tra NetworkManagers.prefab có GameplayCommandService và đã được ServerBootstrap spawn.");
+            { /* Lỗi: GameplayCommandService chưa spawn */ }
             UseItemDirectFromApi(slot, isBagItem: true, "GameplayCommandService unavailable");
             return;
         }
@@ -362,16 +360,14 @@ public class ItemUseHandler : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            Debug.LogError("[ItemUseHandler] ❌ UseItem trả về JSON rỗng.");
+            { /* Lỗi: UseItem trả về JSON rỗng */ }
             return;
         }
 
         if (json.Contains("\"error\""))
         {
             string errorMessage = ExtractErrorMessage(json);
-            Debug.LogError(isBagItem
-                ? $"[ItemUseHandler] ❌ Mở túi thất bại: {json}"
-                : $"[ItemUseHandler] ❌ UseItem thất bại: {json}");
+            { /* Lỗi: Mở túi thất bại: {json} */ }
 
             if (allowDirectFallback && sourceSlot != null && ShouldUseDirectFallback(errorMessage))
             {
@@ -390,13 +386,13 @@ public class ItemUseHandler : MonoBehaviour
         var response = JsonUtility.FromJson<UseItemResult>(json);
         if (response == null)
         {
-            Debug.LogError($"[ItemUseHandler] Parse UseItemResult null. Raw={json}");
+            { /* Lỗi: Parse UseItemResult null. Raw={json} */ }
             return;
         }
 
         if (isBagItem)
         {
-            Debug.Log($"[ItemUseHandler] ✅ Mở túi OK: {response.message} | bag_slots={response.bag_slots}");
+            { /* Mở túi OK: {response.message} | bag_slots={response.bag_slots} */ }
             if (response.bag_slots > 0)
             {
                 currentBagSlots = response.bag_slots;
@@ -419,7 +415,7 @@ public class ItemUseHandler : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[ItemUseHandler] ✅ UseItem OK: {response.message}");
+        { /* UseItem OK: {response.message} */ }
 
         if (response.wave_entry_bonus_added > 0)
         {
@@ -480,7 +476,7 @@ public class ItemUseHandler : MonoBehaviour
             return;
         }
 
-        Debug.LogWarning($"[ItemUseHandler] UseItem direct REST fallback. slot={slot.slotIndex}, playerId={playerId}, reason={reason}");
+        { /* Cảnh báo: UseItem direct REST fallback. slot={slot.slotIndex}, playerId={playerId}, reason={reason} */ }
         StartCoroutine(UseItemDirectFromApiCoroutine(playerId, slot.slotIndex, isBagItem));
     }
 
@@ -559,7 +555,7 @@ public class ItemUseHandler : MonoBehaviour
         if (handled)
         {
             inventoryUI?.HideItemDetail();
-            Debug.Log($"[ItemUseHandler] Redirected item use into Blacksmith flow: slot={slot.slotIndex}, item={slot.itemCode}");
+            { /* Redirected item use into Blacksmith flow: slot={slot.slotIndex}, item={slot.itemCode} */ }
             return true;
         }
 
@@ -586,11 +582,11 @@ public class ItemUseHandler : MonoBehaviour
     {
         if (inventoryBridge == null)
         {
-            Debug.LogWarning("[ItemUseHandler] RequestSortInventory: inventoryBridge null.");
+            { /* Cảnh báo: RequestSortInventory: inventoryBridge null */ }
             return;
         }
 
-        Debug.Log("[ItemUseHandler] 🔀 Gửi request sắp xếp inventory...");
+        { /* 🔀 Gửi request sắp xếp inventory */ }
         if (sortButton != null) sortButton.interactable = false;
 
         // Delegate toàn bộ logic về bridge:
@@ -719,7 +715,7 @@ public class ItemUseHandler : MonoBehaviour
     {
         if (inventoryBridge == null)
         {
-            Debug.LogWarning("[ItemUseHandler] RequestUnequipBagQuickSlot: inventoryBridge null, using direct REST fallback.");
+            { /* Cảnh báo: RequestUnequipBagQuickSlot: inventoryBridge null, using direct REST fallback */ }
             StartCoroutine(UnequipBagDirectFromApiCoroutine(quickSlotIndex));
             return;
         }
@@ -731,7 +727,7 @@ public class ItemUseHandler : MonoBehaviour
                 string errorMessage = ExtractErrorMessage(json);
                 if (ShouldUseDirectFallback(errorMessage))
                 {
-                    Debug.LogWarning($"[ItemUseHandler] Unequip bag direct REST fallback. quickSlot={quickSlotIndex}, reason={errorMessage}");
+                    { /* Cảnh báo: Unequip bag direct REST fallback. quickSlot={quickSlotIndex}, reason={errorMessage} */ }
                     StartCoroutine(UnequipBagDirectFromApiCoroutine(quickSlotIndex));
                     return;
                 }
@@ -752,7 +748,7 @@ public class ItemUseHandler : MonoBehaviour
         var response = JsonUtility.FromJson<UseItemResult>(json);
         if (response == null)
         {
-            Debug.LogWarning($"[ItemUseHandler] Khong parse duoc UnequipBag response. Raw={json}");
+            { /* Cảnh báo: Khong parse duoc UnequipBag response. Raw={json} */ }
             RefreshInventory();
             return;
         }

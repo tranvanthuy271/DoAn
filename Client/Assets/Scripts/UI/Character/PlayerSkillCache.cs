@@ -47,7 +47,7 @@ public class PlayerSkillCache : UnityEngine.MonoBehaviour
     {
         if (string.IsNullOrEmpty(json) || json.Contains("\"error\""))
         {
-            UnityEngine.Debug.LogWarning("[PlayerSkillCache] HandleInitialSkills: nhận json lỗi, bỏ qua.");
+            { /* Cảnh báo: HandleInitialSkills: nhận json lỗi, bỏ qua */ }
             return;
         }
         try
@@ -56,12 +56,12 @@ public class PlayerSkillCache : UnityEngine.MonoBehaviour
             if (data != null && data.skills != null)
             {
                 CachedData = data;
-                UnityEngine.Debug.Log($"[PlayerSkillCache] Cached {data.skills.Length} skill(s) từ server push.");
+                { /* Cached {data.skills.Length} skill(s) từ server push */ }
             }
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.LogError($"[PlayerSkillCache] Parse lỗi OnInitialSkillsReceived: {ex.Message}");
+            { /* Lỗi: Parse lỗi OnInitialSkillsReceived: {ex.Message} */ }
         }
     }
 
@@ -75,12 +75,12 @@ public class PlayerSkillCache : UnityEngine.MonoBehaviour
             if (data != null && data.skills != null)
             {
                 CachedData = data;
-                UnityEngine.Debug.Log($"[PlayerSkillCache] Cache cập nhật sau OnSkillsReceived: {data.skills.Length} skill(s).");
+                { /* Cache cập nhật sau OnSkillsReceived: {data.skills.Length} skill(s) */ }
             }
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.LogError($"[PlayerSkillCache] Parse lỗi OnSkillsReceived: {ex.Message}");
+            { /* Lỗi: Parse lỗi OnSkillsReceived: {ex.Message} */ }
         }
     }
 
@@ -88,6 +88,6 @@ public class PlayerSkillCache : UnityEngine.MonoBehaviour
     public void Invalidate()
     {
         CachedData = null;
-        UnityEngine.Debug.Log("[PlayerSkillCache] Cache đã bị xóa (invalidate).");
+        { /* Cache đã bị xóa (invalidate) */ }
     }
 }

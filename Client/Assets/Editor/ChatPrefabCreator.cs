@@ -24,7 +24,7 @@ public static class ChatPrefabCreator
         CreateFriendHudButtonPrefab();
 
         AssetDatabase.Refresh();
-        Debug.Log("[ChatPrefabCreator] ✓ Đã tạo tất cả prefab trong " + PREFAB_DIR);
+        { /* ✓ Đã tạo tất cả prefab trong */ }
     }
 
     // 1. ChatMessageEntry prefab
@@ -488,7 +488,7 @@ public static class ChatPrefabCreator
     {
         var path = $"{PREFAB_DIR}/{name}.prefab";
         PrefabUtility.SaveAsPrefabAsset(go, path);
-        Debug.Log($"[ChatPrefabCreator] Đã tạo: {path}");
+        { /* Đã tạo: {path} */ }
     }
 
     private static GameObject LoadMessageEntryPrefabAsset()

@@ -8,17 +8,17 @@ public static class BatchSetupPreview
 {
     public static void Run()
     {
-        UnityEngine.Debug.Log("[BatchSetup] Mở GameScene...");
+        { /* Mở GameScene */ }
 
         var scene = EditorSceneManager.OpenScene(
             "Assets/Scenes/GameScene.unity",
             OpenSceneMode.Single);
 
-        UnityEngine.Debug.Log("[BatchSetup] Chạy SetupEquipmentCharacterPreview...");
+        { /* Chạy SetupEquipmentCharacterPreview */ }
         SetupEquipmentCharacterPreview.Run();
 
         EditorSceneManager.SaveScene(scene);
-        UnityEngine.Debug.Log("[BatchSetup] Scene đã lưu.");
+        { /* Scene đã lưu */ }
     }
 }
 #endif

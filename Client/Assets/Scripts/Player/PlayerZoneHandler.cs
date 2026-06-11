@@ -45,7 +45,7 @@ public class PlayerZoneHandler : NetworkBehaviour
         if (roomMgr != null)
             roomMgr.AssignClientToRoom(OwnerClientId, roomIdStr);
         else
-            Debug.LogWarning("[PlayerZoneHandler] ZoneRoomManager chưa được khởi tạo trên server!");
+            { /* Cảnh báo: ZoneRoomManager chưa được khởi tạo trên server */ }
 
         // Cập nhật NetworkVariable để tất cả client biết room mới
         CurrentRoomId.Value = newRoomId;
@@ -57,7 +57,7 @@ public class PlayerZoneHandler : NetworkBehaviour
         OnZoneChangedClientRpc(newRoomId, spawnX, spawnY,
             new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } } });
 
-        Debug.Log($"[PlayerZoneHandler] Player {OwnerClientId} → zone '{roomIdStr}' @ ({spawnX},{spawnY})");
+        { /* Player {OwnerClientId} → zone '{roomIdStr}' @ ({spawnX},{spawnY}) */ }
     }
 
     //  ClientRpc — callback về client sau khi đổi zone thành công
@@ -66,7 +66,7 @@ public class PlayerZoneHandler : NetworkBehaviour
     private void OnZoneChangedClientRpc(FixedString64Bytes newRoomId, float spawnX, float spawnY,
         ClientRpcParams rpcParams = default)
     {
-        Debug.Log($"[PlayerZoneHandler] Đã vào zone '{newRoomId}' tại ({spawnX:F1},{spawnY:F1})");
+        { /* Đã vào zone '{newRoomId}' tại ({spawnX:F1},{spawnY:F1}) */ }
         // Tuỳ chọn: ẩn loading panel, hiện thông báo "Đến Khu B"...
     }
 }

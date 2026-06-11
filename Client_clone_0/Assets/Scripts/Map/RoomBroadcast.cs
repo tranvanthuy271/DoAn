@@ -18,7 +18,7 @@ public static class RoomBroadcast
     {
         if (roomMgr == null)
         {
-            UnityEngine.Debug.LogWarning("[RoomBroadcast] ZoneRoomManager null — broadcast tới all client.");
+            { /* Cảnh báo: ZoneRoomManager null  broadcast tới all client */ }
             return default;
         }
 
@@ -43,7 +43,7 @@ public static class RoomBroadcast
         string room = roomMgr.GetClientRoom(sender.OwnerClientId);
         if (string.IsNullOrEmpty(room))
         {
-            UnityEngine.Debug.LogWarning($"[RoomBroadcast] Không tìm thấy room cho client {sender.OwnerClientId}");
+            { /* Cảnh báo: Không tìm thấy room cho client {sender.OwnerClientId} */ }
             return default;
         }
 

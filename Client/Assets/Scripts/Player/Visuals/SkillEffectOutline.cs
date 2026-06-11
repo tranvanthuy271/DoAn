@@ -42,7 +42,7 @@ public class SkillEffectOutline : MonoBehaviour
         _outlineRenderer = GetComponent<SpriteRenderer>();
         if (_outlineRenderer == null)
         {
-            Debug.LogError("[SkillEffectOutline] Không có SpriteRenderer trên object này!");
+            { /* Lỗi: Không có SpriteRenderer trên object này */ }
             return;
         }
         _outlineRenderer.maskInteraction = SpriteMaskInteraction.None;

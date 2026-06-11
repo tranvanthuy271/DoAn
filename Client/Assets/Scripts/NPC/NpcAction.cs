@@ -32,7 +32,7 @@ public static class NpcAction
             case "open_dungeon":
             case "close":
                 // Không xử lý ở đây — NpcInteraction.SelectMenuItemServerRpc xử lý
-                Debug.LogWarning($"{LogPrefix} Execute: '{actionType}' should be handled by NpcInteraction, not NpcAction.", owner);
+                { /* Cảnh báo: {LogPrefix} Execute: '{actionType}' should be handled by NpcInteraction, not NpcAction */ }
                 break;
 
             case "reset_potential":
@@ -60,7 +60,7 @@ public static class NpcAction
                 break;
 
             default:
-                Debug.LogWarning($"{LogPrefix} Unknown action_type='{actionType}' for npcId={npcData.npc_id}");
+                { /* Cảnh báo: {LogPrefix} Unknown action_type='{actionType}' for npcId={npcData.npc_id} */ }
                 owner.SendActionResultRpc(clientId, false, $"Chức năng '{actionType}' chưa được hỗ trợ.", null);
                 break;
         }
@@ -80,7 +80,7 @@ public static class NpcAction
         string url      = $"{apiBase}/api/npc/action/{apiAction}";
 
         string bodyJson = $"{{\"playerId\":{playerId},\"npcId\":{npcId}}}";
-        Debug.Log($"{LogPrefix} POST {url}  body={bodyJson}  client={clientId}");
+        { /* {LogPrefix} POST {url}  body={bodyJson}  client={clientId} */ }
 
         using var req = new UnityWebRequest(url, "POST");
         req.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(bodyJson));
@@ -93,7 +93,7 @@ public static class NpcAction
         yield return req.SendWebRequest();
 
         string responseText = req.downloadHandler?.text ?? "";
-        Debug.Log($"{LogPrefix} Response [{req.responseCode}]: {responseText}");
+        { /* {LogPrefix} Response [{req.responseCode}]: {responseText} */ }
 
         NpcActionResponse resp = null;
         try
@@ -102,7 +102,7 @@ public static class NpcAction
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"{LogPrefix} Parse response failed: {ex.Message}");
+            { /* Cảnh báo: {LogPrefix} Parse response failed: {ex.Message} */ }
         }
 
         if (resp == null)

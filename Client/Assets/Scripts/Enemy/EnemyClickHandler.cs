@@ -80,13 +80,13 @@ public class EnemyClickHandler : MonoBehaviour
     {
         if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
         {
-            Debug.Log("[EnemyClickHandler] Select ignored because gameplay input is blocked by UI.");
+            { /* Select ignored because gameplay input is blocked by UI */ }
             return;
         }
 
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
-            Debug.Log("[EnemyClickHandler] Select ignored because pointer is over UI.");
+            { /* Select ignored because pointer is over UI */ }
             return;
         }
 

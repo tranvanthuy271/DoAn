@@ -51,9 +51,7 @@ public class ElementIconConfig : ScriptableObject
         var loadedConfig = Resources.Load<ElementIconConfig>(DefaultResourcesPath);
         if (loadedConfig == null)
         {
-            Debug.LogWarning(
-                $"[{owner}] Chưa gán ElementIconConfig và không tìm thấy asset mặc định tại Resources/{DefaultResourcesPath}.",
-                context);
+            { /* Cảnh báo: Chưa gán ElementIconConfig và không tìm thấy asset mặc định tại Resources/{DefaultResourcesPath} */ }
         }
 
         return loadedConfig;
@@ -93,9 +91,7 @@ public class ElementIconConfig : ScriptableObject
                 ? ElementHelper.ToVietnamese(elementId)
                 : $"ID {elementId}";
 
-            Debug.LogWarning(
-                $"[{owner}] Thiếu sprite {spriteLabel} cho hệ {elementLabel} trong asset '{name}'.",
-                context);
+            { /* Cảnh báo: Thiếu sprite {spriteLabel} cho hệ {elementLabel} trong asset '{name}' */ }
         }
 
         return sprite;

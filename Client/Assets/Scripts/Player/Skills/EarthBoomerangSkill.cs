@@ -144,7 +144,7 @@ public class EarthBoomerangSkill : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[EarthBoomerangSkill] boomerangPrefab chưa được gán!");
+            { /* Cảnh báo: boomerangPrefab chưa được gán */ }
         }
 
         yield return new WaitForSeconds(0.2f);

@@ -76,7 +76,7 @@ public class PlatformSetupManager : MonoBehaviour
         int groundLayer = LayerMask.NameToLayer("Ground");
         if (groundLayer < 0)
         {
-            Debug.LogWarning("[PlatformSetupManager] Không tìm thấy layer 'Ground'. Kiểm tra lại Tags & Layers.");
+            { /* Cảnh báo: Không tìm thấy layer 'Ground'. Kiểm tra lại Tags & Layers */ }
             return;
         }
 
@@ -122,6 +122,6 @@ public class PlatformSetupManager : MonoBehaviour
         // Đảm bảo physics engine nhận biết tất cả thay đổi effector ngay lập tức
         Physics2D.SyncTransforms();
 
-        Debug.Log($"[PlatformSetupManager] Đã cấu hình {count} platform nổi (one-way).");
+        { /* Đã cấu hình {count} platform nổi (one-way) */ }
     }
 }

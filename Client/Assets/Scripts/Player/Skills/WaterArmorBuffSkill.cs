@@ -152,7 +152,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
                 return;
             }
         }
-        Debug.LogWarning($"[WaterArmorBuffSkill] Animator không có trigger '{animTriggerName}'.");
+        { /* Cảnh báo: Animator không có trigger '{animTriggerName}' */ }
     }
 
     // Tô màu xanh / khôi phục màu trắng cho tất cả người chơi được buff.
@@ -202,7 +202,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         int playerLayer = 1 << 8;
         Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, buffRadius, playerLayer);
 
-        Debug.Log($"[WaterArmorBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
+        { /* Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position} */ }
 
         // Lấy NetworkPlayerDataSync của bản thân để kiểm tra party
         var mySelf = GetComponent<NetworkPlayerDataSync>();
@@ -244,7 +244,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
             if (ph != null)
             {
                 ph.ApplyArmorBuff(armorValue, buffDuration);
-                Debug.Log($"[WaterArmorBuffSkill] Đã buff giáp cho: {col.name}");
+                { /* Đã buff giáp cho: {col.name} */ }
 
                 // Sync lên HUD của target qua PlayerBuffSync
                 var buffSync = col.GetComponent<PlayerBuffSync>()

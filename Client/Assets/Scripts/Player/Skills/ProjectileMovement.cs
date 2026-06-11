@@ -163,7 +163,7 @@ public class ProjectileMovement : MonoBehaviour
         {
             // Nếu không có Rigidbody2D, dùng transform.position
             // Nhưng tốt nhất là nên có Rigidbody2D
-            Debug.LogWarning("[ProjectileMovement] Projectile không có Rigidbody2D! Nên thêm Rigidbody2D vào Prefab.");
+            { /* Cảnh báo: Projectile không có Rigidbody2D! Nên thêm Rigidbody2D vào Prefab */ }
         }
     }
 

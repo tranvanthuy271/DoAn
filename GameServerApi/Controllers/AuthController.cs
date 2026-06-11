@@ -53,7 +53,7 @@ namespace GameServerApi.Controllers
 
             var token = _authService.GenerateJwtToken(user);
 
-            _logger.LogInformation("Register thành công: {Username} (userId={UserId})", user.Username, user.UserId);
+            { /* Register thành công: {Username} (userId={UserId}) */ }
 
             return Ok(new
             {
@@ -94,7 +94,7 @@ namespace GameServerApi.Controllers
 
             var token = _authService.GenerateJwtToken(user);
 
-            _logger.LogInformation("Login thành công: {Username} (userId={UserId})", user.Username, user.UserId);
+            { /* Login thành công: {Username} (userId={UserId}) */ }
 
             return Ok(new
             {
@@ -124,7 +124,7 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("[Auth] Không thể ghi điểm danh cho userId={UserId}: {Msg}", userId, ex.Message);
+                { /* Cảnh báo: Không thể ghi điểm danh cho userId={UserId}: {Msg} */ }
             }
         }
     }

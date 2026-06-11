@@ -143,11 +143,11 @@ namespace GameServerApi.Controllers
                 }
 
                 await _db.SaveChangesAsync();
-                _logger.LogInformation("[Leaderboard] Refresh hoàn tất ({Count} players).", players.Count);
+                { /* Refresh hoàn tất ({Count} players) */ }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[Leaderboard] Lỗi khi refresh.");
+                { /* Lỗi: Lỗi khi refresh */ }
             }
         }
 

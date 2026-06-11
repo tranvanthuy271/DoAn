@@ -64,7 +64,7 @@ public static class CreateNpcDynamicMenuPrefabs
     private static bool CreateRowPrefab()
     {
         if (AssetDatabase.LoadAssetAtPath<GameObject>(RowPrefabPath) != null)
-        { Debug.Log("[CreateNpcMenu] NpcMenuItemRow đã tồn tại → bỏ qua."); return false; }
+        { { /* NpcMenuItemRow đã tồn tại → bỏ qua */ } return false; }
 
         // Root (HorizontalLayoutGroup + Button + NpcMenuItemRow)
         var root = NewGO("NpcMenuItemRow");
@@ -166,7 +166,7 @@ public static class CreateNpcDynamicMenuPrefabs
 
         bool ok = SavePrefab(root, RowPrefabPath);
         Object.DestroyImmediate(root);
-        if (ok) Debug.Log($"[CreateNpcMenu] ✓ NpcMenuItemRow → {RowPrefabPath}");
+        if (ok) { /* ✓ NpcMenuItemRow → {RowPrefabPath} */ }
         return ok;
     }
 
@@ -180,7 +180,7 @@ public static class CreateNpcDynamicMenuPrefabs
                 "NPC Dynamic Menu Panel",
                 $"Prefab đã tồn tại:\n{PanelPrefabPath}\n\nGhi đè?",
                 "Ghi đè", "Hủy");
-            if (!overwrite) { Debug.Log("[CreateNpcMenu] NpcDynamicMenuPanel đã tồn tại → bỏ qua."); return false; }
+            if (!overwrite) { { /* NpcDynamicMenuPanel đã tồn tại → bỏ qua */ } return false; }
         }
 
         // Root: NpcDynamicMenuPanel
@@ -385,7 +385,7 @@ public static class CreateNpcDynamicMenuPrefabs
 
         bool ok = SavePrefab(root, PanelPrefabPath);
         Object.DestroyImmediate(root);
-        if (ok) Debug.Log($"[CreateNpcMenu] ✓ NpcDynamicMenuPanel → {PanelPrefabPath}");
+        if (ok) { /* ✓ NpcDynamicMenuPanel → {PanelPrefabPath} */ }
         return ok;
     }
 

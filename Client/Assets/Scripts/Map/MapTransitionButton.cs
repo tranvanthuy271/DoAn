@@ -67,7 +67,7 @@ public class MapTransitionButton : MonoBehaviour
 
         if (portalReq.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError($"[MapTransitionButton] Không tìm được portal: {portalReq.error}");
+            { /* Lỗi: Không tìm được portal: {portalReq.error} */ }
             ShowError("Không có đường đi " + (isRightButton ? "sang phải" : "sang trái") + ".");
             ResetButton(hideGlobalLoading: true);
             yield break;
@@ -97,7 +97,7 @@ public class MapTransitionButton : MonoBehaviour
         if (travelReq.result != UnityWebRequest.Result.Success)
         {
             string errBody = travelReq.downloadHandler.text;
-            Debug.LogError($"[MapTransitionButton] Travel từ chối: {errBody}");
+            { /* Lỗi: Travel từ chối: {errBody} */ }
             // Thử parse message lỗi từ server JSON {"message":"..."}
             string displayErr = "Không thể chuyển map.";
             try
@@ -120,7 +120,7 @@ public class MapTransitionButton : MonoBehaviour
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
         if (transitionController == null)
         {
-            Debug.LogError("[MapTransitionButton] Không tìm thấy ZoneTransitionController trong scene.");
+            { /* Lỗi: Không tìm thấy ZoneTransitionController trong scene */ }
             ShowError("Không thể chuyển map lúc này.");
             ResetButton(hideGlobalLoading: true);
             yield break;
@@ -148,12 +148,12 @@ public class MapTransitionButton : MonoBehaviour
         {
             var portal = JsonUtility.FromJson<PortalData>(req.downloadHandler.text);
             Vector2 resolved = new Vector2(portal.src_x, portal.src_y);
-            Debug.Log($"[MapTransitionButton] Arrival resolved from target {oppositeDirection} portal → map={targetMapId} pos=({resolved.x},{resolved.y})");
+            { /* Arrival resolved from target {oppositeDirection} portal → map={targetMapId} pos=({resolved.x},{resolved.y}) */ }
             onResolved?.Invoke(resolved);
         }
         else
         {
-            Debug.LogWarning($"[MapTransitionButton] Không resolve được portal '{oppositeDirection}' của map {targetMapId}. Fallback về dest_x/dest_y từ travel response. HTTP={req.responseCode} err={req.error}");
+            { /* Cảnh báo: Không resolve được portal '{oppositeDirection}' của map {targetMapId}. Fallback về dest_x/dest_y từ travel response. HTTP={req.responseCode} err={req.error} */ }
             onResolved?.Invoke(fallbackPos);
         }
     }
@@ -171,7 +171,7 @@ public class MapTransitionButton : MonoBehaviour
 
     private void ShowError(string message)
     {
-        if (errorText == null) { Debug.LogWarning($"[MapTransitionButton] {message}"); }
+        if (errorText == null) { { /* Cảnh báo: {message} */ } }
         else
         {
             StopAllCoroutines();
@@ -198,13 +198,13 @@ public class MapTransitionButton : MonoBehaviour
             if (map != null && map.map_id >= 0)
             {
                 if (map.map_id != fallbackMapId)
-                    Debug.Log($"[MapTransitionButton] Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id}");
+                    { /* Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id} */ }
                 onResolved?.Invoke(map.map_id);
                 yield break;
             }
         }
 
-        Debug.LogWarning($"[MapTransitionButton] Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error}");
+        { /* Cảnh báo: Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error} */ }
         onResolved?.Invoke(fallbackMapId);
     }
 

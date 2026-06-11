@@ -154,7 +154,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
     {
         if (panel == null)
         {
-            Debug.LogWarning("[UpgradeStoneSlot] Không tìm thấy UpgradePanel cha.");
+            { /* Cảnh báo: Không tìm thấy UpgradePanel cha */ }
             return;
         }
 

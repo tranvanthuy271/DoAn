@@ -116,7 +116,7 @@ public class MapManager : MonoBehaviour
             if (loadedById)
                 yield break;
 
-            Debug.LogWarning($"[MapManager] Không load được mapId={knownMapId} từ runtime state cho scene '{sceneName}'.");
+            { /* Cảnh báo: Không load được mapId={knownMapId} từ runtime state cho scene '{sceneName}' */ }
         }
     }
 
@@ -133,12 +133,12 @@ public class MapManager : MonoBehaviour
             if (!string.IsNullOrWhiteSpace(resp.map_name))
                 mapName = resp.map_name;
 
-            Debug.Log($"[MapManager] Map loaded via mapId: {mapName} (id={mapId})");
+            { /* Map loaded via mapId: {mapName} (id={mapId}) */ }
             onCompleted?.Invoke(true);
             yield break;
         }
 
-        Debug.LogWarning($"[MapManager] API thất bại cho mapId={targetMapId}, sẽ thử resolve theo scene. Error: {req.error}");
+        { /* Cảnh báo: API thất bại cho mapId={targetMapId}, sẽ thử resolve theo scene. Error: {req.error} */ }
         onCompleted?.Invoke(false);
     }
 
@@ -153,7 +153,7 @@ public class MapManager : MonoBehaviour
             var resp = JsonUtility.FromJson<MapConfigResponse>(req.downloadHandler.text);
             mapId   = resp.map_id;
             mapName = resp.map_name;
-            Debug.Log($"[MapManager] Map loaded via API: {mapName} (id={mapId})");
+            { /* Map loaded via API: {mapName} (id={mapId}) */ }
             onCompleted?.Invoke(true);
         }
         else
@@ -161,7 +161,7 @@ public class MapManager : MonoBehaviour
             // Fallback: nếu scene name là số, dùng làm mapId
             if (int.TryParse(sceneName, out int parsed))
                 mapId = parsed;
-            Debug.LogWarning($"[MapManager] API thất bại cho scene '{sceneName}', dùng mapId={mapId}");
+            { /* Cảnh báo: API thất bại cho scene '{sceneName}', dùng mapId={mapId} */ }
             onCompleted?.Invoke(false);
         }
     }

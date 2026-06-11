@@ -26,7 +26,7 @@ public class FriendToggleButton : MonoBehaviour
     {
         ResolveFriendPanel();
 
-        Debug.Log($"[FriendToggleButton] Start resolvedPanel={(friendPanel != null ? friendPanel.name : "NULL")} active={friendPanel != null && friendPanel.gameObject.activeSelf} scene={(IsSceneFriendPanel(friendPanel) ? friendPanel.gameObject.scene.name : "INVALID")}");
+        { /* Start resolvedPanel={(friendPanel != null ? friendPanel.name */ }
 
         var friendManager = FriendManager.EnsureInstance();
         if (friendManager != null)
@@ -39,7 +39,7 @@ public class FriendToggleButton : MonoBehaviour
             }
             else
             {
-                Debug.Log("[FriendToggleButton] Friend cache not loaded yet. Requesting initial friend list.");
+                { /* Friend cache not loaded yet. Requesting initial friend list */ }
                 friendManager.LoadFriends();
             }
         }
@@ -59,11 +59,11 @@ public class FriendToggleButton : MonoBehaviour
 
         if (friendPanel == null)
         {
-            Debug.LogError("[FriendToggleButton] Clicked but no FriendListUI could be resolved.");
+            { /* Lỗi: Clicked but no FriendListUI could be resolved */ }
             return;
         }
 
-        Debug.Log($"[FriendToggleButton] Clicked currentActive={friendPanel.gameObject.activeSelf} activeInHierarchy={friendPanel.gameObject.activeInHierarchy} panelPos={(friendPanel.transform as RectTransform)?.anchoredPosition}");
+        { /* Clicked currentActive={friendPanel.gameObject.activeSelf} activeInHierarchy={friendPanel.gameObject.activeInHierarchy} panelPos={(friendPanel.transform as RectTransform)?.anchoredPosition} */ }
         friendPanel.TogglePanel("FriendToggleButton");
     }
 
@@ -73,7 +73,7 @@ public class FriendToggleButton : MonoBehaviour
             return;
 
         if (friendPanel != null)
-            Debug.LogWarning("[FriendToggleButton] Ignoring FriendListUI reference that is not part of a loaded scene. Re-resolving scene instance.", this);
+            { /* Cảnh báo: Ignoring FriendListUI reference that is not part of a loaded scene. Re-resolving scene instance */ }
 
         friendPanel = FindObjectOfType<FriendListUI>(includeInactive: true);
     }
@@ -91,7 +91,7 @@ public class FriendToggleButton : MonoBehaviour
         foreach (var f in friends)
             if (f.status == "pending_received") pending++;
 
-        Debug.Log($"[FriendToggleButton] Friend list loaded count={friends?.Count ?? 0} pendingReceived={pending}");
+        { /* Friend list loaded count={friends?.Count ?? 0} pendingReceived={pending} */ }
 
         if (badgeRoot != null) badgeRoot.SetActive(pending > 0);
         if (badgeText != null) badgeText.text = pending > 9 ? "9+" : pending.ToString();

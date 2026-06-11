@@ -133,11 +133,11 @@ public class PlayerDash : NetworkBehaviour
         skillEffectAnimator = skillEffectObject.GetComponent<Animator>();
         if (skillEffectAnimator == null)
         {
-            Debug.LogWarning("[PlayerDash] SkillEffect object không có Animator component!");
+            { /* Cảnh báo: SkillEffect object không có Animator component */ }
         }
         else if (skillEffectAnimator.runtimeAnimatorController == null)
         {
-            Debug.LogError("[PlayerDash] SkillEffect Animator KHÔNG CÓ Controller được gán!");
+            { /* Lỗi: SkillEffect Animator KHÔNG CÓ Controller được gán */ }
         }
 
         // Khởi tạo position và scale của SkillEffect
@@ -377,7 +377,7 @@ public class PlayerDash : NetworkBehaviour
         // Validate SkillEffect
         if (skillEffectObject == null)
         {
-            Debug.LogError("[PlayerDash] SkillEffect object là NULL!");
+            { /* Lỗi: SkillEffect object là NULL */ }
             return;
         }
 
@@ -393,7 +393,7 @@ public class PlayerDash : NetworkBehaviour
             skillEffectAnimator = skillEffectObject.GetComponent<Animator>();
             if (skillEffectAnimator == null)
             {
-                Debug.LogError("[PlayerDash] Không tìm thấy Animator component trên SkillEffect object!");
+                { /* Lỗi: Không tìm thấy Animator component trên SkillEffect object */ }
                 return;
             }
         }
@@ -445,14 +445,14 @@ public class PlayerDash : NetworkBehaviour
         {
             if (skillEffectAnimator == null)
             {
-                Debug.LogError("[PlayerDash] skillEffectAnimator là NULL!");
+                { /* Lỗi: skillEffectAnimator là NULL */ }
             }
             return;
         }
 
         if (skillEffectAnimator.runtimeAnimatorController == null)
         {
-            Debug.LogError("[PlayerDash] SkillEffect Animator KHÔNG CÓ Controller!");
+            { /* Lỗi: SkillEffect Animator KHÔNG CÓ Controller */ }
             return;
         }
 
@@ -469,7 +469,7 @@ public class PlayerDash : NetworkBehaviour
 
         if (!hasParameter)
         {
-            Debug.LogError($"[PlayerDash] Parameter '{triggerName}' KHÔNG TỒN TẠI trong Animator Controller!");
+            { /* Lỗi: Parameter '{triggerName}' KHÔNG TỒN TẠI trong Animator Controller */ }
             return;
         }
 
@@ -581,14 +581,14 @@ public class PlayerDash : NetworkBehaviour
             {
                 networkEnemyHealth.TakeDamage(dashDamage, OwnerClientId);
                 hasDamagedThisDash = true;
-                Debug.Log($"[PlayerDash] Dash damage enemy {networkEnemyHealth.name} voi {dashDamage} damage! (Network)");
+                { /* Dash damage enemy {networkEnemyHealth.name} voi {dashDamage} damage! (Network) */ }
                 break;
             }
             else if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(dashDamage);
                 hasDamagedThisDash = true;
-                Debug.Log($"[PlayerDash] Dash damage enemy {enemyCollider.name} voi {dashDamage} damage!");
+                { /* Dash damage enemy {enemyCollider.name} voi {dashDamage} damage */ }
                 break;
             }
         }

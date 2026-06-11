@@ -109,7 +109,7 @@ public class DungeonListUI : MonoBehaviour
     {
         SetLoading(true);
         ClearList();
-        Debug.Log("[DungeonListUI] Bắt đầu tải danh sách phó bản...");
+        { /* Bắt đầu tải danh sách phó bản */ }
 
         if (GameplayCommandService.Instance == null)
         {
@@ -143,14 +143,14 @@ public class DungeonListUI : MonoBehaviour
 
         if (dungeons == null || dungeons.Length == 0)
         {
-            Debug.LogWarning("[DungeonListUI] API trả về 0 phó bản hoặc null.");
+            { /* Cảnh báo: API trả về 0 phó bản hoặc null */ }
             ShowStatus("Chưa có phó bản nào.");
             yield break;
         }
 
-        Debug.Log($"[DungeonListUI] Nhận được {dungeons.Length} phó bản:");
+        { /* Nhận được {dungeons.Length} phó bản */ }
         foreach (var d in dungeons)
-            Debug.Log($"  #{d.dungeon_id} '{d.dungeon_name}' type={d.dungeon_type} map_id={d.map_id} scene={d.scene_name} minLv={d.min_level_required} maxP={d.max_players}");
+            { /* #{d.dungeon_id} '{d.dungeon_name}' type={d.dungeon_type} map_id={d.map_id} scene={d.scene_name} minLv={d.min_level_required} maxP={d.max_players} */ }
 
         _cachedDungeons = dungeons;
         ShowStatus("");
@@ -161,7 +161,7 @@ public class DungeonListUI : MonoBehaviour
             var go   = Instantiate(dungeonItemPrefab, dungeonListContent);
             var item = go.GetComponent<DungeonButtonItem>();
             _sessionCache.TryGetValue(config.dungeon_id, out var session);
-            Debug.Log($"[DungeonListUI] Render item #{config.dungeon_id} '{config.dungeon_name}' prefab={go != null} item={item != null} session={session != null}");
+            { /* Render item #{config.dungeon_id} '{config.dungeon_name}' prefab={go != null} item={item != null} session={session != null} */ }
             item?.Setup(config, _playerLevel, session);
         }
     }

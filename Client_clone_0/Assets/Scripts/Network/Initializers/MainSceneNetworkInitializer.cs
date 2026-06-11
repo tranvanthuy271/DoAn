@@ -220,7 +220,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
                 // Debug.Log($"[MainSceneNetworkInitializer] ✓ This is LOCAL client {clientId}. Connection established!");
                 // Debug.Log($"[MainSceneNetworkInitializer] IsClient: {networkManagerSingleton.IsClient}, IsServer: {networkManagerSingleton.IsServer}");
                 
-                Debug.Log($"[MainSceneNetworkInitializer] Client {clientId} connected. Auth đã được gửi trong ConnectionData payload.");
+                { /* Client {clientId} connected. Auth đã được gửi trong ConnectionData payload */ }
             }
         }
         

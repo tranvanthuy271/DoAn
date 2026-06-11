@@ -120,7 +120,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"{LogPrefix} Chưa có PlayerData trong GameManager, hiển thị dữ liệu mặc định.", this);
+            { /* Cảnh báo: {LogPrefix} Chưa có PlayerData trong GameManager, hiển thị dữ liệu mặc định */ }
             ShowNoData();
         }
     }
@@ -181,14 +181,14 @@ public class CharacterMenuPanelUI : MonoBehaviour
         var partyManager = PartyManager.EnsureInstance();
         if (partyManager == null)
         {
-            Debug.LogError($"{LogPrefix} Không thể mở Quan hệ vì PartyManager không khởi tạo được.", this);
+            { /* Lỗi: {LogPrefix} Không thể mở Quan hệ vì PartyManager không khởi tạo được */ }
             return;
         }
 
         var resolvedPartyPanel = ResolvePartyPanel();
         if (resolvedPartyPanel == null)
         {
-            Debug.LogError($"{LogPrefix} Không thể mở Quan hệ vì không resolve được PartyPanel.", this);
+            { /* Lỗi: {LogPrefix} Không thể mở Quan hệ vì không resolve được PartyPanel */ }
             return;
         }
 
@@ -202,19 +202,19 @@ public class CharacterMenuPanelUI : MonoBehaviour
             return;
         }
 
-        Debug.LogWarning($"{LogPrefix} PartyPanel không có component PartyPanelUI, fallback SetActive(true).", resolvedPartyPanel);
+        { /* Cảnh báo: {LogPrefix} PartyPanel không có component PartyPanelUI, fallback SetActive(true) */ }
     }
 
     private void OnClanClicked()
     {
         // Gia tộc – bỏ qua, chưa triển khai
-        Debug.Log("[CharacterMenuPanelUI] Gia tộc chưa triển khai.");
+        { /* Gia tộc chưa triển khai */ }
     }
 
     private void OnSettingClicked()
     {
         // Setting – placeholder, triển khai sau
-        Debug.Log("[CharacterMenuPanelUI] Setting chưa triển khai.");
+        { /* Setting chưa triển khai */ }
     }
 
     private void OnChangeCharClicked()
@@ -264,7 +264,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     private void OnQuitClicked()
     {
-        Debug.Log("[CharacterMenuPanelUI] Thoát game.");
+        { /* Thoát game */ }
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -278,7 +278,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
     {
         if (avatarImage == null)
         {
-            Debug.LogWarning($"{LogPrefix} Chưa gán AvatarImage trong Inspector.", this);
+            { /* Cảnh báo: {LogPrefix} Chưa gán AvatarImage trong Inspector */ }
             return;
         }
 
@@ -293,9 +293,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
         int elementId = ElementHelper.ToId(resolvedType);
         if (!ElementHelper.IsValid(elementId))
         {
-            Debug.LogWarning(
-                $"{LogPrefix} Không resolve được element_type='{data?.element_type ?? string.Empty}' fallback='{resolvedType}' để hiển thị avatar cho '{data?.character_name ?? "---"}'. Giữ sprite hiện tại.",
-                this);
+            { /* Cảnh báo: {LogPrefix} Không resolve được element_type='{data?.element_type ?? string.Empty}' fallback='{resolvedType}' để hiển thị avatar cho '{data?.character_name ?? */ }
             return;
         }
 
@@ -325,7 +323,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
         if (partyPanel != null && TryInstantiateUiPrefab(partyPanel, out var instantiatedFromField))
         {
             partyPanel = instantiatedFromField;
-            Debug.Log($"{LogPrefix} Đã instantiate PartyPanel từ prefab reference gán trong CharacterMenuPanel.", this);
+            { /* {LogPrefix} Đã instantiate PartyPanel từ prefab reference gán trong CharacterMenuPanel */ }
             return partyPanel;
         }
 
@@ -333,14 +331,14 @@ public class CharacterMenuPanelUI : MonoBehaviour
         if (existingPartyPanel != null)
         {
             partyPanel = existingPartyPanel.gameObject;
-            Debug.Log($"{LogPrefix} Đã resolve PartyPanelUI đang có sẵn trong scene.", existingPartyPanel);
+            { /* {LogPrefix} Đã resolve PartyPanelUI đang có sẵn trong scene */ }
             return partyPanel;
         }
 
         var partyPanelPrefab = Resources.Load<GameObject>(partyPanelResourcesPath);
         if (partyPanelPrefab == null)
         {
-            Debug.LogError($"{LogPrefix} Không tìm thấy prefab PartyPanel tại Resources/{partyPanelResourcesPath}.", this);
+            { /* Lỗi: {LogPrefix} Không tìm thấy prefab PartyPanel tại Resources/{partyPanelResourcesPath} */ }
             return null;
         }
 
@@ -348,7 +346,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
             return null;
 
         partyPanel = instantiatedFromResources;
-        Debug.Log($"{LogPrefix} Đã instantiate PartyPanel từ Resources/{partyPanelResourcesPath}.", partyPanel);
+        { /* {LogPrefix} Đã instantiate PartyPanel từ Resources/{partyPanelResourcesPath} */ }
         return partyPanel;
     }
 
@@ -361,7 +359,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
         var parent = ResolveUiParent();
         if (parent == null)
         {
-            Debug.LogError($"{LogPrefix} Không tìm thấy Canvas/UI root để instantiate '{prefabAsset.name}'.", this);
+            { /* Lỗi: {LogPrefix} Không tìm thấy Canvas/UI root để instantiate '{prefabAsset.name}' */ }
             return false;
         }
 

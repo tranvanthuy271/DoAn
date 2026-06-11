@@ -171,7 +171,7 @@ public static class CreateShopItemRowPrefab
         if (overwrite)
         {
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PREFAB_PATH);
-            Debug.Log($"[CreateShopItemRowPrefab] Created: {PREFAB_PATH}");
+            { /* Created: {PREFAB_PATH} */ }
             Selection.activeObject = prefab;
             EditorGUIUtility.PingObject(prefab);
         }

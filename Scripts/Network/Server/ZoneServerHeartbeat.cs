@@ -29,7 +29,7 @@ public class ZoneServerHeartbeat : MonoBehaviour
             StopCoroutine(_heartbeatCoroutine);
 
         _heartbeatCoroutine = StartCoroutine(HeartbeatLoop());
-        Debug.Log($"[ZoneServerHeartbeat] Bắt đầu heartbeat mỗi {_config.heartbeatInterval}s");
+        { /* Bắt đầu heartbeat mỗi {_config.heartbeatInterval}s */ }
     }
 
     // Heartbeat loop
@@ -86,11 +86,11 @@ public class ZoneServerHeartbeat : MonoBehaviour
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[ZoneServerHeartbeat] Heartbeat thất bại: {req.error}");
+            { /* Cảnh báo: Heartbeat thất bại: {req.error} */ }
         }
         else
         {
-            Debug.Log($"[ZoneServerHeartbeat] ✓ Heartbeat ok — {totalPlayers} players online");
+            { /* ✓ Heartbeat ok  {totalPlayers} players online */ }
         }
     }
 
@@ -112,6 +112,6 @@ public class ZoneServerHeartbeat : MonoBehaviour
         using var req = UnityEngine.Networking.UnityWebRequest.Delete(url);
         req.SetRequestHeader("X-Zone-Api-Key", _config.GetZoneApiKey());
         yield return req.SendWebRequest();
-        Debug.Log("[ZoneServerHeartbeat] Đã gửi deregister.");
+        { /* Đã gửi deregister */ }
     }
 }

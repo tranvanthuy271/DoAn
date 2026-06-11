@@ -31,7 +31,7 @@ public class InventoryToggleButton : MonoBehaviour
     {
         ResolveControllers();
         if (informationPanel == null && characterPanel == null && inventoryUI == null)
-            Debug.LogError("[InventoryToggleButton] Không tìm thấy InformationPanelController, CharacterPanelController hay InventoryUI trong scene! Hãy gán thủ công trong Inspector.");
+            { /* Lỗi: Không tìm thấy InformationPanelController, CharacterPanelController hay InventoryUI trong scene! Hãy gán thủ công trong Inspector */ }
     }
 
     private void OnDestroy()
@@ -43,46 +43,46 @@ public class InventoryToggleButton : MonoBehaviour
     private void OnButtonClicked()
     {
         ResolveControllers();
-        Debug.Log("[InventoryToggleButton] Button clicked!");
+        { /* Button clicked */ }
         
         // Ưu tiên dùng InformationPanelController để hiển thị đồng bộ cả frame + inventory
         if (informationPanel != null)
         {
-            Debug.Log("[InventoryToggleButton] Sử dụng InformationPanelController");
+            { /* Sử dụng InformationPanelController */ }
             
             // LUÔN hiển thị tab Túi Đồ (giống như nhấn vào BtnTuiDo)
             // Nếu đã đang hiển thị Túi Đồ thì đóng, nếu không thì mở Túi Đồ
             if (informationPanel.IsAnyPanelVisible && informationPanel.IsShowingInventory)
             {
-                Debug.Log("[InventoryToggleButton] Đang hiển thị Túi Đồ → đóng panel");
+                { /* Đang hiển thị Túi Đồ → đóng panel */ }
                 informationPanel.HideAll();
             }
             else
             {
-                Debug.Log("[InventoryToggleButton] Mở tab Túi Đồ");
+                { /* Mở tab Túi Đồ */ }
                 informationPanel.ShowTuiDo();
             }
             return;
         }
 
-        Debug.LogWarning("[InventoryToggleButton] Không tìm thấy InformationPanelController, dùng fallback");
+        { /* Cảnh báo: Không tìm thấy InformationPanelController, dùng fallback */ }
 
         bool inventoryVisible = inventoryUI != null && inventoryUI.gameObject.activeSelf;
         if (inventoryVisible)
         {
-            Debug.Log("[InventoryToggleButton] Đang hiển thị Túi Đồ → đóng fallback panels");
+            { /* Đang hiển thị Túi Đồ → đóng fallback panels */ }
             inventoryUI.HideInventory();
             characterPanel?.Hide();
         }
         else if (inventoryUI != null)
         {
-            Debug.Log("[InventoryToggleButton] Show CharacterPanel shell + InventoryUI");
+            { /* Show CharacterPanel shell + InventoryUI */ }
             characterPanel?.HideContent();
             inventoryUI.ShowInventory();
         }
         else
         {
-            Debug.LogError("[InventoryToggleButton] Chưa gán InformationPanelController, CharacterPanelController hoặc InventoryUI trong Inspector!");
+            { /* Lỗi: Chưa gán InformationPanelController, CharacterPanelController hoặc InventoryUI trong Inspector */ }
         }
     }
 
@@ -92,21 +92,21 @@ public class InventoryToggleButton : MonoBehaviour
         {
             characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
             if (characterPanel != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
+                { /* Auto-found CharacterPanelController: {characterPanel.gameObject.name} */ }
         }
 
         if (inventoryUI == null)
         {
             inventoryUI = FindObjectOfType<InventoryUI>(includeInactive: true);
             if (inventoryUI != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found InventoryUI: {inventoryUI.gameObject.name}");
+                { /* Auto-found InventoryUI: {inventoryUI.gameObject.name} */ }
         }
 
         if (informationPanel == null)
         {
             informationPanel = InformationPanelController.GetOrCreate(characterPanel, inventoryUI);
             if (informationPanel != null)
-                Debug.Log($"[InventoryToggleButton] Auto-found/created InformationPanelController: {informationPanel.gameObject.name}");
+                { /* Auto-found/created InformationPanelController: {informationPanel.gameObject.name} */ }
         }
     }
 }

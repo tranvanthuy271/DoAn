@@ -19,7 +19,7 @@ public class HostSceneInitializer : MonoBehaviour
     {
         if (FindObjectOfType<MapWorldBootstrap>() != null)
         {
-            Debug.Log("[HostSceneInitializer] MapWorldBootstrap detected — disabling legacy host initializer.");
+            { /* MapWorldBootstrap detected  disabling legacy host initializer */ }
             enabled = false;
             return;
         }
@@ -219,7 +219,7 @@ public class HostSceneInitializer : MonoBehaviour
     // Callback khi server đã start - spawn NetworkObject để làm auth sender
     private void OnServerStarted()
     {
-        Debug.Log("[HostSceneInitializer] Server started. Registering auth Named Message handler...");
+        { /* Server started. Registering auth Named Message handler */ }
         
         // Đăng ký Named Message handler để nhận auth từ client
         if (networkManager != null)

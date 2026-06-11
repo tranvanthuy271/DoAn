@@ -47,13 +47,12 @@ public class ZoneRoomRegistry : MonoBehaviour
             {
                 var room = new ZoneRoom(mapDef, zoneDef);
                 zoneDict[zoneDef.zoneId] = room;
-                Debug.Log($"[ZoneRoomRegistry] Loaded {room}");
+                { /* Loaded {room} */ }
             }
             _rooms[mapDef.mapId] = zoneDict;
         }
 
-        Debug.Log($"[ZoneRoomRegistry] ✓ Initialized {_rooms.Count} maps, " +
-                  $"{TotalZoneCount} total zones.");
+        { /* ✓ Initialized {_rooms.Count} maps */ }
     }
 
     // Room lookup
@@ -142,6 +141,6 @@ public class ZoneRoomRegistry : MonoBehaviour
     {
         foreach (var zones in _rooms.Values)
             foreach (var room in zones.Values)
-                Debug.Log($"[ZoneRoomRegistry] Status: {room}");
+                { /* Status: {room} */ }
     }
 }

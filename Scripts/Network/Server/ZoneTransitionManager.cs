@@ -40,7 +40,7 @@ public class ZoneTransitionManager : NetworkBehaviour
         if (_lastTransferTime.TryGetValue(clientId, out float lastTime) &&
             now - lastTime < _transferCooldown)
         {
-            Debug.LogWarning($"[ZoneTransitionManager] Client {clientId} spam zone transfer → bỏ qua.");
+            { /* Cảnh báo: Client {clientId} spam zone transfer → bỏ qua */ }
             return;
         }
         _lastTransferTime[clientId] = now;
@@ -50,7 +50,7 @@ public class ZoneTransitionManager : NetworkBehaviour
         int currentZoneId = _config != null ? _config.zoneId : -1;
         if (targetMapId == currentMapId && targetZoneId == currentZoneId)
         {
-            Debug.LogWarning($"[ZoneTransitionManager] Client {clientId} yêu cầu chuyển vào chính zone hiện tại → bỏ qua.");
+            { /* Cảnh báo: Client {clientId} yêu cầu chuyển vào chính zone hiện tại → bỏ qua */ }
             return;
         }
 
@@ -77,7 +77,7 @@ public class ZoneTransitionManager : NetworkBehaviour
     [ClientRpc]
     private void ZoneTransferFailedClientRpc(string reason, ClientRpcParams rpcParams = default)
     {
-        Debug.LogWarning($"[ZoneTransitionManager] Zone transfer thất bại: {reason}");
+        { /* Cảnh báo: Zone transfer thất bại: {reason} */ }
         // TODO: client hiển thị UI thông báo lỗi
     }
 
@@ -113,7 +113,7 @@ public class ZoneTransitionManager : NetworkBehaviour
             yield return saveReq.SendWebRequest();
 
             if (saveReq.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-                Debug.LogWarning($"[ZoneTransitionManager] Save vị trí thất bại: {saveReq.error} — vẫn tiếp tục transfer.");
+                { /* Cảnh báo: Save vị trí thất bại: {saveReq.error}  vẫn tiếp tục transfer */ }
         }
 
         // 3 — Fetch địa chỉ zone server đích từ API
@@ -128,8 +128,7 @@ public class ZoneTransitionManager : NetworkBehaviour
 
             if (addrReq.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"[ZoneTransitionManager] Không lấy được địa chỉ zone " +
-                               $"map={targetMapId} zone={targetZoneId}: {addrReq.error}");
+                { /* Lỗi: Không lấy được địa chỉ zone */ }
                 SendTransferFailed(clientId, "Zone đích chưa sẵn sàng.");
                 yield break;
             }
@@ -140,7 +139,7 @@ public class ZoneTransitionManager : NetworkBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[ZoneTransitionManager] Parse ZoneAddress thất bại: {ex.Message}");
+                { /* Lỗi: Parse ZoneAddress thất bại: {ex.Message} */ }
                 SendTransferFailed(clientId, "Lỗi server nội bộ.");
                 yield break;
             }
@@ -161,8 +160,7 @@ public class ZoneTransitionManager : NetworkBehaviour
             }
         };
 
-        Debug.Log($"[ZoneTransitionManager] Redirect client {clientId} → " +
-                  $"{zoneAddr.ip}:{zoneAddr.port} (map={targetMapId} zone={targetZoneId})");
+        { /* Redirect client {clientId} → */ }
 
         BeginZoneTransferClientRpc(zoneAddr.ip, (ushort)zoneAddr.port, entryPointId,
                                    zoneAddr.sceneName, rpcParams);

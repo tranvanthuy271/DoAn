@@ -53,8 +53,7 @@ public class HybridWaterWoodVenomSkill : HybridSkillBase
     {
         if (bulletPrefab == null)
         {
-            Debug.LogWarning($"[{nameof(HybridWaterWoodVenomSkill)}] "
-                           + "bulletPrefab chưa được gán trong Inspector!");
+            { /* Cảnh báo: Thực hiện ghi log */ }
             return;
         }
 

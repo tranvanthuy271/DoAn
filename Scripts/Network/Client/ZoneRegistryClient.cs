@@ -41,8 +41,7 @@ public class ZoneRegistryClient : MonoBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError($"[ZoneRegistryClient] Fetch zone address thất bại " +
-                           $"map={mapId} zone={zoneId}: {request.error} (HTTP {request.responseCode})");
+            { /* Lỗi: Fetch zone address thất bại */ }
             callback?.Invoke(null);
             yield break;
         }
@@ -54,17 +53,17 @@ public class ZoneRegistryClient : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[ZoneRegistryClient] Parse ZoneAddress thất bại: {ex.Message}");
+            { /* Lỗi: Parse ZoneAddress thất bại: {ex.Message} */ }
         }
 
         if (addr == null || string.IsNullOrEmpty(addr.ip))
         {
-            Debug.LogError($"[ZoneRegistryClient] Zone server map={mapId} zone={zoneId} không có trong registry.");
+            { /* Lỗi: Zone server map={mapId} zone={zoneId} không có trong registry */ }
             callback?.Invoke(null);
             yield break;
         }
 
-        Debug.Log($"[ZoneRegistryClient] ✓ Zone map={mapId} zone={zoneId} → {addr.ip}:{addr.port}");
+        { /* ✓ Zone map={mapId} zone={zoneId} → {addr.ip}:{addr.port} */ }
         callback?.Invoke(addr);
     }
 

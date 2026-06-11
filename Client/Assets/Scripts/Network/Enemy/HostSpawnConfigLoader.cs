@@ -107,12 +107,12 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         if (FindObjectsOfType<WaveDungeonRuntime>(includeInactive: true).Length > 0
             || FindObjectsOfType<PartyDungeonRuntime>(includeInactive: true).Length > 0)
         {
-            Debug.Log("[HostSpawnConfigLoader] Dungeon runtime detected (includeInactive) — skipping spawn config because runtime manages all spawning.");
+            { /* Dungeon runtime detected (includeInactive)  skipping spawn config because runtime manages all spawning */ }
             yield break;
         }
 
         string url = $"{apiBaseURL}/map/{mapId}/spawn-config";
-        Debug.Log($"[HostSpawnConfigLoader] Fetching spawn config: {url}");
+        { /* Fetching spawn config: {url} */ }
 
         using var request = UnityWebRequest.Get(url);
         yield return request.SendWebRequest();
@@ -120,7 +120,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         if (request.result != UnityWebRequest.Result.Success)
         {
             string errMsg = $"API error: {request.error}";
-            Debug.LogError($"[HostSpawnConfigLoader] {errMsg}");
+            { /* Lỗi: {errMsg} */ }
             OnSpawnError?.Invoke(errMsg);
             TryFallback();
             yield break;
@@ -134,7 +134,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         catch (System.Exception ex)
         {
             string errMsg = $"JSON parse error: {ex.Message}";
-            Debug.LogError($"[HostSpawnConfigLoader] {errMsg}");
+            { /* Lỗi: {errMsg} */ }
             OnSpawnError?.Invoke(errMsg);
             TryFallback();
             yield break;
@@ -144,7 +144,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             || response.spawns == null
             || response.spawns.Length == 0)
         {
-            Debug.LogWarning($"[HostSpawnConfigLoader] Không có spawn config cho map {mapId}. Fallback...");
+            { /* Cảnh báo: Không có spawn config cho map {mapId}. Fallback */ }
             TryFallback();
             yield break;
         }
@@ -171,7 +171,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 yield return null;
         }
 
-        Debug.Log($"[HostSpawnConfigLoader] Spawn hoàn tất: {_totalSpawned} enemy từ {totalEntries} entries.");
+        { /* Spawn hoàn tất: {_totalSpawned} enemy từ {totalEntries} entries */ }
         OnSpawnComplete?.Invoke(_totalSpawned);
 
         // Khởi động respawn loop: theo dõi mỗi group, nếu tất cả enemy chết
@@ -182,7 +182,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     // Coroutine kiểm tra respawn cho mỗi SpawnEntry. Chạy mỗi 5s trên server.
     private IEnumerator CheckRespawnLoop()
     {
-        Debug.Log($"[RESPAWN] CheckRespawnLoop STARTED — mapId={mapId} entries={_spawnEntries.Count}");
+        { /* CheckRespawnLoop STARTED  mapId={mapId} entries={_spawnEntries.Count} */ }
         yield return new WaitForSeconds(5f);
         int loopTick = 0;
         while (true)
@@ -191,18 +191,18 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             loopTick++;
             if (!IsServer)
             {
-                Debug.LogWarning("[RESPAWN] IsServer=false → LOOP EXIT");
+                { /* Cảnh báo: IsServer=false → LOOP EXIT */ }
                 yield break;
             }
 
-            Debug.Log($"[RESPAWN] tick={loopTick} Time={Time.time:F1}s entries={_spawnEntries.Count}");
+            { /* tick={loopTick} Time={Time.time:F1}s entries={_spawnEntries.Count} */ }
 
             for (int idx = 0; idx < _spawnEntries.Count; idx++)
             {
                 SpawnEntry entry = _spawnEntries[idx];
                 if (!_spawnGroupInstances.TryGetValue(idx, out var instances))
                 {
-                    Debug.LogWarning($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — KHÔNG CÓ trong _spawnGroupInstances!");
+                    { /* Cảnh báo: idx={idx} enemy_id={entry.enemy_id}  KHÔNG CÓ trong _spawnGroupInstances */ }
                     continue;
                 }
 
@@ -216,13 +216,13 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 int afterCount = instances.Count;
 
                 if (beforeCount != afterCount)
-                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — cleaned {beforeCount - afterCount} dead GO, remaining={afterCount}");
+                    { /* idx={idx} enemy_id={entry.enemy_id}  cleaned {beforeCount - afterCount} dead GO, remaining={afterCount} */ }
 
                 if (instances.Count > 0)
                 {
                     // Còn sống — reset death timer
                     _spawnGroupDeathTime.Remove(idx);
-                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — alive count={instances.Count}, skip");
+                    { /* idx={idx} enemy_id={entry.enemy_id}  alive count={instances.Count}, skip */ }
                     continue;
                 }
 
@@ -230,7 +230,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 if (!_spawnGroupDeathTime.TryGetValue(idx, out float deathTime))
                 {
                     _spawnGroupDeathTime[idx] = Time.time;
-                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — ALL DEAD, death time recorded={Time.time:F1}s, respawn_time={entry.respawn_time}s");
+                    { /* idx={idx} enemy_id={entry.enemy_id}  ALL DEAD, death time recorded={Time.time:F1}s, respawn_time={entry.respawn_time}s */ }
                     continue;
                 }
 
@@ -238,11 +238,11 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 // Chờ đủ respawn_time giây từ lúc chết
                 if (waited < entry.respawn_time)
                 {
-                    Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} — waiting {waited:F1}/{entry.respawn_time}s after death");
+                    { /* idx={idx} enemy_id={entry.enemy_id}  waiting {waited:F1}/{entry.respawn_time}s after death */ }
                     continue;
                 }
 
-                Debug.Log($"[RESPAWN] idx={idx} enemy_id={entry.enemy_id} count={entry.count} — SPAWNING NOW after {waited:F1}s");
+                { /* idx={idx} enemy_id={entry.enemy_id} count={entry.count}  SPAWNING NOW after {waited:F1}s */ }
                 _spawnGroupDeathTime.Remove(idx);
                 SpawnEnemyGroup(entry, idx);
             }
@@ -256,20 +256,20 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     {
         if (e.enemy_id <= 0)
         {
-            Debug.LogError($"[HostSpawnConfigLoader] spawns[{index}]: enemy_id={e.enemy_id} không hợp lệ → bỏ qua.");
+            { /* Lỗi: spawns[{index}]: enemy_id={e.enemy_id} không hợp lệ → bỏ qua */ }
             return false;
         }
 
         if (enemyPrefabManager != null
             && enemyPrefabManager.GetEnemyPrefab(e.enemy_id) == null)
         {
-            Debug.LogWarning($"[HostSpawnConfigLoader] spawns[{index}]: Không tìm thấy prefab cho enemy_id={e.enemy_id} → bỏ qua.");
+            { /* Cảnh báo: spawns[{index}]: Không tìm thấy prefab cho enemy_id={e.enemy_id} → bỏ qua */ }
             return false;
         }
 
         if (e.cx == 0f && e.cy == 0f)
         {
-            Debug.LogWarning($"[HostSpawnConfigLoader] spawns[{index}]: enemy_id={e.enemy_id} có cx=0, cy=0 (vị trí gốc thế giới). Kiểm tra lại DB config.");
+            { /* Cảnh báo: spawns[{index}]: enemy_id={e.enemy_id} có cx=0, cy=0 (vị trí gốc thế giới). Kiểm tra lại DB config */ }
             // Không skip — vẫn spawn nhưng cảnh báo
         }
 
@@ -296,7 +296,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             _skillLookup[entry.enemy_id] = entry;
         }
 
-        Debug.Log($"[HostSpawnConfigLoader] Skill/reward lookup built: {_skillLookup.Count} enemy types.");
+        { /* Skill/reward lookup built: {_skillLookup.Count} enemy types */ }
     }
 
     //  Spawning
@@ -310,7 +310,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             enemyPrefabManager = EnemyPrefabManager.Instance;
         if (enemyPrefabManager == null)
         {
-            Debug.LogError("[HostSpawnConfigLoader] EnemyPrefabManager chưa được gán và Instance cũng null!");
+            { /* Lỗi: EnemyPrefabManager chưa được gán và Instance cũng null */ }
             return;
         }
 
@@ -361,15 +361,13 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             BossAI prefabBossAI = prefab.GetComponent<BossAI>();
             BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
             EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
-            Debug.LogWarning(
-                $"[BOSS25][HostSpawnConfigLoader] Instantiate enemy_id={entry.enemy_id} prefab={prefab.name} instance={enemyObj.name} pos={pos} mapId={mapId} entry.is_boss={entry.is_boss} skillsName='{(skillsEntry != null ? skillsEntry.enemy_name : "")}' prefabHasBossAI={(prefabBossAI != null)} prefabBossEnabled={(prefabBossAI != null && prefabBossAI.enabled)} instanceHasBossAI={(instanceBossAI != null)} instanceBossEnabled={(instanceBossAI != null && instanceBossAI.enabled)} instanceEnemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
-                enemyObj);
+            { /* Cảnh báo: [HostSpawnConfigLoader] Instantiate enemy_id={entry.enemy_id} prefab={prefab.name} instance={enemyObj.name} pos={pos} mapId={mapId} entry.is_boss={entry.is_boss} skillsName='{(skillsEntry != null ? skillsEntry.enemy_name */ }
         }
 
         NetworkObject netObj = enemyObj.GetComponent<NetworkObject>();
         if (netObj == null)
         {
-            Debug.LogError($"[HostSpawnConfigLoader] Prefab enemy_id={entry.enemy_id} thiếu NetworkObject component!");
+            { /* Lỗi: Prefab enemy_id={entry.enemy_id} thiếu NetworkObject component */ }
             Destroy(enemyObj);
             return null;
         }
@@ -383,9 +381,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             bool snapped = spawnEnemyAI.SnapToGroundForServerSpawn();
             if (!snapped)
             {
-                Debug.LogWarning(
-                    $"[HostSpawnConfigLoader] enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                    enemyObj);
+                { /* Cảnh báo: enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
             }
         }
         else
@@ -396,9 +392,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
                 bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
                 if (!snapped)
                 {
-                    Debug.LogWarning(
-                        $"[HostSpawnConfigLoader] boss enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                        enemyObj);
+                    { /* Cảnh báo: boss enemy_id={entry.enemy_id} mapId={mapId} spawn pos={pos} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
                 }
             }
         }
@@ -421,9 +415,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         bool effectiveIsBoss = entry.is_boss || forceBossMode;
         if (watchBoss25 && effectiveIsBoss != entry.is_boss)
         {
-            Debug.LogWarning(
-                $"[BOSS25][HostSpawnConfigLoader] Force boss mode for enemy_id={entry.enemy_id}. entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss}",
-                enemyObj);
+            { /* Cảnh báo: [HostSpawnConfigLoader] Force boss mode for enemy_id={entry.enemy_id}. entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss} */ }
         }
 
         statOverride.Apply(
@@ -449,9 +441,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         {
             BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
             EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
-            Debug.LogWarning(
-                $"[BOSS25][HostSpawnConfigLoader] After statOverride enemy_id={entry.enemy_id} entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)} netSpawned={netObj.IsSpawned} scene={enemyObj.scene.name}",
-                enemyObj);
+            { /* Cảnh báo: [HostSpawnConfigLoader] After statOverride enemy_id={entry.enemy_id} entry.is_boss={entry.is_boss} effectiveIsBoss={effectiveIsBoss} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)} netSpawned={netObj.IsSpawned} scene={enemyObj.scene.name} */ }
         }
 
         // Set drop rules từ enemy_skills (reward_json đã parse sẵn trên server)
@@ -472,12 +462,12 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             }
             else
             {
-                Debug.LogWarning($"[HostSpawnConfigLoader] enemy_id={entry.enemy_id}: EnemyItemDrop component không tồn tại trên prefab!");
+                { /* Cảnh báo: enemy_id={entry.enemy_id}: EnemyItemDrop component không tồn tại trên prefab */ }
             }
         }
         else
         {
-            Debug.Log($"[HostSpawnConfigLoader] enemy_id={entry.enemy_id}: không có drop rules trong reward_json.");
+            { /* enemy_id={entry.enemy_id}: không có drop rules trong reward_json */ }
         }
 
         // Set skills
@@ -533,14 +523,14 @@ public class HostSpawnConfigLoader : NetworkBehaviour
 
         if (fallbackSpawner != null)
         {
-            Debug.Log("[HostSpawnConfigLoader] Chạy NetworkEnemySpawner (fallback)...");
+            { /* Chạy NetworkEnemySpawner (fallback) */ }
             // NetworkEnemySpawner tự check IsServer trong Start() của nó
             // Chỉ cần enable là nó tự load
             fallbackSpawner.enabled = true;
         }
         else
         {
-            Debug.LogWarning("[HostSpawnConfigLoader] Không có fallbackSpawner — không spawn được enemy.");
+            { /* Cảnh báo: Không có fallbackSpawner  không spawn được enemy */ }
         }
     }
 }

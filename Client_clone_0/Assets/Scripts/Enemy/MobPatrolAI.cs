@@ -282,7 +282,7 @@ public class MobPatrolAI : MonoBehaviour
             int counterDmg = Mathf.Max(1, Mathf.RoundToInt(baseDamage * 0.6f));
             // Truyền hệ quai vào đường dẫn dạng — player Hybrid có thể miễn nếu elementType trong HybridImmuneElements
             nph.TakeDamageWithElement(counterDmg, elementType);
-            Debug.Log($"[MobAI] Counter! {counterDmg} dmg ({elementType})");
+            { /* Counter! {counterDmg} dmg ({elementType}) */ }
             yield break;
         }
         var ph = _player.GetComponent<PlayerHealth>();
@@ -290,7 +290,7 @@ public class MobPatrolAI : MonoBehaviour
         {
             int counterDmg = Mathf.Max(1, Mathf.RoundToInt(baseDamage * 0.6f));
             ph.TakeDamage(counterDmg);
-            Debug.Log($"[MobAI] Counter! {counterDmg} dmg");
+            { /* Counter! {counterDmg} dmg */ }
         }
     }
 
@@ -390,7 +390,7 @@ public class MobPatrolAI : MonoBehaviour
     private void ShowFloatingText(string text)
     {
         // Hook cho floating text "Miss!" — implement với FloatingTextManager nếu có
-        Debug.Log($"[MobAI] {gameObject.name}: {text}");
+        { /* {gameObject.name}: {text} */ }
     }
 
 #if UNITY_EDITOR

@@ -30,7 +30,7 @@ public class EnemyHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         OnTakeDamage?.Invoke();
 
-        Debug.Log($"{gameObject.name} took {damage} damage. Health: {currentHealth}/{maxHealth}");
+        { /* {gameObject.name} took {damage} damage. Health: {currentHealth}/{maxHealth} */ }
 
         if (currentHealth <= 0)
         {
@@ -53,7 +53,7 @@ public class EnemyHealth : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log($"{gameObject.name} died!");
+        { /* {gameObject.name} died */ }
         OnDeath?.Invoke();
 
         // Xóa ngay lập tức (không chờ animation death)

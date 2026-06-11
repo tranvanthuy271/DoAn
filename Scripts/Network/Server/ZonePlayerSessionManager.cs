@@ -111,8 +111,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     {
         if (!_approvedUsers.TryGetValue(clientId, out var userInfo))
         {
-            Debug.LogWarning($"[ZonePlayerSessionManager] Client {clientId} kết nối nhưng không có " +
-                             "approved user info — kick.");
+            { /* Cảnh báo: Client {clientId} kết nối nhưng không có */ }
             NetworkManager.Singleton.DisconnectClient(clientId);
             return;
         }
@@ -129,7 +128,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             // Save vị trí cuối trước khi xóa session
             StartCoroutine(SavePlayerPosition(session));
             _activeSessions.Remove(clientId);
-            Debug.Log($"[ZonePlayerSessionManager] Client {clientId} (userId={session.UserId}) đã ngắt kết nối.");
+            { /* Client {clientId} (userId={session.UserId}) đã ngắt kết nối */ }
         }
     }
 
@@ -153,7 +152,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             elapsed += Time.deltaTime;
             if (elapsed > _dataLoadTimeout)
             {
-                Debug.LogWarning($"[ZonePlayerSessionManager] Timeout load data client {clientId} → kick.");
+                { /* Cảnh báo: Timeout load data client {clientId} → kick */ }
                 NetworkManager.Singleton.DisconnectClient(clientId);
                 yield break;
             }
@@ -162,8 +161,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[ZonePlayerSessionManager] Không load được player data " +
-                             $"(userId={userInfo.UserId}): {request.error} → kick client {clientId}.");
+            { /* Cảnh báo: Không load được player data */ }
             if (NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
                 NetworkManager.Singleton.DisconnectClient(clientId);
             _approvedUsers.Remove(clientId);
@@ -178,14 +176,14 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[ZonePlayerSessionManager] Parse PlayerData thất bại: {ex.Message}");
+            { /* Lỗi: Parse PlayerData thất bại: {ex.Message} */ }
             NetworkManager.Singleton.DisconnectClient(clientId);
             yield break;
         }
 
         if (playerData == null)
         {
-            Debug.LogError($"[ZonePlayerSessionManager] PlayerData null sau parse — kick client {clientId}.");
+            { /* Lỗi: PlayerData null sau parse  kick client {clientId} */ }
             NetworkManager.Singleton.DisconnectClient(clientId);
             yield break;
         }
@@ -196,7 +194,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         // 4 — Spawn player NetworkObject
         if (_playerPrefab == null)
         {
-            Debug.LogError("[ZonePlayerSessionManager] _playerPrefab chưa gán!");
+            { /* Lỗi: _playerPrefab chưa gán */ }
             yield break;
         }
 
@@ -204,7 +202,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         var netObj = playerGo.GetComponent<NetworkObject>();
         if (netObj == null)
         {
-            Debug.LogError("[ZonePlayerSessionManager] Player prefab thiếu NetworkObject component!");
+            { /* Lỗi: Player prefab thiếu NetworkObject component */ }
             Destroy(playerGo);
             yield break;
         }
@@ -229,8 +227,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
 
         _approvedUsers.Remove(clientId);
-        Debug.Log($"[ZonePlayerSessionManager] ✓ Spawned player clientId={clientId} " +
-                  $"userId={userInfo.UserId} at {spawnPos}");
+        { /* ✓ Spawned player clientId={clientId} */ }
     }
 
     private static Vector3 GetEntryPoint(int mapId, int zoneId, global::PlayerDataResponse data)
@@ -296,9 +293,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
-            Debug.LogWarning($"[ZonePlayerSessionManager] Save player data thất bại user={session.UserId}: {req.error}");
+            { /* Cảnh báo: Save player data thất bại user={session.UserId}: {req.error} */ }
         else
-            Debug.Log($"[ZonePlayerSessionManager] Saved player data user={session.UserId} hp={hp}/{maxHp} mp={mp}/{maxMp} pos=({pos.x:F2},{pos.y:F2})");
+            { /* Saved player data user={session.UserId} hp={hp}/{maxHp} mp={mp}/{maxMp} pos=({pos.x:F2},{pos.y:F2}) */ }
     }
 
     // Inner types

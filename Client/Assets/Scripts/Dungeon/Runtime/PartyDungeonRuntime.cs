@@ -47,7 +47,7 @@ public class PartyDungeonRuntime : BaseDungeonInstance
         _completed = false;
 
         SetEncounterLocation(_activeMapId, _activeZoneId);
-        Debug.Log($"[PartyDungeonRuntime] SpawnEnemies: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} enemyCount={config.enemySpawns?.Count ?? 0}");
+        { /* SpawnEnemies: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} enemyCount={config.enemySpawns?.Count ?? 0} */ }
 
         foreach (var enemyConfig in config.enemySpawns)
         {
@@ -57,7 +57,7 @@ public class PartyDungeonRuntime : BaseDungeonInstance
 
         if (_aliveEnemies.Count == 0)
         {
-            Debug.Log("[PartyDungeonRuntime] Không có minion — spawn boss ngay.");
+            { /* Không có minion  spawn boss ngay */ }
             SpawnBoss();
         }
         else
@@ -123,7 +123,7 @@ public class PartyDungeonRuntime : BaseDungeonInstance
     {
         _bossSpawned = true;
         SetEncounterLocation(_activeMapId, _activeZoneId);
-        Debug.Log($"[PartyDungeonRuntime] SpawnBoss: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} bossEnemyId={config.bossSpawn?.enemyId}");
+        { /* SpawnBoss: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} bossEnemyId={config.bossSpawn?.enemyId} */ }
         NetworkObject boss = SpawnConfiguredEnemy(config.bossSpawn, 1f, true);
         RegisterEnemy(boss, true);
         BroadcastStatus("Boss đã xuất hiện.");

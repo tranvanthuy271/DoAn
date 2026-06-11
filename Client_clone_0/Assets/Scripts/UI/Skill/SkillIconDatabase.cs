@@ -30,7 +30,7 @@ public class SkillIconDatabase : MonoBehaviour
         var go = new GameObject("SkillIconDatabase [auto]");
         go.AddComponent<SkillIconDatabase>();
         DontDestroyOnLoad(go);
-        Debug.Log("[SkillIconDatabase] Auto-bootstrapped (không tìm thấy instance trong scene).");
+        { /* Auto-bootstrapped (không tìm thấy instance trong scene) */ }
     }
 
     private void Awake()
@@ -54,7 +54,7 @@ public class SkillIconDatabase : MonoBehaviour
         foreach (var sprite in sprites)
             _icons[sprite.name] = sprite;
 
-        Debug.Log($"[SkillIconDatabase] Loaded {_icons.Count} skill icon(s) from Resources/{resourcesFolder}/");
+        { /* Loaded {_icons.Count} skill icon(s) from Resources/{resourcesFolder}/ */ }
     }
 
     // Trả về Sprite theo iconId hoặc skillCode. Không phân biệt hoa thường.

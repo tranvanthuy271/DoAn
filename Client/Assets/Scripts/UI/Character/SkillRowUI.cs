@@ -159,13 +159,11 @@ public class SkillRowUI : MonoBehaviour
     {
         if (_info == null)
         {
-            Debug.Log("[SkillRow] RefreshUI: _info là null, bỏ qua.");
+            { /* RefreshUI: _info là null, bỏ qua */ }
             return;
         }
 
-        Debug.Log($"[SkillRow] RefreshUI skill_id={_info.skill_id} name='{_info.skill_name}' " +
-                  $"code='{_info.skill_code}' icon_id='{_info.icon_id}' " +
-                  $"lv={_info.current_level}/{_info.max_level}");
+        { /* RefreshUI skill_id={_info.skill_id} name='{_info.skill_name}' */ }
 
         if (txtSkillName != null)
         {
@@ -195,7 +193,7 @@ public class SkillRowUI : MonoBehaviour
 
             if (icon != null)
             {
-                Debug.Log($"[SkillRow] Icon OK: '{iconKey}' cho '{_info.skill_name}'");
+                { /* Icon OK: '{iconKey}' cho '{_info.skill_name}' */ }
                 iconImage.sprite = icon;
                 iconImage.color  = Color.white;
                 iconImage.enabled = true;
@@ -211,16 +209,14 @@ public class SkillRowUI : MonoBehaviour
 
                 if (direct != null)
                 {
-                    Debug.Log($"[SkillRow] Icon direct-load OK: '{_info.icon_id}' cho '{_info.skill_name}'");
+                    { /* Icon direct-load OK: '{_info.icon_id}' cho '{_info.skill_name}' */ }
                     iconImage.sprite  = direct;
                     iconImage.color   = Color.white;
                     iconImage.enabled = true;
                 }
                 else
                 {
-                    Debug.LogWarning($"[SkillRow] Không tìm thấy icon cho '{_info.skill_name}' " +
-                                     $"(icon_id='{_info.icon_id}', code='{_info.skill_code}', " +
-                                     $"SkillIconDB={(SkillIconDatabase.Instance != null ? "OK" : "NULL")})");
+                    { /* Cảnh báo: Không tìm thấy icon cho '{_info.skill_name}' */ }
                     iconImage.sprite  = null;
                     iconImage.color   = new Color(0.55f, 0.55f, 0.55f, 1f);
                     iconImage.enabled = true;
@@ -247,7 +243,7 @@ public class SkillRowUI : MonoBehaviour
                 iconImage.sprite  = icon;
                 iconImage.color   = Color.white;
                 iconImage.enabled = true;
-                Debug.Log($"[SkillRow] Retry icon OK: '{iconKey}' cho '{_info.skill_name}'");
+                { /* Retry icon OK: '{iconKey}' cho '{_info.skill_name}' */ }
             }
         }
     }

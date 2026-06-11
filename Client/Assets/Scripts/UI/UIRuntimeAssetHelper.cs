@@ -19,7 +19,7 @@ public static class UIRuntimeAssetHelper
         cachedNotoSans = Resources.Load<TMP_FontAsset>(NotoSansResourcePath);
         if (cachedNotoSans == null)
         {
-            Debug.LogWarning($"[UIRuntimeAssetHelper] Khong tim thay TMP font asset tai Resources/{NotoSansResourcePath}");
+            { /* Cảnh báo: Khong tim thay TMP font asset tai Resources/{NotoSansResourcePath} */ }
         }
 
         return cachedNotoSans;

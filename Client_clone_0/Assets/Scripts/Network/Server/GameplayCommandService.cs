@@ -69,7 +69,7 @@ public class GameplayCommandService : NetworkBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning($"[GameplayCommandService] Duplicate instance on '{gameObject.name}' (existing='{Instance.gameObject.name}') — destroying duplicate COMPONENT only.");
+            { /* Cảnh báo: Duplicate instance on '{gameObject.name}' (existing='{Instance.gameObject.name}')  destroying duplicate COMPONENT only */ }
             Destroy(this);
             return;
         }
@@ -97,8 +97,7 @@ public class GameplayCommandService : NetworkBehaviour
         StartCoroutine(DoGet(
             endpoint, jwt,
             json => SendPlayerDataClientRpc(json, Target(cid)),
-            err  => Debug.LogError($"[GameplayCmd] RequestPlayerData cid={cid}: {err}")
-        ));
+            err  => { /* Lỗi: RequestPlayerData cid={cid}: {err} */ }));
     }
 
     [ClientRpc]
@@ -157,8 +156,7 @@ public class GameplayCommandService : NetworkBehaviour
         StartCoroutine(DoGet(
             endpoint, jwt,
             json => SendInitialSkillsClientRpc(json, Target(clientId)),
-            err  => Debug.LogWarning($"[GameplayCmd] PushSkillsToClient pid={playerId} geneSlot={geneSlot}: {err}")
-        ));
+            err  => { /* Cảnh báo: PushSkillsToClient pid={playerId} geneSlot={geneSlot}: {err} */ }));
     }
 
     [ClientRpc]
@@ -428,7 +426,7 @@ public class GameplayCommandService : NetworkBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[GameplayCmd] TryApplyWaveTicketBonus parse failed: {ex.Message}");
+            { /* Cảnh báo: TryApplyWaveTicketBonus parse failed: {ex.Message} */ }
             return;
         }
 
@@ -440,7 +438,7 @@ public class GameplayCommandService : NetworkBehaviour
             userId = ResolveClientUserId(clientId).ToString();
 
         WaveSessionManager.Instance?.AddBonusEntries(userId, response.wave_entry_bonus_added);
-        Debug.Log($"[GameplayCmd] Applied wave ticket bonus client={clientId} userId={userId} itemTemplateId={response.item_template_id} add={response.wave_entry_bonus_added} msg='{response.message}'");
+        { /* Applied wave ticket bonus client={clientId} userId={userId} itemTemplateId={response.item_template_id} add={response.wave_entry_bonus_added} msg='{response.message}' */ }
     }
 
     // ACTIVE BUFFS
@@ -473,7 +471,7 @@ public class GameplayCommandService : NetworkBehaviour
         if (!IsServer) return;
         ulong cid = rpcParams.Receive.SenderClientId;
         // Dungeon list endpoint không yêu cầu auth → không gửi JWT để tránh middleware exception
-        Debug.Log($"[GameplayCmd] GetDungeonList | cid={cid} url={ApiBase}/dungeon/list", this);
+        { /* GetDungeonList | cid={cid} url={ApiBase}/dungeon/list */ }
         StartCoroutine(DoGet(
             $"{ApiBase}/dungeon/list", null,
             json => SendDungeonListClientRpc(json, Target(cid)),
@@ -483,7 +481,7 @@ public class GameplayCommandService : NetworkBehaviour
 
     [ClientRpc] private void SendDungeonListClientRpc(string json, ClientRpcParams p = default)
     {
-        Debug.Log($"[GameplayCmd] SendDungeonListClientRpc | payloadLength={(json != null ? json.Length : 0)} hasError={(json != null && json.Contains("\"error\""))}", this);
+        { /* SendDungeonListClientRpc | payloadLength={(json != null ? json.Length : 0)} hasError={(json != null && json.Contains( */ })}", this);
         OnDungeonListReceived?.Invoke(json);
     }
 

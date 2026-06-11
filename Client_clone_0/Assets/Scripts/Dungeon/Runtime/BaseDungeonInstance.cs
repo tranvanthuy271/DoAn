@@ -31,14 +31,14 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         if (!IsServer || config == null)
             return null;
 
-        Debug.Log($"[BaseDungeonInstance] SpawnConfiguredEnemy: scene={gameObject.scene.name}, enemyId={config.enemyId}, configMaxHp={config.maxHp}, scale={scale:F2}, isBoss={isBoss}, map={ResolveCurrentMapId()}, zone={ResolveCurrentZoneId()}");
+        { /* SpawnConfiguredEnemy: scene={gameObject.scene.name}, enemyId={config.enemyId}, configMaxHp={config.maxHp}, scale={scale:F2}, isBoss={isBoss}, map={ResolveCurrentMapId()}, zone={ResolveCurrentZoneId()} */ }
 
         GameObject prefab = EnemyPrefabManager.Instance != null
             ? EnemyPrefabManager.Instance.GetEnemyPrefab(config.enemyId)
             : null;
         if (prefab == null)
         {
-            Debug.LogWarning($"[BaseDungeonInstance] Không tìm thấy prefab cho enemyId={config.enemyId}. Kiểm tra EnemyPrefabManager.");
+            { /* Cảnh báo: Không tìm thấy prefab cho enemyId={config.enemyId}. Kiểm tra EnemyPrefabManager */ }
             return null;
         }
 
@@ -46,7 +46,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         NetworkObject networkObject = enemyObject.GetComponent<NetworkObject>();
         if (networkObject == null)
         {
-            Debug.LogError($"[BaseDungeonInstance] Prefab {prefab.name} thiếu NetworkObject component.");
+            { /* Lỗi: Prefab {prefab.name} thiếu NetworkObject component */ }
             Destroy(enemyObject);
             return null;
         }
@@ -67,7 +67,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
             ?? enemyObject.AddComponent<DungeonEnemyRuntimeStats>();
         runtimeStats.Apply(config, scale, isBoss);
         runtimeStats.ApplyDrops(config.drops);
-        Debug.Log($"[BaseDungeonInstance] runtimeStats.MaxHp={runtimeStats.MaxHp} sau Apply() (isBoss={isBoss}) scene={gameObject.scene.name} prefab={prefab.name}");
+        { /* runtimeStats.MaxHp={runtimeStats.MaxHp} sau Apply() (isBoss={isBoss}) scene={gameObject.scene.name} prefab={prefab.name} */ }
 
         // Pre-set maxHealth trên NetworkEnemyHealth TRƯỚC khi Spawn()
         var networkEnemyHealth = enemyObject.GetComponent<NetworkEnemyHealth>();
@@ -90,9 +90,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
                 bool snapped = enemyAI.SnapToGroundForServerSpawn();
                 if (!snapped)
                 {
-                    Debug.LogWarning(
-                        $"[BaseDungeonInstance] enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                        enemyObject);
+                    { /* Cảnh báo: enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
                 }
             }
             else
@@ -103,9 +101,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
                     bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
                     if (!snapped)
                     {
-                        Debug.LogWarning(
-                            $"[BaseDungeonInstance] boss enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                            enemyObject);
+                        { /* Cảnh báo: boss enemyId={config.enemyId} mapId={currentMapId} zoneId={currentZoneId} spawn pos={config.spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
                     }
                 }
             }
@@ -114,7 +110,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning($"[BaseDungeonInstance] Không resolve được mapId cho scene '{gameObject.scene.name}'. Enemy sẽ spawn ở physics scene mặc định.");
+            { /* Cảnh báo: Không resolve được mapId cho scene '{gameObject.scene.name}'. Enemy sẽ spawn ở physics scene mặc định */ }
         }
 
         networkObject.Spawn();
@@ -122,11 +118,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         // Log v\u1ecb tr\u00ed/scene/gravity sau khi Spawn() \u0111\u1ec3 ch\u1ea9n \u0111o\u00e1n boss r\u01a1i
         var rb = enemyObject.GetComponent<Rigidbody2D>();
         var bossAI = enemyObject.GetComponent<BossAI>();
-        Debug.Log($"[BaseDungeonInstance] Enemy spawned: NetId={networkObject.NetworkObjectId}, name={enemyObject.name}, " +
-                  $"layer={LayerMask.LayerToName(enemyObject.layer)}, HP={runtimeStats.MaxHp}, " +
-                  $"scene={enemyObject.scene.name}, pos={enemyObject.transform.position}, " +
-                  $"gravity={(rb != null ? rb.gravityScale : -1f):F2}, body={(rb != null ? rb.bodyType.ToString() : "null")}, " +
-                  $"useGroundPhysics={(bossAI != null ? bossAI.UsesGroundPhysics : false)}, isBoss={isBoss}");
+        { /* Enemy spawned: NetId={networkObject.NetworkObjectId}, name={enemyObject.name} */ }
 
         if (isBoss && rb != null && rb.gravityScale > 0.01f)
         {
@@ -162,7 +154,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
 
             if (enemyObject == null || !networkObject.IsSpawned)
             {
-                Debug.Log($"[BossFallDiag] NetId={networkObject?.NetworkObjectId} despawned tr\u01b0\u1edbc t={checkpointSeconds[i]}s");
+                { /* NetId={networkObject?.NetworkObjectId} despawned tr\u01b0\u1edbc t={checkpointSeconds[i]}s */ }
                 yield break;
             }
 
@@ -170,14 +162,11 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
             float dy = cur.y - startPos.y;
             float vy = rb.velocity.y;
             string sceneName = enemyObject.scene.IsValid() ? enemyObject.scene.name : "<invalid>";
-            Debug.Log($"[BossFallDiag] NetId={networkObject.NetworkObjectId} t={checkpointSeconds[i]:F2}s scene='{sceneName}' map={mapId} " +
-                      $"pos=({cur.x:F2},{cur.y:F2}) deltaY={dy:F2} velocity=({rb.velocity.x:F2},{vy:F2}) gravity={rb.gravityScale:F2} " +
-                      $"isKinematic={(rb.bodyType == RigidbodyType2D.Kinematic)}");
+            { /* NetId={networkObject.NetworkObjectId} t={checkpointSeconds[i]:F2}s scene='{sceneName}' map={mapId} */ }
 
             if (cur.y < -100f)
             {
-                Debug.LogError($"[BossFallDiag] NetId={networkObject.NetworkObjectId} \u0111\u00e3 r\u01a1i xu\u1ed1ng Y={cur.y:F2} \u2192 KH\u00d4NG VA CH\u1ea0M GROUND. " +
-                               $"Ki\u1ec3m tra: (1) physicsScene mapId={mapId} c\u00f3 ground proxy kh\u00f4ng, (2) layer collision matrix Enemy(7) vs Ground(6), (3) ground PlatformEffector2D oneWay c\u00f3 \u0111\u00fang h\u01b0\u1edbng kh\u00f4ng.");
+                { /* Lỗi: NetId={networkObject.NetworkObjectId} \u0111\u00e3 r\u01a1i xu\u1ed1ng Y={cur.y:F2} \u2192 KH\u00d4NG VA CH\u1ea0M GROUND */ }
                 yield break;
             }
         }
@@ -246,7 +235,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
 
     protected void BroadcastStatus(string message)
     {
-        Debug.Log($"[BaseDungeonInstance] Status: {message}");
+        { /* Status: {message} */ }
 
         if (!IsServer)
             return;
@@ -254,7 +243,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         ZoneTransitionController controller = FindAnyObjectByType<ZoneTransitionController>();
         if (controller == null)
         {
-            Debug.LogWarning($"[BaseDungeonInstance] ZoneTransitionController not found. Cannot broadcast status '{message}'.");
+            { /* Cảnh báo: ZoneTransitionController not found. Cannot broadcast status '{message}' */ }
             return;
         }
 
@@ -286,7 +275,7 @@ public abstract class BaseDungeonInstance : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning($"[BaseDungeonInstance] ZoneTransitionController not found. Cannot begin return flow.");
+            { /* Cảnh báo: ZoneTransitionController not found. Cannot begin return flow */ }
         }
 
         yield return new WaitForSeconds(seconds);

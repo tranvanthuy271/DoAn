@@ -98,7 +98,7 @@ public static class LoginSavedAccountStore
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[LoginSavedAccountStore] Cannot read saved accounts: {ex.Message}");
+            { /* Cảnh báo: Cannot read saved accounts: {ex.Message} */ }
             return new AccountRecordList();
         }
     }
@@ -163,7 +163,7 @@ public static class LoginSavedAccountStore
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[LoginSavedAccountStore] Cannot decode saved password: {ex.Message}");
+            { /* Cảnh báo: Cannot decode saved password: {ex.Message} */ }
             return string.Empty;
         }
     }

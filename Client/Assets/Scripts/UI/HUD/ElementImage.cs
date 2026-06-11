@@ -112,6 +112,6 @@ public class ElementImage : MonoBehaviour
                 yield break;
             }
         }
-        Debug.LogWarning("[ElementImage] Timeout: không lấy được PlayerData sau 5s.", this);
+        { /* Cảnh báo: Timeout: không lấy được PlayerData sau 5s */ }
     }
 }

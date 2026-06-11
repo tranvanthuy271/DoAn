@@ -30,7 +30,7 @@ public class GeneUpgradePanelToggleButton : MonoBehaviour
     {
         if (genePanel == null)
         {
-            Debug.LogWarning("[GeneUpgradePanelToggleButton] Chưa gán GeneUpgradePanel vào Inspector.");
+            { /* Cảnh báo: Chưa gán GeneUpgradePanel vào Inspector */ }
             return;
         }
         genePanel.Open();

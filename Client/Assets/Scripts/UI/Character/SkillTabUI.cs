@@ -82,7 +82,7 @@ public class SkillTabUI : MonoBehaviour
         // Dùng cache nếu server đã push lúc spawn
         if (PlayerSkillCache.Instance != null && PlayerSkillCache.Instance.HasData)
         {
-            Debug.Log("[SkillTabUI] Load từ PlayerSkillCache.");
+            { /* Load từ PlayerSkillCache */ }
             PopulateSkills(PlayerSkillCache.Instance.CachedData);
             return;
         }
@@ -116,7 +116,7 @@ public class SkillTabUI : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[SkillTabUI] Parse error: {ex.Message}");
+            { /* Lỗi: Parse error: {ex.Message} */ }
             SetStatus($"Lỗi: {ex.Message}");
         }
     }
@@ -163,7 +163,7 @@ public class SkillTabUI : MonoBehaviour
     {
         if (skillRowPrefab == null || skillListContainer == null)
         {
-            Debug.LogError("[SkillTabUI] Thiếu skillRowPrefab hoặc skillListContainer.");
+            { /* Lỗi: Thiếu skillRowPrefab hoặc skillListContainer */ }
             return;
         }
 

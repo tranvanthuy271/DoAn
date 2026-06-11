@@ -501,7 +501,7 @@ public class ItemDetailPanel : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[ItemDetailPanel] Parse option templates failed: {ex.Message}");
+            { /* Cảnh báo: Parse option templates failed: {ex.Message} */ }
             s_optionTemplates = new List<OptionTemplateDto>();
         }
     }
@@ -516,7 +516,7 @@ public class ItemDetailPanel : MonoBehaviour
 
         if (currentSlotData == null)
         {
-            Debug.LogWarning("[ItemDetailPanel] OnUseButtonPressed: không có item đang chọn.");
+            { /* Cảnh báo: OnUseButtonPressed: không có item đang chọn */ }
             return;
         }
 
@@ -532,43 +532,43 @@ public class ItemDetailPanel : MonoBehaviour
         if (bridge != null)
             bridge.RequestUseItem(currentSlotData.slotIndex, currentSlotData.itemCode, currentSlotData.itemTemplateId);
         else
-            Debug.LogWarning("[ItemDetailPanel] Không tìm thấy ItemUseHandler hoặc InventoryNetworkBridge.");
+            { /* Cảnh báo: Không tìm thấy ItemUseHandler hoặc InventoryNetworkBridge */ }
     }
 
     private void OnShortcutButtonPressed()
     {
-        Debug.Log("[ItemDetailPanel] Nút Phím tắt đã được hiển thị. Chưa có flow gán phím tắt trong client hiện tại.");
+        { /* Nút Phím tắt đã được hiển thị. Chưa có flow gán phím tắt trong client hiện tại */ }
     }
 
     private void OnSplitButtonPressed()
     {
-        Debug.Log("[ItemDetailPanel] Nút Tách đã được hiển thị. Chưa có flow tách stack trong client hiện tại.");
+        { /* Nút Tách đã được hiển thị. Chưa có flow tách stack trong client hiện tại */ }
     }
 
     private void OnDropButtonPressed()
     {
         if (currentSlotData == null)
         {
-            Debug.LogWarning("[ItemDetailPanel] OnDropButtonPressed: khong co item dang chon.");
+            { /* Cảnh báo: OnDropButtonPressed: khong co item dang chon */ }
             return;
         }
 
         var bridge = InventoryNetworkBridge.GetExisting(true);
         if (bridge == null)
         {
-            Debug.LogWarning("[ItemDetailPanel] Khong tim thay InventoryNetworkBridge de vut bo item.");
+            { /* Cảnh báo: Khong tim thay InventoryNetworkBridge de vut bo item */ }
             return;
         }
 
         int quantity = currentSlotData.quantity > 0 ? currentSlotData.quantity : 0;
-        Debug.Log($"[ItemDetailPanel] Vut bo item slot={currentSlotData.slotIndex}, templateId={currentSlotData.itemTemplateId}, quantity={quantity}");
+        { /* Vut bo item slot={currentSlotData.slotIndex}, templateId={currentSlotData.itemTemplateId}, quantity={quantity} */ }
         bridge.RequestRemoveItem(currentSlotData.slotIndex, quantity);
         Hide();
     }
 
     private void OnUseManyButtonPressed()
     {
-        Debug.Log("[ItemDetailPanel] Nút SD nhiều đã được hiển thị. Chưa có flow dùng nhiều trong client hiện tại.");
+        { /* Nút SD nhiều đã được hiển thị. Chưa có flow dùng nhiều trong client hiện tại */ }
     }
 
     private void OnDestroy()

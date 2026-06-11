@@ -22,19 +22,19 @@ public class PlayerProfilePanelUI : MonoBehaviour
         _loadingUserId = userId;
         _loadingUsername = username;
 
-        Debug.Log($"[PlayerProfileBridge] LoadProfile requested userId={userId} username='{username}'");
+        { /* LoadProfile requested userId={userId} username='{username}' */ }
 
         ResolveReferences();
         if (characterPanel == null)
         {
-            Debug.LogError("[PlayerProfileBridge] CharacterPanelController is null. Cannot open friend profile.");
+            { /* Lỗi: CharacterPanelController is null. Cannot open friend profile */ }
             return;
         }
 
         var friendManager = FriendManager.EnsureInstance();
         if (friendManager == null)
         {
-            Debug.LogError("[PlayerProfileBridge] FriendManager.EnsureInstance returned null. Cannot request friend profile.");
+            { /* Lỗi: FriendManager.EnsureInstance returned null. Cannot request friend profile */ }
             return;
         }
 
@@ -45,7 +45,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
     {
         if (dto == null)
         {
-            Debug.LogWarning($"[PlayerProfileBridge] Profile load failed userId={_loadingUserId} username='{_loadingUsername}'");
+            { /* Cảnh báo: Profile load failed userId={_loadingUserId} username='{_loadingUsername}' */ }
             return;
         }
 
@@ -54,7 +54,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
             var infoPanel = Object.FindObjectOfType<InformationPanelController>(includeInactive: true);
             if (infoPanel != null && infoPanel.IsAnyPanelVisible)
             {
-                Debug.Log("[PlayerProfileBridge] Hiding existing character/inventory panel before showing friend profile.");
+                { /* Hiding existing character/inventory panel before showing friend profile */ }
                 infoPanel.HideAll();
             }
             else
@@ -67,9 +67,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
             ? _loadingUsername
             : dto.character_name;
 
-        Debug.Log(
-            $"[PlayerProfileBridge] Profile loaded userId={dto.user_id} playerId={dto.player_id} displayName='{displayName}' " +
-            $"skills={dto.skills?.Length ?? 0} potential={dto.potential_stats?.Length ?? 0} hasEquipment={dto.equipment != null}");
+        { /* Profile loaded userId={dto.user_id} playerId={dto.player_id} displayName='{displayName}' */ }
 
         characterPanel.ShowFriendProfile(dto, displayName);
     }
@@ -84,7 +82,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
             characterPanel = Object.FindObjectOfType<CharacterPanelController>(includeInactive: true);
 
         if (characterPanel != null)
-            Debug.Log($"[PlayerProfileBridge] Resolved CharacterPanelController on '{characterPanel.gameObject.name}'.");
+            { /* Resolved CharacterPanelController on '{characterPanel.gameObject.name}' */ }
     }
 }
 

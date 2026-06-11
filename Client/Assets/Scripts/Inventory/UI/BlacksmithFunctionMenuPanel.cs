@@ -304,7 +304,7 @@ public class BlacksmithFunctionMenuPanel : MonoBehaviour
 
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(gameObject);
-        Debug.Log("[BlacksmithFunctionMenuPanel] UI đã được tạo. Kéo vào Prefabs để lưu.");
+        { /* UI đã được tạo. Kéo vào Prefabs để lưu */ }
 #endif
     }
 

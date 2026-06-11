@@ -293,7 +293,7 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        Console.WriteLine("✓ Database đã được kiểm tra/tạo thành công.");
+        { /* ✓ Database đã được kiểm tra/tạo thành công */ }
     }
     catch (Exception ex)
     {

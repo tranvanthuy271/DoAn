@@ -73,7 +73,7 @@ public class PotentialTabUI : MonoBehaviour
         _isExternalProfileView = true;
         _externalStats = stats;
         _externalCharacterName = characterName;
-        Debug.Log($"[PotentialTabUI] ShowFriendPotential characterName='{characterName}' stats={stats?.Length ?? 0}");
+        { /* ShowFriendPotential characterName='{characterName}' stats={stats?.Length ?? 0} */ }
         Load();
     }
 
@@ -82,7 +82,7 @@ public class PotentialTabUI : MonoBehaviour
         if (!_isExternalProfileView && _externalStats == null)
             return;
 
-        Debug.Log("[PotentialTabUI] ClearFriendPotential()");
+        { /* ClearFriendPotential() */ }
         _isExternalProfileView = false;
         _externalStats = null;
         _externalCharacterName = null;
@@ -188,7 +188,7 @@ public class PotentialTabUI : MonoBehaviour
         GameplayCommandService.OnPotentialAllocated -= HandlePotentialAllocated;
         if (json.Contains("\"error\""))
         {
-            Debug.LogError($"[PotentialTabUI] Cộng tiềm năng lỗi: {json}");
+            { /* Lỗi: Cộng tiềm năng lỗi: {json} */ }
             SetStatus($"Lỗi: {json}");
             SetActionButtonsEnabled(true);
             return;
@@ -219,7 +219,7 @@ public class PotentialTabUI : MonoBehaviour
 
         if (potentialRowPrefab == null || statListContainer == null)
         {
-            Debug.LogError("[PotentialTabUI] potentialRowPrefab hoặc statListContainer == NULL!");
+            { /* Lỗi: potentialRowPrefab hoặc statListContainer == NULL */ }
             return;
         }
         if (response.stats == null || response.stats.Length == 0)
@@ -349,7 +349,7 @@ public class PotentialTabUI : MonoBehaviour
 
         if (potentialRowPrefab == null || statListContainer == null)
         {
-            Debug.LogError("[PotentialTabUI] potentialRowPrefab hoặc statListContainer == NULL khi render friend profile!");
+            { /* Lỗi: potentialRowPrefab hoặc statListContainer == NULL khi render friend profile */ }
             return;
         }
 

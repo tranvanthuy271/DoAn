@@ -80,7 +80,7 @@ public class PartyPanelUI : MonoBehaviour
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, true);
         InputManager.Instance?.CancelAutoMove();
 
-        Debug.Log($"{LogPrefix} OnEnable | currentTab={_activeTabIndex}", this);
+        { /* {LogPrefix} OnEnable | currentTab={_activeTabIndex} */ }
 
         _partyManager = PartyManager.EnsureInstance();
 
@@ -100,7 +100,7 @@ public class PartyPanelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"{LogPrefix} PartyManager.EnsureInstance returned null khi mở PartyPanel.", this);
+            { /* Lỗi: {LogPrefix} PartyManager.EnsureInstance returned null khi mở PartyPanel */ }
         }
 
         SelectTab(_activeTabIndex);
@@ -129,7 +129,7 @@ public class PartyPanelUI : MonoBehaviour
     {
         _activeTabIndex = Mathf.Clamp(tabIndex, 0, 2);
 
-        Debug.Log($"{LogPrefix} SelectTab -> {_activeTabIndex}", this);
+        { /* {LogPrefix} SelectTab -> {_activeTabIndex} */ }
 
         if (partyTabPanel != null) partyTabPanel.SetActive(_activeTabIndex == 0);
         if (searchTabPanel != null) searchTabPanel.SetActive(_activeTabIndex == 1);
@@ -158,9 +158,7 @@ public class PartyPanelUI : MonoBehaviour
     private void HandlePartyStateChanged(PartyStatePayload state)
     {
         _latestPartyState = state;
-        Debug.Log(
-            $"{LogPrefix} HandlePartyStateChanged | partyId={state?.partyId} members={state?.memberCount ?? 0}/{state?.maxMembers ?? 0} leader={PartyManager.Instance?.IsLeader}",
-            this);
+        { /* {LogPrefix} HandlePartyStateChanged | partyId={state?.partyId} members={state?.memberCount ?? 0}/{state?.maxMembers ?? 0} leader={PartyManager.Instance?.IsLeader} */ }
 
         BuildMemberList(state);
 
@@ -216,9 +214,7 @@ public class PartyPanelUI : MonoBehaviour
     private void HandleSearchResultsUpdated(PartySearchResultPayload payload)
     {
         _latestSearchResults = payload ?? new PartySearchResultPayload();
-        Debug.Log(
-            $"{LogPrefix} HandleSearchResultsUpdated | count={_latestSearchResults.parties?.Length ?? 0} leaders={string.Join(", ", (_latestSearchResults.parties ?? Array.Empty<PartySearchEntryDto>()).Select(p => p.leaderName))}",
-            this);
+        { /* {LogPrefix} HandleSearchResultsUpdated | count={_latestSearchResults.parties?.Length ?? 0} leaders={string.Join( */ }
 
         if (_activeTabIndex == 1)
             RenderSearchResults(_latestSearchResults, "HubEvent");
@@ -227,9 +223,7 @@ public class PartyPanelUI : MonoBehaviour
     private void HandleNearbyPlayersUpdated(NearbyPlayersPayload payload)
     {
         _latestNearbyPlayers = NormalizeNearbyPayload(payload);
-        Debug.Log(
-            $"{LogPrefix} HandleNearbyPlayersUpdated | count={_latestNearbyPlayers.players?.Length ?? 0} names={string.Join(", ", (_latestNearbyPlayers.players ?? Array.Empty<NearbyPlayerDto>()).Select(p => p.characterName))}",
-            this);
+        { /* {LogPrefix} HandleNearbyPlayersUpdated | count={_latestNearbyPlayers.players?.Length ?? 0} names={string.Join( */ }
 
         if (_activeTabIndex == 2)
             RenderNearbyPlayers(_latestNearbyPlayers, "HubEvent");
@@ -246,7 +240,7 @@ public class PartyPanelUI : MonoBehaviour
         var partyManager = ResolvePartyManager(ensure: false);
         if (partyManager == null || !partyManager.IsLeader)
         {
-            Debug.LogWarning($"{LogPrefix} Ignored join request because local player is not party leader. requester={payload.requesterName} userId={payload.requesterUserId}", this);
+            { /* Cảnh báo: {LogPrefix} Ignored join request because local player is not party leader. requester={payload.requesterName} userId={payload.requesterUserId} */ }
             return;
         }
 
@@ -254,11 +248,11 @@ public class PartyPanelUI : MonoBehaviour
             && _latestPartyState.members.Any(member => string.Equals(member.userId, payload.requesterUserId, StringComparison.Ordinal));
         if (requesterAlreadyInParty)
         {
-            Debug.LogWarning($"{LogPrefix} Ignored join request because requester is already in the party. requester={payload.requesterName} userId={payload.requesterUserId}", this);
+            { /* Cảnh báo: {LogPrefix} Ignored join request because requester is already in the party. requester={payload.requesterName} userId={payload.requesterUserId} */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} Join request received | requester={payload.requesterName} userId={payload.requesterUserId} level={payload.requesterLevel} element={payload.requesterElementType} | joinRequestPopup={(joinRequestPopup == null ? "NULL" : joinRequestPopup.gameObject.name)}", this);
+        { /* {LogPrefix} Join request received | requester={payload.requesterName} userId={payload.requesterUserId} level={payload.requesterLevel} element={payload.requesterElementType} | joinRequestPopup={(joinRequestPopup == null ? */ }
 
         // Ưu tiên dùng panel thông báo riêng nếu đã ghi
         if (joinRequestPopup != null)
@@ -267,12 +261,12 @@ public class PartyPanelUI : MonoBehaviour
                 payload,
                 onAccept:  (partyId, userId) =>
                 {
-                    Debug.Log($"{LogPrefix} NotificationPanel Accept | partyId={partyId} userId={userId}", this);
+                    { /* {LogPrefix} NotificationPanel Accept | partyId={partyId} userId={userId} */ }
                     ResolvePartyManager()?.AcceptJoinRequest(partyId, userId);
                 },
                 onDecline: (partyId, userId) =>
                 {
-                    Debug.Log($"{LogPrefix} NotificationPanel Decline | partyId={partyId} userId={userId}", this);
+                    { /* {LogPrefix} NotificationPanel Decline | partyId={partyId} userId={userId} */ }
                     ResolvePartyManager()?.RejectJoinRequest(partyId, userId);
                 }
             );
@@ -281,7 +275,7 @@ public class PartyPanelUI : MonoBehaviour
 
         // Fallback: xếp hàng cho nút hành động
         _pendingJoinRequests.Enqueue(payload);
-        Debug.Log($"{LogPrefix} Join request queued for action button | requester={payload.requesterName} userId={payload.requesterUserId}", this);
+        { /* {LogPrefix} Join request queued for action button | requester={payload.requesterName} userId={payload.requesterUserId} */ }
         SetStatusText($"{payload.requesterName} xin vào tổ đội. Nhấn nút hành động để chấp nhận nhanh.");
     }
 
@@ -290,7 +284,7 @@ public class PartyPanelUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(message))
             return;
 
-        Debug.LogWarning($"{LogPrefix} Party error: {message}", this);
+        { /* Cảnh báo: {LogPrefix} Party error: {message} */ }
         SetStatusText(message);
     }
 
@@ -299,11 +293,11 @@ public class PartyPanelUI : MonoBehaviour
         ClearList(memberListRoot);
         if (state?.members == null || memberListRoot == null || memberEntryPrefab == null)
         {
-            Debug.Log($"{LogPrefix} BuildMemberList skipped | hasState={state != null} root={memberListRoot != null} prefab={memberEntryPrefab != null}", this);
+            { /* {LogPrefix} BuildMemberList skipped | hasState={state != null} root={memberListRoot != null} prefab={memberEntryPrefab != null} */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} BuildMemberList | count={state.members.Length}", this);
+        { /* {LogPrefix} BuildMemberList | count={state.members.Length} */ }
 
         foreach (PartyMemberDto member in state.members
                      .OrderByDescending(m => string.Equals(m.userId, state.leaderUserId, StringComparison.Ordinal))
@@ -317,20 +311,18 @@ public class PartyPanelUI : MonoBehaviour
     private void OnActionClicked()
     {
         var partyManager = ResolvePartyManager();
-        Debug.Log(
-            $"{LogPrefix} ActionButton clicked | hasParty={partyManager?.HasParty} leader={partyManager?.IsLeader} connected={partyManager?.IsConnected} pendingJoinRequests={_pendingJoinRequests.Count}",
-            this);
+        { /* {LogPrefix} ActionButton clicked | hasParty={partyManager?.HasParty} leader={partyManager?.IsLeader} connected={partyManager?.IsConnected} pendingJoinRequests={_pendingJoinRequests.Count} */ }
 
         if (partyManager == null)
         {
-            Debug.LogError($"{LogPrefix} ActionButton failed because PartyManager is null.", this);
+            { /* Lỗi: {LogPrefix} ActionButton failed because PartyManager is null */ }
             SetStatusText("PartyManager chưa sẵn sàng.");
             return;
         }
 
         if (!partyManager.IsConnected)
         {
-            Debug.LogWarning($"{LogPrefix} ActionButton blocked because PartyManager is not connected.", this);
+            { /* Cảnh báo: {LogPrefix} ActionButton blocked because PartyManager is not connected */ }
             SetStatusText("PartyManager chưa kết nối. Đang thử kết nối lại, xem Console để biết chi tiết.", false);
         }
 
@@ -364,11 +356,11 @@ public class PartyPanelUI : MonoBehaviour
     private void OpenGroupChat()
     {
         var partyManager = ResolvePartyManager();
-        Debug.Log($"{LogPrefix} ChatGroupButton clicked.", this);
+        { /* {LogPrefix} ChatGroupButton clicked */ }
 
         if (partyManager == null || !partyManager.HasParty)
         {
-            Debug.LogWarning($"{LogPrefix} Không thể mở chat nhóm vì hiện chưa có tổ đội.", this);
+            { /* Cảnh báo: {LogPrefix} Không thể mở chat nhóm vì hiện chưa có tổ đội */ }
             SetStatusText("Bạn chưa có nhóm để chat.");
             return;
         }
@@ -376,7 +368,7 @@ public class PartyPanelUI : MonoBehaviour
         var chatPanel = ResolveChatPanel();
         if (chatPanel == null)
         {
-            Debug.LogError($"{LogPrefix} Không resolve được ChatPanelUI để mở chat nhóm.", this);
+            { /* Lỗi: {LogPrefix} Không resolve được ChatPanelUI để mở chat nhóm */ }
             SetStatusText("Không tìm thấy ChatPanel.");
             return;
         }
@@ -385,12 +377,12 @@ public class PartyPanelUI : MonoBehaviour
         {
             ChatManager.Instance.JoinGroup(partyManager.CurrentParty.partyId);
             ChatManager.Instance.CurrentSendChannel = ChatChannel.Group;
-            Debug.Log($"{LogPrefix} Forced ChatManager.JoinGroup for partyId={partyManager.CurrentParty.partyId}", this);
+            { /* {LogPrefix} Forced ChatManager.JoinGroup for partyId={partyManager.CurrentParty.partyId} */ }
         }
 
         chatPanel.OpenOnGroupTab();
         gameObject.SetActive(false);
-        Debug.Log($"{LogPrefix} PartyPanel closed after opening group chat.", this);
+        { /* {LogPrefix} PartyPanel closed after opening group chat */ }
     }
 
     private void BuildList<T>(Transform root, GameObject prefab, IReadOnlyList<T> items, Action<GameObject, T> binder, string listName)
@@ -398,11 +390,11 @@ public class PartyPanelUI : MonoBehaviour
         ClearList(root);
         if (root == null || prefab == null || items == null)
         {
-            Debug.Log($"{LogPrefix} BuildList skipped | list={listName} root={root != null} prefab={prefab != null} itemsNull={items == null}", this);
+            { /* {LogPrefix} BuildList skipped | list={listName} root={root != null} prefab={prefab != null} itemsNull={items == null} */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} BuildList | list={listName} count={items.Count}", this);
+        { /* {LogPrefix} BuildList | list={listName} count={items.Count} */ }
 
         foreach (T item in items)
         {
@@ -413,19 +405,19 @@ public class PartyPanelUI : MonoBehaviour
 
     private void ClosePanel()
     {
-        Debug.Log($"{LogPrefix} Close button clicked.", this);
+        { /* {LogPrefix} Close button clicked */ }
         gameObject.SetActive(false);
     }
 
     private void OnRefreshSearchClicked()
     {
-        Debug.Log($"{LogPrefix} Refresh search button clicked.", this);
+        { /* {LogPrefix} Refresh search button clicked */ }
         RequestSearchRefresh("RefreshButton");
     }
 
     private void OnRefreshNearbyClicked()
     {
-        Debug.Log($"{LogPrefix} Refresh nearby button clicked.", this);
+        { /* {LogPrefix} Refresh nearby button clicked */ }
         RequestNearbyRefresh("RefreshButton");
     }
 
@@ -433,11 +425,11 @@ public class PartyPanelUI : MonoBehaviour
     {
         var partyManager = ResolvePartyManager();
         UpdateToggleIndicators();
-        Debug.Log($"{LogPrefix} Lock toggle changed -> {isOn}", this);
+        { /* {LogPrefix} Lock toggle changed -> {isOn} */ }
 
         if (partyManager == null)
         {
-            Debug.LogWarning($"{LogPrefix} Lock toggle ignored because PartyManager is null.", this);
+            { /* Cảnh báo: {LogPrefix} Lock toggle ignored because PartyManager is null */ }
             if (lockToggle != null)
                 lockToggle.SetIsOnWithoutNotify(_latestPartyState != null && _latestPartyState.isLocked);
             UpdateToggleIndicators();
@@ -446,7 +438,7 @@ public class PartyPanelUI : MonoBehaviour
 
         if (!partyManager.HasParty || !partyManager.IsLeader)
         {
-            Debug.LogWarning($"{LogPrefix} Lock toggle ignored because local player is not party leader.", this);
+            { /* Cảnh báo: {LogPrefix} Lock toggle ignored because local player is not party leader */ }
             if (lockToggle != null)
                 lockToggle.SetIsOnWithoutNotify(_latestPartyState != null && _latestPartyState.isLocked);
             UpdateToggleIndicators();
@@ -460,11 +452,11 @@ public class PartyPanelUI : MonoBehaviour
     {
         var partyManager = ResolvePartyManager();
         UpdateToggleIndicators();
-        Debug.Log($"{LogPrefix} AutoAccept toggle changed -> {isOn}", this);
+        { /* {LogPrefix} AutoAccept toggle changed -> {isOn} */ }
 
         if (partyManager == null)
         {
-            Debug.LogWarning($"{LogPrefix} AutoAccept toggle ignored because PartyManager is null.", this);
+            { /* Cảnh báo: {LogPrefix} AutoAccept toggle ignored because PartyManager is null */ }
             if (autoAcceptToggle != null)
                 autoAcceptToggle.SetIsOnWithoutNotify(_latestPartyState != null && _latestPartyState.autoAccept);
             UpdateToggleIndicators();
@@ -473,7 +465,7 @@ public class PartyPanelUI : MonoBehaviour
 
         if (!partyManager.HasParty || !partyManager.IsLeader)
         {
-            Debug.LogWarning($"{LogPrefix} AutoAccept toggle ignored because local player is not party leader.", this);
+            { /* Cảnh báo: {LogPrefix} AutoAccept toggle ignored because local player is not party leader */ }
             if (autoAcceptToggle != null)
                 autoAcceptToggle.SetIsOnWithoutNotify(_latestPartyState != null && _latestPartyState.autoAccept);
             UpdateToggleIndicators();
@@ -544,18 +536,18 @@ public class PartyPanelUI : MonoBehaviour
         if (nearbyPopulationText != null)
             nearbyPopulationText.text = $"Dân số: {population}";
 
-        Debug.Log($"{LogPrefix} RenderNearbyPlayers | source={source} population={population}", this);
+        { /* {LogPrefix} RenderNearbyPlayers | source={source} population={population} */ }
     }
 
     private void RequestSearchRefresh(string reason)
     {
-        Debug.Log($"{LogPrefix} RequestSearchRefresh | reason={reason}", this);
+        { /* {LogPrefix} RequestSearchRefresh | reason={reason} */ }
         ResolvePartyManager()?.RefreshPartiesInCurrentZone();
     }
 
     private void RequestNearbyRefresh(string reason)
     {
-        Debug.Log($"{LogPrefix} RequestNearbyRefresh | reason={reason}", this);
+        { /* {LogPrefix} RequestNearbyRefresh | reason={reason} */ }
         ResolvePartyManager()?.RefreshNearbyPlayers();
     }
 
@@ -571,7 +563,7 @@ public class PartyPanelUI : MonoBehaviour
             if (localPlayer != null)
             {
                 players.Add(localPlayer);
-                Debug.Log($"{LogPrefix} Injected local player into nearby list | name={localPlayer.characterName}", this);
+                { /* {LogPrefix} Injected local player into nearby list | name={localPlayer.characterName} */ }
             }
         }
 
@@ -583,7 +575,7 @@ public class PartyPanelUI : MonoBehaviour
         var playerData = GameManager.Instance?.GetPlayerData() ?? GameManager.Instance?.currentPlayerData;
         if (playerData == null)
         {
-            Debug.LogWarning($"{LogPrefix} Cannot inject local nearby player because PlayerData is null.", this);
+            { /* Cảnh báo: {LogPrefix} Cannot inject local nearby player because PlayerData is null */ }
             return null;
         }
 
@@ -612,21 +604,21 @@ public class PartyPanelUI : MonoBehaviour
 
         if (IsSceneChatPanel(_resolvedChatPanel))
         {
-            Debug.Log($"{LogPrefix} Resolved existing ChatPanelUI from scene.", _resolvedChatPanel);
+            { /* {LogPrefix} Resolved existing ChatPanelUI from scene */ }
             return _resolvedChatPanel;
         }
 
         var chatPrefab = Resources.Load<GameObject>(chatPanelResourcesPath);
         if (chatPrefab == null)
         {
-            Debug.LogError($"{LogPrefix} ChatPanel prefab not found at Resources/{chatPanelResourcesPath}.", this);
+            { /* Lỗi: {LogPrefix} ChatPanel prefab not found at Resources/{chatPanelResourcesPath} */ }
             return null;
         }
 
         var uiParent = ResolveUiParent();
         if (uiParent == null)
         {
-            Debug.LogError($"{LogPrefix} No Canvas/UI root found to instantiate ChatPanel.", this);
+            { /* Lỗi: {LogPrefix} No Canvas/UI root found to instantiate ChatPanel */ }
             return null;
         }
 
@@ -635,7 +627,7 @@ public class PartyPanelUI : MonoBehaviour
         chatInstance.SetActive(false);
         _resolvedChatPanel = chatInstance.GetComponent<ChatPanelUI>();
 
-        Debug.Log($"{LogPrefix} Instantiated ChatPanel from Resources/{chatPanelResourcesPath}.", chatInstance);
+        { /* {LogPrefix} Instantiated ChatPanel from Resources/{chatPanelResourcesPath} */ }
         return _resolvedChatPanel;
     }
 
@@ -676,7 +668,7 @@ public class PartyPanelUI : MonoBehaviour
                 popupInstance.SetActive(false);
                 popupInstance.transform.SetAsLastSibling();
                 joinRequestPopup = popupInstance.GetComponent<PartyJoinRequestPopupUI>();
-                Debug.Log($"{LogPrefix} Instantiated join request popup from serialized prefab reference.", popupInstance);
+                { /* {LogPrefix} Instantiated join request popup from serialized prefab reference */ }
                 return joinRequestPopup;
             }
         }
@@ -688,21 +680,21 @@ public class PartyPanelUI : MonoBehaviour
         joinRequestPopup = FindObjectOfType<PartyJoinRequestPopupUI>(includeInactive: true);
         if (IsSceneJoinRequestPopup(joinRequestPopup))
         {
-            Debug.Log($"{LogPrefix} Resolved existing join request popup from scene.", joinRequestPopup);
+            { /* {LogPrefix} Resolved existing join request popup from scene */ }
             return joinRequestPopup;
         }
 
         var popupPrefab = Resources.Load<GameObject>(joinRequestPopupResourcesPath);
         if (popupPrefab == null)
         {
-            Debug.LogWarning($"{LogPrefix} Join request popup prefab not found at Resources/{joinRequestPopupResourcesPath}.", this);
+            { /* Cảnh báo: {LogPrefix} Join request popup prefab not found at Resources/{joinRequestPopupResourcesPath} */ }
             return null;
         }
 
         var parent = ResolveUiParent();
         if (parent == null)
         {
-            Debug.LogWarning($"{LogPrefix} Could not resolve UI parent for join request popup.", this);
+            { /* Cảnh báo: {LogPrefix} Could not resolve UI parent for join request popup */ }
             return null;
         }
 
@@ -714,12 +706,12 @@ public class PartyPanelUI : MonoBehaviour
 
         if (joinRequestPopup == null)
         {
-            Debug.LogWarning($"{LogPrefix} Instantiated popup prefab does not contain PartyJoinRequestPopupUI.", instance);
+            { /* Cảnh báo: {LogPrefix} Instantiated popup prefab does not contain PartyJoinRequestPopupUI */ }
             Destroy(instance);
             return null;
         }
 
-        Debug.Log($"{LogPrefix} Instantiated join request popup from Resources/{joinRequestPopupResourcesPath}.", instance);
+        { /* {LogPrefix} Instantiated join request popup from Resources/{joinRequestPopupResourcesPath} */ }
         return joinRequestPopup;
     }
 

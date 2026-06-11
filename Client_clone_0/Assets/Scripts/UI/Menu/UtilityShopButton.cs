@@ -16,7 +16,7 @@ public class UtilityShopButton : MonoBehaviour
         var ui = NpcMenuUI.GetOrFind();
         if (ui == null)
         {
-            Debug.LogWarning("[UtilityShopButton] Không tìm thấy NpcMenuUI trong scene!");
+            { /* Cảnh báo: Không tìm thấy NpcMenuUI trong scene */ }
             return;
         }
         ui.OpenUtilityMode();

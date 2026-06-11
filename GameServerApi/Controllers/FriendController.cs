@@ -28,7 +28,7 @@ namespace GameServerApi.Controllers
         public async Task<IActionResult> GetFriends()
         {
             int myId = GetMyId();
-            _logger.LogInformation("[FriendController] GetFriends requested by userId={UserId}", myId);
+            { /* GetFriends requested by userId={UserId} */ }
 
             var relations = await _db.FriendRelations
                 .Include(r => r.User)
@@ -70,7 +70,7 @@ namespace GameServerApi.Controllers
                 });
             }
 
-            _logger.LogInformation("[FriendController] GetFriends userId={UserId} returned {Count} relation(s)", myId, result.Count);
+            { /* GetFriends userId={UserId} returned {Count} relation(s) */ }
 
             return Ok(result);
         }
@@ -81,7 +81,7 @@ namespace GameServerApi.Controllers
         public async Task<IActionResult> SendRequest([FromBody] SendFriendRequestDto dto)
         {
             int myId = GetMyId();
-            _logger.LogInformation("[FriendController] SendRequest from userId={UserId} to targetUserId={TargetUserId}", myId, dto.TargetUserId);
+            { /* SendRequest from userId={UserId} to targetUserId={TargetUserId} */ }
 
             if (dto.TargetUserId == myId) return BadRequest("Không thể kết bạn với chính mình.");
 
@@ -92,7 +92,7 @@ namespace GameServerApi.Controllers
 
             if (exists)
             {
-                _logger.LogWarning("[FriendController] SendRequest conflict: relation already exists between {UserId} and {TargetUserId}", myId, dto.TargetUserId);
+                { /* Cảnh báo: SendRequest conflict: relation already exists between {UserId} and {TargetUserId} */ }
                 return Conflict("Quan hệ đã tồn tại.");
             }
 
@@ -100,7 +100,7 @@ namespace GameServerApi.Controllers
             bool targetExists = await _db.Users.AnyAsync(u => u.UserId == dto.TargetUserId);
             if (!targetExists)
             {
-                _logger.LogWarning("[FriendController] SendRequest target not found targetUserId={TargetUserId}", dto.TargetUserId);
+                { /* Cảnh báo: SendRequest target not found targetUserId={TargetUserId} */ }
                 return NotFound("Người chơi không tồn tại.");
             }
 
@@ -114,7 +114,7 @@ namespace GameServerApi.Controllers
             _db.FriendRelations.Add(relation);
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("[FriendController] SendRequest success relationId={RelationId} from userId={UserId} to targetUserId={TargetUserId}", relation.Id, myId, dto.TargetUserId);
+            { /* SendRequest success relationId={RelationId} from userId={UserId} to targetUserId={TargetUserId} */ }
 
             return Ok(new { message = "Đã gửi lời mời kết bạn.", relationId = relation.Id });
         }
@@ -125,21 +125,21 @@ namespace GameServerApi.Controllers
         public async Task<IActionResult> AcceptRequest(int id)
         {
             int myId = GetMyId();
-            _logger.LogInformation("[FriendController] AcceptRequest relationId={RelationId} by userId={UserId}", id, myId);
+            { /* AcceptRequest relationId={RelationId} by userId={UserId} */ }
 
             var rel = await _db.FriendRelations.FirstOrDefaultAsync(
                 r => r.Id == id && r.FriendId == myId && r.Status == "pending");
 
             if (rel == null)
             {
-                _logger.LogWarning("[FriendController] AcceptRequest failed relationId={RelationId} userId={UserId}", id, myId);
+                { /* Cảnh báo: AcceptRequest failed relationId={RelationId} userId={UserId} */ }
                 return NotFound("Lời mời không tồn tại hoặc bạn không phải người nhận.");
             }
 
             rel.Status = "accepted";
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("[FriendController] AcceptRequest success relationId={RelationId} accepterUserId={UserId} requesterUserId={RequesterId}", id, myId, rel.UserId);
+            { /* AcceptRequest success relationId={RelationId} accepterUserId={UserId} requesterUserId={RequesterId} */ }
 
             return Ok(new { message = "Đã chấp nhận lời mời kết bạn." });
         }
@@ -150,21 +150,21 @@ namespace GameServerApi.Controllers
         public async Task<IActionResult> RemoveFriend(int id)
         {
             int myId = GetMyId();
-            _logger.LogInformation("[FriendController] RemoveFriend relationId={RelationId} by userId={UserId}", id, myId);
+            { /* RemoveFriend relationId={RelationId} by userId={UserId} */ }
 
             var rel = await _db.FriendRelations.FirstOrDefaultAsync(
                 r => r.Id == id && (r.UserId == myId || r.FriendId == myId));
 
             if (rel == null)
             {
-                _logger.LogWarning("[FriendController] RemoveFriend failed relationId={RelationId} userId={UserId}", id, myId);
+                { /* Cảnh báo: RemoveFriend failed relationId={RelationId} userId={UserId} */ }
                 return NotFound("Quan hệ không tồn tại.");
             }
 
             _db.FriendRelations.Remove(rel);
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("[FriendController] RemoveFriend success relationId={RelationId} removedByUserId={UserId}", id, myId);
+            { /* RemoveFriend success relationId={RelationId} removedByUserId={UserId} */ }
 
             return Ok(new { message = "Đã xóa." });
         }
@@ -178,7 +178,7 @@ namespace GameServerApi.Controllers
                 return BadRequest("Nhập ít nhất 2 ký tự.");
 
             int myId = GetMyId();
-            _logger.LogInformation("[FriendController] SearchUsers userId={UserId} query='{Query}'", myId, q);
+            { /* SearchUsers userId={UserId} query='{Query}' */ }
 
             var users = await _db.PlayerData
                 .Join(
@@ -197,7 +197,7 @@ namespace GameServerApi.Controllers
                 .Take(10)
                 .ToListAsync();
 
-            _logger.LogInformation("[FriendController] SearchUsers userId={UserId} query='{Query}' returned {Count} user(s)", myId, q, users.Count);
+            { /* SearchUsers userId={UserId} query='{Query}' returned {Count} user(s) */ }
 
             return Ok(users);
         }

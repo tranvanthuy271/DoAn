@@ -25,7 +25,7 @@ public class ZoneConnectionApproval : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[ZoneConnectionApproval] {ex.Message}");
+            { /* Lỗi: {ex.Message} */ }
             enabled = false;
             return;
         }
@@ -35,11 +35,11 @@ public class ZoneConnectionApproval : MonoBehaviour
         {
             NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
             NetworkManager.Singleton.ConnectionApprovalCallback = HandleApprovalRequest;
-            Debug.Log("[ZoneConnectionApproval] ✓ Connection approval callback đã đăng ký.");
+            { /* ✓ Connection approval callback đã đăng ký */ }
         }
         else
         {
-            Debug.LogError("[ZoneConnectionApproval] NetworkManager.Singleton là null!");
+            { /* Lỗi: NetworkManager.Singleton là null */ }
         }
     }
 
@@ -66,7 +66,7 @@ public class ZoneConnectionApproval : MonoBehaviour
 
         if (string.IsNullOrEmpty(rawToken))
         {
-            Debug.LogWarning($"[ZoneConnectionApproval] Client {clientId}: Payload rỗng → Deny.");
+            { /* Cảnh báo: Client {clientId}: Payload rỗng → Deny */ }
             response.Approved = false;
             response.Reason = "Token rỗng.";
             return;
@@ -80,7 +80,7 @@ public class ZoneConnectionApproval : MonoBehaviour
         var result = JwtValidator.Validate(jwt, _jwtSecret);
         if (!result.IsValid)
         {
-            Debug.LogWarning($"[ZoneConnectionApproval] Client {clientId}: JWT invalid — {result.ErrorMessage} → Deny.");
+            { /* Cảnh báo: Client {clientId}: JWT invalid  {result.ErrorMessage} → Deny */ }
             response.Approved = false;
             response.Reason = "Token không hợp lệ.";
             return;
@@ -92,8 +92,7 @@ public class ZoneConnectionApproval : MonoBehaviour
             int currentCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
             if (currentCount >= _config.maxPlayers)
             {
-                Debug.LogWarning($"[ZoneConnectionApproval] Client {clientId}: Zone đầy " +
-                                 $"({currentCount}/{_config.maxPlayers}) → Deny.");
+                { /* Cảnh báo: Client {clientId}: Zone đầy */ }
                 response.Approved = false;
                 response.Reason = "Zone đầy người chơi.";
                 return;
@@ -101,8 +100,7 @@ public class ZoneConnectionApproval : MonoBehaviour
         }
 
         // 5 — Approve
-        Debug.Log($"[ZoneConnectionApproval] ✓ Client {clientId} approved " +
-                  $"(userId={result.UserId}, user={result.Username})");
+        { /* ✓ Client {clientId} approved */ }
 
         // Gắn user info vào session — ZonePlayerSessionManager sẽ đọc khi client connect
         ZonePlayerSessionManager.Instance?.StoreApprovedUser(clientId, result.UserId, result.Username, rawToken);

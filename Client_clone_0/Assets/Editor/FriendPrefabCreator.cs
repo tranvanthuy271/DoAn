@@ -18,7 +18,7 @@ public static class FriendPrefabCreator
         CreateFriendRowEntryPrefab();
         CreatePlayerProfilePanelPrefab();
         AssetDatabase.Refresh();
-        Debug.Log("[FriendPrefabCreator] ✓ Đã tạo prefabs bạn bè trong " + PREFAB_DIR);
+        { /* ✓ Đã tạo prefabs bạn bè trong */ }
     }
 
     // 1. FriendListPanel
@@ -453,7 +453,7 @@ public static class FriendPrefabCreator
     {
         var path = $"{PREFAB_DIR}/{prefabName}.prefab";
         PrefabUtility.SaveAsPrefabAsset(root, path);
-        Debug.Log($"[FriendPrefabCreator] ✓ {prefabName} → {path}");
+        { /* ✓ {prefabName} → {path} */ }
     }
 }
 #endif

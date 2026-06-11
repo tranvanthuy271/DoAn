@@ -140,7 +140,7 @@ public class LeaderboardPanelUI : MonoBehaviour
     private void Fetch()
     {
         int catId = SubCatId[_subIdx];
-        Debug.Log($"{LogTag} Fetch subIdx={_subIdx} → catId={catId}, _svc={((_svc != null) ? _svc.name : "NULL")}");
+        { /* {LogTag} Fetch subIdx={_subIdx} → catId={catId}, _svc={((_svc != null) ? _svc.name */ }
         SetLoading(true);
         _svc.FetchCategory(catId, OnData, OnError);
     }
@@ -151,7 +151,7 @@ public class LeaderboardPanelUI : MonoBehaviour
         ClearRows();
 
         int count = list?.Length ?? 0;
-        Debug.Log($"{LogTag} OnData: {count} entries, rowContent={(rowContent != null ? rowContent.name : "NULL")}");
+        { /* {LogTag} OnData: {count} entries, rowContent={(rowContent != null ? rowContent.name */ }
 
         if (list == null || list.Length == 0)
         {
@@ -161,16 +161,16 @@ public class LeaderboardPanelUI : MonoBehaviour
 
         if (rowContent == null)
         {
-            Debug.LogError($"{LogTag} rowContent chua duoc wire trong Inspector! Hang se khong hien thi.");
+            { /* Lỗi: {LogTag} rowContent chua duoc wire trong Inspector! Hang se khong hien thi */ }
             return;
         }
 
         GameObject prefab = GetRowPrefab();
-        Debug.Log($"{LogTag} rowPrefab={(prefab != null ? prefab.name : "NULL (dung BuildCodeRow)")}" );
+        { /* {LogTag} rowPrefab={(prefab != null ? prefab.name */ }
         for (int i = 0; i < list.Length; i++)
         {
             var e = list[i];
-            Debug.Log($"{LogTag} Row {i}: Rank={e.Rank} Name={e.CharacterName} Value={e.Value} Extra={e.Extra}");
+            { /* {LogTag} Row {i}: Rank={e.Rank} Name={e.CharacterName} Value={e.Value} Extra={e.Extra} */ }
             GameObject go = prefab ? Instantiate(prefab, rowContent) : BuildCodeRow(rowContent);
             go.GetComponent<LeaderboardRowEntryUI>()?.Setup(list[i], i % 2 == 1);
             _rows.Add(go);
@@ -181,7 +181,7 @@ public class LeaderboardPanelUI : MonoBehaviour
     {
         SetLoading(false);
         ShowMsg(msg);
-        Debug.LogWarning($"{LogTag} {msg}");
+        { /* Cảnh báo: {LogTag} {msg} */ }
     }
 
     private void SetLoading(bool on)
@@ -235,18 +235,18 @@ public class LeaderboardPanelUI : MonoBehaviour
     {
         if (_svc && _svc.gameObject.activeInHierarchy)
         {
-            Debug.Log($"{LogTag} EnsureSvc: đã có _svc={_svc.name}");
+            { /* {LogTag} EnsureSvc: đã có _svc={_svc.name} */ }
             return;
         }
         _svc = FindObjectOfType<LeaderboardService>();
         if (_svc)
         {
-            Debug.Log($"{LogTag} EnsureSvc: tìm thấy trong scene → {_svc.name}");
+            { /* {LogTag} EnsureSvc: tìm thấy trong scene → {_svc.name} */ }
         }
         else
         {
             _svc = new GameObject("LeaderboardSvc[auto]").AddComponent<LeaderboardService>();
-            Debug.Log($"{LogTag} EnsureSvc: tạo mới LeaderboardSvc[auto]");
+            { /* {LogTag} EnsureSvc: tạo mới LeaderboardSvc[auto] */ }
         }
     }
 

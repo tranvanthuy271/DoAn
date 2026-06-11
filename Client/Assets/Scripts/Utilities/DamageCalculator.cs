@@ -48,7 +48,7 @@ public static class DamageCalculator
             if (ElementHelper.IsInCsvList(targetElementType, attackerData.hybrid_bonus_targets))
             {
                 int boosted = Mathf.RoundToInt(damage * (1f + attackerData.hybrid_atk_bonus_pct / 100f));
-                Debug.Log($"[DamageCalculator] Hybrid bonus vs {targetElementType}: {damage} → {boosted}");
+                { /* Hybrid bonus vs {targetElementType}: {damage} → {boosted} */ }
                 damage = boosted;
             }
         }
@@ -120,13 +120,13 @@ public static class DamageCalculator
         // Hybrid miễn khắc hệ → sát thương gốc
         if (ElementHelper.IsImmuneToCounter(attackerElement, targetPlayerData))
         {
-            Debug.Log($"[DamageCalculator] Hybrid Immune: {attackerElement} khắc {targetPlayerData.element_type} nhưng bị chặn.");
+            { /* Hybrid Immune: {attackerElement} khắc {targetPlayerData.element_type} nhưng bị chặn */ }
             return rawDamage;
         }
 
         // Kẻ tấn công khắc hệ người chơi → +30%
         int final = Mathf.RoundToInt(rawDamage * 1.3f);
-        Debug.Log($"[DamageCalculator] Counter {attackerElement}→{targetPlayerData.element_type}: {rawDamage} → {final}");
+        { /* Counter {attackerElement}→{targetPlayerData.element_type}: {rawDamage} → {final} */ }
         return final;
     }
 }

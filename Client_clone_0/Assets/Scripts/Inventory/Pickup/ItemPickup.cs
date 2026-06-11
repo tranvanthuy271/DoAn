@@ -40,7 +40,7 @@ public class ItemPickup : NetworkBehaviour
     private static void TracePickup(int itemId, string message)
     {
         if (ShouldTracePickup(itemId))
-            Debug.Log($"[PickupTrace][ItemPickup] {message}");
+            { /* [ItemPickup] {message} */ }
     }
 
     [Header("Visual")]
@@ -155,7 +155,7 @@ public class ItemPickup : NetworkBehaviour
                     if (sprite != null)
                         spriteRenderer.sprite = sprite;
                     else
-                        Debug.LogWarning($"[ItemPickup] Không tìm thấy sprite ItemIcons/{template.idIcon} cho item_id={id}");
+                        { /* Cảnh báo: Không tìm thấy sprite ItemIcons/{template.idIcon} cho item_id={id} */ }
                 }
             }
         }
@@ -283,7 +283,7 @@ public class ItemPickup : NetworkBehaviour
         NetworkObject localPlayer = FindPlayerObjectByOwner(senderClientId);
         if (localPlayer == null)
         {
-            Debug.LogWarning($"[ItemPickup][Server] Không tìm thấy player có NetworkInventory cho clientId={senderClientId}!");
+            { /* Cảnh báo: [Server] Không tìm thấy player có NetworkInventory cho clientId={senderClientId} */ }
             return;
         }
 
@@ -315,7 +315,7 @@ public class ItemPickup : NetworkBehaviour
         if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects
                 .TryGetValue(playerNetworkObjectId, out NetworkObject playerObject))
         {
-            Debug.LogWarning($"[ItemPickup][Server] Không tìm thấy player NetworkObjectId={playerNetworkObjectId}!");
+            { /* Cảnh báo: [Server] Không tìm thấy player NetworkObjectId={playerNetworkObjectId} */ }
             return;
         }
 
@@ -329,14 +329,14 @@ public class ItemPickup : NetworkBehaviour
                            : (itemData != null ? itemData.itemID : 0);
         if (itemIdToPickup <= 0)
         {
-            Debug.LogWarning($"[ItemPickup][Server] item_id không hợp lệ (networkItemId={networkItemId.Value})");
+            { /* Cảnh báo: [Server] item_id không hợp lệ (networkItemId={networkItemId.Value}) */ }
             return;
         }
 
         NetworkInventory inventory = playerObject.GetComponent<NetworkInventory>();
         if (inventory == null)
         {
-            Debug.LogWarning($"[ItemPickup][Server] Player {playerObject.NetworkObjectId} không có NetworkInventory!");
+            { /* Cảnh báo: [Server] Player {playerObject.NetworkObjectId} không có NetworkInventory */ }
             return;
         }
 
@@ -344,7 +344,7 @@ public class ItemPickup : NetworkBehaviour
         if (!inventory.TryAddItemOnServer(itemIdToPickup, networkQuantity.Value))
         {
             canPickup.Value = true;
-            Debug.LogWarning($"[PickupTrace][ItemPickup] PickupFail item={itemIdToPickup} qty={networkQuantity.Value} playerNetObj={playerObject.NetworkObjectId} reason=network_inventory_rejected");
+            { /* Cảnh báo: [ItemPickup] PickupFail item={itemIdToPickup} qty={networkQuantity.Value} playerNetObj={playerObject.NetworkObjectId} reason=network_inventory_rejected */ }
             return;
         }
 

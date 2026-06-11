@@ -48,7 +48,7 @@ public class ElementIconLoader : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[ElementIconLoader] Lỗi tải hệ nguyên tố: {req.error}");
+            { /* Cảnh báo: Lỗi tải hệ nguyên tố: {req.error} */ }
             yield break;
         }
 
@@ -61,7 +61,7 @@ public class ElementIconLoader : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[ElementIconLoader] Parse thất bại: {ex.Message}");
+            { /* Lỗi: Parse thất bại: {ex.Message} */ }
             yield break;
         }
 
@@ -78,7 +78,7 @@ public class ElementIconLoader : MonoBehaviour
                 if (sprite != null)
                     Icons[elem.element_key] = sprite;
                 else
-                    Debug.LogWarning($"[ElementIconLoader] Thiếu sprite: Resources/{elem.icon_path}.png");
+                    { /* Cảnh báo: Thiếu sprite: Resources/{elem.icon_path}.png */ }
             }
 
             // Parse màu hex (#FF4500)
@@ -88,7 +88,7 @@ public class ElementIconLoader : MonoBehaviour
         }
 
         IsLoaded = true;
-        Debug.Log($"[ElementIconLoader] Tải xong {Icons.Count} icon hệ nguyên tố.");
+        { /* Tải xong {Icons.Count} icon hệ nguyên tố */ }
     }
 
     // Hàm public để script hoặc hệ thống khác gọi vào.

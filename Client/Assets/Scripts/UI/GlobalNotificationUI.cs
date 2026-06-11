@@ -74,7 +74,7 @@ public class GlobalNotificationUI : MonoBehaviour
         var inst = GetOrFind();
         if (inst == null)
         {
-            Debug.LogWarning("[GlobalNotificationUI] Không tìm thấy instance trong scene!");
+            { /* Cảnh báo: Không tìm thấy instance trong scene */ }
             return;
         }
         inst.InternalShow(message, title, autoHideSeconds, confirmLabel);
@@ -99,11 +99,11 @@ public class GlobalNotificationUI : MonoBehaviour
             Instance = prefabInstance.GetComponent<GlobalNotificationUI>();
             if (Instance != null)
             {
-                Debug.Log($"{LogPrefix} Using prefab from Resources/{PrefabResourcesPath}.");
+                { /* {LogPrefix} Using prefab from Resources/{PrefabResourcesPath} */ }
                 return Instance;
             }
 
-            Debug.LogWarning($"{LogPrefix} Prefab Resources/{PrefabResourcesPath} không có GlobalNotificationUI component. Dùng fallback runtime UI.");
+            { /* Cảnh báo: {LogPrefix} Prefab Resources/{PrefabResourcesPath} không có GlobalNotificationUI component. Dùng fallback runtime UI */ }
             Destroy(runtimeRoot);
         }
 
@@ -130,7 +130,7 @@ public class GlobalNotificationUI : MonoBehaviour
         if (messageText) messageText.text = message ?? string.Empty;
         if (btnOkLabel)  btnOkLabel.text  = !string.IsNullOrEmpty(confirmLabel) ? confirmLabel : "Xác nhận";
 
-        Debug.Log($"{LogPrefix} Show | title='{title}' autoHide={autoHideSeconds:F1}s message='{message}'", this);
+        { /* {LogPrefix} Show | title='{title}' autoHide={autoHideSeconds:F1}s message='{message}' */ }
 
         if (_autoHideCoroutine != null) StopCoroutine(_autoHideCoroutine);
         if (autoHideSeconds > 0f)
@@ -261,7 +261,7 @@ public class GlobalNotificationUI : MonoBehaviour
         buttonText.raycastTarget = false;
 
         UIRuntimeAssetHelper.ApplyNotoSans(title, message, buttonText);
-        Debug.Log($"{LogPrefix} Built runtime fallback UI.", this);
+        { /* {LogPrefix} Built runtime fallback UI */ }
     }
 
     private void EnsureReferences()

@@ -86,7 +86,7 @@ public class CameraFollow : MonoBehaviour
         if (target != null && instantFollow)
             transform.position = GetClampedPosition(target.position + offset);
 
-        Debug.Log($"[CameraFollow] OnSceneLoaded scene={scene.name} mode={mode} | activeScene={SceneManager.GetActiveScene().name} | target={(target != null ? target.name : "null")}");
+        { /* OnSceneLoaded scene={scene.name} mode={mode} | activeScene={SceneManager.GetActiveScene().name} | target={(target != null ? target.name */ }
     }
 
     private void Start()
@@ -132,8 +132,7 @@ public class CameraFollow : MonoBehaviour
         }
         if (layerId < 0)
         {
-            Debug.LogWarning("[CameraFollow] Không tìm thấy layer 'MaxMap' lẫn 'Ground'. " +
-                "Camera sẽ không có giới hạn map.");
+            { /* Cảnh báo: Không tìm thấy layer 'MaxMap' lẫn 'Ground' */ }
             return;
         }
 
@@ -158,7 +157,7 @@ public class CameraFollow : MonoBehaviour
         if (!found)
         {
             if (ShouldWarnMissingBounds(boundsScene.name))
-                Debug.LogWarning($"[CameraFollow] Không tìm thấy Collider2D nào trên layer '{layerUsed}' trong scene '{boundsScene.name}'.");
+                { /* Cảnh báo: Không tìm thấy Collider2D nào trên layer '{layerUsed}' trong scene '{boundsScene.name}' */ }
             return;
         }
 
@@ -206,7 +205,7 @@ public class CameraFollow : MonoBehaviour
             maxBounds = new Vector2(combined.max.x, combined.max.y);
         }
 
-        Debug.Log($"[CameraFollow] Map bounds ({layerUsed}, scene={boundsScene.name}): min={minBounds}, max={maxBounds}");
+        { /* Map bounds ({layerUsed}, scene={boundsScene.name}): min={minBounds}, max={maxBounds} */ }
     }
 
     private static bool ShouldWarnMissingBounds(string sceneName)
@@ -232,7 +231,7 @@ public class CameraFollow : MonoBehaviour
                 if (p.IsOwner)
                 {
                     target = p.transform;
-                    Debug.Log($"[CameraFollow] Theo dõi network player (ClientId: {networkManager.LocalClientId})");
+                    { /* Theo dõi network player (ClientId: {networkManager.LocalClientId}) */ }
                     return;
                 }
             }
@@ -243,7 +242,7 @@ public class CameraFollow : MonoBehaviour
         if (playerController != null)
         {
             target = playerController.transform;
-            Debug.Log($"[CameraFollow] Theo dõi PlayerController: {playerController.gameObject.name}");
+            { /* Theo dõi PlayerController: {playerController.gameObject.name} */ }
         }
     }
 
@@ -263,7 +262,7 @@ public class CameraFollow : MonoBehaviour
             transform.position = GetClampedPosition(newTarget.position + offset);
         }
 
-        Debug.Log($"[CameraFollow] Target đã được gán: {newTarget?.name}");
+        { /* Target đã được gán: {newTarget?.name} */ }
     }
 
     // Yêu cầu camera quét lại layer MaxMap và cập nhật bounds.

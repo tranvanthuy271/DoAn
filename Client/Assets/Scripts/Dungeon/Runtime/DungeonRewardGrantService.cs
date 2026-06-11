@@ -15,7 +15,7 @@ public static class DungeonRewardGrantService
         int targetPlayerId = ResolveTargetPlayerId(clientId);
         if (targetPlayerId <= 0)
         {
-            Debug.LogWarning($"[DungeonRewardGrantService] Không resolve được playerId cho client {clientId}.");
+            { /* Cảnh báo: Không resolve được playerId cho client {clientId} */ }
             yield break;
         }
 
@@ -40,7 +40,7 @@ public static class DungeonRewardGrantService
         {
             if (string.IsNullOrWhiteSpace(jwt))
             {
-                Debug.LogWarning($"[DungeonRewardGrantService] Thiếu JWT để phát thưởng cho client {clientId}.");
+                { /* Cảnh báo: Thiếu JWT để phát thưởng cho client {clientId} */ }
                 yield break;
             }
 
@@ -56,7 +56,7 @@ public static class DungeonRewardGrantService
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
-            Debug.LogError($"[DungeonRewardGrantService] Phát thưởng thất bại cho playerId={targetPlayerId}: {req.error} | {req.downloadHandler.text}");
+            { /* Lỗi: Phát thưởng thất bại cho playerId={targetPlayerId}: {req.error} | {req.downloadHandler.text} */ }
     }
 
     private static int ResolveTargetPlayerId(ulong clientId)

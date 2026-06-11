@@ -212,7 +212,7 @@ public class GameErrorNotifier : MonoBehaviour
         }
 
         _connectionWatchRoutine = StartCoroutine(ConnectionWatchCoroutine(timeoutSeconds));
-        Debug.Log($"[GameErrorNotifier] Watching client connection for {timeoutSeconds:0.0}s...");
+        { /* Watching client connection for {timeoutSeconds:0.0}s */ }
     }
 
     private IEnumerator ConnectionWatchCoroutine(float timeoutSeconds)
@@ -238,7 +238,7 @@ public class GameErrorNotifier : MonoBehaviour
             yield break;
         }
 
-        Debug.LogWarning($"[GameErrorNotifier] Client connection timed out after {timeoutSeconds:0.0}s.");
+        { /* Cảnh báo: Client connection timed out after {timeoutSeconds:0.0}s */ }
         _isWatchingConnection = false;
         ShowInternal(MessageForType(ErrorType.CannotConnect), null);
     }
@@ -266,7 +266,7 @@ public class GameErrorNotifier : MonoBehaviour
 
         StopAutoDismissRoutine();
         LoginLoadingManager.HideLoadingStatic();
-        Debug.Log("[GameErrorNotifier] Local client connected successfully.");
+        { /* Local client connected successfully */ }
     }
 
     private void CancelConnectionWatchInternal()
@@ -310,7 +310,7 @@ public class GameErrorNotifier : MonoBehaviour
         networkManager.OnTransportFailure += OnTransportFailure;
         _subscribedNetworkManager = networkManager;
 
-        Debug.Log("[GameErrorNotifier] Subscribed to Netcode events.");
+        { /* Subscribed to Netcode events */ }
     }
 
     private void UnsubscribeNetcode()
@@ -357,7 +357,7 @@ public class GameErrorNotifier : MonoBehaviour
         {
             CancelConnectionWatchInternal();
             _localClientConnected = false;
-            Debug.Log("[GameErrorNotifier] Local client disconnect ignored because logout is intentional.");
+            { /* Local client disconnect ignored because logout is intentional */ }
             return;
         }
 
@@ -367,7 +367,7 @@ public class GameErrorNotifier : MonoBehaviour
         string disconnectReason = string.IsNullOrWhiteSpace(networkManager.DisconnectReason)
             ? "<empty>"
             : networkManager.DisconnectReason;
-        Debug.LogWarning($"[GameErrorNotifier] Local client disconnect detected. clientId={clientId}, reason={disconnectReason}");
+        { /* Cảnh báo: Local client disconnect detected. clientId={clientId}, reason={disconnectReason} */ }
 
         ShowInternal(MessageForType(wasConnected ? ErrorType.ConnectionLost : ErrorType.CannotConnect), null);
         _localClientConnected = false;
@@ -387,12 +387,12 @@ public class GameErrorNotifier : MonoBehaviour
         {
             CancelConnectionWatchInternal();
             _localClientConnected = false;
-            Debug.Log("[GameErrorNotifier] Transport failure ignored because logout is intentional.");
+            { /* Transport failure ignored because logout is intentional */ }
             return;
         }
 
         CancelConnectionWatchInternal();
-        Debug.LogWarning("[GameErrorNotifier] NetworkManager.OnTransportFailure fired.");
+        { /* Cảnh báo: NetworkManager.OnTransportFailure fired */ }
 
         ShowInternal(MessageForType(wasConnected ? ErrorType.ConnectionLost : ErrorType.CannotConnect), null);
         _localClientConnected = false;

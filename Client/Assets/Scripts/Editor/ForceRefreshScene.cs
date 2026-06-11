@@ -13,14 +13,14 @@ public class ForceRefreshScene : Editor
         // Save current scene
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
         {
-            Debug.Log("[ForceRefreshScene] Starting fix...");
+            { /* Starting fix */ }
             
             // Get current scene path
             string currentScenePath = EditorSceneManager.GetActiveScene().path;
             
             if (string.IsNullOrEmpty(currentScenePath))
             {
-                Debug.LogError("[ForceRefreshScene] No scene is currently open!");
+                { /* Lỗi: No scene is currently open */ }
                 return;
             }
             
@@ -31,25 +31,25 @@ public class ForceRefreshScene : Editor
             AssetDatabase.ImportAsset(currentScenePath, ImportAssetOptions.ForceUpdate);
             AssetDatabase.Refresh();
             
-            Debug.Log($"[ForceRefreshScene] Reimported: {currentScenePath}");
+            { /* Reimported: {currentScenePath} */ }
             
             // Reopen scene
             EditorSceneManager.OpenScene(currentScenePath);
             
             // Find and log all NetworkObjects
             NetworkObject[] networkObjects = FindObjectsOfType<NetworkObject>();
-            Debug.Log($"[ForceRefreshScene] Found {networkObjects.Length} NetworkObject(s) in scene:");
+            { /* Found {networkObjects.Length} NetworkObject(s) in scene */ }
             
             foreach (var netObj in networkObjects)
             {
                 SerializedObject so = new SerializedObject(netObj);
                 SerializedProperty hashProp = so.FindProperty("GlobalObjectIdHash");
                 uint hashValue = hashProp != null ? hashProp.uintValue : 0;
-                Debug.Log($"  - {netObj.gameObject.name} | Hash: {hashValue}");
+                { /* {netObj.gameObject.name} | Hash: {hashValue} */ }
             }
             
-            Debug.Log("[ForceRefreshScene] ✓ Scene refreshed! Check hashes above.");
-            Debug.Log("[ForceRefreshScene] If any scene object has non-zero hash, select it and reset NetworkObject component.");
+            { /* ✓ Scene refreshed! Check hashes above */ }
+            { /* If any scene object has non-zero hash, select it and reset NetworkObject component */ }
         }
     }
     
@@ -76,7 +76,7 @@ public class ForceRefreshScene : Editor
                 
                 if (hashProp != null && hashProp.uintValue != 0)
                 {
-                    Debug.Log($"Resetting hash for scene object: {netObj.gameObject.name} (was {hashProp.uintValue})");
+                    { /* Resetting hash for scene object: {netObj.gameObject.name} (was {hashProp.uintValue}) */ }
                     hashProp.uintValue = 0;
                     so.ApplyModifiedProperties();
                     EditorUtility.SetDirty(netObj);
@@ -89,11 +89,11 @@ public class ForceRefreshScene : Editor
         {
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
-            Debug.Log($"[ForceRefreshScene] ✓ Reset {resetCount} NetworkObject hash(es). Scene saved.");
+            { /* ✓ Reset {resetCount} NetworkObject hash(es). Scene saved */ }
         }
         else
         {
-            Debug.Log("[ForceRefreshScene] No scene objects with non-zero hash found.");
+            { /* No scene objects with non-zero hash found */ }
         }
     }
 }

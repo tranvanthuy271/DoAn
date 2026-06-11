@@ -108,7 +108,7 @@ public class StatusIconEntry : MonoBehaviour
         if (sprite != null)
             iconImage.sprite = sprite;
         else
-            Debug.LogWarning($"[StatusIconEntry] Không tìm thấy icon: {iconsFolder}/{iconId}");
+            { /* Cảnh báo: Không tìm thấy icon: {iconsFolder}/{iconId} */ }
     }
 
     private static string FormatTime(float seconds)

@@ -49,7 +49,7 @@ public static class MapPhysicsQuery2D
             bufferSize *= 2;
         }
 
-        Debug.LogWarning("[MapPhysicsQuery2D] OverlapCircleAll reached the max buffer size. Results may be truncated.");
+        { /* Cảnh báo: OverlapCircleAll reached the max buffer size. Results may be truncated */ }
 
         var maxBuffer = new Collider2D[MaxBufferSize];
         int finalCount = useLayerMask

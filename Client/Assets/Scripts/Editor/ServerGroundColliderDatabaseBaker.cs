@@ -17,7 +17,7 @@ public static class ServerGroundColliderDatabaseBaker
         MapWorldConfig mapWorldConfig = Resources.Load<MapWorldConfig>(MapWorldConfigPath);
         if (mapWorldConfig == null || mapWorldConfig.maps == null)
         {
-            Debug.LogError("[ServerGroundColliderDatabaseBaker] MapWorldConfig not found in Resources/ScriptableObjects.");
+            { /* Lỗi: MapWorldConfig not found in Resources/ScriptableObjects */ }
             return;
         }
 
@@ -25,11 +25,11 @@ public static class ServerGroundColliderDatabaseBaker
         int maxMapLayer = LayerMask.NameToLayer("MaxMap");
         if (groundLayer < 0)
         {
-            Debug.LogError("[ServerGroundColliderDatabaseBaker] Layer 'Ground' not found.");
+            { /* Lỗi: Layer 'Ground' not found */ }
             return;
         }
         if (maxMapLayer < 0)
-            Debug.LogWarning("[ServerGroundColliderDatabaseBaker] Layer 'MaxMap' not found. Only Ground colliders will be baked.");
+            { /* Cảnh báo: Layer 'MaxMap' not found. Only Ground colliders will be baked */ }
 
         var bakedMaps = new List<ServerGroundColliderDatabase.MapGroundData>();
         var bakedMapIds = new HashSet<int>();
@@ -59,21 +59,21 @@ public static class ServerGroundColliderDatabaseBaker
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        Debug.Log($"[ServerGroundColliderDatabaseBaker] Baked {bakedMaps.Count} map(s) into {OutputAssetPath}.");
+        { /* Baked {bakedMaps.Count} map(s) into {OutputAssetPath} */ }
     }
 
     private static ServerGroundColliderDatabase.MapGroundData BakeMap(int mapId, string sceneName, int groundLayer, int maxMapLayer)
     {
         if (string.IsNullOrWhiteSpace(sceneName))
         {
-            Debug.LogWarning($"[ServerGroundColliderDatabaseBaker] mapId={mapId} has empty sceneName.");
+            { /* Cảnh báo: mapId={mapId} has empty sceneName */ }
             return null;
         }
 
         string scenePath = ResolveScenePath(sceneName);
         if (string.IsNullOrEmpty(scenePath))
         {
-            Debug.LogWarning($"[ServerGroundColliderDatabaseBaker] Cannot resolve scene '{sceneName}' for mapId={mapId}.");
+            { /* Cảnh báo: Cannot resolve scene '{sceneName}' for mapId={mapId} */ }
             return null;
         }
 
@@ -104,7 +104,7 @@ public static class ServerGroundColliderDatabaseBaker
         if (closeAfterBake)
             EditorSceneManager.CloseScene(scene, true);
 
-        Debug.Log($"[ServerGroundColliderDatabaseBaker] mapId={mapId} scene='{sceneName}' colliders={colliders.Count}.");
+        { /* mapId={mapId} scene='{sceneName}' colliders={colliders.Count} */ }
         return new ServerGroundColliderDatabase.MapGroundData
         {
             mapId = mapId,

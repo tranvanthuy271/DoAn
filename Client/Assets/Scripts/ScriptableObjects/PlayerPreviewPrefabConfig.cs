@@ -128,8 +128,7 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
         if (fallbackPrefab != null)
             return fallbackPrefab;
 
-        Debug.LogWarning($"[PlayerPreviewPrefabConfig] Không tìm thấy prefab cho " +
-                         $"elementType='{elementType}' gender='{gender}'. Kiểm tra lại config asset.");
+        { /* Cảnh báo: Không tìm thấy prefab cho */ }
         return null;
     }
 

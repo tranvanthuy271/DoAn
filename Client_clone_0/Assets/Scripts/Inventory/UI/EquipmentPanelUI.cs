@@ -132,7 +132,7 @@ public class EquipmentPanelUI : MonoBehaviour
         // Ưu tiên manual slots
         if (manualSlots != null && manualSlots.Length >= 6)
         {
-            Debug.Log("[EquipmentPanelUI] Sử dụng manual slots");
+            { /* Sử dụng manual slots */ }
             for (int i = 0; i < 6; i++)
             {
                 EquipmentSlotType slotType = (EquipmentSlotType)i;
@@ -147,7 +147,7 @@ public class EquipmentPanelUI : MonoBehaviour
         // Auto-create từ prefab
         else if (slotPrefab != null && slotContainer != null)
         {
-            Debug.Log("[EquipmentPanelUI] Tự động tạo slots từ prefab");
+            { /* Tự động tạo slots từ prefab */ }
             
             // Xóa con cũ
             for (int i = slotContainer.childCount - 1; i >= 0; i--)
@@ -168,10 +168,10 @@ public class EquipmentPanelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[EquipmentPanelUI] Không có manualSlots hoặc slotPrefab/slotContainer! Kiểm tra Inspector.");
+            { /* Cảnh báo: Không có manualSlots hoặc slotPrefab/slotContainer! Kiểm tra Inspector */ }
         }
 
-        Debug.Log($"[EquipmentPanelUI] Đã khởi tạo {slotUIs.Count} equipment slots");
+        { /* Đã khởi tạo {slotUIs.Count} equipment slots */ }
     }
 
     // Bật/tắt panel trang bị
@@ -182,7 +182,7 @@ public class EquipmentPanelUI : MonoBehaviour
         bool isActive = !panelRoot.activeSelf;
         panelRoot.SetActive(isActive);
 
-        Debug.Log($"[EquipmentPanelUI] Panel {(isActive ? "MỞ" : "ĐÓNG")}");
+        { /* Panel {(isActive ? */ }
 
         if (isActive)
         {
@@ -257,7 +257,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if (titleText != null)
             titleText.text = string.IsNullOrWhiteSpace(characterName) ? "Trang Bị" : $"Trang Bị - {characterName}";
 
-        Debug.Log($"[EquipmentPanelUI] ShowFriendEquipment characterName='{characterName}' hasEquipment={equipment != null}");
+        { /* ShowFriendEquipment characterName='{characterName}' hasEquipment={equipment != null} */ }
         HideUnequipConfirm();
         RefreshAllSlots();
     }
@@ -267,7 +267,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if (!_isExternalProfileView && string.IsNullOrEmpty(_externalCharacterName))
             return;
 
-        Debug.Log("[EquipmentPanelUI] ClearFriendEquipmentView()");
+        { /* ClearFriendEquipmentView() */ }
         _isExternalProfileView = false;
         _externalCharacterName = null;
 
@@ -287,7 +287,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[EquipmentPanelUI] Không tìm thấy InventoryNetworkBridge!");
+            { /* Cảnh báo: Không tìm thấy InventoryNetworkBridge */ }
         }
     }
 
@@ -299,7 +299,7 @@ public class EquipmentPanelUI : MonoBehaviour
             InitSlots();
             if (slotUIs.Count == 0)
             {
-                Debug.LogWarning("[EquipmentPanelUI] Chưa thể khởi tạo slot UI. Kiểm tra cấu hình Inspector.");
+                { /* Cảnh báo: Chưa thể khởi tạo slot UI. Kiểm tra cấu hình Inspector */ }
                 return;
             }
         }
@@ -314,9 +314,9 @@ public class EquipmentPanelUI : MonoBehaviour
                 EquipmentItemDto item = currentEquipment.GetSlot(slotType);
                 // Debug: trace từng slot để phát hiện Accessory không nhận data
                 if (item != null && item.itemTemplateId > 0)
-                    Debug.Log($"[EquipmentPanelUI] → Slot {slotType}: {item.itemName} lv={item.upgradeLevel} iconId={item.iconId}");
+                    { /* → Slot {slotType}: {item.itemName} lv={item.upgradeLevel} iconId={item.iconId} */ }
                 else
-                    Debug.Log($"[EquipmentPanelUI] → Slot {slotType}: TRỐNG");
+                    { /* → Slot {slotType}: TRỐNG */ }
                 slotUI.SetItem(item);
             }
             else
@@ -325,7 +325,7 @@ public class EquipmentPanelUI : MonoBehaviour
             }
         }
 
-        Debug.Log($"[EquipmentPanelUI] Đã refresh {slotUIs.Count} slots");
+        { /* Đã refresh {slotUIs.Count} slots */ }
         ReplayPendingTierEffectsIfActive();
     }
 
@@ -346,11 +346,11 @@ public class EquipmentPanelUI : MonoBehaviour
     {
         if (_isExternalProfileView)
         {
-            Debug.Log($"[EquipmentPanelUI] Ignore slot click in read-only friend view. slot={slotType}");
+            { /* Ignore slot click in read-only friend view. slot={slotType} */ }
             return;
         }
 
-        Debug.Log($"[EquipmentPanelUI] Click slot {slotType}, item={item?.itemName ?? "trống"}");
+        { /* Click slot {slotType}, item={item?.itemName ?? */ }
 
         if (item == null || item.itemTemplateId <= 0)
             return;
@@ -404,7 +404,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if (pendingUnequipSlot.HasValue)
         {
             EquipmentSlotType slot = pendingUnequipSlot.Value;
-            Debug.Log($"[EquipmentPanelUI] Xác nhận tháo trang bị slot {slot}");
+            { /* Xác nhận tháo trang bị slot {slot} */ }
 
             // Fire event
             OnUnequipRequested?.Invoke(slot);

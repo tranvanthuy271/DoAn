@@ -97,14 +97,14 @@ public class PlayerHealth : MonoBehaviour
         // God mode prevents damage
         if (controller != null && controller.godMode)
         {
-            Debug.Log("God Mode: Damage blocked!");
+            { /* God Mode: Damage blocked */ }
             return;
         }
 
         // Kim Shield — bất tử hoàn toàn
         if (isShieldActive)
         {
-            Debug.Log("[PlayerHealth] Shield active — damage blocked!");
+            { /* Shield active  damage blocked */ }
             return;
         }
 
@@ -129,7 +129,7 @@ public class PlayerHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         OnTakeDamage?.Invoke();
 
-        Debug.Log($"Player took {damage} damage. Health: {currentHealth}/{maxHealth}");
+        { /* Player took {damage} damage. Health: {currentHealth}/{maxHealth} */ }
 
         if (currentHealth <= 0)
         {
@@ -147,7 +147,7 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isHealBlocked)
         {
-            Debug.Log("[PlayerHealth] Heal bị chặn bởi Lava Aura!");
+            { /* Heal bị chặn bởi Lava Aura */ }
             return;
         }
 
@@ -162,7 +162,7 @@ public class PlayerHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         OnHeal?.Invoke();
 
-        Debug.Log($"Player healed {amount}. Health: {currentHealth}/{maxHealth}");
+        { /* Player healed {amount}. Health: {currentHealth}/{maxHealth} */ }
     }
 
     public void HealFull()
@@ -174,7 +174,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log("Player died!");
+        { /* Player died */ }
 
         // Kích hoạt animation die
         var playerAnimator = GetComponent<PlayerAnimator>();

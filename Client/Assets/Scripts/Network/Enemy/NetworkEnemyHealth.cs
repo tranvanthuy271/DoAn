@@ -162,7 +162,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         OnServerTakeDamage?.Invoke(damage, attackerClientId);
         OnTakeDamageClientRpc(damage);
 
-        Debug.Log($"[NetworkEnemyHealth] Enemy {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
+        { /* Enemy {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth} */ }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -198,7 +198,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
 
         var runtimeOverride = GetComponent<EnemyStatOverride>();
         var runtimeStats = GetComponent<DungeonEnemyRuntimeStats>();
-        Debug.Log($"[NEH] death netId={NetworkObjectId} name={gameObject.name} scene={(gameObject.scene.IsValid() ? gameObject.scene.name : "invalid")} boss={(runtimeOverride != null && runtimeOverride.IsBoss)} runtime={(runtimeStats != null && runtimeStats.HasRuntimeOverride)} atk={_lastAttackerClientId} exp={ExpReward}");
+        { /* death netId={NetworkObjectId} name={gameObject.name} scene={(gameObject.scene.IsValid() ? gameObject.scene.name */ }
 
         if (IsServer)
         {
@@ -209,17 +209,17 @@ public class NetworkEnemyHealth : NetworkBehaviour
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[NetworkEnemyHealth] HandleDeathDrop failed: {ex.Message}");
+                { /* Lỗi: HandleDeathDrop failed: {ex.Message} */ }
             }
 
             var waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
             if (waveRuntime != null)
             {
-                Debug.Log($"[NEH] runtime=yes netId={NetworkObjectId} scene={gameObject.scene.name}");
+                { /* runtime=yes netId={NetworkObjectId} scene={gameObject.scene.name} */ }
             }
             else
             {
-                Debug.Log($"[NEH] runtime=no netId={NetworkObjectId} scene={gameObject.scene.name}");
+                { /* runtime=no netId={NetworkObjectId} scene={gameObject.scene.name} */ }
             }
 
             // OnDeathClientRpc chỉ chạy trên client, không chạy trên dedicated server.
@@ -255,20 +255,20 @@ public class NetworkEnemyHealth : NetworkBehaviour
                 // Quest kill hook: báo cáo tiến trình nhiệm vụ loại "kill"
                 int dbPlayerId = killerSync.networkPlayerId.Value;
                 int enemyDbId  = EnemyDbId;
-                Debug.Log($"[QuestKill] dbPlayerId={dbPlayerId} enemyDbId={enemyDbId} enemy={gameObject.name} expReward={ExpReward}");
+                { /* dbPlayerId={dbPlayerId} enemyDbId={enemyDbId} enemy={gameObject.name} expReward={ExpReward} */ }
                 if (dbPlayerId > 0 && enemyDbId > 0)
                 {
-                    Debug.Log($"[QuestKill] → gọi QuestProgressReporter.Report Kill playerId={dbPlayerId} targetId={enemyDbId}");
+                    { /* → gọi QuestProgressReporter.Report Kill playerId={dbPlayerId} targetId={enemyDbId} */ }
                     // Dùng killerSync làm host để coroutine không bị kill khi enemy despawn
                     var capturedSync = killerSync;
                     QuestProgressReporter.Report(killerSync, dbPlayerId, QuestProgressReporter.ProgressType.Kill, enemyDbId, 1,
                         () => capturedSync.NotifyQuestKillOnServer());
                 }
                 else
-                    Debug.LogWarning($"[QuestKill] BỎ QUA: dbPlayerId={dbPlayerId} enemyDbId={enemyDbId} — một trong hai bằng 0!");
+                    { /* Cảnh báo: BỎ QUA: dbPlayerId={dbPlayerId} enemyDbId={enemyDbId}  một trong hai bằng 0 */ }
             }
             else
-                Debug.LogWarning($"[NetworkEnemyHealth] Không tìm được NetworkPlayerDataSync cho client {_lastAttackerClientId}");
+                { /* Cảnh báo: Không tìm được NetworkPlayerDataSync cho client {_lastAttackerClientId} */ }
         }
 
         if (IsServer)
@@ -305,18 +305,18 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (!IsServer) return;
         bool hasNet = NetworkObject != null;
         bool isSpawned = hasNet && NetworkObject.IsSpawned;
-        Debug.Log($"[RESPAWN] DestroyEnemyServer name={gameObject.name} hasNet={hasNet} isSpawned={isSpawned}");
+        { /* DestroyEnemyServer name={gameObject.name} hasNet={hasNet} isSpawned={isSpawned} */ }
         // Despawn network object (chỉ nếu đã được spawn) — true để Destroy luôn GameObject,
         // đảm bảo go == null trong HostSpawnConfigLoader.CheckRespawnLoop hoạt động đúng.
         if (hasNet && isSpawned)
         {
             NetworkObject.Despawn(true);
-            Debug.Log($"[RESPAWN] Despawn(true) called on {gameObject.name}");
+            { /* Despawn(true) called on {gameObject.name} */ }
         }
         else
         {
             // Fallback: Destroy trực tiếp nếu không phải network object hoặc chưa spawn
-            Debug.LogWarning($"[RESPAWN] Fallback Destroy (no NetworkObject or not spawned) name={gameObject.name}");
+            { /* Cảnh báo: Fallback Destroy (no NetworkObject or not spawned) name={gameObject.name} */ }
             Destroy(gameObject);
         }
     }
@@ -336,7 +336,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
     {
         if (hp <= 0) return;
         maxHealth = hp;
-        Debug.Log($"[NetworkEnemyHealth] PreInitMaxHp({hp}) trên {gameObject.name}");
+        { /* PreInitMaxHp({hp}) trên {gameObject.name} */ }
     }
 
     // Khởi tạo HP từ database (gọi bởi NetworkEnemySpawner sau networkObj.Spawn()).
@@ -348,7 +348,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         maxHealth = maxHp;
         networkMaxHealth.Value = maxHp;  // sync maxHealth đến tất cả clients
         networkCurrentHealth.Value = maxHp;
-        Debug.Log($"[NetworkEnemyHealth] InitHealth: {maxHp} HP (object {NetworkObjectId})");
+        { /* InitHealth: {maxHp} HP (object {NetworkObjectId}) */ }
     }
 
     // EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.

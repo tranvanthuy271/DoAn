@@ -85,11 +85,11 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         if (!IsClient) return;
 
-        Debug.Log($"{LogPrefix} Click | {DescribeNpcForLog()} state={DescribeClientState()}", this);
+        { /* {LogPrefix} Click | {DescribeNpcForLog()} state={DescribeClientState()} */ }
 
         if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
         {
-            Debug.Log($"{LogPrefix} Click ignored because gameplay input is blocked by UI.", this);
+            { /* {LogPrefix} Click ignored because gameplay input is blocked by UI */ }
             return;
         }
 
@@ -97,13 +97,13 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         var ui = NpcMenuUI.GetOrFind();
         if (ui != null && ui.IsOpen)
         {
-            Debug.Log($"{LogPrefix} Click ignored because NpcMenuUI is already open.", this);
+            { /* {LogPrefix} Click ignored because NpcMenuUI is already open */ }
             return;
         }
         var dynUi = NpcDynamicMenuUI.GetOrFind();
         if (dynUi != null && dynUi.IsOpen)
         {
-            Debug.Log($"{LogPrefix} Click ignored because NpcDynamicMenuUI is already open.", this);
+            { /* {LogPrefix} Click ignored because NpcDynamicMenuUI is already open */ }
             return;
         }
 
@@ -117,7 +117,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             float dist = Vector2.Distance(transform.position, localObj.transform.position);
             if (dist > MAX_DIST)
             {
-                Debug.Log($"{LogPrefix} Quá xa ({dist:F1}u). Lại gần NPC hơn!", this);
+                { /* {LogPrefix} Quá xa ({dist:F1}u). Lại gần NPC hơn */ }
                 return;
             }
         }
@@ -125,13 +125,13 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         // Click lần 1 (NPC chưa được chọn): hiển thị thông tin + mũi tên
         if (_currentSelected != this)
         {
-            Debug.Log($"{LogPrefix} First click -> select NPC | {DescribeNpcForLog()}", this);
+            { /* {LogPrefix} First click -> select NPC | {DescribeNpcForLog()} */ }
             SelectThis();
             return;
         }
 
         // Click lần 2 (NPC đã được chọn): mở menu / tương tác như cũ
-        Debug.Log($"{LogPrefix} Second click -> InteractServerRpc | {DescribeNpcForLog()}", this);
+        { /* {LogPrefix} Second click -> InteractServerRpc | {DescribeNpcForLog()} */ }
         InteractServerRpc(NetworkObjectId);
     }
 
@@ -165,7 +165,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         TargetSelector.SetTarget(transform);
 
         EnemyInfoPanel.Instance?.Show(BuildNpcStats());
-        Debug.Log($"{LogPrefix} Selected | {DescribeNpcForLog()}", this);
+        { /* {LogPrefix} Selected | {DescribeNpcForLog()} */ }
     }
 
     // Bỏ chọn NPC này: ẩn mũi tên, ẩn info panel.
@@ -177,7 +177,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         TargetSelector.ClearTarget(transform);
 
         EnemyInfoPanel.Instance?.Hide();
-        Debug.Log($"{LogPrefix} Deselected | {DescribeNpcForLog()}", this);
+        { /* {LogPrefix} Deselected | {DescribeNpcForLog()} */ }
     }
 
     // Bỏ chọn NPC hiện tại (gọi từ EnemyClickHandler khi enemy được chọn).
@@ -217,7 +217,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
 
-        Debug.Log($"{LogPrefix} InteractServerRpc | sender={clientId} npcNetId={npcNetworkId} worldPos={transform.position}", this);
+        { /* {LogPrefix} InteractServerRpc | sender={clientId} npcNetId={npcNetworkId} worldPos={transform.position} */ }
 
         if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var client)) return;
 
@@ -232,7 +232,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             float dist = Vector2.Distance(transform.position, playerObj.transform.position);
             if (dist > MAX_DIST * LENIENCY)
             {
-                Debug.LogWarning($"{LogPrefix} Client {clientId} quá xa ({dist:F1}u). Từ chối.", this);
+                { /* Cảnh báo: {LogPrefix} Client {clientId} quá xa ({dist:F1}u). Từ chối */ }
                 return;
             }
         }
@@ -245,11 +245,11 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
         if (data == null)
         {
-            Debug.LogWarning($"{LogPrefix} Không resolve được NpcData cho npcNetId={npcNetworkId}.", this);
+            { /* Cảnh báo: {LogPrefix} Không resolve được NpcData cho npcNetId={npcNetworkId} */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} Interact validated | sender={clientId} npcId={data.npc_id} type='{data.npc_type}' name='{data.npc_name}'", this);
+        { /* {LogPrefix} Interact validated | sender={clientId} npcId={data.npc_id} type='{data.npc_type}' name='{data.npc_name}' */ }
 
         TryReportQuestTalkProgress(clientId, data);
 
@@ -279,8 +279,8 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
         if (userId <= 0)
         {
-            Debug.LogWarning($"{LogPrefix} Skip dialogue fetch | client={clientId} npcId={clientData.npc_id} because resolved playerId is invalid.", this);
-            Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}'", this);
+            { /* Cảnh báo: {LogPrefix} Skip dialogue fetch | client={clientId} npcId={clientData.npc_id} because resolved playerId is invalid */ }
+            { /* {LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}' */ }
             OpenMenuClientRpc(JsonUtility.ToJson(clientData), TargetClient(clientId));
             yield break;
         }
@@ -288,7 +288,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         string apiBase = NpcServerManager.Instance?.ApiBase ?? ServerAddressConfig.Instance.ApiRoot;
         string body    = JsonUtility.ToJson(new InteractPayload { npcId = clientData.npc_id, playerId = userId });
 
-        Debug.Log($"{LogPrefix} FetchDialogue start | client={clientId} npcId={clientData.npc_id} playerId={userId} url={apiBase}/api/npc/interact", this);
+        { /* {LogPrefix} FetchDialogue start | client={clientId} npcId={clientData.npc_id} playerId={userId} url={apiBase}/api/npc/interact */ }
 
         using var req = PostJson($"{apiBase}/api/npc/interact", body);
         if (!string.IsNullOrEmpty(jwtToken))
@@ -305,14 +305,14 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             if (!string.IsNullOrWhiteSpace(dialogueText))
                 clientData.dialogue_text = dialogueText;
 
-            Debug.Log($"{LogPrefix} FetchDialogue success | client={clientId} npcId={clientData.npc_id} dialogue='{clientData.dialogue_text}' menuItems='{clientData.menu_items}'", this);
+            { /* {LogPrefix} FetchDialogue success | client={clientId} npcId={clientData.npc_id} dialogue='{clientData.dialogue_text}' menuItems='{clientData.menu_items}' */ }
         }
         else
         {
-            Debug.LogWarning($"{LogPrefix} FetchDialogue failed | client={clientId} npcId={clientData.npc_id} error={req.error} response={req.downloadHandler?.text}", this);
+            { /* Cảnh báo: {LogPrefix} FetchDialogue failed | client={clientId} npcId={clientData.npc_id} error={req.error} response={req.downloadHandler?.text} */ }
         }
 
-        Debug.Log($"{LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}'", this);
+        { /* {LogPrefix} OpenMenuClientRpc send | client={clientId} npcId={clientData.npc_id} type='{clientData.npc_type}' */ }
         OpenMenuClientRpc(JsonUtility.ToJson(clientData), TargetClient(clientId));
     }
 
@@ -320,7 +320,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private void OpenMenuClientRpc(string npcDataJson, ClientRpcParams clientRpcParams = default)
     {
         var data = JsonUtility.FromJson<NpcData>(npcDataJson);
-        Debug.Log($"{LogPrefix} OpenMenuClientRpc received | {DescribeNpcForLog(data)} menuFound=true state={DescribeClientState()}", this);
+        { /* {LogPrefix} OpenMenuClientRpc received | {DescribeNpcForLog(data)} menuFound=true state={DescribeClientState()} */ }
 
         // Nếu server trả về menu_items → hiện NpcDynamicMenuUI (server-driven)
         if (!string.IsNullOrWhiteSpace(data?.menu_items))
@@ -331,12 +331,12 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 dynMenu.Open(data, this);
                 return;
             }
-            Debug.LogWarning($"{LogPrefix} NpcDynamicMenuUI not found — fallback to NpcMenuUI.", this);
+            { /* Cảnh báo: {LogPrefix} NpcDynamicMenuUI not found  fallback to NpcMenuUI */ }
         }
 
         // Fallback: menu cũ theo npc_type
         var menu = NpcMenuUI.GetOrFind();
-        Debug.Log($"{LogPrefix} OpenMenuClientRpc fallback to NpcMenuUI | menuFound={menu != null}", this);
+        { /* {LogPrefix} OpenMenuClientRpc fallback to NpcMenuUI | menuFound={menu != null} */ }
         menu?.Open(data, this);
     }
 
@@ -432,14 +432,14 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         string menuItemsRaw = NpcMenuConfig.GetMenuItems(data?.npc_id ?? 0, data?.npc_type ?? "");
         if (string.IsNullOrWhiteSpace(menuItemsRaw))
         {
-            Debug.LogWarning($"{LogPrefix} SelectMenuItemServerRpc: no menu_items | npcId={data?.npc_id}", this);
+            { /* Cảnh báo: {LogPrefix} SelectMenuItemServerRpc: no menu_items | npcId={data?.npc_id} */ }
             return;
         }
 
         string[] items = menuItemsRaw.Split(';');
         if (menuIndex < 0 || menuIndex >= items.Length)
         {
-            Debug.LogWarning($"{LogPrefix} SelectMenuItemServerRpc: invalid index={menuIndex} count={items.Length}", this);
+            { /* Cảnh báo: {LogPrefix} SelectMenuItemServerRpc: invalid index={menuIndex} count={items.Length} */ }
             return;
         }
 
@@ -447,7 +447,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int    colonIdx   = item.IndexOf(':');
         string actionType = colonIdx >= 0 ? item.Substring(colonIdx + 1).Trim() : item.Trim();
 
-        Debug.Log($"{LogPrefix} SelectMenuItemServerRpc | client={clientId} idx={menuIndex} action='{actionType}'", this);
+        { /* {LogPrefix} SelectMenuItemServerRpc | client={clientId} idx={menuIndex} action='{actionType}' */ }
 
         switch (actionType.ToLowerInvariant())
         {
@@ -515,7 +515,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 var panel = GeneUpgradePanel.Instance
                     ?? UnityEngine.Object.FindObjectOfType<GeneUpgradePanel>(true);
                 if (panel != null) panel.Open();
-                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene!");
+                else { /* Cảnh báo: {LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene */ }
                 break;
             }
             case "open_secondary_select":
@@ -523,7 +523,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 var panel = SecondaryGeneSelectPanel.Instance
                     ?? UnityEngine.Object.FindObjectOfType<SecondaryGeneSelectPanel>(true);
                 if (panel != null) panel.Open();
-                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: SecondaryGeneSelectPanel không tìm thấy trong scene!");
+                else { /* Cảnh báo: {LogPrefix} ExecuteMenuAction: SecondaryGeneSelectPanel không tìm thấy trong scene */ }
                 break;
             }
             case "open_secondary_upgrade":
@@ -531,7 +531,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 var panel = GeneUpgradePanel.Instance
                     ?? UnityEngine.Object.FindObjectOfType<GeneUpgradePanel>(true);
                 if (panel != null) panel.OpenForSecondary();
-                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene!");
+                else { /* Cảnh báo: {LogPrefix} ExecuteMenuAction: GeneUpgradePanel không tìm thấy trong scene */ }
                 break;
             }
             case "open_hybrid_fusion":
@@ -549,7 +549,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                     }
                 }
                 if (panel != null) panel.Open();
-                else Debug.LogWarning($"{LogPrefix} ExecuteMenuAction: HybridFusionPanel không tìm thấy!");
+                else { /* Cảnh báo: {LogPrefix} ExecuteMenuAction: HybridFusionPanel không tìm thấy */ }
                 break;
             }
             case "open_dungeon":
@@ -585,7 +585,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
         if (data == null)
         {
-            Debug.LogWarning("[Buy] NpcData null — không thể mua.");
+            { /* Cảnh báo: NpcData null  không thể mua */ }
             SendBuyResult(clientId, false, "Lỗi: NPC data không tồn tại.", 0);
             yield break;
         }
@@ -593,7 +593,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         string jwtToken = ResolveClientJwt(clientId);
         if (string.IsNullOrEmpty(jwtToken))
         {
-            Debug.LogWarning("[Buy] JWT_TOKEN trống — chưa đăng nhập.");
+            { /* Cảnh báo: JWT_TOKEN trống  chưa đăng nhập */ }
             SendBuyResult(clientId, false, "Chưa đăng nhập. Vui lòng đăng nhập lại.", 0);
             yield break;
         }
@@ -606,13 +606,13 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             quantity   = quantity
         });
 
-        Debug.Log($"[Buy] POST {apiBase}/api/npc/shop/buy  body={body}  userId={userId}");
+        { /* POST {apiBase}/api/npc/shop/buy  body={body}  userId={userId} */ }
 
         using var req = PostJson($"{apiBase}/api/npc/shop/buy", body);
         req.SetRequestHeader("Authorization", $"Bearer {jwtToken}");
         yield return req.SendWebRequest();
 
-        Debug.Log($"[Buy] Response: {req.responseCode}  {req.downloadHandler?.text}");
+        { /* Response: {req.responseCode}  {req.downloadHandler?.text} */ }
 
         if (req.result == UnityWebRequest.Result.Success)
         {
@@ -708,11 +708,11 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         int dbPlayerId = playerSync != null ? playerSync.networkPlayerId.Value : ResolveClientUserId(clientId);
         if (dbPlayerId <= 0)
         {
-            Debug.LogWarning($"[QuestTalk] BỎ QUA: không resolve được playerId cho clientId={clientId} npcId={data.npc_id}", this);
+            { /* Cảnh báo: BỎ QUA: không resolve được playerId cho clientId={clientId} npcId={data.npc_id} */ }
             return;
         }
 
-        Debug.Log($"[QuestTalk] → gọi QuestProgressReporter.Report Talk playerId={dbPlayerId} npcId={data.npc_id}", this);
+        { /* → gọi QuestProgressReporter.Report Talk playerId={dbPlayerId} npcId={data.npc_id} */ }
         QuestProgressReporter.Report(this, dbPlayerId, QuestProgressReporter.ProgressType.Talk, data.npc_id, 1,
             () => playerSync?.NotifyQuestProgressOnServer("talk"));
     }
@@ -802,7 +802,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private void ShowActionResultClientRpc(bool success, string message, string playerDataJson,
                                            ClientRpcParams clientRpcParams = default)
     {
-        Debug.Log($"{LogPrefix} ActionResult success={success} msg='{message}'", this);
+        { /* {LogPrefix} ActionResult success={success} msg='{message}' */ }
 
         // Hiện thông báo trên UI
         GlobalNotificationUI.Show(message, success ? "Thành công" : "Thông báo", 3f);
@@ -815,13 +815,13 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 var pd = JsonUtility.FromJson<NpcAction.NpcActionPlayerData>(playerDataJson);
                 if (pd != null)
                 {
-                    Debug.Log($"{LogPrefix} Player data updated gold={pd.gold} silver={pd.silver} level={pd.level}");
+                    { /* {LogPrefix} Player data updated gold={pd.gold} silver={pd.silver} level={pd.level} */ }
                     // TODO: khi có GoldHUD / StatsHUD, gọi cập nhật ở đây
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"{LogPrefix} ShowActionResultClientRpc: parse playerData failed: {ex.Message}");
+                { /* Cảnh báo: {LogPrefix} ShowActionResultClientRpc: parse playerData failed: {ex.Message} */ }
             }
         }
     }

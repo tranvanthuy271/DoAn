@@ -51,10 +51,7 @@ public static class BuildSizeOptimizer
             }
         }
 
-        Debug.Log(
-            $"[BuildSizeOptimizer] Resources textures: {textureCount:n0} files, " +
-            $"source PNG/JPG size: {ToMb(sourceBytes):n1} MB, icons: {iconCount:n0}, loading frames: {loadingCount:n0}. " +
-            "Everything inside Assets/Resources is included in player builds.");
+        { /* Resources textures: {textureCount:n0} files */ }
     }
 
     [MenuItem(MenuRoot + "Apply Conservative Resources Texture Settings")]
@@ -141,7 +138,7 @@ public static class BuildSizeOptimizer
             AssetDatabase.Refresh();
         }
 
-        Debug.Log($"[BuildSizeOptimizer] Applied texture build-size settings to {changed:n0} Resources texture(s).");
+        { /* Applied texture build-size settings to {changed:n0} Resources texture(s) */ }
     }
 
     [MenuItem(MenuRoot + "Apply Release Player Size Settings")]
@@ -162,7 +159,7 @@ public static class BuildSizeOptimizer
         ApplyReleasePlayerSizeSettingsCore();
 
         AssetDatabase.SaveAssets();
-        Debug.Log("[BuildSizeOptimizer] Applied release player size settings.");
+        { /* Applied release player size settings */ }
     }
 
     [MenuItem(MenuRoot + "Fix iOS App Store Icon")]
@@ -171,7 +168,7 @@ public static class BuildSizeOptimizer
         Texture2D icon = EnsureAppStoreIconAsset();
         ApplyIosAppStoreIcon(icon);
         AssetDatabase.SaveAssets();
-        Debug.Log("[BuildSizeOptimizer] Applied iOS App Store icon.");
+        { /* Applied iOS App Store icon */ }
     }
 
     internal static void EnsureAndroidBuildSettings()
@@ -184,7 +181,7 @@ public static class BuildSizeOptimizer
         if (PlayerSettings.Android.targetArchitectures == (AndroidArchitecture)0)
         {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-            Debug.Log("[BuildSizeOptimizer] Android target architecture was empty; set to ARM64.");
+            { /* Android target architecture was empty; set to ARM64 */ }
         }
     }
 

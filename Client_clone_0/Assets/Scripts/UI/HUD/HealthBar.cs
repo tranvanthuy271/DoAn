@@ -25,9 +25,9 @@ public class HealthBar : MonoBehaviour
     {
         // Kiểm tra UI references
         if (healthSlider == null)
-            Debug.LogError("[HealthBar] THIẾU: 'Health Slider' chưa được gán trong Inspector!", this);
+            { /* Lỗi: THIẾU: 'Health Slider' chưa được gán trong Inspector */ }
         if (fillImage == null)
-            Debug.LogWarning("[HealthBar] THIẾU: 'Fill Image' chưa được gán — slider sẽ không đổi màu.", this);
+            { /* Cảnh báo: THIẾU: 'Fill Image' chưa được gán  slider sẽ không đổi màu */ }
 
         if (healthSlider != null)
         {
@@ -72,14 +72,11 @@ public class HealthBar : MonoBehaviour
             _retryCount++;
             // Log every ~3 s (10 retries × 0.3 s)
             if (_retryCount % 10 == 1)
-                Debug.LogWarning($"[HealthBar] Chờ player spawn... retry #{_retryCount} | " +
-                                 $"totalFound={allSyncs.Length} " +
-                                 $"spawned={System.Array.FindAll(allSyncs, s => s.IsSpawned).Length} " +
-                                 $"owned={System.Array.FindAll(allSyncs, s => s.IsSpawned && s.IsOwner).Length}");
+                { /* Cảnh báo: Chờ player spawn... retry #{_retryCount} | */ }
             return;
         }
 
-        Debug.Log($"[HealthBar] Bind local player '{dataSync.gameObject.name}' — HP: {dataSync.networkHp.Value}/{dataSync.networkMaxHp.Value}");
+        { /* Bind local player '{dataSync.gameObject.name}'  HP: {dataSync.networkHp.Value}/{dataSync.networkMaxHp.Value} */ }
         dataSync.networkHp.OnValueChanged    += OnHpChanged;
         dataSync.networkMaxHp.OnValueChanged += OnMaxHpChanged;
         UpdateBar(dataSync.networkHp.Value, dataSync.networkMaxHp.Value);
@@ -110,12 +107,12 @@ public class HealthBar : MonoBehaviour
     {
         if (max <= 0)
         {
-            Debug.LogWarning($"[HealthBar] networkMaxHp = {max} — chưa có data từ server, bỏ qua update.");
+            { /* Cảnh báo: networkMaxHp = {max}  chưa có data từ server, bỏ qua update */ }
             return;
         }
 
         float pct = (float)current / max;
-        Debug.Log($"[HealthBar] Cập nhật: {current}/{max} ({pct * 100:F0}%)");
+        { /* Cập nhật: {current}/{max} ({pct * 100:F0}%) */ }
 
         if (healthSlider != null)
             healthSlider.value = pct;

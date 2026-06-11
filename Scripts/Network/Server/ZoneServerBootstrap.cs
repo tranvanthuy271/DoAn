@@ -34,7 +34,7 @@ public class ZoneServerBootstrap : MonoBehaviour
     {
         if (_config == null)
         {
-            Debug.LogError("[ZoneServerBootstrap] Chưa gán ZoneServerConfig! Hủy khởi động.");
+            { /* Lỗi: Chưa gán ZoneServerConfig! Hủy khởi động */ }
             enabled = false;
             return;
         }
@@ -55,7 +55,7 @@ public class ZoneServerBootstrap : MonoBehaviour
 #if UNITY_SERVER || ZONE_SERVER || UNITY_EDITOR
         StartCoroutine(StartServerRoutine());
 #else
-        Debug.LogWarning("[ZoneServerBootstrap] Không phải server build — script bị vô hiệu hóa.");
+        { /* Cảnh báo: Không phải server build  script bị vô hiệu hóa */ }
         enabled = false;
 #endif
     }
@@ -72,8 +72,7 @@ public class ZoneServerBootstrap : MonoBehaviour
             ReadArg(arg, "--apiUrl=",   v => _apiBaseUrl = v);
         }
 
-        Debug.Log($"[ZoneServerBootstrap] Config => map={_mapId} zone={_zoneId} " +
-                  $"port={_port} publicIp={_publicIp} api={_apiBaseUrl}");
+        { /* Config => map={_mapId} zone={_zoneId} */ }
     }
 
     private static void ReadArg(string arg, string prefix, Action<string> setter)
@@ -94,7 +93,7 @@ public class ZoneServerBootstrap : MonoBehaviour
 
         if (transport == null)
         {
-            Debug.LogError("[ZoneServerBootstrap] UnityTransport không tìm thấy trên NetworkManager!");
+            { /* Lỗi: UnityTransport không tìm thấy trên NetworkManager */ }
             yield break;
         }
 
@@ -109,13 +108,11 @@ public class ZoneServerBootstrap : MonoBehaviour
         bool started = NetworkManager.Singleton.StartServer();
         if (!started)
         {
-            Debug.LogError($"[ZoneServerBootstrap] Không thể StartServer() trên port {_port}. " +
-                           "Kiểm tra port có đang bị dùng không.");
+            { /* Lỗi: Không thể StartServer() trên port {_port} */ }
             yield break;
         }
 
-        Debug.Log($"[ZoneServerBootstrap] ✓ Server started — " +
-                  $"map={_mapId} zone={_zoneId} port={_port}");
+        { /* ✓ Server started */ }
 
         // 4 — Register zone server với API
         yield return StartCoroutine(RegisterWithApiRoutine());
@@ -147,19 +144,16 @@ public class ZoneServerBootstrap : MonoBehaviour
 
             if (success)
             {
-                Debug.Log($"[ZoneServerBootstrap] ✓ Đã đăng ký zone server với API.");
+                { /* ✓ Đã đăng ký zone server với API */ }
                 yield break;
             }
 
             retries++;
-            Debug.LogWarning($"[ZoneServerBootstrap] Đăng ký API thất bại " +
-                             $"(lần {retries}/{_maxRegistrationRetries}). " +
-                             $"Thử lại sau {_registrationRetryDelay}s...");
+            { /* Cảnh báo: Đăng ký API thất bại */ }
             yield return new WaitForSeconds(_registrationRetryDelay);
         }
 
-        Debug.LogError("[ZoneServerBootstrap] Không thể đăng ký với API sau tất cả retry. " +
-                       "Kiểm tra API server đang chạy và apiBaseUrl đúng.");
+        { /* Lỗi: Không thể đăng ký với API sau tất cả retry */ }
     }
 
     private void OnApplicationQuit()

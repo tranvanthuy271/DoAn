@@ -198,7 +198,7 @@ public class WindStepSkill : NetworkBehaviour
                 return;
             }
         }
-        Debug.LogWarning("[WindStepSkill] Animator không có Trigger 'Skill3'.");
+        { /* Cảnh báo: Animator không có Trigger 'Skill3' */ }
     }
     // Kích hoạt animation attack của nhân vật (phong.controller) trên TẤT CẢ client.
     [ClientRpc]

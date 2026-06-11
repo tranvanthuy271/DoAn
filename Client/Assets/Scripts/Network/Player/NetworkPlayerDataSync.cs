@@ -55,14 +55,11 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         base.OnNetworkSpawn();
 
-        Debug.Log($"[NetworkPlayerDataSync] OnNetworkSpawn {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
+        { /* OnNetworkSpawn {BuildNetworkIdentity()} state={BuildStateSnapshot()} */ }
 
         if (!IsServer && IsOwner)
         {
-            Debug.Log($"[NetworkPlayerDataSync] *** CLIENT RECEIVED OWN PLAYER OBJECT *** " +
-                      $"netId={NetworkObjectId} owner={OwnerClientId} localClientId={NetworkManager.LocalClientId} " +
-                      $"HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} " +
-                      $"name={networkCharacterName.Value} element={networkElementType.Value}");
+            { /* *** CLIENT RECEIVED OWN PLAYER OBJECT *** */ }
         }
 
         if (IsServer)
@@ -106,7 +103,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         // Apply data ngay lập tức
         ApplyPlayerData();
-        Debug.Log($"[NetworkPlayerDataSync] OnNetworkSpawn applied initial data {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
+        { /* OnNetworkSpawn applied initial data {BuildNetworkIdentity()} state={BuildStateSnapshot()} */ }
     }
 
     // Client: Gửi auth (userId + token) lên server ngay khi player spawn
@@ -118,16 +115,16 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         if (string.IsNullOrEmpty(token) || userId == 0)
         {
-            Debug.LogError($"[NetworkPlayerDataSync] ✗ Cannot send auth - JWT_TOKEN or USER_ID not found!");
-            Debug.LogError($"[NetworkPlayerDataSync] Token empty: {string.IsNullOrEmpty(token)}, UserId: {userId}");
+            { /* Lỗi: ✗ Cannot send auth - JWT_TOKEN or USER_ID not found */ }
+            { /* Lỗi: Token empty: {string.IsNullOrEmpty(token)}, UserId: {userId} */ }
             return;
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] ===== SENDING AUTH TO SERVER =====");
-        Debug.Log($"[NetworkPlayerDataSync] UserId: {userId}");
-        Debug.Log($"[NetworkPlayerDataSync] Token length: {token.Length}");
-        Debug.Log($"[NetworkPlayerDataSync] OwnerClientId: {OwnerClientId}");
-        Debug.Log($"[NetworkPlayerDataSync] Calling SendAuthServerRpc...");
+        { /* ===== SENDING AUTH TO SERVER ===== */ }
+        { /* UserId: {userId} */ }
+        { /* Token length: {token.Length} */ }
+        { /* OwnerClientId: {OwnerClientId} */ }
+        { /* Calling SendAuthServerRpc */ }
 
         SendAuthServerRpc(token, userId, geneSlot);
     }
@@ -138,53 +135,53 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         var senderClientId = rpcParams.Receive.SenderClientId;
 
-        Debug.Log("\n\n\n");
-        Debug.Log("█████████████████████████████████████████████████████");
-        Debug.Log("█████████████████████████████████████████████████████");
-        Debug.Log("███ 🎯 AUTH SERVERRPC RECEIVED ON HOST!!! 🎯 ███");
-        Debug.Log("█████████████████████████████████████████████████████");
-        Debug.Log("█████████████████████████████████████████████████████");
-        Debug.Log($"[HOST/SERVER] Time: {Time.time}");
-        Debug.Log($"[HOST/SERVER] Frame: {Time.frameCount}");
-        Debug.Log($"[HOST/SERVER] SenderClientId: {senderClientId}");
-        Debug.Log($"[HOST/SERVER] UserId: {userId}");
-        Debug.Log($"[HOST/SERVER] Token length: {token?.Length ?? 0}");
+        { /* \n\n\n */ }
+        { /* █████████████████████████████████████████████████████ */ }
+        { /* █████████████████████████████████████████████████████ */ }
+        { /* ███ 🎯 AUTH SERVERRPC RECEIVED ON HOST!!! 🎯 ███ */ }
+        { /* █████████████████████████████████████████████████████ */ }
+        { /* █████████████████████████████████████████████████████ */ }
+        { /* Time: {Time.time} */ }
+        { /* Frame: {Time.frameCount} */ }
+        { /* SenderClientId: {senderClientId} */ }
+        { /* UserId: {userId} */ }
+        { /* Token length: {token?.Length ?? 0} */ }
 
         // Load player data từ API
         if (ServerPlayerDataManager.Instance != null)
         {
-            Debug.Log("[NetworkPlayerDataSync] ===== CALLING SERVERPLAYERDATAMANAGER =====");
-            Debug.Log($"[NetworkPlayerDataSync] Parameters - ClientId: {senderClientId}, UserId: {userId}");
+            { /* ===== CALLING SERVERPLAYERDATAMANAGER ===== */ }
+            { /* Parameters - ClientId: {senderClientId}, UserId: {userId} */ }
 
             ServerPlayerDataManager.Instance.LoadPlayerDataForClient(
                 senderClientId,
                 userId,
                 onSuccess: (playerData) =>
                 {
-                    Debug.Log("[NetworkPlayerDataSync] ===== PLAYER DATA LOADED SUCCESSFULLY =====");
-                    Debug.Log($"[NetworkPlayerDataSync] ✓ ClientId: {senderClientId}");
-                    Debug.Log($"[NetworkPlayerDataSync] ✓ Character: {playerData.character_name}");
-                    Debug.Log($"[NetworkPlayerDataSync] ✓ Element: {playerData.element_type}");
-                    Debug.Log($"[NetworkPlayerDataSync] ✓ Gender: {playerData.gender}");
-                    Debug.Log($"[NetworkPlayerDataSync] ✓ Level: {playerData.level}");
+                    { /* ===== PLAYER DATA LOADED SUCCESSFULLY ===== */ }
+                    { /* ✓ ClientId: {senderClientId} */ }
+                    { /* ✓ Character: {playerData.character_name} */ }
+                    { /* ✓ Element: {playerData.element_type} */ }
+                    { /* ✓ Gender: {playerData.gender} */ }
+                    { /* ✓ Level: {playerData.level} */ }
 
                     // Update NetworkVariables với player data mới load
                     UpdateNetworkVariablesFromPlayerData(playerData);
                 },
                 onError: (error) =>
                 {
-                    Debug.LogError("[NetworkPlayerDataSync] ===== FAILED TO LOAD PLAYER DATA =====");
-                    Debug.LogError($"[NetworkPlayerDataSync] ✗ ClientId: {senderClientId}");
-                    Debug.LogError($"[NetworkPlayerDataSync] ✗ UserId: {userId}");
-                    Debug.LogError($"[NetworkPlayerDataSync] ✗ Error: {error}");
+                    { /* Lỗi: ===== FAILED TO LOAD PLAYER DATA ===== */ }
+                    { /* Lỗi: ✗ ClientId: {senderClientId} */ }
+                    { /* Lỗi: ✗ UserId: {userId} */ }
+                    { /* Lỗi: ✗ Error: {error} */ }
                 },
                 geneSlot: geneSlot
             );
         }
         else
         {
-            Debug.LogError("[NetworkPlayerDataSync] ===== SERVERPLAYERDATAMANAGER IS NULL =====");
-            Debug.LogError($"[NetworkPlayerDataSync] ✗ Cannot load player data for clientId: {senderClientId}, userId: {userId}");
+            { /* Lỗi: ===== SERVERPLAYERDATAMANAGER IS NULL ===== */ }
+            { /* Lỗi: ✗ Cannot load player data for clientId: {senderClientId}, userId: {userId} */ }
         }
     }
 
@@ -193,11 +190,11 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         if (playerData == null)
         {
-            Debug.LogWarning($"[NetworkPlayerDataSync] UpdateNetworkVariablesFromPlayerData ignored null data. {BuildNetworkIdentity()}");
+            { /* Cảnh báo: UpdateNetworkVariablesFromPlayerData ignored null data. {BuildNetworkIdentity()} */ }
             return;
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] UpdateNetworkVariablesFromPlayerData {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()}");
+        { /* UpdateNetworkVariablesFromPlayerData {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()} */ }
 
         networkPlayerId.Value = playerData.player_id;
         networkElementType.Value = (FixedString32Bytes)(playerData.element_type ?? "Fire");
@@ -230,12 +227,12 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkIsUltimate.Value = playerData.is_ultimate;
         networkUltimateAuraPath.Value = (FixedString128Bytes)(playerData.ultimate_aura_path ?? "");
 
-        Debug.Log($"[NetworkPlayerDataSync] ✓ Loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
+        { /* ✓ Loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value} */ }
     }
 
     public override void OnNetworkDespawn()
     {
-        Debug.Log($"[NetworkPlayerDataSync] OnNetworkDespawn {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
+        { /* OnNetworkDespawn {BuildNetworkIdentity()} state={BuildStateSnapshot()} */ }
 
         // Unsubscribe
         networkElementType.OnValueChanged -= OnElementTypeChanged;
@@ -289,11 +286,11 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         if (playerData == null)
         {
-            Debug.LogWarning($"[NetworkPlayerDataSync] LoadPlayerDataFromGameManager: không tìm thấy player data. {BuildNetworkIdentity()}");
+            { /* Cảnh báo: LoadPlayerDataFromGameManager: không tìm thấy player data. {BuildNetworkIdentity()} */ }
             return;
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] LoadPlayerDataFromGameManager source={dataSource}: {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()}");
+        { /* LoadPlayerDataFromGameManager source={dataSource}: {DescribeIncomingData(playerData)} | {BuildNetworkIdentity()} */ }
 
         // Set NetworkVariable (chỉ server mới có quyền write)
         networkPlayerId.Value = playerData.player_id;
@@ -327,7 +324,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkIsUltimate.Value = playerData.is_ultimate;
         networkUltimateAuraPath.Value = (FixedString128Bytes)(playerData.ultimate_aura_path ?? "");
 
-        Debug.Log($"[NetworkPlayerDataSync] Server loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
+        { /* Server loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value} */ }
     }
 
     // IPlayerDataReceiver — gọi bởi ZonePlayerSessionManager ngay sau khi spawn.
@@ -336,17 +333,17 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     {
         if (!IsServer)
         {
-            Debug.LogWarning($"[NetworkPlayerDataSync] OnPlayerDataLoaded bị gọi ngoài server. {BuildNetworkIdentity()}");
+            { /* Cảnh báo: OnPlayerDataLoaded bị gọi ngoài server. {BuildNetworkIdentity()} */ }
             return;
         }
 
         if (data == null)
         {
-            Debug.LogWarning($"[NetworkPlayerDataSync] OnPlayerDataLoaded nhận data=null. {BuildNetworkIdentity()}");
+            { /* Cảnh báo: OnPlayerDataLoaded nhận data=null. {BuildNetworkIdentity()} */ }
             return;
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] OnPlayerDataLoaded received for clientId={clientId}: {DescribeIncomingData(data)} | {BuildNetworkIdentity()}");
+        { /* OnPlayerDataLoaded received for clientId={clientId}: {DescribeIncomingData(data)} | {BuildNetworkIdentity()} */ }
 
         networkPlayerId.Value      = data.player_id;
         networkElementType.Value   = (Unity.Collections.FixedString32Bytes)(data.element_type ?? "Fire");
@@ -374,7 +371,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             nph.SetHealth(networkHp.Value);
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] IPlayerDataReceiver → {data.character_name} HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} ATK={networkAttack.Value}");
+        { /* IPlayerDataReceiver → {data.character_name} HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} ATK={networkAttack.Value} */ }
     }
 
     // Apply player data vào PlayerController và các components khác
@@ -408,20 +405,20 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         // TODO: Apply element_type và gender để thay đổi sprite/visual
         ApplyVisuals();
 
-        Debug.Log($"[NetworkPlayerDataSync] ApplyPlayerData complete. hasPlayerController={playerController != null}, hasStats={playerController?.stats != null}, hasPlayerHealth={playerHealth != null} | {BuildNetworkIdentity()} | state={BuildStateSnapshot()}");
+        { /* ApplyPlayerData complete. hasPlayerController={playerController != null}, hasStats={playerController?.stats != null}, hasPlayerHealth={playerHealth != null} | {BuildNetworkIdentity()} | state={BuildStateSnapshot()} */ }
     }
 
     // Thay đổi visual (sprite, animator) dựa trên element_type + gender
     private void ApplyVisuals()
     {
-        Debug.Log($"[NetworkPlayerDataSync] ApplyVisuals element={networkElementType.Value}, gender={networkGender.Value}, character={networkCharacterName.Value} | {BuildNetworkIdentity()}");
+        { /* ApplyVisuals element={networkElementType.Value}, gender={networkGender.Value}, character={networkCharacterName.Value} | {BuildNetworkIdentity()} */ }
     }
 
     #region NetworkVariable Change Callbacks
 
     private void OnElementTypeChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] Element type changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
+        { /* Element type changed: {oldValue} → {newValue} | {BuildNetworkIdentity()} */ }
         ApplyVisuals();
         // Đổi hệ → cập nhật aura Tối Thượng theo hệ mới
         RefreshUltimateAura();
@@ -429,18 +426,18 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
     private void OnGenderChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] Gender changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
+        { /* Gender changed: {oldValue} → {newValue} | {BuildNetworkIdentity()} */ }
         ApplyVisuals();
     }
 
     private void OnCharacterNameChanged(FixedString64Bytes oldValue, FixedString64Bytes newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] Character name changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
+        { /* Character name changed: {oldValue} → {newValue} | {BuildNetworkIdentity()} */ }
     }
 
     private void OnLevelChanged(int oldValue, int newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] Level changed: {oldValue} → {newValue} | {BuildNetworkIdentity()}");
+        { /* Level changed: {oldValue} → {newValue} | {BuildNetworkIdentity()} */ }
     }
 
     private string BuildNetworkIdentity()
@@ -466,7 +463,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
     private void OnHpChanged(int oldValue, int newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] HP: {oldValue} → {newValue}/{networkMaxHp.Value}");
+        { /* HP: {oldValue} → {newValue}/{networkMaxHp.Value} */ }
         // Only server should write to NetworkPlayerHealth — clients must not send SetHealthServerRpc
         // with stale default values (which would overwrite correct server state)
         if (IsServer && playerHealth != null)
@@ -478,7 +475,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
     private void OnMpChanged(int oldValue, int newValue)
     {
-        Debug.Log($"[NetworkPlayerDataSync] MP: {oldValue} → {newValue}/{networkMaxMp.Value}");
+        { /* MP: {oldValue} → {newValue}/{networkMaxMp.Value} */ }
         if (IsOwner) SyncStatToGameManagerAndUI();
     }
 
@@ -612,7 +609,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         networkDefense.Value       = defense;
         networkMoveSpeed.Value     = moveSpeed;
         networkGeneTier.Value      = geneTier;
-        Debug.Log($"[NetworkPlayerDataSync] ServerRpc: stats updated → atk={attack} def={defense} maxHp={maxHp} spd={moveSpeed} tier={geneTier}");
+        { /* ServerRpc: stats updated → atk={attack} def={defense} maxHp={maxHp} spd={moveSpeed} tier={geneTier} */ }
     }
 
     // ServerRpc nhẹ: chỉ cập nhật Max HP / Max MP (dùng sau khi HpBuff / MpBuff áp dụng).
@@ -629,7 +626,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             if (nph != null) nph.SetMaxHealth(newMaxHp);
         }
 
-        Debug.Log($"[NetworkPlayerDataSync] UpdateMaxHpMp → maxHp={newMaxHp} maxMp={newMaxMp}");
+        { /* UpdateMaxHpMp → maxHp={newMaxHp} maxMp={newMaxMp} */ }
     }
 
     // Get player data (để hiển thị trong UI, name tag, etc.)
@@ -645,7 +642,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public void ConsumeMpServerRpc(int amount)
     {
         networkMp.Value = Mathf.Max(0, networkMp.Value - amount);
-        Debug.Log($"[NetworkPlayerDataSync] ConsumeMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
+        { /* ConsumeMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value} */ }
     }
 
     // Hồi MP (bình mana). Chỉ owner gọi.
@@ -653,7 +650,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public void RestoreMpServerRpc(int amount)
     {
         networkMp.Value = Mathf.Min(networkMaxMp.Value, networkMp.Value + amount);
-        Debug.Log($"[NetworkPlayerDataSync] RestoreMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
+        { /* RestoreMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value} */ }
     }
 
     // Hồi HP (bình máu). Chỉ owner gọi.
@@ -661,7 +658,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public void RestoreHpServerRpc(int amount)
     {
         networkHp.Value = Mathf.Min(networkMaxHp.Value, networkHp.Value + amount);
-        Debug.Log($"[NetworkPlayerDataSync] RestoreHp {amount} → HP={networkHp.Value}/{networkMaxHp.Value}");
+        { /* RestoreHp {amount} → HP={networkHp.Value}/{networkMaxHp.Value} */ }
     }
 
     //  EXP AWARD (gọi từ NetworkEnemyHealth khi quái chết)
@@ -675,7 +672,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         if (playerId <= 0 || expAmount <= 0) return;
 
         int ultimateExp = enemyMaxHp > 0 ? enemyMaxHp : expAmount;
-        Debug.Log($"[NetworkPlayerDataSync] AwardExp +{expAmount} EXP, ultimateExp={ultimateExp} cho playerId={playerId} (clientId={OwnerClientId})");
+        { /* AwardExp +{expAmount} EXP, ultimateExp={ultimateExp} cho playerId={playerId} (clientId={OwnerClientId}) */ }
         StartCoroutine(GainExpCoroutine(playerId, expAmount, ultimateExp));
     }
 
@@ -718,7 +715,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
         if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            Debug.Log($"[NetworkPlayerDataSync] GainExp OK: {req.downloadHandler.text}");
+            { /* GainExp OK: {req.downloadHandler.text} */ }
 
             // Parse JSON response để lấy level mới
             var resp = JsonUtility.FromJson<GainExpResponse>(req.downloadHandler.text);
@@ -727,7 +724,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             if (resp != null && resp.level > 0 && resp.level != networkLevel.Value)
             {
                 networkLevel.Value = resp.level;
-                Debug.Log($"[NetworkPlayerDataSync] networkLevel cập nhật → {resp.level}");
+                { /* networkLevel cập nhật → {resp.level} */ }
             }
 
             // Gene Tối Thượng vừa kích hoạt từ việc giết quái → bật aura ngay cho mọi client
@@ -736,7 +733,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
                 networkIsUltimate.Value = true;
                 if (networkUltimateAuraPath.Value.Length == 0)
                     networkUltimateAuraPath.Value = (FixedString128Bytes)"Prefabs/Player/Aura/UltimateAura";
-                Debug.Log($"[NetworkPlayerDataSync] ✨ Gene Tối Thượng KÍCH HOẠT cho playerId={playerId}!");
+                { /* ✨ Gene Tối Thượng KÍCH HOẠT cho playerId={playerId} */ }
             }
 
             int newLevel  = resp != null ? resp.level : networkLevel.Value;
@@ -750,7 +747,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         }
         else
         {
-            Debug.LogError($"[NetworkPlayerDataSync] GainExp FAIL playerId={playerId}: {req.downloadHandler?.text ?? req.error}");
+            { /* Lỗi: GainExp FAIL playerId={playerId}: {req.downloadHandler?.text ?? req.error} */ }
         }
     }
 
@@ -759,9 +756,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     private void NotifyExpGainClientRpc(int expAmount, int newLevel, bool leveledUp, ClientRpcParams rpcParams = default)
     {
         if (leveledUp)
-            Debug.Log($"[NetworkPlayerDataSync] LEVEL UP! Level {newLevel}! (+{expAmount} EXP)");
+            { /* LEVEL UP! Level {newLevel}! (+{expAmount} EXP) */ }
         else
-            Debug.Log($"[NetworkPlayerDataSync] +{expAmount} EXP từ kill quái! Level={newLevel}");
+            { /* +{expAmount} EXP từ kill quái! Level={newLevel} */ }
         // Refresh stats UI nếu đang mở
         if (IsOwner)
             FindObjectOfType<StatsTabUI>()?.Load();
@@ -779,7 +776,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public void NotifyQuestProgressOnServer(string source = "unknown")
     {
         if (!IsServer) return;
-        Debug.Log($"[NetworkPlayerDataSync] NotifyQuestProgressOnServer source={source} → gửi ClientRpc đến clientId={OwnerClientId}");
+        { /* NotifyQuestProgressOnServer source={source} → gửi ClientRpc đến clientId={OwnerClientId} */ }
         NotifyQuestRefreshClientRpc(new ClientRpcParams
         {
             Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
@@ -789,7 +786,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     [ClientRpc]
     private void NotifyQuestRefreshClientRpc(ClientRpcParams _ = default)
     {
-        Debug.Log("[NetworkPlayerDataSync] NotifyQuestRefresh nhận được → RefreshPlayerOverview()");
+        { /* NotifyQuestRefresh nhận được → RefreshPlayerOverview() */ }
         QuestManager.Instance?.RefreshPlayerOverview();
     }
 
@@ -824,7 +821,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public void SyncPartyIdServerRpc(string partyId, ServerRpcParams rpc = default)
     {
         networkPartyId.Value = new FixedString64Bytes(partyId ?? string.Empty);
-        Debug.Log($"[NetworkPlayerDataSync] SyncPartyId clientId={rpc.Receive.SenderClientId} partyId={partyId}");
+        { /* SyncPartyId clientId={rpc.Receive.SenderClientId} partyId={partyId} */ }
     }
 
     // Kiểm tra xem NetworkObject khác có cùng party với object này không.

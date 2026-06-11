@@ -45,7 +45,7 @@ public class AutoEquipDebugger : MonoBehaviour
         var runtimeObject = new GameObject("AutoEquipDebugger_Runtime");
         runtimeObject.AddComponent<AutoEquipDebugger>();
         DontDestroyOnLoad(runtimeObject);
-        Debug.Log("[AutoEquipDebugger] Runtime bootstrap created automatically.");
+        { /* Runtime bootstrap created automatically */ }
     }
 
     private void Update()
@@ -66,15 +66,12 @@ public class AutoEquipDebugger : MonoBehaviour
     private IEnumerator AddStonesToInventory()
     {
         isBusy = true;
-        Debug.Log("[AutoEquipDebugger] ===== THÊM ĐÁ NÂNG CẤP =====\n" +
-                  $"  Đá nâng cấp (id=7): x{upgradeStoneCount}\n" +
-                  $"  Đá may mắn   (id=8): x{luckyStoneCount}\n" +
-                  $"  Đá bảo vệ   (id=9): x{protectionStoneCount}");
+        { /* ===== THÊM ĐÁ NÂNG CẤP =====\n */ }
 
         int playerId = GetPlayerId();
         if (playerId == 0)
         {
-            Debug.LogError("[AutoEquipDebugger] Không lấy được playerId!");
+            { /* Lỗi: Không lấy được playerId */ }
             isBusy = false;
             yield break;
         }
@@ -86,7 +83,7 @@ public class AutoEquipDebugger : MonoBehaviour
         {
             if (upgradeStoneItemId <= 0)
             {
-                Debug.LogError("[AutoEquipDebugger] Không tìm thấy item đá nâng cấp type=21 trong ItemTemplateManager!");
+                { /* Lỗi: Không tìm thấy item đá nâng cấp type=21 trong ItemTemplateManager */ }
                 isBusy = false;
                 yield break;
             }
@@ -112,15 +109,15 @@ public class AutoEquipDebugger : MonoBehaviour
 
         if (stones.Count == 0)
         {
-            Debug.LogWarning("[AutoEquipDebugger] Tất cả count đều = 0, không thêm gì.");
+            { /* Cảnh báo: Tất cả count đều = 0, không thêm gì */ }
             isBusy = false;
             yield break;
         }
 
         bool done = false;
         yield return StartCoroutine(AddItemsToInventoryDirect(playerId, stones.ToArray(),
-            _ => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm {stones.Count} loại đá vào túi!"); done = true; },
-            (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm đá thất bại: {err}"); done = true; }
+            _ => { { /* Đã thêm {stones.Count} loại đá vào túi */ } done = true; },
+            (err) => { { /* Lỗi: Thêm đá thất bại: {err} */ } done = true; }
         ));
         yield return new WaitUntil(() => done);
 
@@ -128,7 +125,7 @@ public class AutoEquipDebugger : MonoBehaviour
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         bridge?.RefreshInventoryFromDB();
 
-        Debug.Log("[AutoEquipDebugger] ===== XONG =====\nNhấn T lần nữa để thêm tiếp.");
+        { /* ===== XONG =====\nNhấn T lần nữa để thêm tiếp */ }
         isBusy = false;
     }
 
@@ -151,16 +148,12 @@ public class AutoEquipDebugger : MonoBehaviour
     private IEnumerator AddGeneStonesToInventory()
     {
         isBusy = true;
-        Debug.Log($"[AutoEquipDebugger] ===== THÊM LINH THẠCH GENE =====\n" +
-                  $"  Linh Thạch Sơ Cấp    (id=17): x{geneStoneCount}\n" +
-                  $"  Linh Thạch Trung Cấp (id=18): x{geneStoneCount}\n" +
-                  $"  Linh Thạch Cao Cấp   (id=19): x{geneStoneCount}\n" +
-                  $"  Linh Thạch Thượng Cấp(id=20): x{geneStoneCount}");
+        { /* ===== THÊM LINH THẠCH GENE =====\n */ }
 
         int playerId = GetPlayerId();
         if (playerId == 0)
         {
-            Debug.LogError("[AutoEquipDebugger] Không lấy được playerId!");
+            { /* Lỗi: Không lấy được playerId */ }
             isBusy = false;
             yield break;
         }
@@ -175,32 +168,32 @@ public class AutoEquipDebugger : MonoBehaviour
 
         bool done = false;
         yield return StartCoroutine(AddItemsToInventoryDirect(playerId, stones,
-            (_) => { Debug.Log($"[AutoEquipDebugger] ✅ Đã thêm 4 loại Linh Thạch x{geneStoneCount} vào túi!"); done = true; },
-            (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm Linh Thạch thất bại: {err}"); done = true; }
+            (_) => { { /* Đã thêm 4 loại Linh Thạch x{geneStoneCount} vào túi */ } done = true; },
+            (err) => { { /* Lỗi: Thêm Linh Thạch thất bại: {err} */ } done = true; }
         ));
         yield return new WaitUntil(() => done);
 
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         bridge?.RefreshInventoryFromDB();
 
-        Debug.Log("[AutoEquipDebugger] ===== XONG =====\nNhấn Y lần nữa để thêm tiếp.");
+        { /* ===== XONG =====\nNhấn Y lần nữa để thêm tiếp */ }
         isBusy = false;
     }
 
     private IEnumerator AddAndEquipAll()
     {
         isBusy = true;
-        Debug.Log("[AutoEquipDebugger] ===== THÊM ITEM VÀO TÚI ĐỒ =====");
+        { /* ===== THÊM ITEM VÀO TÚI ĐỒ ===== */ }
 
         // 1. Lấy playerId
         int playerId = GetPlayerId();
         if (playerId == 0)
         {
-            Debug.LogError("[AutoEquipDebugger] Không lấy được playerId! Chưa đăng nhập?");
+            { /* Lỗi: Không lấy được playerId! Chưa đăng nhập? */ }
             isBusy = false;
             yield break;
         }
-        Debug.Log($"[AutoEquipDebugger] playerId = {playerId}");
+        { /* playerId = {playerId} */ }
 
         // 2. Đợi ItemTemplateManager load xong
         float timeout = 8f, elapsed = 0f;
@@ -209,7 +202,7 @@ public class AutoEquipDebugger : MonoBehaviour
             elapsed += Time.deltaTime;
             if (elapsed >= timeout)
             {
-                Debug.LogError("[AutoEquipDebugger] ItemTemplateManager chưa load xong sau 8s!");
+                { /* Lỗi: ItemTemplateManager chưa load xong sau 8s */ }
                 isBusy = false;
                 yield break;
             }
@@ -233,7 +226,7 @@ public class AutoEquipDebugger : MonoBehaviour
 
             if (tmpl == null)
             {
-                Debug.LogWarning($"[AutoEquipDebugger] Không tìm thấy item nào cho type={equipType}!");
+                { /* Cảnh báo: Không tìm thấy item nào cho type={equipType} */ }
                 continue;
             }
 
@@ -242,12 +235,12 @@ public class AutoEquipDebugger : MonoBehaviour
                 itemTemplateId = tmpl.id,
                 quantity       = quantityPerItem
             });
-            Debug.Log($"[AutoEquipDebugger] Sẽ thêm: [{tmpl.name}] id={tmpl.id} type={equipType}");
+            { /* Sẽ thêm: [{tmpl.name}] id={tmpl.id} type={equipType} */ }
         }
 
         if (toAdd.Count == 0)
         {
-            Debug.LogError("[AutoEquipDebugger] Không có item nào để thêm!");
+            { /* Lỗi: Không có item nào để thêm */ }
             isBusy = false;
             yield break;
         }
@@ -256,30 +249,30 @@ public class AutoEquipDebugger : MonoBehaviour
         bool clearDone = false;
         yield return StartCoroutine(ClearInventoryDirect(playerId,
             () => { clearDone = true; },
-            (err) => { Debug.LogWarning($"[AutoEquipDebugger] Clear inventory warning: {err}"); clearDone = true; }
+            (err) => { { /* Cảnh báo: Clear inventory warning: {err} */ } clearDone = true; }
         ));
         yield return new WaitUntil(() => clearDone);
-        Debug.Log("[AutoEquipDebugger] Đã clear inventory cũ!");
+        { /* Đã clear inventory cũ */ }
 
         // 5. Gọi API thêm vào inventory
         bool addDone = false, addSuccess = false;
         yield return StartCoroutine(AddItemsToInventoryDirect(playerId, toAdd.ToArray(),
             (_) => { addSuccess = true; addDone = true; },
-            (err) => { Debug.LogError($"[AutoEquipDebugger] Thêm item thất bại: {err}"); addDone = true; }
+            (err) => { { /* Lỗi: Thêm item thất bại: {err} */ } addDone = true; }
         ));
         yield return new WaitUntil(() => addDone);
         if (!addSuccess) { isBusy = false; yield break; }
-        Debug.Log($"[AutoEquipDebugger] Đã thêm {toAdd.Count} item vào túi đồ!");
+        { /* Đã thêm {toAdd.Count} item vào túi đồ */ }
 
         // 6. Refresh UI
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         if (bridge != null)
         {
             bridge.RefreshInventoryFromDB();
-            Debug.Log("[AutoEquipDebugger] UI túi đồ đã refresh!");
+            { /* UI túi đồ đã refresh */ }
         }
 
-        Debug.Log("[AutoEquipDebugger] ===== HOÀN THÀNH =====");
+        { /* ===== HOÀN THÀNH ===== */ }
         isBusy = false;
     }
 
@@ -315,7 +308,7 @@ public class AutoEquipDebugger : MonoBehaviour
             playerId = PlayerPrefs.GetInt("USER_ID", 0);
 
         if (playerId == 0)
-            Debug.LogWarning("[AutoEquipDebugger] playerId = 0! GameManager, ServerPlayerDataManager, và PlayerPrefs đều không có dữ liệu.");
+            { /* Cảnh báo: playerId = 0! GameManager, ServerPlayerDataManager, và PlayerPrefs đều không có dữ liệu */ }
 
         return playerId;
     }

@@ -434,7 +434,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         btnUpgrade.onClick.RemoveAllListeners();
         btnUpgrade.onClick.AddListener(HandleUpgradeClicked);
 
-        Debug.Log("[SkillDetail] RebuildLayout xong.");
+        { /* RebuildLayout xong */ }
     }
 
    
@@ -464,8 +464,7 @@ public class SkillDetailPanelUI : MonoBehaviour
             iconImage.enabled = true;
 
             if (icon == null)
-                Debug.LogWarning($"[SkillDetail] Không tìm thấy icon cho '{_info.skill_name}' " +
-                                 $"(icon_id='{_info.icon_id}', skill_code='{_info.skill_code}')");
+                { /* Cảnh báo: Không tìm thấy icon cho '{_info.skill_name}' */ }
         }
 
         // Body

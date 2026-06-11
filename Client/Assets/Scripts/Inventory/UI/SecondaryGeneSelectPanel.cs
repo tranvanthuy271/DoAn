@@ -183,7 +183,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(SecondaryGeneSelectPanel));
         if (sprite == null)
         {
-            Debug.LogWarning($"[SecondaryGeneSelectPanel] Không apply được icon cho {logContext}.", this);
+            { /* Cảnh báo: Không apply được icon cho {logContext} */ }
             return;
         }
 

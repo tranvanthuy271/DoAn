@@ -21,7 +21,7 @@ public static class QuestUIBuilder
         CreateQuestHudWidget();
         CreateQuestListItemPrefab();
         AssetDatabase.Refresh();
-        Debug.Log("[QuestUIBuilder] ✓ Đã tạo toàn bộ Quest UI. Xem hướng dẫn trong Console.");
+        { /* ✓ Đã tạo toàn bộ Quest UI. Xem hướng dẫn trong Console */ }
         PrintGuide();
     }
 
@@ -31,7 +31,7 @@ public static class QuestUIBuilder
         EnsureDir(PREFAB_DIR);
         var go = BuildDialogueCanvas();
         SavePrefab(go, PREFAB_DIR, "QuestDialogueUI");
-        Debug.Log("[QuestUIBuilder] ✓ QuestDialogueUI prefab tạo xong.");
+        { /* ✓ QuestDialogueUI prefab tạo xong */ }
     }
 
     [MenuItem("DoAn/Quest/Create Quest NPC Panel")]
@@ -40,7 +40,7 @@ public static class QuestUIBuilder
         EnsureDir(PREFAB_DIR);
         var go = BuildNpcPanel();
         SavePrefab(go, PREFAB_DIR, "QuestNpcPanel");
-        Debug.Log("[QuestUIBuilder] ✓ QuestNpcPanel prefab tạo xong.");
+        { /* ✓ QuestNpcPanel prefab tạo xong */ }
     }
 
     [MenuItem("DoAn/Quest/Create Quest HUD Widget")]
@@ -49,7 +49,7 @@ public static class QuestUIBuilder
         EnsureDir(PREFAB_DIR);
         var go = BuildHudWidget();
         SavePrefab(go, PREFAB_DIR, "QuestHudWidget");
-        Debug.Log("[QuestUIBuilder] ✓ QuestHudWidget prefab tạo xong.");
+        { /* ✓ QuestHudWidget prefab tạo xong */ }
     }
 
     [MenuItem("DoAn/Quest/Create Quest List Item Prefab")]
@@ -58,7 +58,7 @@ public static class QuestUIBuilder
         EnsureDir(PREFAB_DIR + "/Quest");
         var go = BuildQuestListItem();
         SavePrefab(go, PREFAB_DIR + "/Quest", "QuestListItem");
-        Debug.Log("[QuestUIBuilder] ✓ QuestListItem prefab tạo xong.");
+        { /* ✓ QuestListItem prefab tạo xong */ }
     }
 
     //  QuestDialogueUI Canvas
@@ -442,44 +442,42 @@ public static class QuestUIBuilder
         bool success;
         PrefabUtility.SaveAsPrefabAsset(go, path, out success);
         Object.DestroyImmediate(go);
-        if (!success) Debug.LogError($"[QuestUIBuilder] Tạo prefab thất bại: {path}");
+        if (!success) { /* Lỗi: Tạo prefab thất bại: {path} */ }
     }
 
     private static void PrintGuide()
     {
-        Debug.Log(
-@"[QuestUIBuilder] === HƯỚNG DẪN CONFIG ===
+        { /* === HƯỚNG DẪN CONFIG ===
 
 Prefabs đã tạo trong Assets/Resources/UI/:
-  QuestDialogueUI.prefab  — hộp hội thoại màn đen + NPC
-  QuestNpcPanel.prefab    — danh sách nhiệm vụ khi nói chuyện với NPC
-  QuestHudWidget.prefab   — tracker góc màn hình
-  Quest/QuestListItem.prefab — item trong danh sách
+  QuestDialogueUI.prefab   hộp hội thoại màn đen + NPC
+  QuestNpcPanel.prefab     danh sách nhiệm vụ khi nói chuyện với NPC
+  QuestHudWidget.prefab    tracker góc màn hình
+  Quest/QuestListItem.prefab  item trong danh sách
 
-BƯỚC 1 — Thêm vào Scene:
+BƯỚC 1  Thêm vào Scene:
   Kéo 3 prefab (QuestDialogueUI, QuestNpcPanel, QuestHudWidget) vào Hierarchy của scene game chính.
   Chúng tự DontDestroyOnLoad / tự tìm nhau qua GetOrCreate().
 
-BƯỚC 2 — Gán QuestListItem prefab:
+BƯỚC 2  Gán QuestListItem prefab:
   Chọn QuestNpcPanel → Inspector → Quest Item Prefab → kéo QuestListItem.prefab vào.
 
-BƯỚC 3 — Đảm bảo QuestManager có trong scene:
+BƯỚC 3  Đảm bảo QuestManager có trong scene:
   Nếu chưa có, tạo GameObject 'QuestManager' và gắn component QuestManager.
 
-BƯỚC 4 — Chạy SQL migration:
+BƯỚC 4  Chạy SQL migration:
   mysql -u root -p gamedb < SQL/migrate_quest_system.sql
 
-BƯỚC 5 — Thêm NPC vào DB:
+BƯỚC 5  Thêm NPC vào DB:
   INSERT INTO npc_config (npc_id, npc_name, npc_type, map_id, pos_x, pos_y, is_active)
   VALUES (2, 'Đại Tướng Lan', 'quest', 0, 5.0, 0.0, 1)
   ON DUPLICATE KEY UPDATE npc_type='quest', is_active=1;
 
-BƯỚC 6 — Test:
+BƯỚC 6  Test:
   Đứng gần NPC quest → nói chuyện → QuestNpcPanel mở
   Click tên quest → hội thoại màn đen xuất hiện → Nhận
   HUD góc màn hình hiện 'Chính: [tên quest]'
-  Click nút '→' để auto-di chuyển đến mục tiêu
-");
+  Click nút '→' để auto-di chuyển đến mục tiêu */ }
     }
 }
 #endif

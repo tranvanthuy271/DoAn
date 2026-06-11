@@ -142,9 +142,7 @@ public class NetworkEnemyController : NetworkBehaviour
 
         if (enemyAI != null && enemyAI.debugGroundMovement && !enemyAI.canFly)
         {
-            Debug.Log(
-                $"[EnemyGravityDebug] name={gameObject.name} scene={gameObject.scene.name} isServerAuthoritative={isServerAuthoritative} usesGroundGravity={usesGroundGravity} initialGravity={initialGravityScale:F2} appliedGravity={rb.gravityScale:F2} bodyType={rb.bodyType} simulated={rb.simulated}",
-                this);
+            { /* name={gameObject.name} scene={gameObject.scene.name} isServerAuthoritative={isServerAuthoritative} usesGroundGravity={usesGroundGravity} initialGravity={initialGravityScale:F2} appliedGravity={rb.gravityScale:F2} bodyType={rb.bodyType} simulated={rb.simulated} */ }
         }
     }
 
@@ -202,7 +200,7 @@ public class NetworkEnemyController : NetworkBehaviour
 
         if (isAttacking)
         {
-            Debug.Log($"[NetworkEnemyController] Attack animation triggered on client for {gameObject.name}");
+            { /* Attack animation triggered on client for {gameObject.name} */ }
             Invoke(nameof(ResetAttackAnimation), 0.5f);
         }
     }

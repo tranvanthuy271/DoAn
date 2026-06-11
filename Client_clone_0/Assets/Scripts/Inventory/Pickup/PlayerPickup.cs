@@ -46,7 +46,7 @@ public class PlayerPickup : MonoBehaviour
             itemLayer
         );
 
-        Debug.Log($"[PlayerPickup] TryPickupAround found {hits.Length} colliders quanh player {networkObject.NetworkObjectId}");
+        { /* TryPickupAround found {hits.Length} colliders quanh player {networkObject.NetworkObjectId} */ }
 
         foreach (Collider2D hit in hits)
         {

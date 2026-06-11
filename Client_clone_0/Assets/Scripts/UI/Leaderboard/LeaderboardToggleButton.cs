@@ -25,7 +25,7 @@ public class LeaderboardToggleButton : MonoBehaviour
     {
         ResolvePanel();
         if (leaderboardPanel == null)
-            Debug.LogWarning("[LeaderboardToggleButton] Chưa tìm thấy LeaderboardPanelUI. Hãy gán thủ công trong Inspector.");
+            { /* Cảnh báo: Chưa tìm thấy LeaderboardPanelUI. Hãy gán thủ công trong Inspector */ }
     }
 
     private void OnDestroy()
@@ -42,7 +42,7 @@ public class LeaderboardToggleButton : MonoBehaviour
         ResolvePanel();
         if (leaderboardPanel == null)
         {
-            Debug.LogError("[LeaderboardToggleButton] Không tìm thấy LeaderboardPanelUI.");
+            { /* Lỗi: Không tìm thấy LeaderboardPanelUI */ }
             return;
         }
 
@@ -69,8 +69,7 @@ public class LeaderboardToggleButton : MonoBehaviour
         // User cần:
         //   1. Kéo LeaderboardPanel vào Canvas trong scene, HOẶC
         //   2. Gán thủ công trường 'leaderboardPanel' trong Inspector của nút này
-        Debug.LogWarning("[LeaderboardToggleButton] Không tìm thấy LeaderboardPanelUI trong scene.\n" +
-                         "Hãy kéo LeaderboardPanel.prefab vào Canvas và gán vào trường 'leaderboardPanel' của nút này.");
+        { /* Cảnh báo: Không tìm thấy LeaderboardPanelUI trong scene.\n */ }
     }
 
     #endregion

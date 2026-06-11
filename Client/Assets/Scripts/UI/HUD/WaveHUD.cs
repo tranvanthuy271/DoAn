@@ -92,7 +92,7 @@ public class WaveHUD : MonoBehaviour
         if (exitButton == null)
             exitButton = CreateExitButton(new Vector2(0f, y));
 
-        Debug.Log($"[WaveHUD] AutoCreateUI — top-right panel created under '{canvas.gameObject.name}'");
+        { /* AutoCreateUI  top-right panel created under '{canvas.gameObject.name}' */ }
     }
 
     private TMP_Text CreateLabel(string goName, Vector2 anchorPos, Vector2 size, float fontSize, string defaultText, TextAlignmentOptions align)
@@ -166,7 +166,7 @@ public class WaveHUD : MonoBehaviour
         var dm = _dungeonManager != null ? _dungeonManager : DungeonManager.Instance;
         if (dm == null)
         {
-            Debug.LogWarning("[WaveHUD] DungeonManager không tìm thấy khi Exit.");
+            { /* Cảnh báo: DungeonManager không tìm thấy khi Exit */ }
             _exitRequested = false;
             return;
         }

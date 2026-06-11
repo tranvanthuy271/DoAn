@@ -26,7 +26,7 @@ public class PartySearchEntryUI : MonoBehaviour
         EnsureRuntimeReferences();
         _partyId = dto?.partyId ?? string.Empty;
 
-        Debug.Log($"{LogPrefix} Setup | partyId={dto?.partyId} leader={dto?.leaderName} members={dto?.memberCount}", this);
+        { /* {LogPrefix} Setup | partyId={dto?.partyId} leader={dto?.leaderName} members={dto?.memberCount} */ }
 
         if (infoText != null)
             infoText.text = $"Tên: {dto?.leaderName}, Cấp: {Mathf.Max(1, dto?.leaderLevel ?? 1)}, Lớp: {ResolveClass(dto)}";
@@ -84,28 +84,28 @@ public class PartySearchEntryUI : MonoBehaviour
 
     private void ApplyElementIcon(string elementType)
     {
-        Debug.Log($"[PartySearchEntryUI] ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? "NULL" : elementIcon.name)}", this);
+        { /* ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? */ }
         if (elementIcon == null)
         {
-            Debug.LogWarning("[PartySearchEntryUI] elementIcon is NULL – runtime resolution failed.", this);
+            { /* Cảnh báo: elementIcon is NULL  runtime resolution failed */ }
             return;
         }
         elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(PartySearchEntryUI));
         int elementId = ElementHelper.ToId(elementType);
         bool hasConfig = elementIconConfig != null;
         bool validId   = ElementHelper.IsValid(elementId);
-        Debug.Log($"[PartySearchEntryUI] ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId}", this);
+        { /* ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId} */ }
         if (hasConfig && validId)
         {
             var sprite = elementIconConfig.GetIcon(elementId);
-            Debug.Log($"[PartySearchEntryUI] ApplyElementIcon | sprite={(sprite == null ? "NULL" : sprite.name)}", this);
+            { /* ApplyElementIcon | sprite={(sprite == null ? */ }
             elementIcon.sprite  = sprite;
             elementIcon.color   = sprite != null ? Color.white : elementIconConfig.GetColor(elementId);
             elementIcon.enabled = true;
         }
         else
         {
-            Debug.LogWarning($"[PartySearchEntryUI] ApplyElementIcon | SKIPPED – hasConfig={hasConfig} validId={validId} elementType='{elementType}'", this);
+            { /* Cảnh báo: ApplyElementIcon | SKIPPED  hasConfig={hasConfig} validId={validId} elementType='{elementType}' */ }
             elementIcon.enabled = false;
         }
     }
@@ -114,11 +114,11 @@ public class PartySearchEntryUI : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(_partyId))
         {
-            Debug.LogWarning($"{LogPrefix} Join ignored because partyId is empty.", this);
+            { /* Cảnh báo: {LogPrefix} Join ignored because partyId is empty */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} Join clicked | partyId={_partyId}", this);
+        { /* {LogPrefix} Join clicked | partyId={_partyId} */ }
 
         PartyManager.EnsureInstance()?.RequestJoinParty(_partyId);
     }

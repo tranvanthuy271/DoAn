@@ -14,13 +14,13 @@ public class MobileJumpButton : MonoBehaviour, IPointerDownHandler, IPointerUpHa
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        Debug.Log("[MobileJumpButton] PRESSED");
+        { /* PRESSED */ }
         InputManager.Instance.SetMobileJump(pressed: true, held: true);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        Debug.Log("[MobileJumpButton] RELEASED");
+        { /* RELEASED */ }
         InputManager.Instance.SetMobileJump(pressed: false, held: false);
     }
 }

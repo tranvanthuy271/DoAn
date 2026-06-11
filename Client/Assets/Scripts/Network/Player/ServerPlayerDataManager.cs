@@ -48,7 +48,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
     {
         if (FindObjectOfType<MapWorldBootstrap>() != null)
         {
-            Debug.Log("[ServerPlayerDataManager] MapWorldBootstrap detected — disabling legacy player data manager.");
+            { /* MapWorldBootstrap detected  disabling legacy player data manager */ }
             enabled = false;
             return;
         }
@@ -59,7 +59,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             
-            Debug.Log("[ServerPlayerDataManager] Creating new instance with DontDestroyOnLoad");
+            { /* Creating new instance with DontDestroyOnLoad */ }
             
             // QUAN TRỌNG: Tạo APIClient NGAY trong Awake()
             // Vì OnClientConnected có thể được trigger trước Start()
@@ -67,12 +67,12 @@ public class ServerPlayerDataManager : NetworkBehaviour
         }
         else
         {
-            Debug.Log("[ServerPlayerDataManager] Instance already exists, destroying duplicate");
+            { /* Instance already exists, destroying duplicate */ }
             
             // QUAN TRỌNG: Trước khi destroy, đảm bảo Instance có APIClient
             if (Instance.apiClient == null)
             {
-                Debug.LogWarning("[ServerPlayerDataManager] Existing instance has null APIClient, initializing now");
+                { /* Cảnh báo: Existing instance has null APIClient, initializing now */ }
                 Instance.InitializeAPIClient();
             }
             
@@ -85,29 +85,29 @@ public class ServerPlayerDataManager : NetworkBehaviour
     {
         if (apiClient == null)
         {
-            Debug.Log("[ServerPlayerDataManager] Initializing APIClient...");
+            { /* Initializing APIClient */ }
             
             // QUAN TRỌNG: Ưu tiên dùng APIClient.Instance đã có (đã có token từ login)
             if (APIClient.Instance != null)
             {
-                Debug.Log("[ServerPlayerDataManager] Using existing APIClient.Instance (has token from login)");
+                { /* Using existing APIClient.Instance (has token from login) */ }
                 apiClient = APIClient.Instance;
                 
                 string token = apiClient.GetToken();
-                Debug.Log($"[ServerPlayerDataManager] ✓ APIClient has token: {(!string.IsNullOrEmpty(token) ? "YES" : "NO")}, length: {token?.Length ?? 0}");
+                { /* ✓ APIClient has token: {(!string.IsNullOrEmpty(token) ? */ }
             }
             else
             {
-                Debug.Log("[ServerPlayerDataManager] No existing APIClient.Instance, creating new one...");
+                { /* No existing APIClient.Instance, creating new one */ }
                 GameObject apiClientObj = new GameObject("APIClient_Server");
                 apiClient = apiClientObj.AddComponent<APIClient>();
                 DontDestroyOnLoad(apiClientObj);
-                Debug.Log("[ServerPlayerDataManager] ✓ New APIClient created");
+                { /* ✓ New APIClient created */ }
             }
         }
         else
         {
-            Debug.Log("[ServerPlayerDataManager] APIClient already exists, skipping initialization");
+            { /* APIClient already exists, skipping initialization */ }
         }
     }
 
@@ -116,12 +116,12 @@ public class ServerPlayerDataManager : NetworkBehaviour
         // Verify APIClient is ready after scene load
         if (apiClient == null)
         {
-            Debug.LogWarning("[ServerPlayerDataManager] APIClient is null in Start(), re-initializing...");
+            { /* Cảnh báo: APIClient is null in Start(), re-initializing */ }
             InitializeAPIClient();
         }
         else
         {
-            Debug.Log("[ServerPlayerDataManager] ✓ APIClient verified in Start()");
+            { /* ✓ APIClient verified in Start() */ }
         }
     }
 
@@ -129,8 +129,8 @@ public class ServerPlayerDataManager : NetworkBehaviour
     // geneSlot=1 → player_data, geneSlot=2 → player2_data.
     public void LoadPlayerDataForClient(ulong clientId, int userId, Action<PlayerDataResponse> onSuccess, Action<string> onError, int geneSlot = 1)
     {
-        Debug.Log($"[ServerPlayerDataManager] ===== LOADING PLAYER DATA FOR CLIENT =====");
-        Debug.Log($"[ServerPlayerDataManager] ClientId: {clientId}, UserId: {userId}, GeneSlot: {geneSlot}");
+        { /* ===== LOADING PLAYER DATA FOR CLIENT ===== */ }
+        { /* ClientId: {clientId}, UserId: {userId}, GeneSlot: {geneSlot} */ }
 
         // Chọn cache theo gene slot
         var cache = geneSlot == 2 ? playerData2Cache : playerDataCache;
@@ -147,7 +147,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
                 clientIdToGeneSlot[clientId] = geneSlot;
                 clientIdToPlayerData[clientId] = cachedData;
             }
-            Debug.Log($"[ServerPlayerDataManager] ✓ Using CACHED player data (slot {geneSlot}) for userId: {userId}");
+            { /* ✓ Using CACHED player data (slot {geneSlot}) for userId: {userId} */ }
             onSuccess?.Invoke(cachedData);
             return;
         }
@@ -155,19 +155,19 @@ public class ServerPlayerDataManager : NetworkBehaviour
         // Load từ API (Query DB)
         if (apiClient == null)
         {
-            Debug.LogWarning("[ServerPlayerDataManager] ⚠️ APIClient is null, initializing now...");
+            { /* Cảnh báo: ⚠️ APIClient is null, initializing now */ }
             InitializeAPIClient();
             
             if (apiClient == null)
             {
-                Debug.LogError("[ServerPlayerDataManager] ✗ Failed to initialize APIClient! Cannot load player data.");
+                { /* Lỗi: ✗ Failed to initialize APIClient! Cannot load player data */ }
                 onError?.Invoke("APIClient initialization failed");
                 return;
             }
         }
 
         string endpoint = geneSlot == 2 ? $"/api/player/{userId}/data2" : $"/api/player/{userId}/data";
-        Debug.Log($"[ServerPlayerDataManager] Querying API (slot {geneSlot}): {endpoint}");
+        { /* Querying API (slot {geneSlot}): {endpoint} */ }
 
         Action<int, Action<PlayerDataResponse>, Action<string>> loadFunc =
             geneSlot == 2
@@ -180,7 +180,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
             userId,
             (playerData) =>
             {
-                Debug.Log($"[ServerPlayerDataManager] ✓ Loaded slot {geneSlot} data for userId {userId}: {playerData.character_name} ({playerData.element_type})");
+                { /* ✓ Loaded slot {geneSlot} data for userId {userId}: {playerData.character_name} ({playerData.element_type}) */ }
 
                 // Cache data
                 cacheToUse[userId] = playerData;
@@ -192,18 +192,18 @@ public class ServerPlayerDataManager : NetworkBehaviour
                 {
                     clientIdToGeneSlot[clientId] = geneSlot;
                     clientIdToPlayerData[clientId] = playerData;
-                    Debug.Log($"[ServerPlayerDataManager] ✓ clientIdToPlayerData updated: clientId={clientId} slot={geneSlot} element={playerData.element_type}");
+                    { /* ✓ clientIdToPlayerData updated: clientId={clientId} slot={geneSlot} element={playerData.element_type} */ }
                 }
                 else
                 {
-                    Debug.LogWarning($"[ServerPlayerDataManager] ⚠ Skipped overwrite: slot {geneSlot} tried to overwrite existing slot {existingSlot} for clientId={clientId}");
+                    { /* Cảnh báo: ⚠ Skipped overwrite: slot {geneSlot} tried to overwrite existing slot {existingSlot} for clientId={clientId} */ }
                 }
 
                 onSuccess?.Invoke(playerData);
             },
             (error) =>
             {
-                Debug.LogError($"[ServerPlayerDataManager] ✗ Failed to load slot {geneSlot} data for userId {userId}: {error}");
+                { /* Lỗi: ✗ Failed to load slot {geneSlot} data for userId {userId}: {error} */ }
                 onError?.Invoke(error);
             }
         );
@@ -213,12 +213,12 @@ public class ServerPlayerDataManager : NetworkBehaviour
     [ContextMenu("Log all player data")]
     public void LogAllPlayerData()
     {
-        Debug.Log($"[ServerPlayerDataManager] ===== LOGGING ALL PLAYER DATA =====");
+        { /* ===== LOGGING ALL PLAYER DATA ===== */ }
         foreach (var kvp in clientIdToPlayerData)
         {
             ulong clientId = kvp.Key;
             PlayerDataResponse data = kvp.Value;
-            Debug.Log($"ClientId: {clientId} => Character: {data.character_name}, Element: {data.element_type}, Gender: {data.gender}");
+            { /* ClientId: {clientId} => Character: {data.character_name}, Element: {data.element_type}, Gender: {data.gender} */ }
         }
     }
 
@@ -226,22 +226,22 @@ public class ServerPlayerDataManager : NetworkBehaviour
     // Get player data cho clientId (từ cache)
     public PlayerDataResponse GetPlayerDataForClient(ulong clientId)
     {
-        Debug.Log($"[ServerPlayerDataManager] GetPlayerDataForClient called for clientId: {clientId}");
+        { /* GetPlayerDataForClient called for clientId: {clientId} */ }
         
         // Log full cache state for debugging
-        Debug.Log($"[ServerPlayerDataManager] Current clientIdToPlayerData cache:");
+        { /* Current clientIdToPlayerData cache */ }
         foreach (var kvp in clientIdToPlayerData)
         {
-            Debug.Log($"  ClientId: {kvp.Key} => PlayerData: {(kvp.Value != null ? kvp.Value.character_name : "null")}");
+            { /* ClientId: {kvp.Key} => PlayerData: {(kvp.Value != null ? kvp.Value.character_name */ }
         }
         
         if (clientIdToPlayerData.ContainsKey(clientId))
         {
-            Debug.Log($"[ServerPlayerDataManager] ✓ Found player data for clientId {clientId}");
+            { /* ✓ Found player data for clientId {clientId} */ }
             return clientIdToPlayerData[clientId];
         }
         
-        Debug.Log($"[ServerPlayerDataManager] ✗ No player data found for clientId {clientId}");
+        { /* ✗ No player data found for clientId {clientId} */ }
         return null;
     }
 

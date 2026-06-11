@@ -70,24 +70,24 @@ public class PotionUsage : NetworkBehaviour
         if (networkHealth != null)
         {
             networkHealth.HealServerRpc(hpRestoreAmount);
-            Debug.Log($"[PotionUsage] Uống bình HP – hồi {hpRestoreAmount} HP (NetworkPlayerHealth)");
+            { /* Uống bình HP  hồi {hpRestoreAmount} HP (NetworkPlayerHealth) */ }
             return;
         }
 
         // Fallback: NetworkPlayerDataSync
-        if (dataSync == null) { Debug.LogWarning("[PotionUsage] Không tìm thấy NetworkPlayerDataSync!"); return; }
+        if (dataSync == null) { { /* Cảnh báo: Không tìm thấy NetworkPlayerDataSync */ } return; }
 
         if (IsServer)
             dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value, dataSync.networkHp.Value + hpRestoreAmount);
         else
             dataSync.RestoreHpServerRpc(hpRestoreAmount);
 
-        Debug.Log($"[PotionUsage] Uống bình HP – hồi {hpRestoreAmount} HP (DataSync)");
+        { /* Uống bình HP  hồi {hpRestoreAmount} HP (DataSync) */ }
     }
 
     private void UseMpPotion()
     {
-        if (dataSync == null) { Debug.LogWarning("[PotionUsage] Không tìm thấy NetworkPlayerDataSync!"); return; }
+        if (dataSync == null) { { /* Cảnh báo: Không tìm thấy NetworkPlayerDataSync */ } return; }
 
         mpCooldownTimer = mpPotionCooldown;
 
@@ -96,7 +96,7 @@ public class PotionUsage : NetworkBehaviour
         else
             dataSync.RestoreMpServerRpc(mpRestoreAmount);
 
-        Debug.Log($"[PotionUsage] Uống bình MP – hồi {mpRestoreAmount} MP");
+        { /* Uống bình MP  hồi {mpRestoreAmount} MP */ }
     }
 
     // Public API (dùng cho UI)

@@ -37,14 +37,14 @@ public class SkillRuntimeLoader : NetworkBehaviour
         base.OnNetworkSpawn();
 
         // Chỉ owner mới load — server (host) và client owner đều chạy riêng
-        Debug.Log($"[SkillRuntimeLoader] OnNetworkSpawn | IsOwner={IsOwner} | IsServer={IsServer} | go={gameObject.name}");
+        { /* OnNetworkSpawn | IsOwner={IsOwner} | IsServer={IsServer} | go={gameObject.name} */ }
         if (!IsOwner) return;
 
         skillManager  = GetComponent<PlayerSkillManager>();
         windStepSkill = GetComponent<WindStepSkill>() ?? GetComponentInParent<WindStepSkill>();
         teleportSkill = GetComponent<TeleportSkill>() ?? GetComponentInParent<TeleportSkill>();
 
-        Debug.Log($"[SkillRuntimeLoader] skillManager={skillManager != null} | IsOwner={IsOwner}");
+        { /* skillManager={skillManager != null} | IsOwner={IsOwner} */ }
         StartCoroutine(WaitAndLoad());
     }
 
@@ -66,7 +66,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
 
         if (skillManager == null)
         {
-            Debug.LogWarning("[SkillRuntimeLoader] ReloadNow: skillManager null, cannot reload hotbar.");
+            { /* Cảnh báo: ReloadNow: skillManager null, cannot reload hotbar */ }
             return;
         }
 
@@ -86,7 +86,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
 
         if (APIClient.Instance == null)
         {
-            Debug.LogWarning("[SkillRuntimeLoader] APIClient.Instance không tìm thấy. Skill stats sẽ dùng giá trị Inspector.");
+            { /* Cảnh báo: APIClient.Instance không tìm thấy. Skill stats sẽ dùng giá trị Inspector */ }
             yield break;
         }
 
@@ -106,10 +106,10 @@ public class SkillRuntimeLoader : NetworkBehaviour
             ? GameManager.Instance.currentPlayerData.player_id.ToString() : "null";
         int ppId = PlayerPrefs.GetInt("PLAYER_ID", 0);
         bool hasJwtToken = !string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""));
-        Debug.Log($"[SkillRuntimeLoader] WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | hasJwt={hasJwtToken} | APIClient={APIClient.Instance != null}");
+        { /* WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | hasJwt={hasJwtToken} | APIClient={APIClient.Instance != null} */ }
         if (!hasJwtToken && GameManager.Instance?.currentPlayerData == null)
         {
-            Debug.LogWarning("[SkillRuntimeLoader] Thiếu cả JWT_TOKEN lẫn GameManager.currentPlayerData. Skill stats sẽ KHÔNG load từ runtime service.");
+            { /* Cảnh báo: Thiếu cả JWT_TOKEN lẫn GameManager.currentPlayerData. Skill stats sẽ KHÔNG load từ runtime service */ }
             yield break;
         }
 
@@ -144,7 +144,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
                     if (response != null) { ApplySkillStats(response); success = true; }
                 }
                 else
-                    Debug.LogWarning($"[SkillRuntimeLoader] Lần {attempts}: GetPlayerSkills lỗi — {json}");
+                    { /* Cảnh báo: Lần {attempts}: GetPlayerSkills lỗi  {json} */ }
                 done = true;
             }
 
@@ -158,7 +158,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         }
 
         if (!loaded)
-            Debug.LogWarning("[SkillRuntimeLoader] Không load được skill stats từ DB. Dùng giá trị Inspector.");
+            { /* Cảnh báo: Không load được skill stats từ DB. Dùng giá trị Inspector */ }
     }
 
     //  Apply
@@ -167,7 +167,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
     {
         if (response?.skills == null || skillManager == null)
         {
-            Debug.LogWarning("[SkillRuntimeLoader] response null hoặc skillManager null.");
+            { /* Cảnh báo: response null hoặc skillManager null */ }
             return;
         }
 
@@ -244,7 +244,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
             }
 
             matched++;
-            Debug.Log($"[SkillRuntimeLoader] Applied '{sd.skillCode}' lv{info.current_level}: CD={sd.cooldown}s base_EV={info.current_effect_value} atkBonus={playerFinalAtk} totalEV={effectValue} MP={sd.currentMpCost}");
+            { /* Applied '{sd.skillCode}' lv{info.current_level}: CD={sd.cooldown}s base_EV={info.current_effect_value} atkBonus={playerFinalAtk} totalEV={effectValue} MP={sd.currentMpCost} */ }
         }
 
         foreach (var info in response.skills)
@@ -252,14 +252,14 @@ public class SkillRuntimeLoader : NetworkBehaviour
             if (info == null || info.current_level <= 0 || string.IsNullOrEmpty(info.skill_code)) continue;
             if (matchedSkillCodes.Contains(info.skill_code)) continue;
 
-            Debug.LogWarning($"[SkillRuntimeLoader] Skill '{info.skill_code}' lv{info.current_level} is unlocked on server but current prefab '{gameObject.name}' has no matching SkillData. Hotbar cannot show/use it until the spawned prefab or SkillData is fixed.");
+            { /* Cảnh báo: Skill '{info.skill_code}' lv{info.current_level} is unlocked on server but current prefab '{gameObject.name}' has no matching SkillData. Hotbar cannot show/use it until the spawned prefab or SkillData is fixed */ }
         }
 
         skillManager.SortSkillsForHotbar();
         FindObjectOfType<SkillHotbarUI>()?.ForceRebind();
 
         loaded = true;
-        Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill, player_final_attack={playerFinalAtk}");
+        { /* Load xong: {matched}/{skillManager.GetSkillCount()} skill, player_final_attack={playerFinalAtk} */ }
     }
 
     // Trả về true nếu skill này gây sát thương trực tiếp và cần cộng player attack vào effectValue.
@@ -302,14 +302,14 @@ public class SkillRuntimeLoader : NetworkBehaviour
         if (string.Equals(skillCode, "HYBRID_FIRE_EARTH_LAVA_AURA", System.StringComparison.OrdinalIgnoreCase)
             && lookup.TryGetValue("HYBRID_EARTH_FIRE_ERUPTION", out info))
         {
-            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_FIRE_EARTH_LAVA_AURA -> HYBRID_EARTH_FIRE_ERUPTION");
+            { /* Alias match: HYBRID_FIRE_EARTH_LAVA_AURA -> HYBRID_EARTH_FIRE_ERUPTION */ }
             return true;
         }
 
         if (string.Equals(skillCode, "HYBRID_EARTH_FIRE_ERUPTION", System.StringComparison.OrdinalIgnoreCase)
             && lookup.TryGetValue("HYBRID_FIRE_EARTH_LAVA_AURA", out info))
         {
-            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_EARTH_FIRE_ERUPTION -> HYBRID_FIRE_EARTH_LAVA_AURA");
+            { /* Alias match: HYBRID_EARTH_FIRE_ERUPTION -> HYBRID_FIRE_EARTH_LAVA_AURA */ }
             return true;
         }
 
@@ -317,14 +317,14 @@ public class SkillRuntimeLoader : NetworkBehaviour
         if (string.Equals(skillCode, "HYBRID_METAL_WIND_BARRAGE", System.StringComparison.OrdinalIgnoreCase)
             && lookup.TryGetValue("HYBRID_METAL_WIND_GALE", out info))
         {
-            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_METAL_WIND_BARRAGE -> HYBRID_METAL_WIND_GALE");
+            { /* Alias match: HYBRID_METAL_WIND_BARRAGE -> HYBRID_METAL_WIND_GALE */ }
             return true;
         }
 
         if (string.Equals(skillCode, "HYBRID_METAL_WIND_GALE", System.StringComparison.OrdinalIgnoreCase)
             && lookup.TryGetValue("HYBRID_METAL_WIND_BARRAGE", out info))
         {
-            Debug.Log("[SkillRuntimeLoader] Alias match: HYBRID_METAL_WIND_GALE -> HYBRID_METAL_WIND_BARRAGE");
+            { /* Alias match: HYBRID_METAL_WIND_GALE -> HYBRID_METAL_WIND_BARRAGE */ }
             return true;
         }
 

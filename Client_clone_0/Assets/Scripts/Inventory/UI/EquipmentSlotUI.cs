@@ -198,7 +198,7 @@ public class EquipmentSlotUI : MonoBehaviour
             else
             {
                 iconImage.enabled = false;
-                Debug.LogWarning($"[EquipmentSlotUI] Không tìm thấy icon: {item.iconId} cho slot {slotType}");
+                { /* Cảnh báo: Không tìm thấy icon: {item.iconId} cho slot {slotType} */ }
             }
         }
 
@@ -220,7 +220,7 @@ public class EquipmentSlotUI : MonoBehaviour
         // Cập nhật viền + bg theo upgrade level
         ApplyTierEffect(item.upgradeLevel);
 
-        Debug.Log($"[EquipmentSlotUI] Slot {slotType}: Đã gán {item.itemName} (id={item.itemTemplateId})");
+        { /* Slot {slotType}: Đã gán {item.itemName} (id={item.itemTemplateId}) */ }
     }
 
     // Lấy item đang trang bị
@@ -238,7 +238,7 @@ public class EquipmentSlotUI : MonoBehaviour
     // Gọi từ Button OnClick trên prefab
     public void OnClick()
     {
-        Debug.Log($"[EquipmentSlotUI] Click slot {slotType}, hasItem={HasItem()}");
+        { /* Click slot {slotType}, hasItem={HasItem()} */ }
         OnSlotClicked?.Invoke(slotType, currentItem);
     }
 
@@ -248,7 +248,7 @@ public class EquipmentSlotUI : MonoBehaviour
         if (!HasItem()) return;
         if (UpgradePanel.Instance == null)
         {
-            Debug.LogWarning("[EquipmentSlotUI] UpgradePanel.Instance chưa được tạo!");
+            { /* Cảnh báo: UpgradePanel.Instance chưa được tạo */ }
             return;
         }
 
@@ -271,15 +271,15 @@ public class EquipmentSlotUI : MonoBehaviour
         {
             HideTierImage(borderImage);
             HideTierImage(bgImage);
-            Debug.LogWarning($"[TierEffect] {name} ({slotType}): tierConfig chưa gán trong Inspector!");
+            { /* Cảnh báo: {name} ({slotType}): tierConfig chưa gán trong Inspector */ }
             return;
         }
 
         // Guard: thiếu image references
         if (borderImage == null)
-            Debug.LogWarning($"[TierEffect] {name} ({slotType}): borderImage chưa gán!");
+            { /* Cảnh báo: {name} ({slotType}): borderImage chưa gán */ }
         if (bgImage == null)
-            Debug.LogWarning($"[TierEffect] {name} ({slotType}): bgImage chưa gán!");
+            { /* Cảnh báo: {name} ({slotType}): bgImage chưa gán */ }
 
         if (borderImage == null && bgImage == null) return;
 
@@ -295,15 +295,11 @@ public class EquipmentSlotUI : MonoBehaviour
         {
             HideTierImage(borderImage);
             HideTierImage(bgImage);
-            Debug.LogWarning($"[TierEffect] {name} ({slotType}): không tìm thấy tier cho level={level} và defaultTier cũng null!");
+            { /* Cảnh báo: {name} ({slotType}): không tìm thấy tier cho level={level} và defaultTier cũng null */ }
             return;
         }
 
-        Debug.Log($"[TierEffect] {name} ({slotType}): level={level} → tier.minLevel={tier.minLevel}, " +
-                  $"borderSprite={(tier.borderSprite != null ? tier.borderSprite.name : "NULL")}, " +
-                  $"bgSprite={(tier.bgSprite != null ? tier.bgSprite.name : "NULL")}, " +
-                  $"borderAnimator={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}, " +
-                  $"bgAnimator={(tier.bgAnimator != null ? tier.bgAnimator.name : "NULL")}");
+        { /* {name} ({slotType}): level={level} → tier.minLevel={tier.minLevel} */ }
 
         // Border
         if (borderImage != null)
@@ -358,7 +354,7 @@ public class EquipmentSlotUI : MonoBehaviour
 
         if (_tierNeedsActiveRestart)
         {
-            Debug.Log($"[TierEffect] {name} ({slotType}): đã gán Animator khi slot chưa activeInHierarchy; sẽ re-apply khi panel active.");
+            { /* {name} ({slotType}): đã gán Animator khi slot chưa activeInHierarchy; sẽ re-apply khi panel active */ }
         }
     }
 
@@ -459,9 +455,7 @@ public class EquipmentSlotUI : MonoBehaviour
                 anim.Update(0f);
             }
 
-            Debug.Log($"[TierEffect] {name} ({slotType}): Animator target={target.name}, " +
-                      $"controller={controller.name}, clips={controller.animationClips?.Length ?? 0}, " +
-                      $"activeSelf={target.activeSelf}, activeInHierarchy={target.activeInHierarchy}, enabled={anim.enabled}");
+            { /* {name} ({slotType}): Animator target={target.name} */ }
         }
         else
         {
@@ -534,7 +528,7 @@ public class EquipmentSlotUI : MonoBehaviour
                 Image tmp = borderImage;
                 borderImage = bgImage;
                 bgImage = tmp;
-                Debug.LogWarning($"[TierEffect] {name} ({slotType}): borderImage/bgImage đang gán ngược, đã tự swap theo tên BG/Vien.");
+                { /* Cảnh báo: {name} ({slotType}): borderImage/bgImage đang gán ngược, đã tự swap theo tên BG/Vien */ }
             }
         }
 
@@ -609,14 +603,14 @@ public class EquipmentSlotUI : MonoBehaviour
     [ContextMenu("Debug Tier State")]
     private void DebugTierState()
     {
-        Debug.Log($"---- [TierDebug] {name} ({slotType}) ----");
-        Debug.Log($"  tierConfig    : {(tierConfig != null ? tierConfig.name : "NULL ← chưa gán!")}");
-        Debug.Log($"  borderImage   : {(borderImage != null ? borderImage.name : "NULL ← chưa gán!")}");
-        Debug.Log($"  bgImage       : {(bgImage != null ? bgImage.name : "NULL ← chưa gán!")}");
-        Debug.Log($"  borderAnimator: {DescribeAnimator(borderImage, _borderAnim)}");
-        Debug.Log($"  bgAnimator    : {DescribeAnimator(bgImage, _bgAnim)}");
-        Debug.Log($"  currentItem   : {(currentItem != null ? $"{currentItem.itemName} level={currentItem.upgradeLevel}" : "null (trống)")}");
-        Debug.Log($"  _currentTierLevel: {_currentTierLevel}");
+        { /* [TierDebug] {name} ({slotType}) */ }
+        { /* tierConfig    : {(tierConfig != null ? tierConfig.name */ }
+        { /* borderImage   : {(borderImage != null ? borderImage.name */ }
+        { /* bgImage       : {(bgImage != null ? bgImage.name */ }
+        { /* borderAnimator: {DescribeAnimator(borderImage, _borderAnim)} */ }
+        { /* bgAnimator    : {DescribeAnimator(bgImage, _bgAnim)} */ }
+        { /* currentItem   : {(currentItem != null ? $ */ }
+        { /* _currentTierLevel: {_currentTierLevel} */ }
 
         if (tierConfig != null)
         {
@@ -625,18 +619,14 @@ public class EquipmentSlotUI : MonoBehaviour
             if (tier == null) tier = tierConfig.defaultTier;
             if (tier != null)
             {
-                Debug.Log($"  Tier sẽ dùng  : minLevel={tier.minLevel}, " +
-                          $"border={(tier.borderSprite != null ? tier.borderSprite.name : "NULL")}, " +
-                          $"bg={(tier.bgSprite != null ? tier.bgSprite.name : "NULL")}, " +
-                          $"borderAnim={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}, " +
-                          $"bgAnim={(tier.bgAnimator != null ? tier.bgAnimator.name : "NULL")}");
+                { /* Tier sẽ dùng  : minLevel={tier.minLevel} */ }
             }
             else
             {
-                Debug.Log($"  Tier sẽ dùng  : NULL (defaultTier cũng chưa set)");
+                { /* Tier sẽ dùng  : NULL (defaultTier cũng chưa set) */ }
             }
         }
-        Debug.Log($"------------------------------------------");
+        { /* Thực hiện ghi log */ }
     }
 
     private static string DescribeAnimator(Image image, Animator cachedAnimator)

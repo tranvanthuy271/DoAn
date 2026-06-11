@@ -78,7 +78,7 @@ public class UltimateAuraVisual : MonoBehaviour
             prefab = Resources.Load<GameObject>(path);
             if (prefab == null)
             {
-                Debug.LogWarning($"[UltimateAuraVisual] Không có aura cho hệ '{elementKey}' trong database và không load được Resources/'{path}'.");
+                { /* Cảnh báo: Không có aura cho hệ '{elementKey}' trong database và không load được Resources/'{path}' */ }
                 return;
             }
         }

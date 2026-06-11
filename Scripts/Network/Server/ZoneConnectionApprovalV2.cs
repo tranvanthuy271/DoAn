@@ -26,7 +26,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     {
         _config = config;
         NetworkManager.Singleton.ConnectionApprovalCallback = HandleApproval;
-        Debug.Log("[ZoneConnectionApprovalV2] Connection Approval đã đăng ký.");
+        { /* Connection Approval đã đăng ký */ }
     }
 
     // Payload format (JSON, UTF-8):
@@ -81,7 +81,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
                 Reject(response, $"Zone ({mapId},{zoneId}) không tồn tại");
                 return;
             }
-            Debug.Log($"[ZoneConnectionApprovalV2] Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback (0,0)");
+            { /* Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback (0,0) */ }
         }
 
         // 5 — Kiểm tra room đầy
@@ -104,8 +104,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         ZonePlayerSessionManager.Instance?.RegisterSession(clientId, result.UserId, result.Username,
             room.MapId, room.ZoneId);
 
-        Debug.Log($"[ZoneConnectionApprovalV2] ✓ Client {clientId} ({result.Username}) " +
-                  $"→ map{room.MapId}_zone{room.ZoneId}");
+        { /* ✓ Client {clientId} ({result.Username}) */ }
 
         // 8 — Approve
         response.Approved          = true;
@@ -120,7 +119,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     {
         response.Approved = false;
         response.Reason   = reason;
-        Debug.LogWarning($"[ZoneConnectionApprovalV2] Từ chối kết nối: {reason}");
+        { /* Cảnh báo: Từ chối kết nối: {reason} */ }
     }
 
     // Minimal JSON parser (không dùng thư viện ngoài)

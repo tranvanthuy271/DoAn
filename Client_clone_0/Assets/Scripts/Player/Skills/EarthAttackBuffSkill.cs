@@ -122,7 +122,7 @@ public class EarthAttackBuffSkill : NetworkBehaviour
 
         // Tìm tất cả player trong cùng physics scene của map hiện tại và áp dụng buff
         Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, transform.position, buffRadius);
-        Debug.Log($"[EarthAttackBuffSkill] Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position}");
+        { /* Overlap buffRadius={buffRadius} hits={hits.Length} at pos={transform.position} */ }
 
         foreach (var hit in hits)
         {
@@ -162,7 +162,7 @@ public class EarthAttackBuffSkill : NetworkBehaviour
                 selfBuffSync.SetAttackBuffServerRpc(attackBonusPercent, buffDuration, 152, "Địa Uy Khí");
         }
 
-        Debug.Log($"[EarthAttackBuffSkill] Áp dụng buff +{attackBonusPercent}% tấn công trong {buffRadius} units (party only).");
+        { /* Áp dụng buff +{attackBonusPercent}% tấn công trong {buffRadius} units (party only) */ }
 
         yield return new WaitForSeconds(0.2f);
         ResetIsUsingClientRpc();

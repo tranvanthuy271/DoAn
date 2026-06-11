@@ -25,7 +25,7 @@ public class CharacterMenuToggleButton : MonoBehaviour
         ResolvePanel();
 
         if (characterMenuPanel == null)
-            Debug.LogWarning("[CharacterMenuToggleButton] Chưa tìm thấy CharacterMenuPanelUI. Hãy gán thủ công trong Inspector.");
+            { /* Cảnh báo: Chưa tìm thấy CharacterMenuPanelUI. Hãy gán thủ công trong Inspector */ }
     }
 
     private void OnDestroy()
@@ -44,7 +44,7 @@ public class CharacterMenuToggleButton : MonoBehaviour
 
         if (characterMenuPanel == null)
         {
-            Debug.LogError("[CharacterMenuToggleButton] Không tìm thấy CharacterMenuPanelUI trong scene.");
+            { /* Lỗi: Không tìm thấy CharacterMenuPanelUI trong scene */ }
             return;
         }
 

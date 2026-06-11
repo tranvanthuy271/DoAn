@@ -31,9 +31,9 @@ public class MpBar : MonoBehaviour
     private void Start()
     {
         if (mpSlider == null)
-            Debug.LogError("[MpBar] THIẾU: 'Mp Slider' chưa được gán trong Inspector!", this);
+            { /* Lỗi: THIẾU: 'Mp Slider' chưa được gán trong Inspector */ }
         if (fillImage == null)
-            Debug.LogWarning("[MpBar] THIẾU: 'Fill Image' chưa được gán — slider sẽ không đổi màu.", this);
+            { /* Cảnh báo: THIẾU: 'Fill Image' chưa được gán  slider sẽ không đổi màu */ }
 
         if (mpSlider != null)
         {
@@ -77,14 +77,11 @@ public class MpBar : MonoBehaviour
         {
             _retryCount++;
             if (_retryCount % 10 == 1)
-                Debug.LogWarning($"[MpBar] Chờ player spawn... retry #{_retryCount} | " +
-                                 $"totalFound={allSyncs.Length} " +
-                                 $"spawned={System.Array.FindAll(allSyncs, s => s.IsSpawned).Length} " +
-                                 $"owned={System.Array.FindAll(allSyncs, s => s.IsSpawned && s.IsOwner).Length}");
+                { /* Cảnh báo: Chờ player spawn... retry #{_retryCount} | */ }
             return;
         }
 
-        Debug.Log($"[MpBar] Bind local player '{dataSync.gameObject.name}' — MP: {dataSync.networkMp.Value}/{dataSync.networkMaxMp.Value}");
+        { /* Bind local player '{dataSync.gameObject.name}'  MP: {dataSync.networkMp.Value}/{dataSync.networkMaxMp.Value} */ }
         dataSync.networkMp.OnValueChanged    += OnMpChanged;
         dataSync.networkMaxMp.OnValueChanged += OnMaxMpChanged;
         UpdateBar(dataSync.networkMp.Value, dataSync.networkMaxMp.Value);
@@ -138,17 +135,17 @@ public class MpBar : MonoBehaviour
     {
         if (max <= 0)
         {
-            Debug.LogWarning($"[MpBar] networkMaxMp = {max} — chưa có data từ server, bỏ qua update.");
+            { /* Cảnh báo: networkMaxMp = {max}  chưa có data từ server, bỏ qua update */ }
             return;
         }
 
         float pct = (float)current / max;
-        Debug.Log($"[MpBar] Cập nhật: {current}/{max} ({pct * 100:F0}%)");
+        { /* Cập nhật: {current}/{max} ({pct * 100:F0}%) */ }
 
         if (mpSlider != null)
             mpSlider.value = pct;
         else
-            Debug.LogWarning("[MpBar] mpSlider = null khi UpdateBar được gọi!");
+            { /* Cảnh báo: mpSlider = null khi UpdateBar được gọi */ }
 
         if (fillImage != null)
             fillImage.color = Color.Lerp(lowMpColor, fullMpColor,

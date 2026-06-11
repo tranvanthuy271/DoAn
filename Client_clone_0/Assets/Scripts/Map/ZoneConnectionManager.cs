@@ -125,7 +125,7 @@ public class ZoneConnectionManager : MonoBehaviour
             }
 
             if (nm.IsListening)
-                Debug.LogWarning("[ZoneConnectionManager] NGO chưa shutdown sau timeout, tiếp tục...");
+                { /* Cảnh báo: NGO chưa shutdown sau timeout, tiếp tục */ }
         }
 
         // 4. Connect sang host mới
@@ -136,7 +136,7 @@ public class ZoneConnectionManager : MonoBehaviour
                 transport.SetConnectionData(zoneData.host_ip, (ushort)zoneData.host_port);
 
             nm.StartClient();
-            Debug.Log($"[ZoneConnectionManager] Kết nối Zone {targetZoneIndex} — {zoneData.host_ip}:{zoneData.host_port}");
+            { /* Kết nối Zone {targetZoneIndex}  {zoneData.host_ip}:{zoneData.host_port} */ }
         }
 
         LoginLoadingManager.HideLoadingStatic();
@@ -148,7 +148,7 @@ public class ZoneConnectionManager : MonoBehaviour
 
     public void ShowError(string message)
     {
-        Debug.LogWarning($"[ZoneConnectionManager] {message}");
+        { /* Cảnh báo: {message} */ }
         if (zoneErrorText)  zoneErrorText.text = message;
         if (zoneErrorPanel) zoneErrorPanel.SetActive(true);
         StartCoroutine(AutoHideError());

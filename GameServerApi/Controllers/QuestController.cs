@@ -324,10 +324,7 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex,
-                    "[Quest] Failed to write player_quest_log for playerId={PlayerId}, questId={QuestId}. Quest completion has already been committed.",
-                    playerId,
-                    questId);
+                { /* Cảnh báo: Failed to write player_quest_log for playerId={PlayerId}, questId={QuestId}. Quest completion has already been committed */ }
                 _db.ChangeTracker.Clear();
             }
 

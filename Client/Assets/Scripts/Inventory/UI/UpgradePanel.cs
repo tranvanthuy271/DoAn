@@ -912,7 +912,7 @@ public class UpgradePanel : MonoBehaviour
         }
 
         if (orderedSlots.Count > stoneSlots.Length)
-            Debug.Log($"[UpgradePanel] StoneGrid có {orderedSlots.Count} slot, sử dụng {stoneSlots.Length} slot đầu tiên.");
+            { /* StoneGrid có {orderedSlots.Count} slot, sử dụng {stoneSlots.Length} slot đầu tiên */ }
     }
 
     private Transform FindStoneGridTransform()

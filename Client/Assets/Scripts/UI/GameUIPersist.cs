@@ -25,7 +25,7 @@ public class GameUIPersist : MonoBehaviour
 
         if (isEventSystem && _eventSystemInstance != null && _eventSystemInstance != this)
         {
-            Debug.Log($"[GameUIPersist] Duplicate EventSystem '{key}' — destroying new instance, keeping persisted one.");
+            { /* Duplicate EventSystem '{key}'  destroying new instance, keeping persisted one */ }
             Destroy(gameObject);
             return;
         }
@@ -33,7 +33,7 @@ public class GameUIPersist : MonoBehaviour
         if (_instances.TryGetValue(key, out var existing) && existing != null)
         {
             // Đã có instance cũ (persistent từ scene trước) — hủy object mới này
-            Debug.Log($"[GameUIPersist] Duplicate '{key}' — destroying new instance, keeping persisted one.");
+            { /* Duplicate '{key}'  destroying new instance, keeping persisted one */ }
             Destroy(gameObject);
             return;
         }
@@ -43,7 +43,7 @@ public class GameUIPersist : MonoBehaviour
             _eventSystemInstance = this;
 
         DontDestroyOnLoad(gameObject);
-        Debug.Log($"[GameUIPersist] '{key}' marked as DontDestroyOnLoad.");
+        { /* '{key}' marked as DontDestroyOnLoad */ }
     }
 
     private void OnDestroy()

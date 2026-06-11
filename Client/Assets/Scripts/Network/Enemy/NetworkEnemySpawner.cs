@@ -70,7 +70,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         if (!IsServer || hasStartedLoading)
         {
             if (!IsServer)
-                Debug.Log($"[NetworkEnemySpawner] TryStartLoading skipped because IsServer=false. scene={gameObject.scene.name}, mapId={mapId}");
+                { /* TryStartLoading skipped because IsServer=false. scene={gameObject.scene.name}, mapId={mapId} */ }
             return;
         }
 
@@ -80,21 +80,21 @@ public class NetworkEnemySpawner : NetworkBehaviour
         if (gameObject.scene.name.Contains("DungeonWaveScene", StringComparison.OrdinalIgnoreCase) &&
             FindObjectOfType<WaveDungeonRuntime>() != null)
         {
-            Debug.Log($"[NetworkEnemySpawner] WaveDungeonRuntime detected in dungeon scene — skipping. scene={gameObject.scene.name} mapId={mapId} isServer={IsServer}");
+            { /* WaveDungeonRuntime detected in dungeon scene  skipping. scene={gameObject.scene.name} mapId={mapId} isServer={IsServer} */ }
             return;
         }
 
         if (mapId <= 0)
         {
-            Debug.LogWarning($"[NetworkEnemySpawner] mapId invalid ({mapId}) in scene={gameObject.scene.name}. Try using MapWorldConfig fallback or MapManager.");
+            { /* Cảnh báo: mapId invalid ({mapId}) in scene={gameObject.scene.name}. Try using MapWorldConfig fallback or MapManager */ }
         }
 
         if (FindObjectOfType<WaveDungeonRuntime>() != null)
         {
-            Debug.Log($"[NetworkEnemySpawner] WaveDungeonRuntime exists but scene is not dungeon wave. Continuing normal map spawn. scene={gameObject.scene.name} mapId={mapId}");
+            { /* WaveDungeonRuntime exists but scene is not dungeon wave. Continuing normal map spawn. scene={gameObject.scene.name} mapId={mapId} */ }
         }
 
-        Debug.Log($"[NetworkEnemySpawner] Start loading. scene={gameObject.scene.name}, mapId={mapId}, isServer={IsServer}, hasStartedLoading={hasStartedLoading}, apiBaseURL={apiBaseURL}");
+        { /* Start loading. scene={gameObject.scene.name}, mapId={mapId}, isServer={IsServer}, hasStartedLoading={hasStartedLoading}, apiBaseURL={apiBaseURL} */ }
 
         hasStartedLoading = true;
         StartCoroutine(LoadAndSpawnEnemies());
@@ -123,7 +123,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             if (yielded.Add(resolvedMapId))
             {
                 bool canSpawn = ShouldAutoSpawnForMap(resolvedMapId);
-                Debug.Log($"[NetworkEnemySpawner] ResolveSingleMapId={resolvedMapId} canSpawn={canSpawn} scene={gameObject.scene.name}");
+                { /* ResolveSingleMapId={resolvedMapId} canSpawn={canSpawn} scene={gameObject.scene.name} */ }
                 if (canSpawn)
                     yield return resolvedMapId;
             }
@@ -143,7 +143,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             if (yielded.Add(currentMapId))
             {
                 bool canSpawn = ShouldAutoSpawnForMap(currentMapId);
-                Debug.Log($"[NetworkEnemySpawner] MapManager fallback currentMapId={currentMapId} canSpawn={canSpawn} scene={gameObject.scene.name}");
+                { /* MapManager fallback currentMapId={currentMapId} canSpawn={canSpawn} scene={gameObject.scene.name} */ }
                 if (canSpawn)
                     yield return currentMapId;
             }
@@ -164,7 +164,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 if (yielded.Add(mapDef.mapId))
                 {
                     bool canSpawn = ShouldAutoSpawnForMap(mapDef.mapId);
-                    Debug.Log($"[NetworkEnemySpawner] MapWorldConfig resolved mapId={mapDef.mapId} canSpawn={canSpawn} scene={gameObject.scene.name}");
+                    { /* MapWorldConfig resolved mapId={mapDef.mapId} canSpawn={canSpawn} scene={gameObject.scene.name} */ }
                     if (canSpawn)
                         yield return mapDef.mapId;
                 }
@@ -194,7 +194,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         MapDefinition mapDef = config != null ? config.GetMap(targetMapId) : null;
         if (mapDef != null && mapDef.zoneTopology == MapZoneTopology.InstanceOnly)
         {
-            Debug.Log($"[NetworkEnemySpawner] Skip auto-spawn for map {targetMapId} because it is InstanceOnly. scene={gameObject.scene.name}, mapName={mapDef.mapName}, zoneTopology={mapDef.zoneTopology}");
+            { /* Skip auto-spawn for map {targetMapId} because it is InstanceOnly. scene={gameObject.scene.name}, mapName={mapDef.mapName}, zoneTopology={mapDef.zoneTopology} */ }
             return false;
         }
 
@@ -211,12 +211,12 @@ public class NetworkEnemySpawner : NetworkBehaviour
         // cho map không có HostSpawnConfigLoader.
         if (HostSpawnConfigLoader.IsMapClaimed(targetMapId))
         {
-            Debug.Log($"[NetworkEnemySpawner] Skip mapId={targetMapId} vì HostSpawnConfigLoader đã claim. scene={gameObject.scene.name}");
+            { /* Skip mapId={targetMapId} vì HostSpawnConfigLoader đã claim. scene={gameObject.scene.name} */ }
             loadedMapIds.Add(targetMapId);
             yield break;
         }
 
-        Debug.Log($"[NetworkEnemySpawner] Loading enemy spawns for map {targetMapId}... scene={gameObject.scene.name}, apiBaseURL={apiBaseURL}, isServer={IsServer}, dedicated={IsDedicatedWorldServer()}");
+        { /* Loading enemy spawns for map {targetMapId}... scene={gameObject.scene.name}, apiBaseURL={apiBaseURL}, isServer={IsServer}, dedicated={IsDedicatedWorldServer()} */ }
 
         string url = $"{apiBaseURL}/enemyspawn/{targetMapId}/spawns";
         
@@ -234,20 +234,20 @@ public class NetworkEnemySpawner : NetworkBehaviour
             if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
                 string jsonResponse = www.downloadHandler.text;
-                Debug.Log($"[NetworkEnemySpawner] Enemy spawns loaded: {jsonResponse}");
-                Debug.Log($"[NetworkEnemySpawner] Response length={jsonResponse?.Length ?? 0}, url={url}");
+                { /* Enemy spawns loaded: {jsonResponse} */ }
+                { /* Response length={jsonResponse?.Length ?? 0}, url={url} */ }
 
                 // Parse JSON response
                 EnemySpawnResponse response = JsonUtility.FromJson<EnemySpawnResponse>(jsonResponse);
                 
                 if (response != null && response.enemy_spawns != null && response.enemy_spawns.Length > 0)
                 {
-                    Debug.Log($"[NetworkEnemySpawner] Found {response.enemy_spawns.Length} enemy spawn points for map {targetMapId}");
+                    { /* Found {response.enemy_spawns.Length} enemy spawn points for map {targetMapId} */ }
                     
                     // Spawn MỖI enemy đúng 1 lần cho cả map — KHÔNG nhân bản theo zone.
                     foreach (var spawnData in response.enemy_spawns)
                     {
-                        Debug.Log($"[NetworkEnemySpawner] Spawn entry spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} max_spawn_count={spawnData.max_spawn_count} is_boss={spawnData.is_boss} respawn={spawnData.respawn_time}");
+                        { /* Spawn entry spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} max_spawn_count={spawnData.max_spawn_count} is_boss={spawnData.is_boss} respawn={spawnData.respawn_time} */ }
                         SpawnEnemyAtPoint(spawnData, targetMapId);
                     }
                     
@@ -255,12 +255,12 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"[NetworkEnemySpawner] No enemy spawns found for map {targetMapId}; response={(response == null ? "null" : "non-null")}");
+                    { /* Cảnh báo: No enemy spawns found for map {targetMapId}; response={(response == null ? */ }
                 }
             }
             else
             {
-                Debug.LogError($"[NetworkEnemySpawner] Failed to load enemy spawns: {www.error}");
+                { /* Lỗi: Failed to load enemy spawns: {www.error} */ }
             }
         }
     }
@@ -270,14 +270,14 @@ public class NetworkEnemySpawner : NetworkBehaviour
     {
         if (enemyPrefabManager == null)
         {
-            Debug.LogError("[NetworkEnemySpawner] EnemyPrefabManager is null!");
+            { /* Lỗi: EnemyPrefabManager is null */ }
             return;
         }
 
         GameObject enemyPrefab = enemyPrefabManager.GetEnemyPrefab(spawnData.enemy_type_id);
         if (enemyPrefab == null)
         {
-            Debug.LogWarning($"[NetworkEnemySpawner] Enemy prefab not found for enemy_type_id {spawnData.enemy_type_id} (spawn_id: {spawnData.spawn_id})");
+            { /* Cảnh báo: Enemy prefab not found for enemy_type_id {spawnData.enemy_type_id} (spawn_id: {spawnData.spawn_id}) */ }
             return;
         }
 
@@ -290,9 +290,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         {
             BossAI prefabBossAI = enemyPrefab.GetComponent<BossAI>();
             EnemyAI prefabEnemyAI = enemyPrefab.GetComponent<EnemyAI>();
-            Debug.LogWarning(
-                $"[BOSS25][NetworkEnemySpawner] Resolve prefab spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)} enemyName='{(spawnData.enemy != null ? spawnData.enemy.enemy_name : "")}' prefab={enemyPrefab.name} spawnData.is_boss={spawnData.is_boss} enemy_type='{(spawnData.enemy != null ? spawnData.enemy.enemy_type : "")}' prefabHasBossAI={(prefabBossAI != null)} prefabBossEnabled={(prefabBossAI != null && prefabBossAI.enabled)} prefabEnemyAIEnabled={(prefabEnemyAI != null && prefabEnemyAI.enabled)} map={targetMapId}",
-                this);
+            { /* Cảnh báo: [NetworkEnemySpawner] Resolve prefab spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)} enemyName='{(spawnData.enemy != null ? spawnData.enemy.enemy_name */ }
         }
 
         Vector3 spawnPosition = new Vector3(spawnData.spawn_x, spawnData.spawn_y, 0f);
@@ -302,7 +300,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             string spawnKey = $"map{targetMapId}_spawn{spawnData.spawn_id}_i{i}";
             if (!_spawnedEnemyKeys.Add(spawnKey))
             {
-                Debug.LogWarning($"[NetworkEnemySpawner] Dedup skip: {spawnKey}");
+                { /* Cảnh báo: Dedup skip: {spawnKey} */ }
                 continue;
             }
 
@@ -311,9 +309,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             {
                 BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
                 EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
-                Debug.LogWarning(
-                    $"[BOSS25][NetworkEnemySpawner] Instantiate spawn_id={spawnData.spawn_id} instance={enemyObj.name} pos={spawnPosition} hasBossAI={(instanceBossAI != null)} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
-                    enemyObj);
+                { /* Cảnh báo: [NetworkEnemySpawner] Instantiate spawn_id={spawnData.spawn_id} instance={enemyObj.name} pos={spawnPosition} hasBossAI={(instanceBossAI != null)} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)} */ }
             }
 
             NetworkObject networkObj = enemyObj.GetComponent<NetworkObject>();
@@ -324,9 +320,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             {
                 if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
                 {
-                    Debug.Log(
-                        $"[EnemySpawnDebug] stage=PreMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} spawnPos={spawnPosition} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2} useVirtual={spawnedEnemyAI.useServerVirtualGround}",
-                        enemyObj);
+                    { /* stage=PreMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} spawnPos={spawnPosition} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2} useVirtual={spawnedEnemyAI.useServerVirtualGround} */ }
                 }
 
                 // Di chuyển vào physics scene riêng của map — TRƯỚC Spawn()
@@ -336,9 +330,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
                     bool snapped = spawnedEnemyAI.SnapToGroundForServerSpawn();
                     if (!snapped)
                     {
-                        Debug.LogWarning(
-                            $"[NetworkEnemySpawner] spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                            enemyObj);
+                        { /* Cảnh báo: spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
                     }
                 }
                 else
@@ -349,18 +341,14 @@ public class NetworkEnemySpawner : NetworkBehaviour
                         bool snapped = spawnBossAI.SnapToGroundForServerSpawn();
                         if (!snapped)
                         {
-                            Debug.LogWarning(
-                                $"[NetworkEnemySpawner] boss spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y.",
-                                enemyObj);
+                            { /* Cảnh báo: boss spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} mapId={targetMapId} spawn pos={spawnPosition} khong snap duoc ground proxy. Kiem tra ServerGroundColliderDatabase hoac spawn_y */ }
                         }
                     }
                 }
 
                 if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
                 {
-                    Debug.Log(
-                        $"[EnemySpawnDebug] stage=PostMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2}",
-                        enemyObj);
+                    { /* stage=PostMove name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2} */ }
                 }
 
                 // Map-based visibility: visible cho TẤT CẢ player cùng map
@@ -377,23 +365,19 @@ public class NetworkEnemySpawner : NetworkBehaviour
                 {
                     BossAI instanceBossAI = enemyObj.GetComponent<BossAI>();
                     EnemyAI instanceEnemyAI = enemyObj.GetComponent<EnemyAI>();
-                    Debug.LogWarning(
-                        $"[BOSS25][NetworkEnemySpawner] After overrides spawn_id={spawnData.spawn_id} netSpawned={networkObj.IsSpawned} scene={enemyObj.scene.name} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)}",
-                        enemyObj);
+                    { /* Cảnh báo: [NetworkEnemySpawner] After overrides spawn_id={spawnData.spawn_id} netSpawned={networkObj.IsSpawned} scene={enemyObj.scene.name} bossAIEnabled={(instanceBossAI != null && instanceBossAI.enabled)} enemyAIEnabled={(instanceEnemyAI != null && instanceEnemyAI.enabled)} */ }
                 }
 
                 if (spawnedEnemyAI != null && !spawnedEnemyAI.canFly && spawnedEnemyAI.debugGroundMovement)
                 {
-                    Debug.Log(
-                        $"[EnemySpawnDebug] stage=PostSpawn name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} netId={networkObj.NetworkObjectId} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2}",
-                        enemyObj);
+                    { /* stage=PostSpawn name={enemyObj.name} spawnId={spawnData.spawn_id} map={targetMapId} scene={enemyObj.scene.name} netId={networkObj.NetworkObjectId} gravity={(enemyRb != null ? enemyRb.gravityScale : 0f):F2} */ }
                 }
 
-                Debug.Log($"[NetworkEnemySpawner] Spawned '{spawnData.enemy?.enemy_name ?? "Unknown"}' at ({spawnData.spawn_x}, {spawnData.spawn_y}) [copy {i+1}/{spawnData.max_spawn_count}] map={targetMapId}");
+                { /* Spawned '{spawnData.enemy?.enemy_name ?? */ }
             }
             else
             {
-                Debug.LogError($"[NetworkEnemySpawner] Enemy prefab missing NetworkObject!");
+                { /* Lỗi: Enemy prefab missing NetworkObject */ }
                 Destroy(enemyObj);
             }
         }
@@ -427,7 +411,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
 
                 if (spawnedEnemies.TryGetValue(spawnId, out go) && go == null)
                 {
-                    Debug.LogWarning($"[EnemySpawnDebug] stage=RespawnCheck missingInstance spawnId={spawnId} enemyType={spawnData.enemy_type_id} lastRespawnTime={(lastRespawnTime.TryGetValue(spawnId, out float respawnAt) ? respawnAt : -1f):F2} now={Time.time:F2}");
+                    { /* Cảnh báo: stage=RespawnCheck missingInstance spawnId={spawnId} enemyType={spawnData.enemy_type_id} lastRespawnTime={(lastRespawnTime.TryGetValue(spawnId, out float respawnAt) ? respawnAt : -1f):F2} now={Time.time:F2} */ }
                 }
 
                 // Enemy đã chết — kiểm tra respawn timer
@@ -444,7 +428,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             // Thực thi respawn ngoài vòng foreach để tránh sửa _spawnDataCache trong khi duyệt
             foreach (var (spawnId, spawnData, cachedMapId) in pendingRespawn)
             {
-                Debug.Log($"[NetworkEnemySpawner] Respawning spawn_id={spawnId} enemy_type_id={spawnData.enemy_type_id} map={cachedMapId} after {spawnData.respawn_time}s");
+                { /* Respawning spawn_id={spawnId} enemy_type_id={spawnData.enemy_type_id} map={cachedMapId} after {spawnData.respawn_time}s */ }
 
                 // Xóa dedup keys cũ để SpawnEnemyAtPoint không bị skip
                 for (int i = 0; i < spawnData.max_spawn_count; i++)
@@ -492,9 +476,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             || enemyObj.GetComponent<BossAI>() != null;
         if (forceBossMode && !isBoss)
         {
-            Debug.LogWarning(
-                $"[BOSS25][NetworkEnemySpawner] Force boss mode spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)}",
-                enemyObj);
+            { /* Cảnh báo: [NetworkEnemySpawner] Force boss mode spawn_id={spawnData.spawn_id} enemy_type_id={spawnData.enemy_type_id} enemy.enemy_id={(spawnData.enemy != null ? spawnData.enemy.enemy_id : 0)} */ }
             isBoss = true;
         }
 
@@ -565,7 +547,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             if (configuredDrops.Count > 0)
             {
                 itemDrop.SetDropsFromConfig(configuredDrops);
-                Debug.Log($"[NetworkEnemySpawner] map={targetMapId} enemy_id={resolvedEnemyId}: dùng {configuredDrops.Count} drop rules từ reward_json.");
+                { /* map={targetMapId} enemy_id={resolvedEnemyId}: dùng {configuredDrops.Count} drop rules từ reward_json */ }
             }
         }
     }

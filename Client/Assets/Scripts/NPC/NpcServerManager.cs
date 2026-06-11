@@ -57,7 +57,7 @@ public class NpcServerManager : MonoBehaviour
         _resolvedPrefabConfig = NpcPrefabConfig.Resolve(npcPrefabConfig, this, nameof(NpcServerManager));
         if (_resolvedPrefabConfig != null)
         {
-            Debug.Log($"{LogPrefix} Using ScriptableObject prefab config '{_resolvedPrefabConfig.name}'.", this);
+            { /* {LogPrefix} Using ScriptableObject prefab config '{_resolvedPrefabConfig.name}' */ }
         }
     }
 
@@ -139,7 +139,7 @@ public class NpcServerManager : MonoBehaviour
     private IEnumerator LoadAndSpawnNpcsForMap(int targetMapId)
     {
         string url = $"{apiBase}/api/npc/list?mapId={targetMapId}";
-        Debug.Log($"{LogPrefix} Load NPC list | map={targetMapId} url={url} dedicated={IsDedicatedWorldServer()}", this);
+        { /* {LogPrefix} Load NPC list | map={targetMapId} url={url} dedicated={IsDedicatedWorldServer()} */ }
         using var req = UnityWebRequest.Get(url);
         if (IsDedicatedWorldServer())
         {
@@ -155,7 +155,7 @@ public class NpcServerManager : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError($"[NpcServerManager] GET {url} lỗi: {req.error}");
+            { /* Lỗi: GET {url} lỗi: {req.error} */ }
             yield break;
         }
 
@@ -167,17 +167,17 @@ public class NpcServerManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NpcServerManager] Parse lỗi: {ex.Message}");
+            { /* Lỗi: Parse lỗi: {ex.Message} */ }
             yield break;
         }
 
         if (resp?.npcs == null)
         {
-            Debug.LogWarning($"{LogPrefix} Không có NPC nào cho mapId={targetMapId}.", this);
+            { /* Cảnh báo: {LogPrefix} Không có NPC nào cho mapId={targetMapId} */ }
             yield break;
         }
 
-        Debug.Log($"{LogPrefix} API returned {resp.npcs.Length} NPC(s) for map={targetMapId}.", this);
+        { /* {LogPrefix} API returned {resp.npcs.Length} NPC(s) for map={targetMapId} */ }
 
         // Spawn MỖI NPC đúng 1 lần cho cả map — KHÔNG nhân bản theo zone.
         // Visibility sẽ filter theo MAP (tất cả player cùng map thấy NPC, bất kể zone nào).
@@ -186,14 +186,14 @@ public class NpcServerManager : MonoBehaviour
             var prefab = GetPrefab(npc);
             if (prefab == null)
             {
-                Debug.LogWarning($"{LogPrefix} Không tìm được prefab | npcId={npc.npc_id} type='{npc.npc_type}' name='{npc.npc_name}'.", this);
+                { /* Cảnh báo: {LogPrefix} Không tìm được prefab | npcId={npc.npc_id} type='{npc.npc_type}' name='{npc.npc_name}' */ }
                 continue;
             }
 
             SpawnNpcInstance(prefab, npc, targetMapId);
         }
 
-        Debug.Log($"{LogPrefix} Đã spawn {resp.npcs.Length} NPC(s) trên mapId={targetMapId}.", this);
+        { /* {LogPrefix} Đã spawn {resp.npcs.Length} NPC(s) trên mapId={targetMapId} */ }
     }
 
     private void SpawnNpcInstance(GameObject prefab, NpcData npc, int targetMapId)
@@ -206,7 +206,7 @@ public class NpcServerManager : MonoBehaviour
         var netObj = obj.GetComponent<NetworkObject>();
         if (netObj == null)
         {
-            Debug.LogError($"[NpcServerManager] Prefab '{prefab.name}' thiếu NetworkObject! Destroy.");
+            { /* Lỗi: Prefab '{prefab.name}' thiếu NetworkObject! Destroy */ }
             Destroy(obj);
             return;
         }
@@ -234,9 +234,7 @@ public class NpcServerManager : MonoBehaviour
 
         _npcCache[netObj.NetworkObjectId] = npc;
 
-        Debug.Log(
-            $"{LogPrefix} Spawned | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' prefab='{prefab.name}' map={targetMapId} pos=({npc.pos_x:F2}, {npc.pos_y:F2}) netId={netObj.NetworkObjectId}",
-            this);
+        { /* {LogPrefix} Spawned | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' prefab='{prefab.name}' map={targetMapId} pos=({npc.pos_x:F2}, {npc.pos_y:F2}) netId={netObj.NetworkObjectId} */ }
     }
 
     // Gắn map-based visibility: NPC visible cho TẤT CẢ player cùng map (bất kể zone).

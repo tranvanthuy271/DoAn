@@ -40,7 +40,7 @@ public class PlayerController : MonoBehaviour
     {
         if (stats == null)
         {
-            Debug.LogError("PlayerStats is not assigned!");
+            { /* Lỗi: PlayerStats is not assigned */ }
         }
 
         // Ngăn player và player va chạm vật lý với nhau (damage được xử lý bằng code, không qua physics contact)
@@ -81,7 +81,7 @@ public class PlayerController : MonoBehaviour
                 {
                     cam.RefreshMaxMapBounds();
                     cam.SetTarget(transform, true);
-                    Debug.Log($"[PlayerController] Camera gán target: {gameObject.name}");
+                    { /* Camera gán target: {gameObject.name} */ }
                 }
             }
         }
@@ -121,7 +121,7 @@ public class PlayerController : MonoBehaviour
         // Thêm x10 item đột biến mỗi hệ với phím M
         if (Input.GetKeyDown(KeyCode.M) && !_geneItemsBusy)
         {
-            Debug.Log("[PlayerController] Phím M được nhấn — bắt đầu thêm item đột biến...");
+            { /* Phím M được nhấn  bắt đầu thêm item đột biến */ }
             StartCoroutine(AddGeneItemsCoroutine());
         }
     }
@@ -144,13 +144,13 @@ public class PlayerController : MonoBehaviour
     public void ToggleGodMode()
     {
         godMode = !godMode;
-        Debug.Log($"God Mode: {(godMode ? "ON" : "OFF")}");
+        { /* God Mode: {(godMode ? */ }
     }
 
     public void ToggleUnlimitedFlight()
     {
         unlimitedFlight = !unlimitedFlight;
-        Debug.Log($"Unlimited Flight: {(unlimitedFlight ? "ON" : "OFF")}");
+        { /* Unlimited Flight: {(unlimitedFlight ? */ }
     }
 
     public PlayerMovement GetMovement() => movement;
@@ -161,7 +161,7 @@ public class PlayerController : MonoBehaviour
     private IEnumerator AddGeneItemsCoroutine()
     {
         _geneItemsBusy = true;
-        Debug.Log("[PlayerController] === Đang thêm x10 Lõi Đột Biến vào túi... ===");
+        { /* === Đang thêm x10 Lõi Đột Biến vào túi... === */ }
 
         int playerId = 0;
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
@@ -171,24 +171,24 @@ public class PlayerController : MonoBehaviour
 
         if (playerId <= 0)
         {
-            Debug.LogWarning("[PlayerController] playerId = 0, chưa đăng nhập!");
+            { /* Cảnh báo: playerId = 0, chưa đăng nhập */ }
             _geneItemsBusy = false;
             yield break;
         }
 
         string url = $"{APIClient.BASE_URL}/api/item/debug/add-fusion-cores?playerId={playerId}";
-        Debug.Log($"[PlayerController] POST {url}");
+        { /* POST {url} */ }
 
         using var req = UnityEngine.Networking.UnityWebRequest.PostWwwForm(url, "");
         yield return req.SendWebRequest();
 
         if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            Debug.Log($"[PlayerController] ✅ +10 Lõi Đột Biến đã thêm vào túi! Server: {req.downloadHandler.text}");
+            { /* +10 Lõi Đột Biến đã thêm vào túi! Server: {req.downloadHandler.text} */ }
         }
         else
         {
-            Debug.LogError($"[PlayerController] ❌ Thêm Lõi Đột Biến thất bại: {req.downloadHandler?.text ?? req.error}");
+            { /* Lỗi: Thêm Lõi Đột Biến thất bại: {req.downloadHandler?.text ?? req.error} */ }
         }
 
         _geneItemsBusy = false;

@@ -25,7 +25,7 @@ public static class SkillEffectUiBuilder
         CreateStatusIconEntry();
 
         AssetDatabase.Refresh();
-        Debug.Log("[SkillEffectUiBuilder] ✓ Tạo xong StatusIconEntry prefab tại " + PREFAB_DIR);
+        { /* ✓ Tạo xong StatusIconEntry prefab tại */ }
     }
 
     // CẤU HÌNH TỰ ĐỘNG 7 FILE .ASSET SkillEffectConfig
@@ -154,8 +154,7 @@ public static class SkillEffectUiBuilder
 
             if (so == null)
             {
-                Debug.LogWarning($"[SkillEffectUiBuilder] ✗ Không tìm thấy '{p.assetName}.asset'. " +
-                                 $"Hãy tạo file trước qua Assets → Create → DoAn → Skill Effect Config.");
+                { /* Cảnh báo: ✗ Không tìm thấy '{p.assetName}.asset' */ }
                 missing++;
                 continue;
             }
@@ -176,7 +175,7 @@ public static class SkillEffectUiBuilder
             serialized.ApplyModifiedProperties();
 
             EditorUtility.SetDirty(so);
-            Debug.Log($"[SkillEffectUiBuilder] ✓ Đã config '{p.assetName}'");
+            { /* ✓ Đã config '{p.assetName}' */ }
             configured++;
         }
 
@@ -184,7 +183,7 @@ public static class SkillEffectUiBuilder
         AssetDatabase.Refresh();
 
         string summary = $"[SkillEffectUiBuilder] Hoàn tất: {configured} config ✓, {missing} file thiếu ✗";
-        Debug.Log(summary);
+        { /* Ghi nhận: summary */ }
         EditorUtility.DisplayDialog("Configure Effect Configs", summary, "OK");
     }
 
@@ -263,7 +262,7 @@ public static class SkillEffectUiBuilder
         PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
 
-        Debug.Log($"[SkillEffectUiBuilder] Đã tạo StatusIconEntry tại {path}");
+        { /* Đã tạo StatusIconEntry tại {path} */ }
     }
 
 
@@ -372,8 +371,7 @@ public static class SkillEffectConfigAssigner
             if (cfg != null)
                 configCache[assetName] = cfg;
             else
-                Debug.LogWarning($"[SkillEffectConfigAssigner] ✗ Không tìm thấy '{assetName}.asset'. " +
-                                 "Hãy chạy Configure All Effect Configs trước.");
+                { /* Cảnh báo: ✗ Không tìm thấy '{assetName}.asset' */ }
         }
 
         int totalAssigned = 0;
@@ -385,7 +383,7 @@ public static class SkillEffectConfigAssigner
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (asset == null)
             {
-                Debug.LogWarning($"[SkillEffectConfigAssigner] ✗ Không tìm thấy: {prefabPath}");
+                { /* Cảnh báo: ✗ Không tìm thấy: {prefabPath} */ }
                 continue;
             }
 
@@ -396,7 +394,7 @@ public static class SkillEffectConfigAssigner
                    ?? root.GetComponentInChildren<PlayerSkillManager>(true);
             if (psm == null)
             {
-                Debug.LogWarning($"[SkillEffectConfigAssigner] ✗ Không có PlayerSkillManager: {prefabPath}");
+                { /* Cảnh báo: ✗ Không có PlayerSkillManager: {prefabPath} */ }
                 continue;
             }
 
@@ -423,8 +421,7 @@ public static class SkillEffectConfigAssigner
                 cfgProp.objectReferenceValue = cfg;
                 changed++;
                 totalAssigned++;
-                Debug.Log($"[SkillEffectConfigAssigner] ✓ {System.IO.Path.GetFileNameWithoutExtension(prefabPath)}" +
-                          $" | skill '{code}' → {assetName}");
+                { /* ✓ {System.IO.Path.GetFileNameWithoutExtension(prefabPath)} */ }
             }
 
             if (changed > 0)
@@ -438,7 +435,7 @@ public static class SkillEffectConfigAssigner
         AssetDatabase.Refresh();
 
         string msg = $"Hoàn tất: gán {totalAssigned} effectConfig trên {totalPrefabs} prefab.";
-        Debug.Log($"[SkillEffectConfigAssigner] {msg}");
+        { /* {msg} */ }
         EditorUtility.DisplayDialog("Assign Effect Configs", msg, "OK");
     }
 }

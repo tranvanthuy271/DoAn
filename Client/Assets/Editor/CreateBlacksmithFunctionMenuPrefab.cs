@@ -31,7 +31,7 @@ public static class CreateBlacksmithFunctionMenuPrefab
 
         TMP_FontAsset notoSans = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NOTO_SANS_PATH);
         if (notoSans == null)
-            Debug.LogWarning("[CreateBlacksmithFunctionMenuPrefab] NotoSans font asset không tìm thấy tại " + NOTO_SANS_PATH + ". Text sẽ dùng font mặc định.");
+            { /* Cảnh báo: NotoSans font asset không tìm thấy tại */ }
 
         // Canvas root
         var root = new GameObject("BlacksmithFunctionMenuCanvas");
@@ -126,7 +126,7 @@ public static class CreateBlacksmithFunctionMenuPrefab
         if (overwrite)
         {
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PREFAB_PATH);
-            Debug.Log($"[CreateBlacksmithFunctionMenuPrefab] Đã tạo: {PREFAB_PATH}\nRuntime sẽ tự load từ Resources/UI/BlacksmithFunctionMenuCanvas");
+            { /* Đã tạo: {PREFAB_PATH}\nRuntime sẽ tự load từ Resources/UI/BlacksmithFunctionMenuCanvas */ }
             Selection.activeObject = prefab;
             EditorGUIUtility.PingObject(prefab);
         }

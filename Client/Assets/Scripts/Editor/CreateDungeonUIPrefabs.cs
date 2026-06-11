@@ -56,7 +56,7 @@ public static class CreateDungeonUIPrefabs
     {
         const string path = PrefabFolder + "/DungeonNpcMenuPanel.prefab";
         if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-        { Debug.Log("[CreateDungeonUI] DungeonNpcMenuPanel đã tồn tại → bỏ qua."); return false; }
+        { { /* DungeonNpcMenuPanel đã tồn tại → bỏ qua */ } return false; }
 
         var root = NewGO("DungeonNpcMenuPanel");
         SizeRect(root, 340, 500);
@@ -117,7 +117,7 @@ public static class CreateDungeonUIPrefabs
 
         bool ok = SavePrefab(root, path);
         Object.DestroyImmediate(root);
-        if (ok) Debug.Log($"[CreateDungeonUI] ✓ DungeonNpcMenuPanel → {path}");
+        if (ok) { /* ✓ DungeonNpcMenuPanel → {path} */ }
         return ok;
     }
 
@@ -126,7 +126,7 @@ public static class CreateDungeonUIPrefabs
     {
         const string path = PrefabFolder + "/DungeonNpcMenuEntryPrefab.prefab";
         if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-        { Debug.Log("[CreateDungeonUI] DungeonNpcMenuEntryPrefab đã tồn tại → bỏ qua."); return false; }
+        { { /* DungeonNpcMenuEntryPrefab đã tồn tại → bỏ qua */ } return false; }
 
         var root = NewGO("DungeonNpcMenuEntryPrefab");
         var rt = root.AddComponent<RectTransform>();
@@ -185,7 +185,7 @@ public static class CreateDungeonUIPrefabs
 
         bool ok = SavePrefab(root, path);
         Object.DestroyImmediate(root);
-        if (ok) Debug.Log($"[CreateDungeonUI] ✓ DungeonNpcMenuEntryPrefab → {path}");
+        if (ok) { /* ✓ DungeonNpcMenuEntryPrefab → {path} */ }
         return ok;
     }
 
@@ -194,7 +194,7 @@ public static class CreateDungeonUIPrefabs
     {
         const string path = ResourcesUiPrefabFolder + "/GlobalNotificationPanel.prefab";
         if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-        { Debug.Log("[CreateDungeonUI] GlobalNotificationPanel đã tồn tại → bỏ qua."); return false; }
+        { { /* GlobalNotificationPanel đã tồn tại → bỏ qua */ } return false; }
 
         var root = NewGO("GlobalNotificationPanel");
         root.AddComponent<RectTransform>().sizeDelta = new Vector2(360, 240);
@@ -287,7 +287,7 @@ public static class CreateDungeonUIPrefabs
 
         bool ok = SavePrefab(root, path);
         Object.DestroyImmediate(root);
-        if (ok) Debug.Log($"[CreateDungeonUI] ✓ GlobalNotificationPanel → {path}");
+        if (ok) { /* ✓ GlobalNotificationPanel → {path} */ }
         return ok;
     }
 

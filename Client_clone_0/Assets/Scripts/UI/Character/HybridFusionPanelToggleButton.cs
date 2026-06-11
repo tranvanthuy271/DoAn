@@ -31,7 +31,7 @@ public class HybridFusionPanelToggleButton : MonoBehaviour
     {
         if (hybridPanel == null)
         {
-            Debug.LogWarning("[HybridFusionPanelToggleButton] Chưa gán HybridFusionPanel vào Inspector.");
+            { /* Cảnh báo: Chưa gán HybridFusionPanel vào Inspector */ }
             return;
         }
         hybridPanel.Open();

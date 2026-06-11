@@ -107,7 +107,7 @@ public static class CreateItemDetailPanelPrefab
         PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
         UnityEngine.Object.DestroyImmediate(root);
         AssetDatabase.Refresh();
-        Debug.Log("[CreateItemDetailPanelPrefab] Rebuilt " + PrefabPath);
+        { /* Rebuilt */ }
     }
 
     private static ScrollRect MakeScrollView(Transform parent, out TMP_Text bodyText)

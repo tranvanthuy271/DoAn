@@ -33,7 +33,7 @@ public class NetworkManagerCustom : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("==== [GENE2_DEBUG] NetworkManagerCustom.Start() ACTIVE_GENE_SLOT=" + PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1));
+        { /* ==== [GENE2_DEBUG] NetworkManagerCustom.Start() ACTIVE_GENE_SLOT= */ }
         InitFromConfig();
         EnsureCallbacksSubscribed();
     }
@@ -48,7 +48,7 @@ public class NetworkManagerCustom : MonoBehaviour
 
         if (networkManager == null)
         {
-            Debug.LogWarning("[NetworkManagerCustom] EnsureCallbacksSubscribed: NetworkManager.Singleton is null, will retry before connect.");
+            { /* Cảnh báo: EnsureCallbacksSubscribed: NetworkManager.Singleton is null, will retry before connect */ }
             return;
         }
 
@@ -61,7 +61,7 @@ public class NetworkManagerCustom : MonoBehaviour
         networkManager.OnClientDisconnectCallback += OnClientDisconnected;
         callbacksSubscribed = true;
 
-        Debug.Log("[NetworkManagerCustom] ✓ Callbacks subscribed (OnClientConnected + OnClientDisconnected)");
+        { /* ✓ Callbacks subscribed (OnClientConnected + OnClientDisconnected) */ }
     }
 
     // Connect to host (chỉ dùng trong GameScene - Client)
@@ -72,13 +72,13 @@ public class NetworkManagerCustom : MonoBehaviour
 
         if (networkManager == null)
         {
-            Debug.LogError("[NetworkManagerCustom] NetworkManager.Singleton is null! Cannot connect.");
+            { /* Lỗi: NetworkManager.Singleton is null! Cannot connect */ }
             return;
         }
 
         if (networkManager.IsListening && !networkManager.ShutdownInProgress)
         {
-            Debug.LogWarning($"[NetworkManagerCustom] ConnectToServer() skipped because NetworkManager is already listening. IsClient={networkManager.IsClient}, IsServer={networkManager.IsServer}, IsHost={networkManager.IsHost}");
+            { /* Cảnh báo: ConnectToServer() skipped because NetworkManager is already listening. IsClient={networkManager.IsClient}, IsServer={networkManager.IsServer}, IsHost={networkManager.IsHost} */ }
             GameErrorNotifier.MarkClientConnected();
             LoginLoadingManager.HideLoadingStatic();
             return;
@@ -91,14 +91,14 @@ public class NetworkManagerCustom : MonoBehaviour
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
         if (string.IsNullOrWhiteSpace(token))
         {
-            Debug.LogError("[NetworkManagerCustom] JWT_TOKEN not found in PlayerPrefs! Cannot connect.");
+            { /* Lỗi: JWT_TOKEN not found in PlayerPrefs! Cannot connect */ }
             return;
         }
 
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[NetworkManagerCustom] UnityTransport not found!");
+            { /* Lỗi: UnityTransport not found */ }
             return;
         }
 
@@ -108,7 +108,7 @@ public class NetworkManagerCustom : MonoBehaviour
         int zoneId = ResolveInitialZoneId();
         int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
         string payload = BuildConnectionPayload(token, mapId, zoneId, geneSlot);
-        Debug.Log($"==== [GENE2_DEBUG] NetworkManagerCustom.ConnectToServer: ACTIVE_GENE_SLOT={geneSlot} included in payload ====");
+        { /* ==== [GENE2_DEBUG] NetworkManagerCustom.ConnectToServer: ACTIVE_GENE_SLOT={geneSlot} included in payload ==== */ }
 
         transport.ConnectionData.Address = effectiveIp;
         transport.ConnectionData.Port = effectivePort;
@@ -120,24 +120,23 @@ public class NetworkManagerCustom : MonoBehaviour
         serverIP = effectiveIp;
         serverPort = effectivePort;
 
-        Debug.Log($"[NetworkManagerCustom] ConnectToServer: callbacksSubscribed={callbacksSubscribed}, " +
-                  $"address={effectiveIp}:{effectivePort}, userId={userId}, mapId={mapId}, zoneId={zoneId}, tokenLength={token.Length}");
+        { /* ConnectToServer: callbacksSubscribed={callbacksSubscribed} */ }
 
         try
         {
             if (networkManager.StartClient())
             {
-                Debug.Log($"[NetworkManagerCustom] ✓ StartClient() OK. Connecting to {effectiveIp}:{effectivePort} with approval payload.");
+                { /* ✓ StartClient() OK. Connecting to {effectiveIp}:{effectivePort} with approval payload */ }
             }
             else
             {
-                Debug.LogError("[NetworkManagerCustom] ✗ StartClient() returned false! Check NetworkManager config.");
+                { /* Lỗi: ✗ StartClient() returned false! Check NetworkManager config */ }
                 GameErrorNotifier.Show(GameErrorNotifier.ErrorType.CannotConnect);
             }
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NetworkManagerCustom] ✗ Exception in StartClient: {ex.Message}\n{ex.StackTrace}");
+            { /* Lỗi: ✗ Exception in StartClient: {ex.Message}\n{ex.StackTrace} */ }
             GameErrorNotifier.Show(GameErrorNotifier.ErrorType.CannotConnect);
         }
     }
@@ -259,25 +258,25 @@ public class NetworkManagerCustom : MonoBehaviour
         
         if (networkManager == null)
         {
-            Debug.LogError("[NetworkManagerCustom] RegisterAuthMessageHandler: NetworkManager is NULL!");
+            { /* Lỗi: RegisterAuthMessageHandler: NetworkManager is NULL */ }
             return;
         }
         
         if (!networkManager.IsServer)
         {
-            Debug.LogWarning($"[NetworkManagerCustom] RegisterAuthMessageHandler: Not server (IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient})");
+            { /* Cảnh báo: RegisterAuthMessageHandler: Not server (IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}) */ }
             return;
         }
         
         if (authMessageHandlerRegistered)
         {
-            Debug.Log("[NetworkManagerCustom] Auth handler already registered, skipping...");
+            { /* Auth handler already registered, skipping */ }
             return;
         }
 
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(AUTH_MESSAGE_NAME, OnAuthMessageReceived);
         authMessageHandlerRegistered = true;
-        Debug.Log("[NetworkManagerCustom] ✓ Registered Named Message handler for ClientAuth");
+        { /* ✓ Registered Named Message handler for ClientAuth */ }
     }
 
     // Server nhận auth message từ client qua CustomMessagingManager
@@ -287,10 +286,10 @@ public class NetworkManagerCustom : MonoBehaviour
         reader.ReadValueSafe(out ForceNetworkSerializeByMemcpy<FixedString512Bytes> tokenWrapper);
         string token = tokenWrapper.Value.ToString();
 
-        Debug.Log($"[NetworkManagerCustom] ===== AUTH MESSAGE RECEIVED =====");
-        Debug.Log($"[NetworkManagerCustom] SenderClientId: {senderClientId}");
-        Debug.Log($"[NetworkManagerCustom] UserId: {userId}");
-        Debug.Log($"[NetworkManagerCustom] Token length: {token?.Length ?? 0}");
+        { /* ===== AUTH MESSAGE RECEIVED ===== */ }
+        { /* SenderClientId: {senderClientId} */ }
+        { /* UserId: {userId} */ }
+        { /* Token length: {token?.Length ?? 0} */ }
 
         if (ServerPlayerDataManager.Instance != null)
         {
@@ -302,17 +301,17 @@ public class NetworkManagerCustom : MonoBehaviour
                 userId,
                 onSuccess: (playerData) =>
                 {
-                    Debug.Log($"[NetworkManagerCustom] ✓ Player data loaded for client {senderClientId}: {playerData.character_name}");
+                    { /* ✓ Player data loaded for client {senderClientId}: {playerData.character_name} */ }
                 },
                 onError: (error) =>
                 {
-                    Debug.LogError($"[NetworkManagerCustom] ✗ Failed to load player data for client {senderClientId}: {error}");
+                    { /* Lỗi: ✗ Failed to load player data for client {senderClientId}: {error} */ }
                 }
             );
         }
         else
         {
-            Debug.LogError($"[NetworkManagerCustom] ✗ ServerPlayerDataManager.Instance is null! Cannot load data for client {senderClientId}");
+            { /* Lỗi: ✗ ServerPlayerDataManager.Instance is null! Cannot load data for client {senderClientId} */ }
         }
     }
 
@@ -325,12 +324,12 @@ public class NetworkManagerCustom : MonoBehaviour
 
         if (userId == 0 || string.IsNullOrEmpty(token))
         {
-            Debug.LogError($"[NetworkManagerCustom] ✗ Cannot send auth: userId={userId}, token empty={string.IsNullOrEmpty(token)}");
+            { /* Lỗi: ✗ Cannot send auth: userId={userId}, token empty={string.IsNullOrEmpty(token)} */ }
             return;
         }
 
-        Debug.Log($"[NetworkManagerCustom] ===== SENDING AUTH VIA NAMED MESSAGE =====");
-        Debug.Log($"[NetworkManagerCustom] UserId: {userId}, Token length: {token.Length}");
+        { /* ===== SENDING AUTH VIA NAMED MESSAGE ===== */ }
+        { /* UserId: {userId}, Token length: {token.Length} */ }
 
         // Serialize userId + token vào FastBufferWriter
         var tokenFixed = new FixedString512Bytes(token);
@@ -343,26 +342,26 @@ public class NetworkManagerCustom : MonoBehaviour
             networkManager.CustomMessagingManager.SendNamedMessage(AUTH_MESSAGE_NAME, NetworkManager.ServerClientId, writer);
         }
 
-        Debug.Log($"[NetworkManagerCustom] ✓ Auth message sent to server");
+        { /* ✓ Auth message sent to server */ }
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        Debug.Log($"[NetworkManagerCustom] OnClientConnected snapshot: {BuildConnectionSnapshot(clientId)}");
+        { /* OnClientConnected snapshot: {BuildConnectionSnapshot(clientId)} */ }
 
         if (networkManager != null && networkManager.IsHost && clientId == networkManager.LocalClientId)
         {
             // Host: Load player data trực tiếp
-            Debug.Log($"[NetworkManagerCustom] Host-side: Loading player data directly for local client {clientId}...");
+            { /* Host-side: Loading player data directly for local client {clientId} */ }
             
             int userId = PlayerPrefs.GetInt("USER_ID", 0);
             string token = PlayerPrefs.GetString("JWT_TOKEN", "");
             int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
-            Debug.Log($"==== [GENE2_DEBUG] NetworkManagerCustom HOST path: ACTIVE_GENE_SLOT = {geneSlot} ====");
+            { /* ==== [GENE2_DEBUG] NetworkManagerCustom HOST path: ACTIVE_GENE_SLOT = {geneSlot} ==== */ }
             
             if (userId == 0 || string.IsNullOrEmpty(token))
             {
-                Debug.LogError($"[NetworkManagerCustom] Host authentication failed: userId={userId}, token empty={string.IsNullOrEmpty(token)}");
+                { /* Lỗi: Host authentication failed: userId={userId}, token empty={string.IsNullOrEmpty(token)} */ }
                 return;
             }
             
@@ -376,18 +375,18 @@ public class NetworkManagerCustom : MonoBehaviour
                     userId,
                     onSuccess: (playerData) =>
                     {
-                        Debug.Log($"[NetworkManagerCustom] ✓ Host player data loaded: {playerData.character_name} (slot {geneSlot})");
+                        { /* ✓ Host player data loaded: {playerData.character_name} (slot {geneSlot}) */ }
                     },
                     onError: (error) =>
                     {
-                        Debug.LogError($"[NetworkManagerCustom] ✗ Failed to load host player data: {error}");
+                        { /* Lỗi: ✗ Failed to load host player data: {error} */ }
                     },
                     geneSlot: geneSlot
                 );
             }
             else
             {
-                Debug.LogError("[NetworkManagerCustom] ServerPlayerDataManager.Instance is null!");
+                { /* Lỗi: ServerPlayerDataManager.Instance is null */ }
             }
         }
         else if (networkManager != null && networkManager.IsClient && !networkManager.IsServer)
@@ -396,18 +395,18 @@ public class NetworkManagerCustom : MonoBehaviour
             {
                 GameErrorNotifier.MarkClientConnected();
                 LoginLoadingManager.HideLoadingStatic();
-                Debug.Log($"[NetworkManagerCustom] Client-side: approved via ConnectionData payload for clientId {clientId}. Skipping legacy Named Message auth.");
+                { /* Client-side: approved via ConnectionData payload for clientId {clientId}. Skipping legacy Named Message auth */ }
                 return;
             }
 
             // Client: Gửi auth NGAY LẬP TỨC qua Named Message (không cần đợi player spawn)
-            Debug.Log($"[NetworkManagerCustom] Client-side: Sending auth immediately via Named Message for clientId {clientId}...");
+            { /* Client-side: Sending auth immediately via Named Message for clientId {clientId} */ }
             SendAuthToServer();
         }
         else if (networkManager != null && networkManager.IsServer && clientId != networkManager.LocalClientId)
         {
             // Server-side: Remote client connected, auth sẽ đến qua Named Message
-            Debug.Log($"[NetworkManagerCustom] Server-side: Remote client {clientId} connected, waiting for auth via Named Message...");
+            { /* Server-side: Remote client {clientId} connected, waiting for auth via Named Message */ }
         }
     }
 
@@ -432,11 +431,11 @@ public class NetworkManagerCustom : MonoBehaviour
             string disconnectReason = string.IsNullOrWhiteSpace(networkManager.DisconnectReason)
                 ? "<empty>"
                 : networkManager.DisconnectReason;
-            Debug.LogWarning($"[NetworkManagerCustom] Client disconnected! clientId={clientId}. DisconnectReason={disconnectReason}. Có thể host chưa chạy hoặc bị reject.");
+            { /* Cảnh báo: Client disconnected! clientId={clientId}. DisconnectReason={disconnectReason}. Có thể host chưa chạy hoặc bị reject */ }
         }
         else if (networkManager != null && networkManager.IsServer)
         {
-            Debug.Log($"[NetworkManagerCustom] Remote client {clientId} disconnected.");
+            { /* Remote client {clientId} disconnected */ }
         }
     }
 

@@ -278,7 +278,7 @@ public static class CreateUtilityDrawerPrefab
         if (prop != null)
             prop.objectReferenceValue = obj;
         else
-            Debug.LogWarning($"[CreateUtilityDrawerPrefab] Không tìm thấy property '{propName}' trong UtilityDrawerController. Kiểm tra tên field.");
+            { /* Cảnh báo: Không tìm thấy property '{propName}' trong UtilityDrawerController. Kiểm tra tên field */ }
     }
 
     private static void EnsureFolder(string path)

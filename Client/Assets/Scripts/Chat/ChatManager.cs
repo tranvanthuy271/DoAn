@@ -57,7 +57,7 @@ public class ChatManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Debug.Log($"[Chat] Awake: root='{gameObject.name}' active={gameObject.activeInHierarchy}");
+        { /* Awake: root='{gameObject.name}' active={gameObject.activeInHierarchy} */ }
 
         foreach (ChatChannel ch in Enum.GetValues(typeof(ChatChannel)))
             _history[ch] = new List<ChatMessageDto>();
@@ -65,7 +65,7 @@ public class ChatManager : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[Chat] Start: chuẩn bị kết nối ChatHub");
+        { /* Start: chuẩn bị kết nối ChatHub */ }
         // Đăng ký sự kiện player data (cho reconnect / scenario đăng nhập muộn)
         GameManager.OnPlayerDataSet += OnPlayerDataSet;
 
@@ -82,7 +82,7 @@ public class ChatManager : MonoBehaviour
         if (Instance == this)
             Instance = null;
 
-        Debug.Log($"[Chat] OnDestroy: '{gameObject.name}'");
+        { /* OnDestroy: '{gameObject.name}' */ }
         GameManager.OnPlayerDataSet -= OnPlayerDataSet;
     }
 
@@ -105,7 +105,7 @@ public class ChatManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("[Chat] Đang kết nối ChatHub...");
+        { /* Đang kết nối ChatHub */ }
 
         string apiRoot = ServerAddressConfig.Instance != null
             ? ServerAddressConfig.Instance.ApiRoot
@@ -148,7 +148,7 @@ public class ChatManager : MonoBehaviour
     private void HandleConnected()
     {
         _isConnecting = false;
-        Debug.Log("[Chat] Đã kết nối ChatHub");
+        { /* Đã kết nối ChatHub */ }
         OnConnectionChanged?.Invoke(true);
         SyncDisplayName();
 
@@ -162,7 +162,7 @@ public class ChatManager : MonoBehaviour
     private void HandleDisconnected(string reason)
     {
         _isConnecting = false;
-        Debug.LogWarning($"[Chat] Ngắt kết nối: {reason}");
+        { /* Cảnh báo: Ngắt kết nối: {reason} */ }
         OnConnectionChanged?.Invoke(false);
         StartCoroutine(ReconnectAfterDelay(5f));
     }
@@ -170,7 +170,7 @@ public class ChatManager : MonoBehaviour
     private void HandleError(string err)
     {
         _isConnecting = false;
-        Debug.LogError($"[Chat] Lỗi: {err}");
+        { /* Lỗi: Lỗi: {err} */ }
         StartCoroutine(ReconnectAfterDelay(8f));
     }
 
@@ -193,7 +193,7 @@ public class ChatManager : MonoBehaviour
                 string t = PlayerPrefs.GetString("JWT_TOKEN", "");
                 if (!string.IsNullOrEmpty(t))
                 {
-                    Debug.Log("[Chat] PeriodicCheck: chưa kết nối, đang thử lại...");
+                    { /* PeriodicCheck: chưa kết nối, đang thử lại */ }
                     AutoConnect();
                 }
             }
@@ -206,7 +206,7 @@ public class ChatManager : MonoBehaviour
     {
         var msg = ChatMessageDto.FromJson(json);
         msg.channel = ch.ToString().ToLower();
-        Debug.Log($"[Chat] Receive {ch}: from='{msg.senderName}' text='{msg.message}'");
+        { /* Receive {ch}: from='{msg.senderName}' text='{msg.message}' */ }
         AddHistory(ch, msg);
         OnMessageReceived?.Invoke(msg);
     }
@@ -235,7 +235,7 @@ public class ChatManager : MonoBehaviour
             var bridge = InventoryNetworkBridge.GetExisting(true);
             if (bridge != null)
             {
-                Debug.Log("[ChatManager] Phát hiện thông báo thêm item, tiến hành vô hiệu hóa cache túi đồ...");
+                { /* Phát hiện thông báo thêm item, tiến hành vô hiệu hóa cache túi đồ */ }
                 bridge.InvalidateInventoryCache();
                 
                 // Nếu UI đang mở thì force tải lại
@@ -274,7 +274,7 @@ public class ChatManager : MonoBehaviour
         if (string.IsNullOrWhiteSpace(text)) return;
         text = text.Trim();
 
-        Debug.Log($"[Chat] Send: channel={CurrentSendChannel} connected={IsConnected} text='{text}'");
+        { /* Send: channel={CurrentSendChannel} connected={IsConnected} text='{text}' */ }
 
         // Khi đã kết nối server: chỉ gửi lên server, server sẽ tự echo lại → tránh hiển thị 2 lần
         if (IsConnected)
@@ -284,7 +284,7 @@ public class ChatManager : MonoBehaviour
             bool isCommand = text.StartsWith("item ", System.StringComparison.OrdinalIgnoreCase);
             if (isCommand)
             {
-                Debug.Log($"[Chat] Detected command, routing via SendWorldMessage: '{text}'");
+                { /* Detected command, routing via SendWorldMessage: '{text}' */ }
                 _client.Invoke("SendWorldMessage", text);
                 return;
             }

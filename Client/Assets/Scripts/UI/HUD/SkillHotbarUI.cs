@@ -50,7 +50,7 @@ public class SkillHotbarUI : MonoBehaviour
         isBound = false;
         boundManager = null;
         retryTimer = 0f;
-        Debug.Log("[SkillHotbarUI] ForceRebind() được gọi — reset và tìm lại PlayerSkillManager.");
+        { /* ForceRebind() được gọi  reset và tìm lại PlayerSkillManager */ }
     }
 
     // Gán thủ công PlayerSkillManager (nếu autoFind = false)
@@ -89,7 +89,7 @@ public class SkillHotbarUI : MonoBehaviour
         PlayerSkillManager[] all = FindObjectsByType<PlayerSkillManager>(FindObjectsSortMode.None);
         if (all.Length != _lastManagerCount)
         {
-            Debug.Log($"[SkillHotbarUI] TryFindAndBind — tìm thấy {all.Length} PlayerSkillManager trong scene.");
+            { /* TryFindAndBind  tìm thấy {all.Length} PlayerSkillManager trong scene */ }
         }
 
         // Nếu số manager tăng lên (player mới spawn) và có owner mới → force rebind
@@ -98,7 +98,7 @@ public class SkillHotbarUI : MonoBehaviour
             bool ownerExists = System.Array.Exists(all, m => m.IsSpawned && m.IsOwner);
             if (ownerExists && (boundManager == null || !boundManager.IsOwner))
             {
-                Debug.Log("[SkillHotbarUI] Phát hiện owner manager mới — rebind.");
+                { /* Phát hiện owner manager mới  rebind */ }
                 isBound = false;
                 boundManager = null;
             }
@@ -129,7 +129,7 @@ public class SkillHotbarUI : MonoBehaviour
                 || Unity.Netcode.NetworkManager.Singleton.IsServer);
         if (!isMultiplayer && all.Length == 1)
         {
-            Debug.Log($"[SkillHotbarUI] Offline fallback bind vào '{all[0].name}'.");
+            { /* Offline fallback bind vào '{all[0].name}' */ }
             _loggedNoManagerWarning = false;
             _loggedNoOwnerWarning = false;
             BindToManager(all[0]);
@@ -138,7 +138,7 @@ public class SkillHotbarUI : MonoBehaviour
         {
             if (isNetworkActive && !_loggedNoManagerWarning)
             {
-                Debug.LogWarning("[SkillHotbarUI] Chưa tìm thấy PlayerSkillManager nào — sẽ thử lại.");
+                { /* Cảnh báo: Chưa tìm thấy PlayerSkillManager nào  sẽ thử lại */ }
                 _loggedNoManagerWarning = true;
             }
         }
@@ -147,7 +147,7 @@ public class SkillHotbarUI : MonoBehaviour
             _loggedNoManagerWarning = false;
             if (isNetworkActive && !_loggedNoOwnerWarning)
             {
-                Debug.LogWarning($"[SkillHotbarUI] Có {all.Length} manager nhưng chưa tìm thấy IsOwner — sẽ thử lại.");
+                { /* Cảnh báo: Có {all.Length} manager nhưng chưa tìm thấy IsOwner  sẽ thử lại */ }
                 _loggedNoOwnerWarning = true;
             }
         }
@@ -173,14 +173,14 @@ public class SkillHotbarUI : MonoBehaviour
             }
         }
 
-        Debug.Log($"[SkillHotbarUI] BindToManager '{manager.name}' — skillCount={skillCount}, slots={slots.Count}, gameObject.activeSelf={gameObject.activeSelf}");
+        { /* BindToManager '{manager.name}'  skillCount={skillCount}, slots={slots.Count}, gameObject.activeSelf={gameObject.activeSelf} */ }
 
         for (int i = 0; i < slots.Count; i++)
         {
             SkillSlotUI slot = slots[i];
             if (slot == null)
             {
-                Debug.LogWarning($"[SkillHotbarUI]   Slot[{i}] bị NULL trong danh sách!");
+                { /* Cảnh báo: Slot[{i}] bị NULL trong danh sách */ }
                 continue;
             }
 
@@ -200,22 +200,22 @@ public class SkillHotbarUI : MonoBehaviour
                 }
 
                 string iconName = icon != null ? icon.name : "null";
-                Debug.Log($"[SkillHotbarUI]   Slot[{i}] ← skill '{skillData?.skillName}' key={skillData?.activationKey} icon={iconName}");
+                { /* Slot[{i}] ← skill '{skillData?.skillName}' key={skillData?.activationKey} icon={iconName} */ }
                 slot.Bind(skillData, manager, i, icon);
             }
             else
             {
-                Debug.Log($"[SkillHotbarUI]   Slot[{i}] không có skill tương ứng → Unbind.");
+                { /* Slot[{i}] không có skill tương ứng → Unbind */ }
                 slot.Unbind();
             }
         }
 
-        Debug.Log($"[SkillHotbarUI] Hoàn tất bind {Mathf.Min(skillCount, slots.Count)} slot(s). GameObject active={gameObject.activeSelf}");
+        { /* Hoàn tất bind {Mathf.Min(skillCount, slots.Count)} slot(s). GameObject active={gameObject.activeSelf} */ }
 
         // Nếu panel đang ẩn, log cảnh báo rõ ràng
         if (!gameObject.activeSelf)
         {
-            Debug.LogWarning("[SkillHotbarUI] CẢNH BÁO: SkillHotbar đang bị SetActive(false) sau khi bind xong! Nhấn T để hiện.");
+            { /* Cảnh báo: CẢNH BÁO: SkillHotbar đang bị SetActive(false) sau khi bind xong! Nhấn T để hiện */ }
         }
     }
 }

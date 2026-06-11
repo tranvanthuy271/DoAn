@@ -14,13 +14,13 @@ public class MobileLeftButton : MonoBehaviour, IPointerDownHandler, IPointerUpHa
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        Debug.Log("[MobileLeftButton] PRESSED");
+        { /* PRESSED */ }
         InputManager.Instance.SetMobileAxis(-1f, 0f);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        Debug.Log("[MobileLeftButton] RELEASED");
+        { /* RELEASED */ }
         InputManager.Instance.SetMobileAxis(0f, 0f);
     }
 }

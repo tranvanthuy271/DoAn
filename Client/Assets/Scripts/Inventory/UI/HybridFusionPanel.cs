@@ -302,7 +302,7 @@ public class HybridFusionPanel : MonoBehaviour
         var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(HybridFusionPanel));
         if (sprite == null)
         {
-            Debug.LogWarning($"[HybridFusionPanel] Không apply được icon cho {logContext}.", this);
+            { /* Cảnh báo: Không apply được icon cho {logContext} */ }
             return;
         }
 

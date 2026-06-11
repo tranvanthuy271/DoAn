@@ -79,7 +79,7 @@ public class StatsTabUI : MonoBehaviour
     {
         _friendProfile = profile;
         _friendDisplayName = displayName;
-        Debug.Log($"[StatsTabUI] ShowFriendProfile displayName='{displayName}' hasProfile={profile != null}");
+        { /* ShowFriendProfile displayName='{displayName}' hasProfile={profile != null} */ }
         Load();
     }
 
@@ -88,7 +88,7 @@ public class StatsTabUI : MonoBehaviour
         if (_friendProfile == null)
             return;
 
-        Debug.Log("[StatsTabUI] ClearFriendProfile()");
+        { /* ClearFriendProfile() */ }
         _friendProfile = null;
         _friendDisplayName = null;
         UnsubscribeHealth();

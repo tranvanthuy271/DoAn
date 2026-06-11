@@ -40,7 +40,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log("[NetworkItemTemplateSync] Host đang đợi ItemTemplateManager load...");
+            { /* Host đang đợi ItemTemplateManager load */ }
         }
 
         // Đợi ItemTemplateManager load xong
@@ -55,13 +55,13 @@ public class NetworkItemTemplateSync : NetworkBehaviour
 
         if (!ItemTemplateManager.Instance.IsLoaded())
         {
-            Debug.LogError("[NetworkItemTemplateSync] ❌ Timeout khi đợi ItemTemplateManager load!");
+            { /* Lỗi: Timeout khi đợi ItemTemplateManager load */ }
             yield break;
         }
 
         if (enableDebugLog)
         {
-            Debug.Log("[NetworkItemTemplateSync] ✅ ItemTemplateManager đã load xong, bắt đầu sync...");
+            { /* ItemTemplateManager đã load xong, bắt đầu sync */ }
         }
 
         // Sync item templates
@@ -73,7 +73,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
     {
         if (!IsServer)
         {
-            Debug.LogWarning("[NetworkItemTemplateSync] Chỉ Host mới có thể sync item templates!");
+            { /* Cảnh báo: Chỉ Host mới có thể sync item templates */ }
             return;
         }
 
@@ -81,14 +81,14 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         {
             if (enableDebugLog)
             {
-                Debug.Log("[NetworkItemTemplateSync] Item templates đã được sync trước đó.");
+                { /* Item templates đã được sync trước đó */ }
             }
             return;
         }
 
         if (ItemTemplateManager.Instance == null || !ItemTemplateManager.Instance.IsLoaded())
         {
-            Debug.LogError("[NetworkItemTemplateSync] ItemTemplateManager chưa load xong!");
+            { /* Lỗi: ItemTemplateManager chưa load xong */ }
             return;
         }
 
@@ -97,7 +97,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         
         if (templates == null || templates.Length == 0)
         {
-            Debug.LogWarning("[NetworkItemTemplateSync] Không có item templates để sync!");
+            { /* Cảnh báo: Không có item templates để sync */ }
             return;
         }
 
@@ -106,13 +106,13 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         
         if (string.IsNullOrEmpty(json))
         {
-            Debug.LogError("[NetworkItemTemplateSync] Lỗi khi serialize item templates!");
+            { /* Lỗi: Lỗi khi serialize item templates */ }
             return;
         }
 
         if (enableDebugLog)
         {
-            Debug.Log($"[NetworkItemTemplateSync] Host đang sync {templates.Length} item templates cho clients...");
+            { /* Host đang sync {templates.Length} item templates cho clients */ }
         }
 
         // Chia nhỏ JSON nếu quá lớn (Unity Netcode giới hạn message size)
@@ -157,7 +157,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NetworkItemTemplateSync] Lỗi khi serialize: {ex.Message}");
+            { /* Lỗi: Lỗi khi serialize: {ex.Message} */ }
             return null;
         }
     }
@@ -178,7 +178,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
 
         if (enableDebugLog)
         {
-            Debug.Log($"[NetworkItemTemplateSync] Client nhận chunk {chunkIndex + 1}/{totalChunks} (size={jsonChunk.Length})");
+            { /* Client nhận chunk {chunkIndex + 1}/{totalChunks} (size={jsonChunk.Length}) */ }
         }
 
         // Lưu chunk vào buffer
@@ -198,7 +198,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"[NetworkItemTemplateSync] Thiếu chunk {i}!");
+                    { /* Lỗi: Thiếu chunk {i} */ }
                     return;
                 }
             }
@@ -222,13 +222,13 @@ public class NetworkItemTemplateSync : NetworkBehaviour
             
             if (wrapper == null || wrapper.templates == null)
             {
-                Debug.LogError("[NetworkItemTemplateSync] Lỗi khi deserialize item templates!");
+                { /* Lỗi: Lỗi khi deserialize item templates */ }
                 return;
             }
 
             if (enableDebugLog)
             {
-                Debug.Log($"[NetworkItemTemplateSync] ✅ Client nhận {wrapper.templates.Length} item templates từ Host");
+                { /* Client nhận {wrapper.templates.Length} item templates từ Host */ }
             }
 
             // Apply vào ItemTemplateManager (force update cache)
@@ -244,13 +244,13 @@ public class NetworkItemTemplateSync : NetworkBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("[NetworkItemTemplateSync] Không tìm thấy method OnItemTemplatesLoaded, client cần load từ API.");
+                    { /* Cảnh báo: Không tìm thấy method OnItemTemplatesLoaded, client cần load từ API */ }
                 }
             }
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NetworkItemTemplateSync] Lỗi khi deserialize: {ex.Message}");
+            { /* Lỗi: Lỗi khi deserialize: {ex.Message} */ }
         }
     }
 

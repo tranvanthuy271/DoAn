@@ -77,7 +77,7 @@ public class QuestManager : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[QuestManager] LoadQuests failed: {req.error} — {req.downloadHandler?.text}");
+            { /* Cảnh báo: LoadQuests failed: {req.error}  {req.downloadHandler?.text} */ }
             onDone?.Invoke(null);
             yield break;
         }
@@ -145,7 +145,7 @@ public class QuestManager : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[QuestManager] PlayerOverview failed: {req.error}");
+            { /* Cảnh báo: PlayerOverview failed: {req.error} */ }
             onDone?.Invoke();
             yield break;
         }
@@ -163,16 +163,16 @@ public class QuestManager : MonoBehaviour
         try
         {
             var dto = JsonUtility.FromJson<QuestStatusDto>(text);
-            Debug.Log($"[QuestManager] PlayerOverview parsed: id={dto?.quest_id} name={dto?.name} status={dto?.status} progress={dto?.quest_progress_json} stepIdx={dto?.current_step_index}");
+            { /* PlayerOverview parsed: id={dto?.quest_id} name={dto?.name} status={dto?.status} progress={dto?.quest_progress_json} stepIdx={dto?.current_step_index} */ }
             HintQuest = dto;
             if (dto?.status == "active") ActiveQuest = dto;
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[QuestManager] ParsePlayerOverview error: {ex.Message}");
+            { /* Cảnh báo: ParsePlayerOverview error: {ex.Message} */ }
         }
 
-        Debug.Log($"[QuestManager] OnQuestListChanged.Invoke() — subscribers={OnQuestListChanged?.GetInvocationList()?.Length ?? 0}");
+        { /* OnQuestListChanged.Invoke()  subscribers={OnQuestListChanged?.GetInvocationList()?.Length ?? 0} */ }
         OnQuestListChanged?.Invoke();
         onDone?.Invoke();
     }
@@ -189,7 +189,7 @@ public class QuestManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[QuestManager] ParseQuestList error: {ex.Message}\nJson: {json}");
+            { /* Cảnh báo: ParseQuestList error: {ex.Message}\nJson: {json} */ }
             return new List<QuestStatusDto>();
         }
     }
@@ -213,7 +213,7 @@ public class QuestManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[QuestManager] ExtractApiMessage parse failed: {ex.Message}");
+            { /* Cảnh báo: ExtractApiMessage parse failed: {ex.Message} */ }
         }
 
         return trimmed;
@@ -230,7 +230,7 @@ public class QuestManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[QuestManager] ParseCompleteResponse error: {ex.Message}\nJson: {responseText}");
+            { /* Cảnh báo: ParseCompleteResponse error: {ex.Message}\nJson: {responseText} */ }
             return null;
         }
     }

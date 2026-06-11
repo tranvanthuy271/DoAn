@@ -63,7 +63,7 @@ public class EnemySkillSet : MonoBehaviour
             _skills.Add(skill);
         }
 
-        Debug.Log($"[EnemySkillSet] {gameObject.name}: {_skills.Count} skill(s) loaded. Element={ElementType}");
+        { /* {gameObject.name}: {_skills.Count} skill(s) loaded. Element={ElementType} */ }
     }
 
     //  Runtime query
@@ -111,7 +111,7 @@ public class EnemySkillSet : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(skill.skill_id))
         {
-            Debug.LogWarning($"[EnemySkillSet] {gameObject.name}: Bỏ qua skill không có skill_id.");
+            { /* Cảnh báo: {gameObject.name}: Bỏ qua skill không có skill_id */ }
             return false;
         }
         return true;

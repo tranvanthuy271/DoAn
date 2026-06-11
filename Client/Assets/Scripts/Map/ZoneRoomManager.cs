@@ -60,8 +60,7 @@ public class ZoneRoomManager : MonoBehaviour
         _rooms[newRoomId].Add(clientId);
         _clientRoom[clientId] = newRoomId;
 
-        Debug.Log($"[ZoneRoomManager] Client {clientId} → room '{newRoomId}' " +
-                  $"(tổng trong room: {_rooms[newRoomId].Count})");
+        { /* Client {clientId} → room '{newRoomId}' */ }
     }
 
     // Trả về tất cả clientId trong room.
@@ -91,6 +90,6 @@ public class ZoneRoomManager : MonoBehaviour
         if (!_clientRoom.TryGetValue(clientId, out string room)) return;
         if (_rooms.ContainsKey(room)) _rooms[room].Remove(clientId);
         _clientRoom.Remove(clientId);
-        Debug.Log($"[ZoneRoomManager] Client {clientId} rời room '{room}'");
+        { /* Client {clientId} rời room '{room}' */ }
     }
 }

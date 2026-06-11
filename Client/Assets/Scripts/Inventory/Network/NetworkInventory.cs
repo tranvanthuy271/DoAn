@@ -40,13 +40,13 @@ public class NetworkInventory : NetworkBehaviour
     private static void TracePickup(int itemID, string message)
     {
         if (ShouldTracePickupItem(itemID))
-            Debug.Log($"[PickupTrace][NetworkInventory] {message}");
+            { /* [NetworkInventory] {message} */ }
     }
 
     private void VerboseLog(string message)
     {
         if (verboseInventoryLogs)
-            Debug.Log(message);
+            { /* Ghi nhận: message */ }
     }
 
     public override void OnNetworkSpawn()
@@ -134,7 +134,7 @@ public class NetworkInventory : NetworkBehaviour
 
         if (playerId == 0)
         {
-            Debug.LogWarning($"[NetworkInventory] RequestInventoryDataServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
+            { /* Cảnh báo: RequestInventoryDataServerRpc: Không thể resolve playerId cho clientId={senderClientId} */ }
             return;
         }
 
@@ -157,7 +157,7 @@ public class NetworkInventory : NetworkBehaviour
 
         if (playerId == 0)
         {
-            Debug.LogWarning($"[NetworkInventory] RequestSortInventoryServerRpc: Không thể resolve playerId cho clientId={senderClientId}");
+            { /* Cảnh báo: RequestSortInventoryServerRpc: Không thể resolve playerId cho clientId={senderClientId} */ }
             return;
         }
 
@@ -175,7 +175,7 @@ public class NetworkInventory : NetworkBehaviour
         if (bridge != null)
             bridge.OnReceivedInventoryDataFromHost(inventoryJson);
         else
-            Debug.LogWarning("[NetworkInventory] SendInventoryDataClientRpc: InventoryNetworkBridge không tìm thấy!");
+            { /* Cảnh báo: SendInventoryDataClientRpc: InventoryNetworkBridge không tìm thấy */ }
     }
 
     public override void OnNetworkDespawn()
@@ -242,7 +242,7 @@ public class NetworkInventory : NetworkBehaviour
     {
         if (!IsServer)
         {
-            Debug.LogWarning("[NetworkInventory] TryAddItemOnServer chỉ được gọi trên server.");
+            { /* Cảnh báo: TryAddItemOnServer chỉ được gọi trên server */ }
             return false;
         }
 
@@ -265,14 +265,14 @@ public class NetworkInventory : NetworkBehaviour
 
         if (quantity <= 0)
         {
-            Debug.LogWarning($"[NetworkInventory] Bỏ qua AddItem vì quantity={quantity} không hợp lệ.");
+            { /* Cảnh báo: Bỏ qua AddItem vì quantity={quantity} không hợp lệ */ }
             return false;
         }
 
         var template = GetItemTemplate(itemID);
         if (template == null)
         {
-            Debug.LogWarning($"[NetworkInventory] ItemID {itemID} không tồn tại!");
+            { /* Cảnh báo: ItemID {itemID} không tồn tại */ }
             return false;
         }
 
@@ -346,7 +346,7 @@ public class NetworkInventory : NetworkBehaviour
         // Nothing could be added; report the capacity state once.
         if (remainingQuantity > 0)
         {
-            Debug.LogWarning($"[PickupTrace][NetworkInventory] NetAddFail item={itemID} remaining={remainingQuantity} maxSlots={maxSlots} slotDataLen={currentData.slotData.Length} usedSlots={CountUsedSlots(currentData.slotData)} stacks={BuildItemSlotSummary(currentData.slotData, itemID)}");
+            { /* Cảnh báo: [NetworkInventory] NetAddFail item={itemID} remaining={remainingQuantity} maxSlots={maxSlots} slotDataLen={currentData.slotData.Length} usedSlots={CountUsedSlots(currentData.slotData)} stacks={BuildItemSlotSummary(currentData.slotData, itemID)} */ }
         }
 
         return false;
@@ -390,7 +390,7 @@ public class NetworkInventory : NetworkBehaviour
 
         // Notify clients
         OnItemRemovedClientRpc(slotIndex, oldQuantity, slot.quantity);
-        Debug.Log($"[NetworkInventory] Removed {quantity}x from slot {slotIndex}");
+        { /* Removed {quantity}x from slot {slotIndex} */ }
     }
 
     // ServerRpc: Sử dụng item (consumable) — NGO-only path, giảm NGO cache inventory.
@@ -459,7 +459,7 @@ public class NetworkInventory : NetworkBehaviour
                 dataSync.networkMaxMp.Value,
                 dataSync.networkMp.Value + mpHeal);
 
-        Debug.Log($"[NetworkInventory] 💉 Heal tick: +{hpHeal} HP / +{mpHeal} MP");
+        { /* 💉 Heal tick: +{hpHeal} HP / +{mpHeal} MP */ }
     }
 
     // ServerRpc: Đặt HP/MP về giá trị chính xác từ REST API (server-authoritative).
@@ -477,7 +477,7 @@ public class NetworkInventory : NetworkBehaviour
         if (syncMp > 0)
             dataSync.networkMp.Value = Mathf.Min(dataSync.networkMaxMp.Value, syncMp);
 
-        Debug.Log($"[NetworkInventory] ✅ Sync HP={syncHp} MP={syncMp} từ REST API");
+        { /* Sync HP={syncHp} MP={syncMp} từ REST API */ }
     }
 
     // ServerRpc: CHỈ áp dụng stat effect (HP/MP) của consumable — KHÔNG giảm inventory.
@@ -492,14 +492,14 @@ public class NetworkInventory : NetworkBehaviour
             : null;
         if (template == null)
         {
-            Debug.LogWarning($"[NetworkInventory] ApplyConsumableStatServerRpc: template {templateId} not found");
+            { /* Cảnh báo: ApplyConsumableStatServerRpc: template {templateId} not found */ }
             return;
         }
 
         int itemType = template.type;
         if (itemType < 21 || itemType > 29)
         {
-            Debug.LogWarning($"[NetworkInventory] ApplyConsumableStatServerRpc: item type {itemType} is not consumable (21-29)");
+            { /* Cảnh báo: ApplyConsumableStatServerRpc: item type {itemType} is not consumable (21-29) */ }
             return;
         }
 
@@ -521,19 +521,19 @@ public class NetworkInventory : NetworkBehaviour
         {
             dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value,
                 dataSync.networkHp.Value + healValue);
-            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP (type=22)");
+            { /* 💊 +{healValue} HP (type=22) */ }
         }
         // type 23 = MP Potion
         else if (itemType == 23 && dataSync != null)
         {
             dataSync.networkMp.Value = Mathf.Min(dataSync.networkMaxMp.Value, dataSync.networkMp.Value + healValue);
-            Debug.Log($"[NetworkInventory] 🔵 +{healValue} MP (type=23)");
+            { /* 🔵 +{healValue} MP (type=23) */ }
         }
         // type 24 = Timed buff — buff đã được server persist trong active_buffs;
         //   chỉ cần notify client reload buff HUD.
         else if (itemType == 24)
         {
-            Debug.Log($"[NetworkInventory] ✨ Timed buff item (type=24, id={itemID}) — client sẽ refresh buff HUD.");
+            { /* ✨ Timed buff item (type=24, id={itemID})  client sẽ refresh buff HUD */ }
             // Client tự handle qua UseItemResponse.active_buffs từ REST API
         }
         // Fallback (generic consumable): ưu tiên sync vào dataSync để HP bar/UI luôn cập nhật.
@@ -541,12 +541,12 @@ public class NetworkInventory : NetworkBehaviour
         {
             dataSync.networkHp.Value = Mathf.Min(dataSync.networkMaxHp.Value,
                 dataSync.networkHp.Value + healValue);
-            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP fallback qua dataSync (type={itemType})");
+            { /* 💊 +{healValue} HP fallback qua dataSync (type={itemType}) */ }
         }
         else if (playerHealth != null)
         {
             playerHealth.HealServerRpc(healValue);
-            Debug.Log($"[NetworkInventory] 💊 +{healValue} HP fallback (type={itemType})");
+            { /* 💊 +{healValue} HP fallback (type={itemType}) */ }
         }
 
         ClientRpcParams clientParams = new ClientRpcParams
@@ -572,7 +572,7 @@ public class NetworkInventory : NetworkBehaviour
         dataSync.networkPhucBonusPct.Value    = phucBonusPct;
         dataSync.networkAttackBonusPct.Value  = attackBonusPct;
         dataSync.networkDefenseBonusPct.Value = defenseBonusPct;
-        Debug.Log($"[NetworkInventory] 🎯 Sync buff bonuses: GeneEXP+{geneExpBonusPct}% EXP+{expBonusPct}% Phuc+{phucBonusPct}% ATK+{attackBonusPct}% DEF+{defenseBonusPct}%");
+        { /* 🎯 Sync buff bonuses: GeneEXP+{geneExpBonusPct}% EXP+{expBonusPct}% Phuc+{phucBonusPct}% ATK+{attackBonusPct}% DEF+{defenseBonusPct}% */ }
     }
 
     // ClientRpc: Notify về item được thêm
@@ -604,7 +604,7 @@ public class NetworkInventory : NetworkBehaviour
     private void OnItemUsedClientRpc(int itemID, ClientRpcParams clientRpcParams = default)
     {
         // Có thể play sound/effect ở đây
-        Debug.Log($"[NetworkInventory] Item {itemID} được sử dụng");
+        { /* Item {itemID} được sử dụng */ }
     }
 
     // Lấy ItemTemplateDto từ ItemID (dùng ItemTemplateManager mới)
@@ -616,25 +616,25 @@ public class NetworkInventory : NetworkBehaviour
             if (IsServer)
             {
                 ItemTemplateManager.EnsureInstance();
-                Debug.LogWarning($"[NetworkInventory] ItemTemplateManager vừa được tạo tự động, đang load...");
+                { /* Cảnh báo: ItemTemplateManager vừa được tạo tự động, đang load */ }
             }
             else
             {
-                Debug.LogWarning($"[NetworkInventory] ItemTemplateManager chưa sẵn sàng!");
+                { /* Cảnh báo: ItemTemplateManager chưa sẵn sàng */ }
             }
             return null;
         }
 
         if (!ItemTemplateManager.Instance.IsLoaded())
         {
-            Debug.LogWarning($"[NetworkInventory] ItemTemplateManager chưa load xong templates!");
+            { /* Cảnh báo: ItemTemplateManager chưa load xong templates */ }
             return null;
         }
 
         var template = ItemTemplateManager.Instance.GetItemTemplate(itemID);
         if (template == null)
         {
-            Debug.LogWarning($"[NetworkInventory] ItemID {itemID} not found in ItemTemplateManager!");
+            { /* Cảnh báo: ItemID {itemID} not found in ItemTemplateManager */ }
         }
         return template;
     }
@@ -723,7 +723,7 @@ public class NetworkInventory : NetworkBehaviour
         {
             int oldMaxSlots = maxSlots;
             maxSlots = bagSlots;
-            Debug.Log($"[PickupTrace][NetworkInventory] Apply bag_slots from DB: {oldMaxSlots} -> {maxSlots}");
+            { /* [NetworkInventory] Apply bag_slots from DB: {oldMaxSlots} -> {maxSlots} */ }
         }
     }
 
@@ -768,15 +768,15 @@ public class NetworkInventory : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        Debug.Log($"[NetworkInventory] AddItemWithDBSyncServerRpc: itemCode={itemCode}, quantity={quantity}");
+        { /* AddItemWithDBSyncServerRpc: itemCode={itemCode}, quantity={quantity} */ }
 
         AddItemToNetworkVariable(itemTemplateId, itemCode, iconId, quantity);
 
         // ✅ Sync với DB ngay lập tức sau khi thêm item
-        Debug.Log($"[NetworkInventory] Đang sync item vào DB...");
+        { /* Đang sync item vào DB */ }
         SyncInventoryToDB(itemTemplateId, itemCode, iconId, quantity);
         
-        Debug.Log($"[NetworkInventory] ✅ AddItemWithDBSyncServerRpc hoàn thành!");
+        { /* AddItemWithDBSyncServerRpc hoàn thành */ }
     }
 
     // ServerRpc: Thêm item vào NetworkVariable KHÔNG sync DB.
@@ -786,9 +786,9 @@ public class NetworkInventory : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        Debug.Log($"[NetworkInventory] AddItemWithoutDBSyncServerRpc: itemCode={itemCode}, quantity={quantity}");
+        { /* AddItemWithoutDBSyncServerRpc: itemCode={itemCode}, quantity={quantity} */ }
         AddItemToNetworkVariable(itemTemplateId, itemCode, iconId, quantity);
-        Debug.Log($"[NetworkInventory] ✅ AddItemWithoutDBSyncServerRpc hoàn thành!");
+        { /* AddItemWithoutDBSyncServerRpc hoàn thành */ }
     }
 
     // Helper: Thêm item vào NetworkVariable (không sync DB)
@@ -819,7 +819,7 @@ public class NetworkInventory : NetworkBehaviour
 
         if (emptySlotIndex == -1)
         {
-            Debug.LogWarning("[NetworkInventory] Inventory đầy! Không thể thêm item.");
+            { /* Cảnh báo: Inventory đầy! Không thể thêm item */ }
             return;
         }
 
@@ -833,7 +833,7 @@ public class NetworkInventory : NetworkBehaviour
         
         networkInventoryData.Value = currentData;
 
-        Debug.Log($"[NetworkInventory] Đã thêm {quantity}x {itemCode} vào slot {emptySlotIndex}");
+        { /* Đã thêm {quantity}x {itemCode} vào slot {emptySlotIndex} */ }
 
         OnItemAddedClientRpc(itemID, quantity);
     }
@@ -845,7 +845,7 @@ public class NetworkInventory : NetworkBehaviour
 
         if (playerId == 0)
         {
-            Debug.LogWarning($"[NetworkInventory] SyncInventoryToDB: playerId=0, OwnerClientId={OwnerClientId} — không thể sync DB!");
+            { /* Cảnh báo: SyncInventoryToDB: playerId=0, OwnerClientId={OwnerClientId}  không thể sync DB */ }
             return;
         }
 
@@ -865,7 +865,7 @@ public class NetworkInventory : NetworkBehaviour
 
         if (string.IsNullOrEmpty(clientJwt))
         {
-            Debug.LogWarning("[NetworkInventory] APIClient.Instance is null và không có JWT client! Không thể sync với DB.");
+            { /* Cảnh báo: APIClient.Instance is null và không có JWT client! Không thể sync với DB */ }
             return;
         }
 
@@ -877,7 +877,7 @@ public class NetworkInventory : NetworkBehaviour
     {
         if (!IsServer)
         {
-            Debug.LogWarning("[NetworkInventory] LoadInventoryFromDB: Chỉ server mới load được!");
+            { /* Cảnh báo: LoadInventoryFromDB: Chỉ server mới load được */ }
             return;
         }
 
@@ -885,7 +885,7 @@ public class NetworkInventory : NetworkBehaviour
         
         if (playerId == 0)
         {
-            Debug.LogWarning("[NetworkInventory] LoadInventoryFromDB: playerId = 0, không thể load!");
+            { /* Cảnh báo: LoadInventoryFromDB: playerId = 0, không thể load */ }
             return;
         }
 
@@ -923,7 +923,7 @@ public class NetworkInventory : NetworkBehaviour
         int prefsUserId = PlayerPrefs.GetInt("USER_ID", 0);
         if (prefsUserId > 0)
         {
-            Debug.LogWarning($"[NetworkInventory] ResolveInventoryApiPlayerId: fallback USER_ID={prefsUserId} cho clientId={clientId}. Kiểm tra luồng set PLAYER_ID/player_id.");
+            { /* Cảnh báo: ResolveInventoryApiPlayerId: fallback USER_ID={prefsUserId} cho clientId={clientId}. Kiểm tra luồng set PLAYER_ID/player_id */ }
             return prefsUserId;
         }
 
@@ -986,7 +986,7 @@ public class NetworkInventory : NetworkBehaviour
             string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
                 ? req.downloadHandler.text
                 : req.error;
-            Debug.LogError($"[PickupTrace][NetworkInventory] DbSyncFail item={traceItemId} playerId={playerId} targetClient={targetClientId} error={errorMessage}");
+            { /* Lỗi: [NetworkInventory] DbSyncFail item={traceItemId} playerId={playerId} targetClient={targetClientId} error={errorMessage} */ }
             yield break;
         }
 
@@ -1014,11 +1014,11 @@ public class NetworkInventory : NetworkBehaviour
             string errorMessage = req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text)
                 ? req.downloadHandler.text
                 : req.error;
-            Debug.LogError($"[NetworkInventory] ❌ Direct sort inventory failed: {errorMessage}");
+            { /* Lỗi: Direct sort inventory failed: {errorMessage} */ }
             yield break;
         }
 
-        Debug.Log($"[NetworkInventory] ✅ Direct sort inventory thành công: {req.downloadHandler.text}");
+        { /* Direct sort inventory thành công: {req.downloadHandler.text} */ }
         yield return PushInventoryDataToClientDirect(playerId, targetClientId);
     }
 
@@ -1042,10 +1042,9 @@ public class NetworkInventory : NetworkBehaviour
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientId } }
                 };
                 SendInventoryDataClientRpc(json, clientParams);
-                Debug.Log($"[NetworkInventory] 📡 Direct push {freshItems.Length} items về client {targetClientId}");
+                { /* 📡 Direct push {freshItems.Length} items về client {targetClientId} */ }
             },
-            error => Debug.LogError($"[NetworkInventory] ❌ Direct push inventory thất bại cho clientId={targetClientId}: {error}")
-        );
+            error => { /* Lỗi: Direct push inventory thất bại cho clientId={targetClientId}: {error} */ });
     }
 
     private IEnumerator FetchPlayerDataFromApiDirect(int playerId, int geneSlot, System.Action<PlayerDataResponse> onSuccess, System.Action<string> onError = null)
@@ -1100,8 +1099,7 @@ public class NetworkInventory : NetworkBehaviour
                 int bagSlots = response != null && response.bag_slots > 0 ? response.bag_slots : maxSlots;
                 PopulateInventoryFromDB(items, bagSlots);
             },
-            error => Debug.LogWarning($"[NetworkInventory] Direct API load failed: {error}")
-        );
+            error => { /* Cảnh báo: Direct API load failed: {error} */ });
     }
 
     // Rebuild Netcode inventory from DB data using the player's current bag slot limit.
@@ -1120,7 +1118,7 @@ public class NetworkInventory : NetworkBehaviour
             
             if (slotIndex < 0 || slotIndex >= maxSlots)
             {
-                Debug.LogWarning($"[PickupTrace][NetworkInventory] DBLoadSkipSlot item={dbItem.itemTemplateId} slot={slotIndex} qty={dbItem.quantity} maxSlots={maxSlots}");
+                { /* Cảnh báo: [NetworkInventory] DBLoadSkipSlot item={dbItem.itemTemplateId} slot={slotIndex} qty={dbItem.quantity} maxSlots={maxSlots} */ }
                 continue;
             }
 

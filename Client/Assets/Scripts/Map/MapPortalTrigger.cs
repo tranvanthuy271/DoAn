@@ -102,7 +102,7 @@ public class MapPortalTrigger : MonoBehaviour
                 }
                 catch { /* giữ message mặc định */ }
             }
-            Debug.LogWarning($"[MapPortalTrigger] API lỗi: {req.error} | body: {req.downloadHandler.text}");
+            { /* Cảnh báo: API lỗi: {req.error} | body: {req.downloadHandler.text} */ }
             ShowDenied(deniedMsg);
             LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
@@ -125,7 +125,7 @@ public class MapPortalTrigger : MonoBehaviour
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
         if (transitionController == null)
         {
-            Debug.LogError("[MapPortalTrigger] Không tìm thấy ZoneTransitionController trong scene.");
+            { /* Lỗi: Không tìm thấy ZoneTransitionController trong scene */ }
             ShowDenied("Không thể chuyển khu lúc này.");
             LoginLoadingManager.HideLoadingStatic();
             _isTransitioning = false;
@@ -144,7 +144,7 @@ public class MapPortalTrigger : MonoBehaviour
 
     private void ShowDenied(string msg)
     {
-        Debug.Log($"[Portal] Không thể đi qua: {msg}");
+        { /* Không thể đi qua: {msg} */ }
         // Hiển thị thông báo nổi bật cho người chơi
         GlobalNotificationUI.Show(msg, "Không thể vào khu vực này", 3f);
         if (keyRequiredPrompt != null)

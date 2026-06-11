@@ -113,7 +113,7 @@ public class MetalShieldSkill : NetworkBehaviour
                 else
                     Destroy(other.gameObject);
 
-                Debug.Log($"[MetalShieldSkill] Đã xóa projectile: {other.name} (tag: {tag})");
+                { /* Đã xóa projectile: {other.name} (tag: {tag}) */ }
                 return;
             }
         }
@@ -177,7 +177,7 @@ public class MetalShieldSkill : NetworkBehaviour
         Animator anim = skillEffect.GetComponent<Animator>();
         if (anim == null || anim.runtimeAnimatorController == null)
         {
-            Debug.LogWarning("[MetalShieldSkill] SkillEffect không có Animator hoặc AnimatorController.");
+            { /* Cảnh báo: SkillEffect không có Animator hoặc AnimatorController */ }
             return;
         }
 
@@ -189,7 +189,7 @@ public class MetalShieldSkill : NetworkBehaviour
                 return;
             }
         }
-        Debug.LogWarning($"[MetalShieldSkill] Animator không có Trigger '{shieldTriggerName}'.");
+        { /* Cảnh báo: Animator không có Trigger '{shieldTriggerName}' */ }
     }
 
     [ClientRpc]
@@ -252,7 +252,7 @@ public class MetalShieldSkill : NetworkBehaviour
     {
         if (!IsOwner) return;
         playerHealth?.ActivateShield();
-        Debug.Log("[MetalShieldSkill] Khiên bật — bất tử!");
+        { /* Khiên bật  bất tử */ }
     }
 
     [ClientRpc]
@@ -260,7 +260,7 @@ public class MetalShieldSkill : NetworkBehaviour
     {
         if (!IsOwner) return;
         playerHealth?.DeactivateShield();
-        Debug.Log("[MetalShieldSkill] Khiên tắt — cooldown bắt đầu.");
+        { /* Khiên tắt  cooldown bắt đầu */ }
     }
 
     // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.

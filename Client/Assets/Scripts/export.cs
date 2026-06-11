@@ -31,7 +31,7 @@ public class ExportSprites
             File.WriteAllBytes("Assets/" + sprite.name + ".png", png);
         }
 
-        Debug.Log("Export done!");
+        { /* Export done */ }
     }
 }
 #endif

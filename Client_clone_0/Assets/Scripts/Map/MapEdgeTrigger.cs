@@ -55,7 +55,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (!other.TryGetComponent<NetworkObject>(out var netObj)) return;
         if (!netObj.IsOwner) return;
 
-        Debug.Log($"[MapEdgeTrigger] Trigger! obj={other.name} direction={direction} mapId={ResolveMapId()}");
+        { /* Trigger! obj={other.name} direction={direction} mapId={ResolveMapId()} */ }
         StartCoroutine(DoTravel(other.gameObject));
     }
 
@@ -77,20 +77,20 @@ public class MapEdgeTrigger : MonoBehaviour
 
         // Bước 1: tìm portal theo direction
         string url = $"{apiBase}/api/map/portal/direction?mapId={mapId}&direction={direction}";
-        Debug.Log($"[MapEdgeTrigger] Bước 1 — GET {url}");
+        { /* Bước 1  GET {url} */ }
         using var portalReq = UnityWebRequest.Get(url);
         portalReq.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
         yield return portalReq.SendWebRequest();
 
         if (portalReq.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[MapEdgeTrigger] Bước 1 FAIL — portal '{direction}' map {mapId}: {portalReq.error} | HTTP={portalReq.responseCode}");
+            { /* Cảnh báo: Bước 1 FAIL  portal '{direction}' map {mapId}: {portalReq.error} | HTTP={portalReq.responseCode} */ }
             GlobalNotificationUI.Show("Không tìm thấy đường đi ở hướng này.", "Không thể chuyển map", 3f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
-        Debug.Log($"[MapEdgeTrigger] Bước 1 OK — portal response: {portalReq.downloadHandler.text}");
+        { /* Bước 1 OK  portal response: {portalReq.downloadHandler.text} */ }
 
         var portal = JsonUtility.FromJson<PortalInfo>(portalReq.downloadHandler.text);
 
@@ -106,7 +106,7 @@ public class MapEdgeTrigger : MonoBehaviour
         };
 
         string json = JsonUtility.ToJson(payload);
-        Debug.Log($"[MapEdgeTrigger] Bước 2 — POST travel: {json}");
+        { /* Bước 2  POST travel: {json} */ }
         using var travelReq = new UnityWebRequest($"{apiBase}/api/map/travel", "POST");
         travelReq.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
         travelReq.downloadHandler = new DownloadHandlerBuffer();
@@ -129,18 +129,18 @@ public class MapEdgeTrigger : MonoBehaviour
                 }
                 catch { /* giữ message mặc định */ }
             }
-            Debug.LogWarning($"[MapEdgeTrigger] Bước 2 FAIL — Travel lỗi HTTP={travelReq.responseCode}: {travelReq.downloadHandler.text}");
+            { /* Cảnh báo: Bước 2 FAIL  Travel lỗi HTTP={travelReq.responseCode}: {travelReq.downloadHandler.text} */ }
             GlobalNotificationUI.Show(deniedMsg, "Không thể vào khu vực này", 4f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
         }
 
-        Debug.Log($"[MapEdgeTrigger] Bước 2 OK — Travel response: {travelReq.downloadHandler.text}");
+        { /* Bước 2 OK  Travel response: {travelReq.downloadHandler.text} */ }
         var resp = JsonUtility.FromJson<TravelResponse>(travelReq.downloadHandler.text);
         if (!resp.success)
         {
             string errMsg = resp.GetErrorMessage() ?? "Server từ chối chuyển map.";
-            Debug.LogWarning($"[MapEdgeTrigger] Bước 2 — Server từ chối: {errMsg}");
+            { /* Cảnh báo: Bước 2  Server từ chối: {errMsg} */ }
             GlobalNotificationUI.Show(errMsg, "Không thể vào khu vực này", 4f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
@@ -153,7 +153,7 @@ public class MapEdgeTrigger : MonoBehaviour
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
         if (transitionController == null)
         {
-            Debug.LogWarning("[MapEdgeTrigger] Không tìm thấy ZoneTransitionController để chuyển map.");
+            { /* Cảnh báo: Không tìm thấy ZoneTransitionController để chuyển map */ }
             GlobalNotificationUI.Show("Không thể chuyển map lúc này.", "Lỗi", 3f);
             ResetTrigger(hideGlobalLoading: true);
             yield break;
@@ -166,7 +166,7 @@ public class MapEdgeTrigger : MonoBehaviour
             arrivalPos.x,
             arrivalPos.y);
 
-        Debug.Log($"[MapEdgeTrigger] Bước 3 — RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({arrivalPos.x},{arrivalPos.y})");
+        { /* Bước 3  RequestMapPortalTransfer → map={resp.dest_map_id} zone={preferredZoneId} pos=({arrivalPos.x},{arrivalPos.y}) */ }
         ResetTrigger(hideGlobalLoading: false);
     }
 
@@ -174,7 +174,7 @@ public class MapEdgeTrigger : MonoBehaviour
     {
         string oppositeDirection = travelDirection == "left" ? "right" : "left";
         string url = $"{apiBase}/api/map/portal/direction?mapId={targetMapId}&direction={oppositeDirection}";
-        Debug.Log($"[MapEdgeTrigger] Resolve arrival — GET {url}");
+        { /* Resolve arrival  GET {url} */ }
 
         using var req = UnityWebRequest.Get(url);
         req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
@@ -190,12 +190,12 @@ public class MapEdgeTrigger : MonoBehaviour
             const float inwardOffset = 1.5f;
             float arrX = oppositeDirection == "right" ? portal.src_x - inwardOffset : portal.src_x + inwardOffset;
             Vector2 resolved = new Vector2(arrX, portal.src_y);
-            Debug.Log($"[MapEdgeTrigger] Resolve arrival OK — target {oppositeDirection} portal map={targetMapId} raw=({portal.src_x},{portal.src_y}) adjusted=({resolved.x},{resolved.y})");
+            { /* Resolve arrival OK  target {oppositeDirection} portal map={targetMapId} raw=({portal.src_x},{portal.src_y}) adjusted=({resolved.x},{resolved.y}) */ }
             onResolved?.Invoke(resolved);
         }
         else
         {
-            Debug.LogWarning($"[MapEdgeTrigger] Resolve arrival FAIL — target {oppositeDirection} portal map={targetMapId}. Fallback dest_x/dest_y. HTTP={req.responseCode} err={req.error}");
+            { /* Cảnh báo: Resolve arrival FAIL  target {oppositeDirection} portal map={targetMapId}. Fallback dest_x/dest_y. HTTP={req.responseCode} err={req.error} */ }
             onResolved?.Invoke(fallbackPos);
         }
     }
@@ -232,13 +232,13 @@ public class MapEdgeTrigger : MonoBehaviour
             if (map != null && map.map_id >= 0)
             {
                 if (map.map_id != fallbackMapId)
-                    Debug.Log($"[MapEdgeTrigger] Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id}");
+                    { /* Resolve mapId by scene '{sceneName}': {fallbackMapId} -> {map.map_id} */ }
                 onResolved?.Invoke(map.map_id);
                 yield break;
             }
         }
 
-        Debug.LogWarning($"[MapEdgeTrigger] Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error}");
+        { /* Cảnh báo: Không resolve được mapId theo scene '{sceneName}', dùng fallback mapId={fallbackMapId}. HTTP={req.responseCode} err={req.error} */ }
         onResolved?.Invoke(fallbackMapId);
     }
 

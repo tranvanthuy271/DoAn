@@ -36,7 +36,7 @@ namespace ParrelSync
 
                 EditorPrefs.SetBool(key, value);
                 valueCache = value;
-                Debug.Log("Editor preference updated. key: " + key + ", value: " + value);
+                { /* Editor preference updated. key */ }
             }
         }
 
@@ -78,7 +78,7 @@ namespace ParrelSync
             {
                 if (item.Contains(serializationToken))
                 {
-                    Debug.LogError("Unable to serialize this value ["+item+"], it contains the serialization token ["+serializationToken+"]");
+                    { /* Lỗi: Unable to serialize this value [ */ }
                     continue;
                 }
 
@@ -182,7 +182,7 @@ namespace ParrelSync
                     }
                     else if( result != "")
                     {
-                        Debug.LogWarning("Symbolic Link folder must be within the project directory");
+                        { /* Cảnh báo: Symbolic Link folder must be within the project directory */ }
                     }
                 }
                 if (GUILayout.Button("Clear", GUILayout.Width(100)))
@@ -207,7 +207,7 @@ namespace ParrelSync
                 AssetModPref.ClearValue();
                 AlsoCheckUnityLockFileStaPref.ClearValue();
                 OptionalSymbolicLinkFolders.ClearStoredValue();
-                Debug.Log("Editor preferences cleared");
+                { /* Editor preferences cleared */ }
             }
             GUILayout.EndVertical();
         }

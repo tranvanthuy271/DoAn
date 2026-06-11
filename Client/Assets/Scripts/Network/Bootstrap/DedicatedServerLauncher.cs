@@ -44,18 +44,18 @@ public class DedicatedServerLauncher : MonoBehaviour
         // Chỉ auto start nếu đang trong scene ServerScene
         // Nếu không phải ServerScene, không tự động start (để client chỉ connect)
         string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        UnityEngine.Debug.Log($"[DedicatedServerLauncher] Start() called in scene: '{currentSceneName}'");
+        { /* Start() called in scene: '{currentSceneName}' */ }
         
         if (currentSceneName == "ServerScene")
         {
             // Tự động start server khi script start (chỉ trong ServerScene)
-            UnityEngine.Debug.Log("[DedicatedServerLauncher] Scene is ServerScene, starting dedicated server...");
+            { /* Scene is ServerScene, starting dedicated server */ }
             StartDedicatedServer();
         }
         else
         {
-            UnityEngine.Debug.LogWarning($"[DedicatedServerLauncher] ⚠️ Current scene is '{currentSceneName}', not 'ServerScene'. DedicatedServerLauncher should only be in ServerScene. Disabling auto start.");
-            UnityEngine.Debug.LogWarning($"[DedicatedServerLauncher] ⚠️ Please remove DedicatedServerLauncher from scene '{currentSceneName}'.");
+            { /* Cảnh báo: ⚠️ Current scene is '{currentSceneName}', not 'ServerScene'. DedicatedServerLauncher should only be in ServerScene. Disabling auto start */ }
+            { /* Cảnh báo: ⚠️ Please remove DedicatedServerLauncher from scene '{currentSceneName}' */ }
         }
     }
 
@@ -64,11 +64,11 @@ public class DedicatedServerLauncher : MonoBehaviour
     {
         if (isServerRunning)
         {
-            UnityEngine.Debug.LogWarning("[DedicatedServer] Server đã đang chạy!");
+            { /* Cảnh báo: Server đã đang chạy */ }
             return;
         }
 
-        UnityEngine.Debug.Log("[DedicatedServer] Đang khởi động Dedicated Server...");
+        { /* Đang khởi động Dedicated Server */ }
 
         // 1. Start API Server
         StartAPIServer();
@@ -105,8 +105,8 @@ public class DedicatedServerLauncher : MonoBehaviour
 
         if (string.IsNullOrEmpty(apiServerPath) || !File.Exists(apiServerPath))
         {
-            UnityEngine.Debug.LogError($"[DedicatedServer] Không tìm thấy GameServerApi.exe tại: {apiServerPath}");
-            UnityEngine.Debug.LogError("Vui lòng build GameServerApi project trước!");
+            { /* Lỗi: Không tìm thấy GameServerApi.exe tại: {apiServerPath} */ }
+            { /* Lỗi: Vui lòng build GameServerApi project trước */ }
             return;
         }
 
@@ -121,11 +121,11 @@ public class DedicatedServerLauncher : MonoBehaviour
             };
 
             apiServerProcess = Process.Start(startInfo);
-            UnityEngine.Debug.Log($"[DedicatedServer] ✓ API Server đã khởi động: {apiServerPath}");
+            { /* ✓ API Server đã khởi động: {apiServerPath} */ }
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.LogError($"[DedicatedServer] ✗ Lỗi khi start API Server: {ex.Message}");
+            { /* Lỗi: ✗ Lỗi khi start API Server: {ex.Message} */ }
         }
     }
 
@@ -139,14 +139,14 @@ public class DedicatedServerLauncher : MonoBehaviour
 
         if (networkManager == null)
         {
-            UnityEngine.Debug.LogError("[DedicatedServer] NetworkManager not found!");
+            { /* Lỗi: NetworkManager not found */ }
             return;
         }
 
         // Kiểm tra xem server/host đã start chưa (có thể bởi ServerBootstrap hoặc script khác)
         if (networkManager.IsServer || networkManager.IsHost)
         {
-            UnityEngine.Debug.Log("[DedicatedServer] Netcode Server/Host đã được start bởi script khác (có thể là ServerBootstrap). Bỏ qua.");
+            { /* Netcode Server/Host đã được start bởi script khác (có thể là ServerBootstrap). Bỏ qua */ }
             isServerRunning = true;
             return;
         }
@@ -154,7 +154,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         var transport = networkManager.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            UnityEngine.Debug.LogError("[DedicatedServer] UnityTransport not found!");
+            { /* Lỗi: UnityTransport not found */ }
             return;
         }
 
@@ -164,11 +164,11 @@ public class DedicatedServerLauncher : MonoBehaviour
         if (networkManager.StartServer())
         {
             isServerRunning = true;
-            UnityEngine.Debug.Log($"[DedicatedServer] ✓ Netcode Server đã khởi động trên port {netcodePort}");
+            { /* ✓ Netcode Server đã khởi động trên port {netcodePort} */ }
         }
         else
         {
-            UnityEngine.Debug.LogError("[DedicatedServer] ✗ Không thể start Netcode Server!");
+            { /* Lỗi: ✗ Không thể start Netcode Server */ }
         }
     }
 
@@ -180,7 +180,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         {
             networkManager.Shutdown();
             isServerRunning = false;
-            UnityEngine.Debug.Log("[DedicatedServer] Netcode Server/Host đã dừng");
+            { /* Netcode Server/Host đã dừng */ }
         }
 
         // Stop API Server
@@ -189,7 +189,7 @@ public class DedicatedServerLauncher : MonoBehaviour
             apiServerProcess.Kill();
             apiServerProcess.Dispose();
             apiServerProcess = null;
-            UnityEngine.Debug.Log("[DedicatedServer] API Server đã dừng");
+            { /* API Server đã dừng */ }
         }
     }
 

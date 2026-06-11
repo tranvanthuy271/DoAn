@@ -174,7 +174,7 @@ public static class SelectGeneSceneSetup
         }
         else
         {
-            Debug.LogWarning($"[SelectGeneSceneSetup] Không tìm thấy font tại: {NotoSansPath}");
+            { /* Cảnh báo: Không tìm thấy font tại: {NotoSansPath} */ }
         }
 
         // ── EventSystem: NOT created here — GameUIPersist already provides

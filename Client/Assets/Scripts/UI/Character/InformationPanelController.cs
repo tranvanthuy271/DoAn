@@ -118,7 +118,7 @@ public class InformationPanelController : MonoBehaviour
     {
         UIPanelManager.CloseOthers(gameObject);
         ResolveReferences();
-        Debug.Log("[InformationPanelController] ShowPanel() được gọi");
+        { /* ShowPanel() được gọi */ }
 
         // Mở thẳng tab Túi Đồ — không cần bật CharacterPanel
         SwitchTo(TopTab.TuiDo);
@@ -194,14 +194,14 @@ public class InformationPanelController : MonoBehaviour
         {
             characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
             if (characterPanel != null)
-                Debug.Log($"[InformationPanelController] Auto-resolved CharacterPanelController: {characterPanel.gameObject.name}");
+                { /* Auto-resolved CharacterPanelController: {characterPanel.gameObject.name} */ }
         }
 
         if (inventoryUI == null)
         {
             inventoryUI = FindObjectOfType<InventoryUI>(includeInactive: true);
             if (inventoryUI != null)
-                Debug.Log($"[InformationPanelController] Auto-resolved InventoryUI: {inventoryUI.gameObject.name}");
+                { /* Auto-resolved InventoryUI: {inventoryUI.gameObject.name} */ }
         }
 
         if (btnThongTin == null)

@@ -53,7 +53,7 @@ public class QuestNpcPanel : MonoBehaviour
         //   2. Không bị các Canvas khác (EnemyInfoPanel, BuffHudPanel…) che khuất
         if (transform.parent != null)
         {
-            Debug.Log($"{LogPrefix} Awake: đang ở trong '{transform.parent.name}' → tách ra root để Canvas hoạt động đúng.");
+            { /* {LogPrefix} Awake: đang ở trong '{transform.parent.name}' → tách ra root để Canvas hoạt động đúng */ }
             transform.SetParent(null, false);
         }
         DontDestroyOnLoad(gameObject);
@@ -69,7 +69,7 @@ public class QuestNpcPanel : MonoBehaviour
     {
         if (_initialized) return;
         _initialized = true;
-        Debug.Log($"{LogPrefix} EnsureInit() running | childCount={transform.childCount}");
+        { /* {LogPrefix} EnsureInit() running | childCount={transform.childCount} */ }
 
         // AutoWire by name convention
         if (rootPanel        == null) rootPanel        = transform.Find("QuestNpcPanelRoot")?.gameObject
@@ -99,12 +99,12 @@ public class QuestNpcPanel : MonoBehaviour
                     if (oldImg != null) oldImg.enabled = false;
                     if (viewport.GetComponent<RectMask2D>() == null)
                         viewport.gameObject.AddComponent<RectMask2D>();
-                    Debug.Log($"{LogPrefix} Viewport Mask→RectMask2D fixed.");
+                    { /* {LogPrefix} Viewport Mask→RectMask2D fixed */ }
                 }
             }
         }
 
-        Debug.Log($"{LogPrefix} EnsureInit() done | rootPanel={(rootPanel == null ? "null" : rootPanel.name)} headerText={(headerText == null ? "null" : "ok")} questListContent={(questListContent == null ? "null" : "ok")} btnClose={(btnClose == null ? "null" : "ok")} questItemPrefab={(questItemPrefab == null ? "null (fallback)" : questItemPrefab.name)}");
+        { /* {LogPrefix} EnsureInit() done | rootPanel={(rootPanel == null ? */ }
         if (btnClose  == null) btnClose  = rootPanel.transform.Find("BtnClose")?.GetComponent<Button>();
         if (btnCaoTu  == null) btnCaoTu  = rootPanel.transform.Find("BtnCaoTu")?.GetComponent<Button>();
 
@@ -131,7 +131,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
 
         if (Instance == null)
-            Debug.LogWarning($"{LogPrefix} Không tìm thấy QuestNpcPanel trong scene hoặc Resources/{ResourcesPath}.");
+            { /* Cảnh báo: {LogPrefix} Không tìm thấy QuestNpcPanel trong scene hoặc Resources/{ResourcesPath} */ }
 
         return Instance;
     }
@@ -139,40 +139,40 @@ public class QuestNpcPanel : MonoBehaviour
     public void Open(NpcData npc)
     {
         _currentNpc = npc;
-        Debug.Log($"{LogPrefix} Open() called | npc={(npc == null ? "null" : $"id={npc.npc_id} name={npc.npc_name} type={npc.npc_type}")} | GO.active={gameObject.activeSelf} parent={(transform.parent == null ? "none" : $"{transform.parent.name}.active={transform.parent.gameObject.activeSelf}")}");
+        { /* {LogPrefix} Open() called | npc={(npc == null ? */ }
         EnsureInit();
         // Kích hoạt root GO trước — nếu prefab bắt đầu với SetActive(false),
         // rootPanel.SetActive(true) trên child sẽ không có tác dụng khi parent vẫn inactive.
         var _registeredGo = rootPanel != null ? rootPanel : gameObject;
         UIPanelManager.CloseOthers(_registeredGo);
         gameObject.SetActive(true);
-        Debug.Log($"{LogPrefix} After gameObject.SetActive(true) | GO.active={gameObject.activeSelf} rootPanel={(rootPanel == null ? "null" : $"{rootPanel.name}.active={rootPanel.activeSelf}")}");
+        { /* {LogPrefix} After gameObject.SetActive(true) | GO.active={gameObject.activeSelf} rootPanel={(rootPanel == null ? */ }
         if (rootPanel) rootPanel.SetActive(true);
-        Debug.Log($"{LogPrefix} After rootPanel.SetActive(true) | rootPanel.active={rootPanel?.activeSelf} rootPanel.activeInHierarchy={rootPanel?.activeInHierarchy}");
+        { /* {LogPrefix} After rootPanel.SetActive(true) | rootPanel.active={rootPanel?.activeSelf} rootPanel.activeInHierarchy={rootPanel?.activeInHierarchy} */ }
 
         // DIAGNOSTIC + AUTO-FIX: Canvas info
         var _c = GetComponent<Canvas>();
         if (_c != null)
         {
-            Debug.Log($"{LogPrefix} Canvas | renderMode={_c.renderMode} sortOrder={_c.sortingOrder} enabled={_c.enabled} isActiveEnabled={_c.isActiveAndEnabled}");
+            { /* {LogPrefix} Canvas | renderMode={_c.renderMode} sortOrder={_c.sortingOrder} enabled={_c.enabled} isActiveEnabled={_c.isActiveAndEnabled} */ }
             // Force đúng mode nếu bị đặt sai trong Inspector
             if (_c.renderMode != RenderMode.ScreenSpaceOverlay)
             {
-                Debug.LogWarning($"{LogPrefix} Canvas renderMode SAI ({_c.renderMode})! Đang sửa → ScreenSpaceOverlay.");
+                { /* Cảnh báo: {LogPrefix} Canvas renderMode SAI ({_c.renderMode})! Đang sửa → ScreenSpaceOverlay */ }
                 _c.renderMode = RenderMode.ScreenSpaceOverlay;
             }
             if (!_c.enabled)
             {
-                Debug.LogWarning($"{LogPrefix} Canvas bị disabled! Đang bật lại.");
+                { /* Cảnh báo: {LogPrefix} Canvas bị disabled! Đang bật lại */ }
                 _c.enabled = true;
             }
         }
         else
-            Debug.LogError($"{LogPrefix} KHÔNG CÓ Canvas component! Prefab bị sai — cần chạy lại DoAn > Quest > Create Quest NPC Panel.");
+            { /* Lỗi: {LogPrefix} KHÔNG CÓ Canvas component! Prefab bị sai  cần chạy lại DoAn > Quest > Create Quest NPC Panel */ }
         if (rootPanel != null)
         {
             var _rt = rootPanel.GetComponent<RectTransform>();
-            if (_rt != null) Debug.Log($"{LogPrefix} rootPanel RectTransform | worldPos={_rt.position} anchoredPos={_rt.anchoredPosition} sizeDelta={_rt.sizeDelta}");
+            if (_rt != null) { /* {LogPrefix} rootPanel RectTransform | worldPos={_rt.position} anchoredPos={_rt.anchoredPosition} sizeDelta={_rt.sizeDelta} */ }
         }
         UIPanelManager.NotifyOpened(rootPanel != null ? rootPanel : gameObject);
 
@@ -194,10 +194,10 @@ public class QuestNpcPanel : MonoBehaviour
 
     private void LoadAndBuildList()
     {
-        Debug.Log($"{LogPrefix} LoadAndBuildList() | QuestManager.Instance={(QuestManager.Instance == null ? "null" : "ok")} npcId={_currentNpc?.npc_id ?? 0}");
+        { /* {LogPrefix} LoadAndBuildList() | QuestManager.Instance={(QuestManager.Instance == null ? */ }
         if (QuestManager.Instance == null)
         {
-            Debug.LogWarning($"{LogPrefix} QuestManager.Instance is null! Đảm bảo QuestManager có trong scene.");
+            { /* Cảnh báo: {LogPrefix} QuestManager.Instance is null! Đảm bảo QuestManager có trong scene */ }
             return;
         }
         QuestManager.Instance.RefreshFromServer(_currentNpc?.npc_id ?? 0, BuildQuestList);
@@ -205,10 +205,10 @@ public class QuestNpcPanel : MonoBehaviour
 
     private void BuildQuestList(List<QuestManager.QuestStatusDto> quests)
     {
-        Debug.Log($"{LogPrefix} BuildQuestList() | quests={(quests == null ? "null" : quests.Count.ToString())} questListContent={(questListContent == null ? "null" : "ok")} rootPanel.activeInHierarchy={rootPanel?.activeInHierarchy}");
+        { /* {LogPrefix} BuildQuestList() | quests={(quests == null ? */ }
         if (questListContent == null)
         {
-            Debug.LogWarning($"{LogPrefix} questListContent is null — không thể build danh sách. Kiểm tra hierarchy: QuestNpcPanelRoot > QuestListScroll > Viewport > Content");
+            { /* Cảnh báo: {LogPrefix} questListContent is null  không thể build danh sách. Kiểm tra hierarchy: QuestNpcPanelRoot > QuestListScroll > Viewport > Content */ }
             return;
         }
 
@@ -223,7 +223,7 @@ public class QuestNpcPanel : MonoBehaviour
 
         if (quests == null || quests.Count == 0)
         {
-            Debug.LogWarning($"{LogPrefix} Không có nhiệm vụ nào từ server cho npcId={_currentNpc?.npc_id}. Kiểm tra DB: npc_type='quest' và quest_config có npc_id phù hợp.");
+            { /* Cảnh báo: {LogPrefix} Không có nhiệm vụ nào từ server cho npcId={_currentNpc?.npc_id}. Kiểm tra DB: npc_type='quest' và quest_config có npc_id phù hợp */ }
             var empty = CreateListItem("NPC này hiện không có nhiệm vụ.");
             empty.GetComponent<Button>().interactable = false;
             return;
@@ -253,7 +253,7 @@ public class QuestNpcPanel : MonoBehaviour
             string label = $"  {icon}  {q.name}";
 
             var item = CreateListItem(label);
-            Debug.Log($"{LogPrefix} item '{q.name}' created | active={item.activeSelf} parent={item.transform.parent?.name}");
+            { /* {LogPrefix} item '{q.name}' created | active={item.activeSelf} parent={item.transform.parent?.name} */ }
             var btn  = item.GetComponent<Button>();
 
             var captured = q;
@@ -261,7 +261,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
 
         // Force layout rebuild để ContentSizeFitter cập nhật ngay lập tức
-        Debug.Log($"{LogPrefix} BuildQuestList done | Content.childCount={questListContent.childCount}");
+        { /* {LogPrefix} BuildQuestList done | Content.childCount={questListContent.childCount} */ }
         UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(
             questListContent.GetComponent<RectTransform>());
 
@@ -271,10 +271,10 @@ public class QuestNpcPanel : MonoBehaviour
         if (scrollRect != null)
         {
             scrollRect.verticalNormalizedPosition = 1f;  // 1 = top
-            Debug.Log($"{LogPrefix} ScrollRect reset to top | Content.localPos={questListContent.localPosition}");
+            { /* {LogPrefix} ScrollRect reset to top | Content.localPos={questListContent.localPosition} */ }
         }
         else
-            Debug.LogWarning($"{LogPrefix} Không tìm thấy ScrollRect cha của Content!");
+            { /* Cảnh báo: {LogPrefix} Không tìm thấy ScrollRect cha của Content */ }
     }
 
     private void OnQuestItemClicked(QuestManager.QuestStatusDto quest)
@@ -285,7 +285,7 @@ public class QuestNpcPanel : MonoBehaviour
         var dialogueUI = QuestDialogueUI.GetOrCreate();
         if (dialogueUI == null)
         {
-            Debug.LogWarning($"{LogPrefix} QuestDialogueUI không tồn tại!");
+            { /* Cảnh báo: {LogPrefix} QuestDialogueUI không tồn tại */ }
             if (rootPanel) rootPanel.SetActive(true);
             return;
         }
@@ -304,7 +304,7 @@ public class QuestNpcPanel : MonoBehaviour
                     {
                         if (!ok)
                         {
-                            Debug.LogWarning($"{LogPrefix} Nộp quest thất bại: {msg}");
+                            { /* Cảnh báo: {LogPrefix} Nộp quest thất bại: {msg} */ }
                             GlobalNotificationUI.Show(msg, "Nộp nhiệm vụ thất bại", 3f, "Đóng");
                             Open(_currentNpc);
                         }
@@ -327,10 +327,10 @@ public class QuestNpcPanel : MonoBehaviour
                     QuestManager.Instance?.AcceptQuest(quest.quest_id, (ok, msg) =>
                     {
                         if (ok)
-                            Debug.Log($"{LogPrefix} Đã nhận nhiệm vụ '{quest.name}'.");
+                            { /* {LogPrefix} Đã nhận nhiệm vụ '{quest.name}' */ }
                         else
                         {
-                            Debug.LogWarning($"{LogPrefix} Nhận quest thất bại: {msg}");
+                            { /* Cảnh báo: {LogPrefix} Nhận quest thất bại: {msg} */ }
                             GlobalNotificationUI.Show(msg, "Nhận nhiệm vụ thất bại", 3f, "Đóng");
                             Open(_currentNpc);
                         }
@@ -392,20 +392,18 @@ public class QuestNpcPanel : MonoBehaviour
         }
 
         var txt = item.GetComponentInChildren<TMP_Text>();
-        Debug.Log($"[QuestNpcPanel] CreateListItem | txt={(txt == null ? "NULL" : txt.name)} " +
-                  $"enabled={txt?.enabled} activeInH={txt?.gameObject.activeInHierarchy} " +
-                  $"text_before='{txt?.text}' color={txt?.color} fontSize={txt?.fontSize}");
+        { /* CreateListItem | txt={(txt == null ? */ }
         if (txt)
         {
             txt.text      = label;
             txt.fontSize  = 18;
             txt.color     = Color.white;
             txt.alignment = TextAlignmentOptions.MidlineLeft;
-            Debug.Log($"[QuestNpcPanel] CreateListItem SET | text='{txt.text}' h={item.GetComponent<RectTransform>()?.sizeDelta.y}");
+            { /* CreateListItem SET | text='{txt.text}' h={item.GetComponent<RectTransform>()?.sizeDelta.y} */ }
         }
         else
         {
-            Debug.LogWarning($"[QuestNpcPanel] CreateListItem: KHONG TIM THAY TMP_Text trong '{item.name}' (childCount={item.transform.childCount})");
+            { /* Cảnh báo: CreateListItem: KHONG TIM THAY TMP_Text trong '{item.name}' (childCount={item.transform.childCount}) */ }
         }
         return item;
     }

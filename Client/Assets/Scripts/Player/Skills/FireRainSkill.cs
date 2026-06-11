@@ -149,7 +149,7 @@ public class FireRainSkill : NetworkBehaviour
                 return;
             }
         }
-        Debug.LogWarning($"[FireRainSkill] Animator không có trigger '{animTriggerName}'.");
+        { /* Cảnh báo: Animator không có trigger '{animTriggerName}' */ }
     }
 
     [ClientRpc]
@@ -194,7 +194,7 @@ public class FireRainSkill : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[FireRainSkill] firePrefab chưa được gán! Hãy gán trong Unity Inspector.");
+            { /* Cảnh báo: firePrefab chưa được gán! Hãy gán trong Unity Inspector */ }
         }
 
         yield return new WaitForSeconds(0.2f);

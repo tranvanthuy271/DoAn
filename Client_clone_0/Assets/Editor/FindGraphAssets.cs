@@ -75,6 +75,6 @@ public class FindGraphAssets : EditorWindow
             }
         }
 
-        Debug.Log($"[FindGraphAssets] Scan complete, found {_results.Count} candidate assets.");
+        { /* Scan complete, found {_results.Count} candidate assets */ }
     }
 }

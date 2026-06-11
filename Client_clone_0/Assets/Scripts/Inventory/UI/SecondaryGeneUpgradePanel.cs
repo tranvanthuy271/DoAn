@@ -147,7 +147,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[SecondaryGeneUpgradePanel] config error: {req.downloadHandler.text}");
+            { /* Cảnh báo: config error: {req.downloadHandler.text} */ }
             cb(false);
             yield break;
         }
@@ -222,7 +222,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(SecondaryGeneUpgradePanel));
         if (sprite == null)
         {
-            Debug.LogWarning($"[SecondaryGeneUpgradePanel] Không apply được icon cho {logContext}.", this);
+            { /* Cảnh báo: Không apply được icon cho {logContext} */ }
             return;
         }
 

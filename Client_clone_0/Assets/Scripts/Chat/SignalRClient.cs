@@ -65,7 +65,7 @@ public class SignalRClient : MonoBehaviour
     {
         _hubUrl = hubUrl;
         _token  = jwtToken;
-        Debug.Log($"[Chat] SignalR Connect -> {_hubUrl}");
+        { /* SignalR Connect -> {_hubUrl} */ }
         StartCoroutine(ConnectRoutine());
     }
 
@@ -178,8 +178,7 @@ public class SignalRClient : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError($"[Chat] Negotiate HTTP {req.responseCode} lỗi: {req.error}\n" +
-                           $"URL: {url}\nBody: {req.downloadHandler?.text}");
+            { /* Lỗi: Negotiate HTTP {req.responseCode} lỗi: {req.error}\n */ }
             onResult(null);
             yield break;
         }
@@ -187,7 +186,7 @@ public class SignalRClient : MonoBehaviour
         var json = req.downloadHandler.text;
         if (string.IsNullOrEmpty(json))
         {
-            Debug.LogError("[Chat] Negotiate trả về body rỗng");
+            { /* Lỗi: Negotiate trả về body rỗng */ }
             onResult(null);
             yield break;
         }
@@ -195,7 +194,7 @@ public class SignalRClient : MonoBehaviour
         // Server trả về lỗi dạng JSON (ít phổ biến nhưng có thể xảy ra)
         if (json.Contains("\"error\"") && !json.Contains("\"availableTransports\""))
         {
-            Debug.LogError($"[Chat] Negotiate lỗi từ server: {json}");
+            { /* Lỗi: Negotiate lỗi từ server: {json} */ }
             onResult(null);
             yield break;
         }
@@ -205,7 +204,7 @@ public class SignalRClient : MonoBehaviour
                  ?? ExtractString(json, "connectionId");
 
         if (string.IsNullOrEmpty(token))
-            Debug.LogError($"[Chat] Negotiate không tìm thấy connectionToken/connectionId. Response: {json}");
+            { /* Lỗi: Negotiate không tìm thấy connectionToken/connectionId. Response: {json} */ }
 
         onResult(token);
     }
@@ -285,11 +284,11 @@ public class SignalRClient : MonoBehaviour
                 var target = ExtractString(json, "target");
                 if (string.IsNullOrEmpty(target)) return;
                 var argJson = ExtractFirstArgument(json);
-                Debug.Log($"[Chat] SignalR Invocation: target='{target}' payload={argJson}");
+                { /* SignalR Invocation: target='{target}' payload={argJson} */ }
                 if (_handlers.TryGetValue(target, out var h))
                     h?.Invoke(argJson);
                 else
-                    Debug.LogWarning($"[Chat] Chưa đăng ký handler cho target '{target}'");
+                    { /* Cảnh báo: Chưa đăng ký handler cho target '{target}' */ }
                 break;
             }
             case 7: // Close
@@ -317,7 +316,7 @@ public class SignalRClient : MonoBehaviour
                 endOfMessage: true,
                 cancellationToken: _cts?.Token ?? CancellationToken.None);
         }
-        catch (Exception ex) { Debug.LogWarning($"[Chat] Send error: {ex.Message}"); }
+        catch (Exception ex) { { /* Cảnh báo: Send error: {ex.Message} */ } }
     }
 
     // JSON Helpers

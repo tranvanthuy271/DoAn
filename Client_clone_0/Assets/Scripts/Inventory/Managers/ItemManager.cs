@@ -40,7 +40,7 @@ public class ItemManager : MonoBehaviour
             {
                 if (itemDatabase.ContainsKey(item.itemID))
                 {
-                    Debug.LogWarning($"[ItemManager] Duplicate ItemID {item.itemID} found! Item: {item.itemName}");
+                    { /* Cảnh báo: Duplicate ItemID {item.itemID} found! Item: {item.itemName} */ }
                 }
                 else
                 {
@@ -49,7 +49,7 @@ public class ItemManager : MonoBehaviour
             }
         }
         
-        Debug.Log($"[ItemManager] Loaded {itemDatabase.Count} items from Resources/{itemsResourcePath}");
+        { /* Loaded {itemDatabase.Count} items from Resources/{itemsResourcePath} */ }
     }
 
     // Lấy ItemData theo ItemID
@@ -60,7 +60,7 @@ public class ItemManager : MonoBehaviour
             return item;
         }
         
-        Debug.LogWarning($"[ItemManager] ItemID {itemID} not found in database!");
+        { /* Cảnh báo: ItemID {itemID} not found in database */ }
         return null;
     }
 

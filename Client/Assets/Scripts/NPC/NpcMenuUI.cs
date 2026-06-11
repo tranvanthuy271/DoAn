@@ -142,7 +142,7 @@ public class NpcMenuUI : MonoBehaviour
     {
         if (npc == null)
         {
-            Debug.LogWarning($"{LogPrefix} Open called with null npc.", this);
+            { /* Cảnh báo: {LogPrefix} Open called with null npc */ }
             return;
         }
 
@@ -153,9 +153,7 @@ public class NpcMenuUI : MonoBehaviour
             ? npc.dialogue_text
             : "Xin chao, ta co the giup gi cho nguoi?";
 
-        Debug.Log(
-            $"{LogPrefix} Open | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' interactionFound={interaction != null}",
-            this);
+        { /* {LogPrefix} Open | npcId={npc.npc_id} name='{npc.npc_name}' type='{npc.npc_type}' interactionFound={interaction != null} */ }
 
         BlacksmithFunctionMenuPanel.Instance?.Close();
 
@@ -165,11 +163,11 @@ public class NpcMenuUI : MonoBehaviour
             var dungeonMenu = DungeonNpcMenuUI.GetOrCreate();
             if (dungeonMenu != null)
             {
-                Debug.Log($"{LogPrefix} Route -> DungeonNpcMenuUI for npcId={npc.npc_id}.", this);
+                { /* {LogPrefix} Route -> DungeonNpcMenuUI for npcId={npc.npc_id} */ }
                 dungeonMenu.Open(npc);
             }
             else
-                Debug.LogWarning($"{LogPrefix} Không tìm thấy DungeonNpcMenuUI trong scene!", this);
+                { /* Cảnh báo: {LogPrefix} Không tìm thấy DungeonNpcMenuUI trong scene */ }
             return;
         }
 
@@ -196,7 +194,7 @@ public class NpcMenuUI : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("[NpcMenuUI] Không tìm thấy menu thợ rèn hoặc panel fallback trong scene!");
+                    { /* Cảnh báo: Không tìm thấy menu thợ rèn hoặc panel fallback trong scene */ }
                 }
             }
             return; // không mở NPC menu thông thường
@@ -208,12 +206,12 @@ public class NpcMenuUI : MonoBehaviour
             var questPanel = QuestNpcPanel.GetOrCreate();
             if (questPanel != null)
             {
-                Debug.Log($"{LogPrefix} Route -> QuestNpcPanel for npcId={npc.npc_id}.", this);
+                { /* {LogPrefix} Route -> QuestNpcPanel for npcId={npc.npc_id} */ }
                 questPanel.Open(npc);
             }
             else
             {
-                Debug.LogWarning($"{LogPrefix} Không tìm thấy QuestNpcPanel trong scene!", this);
+                { /* Cảnh báo: {LogPrefix} Không tìm thấy QuestNpcPanel trong scene */ }
             }
             return;
         }
@@ -229,7 +227,7 @@ public class NpcMenuUI : MonoBehaviour
 
     public void Close()
     {
-        Debug.Log($"{LogPrefix} Close root NPC menu.", this);
+        { /* {LogPrefix} Close root NPC menu */ }
         if (_isUtilityMode)
         {
             GameplayCommandService.OnUtilityShopReceived  -= ShowShop;
@@ -261,7 +259,7 @@ public class NpcMenuUI : MonoBehaviour
         HideItemDetailPanelIfOpen();
         ClearShopItems();
         UIPanelManager.NotifyOpened(gameObject);
-        Debug.Log($"{LogPrefix} OpenShopDirect called.", this);
+        { /* {LogPrefix} OpenShopDirect called */ }
     }
     // Mở shop tiện ích (không cần NPC) từ HUD. Gọi từ UtilityDrawerAutoInstaller khi nhấn nút "Shop".
     public void OpenUtilityMode()
@@ -282,7 +280,7 @@ public class NpcMenuUI : MonoBehaviour
         if (dialogueText) dialogueText.text = "Mua sắm không nào?";
         UIPanelManager.NotifyOpened(gameObject);
         GameplayCommandService.Instance?.LoadUtilityShopServerRpc();
-        Debug.Log($"{LogPrefix} OpenUtilityMode called.", this);
+        { /* {LogPrefix} OpenUtilityMode called */ }
     }
 
     // Called via GameplayCommandService.OnUtilityShopBuyResult when server responds to a utility buy.
@@ -339,7 +337,7 @@ public class NpcMenuUI : MonoBehaviour
     // Called by NpcInteraction.ShowShopClientRpc with a JSON array of shop items.
     public void ShowShop(string shopItemsJson)
     {
-        Debug.Log($"[NpcMenuUI] ShowShop called. JSON length={shopItemsJson?.Length}. shopItemContainer={(shopItemContainer==null?"NULL":shopItemContainer.name)}. shopItemRowPrefab={(shopItemRowPrefab==null?"NULL":shopItemRowPrefab.name)}. filterBarScene={(HasFilterBar?filterBarScene.name:"NULL")}");
+        { /* ShowShop called. JSON length={shopItemsJson?.Length}. shopItemContainer={(shopItemContainer==null? */ }
         ClearShopItems();
 
         ShopListWrapper resp;
@@ -349,21 +347,21 @@ public class NpcMenuUI : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NpcMenuUI] Parse shop data error: {ex.Message}");
+            { /* Lỗi: Parse shop data error: {ex.Message} */ }
             ShowFeedback("Cannot load shop. Try again later!", new Color(1f, 0.4f, 0.4f));
             return;
         }
 
         if (resp?.items == null || resp.items.Length == 0)
         {
-            Debug.LogWarning("[NpcMenuUI] ShowShop: items list is empty or null!");
+            { /* Cảnh báo: ShowShop: items list is empty or null */ }
             ShowFeedback("This shop has no items.", new Color(1f, 0.85f, 0f));
             return;
         }
 
-        Debug.Log($"[NpcMenuUI] ShowShop: parsed {resp.items.Length} items");
+        { /* ShowShop: parsed {resp.items.Length} items */ }
         for (int di = 0; di < Mathf.Min(resp.items.Length, 5); di++)
-            Debug.Log($"  item[{di}] name={resp.items[di].item_name} element_class={resp.items[di].element_class} equip_type={resp.items[di].equip_type}");
+            { /* item[{di}] name={resp.items[di].item_name} element_class={resp.items[di].element_class} equip_type={resp.items[di].equip_type} */ }
 
         // Clear stale feedback
         if (feedbackText != null) feedbackText.gameObject.SetActive(false);
@@ -389,13 +387,13 @@ public class NpcMenuUI : MonoBehaviour
 
         bool hasElements = presentElements.Count > 0;
         if (!hasElements) _activeElementFilter = 0;
-        Debug.Log($"[NpcMenuUI] Filter decision: hasElements={hasElements} presentElements=[{string.Join(",",presentElements)}] presentEquipTypes=[{string.Join(",",presentEquipTypes)}]");
+        { /* Filter decision: hasElements={hasElements} presentElements=[{string.Join( */ }
         CreateElementFilterBar(hasElements, presentElements);
 
         // Filter loại trang bị chỉ hiện khi shop KHÔNG có item theo hệ (loại trừ lẫn nhau)
         bool hasEquipTypes = !hasElements && presentEquipTypes.Count > 0;
         if (!hasEquipTypes) _activeEquipTypeFilter = -1;
-        Debug.Log($"[NpcMenuUI] Filter decision: hasEquipTypes={hasEquipTypes}");
+        { /* Filter decision: hasEquipTypes={hasEquipTypes} */ }
         CreateEquipTypeFilterBar(hasEquipTypes, presentEquipTypes);
 
         _shopCellsWithEquipType.Clear();
@@ -407,7 +405,7 @@ public class NpcMenuUI : MonoBehaviour
             var cell   = cellGO.GetComponent<ShopItemRowUI>();
             if (cell == null)
             {
-                Debug.LogError("[NpcMenuUI] ShopItemCell prefab missing ShopItemRowUI component!");
+                { /* Lỗi: ShopItemCell prefab missing ShopItemRowUI component */ }
                 continue;
             }
 
@@ -452,7 +450,7 @@ public class NpcMenuUI : MonoBehaviour
             cellCount++;
         }
 
-        Debug.Log($"[NpcMenuUI] ShowShop: spawned {cellCount} cells. _activeElementFilter={_activeElementFilter} _activeEquipTypeFilter={_activeEquipTypeFilter}");
+        { /* ShowShop: spawned {cellCount} cells. _activeElementFilter={_activeElementFilter} _activeEquipTypeFilter={_activeEquipTypeFilter} */ }
 
         // Re-apply filters after rebuild (e.g. shop reload following a purchase)
         if (_activeElementFilter != 0)
@@ -468,19 +466,19 @@ public class NpcMenuUI : MonoBehaviour
             string needText = shopItem.price_gold > 0
                 ? shopItem.price_gold + "g"
                 : shopItem.price_silver + "s";
-            Debug.Log($"[Shop] Không đủ tiền mua '{shopItem.item_name}'. Cần: {needText}");
+            { /* Không đủ tiền mua '{shopItem.item_name}'. Cần: {needText} */ }
             ShowFeedback($"Không đủ tiền mua {shopItem.item_name}.", new Color(1f, 0.4f, 0.4f));
             return false;
         }
 
         if (!shopItem.meets_level)
         {
-            Debug.Log($"[Shop] Chưa đủ level. '{shopItem.item_name}' yêu cầu level {shopItem.required_level}.");
+            { /* Chưa đủ level. '{shopItem.item_name}' yêu cầu level {shopItem.required_level} */ }
             ShowFeedback($"Cần cấp {shopItem.required_level} để mua {shopItem.item_name}.", new Color(1f, 0.4f, 0.4f));
             return false;
         }
 
-        Debug.Log($"[Shop] Gửi mua: shopItemId={shopItem.shop_item_id} '{shopItem.item_name}' utilityMode={_isUtilityMode}");
+        { /* Gửi mua: shopItemId={shopItem.shop_item_id} '{shopItem.item_name}' utilityMode={_isUtilityMode} */ }
         if (_isUtilityMode)
         {
             GameplayCommandService.Instance?.BuyUtilityShopItemServerRpc(shopItem.shop_item_id, 1);
@@ -506,7 +504,7 @@ public class NpcMenuUI : MonoBehaviour
 
         if (detailPanel == null)
         {
-            Debug.LogWarning("[NpcMenuUI] Không tìm thấy ItemDetailPanel để hiển thị thông tin item trong shop.");
+            { /* Cảnh báo: Không tìm thấy ItemDetailPanel để hiển thị thông tin item trong shop */ }
             return;
         }
 
@@ -550,12 +548,12 @@ public class NpcMenuUI : MonoBehaviour
 
     private void CreateElementFilterBar(bool enabled, System.Collections.Generic.HashSet<int> presentClasses = null)
     {
-        Debug.Log($"[NpcMenuUI] CreateElementFilterBar enabled={enabled} filterBarScene={(HasFilterBar ? filterBarScene.name : "NULL")}");
+        { /* CreateElementFilterBar enabled={enabled} filterBarScene={(HasFilterBar ? filterBarScene.name */ }
         if (!enabled || shopPanel == null) return;  // ClearShopItems already hid bar + restored scroll
 
         if (!HasFilterBar)
         {
-            Debug.LogWarning("[NpcMenuUI] filterBarScene chưa được gán trong Inspector!", this);
+            { /* Cảnh báo: filterBarScene chưa được gán trong Inspector */ }
             return;
         }
 
@@ -659,13 +657,13 @@ public class NpcMenuUI : MonoBehaviour
 
     private void CreateEquipTypeFilterBar(bool enabled, System.Collections.Generic.HashSet<int> presentTypes = null)
     {
-        Debug.Log($"[NpcMenuUI] CreateEquipTypeFilterBar enabled={enabled} filterBarScene={(HasFilterBar ? filterBarScene.name : "NULL")} presentTypes=[{(presentTypes == null ? "null" : string.Join(",", presentTypes))}]");
+        { /* CreateEquipTypeFilterBar enabled={enabled} filterBarScene={(HasFilterBar ? filterBarScene.name */ }
         _filterButtons.Clear();
         if (!enabled || shopPanel == null) return;  // ClearShopItems already hid bar + restored scroll
 
         if (!HasFilterBar)
         {
-            Debug.LogWarning("[NpcMenuUI] filterBarScene chưa được gán trong Inspector!", this);
+            { /* Cảnh báo: filterBarScene chưa được gán trong Inspector */ }
             return;
         }
 

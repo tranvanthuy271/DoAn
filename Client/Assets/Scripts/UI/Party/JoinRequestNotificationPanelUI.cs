@@ -47,7 +47,7 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
     {
         if (payload == null)
         {
-            Debug.LogWarning($"{LogPrefix} ShowRequest called with null payload.", this);
+            { /* Cảnh báo: {LogPrefix} ShowRequest called with null payload */ }
             return;
         }
 
@@ -55,7 +55,7 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
         _onDecline = onDecline;
         _queue.Enqueue(payload);
 
-        Debug.Log($"{LogPrefix} Enqueued | from={payload.requesterName} userId={payload.requesterUserId} queue={_queue.Count}", this);
+        { /* {LogPrefix} Enqueued | from={payload.requesterName} userId={payload.requesterUserId} queue={_queue.Count} */ }
 
         if (!gameObject.activeSelf)
             ShowNextRequest();
@@ -67,14 +67,14 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
     {
         if (_queue.Count == 0)
         {
-            Debug.Log($"{LogPrefix} Queue empty – hiding panel.", this);
+            { /* {LogPrefix} Queue empty  hiding panel */ }
             gameObject.SetActive(false);
             return;
         }
 
         _current = _queue.Dequeue();
 
-        Debug.Log($"{LogPrefix} ShowNext | name={_current.requesterName} level={_current.requesterLevel} element={_current.requesterElementType} remaining={_queue.Count}", this);
+        { /* {LogPrefix} ShowNext | name={_current.requesterName} level={_current.requesterLevel} element={_current.requesterElementType} remaining={_queue.Count} */ }
 
         // Info text
         if (requesterInfoText != null)
@@ -119,7 +119,7 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
     {
         if (_current == null) { ShowNextRequest(); return; }
 
-        Debug.Log($"{LogPrefix} Accept | partyId={_current.partyId} userId={_current.requesterUserId}", this);
+        { /* {LogPrefix} Accept | partyId={_current.partyId} userId={_current.requesterUserId} */ }
         _onAccept?.Invoke(_current.partyId, _current.requesterUserId);
         _current = null;
         ShowNextRequest();
@@ -129,7 +129,7 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
     {
         if (_current == null) { ShowNextRequest(); return; }
 
-        Debug.Log($"{LogPrefix} Decline | partyId={_current.partyId} userId={_current.requesterUserId}", this);
+        { /* {LogPrefix} Decline | partyId={_current.partyId} userId={_current.requesterUserId} */ }
         _onDecline?.Invoke(_current.partyId, _current.requesterUserId);
         _current = null;
         ShowNextRequest();

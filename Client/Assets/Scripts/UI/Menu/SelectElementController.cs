@@ -136,7 +136,7 @@ public class SelectElementController : MonoBehaviour
     {
         if (characterButtons == null || characterButtons.Length == 0)
         {
-            Debug.LogError("SelectElementController: Character Buttons array trống!");
+            { /* Lỗi: SelectElementController: Character Buttons array trống */ }
             return;
         }
 
@@ -241,7 +241,7 @@ public class SelectElementController : MonoBehaviour
     {
         if (previewImage == null)
         {
-            Debug.LogWarning("[SelectElementController] PreviewImage chưa được gán trong Inspector.", this);
+            { /* Cảnh báo: PreviewImage chưa được gán trong Inspector */ }
             return;
         }
 
@@ -263,9 +263,7 @@ public class SelectElementController : MonoBehaviour
             sprite = characterButtons[buttonIndex].previewSprite;
             if (sprite != null)
             {
-                Debug.LogWarning(
-                    $"[SelectElementController] Đang fallback sang previewSprite cũ cho hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)}.",
-                    this);
+                { /* Cảnh báo: Đang fallback sang previewSprite cũ cho hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)} */ }
             }
         }
 
@@ -278,9 +276,7 @@ public class SelectElementController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning(
-                $"[SelectElementController] Thiếu avatar preview cho button index {buttonIndex} / hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)}.",
-                this);
+            { /* Cảnh báo: Thiếu avatar preview cho button index {buttonIndex} / hệ {ElementHelper.ToVietnamese(characterButtons[buttonIndex].elementId)} */ }
             previewImage.sprite = null;
             previewImage.enabled = false;
         }

@@ -57,7 +57,7 @@ public class EquipmentTierConfigEditor : Editor
                 };
             }
             EditorUtility.SetDirty(config);
-            Debug.Log("[TierConfig] Auto-fill 4 tiers xong. Nhớ kéo Sprite vào từng tier!");
+            { /* Auto-fill 4 tiers xong. Nhớ kéo Sprite vào từng tier */ }
         }
 
         // Nút clear

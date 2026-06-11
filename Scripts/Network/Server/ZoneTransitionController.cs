@@ -33,7 +33,7 @@ public class ZoneTransitionController : NetworkBehaviour
         _config   = _registry?.Config;
 
         if (_registry == null)
-            Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
+            { /* Lỗi: ZoneRoomRegistry chưa khởi tạo */ }
     }
 
     // Public API (gọi từ ZoneTransitionTrigger)
@@ -60,7 +60,7 @@ public class ZoneTransitionController : NetworkBehaviour
         if (_lastTransferTime.TryGetValue(clientId, out float last) &&
             Time.time - last < _transferCooldown)
         {
-            Debug.Log($"[ZoneTransitionController] Client {clientId} request quá nhanh (cooldown). Bỏ qua.");
+            { /* Client {clientId} request quá nhanh (cooldown). Bỏ qua */ }
             return;
         }
 
@@ -75,7 +75,7 @@ public class ZoneTransitionController : NetworkBehaviour
         ZoneRoom targetRoom = _registry.GetRoom(targetMapId, targetZoneId);
         if (targetRoom == null)
         {
-            Debug.LogWarning($"[ZoneTransitionController] Zone ({targetMapId},{targetZoneId}) không tồn tại!");
+            { /* Cảnh báo: Zone ({targetMapId},{targetZoneId}) không tồn tại */ }
             return;
         }
 
@@ -85,11 +85,11 @@ public class ZoneTransitionController : NetworkBehaviour
             ZoneRoom fallback = _registry.FindLeastLoadedZone(targetMapId);
             if (fallback == null || fallback.IsFull)
             {
-                Debug.LogWarning($"[ZoneTransitionController] Map {targetMapId} đầy hết zone. Từ chối transfer.");
+                { /* Cảnh báo: Map {targetMapId} đầy hết zone. Từ chối transfer */ }
                 SendTransferFailedClientRpc("MAP_FULL", BuildSingleClientRpcParams(clientId));
                 return;
             }
-            Debug.Log($"[ZoneTransitionController] Zone {targetZoneId} đầy, fallback → zone {fallback.ZoneId}");
+            { /* Zone {targetZoneId} đầy, fallback → zone {fallback.ZoneId} */ }
             targetRoom = fallback;
         }
 
@@ -105,7 +105,7 @@ public class ZoneTransitionController : NetworkBehaviour
 
         // 7. In-process room reassignment (giống LangLa: zone.removeChar + Map.maps[id].addChar)
         _registry.AssignClientToRoom(clientId, targetRoom);
-        Debug.Log($"[ZoneTransitionController] Client {clientId} → map{targetRoom.MapId}_zone{targetRoom.ZoneId} ({entry})");
+        { /* Client {clientId} → map{targetRoom.MapId}_zone{targetRoom.ZoneId} ({entry}) */ }
 
         // 8. Refresh NGO visibility (players, enemies, items trong zone cũ/mới)
         RefreshVisibilityForClient(clientId);
@@ -135,14 +135,14 @@ public class ZoneTransitionController : NetworkBehaviour
         ClientRpcParams rpcParams = default)
     {
         // NGO chỉ gửi ClientRpc đến TargetClientIds — không cần guard thêm
-        Debug.Log($"[ZoneTransitionController] Nhận TeleportToZone → scene={sceneName} ({x},{y})");
+        { /* Nhận TeleportToZone → scene={sceneName} ({x},{y}) */ }
         ClientSceneController.Instance?.HandleZoneTeleport(sceneName, x, y, mapId, zoneId);
     }
 
     [ClientRpc]
     private void SendTransferFailedClientRpc(string reason, ClientRpcParams rpcParams = default)
     {
-        Debug.LogWarning($"[ZoneTransitionController] Zone transfer thất bại: {reason}");
+        { /* Cảnh báo: Zone transfer thất bại: {reason} */ }
     }
 
     // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
@@ -187,7 +187,7 @@ public class ZoneTransitionController : NetworkBehaviour
         yield return req.SendWebRequest();
 
         if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-            Debug.LogWarning($"[ZoneTransitionController] SavePosition failed (non-critical): {req.error}");
+            { /* Cảnh báo: SavePosition failed (non-critical): {req.error} */ }
     }
 
     private static string EscapeJson(string s) =>

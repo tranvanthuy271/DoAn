@@ -160,7 +160,7 @@ public class InputManager : MonoBehaviour
 
         if (!changed) return;
 
-        Debug.Log($"[InputManager] Gameplay input {(blocked ? "blocked" : "unblocked")} by '{source}'. activeBlocks={_gameplayBlockSources.Count} inputEnabled={inputEnabled}");
+        { /* Gameplay input {(blocked ? */ }
     }
 
     public void EnableInput(bool enable)

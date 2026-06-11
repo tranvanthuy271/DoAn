@@ -163,7 +163,7 @@ public class QuestHudWidget : MonoBehaviour
         var quest = QuestManager.Instance?.HintQuest
                  ?? QuestManager.Instance?.ActiveQuest;
 
-        Debug.Log($"[QuestHudWidget] Refresh() — QuestManager={QuestManager.Instance != null} HintQuest={QuestManager.Instance?.HintQuest?.name} ActiveQuest={QuestManager.Instance?.ActiveQuest?.name} rootWidget={rootWidget?.name} active={rootWidget?.activeSelf}");
+        { /* Refresh()  QuestManager={QuestManager.Instance != null} HintQuest={QuestManager.Instance?.HintQuest?.name} ActiveQuest={QuestManager.Instance?.ActiveQuest?.name} rootWidget={rootWidget?.name} active={rootWidget?.activeSelf} */ }
 
         // Luôn hiện widget (ẩn chỉ khi rootWidget = null)
         EnsureHudLayout();
@@ -176,11 +176,11 @@ public class QuestHudWidget : MonoBehaviour
             if (questNameText) questNameText.text = "Nhiem vu: Chua co";
             if (questStepText)  questStepText.text  = "- Tim NPC nhiem vu de bat dau";
             if (btnNavigate)    btnNavigate.gameObject.SetActive(false);
-            Debug.Log("[QuestHudWidget] quest=null -> hien thi Chua co");
+            { /* quest=null -> hien thi Chua co */ }
             return;
         }
 
-        Debug.Log($"[QuestHudWidget] quest={quest.name} status={quest.status} progress={quest.quest_progress_json} stepIdx={quest.current_step_index}");
+        { /* quest={quest.name} status={quest.status} progress={quest.quest_progress_json} stepIdx={quest.current_step_index} */ }
 
         StopAutoMove();
 

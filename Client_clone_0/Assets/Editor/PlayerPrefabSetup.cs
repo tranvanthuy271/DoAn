@@ -66,7 +66,7 @@ public static class PlayerPrefabSetup
             var root = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (root == null)
             {
-                Debug.LogWarning($"[PlayerPrefabSetup] ✗ Không tìm thấy prefab: {path}");
+                { /* Cảnh báo: ✗ Không tìm thấy prefab: {path} */ }
                 skipped++;
                 continue;
             }
@@ -83,7 +83,7 @@ public static class PlayerPrefabSetup
                 if (prefabRoot.GetComponent<DebuffSpriteTint>() == null)
                 {
                     prefabRoot.AddComponent<DebuffSpriteTint>();
-                    Debug.Log($"[PlayerPrefabSetup] + DebuffSpriteTint → {path}");
+                    { /* + DebuffSpriteTint → {path} */ }
                     changed = true;
                 }
             }
@@ -96,7 +96,7 @@ public static class PlayerPrefabSetup
                     if (candSr.GetComponent<DebuffSpriteTint>() == null)
                     {
                         candSr.gameObject.AddComponent<DebuffSpriteTint>();
-                        Debug.Log($"[PlayerPrefabSetup] + DebuffSpriteTint (child '{candSr.gameObject.name}') → {path}");
+                        { /* + DebuffSpriteTint (child '{candSr.gameObject.name}') → {path} */ }
                         changed = true;
                     }
                     break;
@@ -107,7 +107,7 @@ public static class PlayerPrefabSetup
             var hpBarCanvas = FindChildByName(prefabRoot.transform, "PlayerHpBarCanvas");
             if (hpBarCanvas == null)
             {
-                Debug.LogWarning($"[PlayerPrefabSetup] ✗ Không tìm thấy 'PlayerHpBarCanvas' trong {path}. Bỏ qua OverheadStatusDisplay.");
+                { /* Cảnh báo: ✗ Không tìm thấy 'PlayerHpBarCanvas' trong {path}. Bỏ qua OverheadStatusDisplay */ }
             }
             else
             {
@@ -139,7 +139,7 @@ public static class PlayerPrefabSetup
                     so.FindProperty("iconContainer").objectReferenceValue = rt;
                     so.ApplyModifiedProperties();
 
-                    Debug.Log($"[PlayerPrefabSetup] + OverheadStatusDisplay + StatusIconContainer → {path}");
+                    { /* + OverheadStatusDisplay + StatusIconContainer → {path} */ }
                     changed = true;
                 }
             }
@@ -152,7 +152,7 @@ public static class PlayerPrefabSetup
         AssetDatabase.Refresh();
 
         string msg = $"Hoàn tất: {done} prefab đã cập nhật, {skipped} không cần thay đổi.";
-        Debug.Log($"[PlayerPrefabSetup] {msg}");
+        { /* {msg} */ }
         EditorUtility.DisplayDialog("Setup Player Prefabs", msg, "OK");
     }
 

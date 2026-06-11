@@ -12,7 +12,7 @@ public class InventoryDebugger : MonoBehaviour
 
         if (inventory == null)
         {
-            Debug.LogWarning("[InventoryDebugger] Không tìm thấy NetworkInventory trên GameObject này.");
+            { /* Cảnh báo: Không tìm thấy NetworkInventory trên GameObject này */ }
         }
     }
 
@@ -21,7 +21,7 @@ public class InventoryDebugger : MonoBehaviour
         if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked) return;
         if (Input.GetKeyDown(KeyCode.I) && inventory != null)
         {
-            Debug.Log("===== INVENTORY =====");
+            { /* ===== INVENTORY ===== */ }
 
             int maxSlots = inventory.GetMaxSlots();
             for (int i = 0; i < maxSlots; i++)
@@ -31,7 +31,7 @@ public class InventoryDebugger : MonoBehaviour
                 {
                     var template = ItemTemplateManager.Instance?.GetItemTemplate(slot.itemID);
                     string itemName = template?.name ?? $"Item {slot.itemID}";
-                    Debug.Log($"Slot {i}: {itemName} x{slot.quantity}");
+                    { /* Slot {i}: {itemName} x{slot.quantity} */ }
                 }
             }
         }

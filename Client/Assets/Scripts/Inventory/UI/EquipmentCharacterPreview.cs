@@ -89,19 +89,19 @@ public class EquipmentCharacterPreview : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log($"[EquipPreview] Awake trên '{gameObject.name}' | previewCamera={(previewCamera != null ? previewCamera.name : "NULL")} | renderTargetImage={(renderTargetImage != null ? renderTargetImage.name : "NULL")}");
+        { /* Awake trên '{gameObject.name}' | previewCamera={(previewCamera != null ? previewCamera.name */ }
         // Camera phải luôn disabled khi start.
         // Chỉ được enable lại sau khi SpawnPreview() tạo xong RenderTexture.
         if (previewCamera != null)
         {
             previewCamera.enabled = false;
-            Debug.Log("[EquipPreview] Awake: previewCamera disabled (chờ spawn).");
+            { /* Awake: previewCamera disabled (chờ spawn) */ }
         }
     }
 
     private void OnEnable()
     {
-        Debug.Log($"[EquipPreview] OnEnable | _previewInstance={((_previewInstance != null) ? _previewInstance.name : "null")}");
+        { /* OnEnable | _previewInstance={((_previewInstance != null) ? _previewInstance.name */ }
         SubscribePlayerData();
         SpawnPreview();
         if (_usingRenderTexture && previewCamera != null)
@@ -110,7 +110,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
 
     private void OnDisable()
     {
-        Debug.Log("[EquipPreview] OnDisable");
+        { /* OnDisable */ }
         UnsubscribePlayerData();
         StopRetry();
         // Luôn tắt camera — không để nó render to screen khi panel ẩn
@@ -147,7 +147,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         if (_previewInstance != null && string.Equals(_lastResolvedKey, newKey, System.StringComparison.Ordinal))
             return;
 
-        Debug.Log($"[EquipPreview] PlayerDataSet -> refresh preview key '{_lastResolvedKey}' -> '{newKey}'");
+        { /* PlayerDataSet -> refresh preview key '{_lastResolvedKey}' -> '{newKey}' */ }
         RefreshForLocalPlayer();
     }
 
@@ -180,47 +180,46 @@ public class EquipmentCharacterPreview : MonoBehaviour
         // 1. Manual override
         if (characterPrefab != null)
         {
-            Debug.Log($"[EquipPreview] Resolve: dùng characterPrefab (manual) = '{characterPrefab.name}'");
+            { /* Resolve: dùng characterPrefab (manual) = '{characterPrefab.name}' */ }
             return characterPrefab;
         }
 
-        Debug.Log("[EquipPreview] Resolve: characterPrefab=null, thử PlayerPreviewPrefabConfig...");
+        { /* Resolve: characterPrefab=null, thử PlayerPreviewPrefabConfig */ }
 
         // 2. Tra config
         var config = previewPrefabConfig;
         if (config == null)
         {
-            Debug.Log("[EquipPreview] Resolve: previewPrefabConfig chưa gán, thử Resources.Load...");
+            { /* Resolve: previewPrefabConfig chưa gán, thử Resources.Load */ }
             config = PlayerPreviewPrefabConfig.Load();
         }
 
         if (config != null)
         {
-            Debug.Log($"[EquipPreview] Resolve: có config '{config.name}'.");
+            { /* Resolve: có config '{config.name}' */ }
             PlayerDataResponse playerData = null;
             if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
             {
                 playerData = GameManager.Instance.GetPlayerData();
-                Debug.Log($"[EquipPreview] Resolve: playerData element_type='{playerData?.element_type}', gender='{playerData?.gender}', is_hybrid={playerData?.is_hybrid}");
+                { /* Resolve: playerData element_type='{playerData?.element_type}', gender='{playerData?.gender}', is_hybrid={playerData?.is_hybrid} */ }
             }
             else
-                Debug.LogWarning("[EquipPreview] Resolve: GameManager.Instance=null hoặc HasPlayerData()=false. Prefab sẽ là fallback.");
+                { /* Cảnh báo: Resolve: GameManager.Instance=null hoặc HasPlayerData()=false. Prefab sẽ là fallback */ }
 
             var resolved = config.Resolve(playerData);
             if (resolved != null)
             {
-                Debug.Log($"[EquipPreview] Resolve: ✓ resolved = '{resolved.name}'");
+                { /* Resolve: ✓ resolved = '{resolved.name}' */ }
                 return resolved;
             }
-            Debug.LogWarning("[EquipPreview] Resolve: config.Resolve() trả về null (không có entry khớp).");
+            { /* Cảnh báo: Resolve: config.Resolve() trả về null (không có entry khớp) */ }
         }
         else
         {
-            Debug.LogWarning("[EquipPreview] Resolve: Không tìm thấy PlayerPreviewPrefabConfig tại Resources/ScriptableObjects/PlayerPreviewPrefabConfig.");
+            { /* Cảnh báo: Resolve: Không tìm thấy PlayerPreviewPrefabConfig tại Resources/ScriptableObjects/PlayerPreviewPrefabConfig */ }
         }
 
-        Debug.LogWarning("[EquipmentCharacterPreview] Không có characterPrefab và không resolve được từ PlayerPreviewPrefabConfig. " +
-                         "Hãy tạo asset tại Resources/ScriptableObjects/PlayerPreviewPrefabConfig hoặc kéo prefab vào Inspector.");
+        { /* Cảnh báo: Không có characterPrefab và không resolve được từ PlayerPreviewPrefabConfig */ }
         return null;
     }
 
@@ -228,7 +227,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
     {
         if (_previewInstance != null)
         {
-            Debug.Log("[EquipPreview] SpawnPreview: đã có _previewInstance, bỏ qua.");
+            { /* SpawnPreview: đã có _previewInstance, bỏ qua */ }
             return;
         }
 
@@ -237,17 +236,17 @@ public class EquipmentCharacterPreview : MonoBehaviour
         var prefabToSpawn = ResolveCharacterPrefab();
         if (prefabToSpawn == null)
         {
-            Debug.LogWarning("[EquipPreview] SpawnPreview: prefabToSpawn = null, dừng lại.");
+            { /* Cảnh báo: SpawnPreview: prefabToSpawn = null, dừng lại */ }
             ScheduleRetry();
             return;
         }
 
         StopRetry();
         _lastResolvedKey = BuildCurrentPlayerDataKey();
-        Debug.Log($"[EquipPreview] SpawnPreview: dùng prefab '{prefabToSpawn.name}'");
+        { /* SpawnPreview: dùng prefab '{prefabToSpawn.name}' */ }
 
         _usingRenderTexture = (previewCamera != null && renderTargetImage != null);
-        Debug.Log($"[EquipPreview] _usingRenderTexture={_usingRenderTexture} | previewCamera={(previewCamera != null ? previewCamera.name : "NULL")} | renderTargetImage={(renderTargetImage != null ? renderTargetImage.name : "NULL")}");
+        { /* _usingRenderTexture={_usingRenderTexture} | previewCamera={(previewCamera != null ? previewCamera.name */ }
 
         if (_usingRenderTexture)
         {
@@ -256,7 +255,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             _previewInstance.transform.position  = previewWorldPosition;
             _previewInstance.transform.localScale = previewScale;
             _previewInstance.transform.rotation   = Quaternion.Euler(0f, initialRotationY, 0f);
-            Debug.Log($"[EquipPreview] MODE A: Spawn tại {previewWorldPosition}, scale={previewScale}");
+            { /* MODE A: Spawn tại {previewWorldPosition}, scale={previewScale} */ }
 
             // Tính kích thước RT
             int rtW = renderTextureSize.x > 0 ? renderTextureSize.x : 256;
@@ -264,7 +263,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             var rect = renderTargetImage.rectTransform.rect;
             if (rect.width  > 1) rtW = (int)rect.width;
             if (rect.height > 1) rtH = (int)rect.height;
-            Debug.Log($"[EquipPreview] RenderTexture size={rtW}x{rtH}");
+            { /* RenderTexture size={rtW}x{rtH} */ }
 
             _renderTexture = new RenderTexture(rtW, rtH, 24, RenderTextureFormat.ARGB32)
             {
@@ -279,17 +278,17 @@ public class EquipmentCharacterPreview : MonoBehaviour
             int siblingBefore = renderTargetImage.transform.GetSiblingIndex();
             renderTargetImage.transform.SetAsLastSibling();
             int siblingAfter = renderTargetImage.transform.GetSiblingIndex();
-            Debug.Log($"[EquipPreview] RawImage sibling: {siblingBefore} → {siblingAfter} (parent='{renderTargetImage.transform.parent?.name}', total children={renderTargetImage.transform.parent?.childCount})");
+            { /* RawImage sibling: {siblingBefore} → {siblingAfter} (parent='{renderTargetImage.transform.parent?.name}', total children={renderTargetImage.transform.parent?.childCount}) */ }
             // Log tên các siblings để xác nhận thứ tự
             if (renderTargetImage.transform.parent != null)
             {
                 var sb = new System.Text.StringBuilder("[EquipPreview] Children order: ");
                 for (int i = 0; i < renderTargetImage.transform.parent.childCount; i++)
                     sb.Append($"[{i}]{renderTargetImage.transform.parent.GetChild(i).name} ");
-                Debug.Log(sb.ToString());
+                { /* Ghi nhận: sb.ToString() */ }
             }
             previewCamera.enabled = true;
-            Debug.Log($"[EquipPreview] Camera enabled, RenderTexture gán xong.");
+            { /* Camera enabled, RenderTexture gán xong */ }
         }
         else
         {
@@ -298,7 +297,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             _previewInstance.transform.localPosition = localOffset;
             _previewInstance.transform.localScale    = previewScale;
             _previewInstance.transform.localRotation = Quaternion.Euler(0f, initialRotationY, 0f);
-            Debug.Log($"[EquipPreview] MODE B: Spawn làm con của {transform.name}.");
+            { /* MODE B: Spawn làm con của {transform.name} */ }
         }
 
         // Tắt mọi script gameplay + physics trước khi Unity simulate frame
@@ -312,7 +311,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             var sb = new System.Text.StringBuilder("[EquipPreview] Children sau HidePreviewChildren:\n");
             foreach (Transform ch in _previewInstance.transform)
                 sb.AppendLine($"  - '{ch.name}' active={ch.gameObject.activeSelf}");
-            Debug.Log(sb.ToString());
+            { /* Ghi nhận: sb.ToString() */ }
         }
 
         // Ghim lại vị trí (MODE A: fix tại previewWorldPosition)
@@ -325,7 +324,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         _previewAnimator = _previewInstance.GetComponentInChildren<Animator>(false);
         if (_previewAnimator == null)
             _previewAnimator = _previewInstance.GetComponentInChildren<Animator>(true);
-        Debug.Log($"[EquipPreview] _previewAnimator cached = '{(_previewAnimator != null ? _previewAnimator.gameObject.name : "NULL")}'");
+        { /* _previewAnimator cached = '{(_previewAnimator != null ? _previewAnimator.gameObject.name */ }
 
         // Đặt layer
         if (overrideLayer >= 0)
@@ -336,7 +335,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         {
             int targetLayer = (overrideLayer >= 0) ? overrideLayer : _previewInstance.layer;
             previewCamera.cullingMask = 1 << targetLayer;
-            Debug.Log($"[EquipPreview] Camera cullingMask = layer {targetLayer} ('{LayerMask.LayerToName(targetLayer)}')");
+            { /* Camera cullingMask = layer {targetLayer} ('{LayerMask.LayerToName(targetLayer)}') */ }
 
             // Auto-center camera dựa trên bounds thực của nhân vật
             AutoCenterCamera();
@@ -345,7 +344,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
 
     private void HidePreviewChildren(GameObject root)
     {
-        Debug.Log($"[EquipPreview] HidePreviewChildren: hideChildrenNamed={hideChildrenNamed?.Length ?? 0} entries, root='{root.name}' childCount={root.transform.childCount}");
+        { /* HidePreviewChildren: hideChildrenNamed={hideChildrenNamed?.Length ?? 0} entries, root='{root.name}' childCount={root.transform.childCount} */ }
         if (hideChildrenNamed == null || hideChildrenNamed.Length == 0) return;
         foreach (var childName in hideChildrenNamed)
         {
@@ -354,13 +353,13 @@ public class EquipmentCharacterPreview : MonoBehaviour
             if (t != null)
             {
                 t.gameObject.SetActive(false);
-                Debug.Log($"[EquipPreview] Ẩn child '{childName}' ✓");
+                { /* Ẩn child '{childName}' ✓ */ }
             }
             else
             {
                 // Tìm trong toàn bộ hierarchy
                 var found = root.transform.GetComponentsInChildren<Transform>(true);
-                Debug.LogWarning($"[EquipPreview] Không tìm thấy direct child '{childName}'. Các children hiện có: {string.Join(", ", System.Array.ConvertAll(found, x => x.name))}");
+                { /* Cảnh báo: Không tìm thấy direct child '{childName}'. Các children hiện có: {string.Join( */ }
             }
         }
     }
@@ -372,18 +371,18 @@ public class EquipmentCharacterPreview : MonoBehaviour
 
         // Chỉ lấy renderer của các active children (SkillEffect đã bị ẩn)
         var renderers = _previewInstance.GetComponentsInChildren<Renderer>(false);
-        Debug.Log($"[EquipPreview] AutoCenter: tìm được {renderers.Length} active renderer(s).");
+        { /* AutoCenter: tìm được {renderers.Length} active renderer(s) */ }
         if (renderers.Length == 0)
         {
             renderers = _previewInstance.GetComponentsInChildren<Renderer>(true);
-            Debug.LogWarning($"[EquipPreview] AutoCenter: fallback include-inactive, {renderers.Length} renderer(s).");
+            { /* Cảnh báo: AutoCenter: fallback include-inactive, {renderers.Length} renderer(s) */ }
         }
-        if (renderers.Length == 0) { Debug.LogWarning("[EquipPreview] AutoCenter: 0 renderers, bỏ qua."); return; }
+        if (renderers.Length == 0) { { /* Cảnh báo: AutoCenter: 0 renderers, bỏ qua */ } return; }
 
         var sbR = new System.Text.StringBuilder("[EquipPreview] AutoCenter renderers:\n");
         foreach (var r in renderers)
             sbR.AppendLine($"  - '{r.gameObject.name}' bounds={r.bounds.center} size={r.bounds.size} active={r.gameObject.activeSelf}");
-        Debug.Log(sbR.ToString());
+        { /* Ghi nhận: sbR.ToString() */ }
 
         // Tính bounding box chỉ của character
         var allBounds = renderers[0].bounds;
@@ -397,7 +396,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         // OrthoSize: 1.5x lớn hơn (3.6 / 1.5 = 2.4)
         previewCamera.orthographicSize = allBounds.extents.y * 2.4f;
 
-        Debug.Log($"[EquipPreview] AutoCenter: center={allBounds.center} extents={allBounds.extents} camY={newY:F3} orthoSize={previewCamera.orthographicSize:F3} (offset={cameraVerticalOffset})");
+        { /* AutoCenter: center={allBounds.center} extents={allBounds.extents} camY={newY:F3} orthoSize={previewCamera.orthographicSize:F3} (offset={cameraVerticalOffset}) */ }
     }
 
     private void LateUpdate()
@@ -486,7 +485,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             if (GameManager.Instance == null || !GameManager.Instance.HasPlayerData())
                 continue;
 
-            Debug.Log($"[EquipPreview] Retry spawn preview attempt={attempt}");
+            { /* Retry spawn preview attempt={attempt} */ }
             SpawnPreview();
         }
 
@@ -523,20 +522,20 @@ public class EquipmentCharacterPreview : MonoBehaviour
         var animator = root.GetComponentInChildren<Animator>(false);
         if (animator == null)
         {
-            Debug.LogWarning("[EquipPreview] ForceIdle: Không tìm được active Animator, thử include-inactive...");
+            { /* Cảnh báo: ForceIdle: Không tìm được active Animator, thử include-inactive */ }
             animator = root.GetComponentInChildren<Animator>(true);
         }
         if (animator == null)
         {
-            Debug.LogWarning($"[EquipPreview] ForceIdle: Không tìm thấy Animator trên '{root.name}' hoặc children.");
+            { /* Cảnh báo: ForceIdle: Không tìm thấy Animator trên '{root.name}' hoặc children */ }
             return;
         }
 
-        Debug.Log($"[EquipPreview] ForceIdle: Animator trên '{animator.gameObject.name}' | controller={(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NULL")}");
+        { /* ForceIdle: Animator trên '{animator.gameObject.name}' | controller={(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name */ }
 
         if (animator.runtimeAnimatorController == null)
         {
-            Debug.LogWarning($"[EquipPreview] ForceIdle: Animator không có Controller, không thể play animation.");
+            { /* Cảnh báo: ForceIdle: Animator không có Controller, không thể play animation */ }
             return;
         }
 
@@ -552,7 +551,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             var clips = animator.runtimeAnimatorController.animationClips;
             var names = new System.Text.StringBuilder("[EquipPreview] ForceIdle: Clips trong controller: ");
             foreach (var clip in clips) names.Append(clip.name).Append(", ");
-            Debug.Log(names.ToString());
+            { /* Ghi nhận: names.ToString() */ }
         }
 
         // Thử từng tên state phổ biến
@@ -562,7 +561,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             if (animator.HasState(0, hash))
             {
                 animator.Play(hash, 0, 0f);
-                Debug.Log($"[EquipPreview] ForceIdle: ✓ Play state '{stateName}'");
+                { /* ForceIdle: ✓ Play state '{stateName}' */ }
                 return;
             }
         }
@@ -580,14 +579,14 @@ public class EquipmentCharacterPreview : MonoBehaviour
                 if (animator.HasState(0, h))
                 {
                     animator.Play(h, 0, 0f);
-                    Debug.Log($"[EquipPreview] ForceIdle: ✓ Play state '{c}' (từ clip '{clip.name}')");
+                    { /* ForceIdle: ✓ Play state '{c}' (từ clip '{clip.name}') */ }
                     return;
                 }
             }
         }
 
         // Fallback cuối: Rebind → entry state mặc định
-        Debug.Log("[EquipPreview] ForceIdle: Dùng Rebind() → entry state.");
+        { /* ForceIdle: Dùng Rebind() → entry state */ }
         animator.Rebind();
         animator.Update(0f);
     }
@@ -602,11 +601,11 @@ public class EquipmentCharacterPreview : MonoBehaviour
         {
             if (mb == this) continue;
             if (!mb.enabled) continue;
-            Debug.Log($"[EquipPreview] Disable script: {mb.GetType().Name} trên '{mb.gameObject.name}'");
+            { /* Disable script: {mb.GetType().Name} trên '{mb.gameObject.name}' */ }
             mb.enabled = false;
             disabledCount++;
         }
-        Debug.Log($"[EquipPreview] DisableAllControlScripts: đã disable {disabledCount} MonoBehaviour(s).");
+        { /* DisableAllControlScripts: đã disable {disabledCount} MonoBehaviour(s) */ }
 
         foreach (var rb in root.GetComponentsInChildren<Rigidbody>(true))
         {

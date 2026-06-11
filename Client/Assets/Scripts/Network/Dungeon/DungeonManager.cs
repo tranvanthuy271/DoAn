@@ -94,12 +94,12 @@ public class DungeonManager : MonoBehaviour
     {
         if (config == null) return;
 
-        Debug.Log($"[DungeonManager] EnterDungeon | dungeonId={config.dungeon_id} name='{config.dungeon_name}' type='{config.dungeon_type}' mapId={config.map_id}", this);
+        { /* EnterDungeon | dungeonId={config.dungeon_id} name='{config.dungeon_name}' type='{config.dungeon_type}' mapId={config.map_id} */ }
 
         var ztc = FindAnyObjectByType<ZoneTransitionController>();
         if (ztc == null)
         {
-            Debug.LogError("[DungeonManager] ZoneTransitionController không tìm thấy!");
+            { /* Lỗi: ZoneTransitionController không tìm thấy */ }
             return;
         }
 
@@ -113,12 +113,12 @@ public class DungeonManager : MonoBehaviour
     {
         if (config == null) return;
 
-        Debug.Log($"[DungeonManager] EnterPartyDungeon | dungeonId={config.dungeon_id} members={partyMemberUserIds?.Length ?? 0}", this);
+        { /* EnterPartyDungeon | dungeonId={config.dungeon_id} members={partyMemberUserIds?.Length ?? 0} */ }
 
         var ztc = FindAnyObjectByType<ZoneTransitionController>();
         if (ztc == null)
         {
-            Debug.LogError("[DungeonManager] ZoneTransitionController không tìm thấy!");
+            { /* Lỗi: ZoneTransitionController không tìm thấy */ }
             return;
         }
 
@@ -134,12 +134,12 @@ public class DungeonManager : MonoBehaviour
     // Rời phó bản và quay về overworld.
     public void ExitDungeon(int returnMapId = 0)
     {
-        Debug.Log($"[DungeonManager] ExitDungeon | returnMapId={returnMapId}", this);
+        { /* ExitDungeon | returnMapId={returnMapId} */ }
 
         var ztc = FindAnyObjectByType<ZoneTransitionController>();
         if (ztc == null)
         {
-            Debug.LogError("[DungeonManager] ZoneTransitionController không tìm thấy!");
+            { /* Lỗi: ZoneTransitionController không tìm thấy */ }
             return;
         }
 
@@ -165,7 +165,7 @@ public class DungeonManager : MonoBehaviour
         _waveCountdownEndRealtime = 0f;
         _waveCountdownActive = false;
 
-        Debug.Log($"[DungeonManager] Entered dungeon | configId={dungeonConfigId} map={mapId} zone={zoneId}", this);
+        { /* Entered dungeon | configId={dungeonConfigId} map={mapId} zone={zoneId} */ }
         OnDungeonEntered?.Invoke();
         Notify("Đã vào phó bản!");
     }
@@ -186,7 +186,7 @@ public class DungeonManager : MonoBehaviour
         // Reset WaveHUD ref so it gets re-validated on next entry
         _waveHUD = null;
 
-        Debug.Log("[DungeonManager] Exited dungeon", this);
+        { /* Exited dungeon */ }
         OnDungeonExited?.Invoke();
         Notify("Đã rời phó bản!");
     }
@@ -211,7 +211,7 @@ public class DungeonManager : MonoBehaviour
         if (_currentWaveRound > 0)
             EnsureWaveHUD();
 
-        Debug.Log($"[DungeonManager] Wave state updated | round={_currentWaveRound}/{_currentWaveMaxRounds} remaining={_currentWaveRemainingSeconds}s", this);
+        { /* Wave state updated | round={_currentWaveRound}/{_currentWaveMaxRounds} remaining={_currentWaveRemainingSeconds}s */ }
         OnWaveStateChanged?.Invoke(_currentWaveRound, _currentWaveMaxRounds, _currentWaveRemainingSeconds);
     }
 
@@ -237,13 +237,13 @@ public class DungeonManager : MonoBehaviour
         hudGo.transform.SetParent(canvasGo.transform, false);
         _waveHUD = hudGo.AddComponent<WaveHUD>();
         // WaveHUD.Start() -> AutoCreateUI() will create the RectTransform + TMP labels
-        Debug.Log("[DungeonManager] Auto-created WaveHUD canvas for wave dungeon.");
+        { /* Auto-created WaveHUD canvas for wave dungeon */ }
     }
 
     public void OnDungeonRuntimeStatusUpdated(string message)
     {
         _currentDungeonStatusMessage = message ?? string.Empty;
-        Debug.Log($"[DungeonManager] Runtime status updated | message='{_currentDungeonStatusMessage}'", this);
+        { /* Runtime status updated | message='{_currentDungeonStatusMessage}' */ }
         OnDungeonStatusMessage?.Invoke(_currentDungeonStatusMessage);
     }
 
@@ -253,7 +253,7 @@ public class DungeonManager : MonoBehaviour
 
     private void Notify(string msg)
     {
-        Debug.Log("[DungeonManager] " + msg);
+        { /* Thực hiện ghi log */ }
         OnDungeonStatusMessage?.Invoke(msg);
     }
 }

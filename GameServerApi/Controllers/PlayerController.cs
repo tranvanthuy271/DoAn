@@ -265,10 +265,8 @@ namespace GameServerApi.Controllers
             finalStats.Mp = Math.Min(finalStats.Mp, finalStats.MaxMp);
 
             // DEBUG LOG
-            _logger.LogDebug("[PlayerCtrl] GetPlayerData playerId={PlayerId} level={Level} exp={Exp} expNextLv={ExpNextLv}",
-                playerId, info.Level, info.Experience, expForNextLevel);
-            _logger.LogDebug("[PlayerCtrl] InfoChar attack={Attack} maxHp={MaxHp} maxMp={MaxMp} defense={Defense}",
-                info.Attack, info.MaxHp, info.MaxMp, info.Defense);
+            { /* GetPlayerData playerId={PlayerId} level={Level} exp={Exp} expNextLv={ExpNextLv} */ }
+            { /* InfoChar attack={Attack} maxHp={MaxHp} maxMp={MaxMp} defense={Defense} */ }
 
             var response = new
             {
@@ -663,11 +661,7 @@ namespace GameServerApi.Controllers
                     bool tracePickupItem = itemTemplateId == PickupTraceItemId;
                     if (tracePickupItem)
                     {
-                        _logger.LogInformation(
-                            "[PickupTrace][InventoryAdd] Start playerId={PlayerId} item={ItemId} qty={Qty} maxSlots={MaxSlots} usedSlots={UsedSlots} stacks={Stacks}",
-                            targetPlayerId, itemTemplateId, quantity, maxSlots,
-                            CountInventoryUsedSlots(inventory),
-                            BuildInventorySlotSummary(inventory, itemTemplateId));
+                        { /* [InventoryAdd] Start playerId={PlayerId} item={ItemId} qty={Qty} maxSlots={MaxSlots} usedSlots={UsedSlots} stacks={Stacks} */ }
                     }
 
                     // Nếu stackable: thử gộp vào slot đã có
@@ -692,11 +686,7 @@ namespace GameServerApi.Controllers
                             {
                                 if (tracePickupItem)
                                 {
-                                    _logger.LogInformation(
-                                        "[PickupTrace][InventoryAdd] StackFull playerId={PlayerId} item={ItemId} slot={Slot} qty={Qty}",
-                                        targetPlayerId, itemTemplateId,
-                                        existingSlot.ContainsKey("slotIndex") ? Convert.ToInt32(existingSlot["slotIndex"]) : -1,
-                                        currentQty);
+                                    { /* [InventoryAdd] StackFull playerId={PlayerId} item={ItemId} slot={Slot} qty={Qty} */ }
                                 }
                                 continue;
                             }
@@ -707,11 +697,7 @@ namespace GameServerApi.Controllers
                             addedCount += addAmount;
                             if (tracePickupItem)
                             {
-                                _logger.LogInformation(
-                                    "[PickupTrace][InventoryAdd] FillStack playerId={PlayerId} item={ItemId} slot={Slot} add={Add} newQty={NewQty} remaining={Remaining}",
-                                    targetPlayerId, itemTemplateId,
-                                    existingSlot.ContainsKey("slotIndex") ? Convert.ToInt32(existingSlot["slotIndex"]) : -1,
-                                    addAmount, currentQty + addAmount, remainingQuantity);
+                                { /* [InventoryAdd] FillStack playerId={PlayerId} item={ItemId} slot={Slot} add={Add} newQty={NewQty} remaining={Remaining} */ }
                             }
 
                             if (remainingQuantity <= 0)
@@ -738,9 +724,7 @@ namespace GameServerApi.Controllers
                         {
                             if (tracePickupItem)
                             {
-                                _logger.LogWarning(
-                                    "[PickupTrace][InventoryAdd] NoEmptySlot playerId={PlayerId} item={ItemId} remaining={Remaining} maxSlots={MaxSlots} usedSlots={UsedSlots}",
-                                    targetPlayerId, itemTemplateId, remainingQuantity, maxSlots, CountInventoryUsedSlots(inventory));
+                                { /* Cảnh báo: [InventoryAdd] NoEmptySlot playerId={PlayerId} item={ItemId} remaining={Remaining} maxSlots={MaxSlots} usedSlots={UsedSlots} */ }
                             }
                             break;
                         }
@@ -764,19 +748,13 @@ namespace GameServerApi.Controllers
                         addedCount += addAmount;
                         if (tracePickupItem)
                         {
-                            _logger.LogInformation(
-                                "[PickupTrace][InventoryAdd] UseEmptySlot playerId={PlayerId} item={ItemId} slot={Slot} add={Add} remaining={Remaining}",
-                                targetPlayerId, itemTemplateId, emptySlotIndex, addAmount, remainingQuantity);
+                            { /* [InventoryAdd] UseEmptySlot playerId={PlayerId} item={ItemId} slot={Slot} add={Add} remaining={Remaining} */ }
                         }
                     }
 
                     if (tracePickupItem)
                     {
-                        _logger.LogInformation(
-                            "[PickupTrace][InventoryAdd] Result playerId={PlayerId} item={ItemId} requested={Requested} added={Added} remaining={Remaining} usedSlots={UsedSlots} stacks={Stacks}",
-                            targetPlayerId, itemTemplateId, quantity, quantity - remainingQuantity, remainingQuantity,
-                            CountInventoryUsedSlots(inventory),
-                            BuildInventorySlotSummary(inventory, itemTemplateId));
+                        { /* [InventoryAdd] Result playerId={PlayerId} item={ItemId} requested={Requested} added={Added} remaining={Remaining} usedSlots={UsedSlots} stacks={Stacks} */ }
                     }
                 }
 
@@ -1079,9 +1057,7 @@ namespace GameServerApi.Controllers
                         if (effects.Count == 0)
                             return BadRequest($"Item consumable '{itemName}' (templateId={itemTemplateId}, type={itemType}) chưa có cấu hình trong item_effect_template.");
 
-                        _logger.LogWarning(
-                            "[UseInventoryItem] Dùng fallback effect config cho itemTemplateId={ItemTemplateId}, itemName={ItemName}",
-                            itemTemplateId, itemName);
+                        { /* Cảnh báo: Dùng fallback effect config cho itemTemplateId={ItemTemplateId}, itemName={ItemName} */ }
                     }
 
                     var activeBuffs = player.GetActiveBuffs();
@@ -1178,34 +1154,24 @@ namespace GameServerApi.Controllers
                             // Nếu hệ chính đã Tier 5 (max) và có hệ phụ → tràn sang SecondaryGeneExp
                             // Ngược lại luôn cộng vào GeneExp chính, không phụ thuộc element của item
                             const int MaxGeneTier = 5;
-                            _logger.LogInformation(
-                                "[GeneExpAdd] playerId={PlayerId} gain={Gain} | GeneTier={GeneTier} SecondaryElement={SecElem} SecondaryGeneExp={SecExp} GeneExp={GeneExp}",
-                                targetPlayerId, geneExpGain,
-                                info.GeneTier, info.SecondaryElement ?? "(null)",
-                                info.SecondaryGeneExp, info.GeneExp);
+                            { /* playerId={PlayerId} gain={Gain} | GeneTier={GeneTier} SecondaryElement={SecElem} SecondaryGeneExp={SecExp} GeneExp={GeneExp} */ }
 
                             // Ưu tiên cao nhất: player đã Dung hợp Hybrid và chưa tối thượng → dồn vào Gene Tối Thượng
                             if (info.IsHybrid && !info.IsUltimate)
                             {
                                 var ultCfg = GeneUltimateService.GetConfig(info.ElementType);
                                 bool activated = GeneUltimateService.TryAccumulateAndActivate(info, geneExpGain, ultCfg);
-                                _logger.LogInformation(
-                                    "[GeneExpAdd] → cộng vào UltimateGeneExp, mới = {NewUltExp} (activated={Activated})",
-                                    info.UltimateGeneExp, activated);
+                                { /* → cộng vào UltimateGeneExp, mới = {NewUltExp} (activated={Activated}) */ }
                             }
                             else if (info.GeneTier >= MaxGeneTier && !string.IsNullOrEmpty(info.SecondaryElement))
                             {
                                 info.SecondaryGeneExp = (info.SecondaryGeneExp ?? 0) + geneExpGain;
-                                _logger.LogInformation(
-                                    "[GeneExpAdd] → cộng vào SecondaryGeneExp, mới = {NewSecExp}",
-                                    info.SecondaryGeneExp);
+                                { /* → cộng vào SecondaryGeneExp, mới = {NewSecExp} */ }
                             }
                             else
                             {
                                 info.GeneExp += geneExpGain;
-                                _logger.LogInformation(
-                                    "[GeneExpAdd] → cộng vào GeneExp chính, mới = {NewGeneExp} (GeneTier={Tier}, SecElem={SecElem})",
-                                    info.GeneExp, info.GeneTier, info.SecondaryElement ?? "(null)");
+                                { /* → cộng vào GeneExp chính, mới = {NewGeneExp} (GeneTier={Tier}, SecElem={SecElem}) */ }
                             }
                         }
                         else if (eff.DurationSec > 0)
@@ -1934,8 +1900,7 @@ namespace GameServerApi.Controllers
                     catch { }
                 }
 
-                _logger.LogInformation("[LevelUp] Player leveled up to {Level}. SkillPts={SkillPts} PotPts={PotPts}",
-                    info.Level, info.SkillPoints, info.PotentialPoints);
+                { /* Player leveled up to {Level}. SkillPts={SkillPts} PotPts={PotPts} */ }
                 changed = true;
             }
 
@@ -3347,8 +3312,7 @@ namespace GameServerApi.Controllers
             player.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            _logger.LogDebug("[PlayerCtrl] GainExp playerId={PlayerId} amount={Amount} totalExp={TotalExp} level={Level} leveledUp={LeveledUp} ultExp={UltExp} ultActivated={UltActivated}",
-                playerId, amount, info.Experience, info.Level, leveledUp, info.UltimateGeneExp, ultimateActivated);
+            { /* GainExp playerId={PlayerId} amount={Amount} totalExp={TotalExp} level={Level} leveledUp={LeveledUp} ultExp={UltExp} ultActivated={UltActivated} */ }
 
             return Ok(new
             {
@@ -3370,12 +3334,12 @@ namespace GameServerApi.Controllers
         [HttpGet("by-user/{userId}")]
         public async Task<IActionResult> GetPlayerByUserId(int userId)
         {
-            _logger.LogInformation("[PlayerController] GetPlayerByUserId requested userId={UserId}", userId);
+            { /* GetPlayerByUserId requested userId={UserId} */ }
 
             var player = await _db.PlayerData.FirstOrDefaultAsync(p => p.PlayerId == userId);
             if (player == null)
             {
-                _logger.LogWarning("[PlayerController] GetPlayerByUserId failed userId={UserId}: player not found", userId);
+                { /* Cảnh báo: GetPlayerByUserId failed userId={UserId}: player not found */ }
                 return NotFound("Người chơi chưa tạo nhân vật.");
             }
 
@@ -3389,7 +3353,7 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[PlayerController] GetPlayerByUserId equipment parse failed userId={UserId}", userId);
+                { /* Cảnh báo: GetPlayerByUserId equipment parse failed userId={UserId} */ }
                 equipment = new { };
             }
 
@@ -3433,10 +3397,7 @@ namespace GameServerApi.Controllers
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex,
-                            "[PlayerController] GetPlayerByUserId skill levels parse failed userId={UserId} skillId={SkillId}",
-                            userId,
-                            row.template.SkillId);
+                        { /* Cảnh báo: GetPlayerByUserId skill levels parse failed userId={UserId} skillId={SkillId} */ }
                     }
                 }
 
@@ -3507,7 +3468,7 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[PlayerController] GetPlayerByUserId potential parse failed userId={UserId}", userId);
+                { /* Cảnh báo: GetPlayerByUserId potential parse failed userId={UserId} */ }
             }
 
             var potentialStats = PotentialStatConfig.Select(cfg => new
@@ -3519,12 +3480,7 @@ namespace GameServerApi.Controllers
                 total_value = (potentialPoints.TryGetValue(cfg.Key, out var totalPoints) ? totalPoints : 0) * cfg.Value.ValuePerPoint
             }).ToList();
 
-            _logger.LogInformation(
-                "[PlayerController] GetPlayerByUserId success userId={UserId} playerId={PlayerId} skills={SkillCount} potentialStats={PotentialCount}",
-                userId,
-                player.PlayerId,
-                skills.Count,
-                potentialStats.Count);
+            { /* GetPlayerByUserId success userId={UserId} playerId={PlayerId} skills={SkillCount} potentialStats={PotentialCount} */ }
 
             return Ok(new
             {

@@ -24,7 +24,7 @@ public class ServerAddressConfig : ScriptableObject
                 _instance = Resources.Load<ServerAddressConfig>("ServerAddressConfig");
                 if (_instance == null)
                 {
-                    Debug.LogWarning("[ServerAddressConfig] Không tìm thấy asset trong Resources/ServerAddressConfig. Tạo default runtime.");
+                    { /* Cảnh báo: Không tìm thấy asset trong Resources/ServerAddressConfig. Tạo default runtime */ }
                     _instance = CreateInstance<ServerAddressConfig>();
                 }
             }
@@ -121,11 +121,11 @@ public class ServerAddressConfig : ScriptableObject
             _lastRuntimeConfigPath = path;
             _lastRuntimeConfigTicks = ticks;
 
-            Debug.Log($"[ServerAddressConfig] Runtime override applied ({path}) → API={apiBaseUrl} GameServer={gameServerIp}:{gameServerPort}");
+            { /* Runtime override applied ({path}) → API={apiBaseUrl} GameServer={gameServerIp}:{gameServerPort} */ }
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"[ServerAddressConfig] Parse server_config.json thất bại: {ex.Message}");
+            { /* Cảnh báo: Parse server_config.json thất bại: {ex.Message} */ }
         }
     }
 

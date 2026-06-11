@@ -67,13 +67,13 @@ public class FireballDamage : MonoBehaviour
         if (col != null && !col.isTrigger)
         {
             col.isTrigger = true;
-            Debug.LogWarning("[FireballDamage] Collider đã được tự động set thành trigger!");
+            { /* Cảnh báo: Collider đã được tự động set thành trigger */ }
         }
 
         // Kiểm tra nếu không có Collider2D
         if (col == null)
         {
-            Debug.LogError("[FireballDamage] Fireball không có Collider2D! Vui lòng thêm Collider2D vào Prefab.");
+            { /* Lỗi: Fireball không có Collider2D! Vui lòng thêm Collider2D vào Prefab */ }
         }
     }
 
@@ -100,7 +100,7 @@ public class FireballDamage : MonoBehaviour
             int ownerMap = GetOwnerMapId();
             if (enemyZoneTag != null && ownerMap != -999 && ownerMap != enemyZoneTag.MapId)
             {
-                Debug.LogWarning($"[FireballDamage] Bỏ qua cross-map: owner map={ownerMap}, enemy map={enemyZoneTag.MapId}");
+                { /* Cảnh báo: Bỏ qua cross-map: owner map={ownerMap}, enemy map={enemyZoneTag.MapId} */ }
                 return;
             }
 
@@ -118,14 +118,14 @@ public class FireballDamage : MonoBehaviour
             networkEnemyHealth.TakeDamage(finalDamage, GetOwnerClientId());
             ApplyDebuffToTarget(networkEnemyHealth.gameObject);
             hasHit = true;
-            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network)");
+            { /* Fireball damage enemy {collision.name} voi {finalDamage} damage! (Network) */ }
             if (destroyOnHit) Destroy(gameObject);
         }
         else if (enemyHealth != null)
         {
             enemyHealth.TakeDamage(baseFinalDamage);
             hasHit = true;
-            Debug.Log($"[FireballDamage] Fireball damage enemy {collision.name} voi {baseFinalDamage} damage!");
+            { /* Fireball damage enemy {collision.name} voi {baseFinalDamage} damage */ }
             if (destroyOnHit) Destroy(gameObject);
         }        // Check va chạm với Player (PvP)
         else if (collision.CompareTag("Player"))
@@ -142,7 +142,7 @@ public class FireballDamage : MonoBehaviour
                 networkPlayerHealth.TakeDamage(baseFinalDamage);
                 ApplyDebuffToTarget(networkPlayerHealth.gameObject);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Hit player {collision.name} với {baseFinalDamage} damage! (Network PvP)");
+                { /* Hit player {collision.name} với {baseFinalDamage} damage! (Network PvP) */ }
                 if (destroyOnHit) Destroy(gameObject);
                 return;
             }
@@ -153,13 +153,13 @@ public class FireballDamage : MonoBehaviour
             {
                 playerHealth.TakeDamage(baseFinalDamage);
                 hasHit = true;
-                Debug.Log($"[FireballDamage] Hit player {collision.name} với {baseFinalDamage} damage! (Standalone PvP)");
+                { /* Hit player {collision.name} với {baseFinalDamage} damage! (Standalone PvP) */ }
                 if (destroyOnHit) Destroy(gameObject);
             }
         }        // Nếu va chạm với ground/wall, hủy fireball
         else if (destroyOnGround && (collision.CompareTag("Ground") || collision.CompareTag("Wall")))
         {
-            Debug.Log("[FireballDamage] Fireball đã chạm ground/wall, tự hủy.");
+            { /* Fireball đã chạm ground/wall, tự hủy */ }
             Destroy(gameObject);
         }
     }

@@ -41,7 +41,7 @@ public class WaveSessionManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = owner.AddComponent<WaveSessionManager>();
-            Debug.LogWarning($"[WaveSessionManager] Instance bị thiếu ở runtime. Auto-created trên GameObject '{owner.name}'.");
+            { /* Cảnh báo: Instance bị thiếu ở runtime. Auto-created trên GameObject '{owner.name}' */ }
         }
 
         return Instance;
@@ -96,12 +96,12 @@ public class WaveSessionManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning($"[WaveSessionManager] Duplicate instance on '{gameObject.name}' (existing='{Instance.gameObject.name}') — destroying duplicate COMPONENT only.");
+            { /* Cảnh báo: Duplicate instance on '{gameObject.name}' (existing='{Instance.gameObject.name}')  destroying duplicate COMPONENT only */ }
             Destroy(this);
             return;
         }
         Instance = this;
-        Debug.Log("[WaveSessionManager] Initialized (in-memory, no DB).");
+        { /* Initialized (in-memory, no DB) */ }
     }
 
     private void OnDestroy()
@@ -120,7 +120,7 @@ public class WaveSessionManager : MonoBehaviour
         int limit = configuredLimit ?? _defaultDailyLimit;
         if (limit < 0)
         {
-            Debug.Log($"[WaveSessionManager] CheckDailyLimit userId={userId} dungeonId={dungeonId} limit=unlimited → OK");
+            { /* CheckDailyLimit userId={userId} dungeonId={dungeonId} limit=unlimited → OK */ }
             return true;
         }
 
@@ -128,7 +128,7 @@ public class WaveSessionManager : MonoBehaviour
         int allowed = Mathf.Max(0, limit) + Mathf.Max(0, entry.BonusCount);
         bool ok = entry.UsedCount < allowed;
 
-        Debug.Log($"[WaveSessionManager] CheckDailyLimit userId={userId} dungeonId={dungeonId} used={entry.UsedCount}/{allowed} base={limit} bonus={entry.BonusCount} date={entry.DateKey} → {(ok ? "OK" : "DENIED")}");
+        { /* CheckDailyLimit userId={userId} dungeonId={dungeonId} used={entry.UsedCount}/{allowed} base={limit} bonus={entry.BonusCount} date={entry.DateKey} → {(ok ? */ }
         return ok;
     }
 
@@ -173,7 +173,7 @@ public class WaveSessionManager : MonoBehaviour
         DailyEntry entry = GetOrCreateDailyEntry(userId);
         entry.BonusCount += amount;
 
-        Debug.Log($"[WaveSessionManager] AddBonusEntries userId={userId} add={amount} bonusToday={entry.BonusCount} usedToday={entry.UsedCount} remaining={GetDailyRemainingCount(userId, 0)}");
+        { /* AddBonusEntries userId={userId} add={amount} bonusToday={entry.BonusCount} usedToday={entry.UsedCount} remaining={GetDailyRemainingCount(userId, 0)} */ }
     }
 
     // Tăng bộ đếm lượt đã dùng lên 1.
@@ -185,7 +185,7 @@ public class WaveSessionManager : MonoBehaviour
         DailyEntry entry = GetOrCreateDailyEntry(userId);
         entry.UsedCount++;
 
-        Debug.Log($"[WaveSessionManager] ConsumeEntry userId={userId} dungeonId={dungeonId} usedToday={entry.UsedCount} bonusToday={entry.BonusCount} remaining={GetDailyRemainingCount(userId, dungeonId)}");
+        { /* ConsumeEntry userId={userId} dungeonId={dungeonId} usedToday={entry.UsedCount} bonusToday={entry.BonusCount} remaining={GetDailyRemainingCount(userId, dungeonId)} */ }
     }
 
     // Session API
@@ -249,7 +249,7 @@ public class WaveSessionManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(userId))
         {
-            Debug.LogWarning("[WaveSessionManager] BeginSession gọi với userId rỗng — bỏ qua.");
+            { /* Cảnh báo: BeginSession gọi với userId rỗng  bỏ qua */ }
             return;
         }
 
@@ -267,7 +267,7 @@ public class WaveSessionManager : MonoBehaviour
             SessionStartTime = DateTime.UtcNow,
         };
         _activeSessions[userId] = session;
-        Debug.Log($"[WaveSessionManager] BeginSession userId={userId} dungeonId={dungeonId} mapId={mapId} zoneId={zoneId} room={(zoneRoom != null ? zoneRoom.ZoneId.ToString() : "null")}");
+        { /* BeginSession userId={userId} dungeonId={dungeonId} mapId={mapId} zoneId={zoneId} room={(zoneRoom != null ? zoneRoom.ZoneId.ToString() */ }
     }
 
     // Cập nhật trạng thái wave (round, timer) cho tất cả session thuộc zoneId.
@@ -295,12 +295,7 @@ public class WaveSessionManager : MonoBehaviour
         PlayerWaveSession dbgSession = null;
         bool found   = !string.IsNullOrEmpty(userId) && _activeSessions.TryGetValue(userId, out dbgSession);
         bool active  = found && dbgSession != null && dbgSession.IsActive;
-        Debug.Log($"[RECONNECT-DEBUG][2-WaveDisconnect] userId={userId} " +
-                  $"foundInDict={found} IsActive={active} " +
-                  $"ZoneRoom={(found && dbgSession?.ZoneRoom != null ? dbgSession.ZoneRoom.ZoneKey : "null")} " +
-                  $"ZoneRoom.IsCustom={(found && dbgSession?.ZoneRoom != null ? dbgSession.ZoneRoom.IsCustom.ToString() : "n/a")} " +
-                  $"mapId={(found ? dbgSession?.MapId.ToString() : "n/a")} zoneId={(found ? dbgSession?.ZoneId.ToString() : "n/a")} " +
-                  $"ZoneRoomRegistry.Instance={(ZoneRoomRegistry.Instance != null ? "OK" : "NULL!")}");
+        { /* [2-WaveDisconnect] userId={userId} */ }
 
         if (HasActiveSession(userId))
         {
@@ -308,30 +303,25 @@ public class WaveSessionManager : MonoBehaviour
             if (s.ZoneRoom != null)
             {
                 ZoneRoom restoredRoom = ZoneRoomRegistry.Instance?.EnsureRoomRegistered(s.ZoneRoom);
-                Debug.Log($"[RECONNECT-DEBUG][2a-EnsureRegistered] userId={userId} zoneKey={s.ZoneRoom.ZoneKey} " +
-                          $"restoredRoom={(restoredRoom != null ? restoredRoom.ZoneKey : "NULL!")}");
+                { /* [2a-EnsureRegistered] userId={userId} zoneKey={s.ZoneRoom.ZoneKey} */ }
                 if (restoredRoom != null)
                     s.ZoneRoom = restoredRoom;
             }
             else
             {
                 s.ZoneRoom = ZoneRoomRegistry.Instance?.EnsureCustomRoomRegistered(s.MapId, s.ZoneId);
-                Debug.Log($"[RECONNECT-DEBUG][2b-EnsureCustomRegistered] userId={userId} map={s.MapId} zone={s.ZoneId} " +
-                          $"result={(s.ZoneRoom != null ? s.ZoneRoom.ZoneKey : "NULL! → preserve sẽ thất bại")}");
+                { /* [2b-EnsureCustomRegistered] userId={userId} map={s.MapId} zone={s.ZoneId} */ }
             }
 
             ZoneRoomRegistry.Instance?.MarkRoomPreserved(s.ZoneRoom, $"disconnect userId={userId}");
-            Debug.Log($"[RECONNECT-DEBUG][2c-MarkPreserved] userId={userId} ZoneRoom={(s.ZoneRoom != null ? s.ZoneRoom.ZoneKey : "NULL → KHÔNG preserved!")}");
-            Debug.Log($"[WaveSessionManager] OnPlayerDisconnect userId={userId} dungeonId={s.DungeonId} " +
-                      $"zoneId={s.ZoneId} round={s.CurrentRound}/{s.MaxRounds} remaining={s.RemainingSeconds}s " +
-                      $"— session PRESERVED. Timer tiếp tục chạy trên server.");
+            { /* [2c-MarkPreserved] userId={userId} ZoneRoom={(s.ZoneRoom != null ? s.ZoneRoom.ZoneKey */ }
+            { /* OnPlayerDisconnect userId={userId} dungeonId={s.DungeonId} */ }
             // Không xóa session — IsActive vẫn = true
         }
         else
         {
-            Debug.LogWarning($"[RECONNECT-DEBUG][2-WaveDisconnect] userId={userId} — HasActiveSession=false " +
-                             $"→ KHÔNG preserve session! Lý do: found={found} active={active}");
-            Debug.Log($"[WaveSessionManager] OnPlayerDisconnect userId={userId} — không có active session.");
+            { /* Cảnh báo: [2-WaveDisconnect] userId={userId}  HasActiveSession=false */ }
+            { /* OnPlayerDisconnect userId={userId}  không có active session */ }
         }
     }
 
@@ -343,7 +333,7 @@ public class WaveSessionManager : MonoBehaviour
         {
             s.IsActive = false;
             ZoneRoomRegistry.Instance?.ReleasePreservedRoom(s.MapId, s.ZoneId);
-            Debug.Log($"[WaveSessionManager] EndSession userId={userId} dungeonId={s.DungeonId} finalRound={s.CurrentRound}");
+            { /* EndSession userId={userId} dungeonId={s.DungeonId} finalRound={s.CurrentRound} */ }
         }
     }
 
@@ -362,7 +352,7 @@ public class WaveSessionManager : MonoBehaviour
                     ZoneRoomRegistry.Instance?.ReleasePreservedRoom(s.MapId, s.ZoneId);
                     releasedRoom = true;
                 }
-                Debug.Log($"[WaveSessionManager] EndSessionsByZone userId={kv.Key} zoneId={zoneId} finalRound={s.CurrentRound}");
+                { /* EndSessionsByZone userId={kv.Key} zoneId={zoneId} finalRound={s.CurrentRound} */ }
             }
         }
     }
@@ -378,7 +368,7 @@ public class WaveSessionManager : MonoBehaviour
         {
             if (!string.Equals(entry.DateKey, today, StringComparison.Ordinal))
             {
-                Debug.Log($"[WaveSessionManager] Daily reset userId={userId} prevDate={entry.DateKey} newDate={today} used={entry.UsedCount} bonus={entry.BonusCount}");
+                { /* Daily reset userId={userId} prevDate={entry.DateKey} newDate={today} used={entry.UsedCount} bonus={entry.BonusCount} */ }
                 entry.DateKey = today;
                 entry.UsedCount = 0;
                 entry.BonusCount = 0;
@@ -421,7 +411,7 @@ public class WaveSessionManager : MonoBehaviour
             }
         }
 
-        Debug.LogWarning("[WaveSessionManager] Không resolve được múi giờ VN. Fallback về TimeZoneInfo.Local.");
+        { /* Cảnh báo: Không resolve được múi giờ VN. Fallback về TimeZoneInfo.Local */ }
         return TimeZoneInfo.Local;
     }
 }

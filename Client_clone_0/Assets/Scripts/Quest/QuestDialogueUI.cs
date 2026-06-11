@@ -62,7 +62,7 @@ public class QuestDialogueUI : MonoBehaviour
         // QuestDialogueUI là root Canvas sortOrder=100 — phải là root GO.
         if (transform.parent != null)
         {
-            Debug.Log("[QuestDialogueUI] Awake: đang nested → tách ra root.");
+            { /* Awake: đang nested → tách ra root */ }
             transform.SetParent(null, false);
         }
         DontDestroyOnLoad(gameObject); // hoạt động đúng sau khi đã là root
@@ -143,7 +143,7 @@ public class QuestDialogueUI : MonoBehaviour
     private void Show(string text, string npcName,
                       string acceptLabel, string declineLabel, Action<bool> callback)
     {
-        Debug.Log($"[QuestDialogueUI] Show() | npcName='{npcName}' acceptLabel='{acceptLabel}' textLen={text?.Length ?? 0} rootCanvas={(rootCanvas == null ? "null" : rootCanvas.name)} GO.active={gameObject.activeSelf}");
+        { /* Show() | npcName='{npcName}' acceptLabel='{acceptLabel}' textLen={text?.Length ?? 0} rootCanvas={(rootCanvas == null ? */ }
         _callback = callback;
         _lines.Clear();
 
@@ -221,12 +221,12 @@ public class QuestDialogueUI : MonoBehaviour
         // Dùng gameObject trực tiếp để đảm bảo hoạt động ngay cả khi rootCanvas chưa được gán
         if (rootCanvas != null)
         {
-            Debug.Log($"[QuestDialogueUI] SetCanvasActive({active}) via rootCanvas={rootCanvas.name}");
+            { /* SetCanvasActive({active}) via rootCanvas={rootCanvas.name} */ }
             rootCanvas.gameObject.SetActive(active);
         }
         else
         {
-            Debug.Log($"[QuestDialogueUI] SetCanvasActive({active}) via gameObject (rootCanvas=null)");
+            { /* SetCanvasActive({active}) via gameObject (rootCanvas=null) */ }
             gameObject.SetActive(active);
         }
     }
@@ -248,7 +248,7 @@ public class QuestDialogueUI : MonoBehaviour
 
         if (panelT == null)
         {
-            Debug.LogWarning($"[QuestDialogueUI] AutoWire: KHÔNG tìm thấy DialoguePanel! overlayT={(overlayT == null ? "null" : overlayT.name)} childCount={transform.childCount}");
+            { /* Cảnh báo: AutoWire: KHÔNG tìm thấy DialoguePanel! overlayT={(overlayT == null ? */ }
             return;
         }
 
@@ -275,6 +275,6 @@ public class QuestDialogueUI : MonoBehaviour
             }
         }
 
-        Debug.Log($"[QuestDialogueUI] AutoWire done | rootCanvas={(rootCanvas == null ? "null" : rootCanvas.name)} overlay={(overlay == null ? "null" : "ok")} dialoguePanel={panelT.name} dialogueText={(dialogueText == null ? "null" : "ok")} npcNameText={(npcNameText == null ? "null" : "ok")} btnAccept={(btnAccept == null ? "null" : "ok")} btnDecline={(btnDecline == null ? "null" : "ok")}");
+        { /* AutoWire done | rootCanvas={(rootCanvas == null ? */ }
     }
 }

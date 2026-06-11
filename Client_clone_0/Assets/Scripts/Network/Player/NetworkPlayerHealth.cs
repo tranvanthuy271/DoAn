@@ -117,7 +117,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
             {
                 // Fallback: Dùng vị trí hiện tại
                 spawnPoints = new Vector3[] { transform.position };
-                Debug.LogWarning($"[NetworkPlayerHealth] No spawn points found, using current position: {transform.position}");
+                { /* Cảnh báo: No spawn points found, using current position: {transform.position} */ }
             }
         }
     }
@@ -178,7 +178,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
         if (controller != null && controller.godMode)
         {
-            Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} - God Mode: Damage blocked!");
+            { /* Player {NetworkObjectId} - God Mode: Damage blocked */ }
             return;
         }
 
@@ -215,7 +215,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
         OnTakeDamageClientRpc(damage);
 
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
+        { /* Player {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth} */ }
     }
 
     // ServerRpc: Client yêu cầu server gây damage
@@ -239,7 +239,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         isHealBlocked = true;
         healBlockTimer = Mathf.Max(healBlockTimer, duration);
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} heal blocked for {duration}s");
+        { /* Player {NetworkObjectId} heal blocked for {duration}s */ }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -253,7 +253,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (isDead) return;
         if (isHealBlocked)
         {
-            Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} - Heal bị chặn bởi Lava Aura!");
+            { /* Player {NetworkObjectId} - Heal bị chặn bởi Lava Aura */ }
             return;
         }
 
@@ -267,7 +267,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
         OnHealClientRpc(amount);
 
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} healed {amount}. Health: {newHealth}/{maxHealth}");
+        { /* Player {NetworkObjectId} healed {amount}. Health: {newHealth}/{maxHealth} */ }
     }
 
     // ClientRpc: Notify clients về heal
@@ -301,7 +301,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} died!");
+        { /* Player {NetworkObjectId} died */ }
 
         // Notify clients về death
         OnDeathClientRpc();
@@ -344,7 +344,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
             if (spawnPoints != null && spawnPoints.Length > 0)
                 spawnPosition = spawnPoints[Random.Range(0, spawnPoints.Length)];
             else
-                Debug.LogWarning("[NetworkPlayerHealth] spawnPoints trống — respawn tại (0,0,0)");
+                { /* Cảnh báo: spawnPoints trống  respawn tại (0,0,0) */ }
         }
 
         // Lấy HP/MP max thực tế từ NetworkPlayerDataSync (authoritative stats từ API)
@@ -373,7 +373,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         // Notify clients về respawn
         OnRespawnClientRpc(spawnPosition);
 
-        Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} respawned at {spawnPosition} HP={fullHp}/{fullHp}");
+        { /* Player {NetworkObjectId} respawned at {spawnPosition} HP={fullHp}/{fullHp} */ }
     }
 
     // ClientRpc: Notify clients về respawn
@@ -475,7 +475,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
             networkCurrentHealth.Value = maxHealth;
         }
         
-        Debug.Log($"[NetworkPlayerHealth] Max health set to {maxHealth} for player {NetworkObjectId}");
+        { /* Max health set to {maxHealth} for player {NetworkObjectId} */ }
     }
 
     // ServerRpc: Set current health (chỉ server mới có quyền)
@@ -487,7 +487,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         newHealth = Mathf.Clamp(newHealth, 0, maxHealth);
         networkCurrentHealth.Value = newHealth;
         
-        Debug.Log($"[NetworkPlayerHealth] Health set to {newHealth}/{maxHealth} for player {NetworkObjectId}");
+        { /* Health set to {newHealth}/{maxHealth} for player {NetworkObjectId} */ }
     }
 
     // Public method để set max health (tự động chuyển thành ServerRpc nếu cần)

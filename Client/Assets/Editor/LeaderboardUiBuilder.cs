@@ -51,7 +51,7 @@ public static class LeaderboardUiBuilder
     public static void Build()
     {
         _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NOTO_FONT);
-        if (_font == null) Debug.LogWarning("[BXH] Khong tim thay NotoSans font.");
+        if (_font == null) { /* Cảnh báo: Khong tim thay NotoSans font */ }
         Folder("Assets/Resources/Prefabs/UI/Leaderboard");
 
         // Row prefab: luon tao moi
@@ -63,7 +63,7 @@ public static class LeaderboardUiBuilder
         if (!panelExists)
             MakePanelSkeleton();
         else
-            Debug.Log("[BXH] Panel da ton tai, giu nguyen. Dung menu Reset neu muon tao lai.");
+            { /* Panel da ton tai, giu nguyen. Dung menu Reset neu muon tao lai */ }
 
         // HUD button: luon tao moi
         AssetDatabase.DeleteAsset(HudBtnPath);
@@ -90,7 +90,7 @@ public static class LeaderboardUiBuilder
             return;
 
         _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NOTO_FONT);
-        if (_font == null) Debug.LogWarning("[BXH] Khong tim thay NotoSans font.");
+        if (_font == null) { /* Cảnh báo: Khong tim thay NotoSans font */ }
         Folder("Assets/Resources/Prefabs/UI/Leaderboard");
 
         AssetDatabase.DeleteAsset(PanelPath);
@@ -165,7 +165,7 @@ public static class LeaderboardUiBuilder
         var saved = PrefabUtility.SaveAsPrefabAsset(root, PanelPath);
         Object.DestroyImmediate(root);
         Selection.activeObject = saved;
-        Debug.Log("[BXH] Skeleton saved: " + PanelPath);
+        { /* Skeleton saved */ }
     }
 
     // =========================================================================
@@ -437,13 +437,13 @@ public static class LeaderboardUiBuilder
     {
         var p = so.FindProperty(name);
         if (p != null) p.objectReferenceValue = val;
-        else Debug.LogWarning("[BXH] prop not found: " + name);
+        else { /* Cảnh báo: prop not found */ }
     }
 
     static void SetArr<T>(SerializedObject so, string name, T[] arr) where T : Object
     {
         var p = so.FindProperty(name);
-        if (p == null) { Debug.LogWarning("[BXH] arr prop not found: " + name); return; }
+        if (p == null) { { /* Cảnh báo: arr prop not found */ } return; }
         p.arraySize = arr.Length;
         for (int i = 0; i < arr.Length; i++)
             p.GetArrayElementAtIndex(i).objectReferenceValue = arr[i];

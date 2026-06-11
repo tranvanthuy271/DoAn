@@ -58,13 +58,13 @@ public static class QuestProgressReporter
         if (req.result == UnityWebRequest.Result.Success)
         {
             string responseText = req.downloadHandler.text;
-            Debug.Log($"[QuestProgress] ✓ OK playerId={playerId} type={type} targetId={targetId}: {responseText}");
+            { /* ✓ OK playerId={playerId} type={type} targetId={targetId}: {responseText} */ }
             // Chỉ notify client khi server thực sự cộng tiến trình (response có step_progress)
             if (responseText.Contains("step_progress"))
                 onSuccess?.Invoke();
         }
         else
-            Debug.LogWarning($"[QuestProgress] ✗ FAIL playerId={playerId} type={type} targetId={targetId}: {req.error} | body={req.downloadHandler?.text}");
+            { /* Cảnh báo: ✗ FAIL playerId={playerId} type={type} targetId={targetId}: {req.error} | body={req.downloadHandler?.text} */ }
     }
 
     [System.Serializable]

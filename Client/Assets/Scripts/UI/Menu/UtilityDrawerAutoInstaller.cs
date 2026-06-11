@@ -132,7 +132,7 @@ public static class UtilityDrawerAutoInstaller
             44f,
             true);
 
-        Debug.Log("[UtilityDrawerAutoInstaller] Created default utility drawer under HUD.");
+        { /* Created default utility drawer under HUD */ }
     }
 
     private static void CreateUtilityButton(RectTransform parent, Font font, string label)
@@ -146,7 +146,7 @@ public static class UtilityDrawerAutoInstaller
         colors.highlightedColor = new Color(1f, 0.90f, 0.38f, 1f);
         colors.pressedColor = new Color(0.85f, 0.67f, 0.16f, 1f);
         button.colors = colors;
-        button.onClick.AddListener(() => Debug.Log($"[UtilityDrawerAutoInstaller] Clicked utility '{label}'."));
+        button.onClick.AddListener(() => { /* Clicked utility '{label}' */ });
 
         RectTransform textRect = CreateRect("Label", buttonRect, new Vector2(46f, 46f));
         textRect.anchorMin = Vector2.zero;

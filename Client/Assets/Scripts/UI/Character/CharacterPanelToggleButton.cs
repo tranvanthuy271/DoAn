@@ -28,7 +28,7 @@ public class CharacterPanelToggleButton : MonoBehaviour
     {
         ResolveControllers();
         if (informationPanel == null && characterPanel == null)
-            Debug.LogError("[CharacterPanelToggleButton] Không tìm thấy InformationPanelController hay CharacterPanelController trong scene! Hãy gán thủ công trong Inspector.");
+            { /* Lỗi: Không tìm thấy InformationPanelController hay CharacterPanelController trong scene! Hãy gán thủ công trong Inspector */ }
     }
 
     private void OnDestroy()
@@ -40,37 +40,37 @@ public class CharacterPanelToggleButton : MonoBehaviour
     private void OnButtonClicked()
     {
         ResolveControllers();
-        Debug.Log("[CharacterPanelToggleButton] Button clicked!");
+        { /* Button clicked */ }
         
         // Ưu tiên dùng InformationPanelController để đồng bộ state cả 2 tab
         if (informationPanel != null)
         {
-            Debug.Log("[CharacterPanelToggleButton] Sử dụng InformationPanelController");
+            { /* Sử dụng InformationPanelController */ }
 
             if (informationPanel.IsAnyPanelVisible && !informationPanel.IsShowingInventory)
             {
-                Debug.Log("[CharacterPanelToggleButton] Panel đang hiện → đóng");
+                { /* Panel đang hiện → đóng */ }
                 informationPanel.HideAll();
             }
             else
             {
-                Debug.Log("[CharacterPanelToggleButton] Panel đang ẩn → mở CharacterPanel tab Thông Tin");
+                { /* Panel đang ẩn → mở CharacterPanel tab Thông Tin */ }
                 informationPanel.ShowThongTin();
             }
             return;
         }
 
         // Fallback khi chưa gán InformationPanelController
-        Debug.LogWarning("[CharacterPanelToggleButton] Không tìm thấy InformationPanelController, dùng fallback");
+        { /* Cảnh báo: Không tìm thấy InformationPanelController, dùng fallback */ }
         
         if (characterPanel != null)
         {
-            Debug.Log("[CharacterPanelToggleButton] Toggle CharacterPanel trực tiếp");
+            { /* Toggle CharacterPanel trực tiếp */ }
             characterPanel.Toggle();
         }
         else
         {
-            Debug.LogError("[CharacterPanelToggleButton] Chưa gán InformationPanelController hoặc CharacterPanelController.");
+            { /* Lỗi: Chưa gán InformationPanelController hoặc CharacterPanelController */ }
         }
     }
 
@@ -80,14 +80,14 @@ public class CharacterPanelToggleButton : MonoBehaviour
         {
             characterPanel = FindObjectOfType<CharacterPanelController>(includeInactive: true);
             if (characterPanel != null)
-                Debug.Log($"[CharacterPanelToggleButton] Auto-found CharacterPanelController: {characterPanel.gameObject.name}");
+                { /* Auto-found CharacterPanelController: {characterPanel.gameObject.name} */ }
         }
 
         if (informationPanel == null)
         {
             informationPanel = InformationPanelController.GetOrCreate(characterPanel, null);
             if (informationPanel != null)
-                Debug.Log($"[CharacterPanelToggleButton] Auto-found/created InformationPanelController: {informationPanel.gameObject.name}");
+                { /* Auto-found/created InformationPanelController: {informationPanel.gameObject.name} */ }
         }
     }
 }

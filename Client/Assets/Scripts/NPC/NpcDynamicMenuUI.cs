@@ -116,7 +116,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
             {
                 // Fix Viewport RT — nếu prefab cũ lưu anchor (0,0)/(0,0) → mask = 0px → block tất cả click
                 FixViewportRt(go);
-                Debug.Log($"{LogPrefix} Instantiated from Resources/{ResourcePath}.");
+                { /* {LogPrefix} Instantiated from Resources/{ResourcePath} */ }
                 return Instance;
             }
         }
@@ -133,7 +133,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
     // Tham số interaction: NpcInteraction để gọi SelectMenuItemServerRpc sau khi chọn.
     public void Open(NpcData data, NpcInteraction interaction)
     {
-        if (data == null) { Debug.LogWarning($"{LogPrefix} Open: data null."); return; }
+        if (data == null) { { /* Cảnh báo: {LogPrefix} Open: data null */ } return; }
 
         _currentInteraction = interaction;
         LastOpenedNpcData   = data;
@@ -167,13 +167,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         var viewport   = scrollRect != null ? scrollRect.viewport : null;
         var content    = scrollRect != null ? scrollRect.content  : null;
         var cgRoot     = GetComponent<CanvasGroup>();
-        Debug.Log($"{LogPrefix} Open diagnostics | " +
-            $"mainPanel={(mainPanel!=null?mainPanel.name:"NULL")} active={mainPanel?.activeSelf} " +
-            $"menuListContent={(menuListContent!=null?menuListContent.name:"NULL")} " +
-            $"ScrollRect={(scrollRect!=null?"OK":"NULL")} " +
-            $"Viewport={(viewport != null ? $"{viewport.name} anchorMax={viewport.anchorMax} size={viewport.rect.size}" : "NULL")} " +
-            $"Content={(content != null ? $"{content.name} childCount={content.childCount}" : "NULL")} " +
-            $"CanvasGroup={(cgRoot != null ? $"blocksRaycasts={cgRoot.blocksRaycasts} interactable={cgRoot.interactable}" : "none")}");
+        { /* {LogPrefix} Open diagnostics | */ }
 
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, true);
         InputManager.Instance?.CancelAutoMove();
@@ -183,7 +177,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
             LayoutRebuilder.ForceRebuildLayoutImmediate(menuListContent as RectTransform
                 ?? menuListContent.GetComponent<RectTransform>());
 
-        Debug.Log($"{LogPrefix} Open | npcId={data.npc_id} name='{data.npc_name}' items='{data.menu_items}'");
+        { /* {LogPrefix} Open | npcId={data.npc_id} name='{data.npc_name}' items='{data.menu_items}' */ }
     }
 
     public void Close()
@@ -192,7 +186,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         ClearRows();
         _currentInteraction = null;
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, false);
-        Debug.Log($"{LogPrefix} Close.");
+        { /* {LogPrefix} Close */ }
         UIPanelManager.NotifyClosed(gameObject);
     }
 
@@ -205,11 +199,11 @@ public class NpcDynamicMenuUI : MonoBehaviour
         if (menuItemRowPrefab != null && menuListContent != null)
         {
             rowGo = Instantiate(menuItemRowPrefab, menuListContent);
-            Debug.Log($"{LogPrefix} SpawnRow [{index}] '{label}' | prefab='{menuItemRowPrefab.name}' parent='{menuListContent.name}' rowActive={rowGo.activeSelf}");
+            { /* {LogPrefix} SpawnRow [{index}] '{label}' | prefab='{menuItemRowPrefab.name}' parent='{menuListContent.name}' rowActive={rowGo.activeSelf} */ }
         }
         else
         {
-            Debug.LogWarning($"{LogPrefix} SpawnRow [{index}] fallback | prefab={(menuItemRowPrefab==null?"NULL":menuItemRowPrefab.name)} content={(menuListContent==null?"NULL":menuListContent.name)}");
+            { /* Cảnh báo: {LogPrefix} SpawnRow [{index}] fallback | prefab={(menuItemRowPrefab==null? */ }
             rowGo = CreateFallbackRow(label, index);
             if (rowGo == null) return;
         }
@@ -224,19 +218,17 @@ public class NpcDynamicMenuUI : MonoBehaviour
             var cg  = rowGo.GetComponentInParent<CanvasGroup>();
             var scrollSr = menuListContent?.GetComponentInParent<ScrollRect>();
             bool raycaster = FindObjectOfType<GraphicRaycaster>() != null;
-            Debug.Log($"{LogPrefix} SpawnRow [{index}] '{label}' | NpcMenuItemRow=OK btn={(btn!=null?"OK btn.interactable="+btn.interactable+" btn.enabled="+btn.enabled:"NULL")} " +
-                      $"CanvasGroup={(cg!=null?"blocksRaycasts="+cg.blocksRaycasts+" interactable="+cg.interactable:"none")} " +
-                      $"ScrollRect={(scrollSr!=null?"OK":"NULL")} GraphicRaycaster={raycaster}");
+            { /* {LogPrefix} SpawnRow [{index}] '{label}' | NpcMenuItemRow=OK btn={(btn!=null? */ }
         }
         else
         {
             // Prefab không có NpcMenuItemRow → tự bind
-            Debug.LogWarning($"{LogPrefix} SpawnRow [{index}] '{label}' | NO NpcMenuItemRow component — manual bind");
+            { /* Cảnh báo: {LogPrefix} SpawnRow [{index}] '{label}' | NO NpcMenuItemRow component  manual bind */ }
             var btn = rowGo.GetComponentInChildren<Button>(true);
             var txt = rowGo.GetComponentInChildren<TMP_Text>(true);
             if (txt) txt.text = label;
             if (btn) { int captured = index; btn.onClick.AddListener(() => OnRowSelected(captured)); }
-            Debug.Log($"{LogPrefix} SpawnRow [{index}] manual bind | btn={(btn!=null?"OK":"NULL")} txt={(txt!=null?"OK":"NULL")}");
+            { /* {LogPrefix} SpawnRow [{index}] manual bind | btn={(btn!=null? */ }
         }
 
         _rows.Add(rowGo);
@@ -244,10 +236,10 @@ public class NpcDynamicMenuUI : MonoBehaviour
 
     private void OnRowSelected(int index)
     {
-        Debug.Log($"{LogPrefix} Row selected | index={index}");
+        { /* {LogPrefix} Row selected | index={index} */ }
         if (_currentInteraction == null)
         {
-            Debug.LogWarning($"{LogPrefix} OnRowSelected: _currentInteraction is null.");
+            { /* Cảnh báo: {LogPrefix} OnRowSelected: _currentInteraction is null */ }
             Close();
             return;
         }
@@ -290,7 +282,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
                 vp.offsetMin        = Vector2.zero;
                 vp.offsetMax        = Vector2.zero;
                 vp.pivot            = new Vector2(0f, 1f);
-                Debug.Log($"{LogPrefix} FixViewportRt: corrected Viewport anchor from (0,0) to (1,1).");
+                { /* {LogPrefix} FixViewportRt: corrected Viewport anchor from (0,0) to (1,1) */ }
             }
         }
     }
@@ -313,7 +305,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
             }
         }
         if (best != null) return best.transform;
-        Debug.LogWarning($"{LogPrefix} Không tìm thấy Screen Space Canvas.");
+        { /* Cảnh báo: {LogPrefix} Không tìm thấy Screen Space Canvas */ }
         return null;
     }
 
@@ -324,7 +316,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         var parent = FindScreenSpaceCanvas();
         if (parent == null)
         {
-            Debug.LogWarning($"{LogPrefix} No Screen Space Canvas found — cannot create runtime NpcDynamicMenuUI.");
+            { /* Cảnh báo: {LogPrefix} No Screen Space Canvas found  cannot create runtime NpcDynamicMenuUI */ }
             return null;
         }
 
@@ -457,7 +449,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         comp.btnClose = closeBtn;
         closeBtn.onClick.AddListener(comp.Close);
 
-        Debug.Log($"{LogPrefix} Created runtime NpcDynamicMenuUI.");
+        { /* {LogPrefix} Created runtime NpcDynamicMenuUI */ }
         return comp;
     }
 

@@ -65,19 +65,18 @@ public static class BagSlotUiBuilder
                 if (iconProp != null)
                     iconProp.objectReferenceValue = itemIconImg;
                 else
-                    Debug.LogWarning("[BagSlotUiBuilder] Không tìm thấy property 'iconImage' trên InventorySlotUI.");
+                    { /* Cảnh báo: Không tìm thấy property 'iconImage' trên InventorySlotUI */ }
 
                 if (itemBgProp != null)
                     itemBgProp.objectReferenceValue = itemBgImg;
                 else
-                    Debug.LogWarning("[BagSlotUiBuilder] Không tìm thấy property 'itemBgImage' trên InventorySlotUI. " +
-                                     "Hãy đảm bảo field [SerializeField] private Image itemBgImage; đã được thêm vào script.");
+                    { /* Cảnh báo: Không tìm thấy property 'itemBgImage' trên InventorySlotUI */ }
 
                 so.ApplyModifiedProperties();
             }
             else
             {
-                Debug.LogWarning("[BagSlotUiBuilder] Không tìm thấy component InventorySlotUI trên root prefab.");
+                { /* Cảnh báo: Không tìm thấy component InventorySlotUI trên root prefab */ }
             }
 
             PrefabUtility.SaveAsPrefabAsset(root, InvSlotPrefabPath);
@@ -116,7 +115,7 @@ public static class BagSlotUiBuilder
             GameObject bagSlotGO = GameObject.Find(bagSlotNames[i]);
             if (bagSlotGO == null)
             {
-                Debug.LogWarning($"[BagSlotUiBuilder] Không tìm thấy '{bagSlotNames[i]}' trong scene — bỏ qua.");
+                { /* Cảnh báo: Không tìm thấy '{bagSlotNames[i]}' trong scene  bỏ qua */ }
                 continue;
             }
 
@@ -170,19 +169,17 @@ public static class BagSlotUiBuilder
                 }
                 else
                 {
-                    Debug.LogWarning(
-                        "[BagSlotUiBuilder] Không tìm thấy property 'bagSlotItemBgs' trên ItemUseHandler.\n" +
-                        "Hãy đảm bảo [SerializeField] private Image[] bagSlotItemBgs; đã được thêm vào script.");
+                    { /* Cảnh báo: Không tìm thấy property 'bagSlotItemBgs' trên ItemUseHandler.\n */ }
                 }
             }
             else
             {
-                Debug.LogWarning("[BagSlotUiBuilder] Không tìm thấy component ItemUseHandler trên 'InventoryManager'.");
+                { /* Cảnh báo: Không tìm thấy component ItemUseHandler trên 'InventoryManager' */ }
             }
         }
         else
         {
-            Debug.LogWarning("[BagSlotUiBuilder] Không tìm thấy GameObject 'InventoryManager' trong scene.");
+            { /* Cảnh báo: Không tìm thấy GameObject 'InventoryManager' trong scene */ }
         }
 
         EditorSceneManager.MarkSceneDirty(scene);

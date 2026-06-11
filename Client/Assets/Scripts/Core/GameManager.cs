@@ -78,14 +78,14 @@ public class GameManager : MonoBehaviour
     {
         isPaused = !isPaused;
         Time.timeScale = isPaused ? 0f : 1f;
-        Debug.Log($"Game {(isPaused ? "Paused" : "Resumed")}");
+        { /* Game {(isPaused ? */ }
     }
 
     public void GameOver()
     {
         isGameOver = true;
         Time.timeScale = 0f;
-        Debug.Log("Game Over!");
+        { /* Game Over */ }
     }
 
     public void RestartGame()
@@ -107,7 +107,7 @@ public class GameManager : MonoBehaviour
     public void SetPlayerData(PlayerDataResponse data)
     {
         currentPlayerData = data;
-        Debug.Log($"[GameManager] Player data set: Level {data.level}, Map {data.map_id}");
+        { /* Player data set: Level {data.level}, Map {data.map_id} */ }
         OnPlayerDataSet?.Invoke(data);
     }
 

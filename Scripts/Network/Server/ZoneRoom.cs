@@ -50,14 +50,14 @@ public class ZoneRoom
     public void AddClient(ulong clientId)
     {
         _clientIds.Add(clientId);
-        Debug.Log($"[ZoneRoom] {ZoneKey}: +client {clientId} ({PlayerCount}/{MaxPlayers})");
+        { /* {ZoneKey}: +client {clientId} ({PlayerCount}/{MaxPlayers}) */ }
     }
 
     // Xóa player khỏi zone. Gọi khi transfer đi hoặc disconnect.
     public void RemoveClient(ulong clientId)
     {
         _clientIds.Remove(clientId);
-        Debug.Log($"[ZoneRoom] {ZoneKey}: -client {clientId} ({PlayerCount}/{MaxPlayers})");
+        { /* {ZoneKey}: -client {clientId} ({PlayerCount}/{MaxPlayers}) */ }
     }
 
     // Kiểm tra client có ở trong zone này không.

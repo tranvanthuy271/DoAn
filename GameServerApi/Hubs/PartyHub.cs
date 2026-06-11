@@ -42,7 +42,7 @@ namespace GameServerApi.Hubs
                 set.Add(Context.ConnectionId);
             }
 
-            _logger.LogInformation("[PartyHub] Connected userId={UserId} connectionId={ConnectionId}", userId, Context.ConnectionId);
+            { /* Connected userId={UserId} connectionId={ConnectionId} */ }
 
             string partyId = string.Empty;
             lock (SyncRoot)
@@ -101,7 +101,7 @@ namespace GameServerApi.Hubs
             if (!string.IsNullOrWhiteSpace(updatedPartyId) && payload != null)
                 await Clients.Group(BuildGroupName(updatedPartyId)).SendAsync("PartyStateUpdated", payload);
 
-            _logger.LogInformation("[PartyHub] Disconnected userId={UserId} connectionId={ConnectionId}", userId, Context.ConnectionId);
+            { /* Disconnected userId={UserId} connectionId={ConnectionId} */ }
             await base.OnDisconnectedAsync(exception);
         }
 

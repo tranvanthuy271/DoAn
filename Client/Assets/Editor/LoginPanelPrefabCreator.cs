@@ -241,7 +241,7 @@ public static class LoginPanelPrefabCreator
         string path = $"{PrefabDir}/{prefabName}.prefab";
         PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
-        Debug.Log($"[LoginPanelPrefabCreator] Saved {path}");
+        { /* Saved {path} */ }
     }
 }
 #endif

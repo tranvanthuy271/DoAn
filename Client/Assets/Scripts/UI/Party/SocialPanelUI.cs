@@ -110,7 +110,7 @@ public class SocialPanelUI : MonoBehaviour
             if (_panels[i] != null)
                 _panels[i].SetActive(i == _activeTab);
             else
-                Debug.LogWarning($"{LogPrefix} Outer tab index {i} chưa có panel được gán.", this);
+                { /* Cảnh báo: {LogPrefix} Outer tab index {i} chưa có panel được gán */ }
 
             if (_tabButtons[i] != null)
             {
@@ -133,7 +133,7 @@ public class SocialPanelUI : MonoBehaviour
     {
         if (panelParty == null)
         {
-            Debug.LogError($"{LogPrefix} panelParty chưa được gán trong SocialPanelUI.", this);
+            { /* Lỗi: {LogPrefix} panelParty chưa được gán trong SocialPanelUI */ }
             return;
         }
 
@@ -159,9 +159,7 @@ public class SocialPanelUI : MonoBehaviour
 
         if (prefabToInstantiate == null)
         {
-            Debug.LogError(
-                $"{LogPrefix} Không tìm thấy PartyPanel prefab. Hãy gán partyPanelPrefab hoặc tạo prefab tại Resources/{partyPanelResourcesPath}.",
-                this);
+            { /* Lỗi: {LogPrefix} Không tìm thấy PartyPanel prefab. Hãy gán partyPanelPrefab hoặc tạo prefab tại Resources/{partyPanelResourcesPath} */ }
             return;
         }
 
@@ -181,12 +179,12 @@ public class SocialPanelUI : MonoBehaviour
         _partyPanelInstance = instance.GetComponent<PartyPanelUI>();
         if (_partyPanelInstance == null)
         {
-            Debug.LogError($"{LogPrefix} Prefab '{prefabToInstantiate.name}' không có PartyPanelUI.", instance);
+            { /* Lỗi: {LogPrefix} Prefab '{prefabToInstantiate.name}' không có PartyPanelUI */ }
             return;
         }
 
         DisablePlaceholderChildren(instance);
-        Debug.Log($"{LogPrefix} Đã instantiate PartyPanel vào tab Đồng đội.", instance);
+        { /* {LogPrefix} Đã instantiate PartyPanel vào tab Đồng đội */ }
     }
 
     private void DisablePlaceholderChildren(GameObject activePartyPanel)

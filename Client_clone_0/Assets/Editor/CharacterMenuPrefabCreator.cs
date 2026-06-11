@@ -36,7 +36,7 @@ public static class CharacterMenuPrefabCreator
         CreateCharacterMenuHudButtonPrefab();
 
         AssetDatabase.Refresh();
-        Debug.Log("[CharacterMenuPrefabCreator] ✓ Tạo xong tất cả prefabs trong " + PREFAB_DIR);
+        { /* ✓ Tạo xong tất cả prefabs trong */ }
     }
 
     // ENTRY PREFABS
@@ -466,7 +466,7 @@ public static class CharacterMenuPrefabCreator
         EnsureDirectory(PARTY_PREFAB_DIR);
         CreateJoinRequestNotificationPanelPrefab();
         AssetDatabase.Refresh();
-        Debug.Log("[CharacterMenuPrefabCreator] ✓ Tạo xong PartyJoinRequestPopup");
+        { /* ✓ Tạo xong PartyJoinRequestPopup */ }
     }
 
     private static void CreateJoinRequestNotificationPanelPrefab()
@@ -936,7 +936,7 @@ public static class CharacterMenuPrefabCreator
 
         _cachedNotoSans = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NOTO_SANS_PATH);
         if (_cachedNotoSans == null)
-            Debug.LogWarning("[CharacterMenuPrefabCreator] Khong tim thay NotoSans font asset tai " + NOTO_SANS_PATH);
+            { /* Cảnh báo: Khong tim thay NotoSans font asset tai */ }
 
         return _cachedNotoSans;
     }

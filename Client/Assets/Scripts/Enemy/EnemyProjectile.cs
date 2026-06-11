@@ -72,7 +72,7 @@ public class EnemyProjectile : MonoBehaviour
                             var room = registry.GetClientRoom(netObj.OwnerClientId);
                             if (room != null && room.MapId != EnemyMapId)
                             {
-                                Debug.LogWarning($"[EnemyProjectile] Bỏ qua cross-map: enemy map={EnemyMapId}, player map={room.MapId}");
+                                { /* Cảnh báo: Bỏ qua cross-map: enemy map={EnemyMapId}, player map={room.MapId} */ }
                                 return;
                             }
                         }

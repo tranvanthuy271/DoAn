@@ -35,8 +35,7 @@ namespace GameServerApi.Hubs
             var userId   = GetUserId();
             var username = GetUsername();
 
-            _logger.LogInformation("[ChatHub] Connected: connectionId={ConnectionId} userId={UserId} username={Username}",
-                Context.ConnectionId, userId, username);
+            { /* Connected: connectionId={ConnectionId} userId={UserId} username={Username} */ }
 
             _sessions[Context.ConnectionId] = new ChatUserSession
             {
@@ -52,8 +51,7 @@ namespace GameServerApi.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            _logger.LogInformation("[ChatHub] Disconnected: connectionId={ConnectionId} reason={Reason}",
-                Context.ConnectionId, exception?.Message ?? "client closed");
+            { /* Disconnected: connectionId={ConnectionId} reason={Reason} */ }
             _sessions.TryRemove(Context.ConnectionId, out _);
             await base.OnDisconnectedAsync(exception);
         }
@@ -70,8 +68,7 @@ namespace GameServerApi.Hubs
 
             var session = GetSession();
             var msg = BuildMessage(session, "world", message);
-            _logger.LogInformation("[ChatHub] World: fromUserId={UserId} fromName={Username} message={Message}",
-                session.UserId, session.Username, message);
+            { /* World: fromUserId={UserId} fromName={Username} message={Message} */ }
             await Clients.All.SendAsync("ReceiveWorldMessage", msg);
         }
 
@@ -181,11 +178,7 @@ namespace GameServerApi.Hubs
                     return existing;
                 });
 
-            _logger.LogInformation(
-                "[ChatHub] Updated display name: connectionId={ConnectionId} userId={UserId} displayName={DisplayName}",
-                Context.ConnectionId,
-                userId,
-                sanitizedDisplayName);
+            { /* Updated display name: connectionId={ConnectionId} userId={UserId} displayName={DisplayName} */ }
 
             return Task.CompletedTask;
         }
@@ -199,8 +192,7 @@ namespace GameServerApi.Hubs
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
             var session = GetSession();
             var msg = BuildMessage(session, "private", message, targetId: targetUserId);
-            _logger.LogInformation("[ChatHub] Private: fromUserId={UserId} toUserId={TargetUserId} message={Message}",
-                session.UserId, targetUserId, message);
+            { /* Private: fromUserId={UserId} toUserId={TargetUserId} message={Message} */ }
 
             // Gửi đến người nhận (theo userId)
             await Clients.User(targetUserId).SendAsync("ReceivePrivateMessage", msg);
@@ -287,49 +279,49 @@ namespace GameServerApi.Hubs
             if (!trimmed.StartsWith("item ", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            _logger.LogInformation("[Chat Command] Start TryHandleChatCommandAsync. Message: '{Message}'", trimmed);
+            { /* Start TryHandleChatCommandAsync. Message: '{Message}' */ }
 
             var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             // "item <itemId> <quantity>"
             if (parts.Length < 3)
             {
-                _logger.LogWarning("[Chat Command] Invalid syntax, args count: {Count}", parts.Length);
+                { /* Cảnh báo: Invalid syntax, args count: {Count} */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Cú pháp: item <itemId> <sốLượng>  ví dụ: item 61 1"));
                 return true;
             }
 
             if (!int.TryParse(parts[1], out int itemTemplateId) || itemTemplateId <= 0)
             {
-                _logger.LogWarning("[Chat Command] Invalid item ID: {ItemId}", parts[1]);
+                { /* Cảnh báo: Invalid item ID: {ItemId} */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("itemId không hợp lệ."));
                 return true;
             }
 
             if (!int.TryParse(parts[2], out int quantity) || quantity <= 0 || quantity > 9999)
             {
-                _logger.LogWarning("[Chat Command] Invalid quantity: {Quantity}", parts[2]);
+                { /* Cảnh báo: Invalid quantity: {Quantity} */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Số lượng không hợp lệ (1–9999)."));
                 return true;
             }
 
             string rawUserId = GetUserId();
-            _logger.LogInformation("[Chat Command] Parsed. userId: '{UserId}', itemId: {ItemId}, qty: {Qty}", rawUserId, itemTemplateId, quantity);
+            { /* Parsed. userId: '{UserId}', itemId: {ItemId}, qty: {Qty} */ }
 
             if (!int.TryParse(rawUserId, out int playerId) || playerId <= 0)
             {
-                _logger.LogError("[Chat Command] Cannot parse playerId <= 0 from '{RawUserId}'", rawUserId);
+                { /* Lỗi: Cannot parse playerId <= 0 from '{RawUserId}' */ }
                 return false;
             }
 
-            _logger.LogInformation("[Chat Command] Database lookup for playerId: {PlayerId}", playerId);
+            { /* Database lookup for playerId: {PlayerId} */ }
             await using var scope = _scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
 
             var player = await db.PlayerData.FindAsync(playerId);
             if (player == null)
             {
-                _logger.LogWarning("[Chat Command] Player not found: {PlayerId}", playerId);
+                { /* Cảnh báo: Player not found: {PlayerId} */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Không tìm thấy tài khoản."));
                 return true;
             }
@@ -337,7 +329,7 @@ namespace GameServerApi.Hubs
             var itemTemplate = await db.ItemTemplates.FindAsync(itemTemplateId);
             if (itemTemplate == null)
             {
-                _logger.LogWarning("[Chat Command] Item template not found: {TemplateId}", itemTemplateId);
+                { /* Cảnh báo: Item template not found: {TemplateId} */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage($"Item ID {itemTemplateId} không tồn tại."));
                 return true;
             }
@@ -345,7 +337,7 @@ namespace GameServerApi.Hubs
             // Đọc bag_slots
             var infoChar = player.GetInfoChar();
             int maxSlots = infoChar?.BagSlots > 0 ? infoChar.BagSlots : 20;
-            _logger.LogInformation("[Chat Command] Player loaded. maxSlots: {MaxSlots}", maxSlots);
+            { /* Player loaded. maxSlots: {MaxSlots} */ }
 
             // Parse inventory
             var inventory = new List<Dictionary<string, object>>();
@@ -369,20 +361,20 @@ namespace GameServerApi.Hubs
                                 };
                             inventory.Add(d);
                         }
-                    _logger.LogInformation("[Chat Command] Loaded {Count} items from InventoryJson.", inventory.Count);
+                    { /* Loaded {Count} items from InventoryJson */ }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("[Chat Command] Error parsing inventory playerId={PlayerId}: {Err}", playerId, ex.Message);
+                    { /* Lỗi: Error parsing inventory playerId={PlayerId}: {Err} */ }
                 }
             }
             else
             {
-                _logger.LogInformation("[Chat Command] Inventory is empty (or whitespace).");
+                { /* Inventory is empty (or whitespace) */ }
             }
 
             bool isStackable = string.Equals(itemTemplate.IsXepChong, "True", StringComparison.OrdinalIgnoreCase);
-            _logger.LogInformation("[Chat Command] Item isStackable: {IsStackable}", isStackable);
+            { /* Item isStackable: {IsStackable} */ }
 
             // Gộp vào slot đã có nếu stackable
             if (isStackable)
@@ -395,7 +387,7 @@ namespace GameServerApi.Hubs
                     player.InventoryJson = JsonSerializer.Serialize(inventory);
                     player.UpdatedAt     = DateTime.UtcNow;
                     await db.SaveChangesAsync();
-                    _logger.LogInformation("[Chat Command] AddItem(stack): added {Qty} to existing stack. New Total: {TotalQty}", quantity, existing["quantity"]);
+                    { /* AddItem(stack): added {Qty} to existing stack. New Total: {TotalQty} */ }
                     await Clients.Caller.SendAsync("ReceiveSystemMessage",
                         BuildSystemMessage($"Đã thêm {quantity}x {itemTemplate.Name} vào túi đồ."));
                     return true;
@@ -415,7 +407,7 @@ namespace GameServerApi.Hubs
 
             if (emptySlot == -1)
             {
-                _logger.LogWarning("[Chat Command] Inventory is full. Iterated {MaxSlots} slots and couldn't find an empty one.", maxSlots);
+                { /* Cảnh báo: Inventory is full. Iterated {MaxSlots} slots and couldn't find an empty one */ }
                 await Clients.Caller.SendAsync("ReceiveSystemMessage", BuildSystemMessage("Túi đồ đầy, không thêm được."));
                 return true;
             }
@@ -433,8 +425,7 @@ namespace GameServerApi.Hubs
             player.UpdatedAt     = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
-            _logger.LogInformation("[Chat Command] AddItem(new slot): playerId={P} itemId={I} qty={Q} slot={S}",
-                playerId, itemTemplateId, quantity, emptySlot);
+            { /* AddItem(new slot): playerId={P} itemId={I} qty={Q} slot={S} */ }
             await Clients.Caller.SendAsync("ReceiveSystemMessage",
                 BuildSystemMessage($"Đã thêm {quantity}x {itemTemplate.Name} vào túi đồ."));
             return true;

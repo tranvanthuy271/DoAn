@@ -124,7 +124,7 @@ public class UtilityDrawerController : MonoBehaviour
         ApplyBoxHeight(expanded);
 
         if (!instant)
-            Debug.Log($"[UtilityDrawerController] State changed expanded={expanded} hideBoxWhenCollapsed={hideBoxWhenCollapsed}");
+            { /* State changed expanded={expanded} hideBoxWhenCollapsed={hideBoxWhenCollapsed} */ }
     }
 
     private void ResolveReferences()

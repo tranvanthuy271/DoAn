@@ -55,28 +55,28 @@ public class PartyMemberEntryUI : MonoBehaviour
 
     private void ApplyElementIcon(string elementType)
     {
-        Debug.Log($"[PartyMemberEntryUI] ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? "NULL" : elementIcon.name)}", this);
+        { /* ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? */ }
         if (elementIcon == null)
         {
-            Debug.LogWarning("[PartyMemberEntryUI] elementIcon is NULL – runtime resolution failed.", this);
+            { /* Cảnh báo: elementIcon is NULL  runtime resolution failed */ }
             return;
         }
         elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(PartyMemberEntryUI));
         int elementId = ElementHelper.ToId(elementType);
         bool hasConfig = elementIconConfig != null;
         bool validId   = ElementHelper.IsValid(elementId);
-        Debug.Log($"[PartyMemberEntryUI] ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId}", this);
+        { /* ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId} */ }
         if (hasConfig && validId)
         {
             var sprite = elementIconConfig.GetIcon(elementId);
-            Debug.Log($"[PartyMemberEntryUI] ApplyElementIcon | sprite={(sprite == null ? "NULL" : sprite.name)}", this);
+            { /* ApplyElementIcon | sprite={(sprite == null ? */ }
             elementIcon.sprite  = sprite;
             elementIcon.color   = sprite != null ? Color.white : elementIconConfig.GetColor(elementId);
             elementIcon.enabled = true;
         }
         else
         {
-            Debug.LogWarning($"[PartyMemberEntryUI] ApplyElementIcon | SKIPPED – hasConfig={hasConfig} validId={validId} elementType='{elementType}'", this);
+            { /* Cảnh báo: ApplyElementIcon | SKIPPED  hasConfig={hasConfig} validId={validId} elementType='{elementType}' */ }
             elementIcon.enabled = false;
         }
     }
@@ -108,7 +108,7 @@ internal static class PartyUiRuntimeHelper
         current = root?.Find("AvatarImage")?.GetComponent<Image>();
         if (current != null)
         {
-            Debug.Log($"{logPrefix} Using AvatarImage directly because ElementIconImage does not exist in this prefab.", logContext);
+            { /* {logPrefix} Using AvatarImage directly because ElementIconImage does not exist in this prefab */ }
             return current;
         }
 
@@ -131,14 +131,14 @@ internal static class PartyUiRuntimeHelper
                     current = child.GetComponent<Image>();
                     if (current != null)
                     {
-                        Debug.Log($"{logPrefix} Using AvatarImage directly because ElementIconImage does not exist in this prefab.", logContext);
+                        { /* {logPrefix} Using AvatarImage directly because ElementIconImage does not exist in this prefab */ }
                         return current;
                     }
                 }
             }
         }
 
-        Debug.LogWarning($"{logPrefix} Could not resolve ElementIconImage or AvatarImage in this prefab.", logContext);
+        { /* Cảnh báo: {logPrefix} Could not resolve ElementIconImage or AvatarImage in this prefab */ }
         return null;
     }
 }

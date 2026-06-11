@@ -393,7 +393,7 @@ public class BossAI : NetworkBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[BossAI] Khong load duoc config boss #{bossId}: {req.error}. Dung fallback inspector/default.");
+            { /* Cảnh báo: Khong load duoc config boss #{bossId}: {req.error}. Dung fallback inspector/default */ }
             _configLoaded = true;
             yield break;
         }
@@ -412,7 +412,7 @@ public class BossAI : NetworkBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[BossAI] Parse config loi: {ex.Message}");
+            { /* Lỗi: Parse config loi: {ex.Message} */ }
             EnsureBossPhasesConfigured();
             _configLoaded = true;
         }
@@ -751,7 +751,7 @@ public class BossAI : NetworkBehaviour
         GameObject projectilePrefab = skill.visualPrefab != null ? skill.visualPrefab : skillBreathPrefab;
         if (projectilePrefab == null)
         {
-            Debug.LogWarning($"[BossAI] {gameObject.name} skill '{ResolveLocalSkillId(skill)}' thieu projectile prefab.");
+            { /* Cảnh báo: {gameObject.name} skill '{ResolveLocalSkillId(skill)}' thieu projectile prefab */ }
             return;
         }
 
@@ -3340,7 +3340,7 @@ public class BossAI : NetworkBehaviour
         }
 
         _debugLogTimes[logKey] = Time.time + activeInterval;
-        Debug.Log($"{Boss25LogTag}[BossAI:{name}] {message}", this);
+        { /* {Boss25LogTag}[BossAI:{name}] {message} */ }
         MirrorBossServerLog(message);
     }
 
@@ -3373,7 +3373,7 @@ public class BossAI : NetworkBehaviour
         string targetName = playerTarget != null ? playerTarget.name : "null";
 
         string message = $"{step} enabled={enabled} active={gameObject.activeInHierarchy} scene={sceneName} bossId={bossId} debugLogs={debugLogs} useInspectorSkillsOnly={useInspectorSkillsOnly} localSkills={(localSkills != null ? localSkills.Count : 0)} nmServer={nmServer} nmClient={nmClient} netSpawned={netSpawned} normalAIEnabled={(normalAI != null && normalAI.enabled)} target={targetName}";
-        Debug.LogWarning($"{Boss25LogTag}[BossAI:{name}] {message}", this);
+        { /* Cảnh báo: {Boss25LogTag}[BossAI:{name}] {message} */ }
         MirrorBossServerLog(message);
     }
 

@@ -36,7 +36,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
     {
         if (tierConfig == null)
         {
-            Debug.LogWarning("[TierEffect] tierConfig chưa gán!");
+            { /* Cảnh báo: tierConfig chưa gán */ }
             return;
         }
 

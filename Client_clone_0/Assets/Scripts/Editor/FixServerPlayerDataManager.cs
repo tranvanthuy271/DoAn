@@ -15,18 +15,18 @@ public class FixServerPlayerDataManager : Editor
         
         if (serverManager == null)
         {
-            Debug.LogError("[FixServerPlayerDataManager] ServerPlayerDataManager not found in scene!");
+            { /* Lỗi: ServerPlayerDataManager not found in scene */ }
             return;
         }
         
-        Debug.Log("[FixServerPlayerDataManager] Found ServerPlayerDataManager, removing...");
+        { /* Found ServerPlayerDataManager, removing */ }
         
         // Get components before deleting
         NetworkObject netObj = serverManager.GetComponent<NetworkObject>();
         
         if (netObj == null)
         {
-            Debug.LogError("[FixServerPlayerDataManager] No NetworkObject component found!");
+            { /* Lỗi: No NetworkObject component found */ }
             return;
         }
         
@@ -68,7 +68,7 @@ public class FixServerPlayerDataManager : Editor
         // Delete old object
         DestroyImmediate(serverManager);
         
-        Debug.Log("[FixServerPlayerDataManager] Creating new ServerPlayerDataManager...");
+        { /* Creating new ServerPlayerDataManager */ }
         
         // Create new GameObject
         GameObject newServerManager = new GameObject("ServerPlayerDataManager");
@@ -116,11 +116,11 @@ public class FixServerPlayerDataManager : Editor
         {
             var scriptType = serverPlayerDataScript.GetType();
             newServerManager.AddComponent(scriptType);
-            Debug.Log($"[FixServerPlayerDataManager] Added {scriptType.Name} component");
+            { /* Added {scriptType.Name} component */ }
         }
         else
         {
-            Debug.LogWarning("[FixServerPlayerDataManager] ServerPlayerDataManager script component not found, skipping...");
+            { /* Cảnh báo: ServerPlayerDataManager script component not found, skipping */ }
         }
         
         // Mark scene dirty and save
@@ -133,15 +133,15 @@ public class FixServerPlayerDataManager : Editor
         hashProp = newSo.FindProperty("GlobalObjectIdHash");
         uint finalHash = hashProp != null ? hashProp.uintValue : 0;
         
-        Debug.Log($"[FixServerPlayerDataManager] ✓ Done! New hash: {finalHash}");
+        { /* ✓ Done! New hash: {finalHash} */ }
         
         if (finalHash != 0)
         {
-            Debug.LogWarning($"[FixServerPlayerDataManager] Hash is still {finalHash}! This may require closing and reopening Unity.");
+            { /* Cảnh báo: Hash is still {finalHash}! This may require closing and reopening Unity */ }
         }
         else
         {
-            Debug.Log("[FixServerPlayerDataManager] ✓ Hash is 0! Scene saved.");
+            { /* ✓ Hash is 0! Scene saved */ }
         }
         
         // Select the new object

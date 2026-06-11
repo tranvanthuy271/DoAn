@@ -159,7 +159,7 @@ public class EarthBlinkStrikeSkill : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[EarthBlinkStrikeSkill] dotProjectilePrefab chưa được gán!");
+            { /* Cảnh báo: dotProjectilePrefab chưa được gán */ }
         }
 
         yield return new WaitForSeconds(0.2f);

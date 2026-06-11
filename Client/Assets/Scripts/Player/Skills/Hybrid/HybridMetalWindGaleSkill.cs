@@ -37,7 +37,7 @@ public class HybridMetalWindGaleSkill : HybridSkillBase
     {
         if (arrowPrefab == null)
         {
-            Debug.LogWarning($"[{nameof(HybridMetalWindGaleSkill)}] arrowPrefab chưa được gán!");
+            { /* Cảnh báo: arrowPrefab chưa được gán */ }
             return;
         }
 

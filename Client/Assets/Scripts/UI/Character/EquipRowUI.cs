@@ -130,7 +130,7 @@ public class EquipRowUI : MonoBehaviour
         var panel = UpgradePanel.Instance;
         if (panel == null)
         {
-            Debug.LogWarning("[EquipRowUI] Không tìm thấy UpgradePanel.Instance trong scene.");
+            { /* Cảnh báo: Không tìm thấy UpgradePanel.Instance trong scene */ }
             _onUpgraded?.Invoke();
             return;
         }

@@ -44,7 +44,7 @@ public class ClientSceneController : MonoBehaviour
     {
         if (_isTransitioning)
         {
-            Debug.LogWarning("[ClientSceneController] Đang trong quá trình chuyển zone, bỏ qua yêu cầu mới.");
+            { /* Cảnh báo: Đang trong quá trình chuyển zone, bỏ qua yêu cầu mới */ }
             return;
         }
         StartCoroutine(LoadSceneAndReposition(sceneName, new Vector3(x, y, 0), mapId, zoneId));
@@ -66,7 +66,7 @@ public class ClientSceneController : MonoBehaviour
         string currentScene = SceneManager.GetActiveScene().name;
         if (!string.IsNullOrEmpty(sceneName) && currentScene != sceneName)
         {
-            Debug.Log($"[ClientSceneController] Loading scene: {sceneName}");
+            { /* Loading scene: {sceneName} */ }
             var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             asyncOp.allowSceneActivation = false;
 
@@ -92,7 +92,7 @@ public class ClientSceneController : MonoBehaviour
         HideLoadingScreen();
         _isTransitioning = false;
 
-        Debug.Log($"[ClientSceneController] ✓ Zone transfer hoàn thành → map{mapId}_zone{zoneId}");
+        { /* ✓ Zone transfer hoàn thành → map{mapId}_zone{zoneId} */ }
     }
 
     private IEnumerator RepositionLocalPlayer(Vector3 pos)
@@ -119,11 +119,11 @@ public class ClientSceneController : MonoBehaviour
         if (playerNetObj != null)
         {
             playerNetObj.transform.position = pos;
-            Debug.Log($"[ClientSceneController] Player repositioned → {pos}");
+            { /* Player repositioned → {pos} */ }
         }
         else
         {
-            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject.");
+            { /* Cảnh báo: Không tìm thấy local player NetworkObject */ }
         }
     }
 

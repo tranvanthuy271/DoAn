@@ -104,9 +104,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         ClientSceneController.Instance?.EnsureZoneStateFromRuntimeData();
 
-        Debug.Log(
-            $"{LogPrefix} Open | npcId={npc?.npc_id ?? -1} name='{npc?.npc_name}' type='{npc?.npc_type}' scene={SceneManager.GetActiveScene().name} map={ClientSceneController.Instance?.CurrentMapId ?? -1} zone={ClientSceneController.Instance?.CurrentZoneId ?? -1}",
-            this);
+        { /* {LogPrefix} Open | npcId={npc?.npc_id ?? -1} name='{npc?.npc_name}' type='{npc?.npc_type}' scene={SceneManager.GetActiveScene().name} map={ClientSceneController.Instance?.CurrentMapId ?? -1} zone={ClientSceneController.Instance?.CurrentZoneId ?? -1} */ }
 
         string playerName = GameManager.Instance?.GetPlayerData()?.character_name ?? "Người chơi";
         if (greetingText != null)
@@ -116,7 +114,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
         if (listPanel == null)
         {
-            Debug.LogError($"{LogPrefix} listPanel chưa được resolve. Kiểm tra prefab/scene.", this);
+            { /* Lỗi: {LogPrefix} listPanel chưa được resolve. Kiểm tra prefab/scene */ }
             return;
         }
 
@@ -143,9 +141,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         var partyManager = PartyManager.EnsureInstance();
         bool hasParty = partyManager != null && partyManager.HasParty;
 
-        Debug.Log(
-            $"{LogPrefix} ShowConfirm | dungeonId={config?.dungeon_id ?? -1} name='{config?.dungeon_name}' type='{config?.dungeon_type}' hasParty={hasParty}",
-            this);
+        { /* {LogPrefix} ShowConfirm | dungeonId={config?.dungeon_id ?? -1} name='{config?.dungeon_name}' type='{config?.dungeon_type}' hasParty={hasParty} */ }
 
         SetConfirmInfoMessage(hasParty
             ? "Hãy tập hợp tất cả đồng đội trong nhóm tại đây"
@@ -163,13 +159,13 @@ public class DungeonNpcMenuUI : MonoBehaviour
         }
         else if (btnConfirmJoin == null)
         {
-            Debug.LogWarning($"{LogPrefix} Không có confirmOptionPrefab và cũng không có btnConfirmJoin.", this);
+            { /* Cảnh báo: {LogPrefix} Không có confirmOptionPrefab và cũng không có btnConfirmJoin */ }
         }
     }
 
     public void Close()
     {
-        Debug.Log($"{LogPrefix} Close | pendingDungeon={_pendingDungeon?.dungeon_id ?? -1}", this);
+        { /* {LogPrefix} Close | pendingDungeon={_pendingDungeon?.dungeon_id ?? -1} */ }
         if (_loadCoroutine != null)
         {
             StopCoroutine(_loadCoroutine);
@@ -186,7 +182,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
     private void BackToList()
     {
-        Debug.Log($"{LogPrefix} BackToList | pendingDungeon={_pendingDungeon?.dungeon_id ?? -1}", this);
+        { /* {LogPrefix} BackToList | pendingDungeon={_pendingDungeon?.dungeon_id ?? -1} */ }
         confirmPanel?.SetActive(false);
         listPanel?.SetActive(true);
         _pendingDungeon = null;
@@ -196,7 +192,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
     {
         if (_pendingDungeon == null)
         {
-            Debug.LogWarning($"{LogPrefix} OnConfirmJoinClicked nhưng chưa có _pendingDungeon.", this);
+            { /* Cảnh báo: {LogPrefix} OnConfirmJoinClicked nhưng chưa có _pendingDungeon */ }
             return;
         }
 
@@ -205,16 +201,14 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
         var partyManager = PartyManager.EnsureInstance();
 
-        Debug.Log(
-            $"{LogPrefix} ConfirmJoin | dungeonId={_pendingDungeon.dungeon_id} type='{_pendingDungeon.dungeon_type}' hasParty={partyManager != null && partyManager.HasParty} isLeader={partyManager != null && partyManager.IsLeader}",
-            this);
+        { /* {LogPrefix} ConfirmJoin | dungeonId={_pendingDungeon.dungeon_id} type='{_pendingDungeon.dungeon_type}' hasParty={partyManager != null && partyManager.HasParty} isLeader={partyManager != null && partyManager.IsLeader} */ }
 
         if (isMulti)
         {
             // Phó bản tổ đội: bắt buộc phải có nhóm
             if (partyManager == null || !partyManager.HasParty)
             {
-                Debug.LogWarning($"{LogPrefix} Reject join: chưa có tổ đội.", this);
+                { /* Cảnh báo: {LogPrefix} Reject join: chưa có tổ đội */ }
                 SetConfirmInfoMessage("Cần phải có nhóm mới có thể tham gia phó bản này.");
                 return;
             }
@@ -222,7 +216,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
             // Chỉ nhóm trưởng mới được khởi động
             if (!partyManager.IsLeader)
             {
-                Debug.LogWarning($"{LogPrefix} Reject join: người chơi không phải trưởng nhóm.", this);
+                { /* Cảnh báo: {LogPrefix} Reject join: người chơi không phải trưởng nhóm */ }
                 SetConfirmInfoMessage("Chỉ nhóm trưởng mới có thể khởi động phó bản.\nHãy yêu cầu nhóm trưởng nhấn Tham gia.");
                 return;
             }
@@ -231,12 +225,12 @@ public class DungeonNpcMenuUI : MonoBehaviour
             string notReadyName = FindMemberNotInSameZone(partyManager);
             if (notReadyName != null)
             {
-                Debug.LogWarning($"{LogPrefix} Reject join: thành viên '{notReadyName}' chưa cùng map/zone.", this);
+                { /* Cảnh báo: {LogPrefix} Reject join: thành viên '{notReadyName}' chưa cùng map/zone */ }
                 SetConfirmInfoMessage($"Thành viên \"{notReadyName}\" chưa ở cùng khu vực.\nHãy tập hợp đầy đủ trước khi vào phó bản!");
                 return;
             }
 
-            Debug.Log($"{LogPrefix} StartPartyDungeon | dungeonId={_pendingDungeon.dungeon_id} mapId={_pendingDungeon.map_id} type='{_pendingDungeon.dungeon_type}'", this);
+            { /* {LogPrefix} StartPartyDungeon | dungeonId={_pendingDungeon.dungeon_id} mapId={_pendingDungeon.map_id} type='{_pendingDungeon.dungeon_type}' */ }
 
             // Thu thập userIds của tất cả thành viên party
             var members = partyManager.CurrentParty?.members;
@@ -253,7 +247,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         else
         {
             // Phó bản solo
-            Debug.Log($"{LogPrefix} Enter solo dungeon directly | dungeonId={_pendingDungeon.dungeon_id} scene='{_pendingDungeon.scene_name}'", this);
+            { /* {LogPrefix} Enter solo dungeon directly | dungeonId={_pendingDungeon.dungeon_id} scene='{_pendingDungeon.scene_name}' */ }
             DungeonManager.Instance?.EnterDungeon(_pendingDungeon);
         }
 
@@ -297,9 +291,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
     private IEnumerator LoadAndRenderDungeons()
     {
-        Debug.Log(
-            $"{LogPrefix} LoadAndRenderDungeons start | root={(dungeonListRoot != null)} prefab={(dungeonEntryPrefab != null ? dungeonEntryPrefab.name : "<runtime>")} scene={SceneManager.GetActiveScene().name}",
-            this);
+        { /* {LogPrefix} LoadAndRenderDungeons start | root={(dungeonListRoot != null)} prefab={(dungeonEntryPrefab != null ? dungeonEntryPrefab.name */ }
 
         // Xoá list cũ
         if (dungeonListRoot != null)
@@ -307,7 +299,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
         if (dungeonListRoot == null)
         {
-            Debug.LogError($"{LogPrefix} dungeonListRoot chưa được resolve. Không thể render list.", this);
+            { /* Lỗi: {LogPrefix} dungeonListRoot chưa được resolve. Không thể render list */ }
             _loadCoroutine = null;
             yield break;
         }
@@ -317,7 +309,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         string apiUrl = ServerAddressConfig.Instance.ApiUrl + "/dungeon/list";
         DungeonConfigData[] dungeons = null;
 
-        Debug.Log($"{LogPrefix} Fetching dungeon list directly | url={apiUrl}", this);
+        { /* {LogPrefix} Fetching dungeon list directly | url={apiUrl} */ }
         using (var req = UnityWebRequest.Get(apiUrl))
         {
             yield return req.SendWebRequest();
@@ -327,11 +319,11 @@ public class DungeonNpcMenuUI : MonoBehaviour
                 string json = req.downloadHandler.text;
                 var resp = JsonUtility.FromJson<DungeonListResponse>(json);
                 dungeons = resp?.dungeons;
-                Debug.Log($"{LogPrefix} Dungeon list received | count={(dungeons != null ? dungeons.Length : 0)}", this);
+                { /* {LogPrefix} Dungeon list received | count={(dungeons != null ? dungeons.Length : 0)} */ }
             }
             else
             {
-                Debug.LogWarning($"{LogPrefix} Dungeon list API error: {req.error} | response={req.downloadHandler?.text}", this);
+                { /* Cảnh báo: {LogPrefix} Dungeon list API error: {req.error} | response={req.downloadHandler?.text} */ }
             }
         }
 
@@ -339,7 +331,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
         if (dungeons == null || dungeons.Length == 0)
         {
-            Debug.LogWarning($"{LogPrefix} Không có dungeon nào để render.", this);
+            { /* Cảnh báo: {LogPrefix} Không có dungeon nào để render */ }
             yield break;
         }
 
@@ -349,7 +341,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
             var go    = CreateEntryInstance(dungeonListRoot);
             var entry = go.GetComponent<DungeonNpcMenuEntryUI>();
-            Debug.Log($"{LogPrefix} Render dungeon entry | dungeonId={cfg.dungeon_id} name='{cfg.dungeon_name}' type='{cfg.dungeon_type}' runtimeEntry={dungeonEntryPrefab == null}", this);
+            { /* {LogPrefix} Render dungeon entry | dungeonId={cfg.dungeon_id} name='{cfg.dungeon_name}' type='{cfg.dungeon_type}' runtimeEntry={dungeonEntryPrefab == null} */ }
             entry?.Setup(cfg, this);
         }
     }
@@ -374,7 +366,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
         if (Instance == null)
         {
-            Debug.LogWarning($"{LogPrefix} Không tìm thấy DungeonNpcMenuUI trong scene hoặc Resources/UI/DungeonNpcMenuPanel.");
+            { /* Cảnh báo: {LogPrefix} Không tìm thấy DungeonNpcMenuUI trong scene hoặc Resources/UI/DungeonNpcMenuPanel */ }
         }
 
         return Instance;
@@ -461,7 +453,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
             return;
 
         confirmInfoText.text = message ?? string.Empty;
-        Debug.Log($"{LogPrefix} ConfirmInfo='{confirmInfoText.text}'", this);
+        { /* {LogPrefix} ConfirmInfo='{confirmInfoText.text}' */ }
     }
 
     private GameObject CreateEntryInstance(Transform parent)
@@ -474,7 +466,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         if (!_loggedRuntimeEntryFallback)
         {
             _loggedRuntimeEntryFallback = true;
-            Debug.LogWarning($"{LogPrefix} dungeonEntryPrefab chưa được gán. Dùng runtime fallback row.", this);
+            { /* Cảnh báo: {LogPrefix} dungeonEntryPrefab chưa được gán. Dùng runtime fallback row */ }
         }
 
         return CreateRuntimeEntry(parent);

@@ -16,7 +16,7 @@ public class FixInformationCanvasLayout
         var canvas = GameObject.Find("InformationCanvas");
         if (canvas == null)
         {
-            Debug.LogError("[FixLayout] Không tìm thấy InformationCanvas trong scene!");
+            { /* Lỗi: Không tìm thấy InformationCanvas trong scene */ }
             return;
         }
 
@@ -30,22 +30,22 @@ public class FixInformationCanvasLayout
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
-            Debug.Log("[FixLayout] CanvasScaler -> ScaleWithScreenSize 1920x1080");
+            { /* CanvasScaler -> ScaleWithScreenSize 1920x1080 */ }
         }
 
         // CharacterPanel → stretch fill canvas
         var charPanel = canvas.transform.Find("CharacterPanel");
-        if (charPanel == null) { Debug.LogError("[FixLayout] CharacterPanel not found!"); return; }
+        if (charPanel == null) { { /* Lỗi: CharacterPanel not found */ } return; }
 
         SetStretch(charPanel, Vector2.zero, new Vector2(-100, -60));
-        Debug.Log("[FixLayout] CharacterPanel → stretch with padding");
+        { /* CharacterPanel → stretch with padding */ }
 
         // Window → stretch fill CharacterPanel
         var window = charPanel.Find("Window");
-        if (window == null) { Debug.LogError("[FixLayout] Window not found!"); return; }
+        if (window == null) { { /* Lỗi: Window not found */ } return; }
 
         SetStretch(window, Vector2.zero, Vector2.zero);
-        Debug.Log("[FixLayout] Window → stretch fill parent");
+        { /* Window → stretch fill parent */ }
 
         // Header (top bar, height 50)
         var header = window.Find("Header");
@@ -53,7 +53,7 @@ public class FixInformationCanvasLayout
         {
             SetTopStrip(header, 50);
             FixChildStretchFill(header, "Title Text");
-            Debug.Log("[FixLayout] Header → top strip h=50");
+            { /* Header → top strip h=50 */ }
         }
 
         // TabBar (left sidebar)
@@ -78,7 +78,7 @@ public class FixInformationCanvasLayout
             // Hide/Remove BtnEquipment if it exists
             var btnEq = tabBar.Find("BtnEquipment");
             if (btnEq != null) btnEq.gameObject.SetActive(false);
-            Debug.Log("[FixLayout] TabBar → left sidebar VLG – 3 tabs");
+            { /* TabBar → left sidebar VLG  3 tabs */ }
         }
 
         // TabContents (fills remaining space)
@@ -104,11 +104,11 @@ public class FixInformationCanvasLayout
             FixContentPotentialInternals(tabContents);
             FixContentStatsInternals(tabContents);
 
-            Debug.Log("[FixLayout] TabContents → fill + content panels fixed");
+            { /* TabContents → fill + content panels fixed */ }
         }
 
         EditorUtility.SetDirty(canvas);
-        Debug.Log("[FixLayout] ══════════ SCENE FIX DONE ══════════");
+        { /* ══════════ SCENE FIX DONE ══════════ */ }
     }
 
     // 2. FIX PREFABS
@@ -118,7 +118,7 @@ public class FixInformationCanvasLayout
         FixSkillRowPrefab();
         FixPotentialStatRowPrefab();
         AssetDatabase.SaveAssets();
-        Debug.Log("[FixPrefabs] ══════════ PREFAB FIX DONE ══════════");
+        { /* ══════════ PREFAB FIX DONE ══════════ */ }
     }
 
     // SkillRowPrefab – keep VerticalLayoutGroup, fix padding
@@ -128,7 +128,7 @@ public class FixInformationCanvasLayout
     {
         string path = "Assets/Prefabs/UI/Thông tin/SkillRowPrefab.prefab";
         var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (prefabAsset == null) { Debug.LogError($"[FixPrefabs] Not found: {path}"); return; }
+        if (prefabAsset == null) { { /* Lỗi: Not found: {path} */ } return; }
 
         // Mở prefab để edit trực tiếp (không instantiate)
         string assetPath = AssetDatabase.GetAssetPath(prefabAsset);
@@ -197,7 +197,7 @@ public class FixInformationCanvasLayout
 
         PrefabUtility.SaveAsPrefabAsset(root, assetPath);
         PrefabUtility.UnloadPrefabContents(root);
-        Debug.Log("[FixPrefabs] SkillRowPrefab → VLG padding fixed");
+        { /* SkillRowPrefab → VLG padding fixed */ }
     }
 
     // PotentialStatRowPrefab – HorizontalLayoutGroup
@@ -206,7 +206,7 @@ public class FixInformationCanvasLayout
     {
         string path = "Assets/Prefabs/UI/Thông tin/PotentialStatRowPrefab.prefab";
         var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (prefabAsset == null) { Debug.LogError($"[FixPrefabs] Not found: {path}"); return; }
+        if (prefabAsset == null) { { /* Lỗi: Not found: {path} */ } return; }
 
         string assetPath = AssetDatabase.GetAssetPath(prefabAsset);
         var root = PrefabUtility.LoadPrefabContents(assetPath);
@@ -265,7 +265,7 @@ public class FixInformationCanvasLayout
 
         PrefabUtility.SaveAsPrefabAsset(root, assetPath);
         PrefabUtility.UnloadPrefabContents(root);
-        Debug.Log("[FixPrefabs] PotentialStatRowPrefab → HLG layout fixed (BtnMinus/BtnPlus/BtnMax)");
+        { /* PotentialStatRowPrefab → HLG layout fixed (BtnMinus/BtnPlus/BtnMax) */ }
     }
 
     private static void EnsureRowButton(Transform parent, string name, string label, float size)
@@ -419,7 +419,7 @@ public class FixInformationCanvasLayout
         if (oldSubTabBar != null)
         {
             Object.DestroyImmediate(oldSubTabBar.gameObject);
-            Debug.Log("[FixLayout] Removed SubTabBar from ContentPotential");
+            { /* Removed SubTabBar from ContentPotential */ }
         }
 
         // ── Create bottom action bar (BtnHuy + BtnCong) if missing ─
@@ -442,7 +442,7 @@ public class FixInformationCanvasLayout
             CreateActionButton(actionBar, "BtnHuy",  "Hủy",  new Color(0.72f, 0.35f, 0.25f, 1f));
             CreateActionButton(actionBar, "BtnCong", "Cộng", new Color(0.35f, 0.60f, 0.25f, 1f));
 
-            Debug.Log("[FixLayout] Created ActionBar with BtnHuy + BtnCong");
+            { /* Created ActionBar with BtnHuy + BtnCong */ }
         }
 
         // Position ActionBar at bottom
@@ -461,7 +461,7 @@ public class FixInformationCanvasLayout
             SetButtonRef(so, "btnHuy",  actionBar.Find("BtnHuy"));
             SetButtonRef(so, "btnCong", actionBar.Find("BtnCong"));
             so.ApplyModifiedProperties();
-            Debug.Log("[FixLayout] Wired BtnHuy + BtnCong to PotentialTabUI");
+            { /* Wired BtnHuy + BtnCong to PotentialTabUI */ }
         }
 
         // Fix any ScrollView – leave room for ActionBar + TxtPotentialPoints at bottom

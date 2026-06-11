@@ -112,9 +112,9 @@ namespace GameServerApi.Services
         // IHostedService
         public async Task StartAsync(CancellationToken ct)
         {
-            _logger.LogInformation("GameConfigCache: Loading all config tables...");
+            { /* GameConfigCache: Loading all config tables */ }
             await ReloadAllAsync(ct);
-            _logger.LogInformation("GameConfigCache: All config loaded.");
+            { /* GameConfigCache: All config loaded */ }
         }
 
         public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
@@ -210,9 +210,7 @@ namespace GameServerApi.Services
             var dungeons = await db.DungeonConfigs.AsNoTracking().ToListAsync(ct);
             _dungeons = new ConcurrentDictionary<int, DungeonConfig>(dungeons.ToDictionary(d => d.DungeonId));
 
-            _logger.LogInformation(
-                "Config loaded: {enemies} enemies, {spawns} spawns, {items} items, {skills} skills, {options} options",
-                _enemies.Count, _allSpawns.Count, _items.Count, _skills.Count, _options.Count);
+            { /* Config loaded: {enemies} enemies, {spawns} spawns, {items} items, {skills} skills, {options} options */ }
         }
 
         // Getters

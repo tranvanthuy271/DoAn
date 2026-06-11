@@ -153,12 +153,12 @@ public class ChatPanelUI : MonoBehaviour
             var friendUi = ResolveFriendPanel();
             if (friendUi != null)
             {
-                Debug.Log("[ChatPanelUI] Private tab selected without target. Opening FriendListUI.");
+                { /* Private tab selected without target. Opening FriendListUI */ }
                 friendUi.ShowPanel("ChatPanelUI.PrivateTab");
             }
             else
             {
-                Debug.LogWarning("[ChatPanelUI] Could not resolve FriendListUI from loaded scenes.");
+                { /* Cảnh báo: Could not resolve FriendListUI from loaded scenes */ }
             }
             return;
         }
@@ -263,11 +263,11 @@ public class ChatPanelUI : MonoBehaviour
             if (sceneFriendPanel != null)
                 return sceneFriendPanel;
 
-            Debug.LogWarning("[ChatPanelUI] friendListPanel points to a loaded scene object without FriendListUI. Re-resolving scene instance.", this);
+            { /* Cảnh báo: friendListPanel points to a loaded scene object without FriendListUI. Re-resolving scene instance */ }
         }
         else if (friendListPanel != null)
         {
-            Debug.LogWarning("[ChatPanelUI] Ignoring friendListPanel reference that is not part of a loaded scene. Re-resolving scene instance.", this);
+            { /* Cảnh báo: Ignoring friendListPanel reference that is not part of a loaded scene. Re-resolving scene instance */ }
         }
 
         var resolved = FindObjectOfType<FriendListUI>(includeInactive: true);
@@ -423,7 +423,7 @@ public class ChatPanelUI : MonoBehaviour
 
         if (messageEntryPrefab != null && messageEntryPrefab.scene.IsValid())
         {
-            Debug.LogWarning("[ChatPanelUI] messageEntryPrefab đang trỏ tới scene object. Sẽ nạp lại prefab từ Resources.", this);
+            { /* Cảnh báo: messageEntryPrefab đang trỏ tới scene object. Sẽ nạp lại prefab từ Resources */ }
             messageEntryPrefab = null;
         }
 
@@ -436,9 +436,7 @@ public class ChatPanelUI : MonoBehaviour
 
         if (messageEntryPrefab == null)
         {
-            Debug.LogError(
-                $"[ChatPanelUI] Không tìm thấy message entry prefab tại Resources/{DefaultMessageEntryResourcesPath} hoặc Resources/{LegacyMessageEntryResourcesPath}.",
-                this);
+            { /* Lỗi: Không tìm thấy message entry prefab tại Resources/{DefaultMessageEntryResourcesPath} hoặc Resources/{LegacyMessageEntryResourcesPath} */ }
         }
 
         return messageEntryPrefab;
@@ -449,9 +447,7 @@ public class ChatPanelUI : MonoBehaviour
         var prefab = Resources.Load<GameObject>(resourcesPath);
         if (prefab != null)
         {
-            Debug.LogWarning(
-                $"[ChatPanelUI] messageEntryPrefab chưa được gán trên ChatPanel instance. Đã nạp fallback prefab từ Resources/{resourcesPath}.",
-                this);
+            { /* Cảnh báo: messageEntryPrefab chưa được gán trên ChatPanel instance. Đã nạp fallback prefab từ Resources/{resourcesPath} */ }
         }
 
         return prefab;

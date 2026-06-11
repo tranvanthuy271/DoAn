@@ -20,15 +20,14 @@ public static class SetupEquipmentCharacterPreview
     [MenuItem(MENU)]
     public static void Run()
     {
-        Debug.Log("[SetupPreview] ══════════ BẮT ĐẦU SETUP ══════════");
+        { /* ══════════ BẮT ĐẦU SETUP ══════════ */ }
 
         // 1. Tìm ContentEquipment
-        Debug.Log("[SetupPreview] Đang tìm ContentEquipment...");
+        { /* Đang tìm ContentEquipment */ }
         var contentEquipment = FindContentEquipment();
         if (contentEquipment == null)
         {
-            Debug.LogError("[SetupPreview] KHÔNG TÌM THẤY ContentEquipment! " +
-                "Hãy chắc chắn scene GameScene đang được mở.");
+            { /* Lỗi: KHÔNG TÌM THẤY ContentEquipment */ }
                 if (!Application.isBatchMode)
                 EditorUtility.DisplayDialog("Setup Preview",
                     "Không tìm thấy ContentEquipment trong scene!\n\n" +
@@ -40,22 +39,22 @@ public static class SetupEquipmentCharacterPreview
 
         Undo.RegisterFullObjectHierarchyUndo(contentEquipment, "Setup Equipment Character Preview");
 
-        Debug.Log($"[SetupPreview] ✓ Tìm thấy ContentEquipment: {GetPath(contentEquipment.transform)}");
+        { /* ✓ Tìm thấy ContentEquipment: {GetPath(contentEquipment.transform)} */ }
 
         // 2. Tạo Camera preview (ngoài Canvas)
-        Debug.Log("[SetupPreview] Đang tạo EquipPreviewCamera...");
+        { /* Đang tạo EquipPreviewCamera */ }
         var cam = SetupPreviewCamera();
-        Debug.Log($"[SetupPreview] ✓ Camera: {(cam != null ? cam.gameObject.name : "NULL")}");
+        { /* ✓ Camera: {(cam != null ? cam.gameObject.name */ }
 
         // 3. Tạo CharPreviewSlot trong ContentEquipment
-        Debug.Log("[SetupPreview] Đang tạo CharPreviewSlot...");
+        { /* Đang tạo CharPreviewSlot */ }
         var slotGO = SetupCharPreviewSlot(contentEquipment, cam);
-        Debug.Log($"[SetupPreview] ✓ Slot: {(slotGO != null ? slotGO.name : "NULL")}");
+        { /* ✓ Slot: {(slotGO != null ? slotGO.name */ }
 
         // 4. Tạo RawImage con của CharPreviewSlot
-        Debug.Log("[SetupPreview] Đang tạo RawImage_CharPreview...");
+        { /* Đang tạo RawImage_CharPreview */ }
         var rawImage = SetupRawImage(slotGO);
-        Debug.Log($"[SetupPreview] ✓ RawImage: {(rawImage != null ? rawImage.gameObject.name : "NULL")}");
+        { /* ✓ RawImage: {(rawImage != null ? rawImage.gameObject.name */ }
 
         // 5. Wire references vào EquipmentCharacterPreview
         var preview = slotGO.GetComponent<EquipmentCharacterPreview>();
@@ -65,16 +64,16 @@ public static class SetupEquipmentCharacterPreview
             so.FindProperty("previewCamera")      .objectReferenceValue = cam;
             so.FindProperty("renderTargetImage")  .objectReferenceValue = rawImage;
             so.ApplyModifiedProperties();
-            Debug.Log("[SetupPreview] ✓ Wire: EquipmentCharacterPreview ← Camera + RawImage");
+            { /* ✓ Wire: EquipmentCharacterPreview ← Camera + RawImage */ }
         }
         else
         {
-            Debug.LogError("[SetupPreview] EquipmentCharacterPreview component là NULL!");
+            { /* Lỗi: EquipmentCharacterPreview component là NULL */ }
         }
 
         // 6. Wire CharPreviewSlot vào EquipmentPanelUI
         var panelUI = contentEquipment.GetComponent<EquipmentPanelUI>();
-        Debug.Log($"[SetupPreview] EquipmentPanelUI trên ContentEquipment: {(panelUI != null ? "CÓ" : "KHÔNG TÌM THẤY")}");
+        { /* EquipmentPanelUI trên ContentEquipment: {(panelUI != null ? */ }
         if (panelUI != null)
         {
             var so2 = new SerializedObject(panelUI);
@@ -83,11 +82,11 @@ public static class SetupEquipmentCharacterPreview
             {
                 prop.objectReferenceValue = preview;
                 so2.ApplyModifiedProperties();
-                Debug.Log("[SetupPreview] ✓ EquipmentPanelUI.characterPreview → CharPreviewSlot");
+                { /* ✓ EquipmentPanelUI.characterPreview → CharPreviewSlot */ }
             }
             else
             {
-                Debug.LogWarning("[SetupPreview] Không tìm thấy field 'characterPreview' trong EquipmentPanelUI!");
+                { /* Cảnh báo: Không tìm thấy field 'characterPreview' trong EquipmentPanelUI */ }
             }
         }
 
@@ -111,7 +110,7 @@ public static class SetupEquipmentCharacterPreview
                 "5. Ctrl+S để lưu scene",
                 "OK");
 
-        Debug.Log("[SetupPreview] ══════════ SETUP HOÀN TẤT ══════════");
+        { /* ══════════ SETUP HOÀN TẤT ══════════ */ }
     }
 
     // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
@@ -138,7 +137,7 @@ public static class SetupEquipmentCharacterPreview
         var panelUI = Object.FindObjectOfType<EquipmentPanelUI>(true);
         if (panelUI != null)
         {
-            Debug.LogWarning($"[SetupPreview] Không tìm theo đường dẫn chuẩn, dùng: {panelUI.gameObject.name}");
+            { /* Cảnh báo: Không tìm theo đường dẫn chuẩn, dùng: {panelUI.gameObject.name} */ }
             return panelUI.gameObject;
         }
 
@@ -154,7 +153,7 @@ public static class SetupEquipmentCharacterPreview
         var existing = GameObject.Find(CAM_NAME);
         if (existing != null)
         {
-            Debug.Log($"[SetupPreview] EquipPreviewCamera đã tồn tại, tái dùng.");
+            { /* EquipPreviewCamera đã tồn tại, tái dùng */ }
             // Đảm bảo camera luôn disabled khi setup (runtime script sẽ bật)
             var existingCam = existing.GetComponent<Camera>();
             if (existingCam != null) existingCam.enabled = false;
@@ -187,11 +186,7 @@ public static class SetupEquipmentCharacterPreview
         // EquipmentCharacterPreview.Awake() / OnEnable() sẽ bật lại sau khi tạo xong RenderTexture
         cam.enabled = false;
 
-        Debug.Log($"[SetupPreview] Đã tạo {CAM_NAME} tại vị trí (1000, 1, 998). Camera DISABLED by default.\n" +
-                  $"  ⚠️ Bạn cần:\n" +
-                  $"     1. Tạo Layer 'UICharacter' (Edit → Project Settings → Tags and Layers)\n" +
-                  $"     2. Set Camera Culling Mask = chỉ chọn 'UICharacter'\n" +
-                  $"     3. Set EquipmentCharacterPreview.overrideLayer = index của UICharacter");
+        { /* Đã tạo {CAM_NAME} tại vị trí (1000, 1, 998). Camera DISABLED by default.\n */ }
         return cam;
     }
 
@@ -204,7 +199,7 @@ public static class SetupEquipmentCharacterPreview
         var existingT = parent.transform.Find(SLOT_NAME);
         if (existingT != null)
         {
-            Debug.Log("[SetupPreview] CharPreviewSlot đã tồn tại, tái dùng.");
+            { /* CharPreviewSlot đã tồn tại, tái dùng */ }
             // Đảm bảo EquipmentCharacterPreview có mặt
             if (existingT.GetComponent<EquipmentCharacterPreview>() == null)
                 existingT.gameObject.AddComponent<EquipmentCharacterPreview>();
@@ -238,7 +233,7 @@ public static class SetupEquipmentCharacterPreview
         so.FindProperty("renderTextureSize")     .vector2IntValue = new Vector2Int(220, 400);
         so.ApplyModifiedProperties();
 
-        Debug.Log("[SetupPreview] Đã tạo CharPreviewSlot với EquipmentCharacterPreview.");
+        { /* Đã tạo CharPreviewSlot với EquipmentCharacterPreview */ }
         return slotGO;
     }
 
@@ -251,7 +246,7 @@ public static class SetupEquipmentCharacterPreview
         var existingT = slotParent.transform.Find(RI_NAME);
         if (existingT != null)
         {
-            Debug.Log("[SetupPreview] RawImage_CharPreview đã tồn tại, tái dùng.");
+            { /* RawImage_CharPreview đã tồn tại, tái dùng */ }
             return existingT.GetComponent<RawImage>();
         }
 
@@ -274,7 +269,7 @@ public static class SetupEquipmentCharacterPreview
         // Đặt về dưới cùng trong sibling order để nằm dưới các slot
         riGO.transform.SetAsFirstSibling();
 
-        Debug.Log("[SetupPreview] Đã tạo RawImage_CharPreview.");
+        { /* Đã tạo RawImage_CharPreview */ }
         return rawImage;
     }
 

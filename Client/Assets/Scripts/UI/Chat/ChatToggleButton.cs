@@ -113,7 +113,7 @@ public class ChatToggleButton : MonoBehaviour
 
         if (friendPanel == null)
         {
-            Debug.LogWarning("[ChatToggleButton] ToggleFriendPanel failed because FriendListUI is NULL.");
+            { /* Cảnh báo: ToggleFriendPanel failed because FriendListUI is NULL */ }
             return;
         }
 
@@ -126,7 +126,7 @@ public class ChatToggleButton : MonoBehaviour
             return;
 
         if (chatPanel != null)
-            Debug.LogWarning("[ChatToggleButton] Ignoring ChatPanelUI reference that is not part of a loaded scene. Re-resolving scene instance.", this);
+            { /* Cảnh báo: Ignoring ChatPanelUI reference that is not part of a loaded scene. Re-resolving scene instance */ }
 
         chatPanel = FindObjectOfType<ChatPanelUI>(includeInactive: true);
     }
@@ -137,7 +137,7 @@ public class ChatToggleButton : MonoBehaviour
             return;
 
         if (friendPanel != null)
-            Debug.LogWarning("[ChatToggleButton] Ignoring FriendListUI reference that is not part of a loaded scene. Re-resolving scene instance.", this);
+            { /* Cảnh báo: Ignoring FriendListUI reference that is not part of a loaded scene. Re-resolving scene instance */ }
 
         friendPanel = FindObjectOfType<FriendListUI>(includeInactive: true);
     }

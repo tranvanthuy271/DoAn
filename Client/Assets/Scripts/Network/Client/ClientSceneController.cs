@@ -60,12 +60,12 @@ public class ClientSceneController : MonoBehaviour
     {
         if (_isTransitioning)
         {
-            Debug.LogWarning("[ClientSceneController] Đang trong quá trình chuyển zone, bỏ qua yêu cầu mới.");
+            { /* Cảnh báo: Đang trong quá trình chuyển zone, bỏ qua yêu cầu mới */ }
             return;
         }
 
         _hasPendingTransferRequest = false;
-        Debug.Log($"[ClientSceneController] HandleZoneTeleport | fromScene={SceneManager.GetActiveScene().name} toScene={sceneName} target=({x:F2}, {y:F2}) map={mapId} zone={zoneId}", this);
+        { /* HandleZoneTeleport | fromScene={SceneManager.GetActiveScene().name} toScene={sceneName} target=({x:F2}, {y:F2}) map={mapId} zone={zoneId} */ }
         ShowLoadingScreen("Đang chuyển map...");
         StartCoroutine(LoadSceneAndReposition(sceneName, new Vector3(x, y, 0), mapId, zoneId));
     }
@@ -97,13 +97,13 @@ public class ClientSceneController : MonoBehaviour
 
         if (oldMapId != CurrentMapId || oldZoneId != CurrentZoneId)
         {
-            Debug.Log($"[ClientSceneController] SetCurrentZoneState | map {oldMapId} -> {CurrentMapId}, zone {oldZoneId} -> {CurrentZoneId}", this);
+            { /* SetCurrentZoneState | map {oldMapId} -> {CurrentMapId}, zone {oldZoneId} -> {CurrentZoneId} */ }
         }
     }
 
     public void ResetZoneState()
     {
-        Debug.Log($"[ClientSceneController] ResetZoneState | map={CurrentMapId} zone={CurrentZoneId}", this);
+        { /* ResetZoneState | map={CurrentMapId} zone={CurrentZoneId} */ }
         CurrentMapId = -1;
         CurrentZoneId = -1;
         _isTransitioning = false;
@@ -214,7 +214,7 @@ public class ClientSceneController : MonoBehaviour
             // trong lúc additive load.
             SetAllEventSystemsEnabled(false);
 
-            Debug.Log($"[ClientSceneController] Loading scene (additive): {sceneName}");
+            { /* Loading scene (additive): {sceneName} */ }
             var loadOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             while (!loadOp.isDone)
                 yield return null;
@@ -222,7 +222,7 @@ public class ClientSceneController : MonoBehaviour
             Scene newScene = SceneManager.GetSceneByName(sceneName);
             if (!newScene.IsValid())
             {
-                Debug.LogError($"[ClientSceneController] Scene '{sceneName}' không hợp lệ sau khi load!");
+                { /* Lỗi: Scene '{sceneName}' không hợp lệ sau khi load */ }
                 EnablePreferredEventSystem();
                 HideLoadingScreen();
                 _isTransitioning = false;
@@ -256,7 +256,7 @@ public class ClientSceneController : MonoBehaviour
                     ProtectLegacyUiRoot(rootObj);
                 }
             }
-            Debug.Log($"[ClientSceneController] Moved {moved} NetworkObject(s) → {sceneName}");
+            { /* Moved {moved} NetworkObject(s) → {sceneName} */ }
 
             // 3b — Protect canvas/event system roots của scene mới.
             // Nếu quay lại GameScene, bước này sẽ gắn GameUIPersist lên canvas mới
@@ -298,7 +298,7 @@ public class ClientSceneController : MonoBehaviour
         _hasPendingTransferRequest = false;
         _isTransitioning = false;
 
-        Debug.Log($"[ClientSceneController] ✓ Zone transfer hoàn thành → map{mapId}_zone{zoneId}");
+        { /* ✓ Zone transfer hoàn thành → map{mapId}_zone{zoneId} */ }
     }
 
     private IEnumerator RepositionLocalPlayer(Vector3 pos)
@@ -364,13 +364,13 @@ public class ClientSceneController : MonoBehaviour
             cam?.RefreshMaxMapBounds();
             cam?.SetTarget(playerNetObj.transform, true);
 
-            Debug.Log($"[ClientSceneController] Player repositioned → requested={pos} resolved={resolvedPos}");
+            { /* Player repositioned → requested={pos} resolved={resolvedPos} */ }
             LogPlayerTransitionDiagnostics("AfterRepositionImmediate", playerNetObj, resolvedPos);
             StartCoroutine(LogPostRepositionDiagnostics(playerNetObj, resolvedPos));
         }
         else
         {
-            Debug.LogWarning("[ClientSceneController] Không tìm thấy local player NetworkObject trong thời gian chờ reposition.");
+            { /* Cảnh báo: Không tìm thấy local player NetworkObject trong thời gian chờ reposition */ }
         }
     }
 
@@ -397,13 +397,13 @@ public class ClientSceneController : MonoBehaviour
             EventSystem existingPersistentEventSystem = FindPreferredEventSystem(eventSystem);
             if (existingPersistentEventSystem != null)
             {
-                Debug.LogWarning($"[ClientSceneController] Duplicate EventSystem '{rootObj.name}' detected while transitioning scene — destroying scene-local copy.");
+                { /* Cảnh báo: Duplicate EventSystem '{rootObj.name}' detected while transitioning scene  destroying scene-local copy */ }
                 Destroy(rootObj);
                 return;
             }
         }
 
-        Debug.LogWarning($"[ClientSceneController] '{rootObj.name}' là Canvas/EventSystem chưa có GameUIPersist — tự động thêm GameUIPersist để tránh mất UI.");
+        { /* Cảnh báo: '{rootObj.name}' là Canvas/EventSystem chưa có GameUIPersist  tự động thêm GameUIPersist để tránh mất UI */ }
         rootObj.AddComponent<GameUIPersist>();
     }
 
@@ -440,7 +440,7 @@ public class ClientSceneController : MonoBehaviour
             if (eventSystem == null || eventSystem == preferred)
                 continue;
 
-            Debug.LogWarning($"[ClientSceneController] Destroying duplicate EventSystem '{eventSystem.gameObject.name}' after scene transition.");
+            { /* Cảnh báo: Destroying duplicate EventSystem '{eventSystem.gameObject.name}' after scene transition */ }
             Destroy(eventSystem.gameObject);
         }
     }
@@ -550,7 +550,7 @@ public class ClientSceneController : MonoBehaviour
         {
             if ((groundedPos - requestedPos).sqrMagnitude > 0.0001f)
             {
-                Debug.LogWarning($"[ClientSceneController] Teleport target {requestedPos} không có ground hợp lệ. Snap sang {groundedPos}.", playerNetObj);
+                { /* Cảnh báo: Teleport target {requestedPos} không có ground hợp lệ. Snap sang {groundedPos} */ }
             }
 
             return groundedPos;
@@ -594,11 +594,11 @@ public class ClientSceneController : MonoBehaviour
 
         if (foundCandidate)
         {
-            Debug.LogWarning($"[ClientSceneController] Teleport target {requestedPos} nằm ngoài nền. Dùng ground gần nhất {bestCandidate}.", playerNetObj);
+            { /* Cảnh báo: Teleport target {requestedPos} nằm ngoài nền. Dùng ground gần nhất {bestCandidate} */ }
             return new Vector3(bestCandidate.x, bestCandidate.y + snapPadding, bestCandidate.z);
         }
 
-        Debug.LogWarning($"[ClientSceneController] Không tìm thấy ground hợp lệ quanh target teleport {requestedPos}. Giữ nguyên tọa độ gốc.", playerNetObj);
+        { /* Cảnh báo: Không tìm thấy ground hợp lệ quanh target teleport {requestedPos}. Giữ nguyên tọa độ gốc */ }
         return requestedPos;
     }
 
@@ -624,7 +624,7 @@ public class ClientSceneController : MonoBehaviour
     {
         if (!scene.IsValid())
         {
-            Debug.LogWarning($"[ClientSceneController] {phase} | scene không hợp lệ.");
+            { /* Cảnh báo: {phase} | scene không hợp lệ */ }
             return;
         }
 
@@ -691,15 +691,14 @@ public class ClientSceneController : MonoBehaviour
 
         string groundLayerLabel = groundLayerId >= 0 ? $"Ground({groundLayerId})" : "Ground(<missing layer>)";
         string sampleText = sampleCount > 0 ? samples.ToString() : "<không có collider nào ở layer Ground>";
-        Debug.Log(
-            $"[ClientSceneController] {phase} | scene={scene.name} activeScene={SceneManager.GetActiveScene().name} loadedScenes={DescribeLoadedScenes()} root={activeRootCount}/{rootCount} colliders={enabledColliders}/{totalColliders} activeColliderObjects={activeColliders} groundLayer={groundLayerLabel} groundColliders={enabledGroundColliders}/{groundColliders} activeGroundObjects={activeGroundColliders} boxColliders={enabledBoxColliders}/{boxColliders} physicsGravity={Physics2D.gravity} samples={sampleText}");
+        { /* {phase} | scene={scene.name} activeScene={SceneManager.GetActiveScene().name} loadedScenes={DescribeLoadedScenes()} root={activeRootCount}/{rootCount} colliders={enabledColliders}/{totalColliders} activeColliderObjects={activeColliders} groundLayer={groundLayerLabel} groundColliders={enabledGroundColliders}/{groundColliders} activeGroundObjects={activeGroundColliders} boxColliders={enabledBoxColliders}/{boxColliders} physicsGravity={Physics2D.gravity} samples={sampleText} */ }
     }
 
     private static void LogPlayerTransitionDiagnostics(string phase, NetworkObject playerNetObj, Vector3 expectedPos)
     {
         if (playerNetObj == null)
         {
-            Debug.LogWarning($"[ClientSceneController] {phase} | playerNetObj=null");
+            { /* Cảnh báo: {phase} | playerNetObj=null */ }
             return;
         }
 
@@ -734,9 +733,7 @@ public class ClientSceneController : MonoBehaviour
         if (groundMask.value == 0)
             hint += " | hint=groundLayer trên PlayerMovement đang = Nothing";
 
-        Debug.Log(
-            $"[ClientSceneController] {phase} | player={playerNetObj.name} playerScene={playerScene.name} activeScene={activeScene.name} loadedScenes={DescribeLoadedScenes()} pos={FormatVector3(playerTransform.position)} target={FormatVector3(expectedPos)} delta={(playerTransform.position - expectedPos).magnitude:F3} rb={DescribeRigidbody(playerRb)} playerCollider={DescribePlayerCollider(playerCollider)} movement={(movement != null ? $"grounded={movement.IsGrounded()} probe={FormatVector3(probePosition)} radius={probeRadius:F2} groundMask={DescribeLayerMask(groundMask)}" : "<không có PlayerMovement>")} groundHits={DescribeColliders(groundHits)} anyHits={DescribeColliders(anyHits)} downHit={DescribeRaycastHit(downHit)}{hint}",
-            playerNetObj);
+        { /* {phase} | player={playerNetObj.name} playerScene={playerScene.name} activeScene={activeScene.name} loadedScenes={DescribeLoadedScenes()} pos={FormatVector3(playerTransform.position)} target={FormatVector3(expectedPos)} delta={(playerTransform.position - expectedPos).magnitude:F3} rb={DescribeRigidbody(playerRb)} playerCollider={DescribePlayerCollider(playerCollider)} movement={(movement != null ? $ */ }
     }
 
     private static string DescribeLoadedScenes()

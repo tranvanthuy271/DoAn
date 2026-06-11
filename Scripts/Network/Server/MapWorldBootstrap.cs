@@ -32,7 +32,7 @@ public class MapWorldBootstrap : MonoBehaviour
     {
         if (_config == null)
         {
-            Debug.LogError("[MapWorldBootstrap] MapWorldConfig chưa gán! Dừng khởi động.");
+            { /* Lỗi: MapWorldConfig chưa gán! Dừng khởi động */ }
             enabled = false;
             return;
         }
@@ -48,7 +48,7 @@ public class MapWorldBootstrap : MonoBehaviour
 #if UNITY_SERVER || ZONE_SERVER || UNITY_EDITOR
         StartCoroutine(StartServerRoutine());
 #else
-        Debug.LogWarning("[MapWorldBootstrap] Không phải server build — disabled.");
+        { /* Cảnh báo: Không phải server build  disabled */ }
         enabled = false;
 #endif
     }
@@ -61,7 +61,7 @@ public class MapWorldBootstrap : MonoBehaviour
             ReadArg(arg, "--publicIp=", v => _publicIp = v);
             ReadArg(arg, "--apiUrl=",  v => _apiBaseUrl = v);
         }
-        Debug.Log($"[MapWorldBootstrap] Config → port={_port} publicIp={_publicIp} api={_apiBaseUrl}");
+        { /* Config → port={_port} publicIp={_publicIp} api={_apiBaseUrl} */ }
     }
 
     private static void ReadArg(string arg, string prefix, Action<string> setter)
@@ -85,7 +85,7 @@ public class MapWorldBootstrap : MonoBehaviour
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[MapWorldBootstrap] UnityTransport không tìm thấy!");
+            { /* Lỗi: UnityTransport không tìm thấy */ }
             yield break;
         }
 
@@ -98,8 +98,7 @@ public class MapWorldBootstrap : MonoBehaviour
             //   transport.SetServerSecrets(serverCert, serverPrivateKey);
             //   transport.ConnectionData.IsSecure = true;
             // TODO: Thay bằng cert thực tế khi production.
-            Debug.LogWarning("[MapWorldBootstrap] DTLS bật nhưng chưa có certificate. " +
-                             "Đặt cert trong transport.SetServerSecrets() trước khi build production.");
+            { /* Cảnh báo: DTLS bật nhưng chưa có certificate */ }
         }
 
         // 4 — Setup Connection Approval
@@ -111,12 +110,11 @@ public class MapWorldBootstrap : MonoBehaviour
         bool started = NetworkManager.Singleton.StartServer();
         if (!started)
         {
-            Debug.LogError($"[MapWorldBootstrap] StartServer() thất bại (port={_port}). " +
-                           "Kiểm tra port không bị chiếm, firewall, NetworkManager config.");
+            { /* Lỗi: StartServer() thất bại (port={_port}) */ }
             yield break;
         }
 
-        Debug.Log($"[MapWorldBootstrap] ✓ Server started — 1 port {_port} cho {_config.maps.Length} maps");
+        { /* ✓ Server started  1 port {_port} cho {_config.maps.Length} maps */ }
 
         // 6 — Register với API (optional — để API biết server đang online)
         yield return StartCoroutine(RegisterServerWithApi());
@@ -147,16 +145,15 @@ public class MapWorldBootstrap : MonoBehaviour
 
             if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
-                Debug.Log("[MapWorldBootstrap] ✓ Đã đăng ký server với API.");
+                { /* ✓ Đã đăng ký server với API */ }
                 yield break;
             }
 
-            Debug.LogWarning($"[MapWorldBootstrap] API register thất bại ({attempt}/{_maxApiRetries}): " +
-                             $"{req.error}. Retry sau {_apiRetryDelay}s...");
+            { /* Cảnh báo: API register thất bại ({attempt}/{_maxApiRetries}) */ }
             yield return new WaitForSeconds(_apiRetryDelay);
         }
 
-        Debug.LogWarning("[MapWorldBootstrap] Không đăng ký được với API — server vẫn hoạt động bình thường.");
+        { /* Cảnh báo: Không đăng ký được với API  server vẫn hoạt động bình thường */ }
     }
 
     private void OnApplicationQuit()

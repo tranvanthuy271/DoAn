@@ -48,9 +48,9 @@ public class PlayerCombat : MonoBehaviour
         if (enemyLayers.value == 0)
         {
             enemyLayers = LayerMask.GetMask("Enemy");
-            Debug.Log("[PlayerCombat] enemyLayers was 0, automatically set to 'Enemy' layer mask.");
+            { /* enemyLayers was 0, automatically set to 'Enemy' layer mask */ }
         }
-        Debug.Log($"[PlayerCombat] enemyLayers mask value: {enemyLayers.value}");
+        { /* enemyLayers mask value: {enemyLayers.value} */ }
 
         // Create attack point if not assigned in Inspector
         if (attackPoint == null)
@@ -151,7 +151,7 @@ public class PlayerCombat : MonoBehaviour
                 damage = Mathf.RoundToInt(damage * (1f + attackBonusPct));
         }
 
-        Debug.Log("Player attacks!");
+        { /* Player attacks */ }
 
         // Play attack animation
         if (animator != null)
@@ -161,17 +161,17 @@ public class PlayerCombat : MonoBehaviour
 
         // Detect enemies in range
         Collider2D[] hitEnemies = MapPhysicsQuery2D.OverlapCircleAll(gameObject, attackPoint.position, attackRange, enemyLayers.value);
-        Debug.Log($"[PlayerCombat] Detected {hitEnemies.Length} enemies in range.");
+        { /* Detected {hitEnemies.Length} enemies in range */ }
         foreach (var e in hitEnemies)
         {
-            Debug.Log($"[PlayerCombat] Hit candidate: {e.name}, tag={e.tag}, layer={LayerMask.LayerToName(e.gameObject.layer)}");
+            { /* Hit candidate: {e.name}, tag={e.tag}, layer={LayerMask.LayerToName(e.gameObject.layer)} */ }
         }
         foreach (Collider2D enemy in hitEnemies)
         {
             // Bỏ qua chính mình — enemyLayers mask có thể bao gồm Player layer
             if (enemy.transform.root == transform.root) continue;
 
-            Debug.Log($"Hit {enemy.name} for {damage} damage");
+            { /* Hit {enemy.name} for {damage} damage */ }
             // Dùng GetComponentInParent để tìm được khi collider nằm ở child object
             var networkEnemyHealth = enemy.GetComponentInParent<NetworkEnemyHealth>();
             if (networkEnemyHealth != null)
@@ -180,7 +180,7 @@ public class PlayerCombat : MonoBehaviour
                 ulong attackerId = GetComponent<NetworkObject>()?.OwnerClientId ?? ulong.MaxValue;
                 // Gây damage từ baseDamage trong PlayerStats (tự động gọi ServerRpc)
                 networkEnemyHealth.TakeDamage(damage, attackerId);
-                Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (NetworkEnemyHealth)");
+                { /* Dealt {damage} damage to {enemy.transform.root.name} (NetworkEnemyHealth) */ }
             }
             else
             {
@@ -189,7 +189,7 @@ public class PlayerCombat : MonoBehaviour
                 if (enemyHealth != null)
                 {
                     enemyHealth.TakeDamage(damage);
-                    Debug.Log($"[PlayerCombat] Dealt {damage} damage to {enemy.transform.root.name} (EnemyHealth - fallback)");
+                    { /* Dealt {damage} damage to {enemy.transform.root.name} (EnemyHealth - fallback) */ }
                 }
             }
         }
@@ -211,7 +211,7 @@ public class PlayerCombat : MonoBehaviour
             if (netPlayer != null)
             {
                 netPlayer.TakeDamage(damage);
-                Debug.Log($"[PlayerCombat] Dealt {damage} PvP damage to {hit.name}");
+                { /* Dealt {damage} PvP damage to {hit.name} */ }
             }
         }
     }

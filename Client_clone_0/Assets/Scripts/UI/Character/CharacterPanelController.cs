@@ -52,7 +52,7 @@ public class CharacterPanelController : MonoBehaviour
             panelRoot = transform.parent != null && transform.parent.gameObject.name.Contains("CharacterPanel") 
                 ? transform.parent.gameObject 
                 : gameObject;
-            Debug.LogWarning($"[CharacterPanelController] panelRoot chưa được gán, tự động lấy: {panelRoot.name}");
+            { /* Cảnh báo: panelRoot chưa được gán, tự động lấy: {panelRoot.name} */ }
         }
         
         if (contentRoot == null) contentRoot = panelRoot; // fallback nếu chưa gán
@@ -71,7 +71,7 @@ public class CharacterPanelController : MonoBehaviour
         if (panelRoot != null)
         {
             panelRoot.SetActive(false);
-            Debug.Log($"[CharacterPanelController] Start: Ẩn panelRoot ({panelRoot.name})");
+            { /* Start: Ẩn panelRoot ({panelRoot.name}) */ }
         }
         
         // Đảm bảo contentRoot ẩn khi start
@@ -112,7 +112,7 @@ public class CharacterPanelController : MonoBehaviour
 
         if (profile == null)
         {
-            Debug.LogWarning("[CharacterPanelController] ShowFriendProfile called with null profile.");
+            { /* Cảnh báo: ShowFriendProfile called with null profile */ }
             return;
         }
 
@@ -121,7 +121,7 @@ public class CharacterPanelController : MonoBehaviour
         _externalProfileFallbackName = fallbackUsername;
 
         string displayName = ResolveExternalProfileName(profile, fallbackUsername);
-        Debug.Log($"[CharacterPanelController] ShowFriendProfile displayName='{displayName}' playerId={profile.player_id} userId={profile.user_id}");
+        { /* ShowFriendProfile displayName='{displayName}' playerId={profile.player_id} userId={profile.user_id} */ }
 
         contentStats?.ShowFriendProfile(profile, displayName);
         contentEquipment?.GetComponent<EquipmentPanelUI>()?.ShowFriendEquipment(profile.equipment, displayName);
@@ -130,7 +130,7 @@ public class CharacterPanelController : MonoBehaviour
 
         if (panelRoot == null)
         {
-            Debug.LogError("[CharacterPanelController] ShowFriendProfile failed because panelRoot is null.");
+            { /* Lỗi: ShowFriendProfile failed because panelRoot is null */ }
             return;
         }
 
@@ -150,7 +150,7 @@ public class CharacterPanelController : MonoBehaviour
         if (!_isExternalProfileView && _externalProfile == null)
             return;
 
-        Debug.Log("[CharacterPanelController] ExitExternalProfileView()");
+        { /* ExitExternalProfileView() */ }
 
         _isExternalProfileView = false;
         _externalProfile = null;
@@ -176,19 +176,19 @@ public class CharacterPanelController : MonoBehaviour
 
         if (panelRoot == null)
         {
-            Debug.LogError("[CharacterPanelController] Show() bị gọi nhưng panelRoot là NULL! Kiểm tra Inspector.");
+            { /* Lỗi: Show() bị gọi nhưng panelRoot là NULL! Kiểm tra Inspector */ }
             return;
         }
         
         UIPanelManager.CloseOthers(gameObject);
-        Debug.Log($"[CharacterPanelController] Show() - Active panelRoot: {panelRoot.name}");
+        { /* Show() - Active panelRoot: {panelRoot.name} */ }
         panelRoot.SetActive(true);
         SetPanelRootGraphicsVisible(true);
         
         if (contentRoot != null)
         {
             contentRoot.SetActive(true);  // đảm bảo Window cũng hiện
-            Debug.Log($"[CharacterPanelController] Show() - Active contentRoot: {contentRoot.name}");
+            { /* Show() - Active contentRoot: {contentRoot.name} */ }
         }
         
         SwitchTab(activeTab);
@@ -307,7 +307,7 @@ public class CharacterPanelController : MonoBehaviour
             panelRoot = transform.parent != null && transform.parent.gameObject.name.Contains("CharacterPanel")
                 ? transform.parent.gameObject
                 : gameObject;
-            Debug.LogWarning($"[CharacterPanelController] panelRoot chưa được gán, tự động lấy: {panelRoot.name}");
+            { /* Cảnh báo: panelRoot chưa được gán, tự động lấy: {panelRoot.name} */ }
         }
 
         if (contentRoot == null)

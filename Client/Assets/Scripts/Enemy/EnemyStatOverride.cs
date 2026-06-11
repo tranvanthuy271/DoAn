@@ -54,9 +54,7 @@ public class EnemyStatOverride : MonoBehaviour
         EnemyAI existingEnemyAI = GetComponent<EnemyAI>();
         if (ShouldLogBoss25(isBoss, existingBossAI))
         {
-            Debug.LogWarning(
-                $"[BOSS25][EnemyStatOverride:{name}] Apply hp={hp} exp={exp} isBoss={isBoss} respawn={RespawnTime} level={Level} enemyName='{EnemyName}' hasBossAI={(existingBossAI != null)} bossAIEnabledBefore={(existingBossAI != null && existingBossAI.enabled)} hasEnemyAI={(existingEnemyAI != null)} enemyAIEnabledBefore={(existingEnemyAI != null && existingEnemyAI.enabled)} scene={gameObject.scene.name}",
-                this);
+            { /* Cảnh báo: [EnemyStatOverride:{name}] Apply hp={hp} exp={exp} isBoss={isBoss} respawn={RespawnTime} level={Level} enemyName='{EnemyName}' hasBossAI={(existingBossAI != null)} bossAIEnabledBefore={(existingBossAI != null && existingBossAI.enabled)} hasEnemyAI={(existingEnemyAI != null)} enemyAIEnabledBefore={(existingEnemyAI != null && existingEnemyAI.enabled)} scene={gameObject.scene.name} */ }
         }
 
         ApplyHealth(hp);
@@ -99,16 +97,14 @@ public class EnemyStatOverride : MonoBehaviour
 
         if (shouldLog)
         {
-            Debug.LogWarning(
-                $"[BOSS25][EnemyStatOverride:{name}] ApplyBossMode BEFORE isBoss={isBoss} hasBossAI={(bossAI != null)} bossAIEnabled={(bossAI != null && bossAI.enabled)} hasEnemyAI={(normalAI != null)} enemyAIEnabled={(normalAI != null && normalAI.enabled)}",
-                this);
+            { /* Cảnh báo: [EnemyStatOverride:{name}] ApplyBossMode BEFORE isBoss={isBoss} hasBossAI={(bossAI != null)} bossAIEnabled={(bossAI != null && bossAI.enabled)} hasEnemyAI={(normalAI != null)} enemyAIEnabled={(normalAI != null && normalAI.enabled)} */ }
         }
 
         if (isBoss)
         {
             if (bossAI == null)
             {
-                Debug.LogWarning($"[EnemyStatOverride] Enemy '{gameObject.name}' được đánh dấu is_boss=true nhưng không có BossAI component. Thêm BossAI vào prefab.");
+                { /* Cảnh báo: Enemy '{gameObject.name}' được đánh dấu is_boss=true nhưng không có BossAI component. Thêm BossAI vào prefab */ }
                 // Không crash — vẫn dùng EnemyAI bình thường
             }
             else
@@ -125,9 +121,7 @@ public class EnemyStatOverride : MonoBehaviour
 
         if (shouldLog)
         {
-            Debug.LogWarning(
-                $"[BOSS25][EnemyStatOverride:{name}] ApplyBossMode AFTER isBoss={isBoss} bossAIEnabled={(bossAI != null && bossAI.enabled)} enemyAIEnabled={(normalAI != null && normalAI.enabled)}",
-                this);
+            { /* Cảnh báo: [EnemyStatOverride:{name}] ApplyBossMode AFTER isBoss={isBoss} bossAIEnabled={(bossAI != null && bossAI.enabled)} enemyAIEnabled={(normalAI != null && normalAI.enabled)} */ }
         }
     }
 

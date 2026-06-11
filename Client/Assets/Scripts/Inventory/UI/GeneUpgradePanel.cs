@@ -148,18 +148,13 @@ public class GeneUpgradePanel : MonoBehaviour
         _playerData = GameManager.Instance.GetPlayerData();
         if (_playerData == null)
         {
-            Debug.LogError("[GeneUpgradePanel] _playerData == null sau RefreshPlayerData!");
+            { /* Lỗi: _playerData == null sau RefreshPlayerData */ }
             SetStatus("Không tải được dữ liệu nhân vật.", Color.red);
             SetLoading(false);
             yield break;
         }
 
-        Debug.Log($"[GeneUpgradePanel] PlayerData loaded — " +
-                  $"player_id={_playerData.player_id} | " +
-                  $"element={_playerData.element_type} | " +
-                  $"gene_tier={_playerData.gene_tier} | " +
-                  $"gene_exp={_playerData.gene_exp} | " +
-                  $"gold={_playerData.gold}");
+        { /* PlayerData loaded */ }
 
         // 2. Kiểm tra đã max tier chưa
         if (_playerData.gene_tier >= 5)
@@ -219,7 +214,7 @@ public class GeneUpgradePanel : MonoBehaviour
         bool done    = false;
         bool success = false;
 
-        Debug.Log($"[GeneUpgradePanel] GetGeneConfig → elementType={_playerData.element_type} tier={_playerData.gene_tier}");
+        { /* GetGeneConfig → elementType={_playerData.element_type} tier={_playerData.gene_tier} */ }
 
         GameplayCommandService.OnGeneConfigReceived -= HandleGeneConfig;
         GameplayCommandService.OnGeneConfigReceived += HandleGeneConfig;
@@ -230,14 +225,14 @@ public class GeneUpgradePanel : MonoBehaviour
             GameplayCommandService.OnGeneConfigReceived -= HandleGeneConfig;
             if (json.Contains("\"error\""))
             {
-                Debug.LogError($"[GeneUpgradePanel] GetGeneConfig error: {json}");
+                { /* Lỗi: GetGeneConfig error: {json} */ }
             }
             else
             {
                 _config = JsonUtility.FromJson<GeneConfigDto>(json);
                 success = _config != null;
                 if (success)
-                    Debug.Log($"[GeneUpgradePanel] Config loaded — tier {_config.tierFrom}→{_config.tierTo} | geneExpRequired={_config.geneExpRequired}");
+                    { /* Config loaded  tier {_config.tierFrom}→{_config.tierTo} | geneExpRequired={_config.geneExpRequired} */ }
             }
             done = true;
         }
@@ -261,10 +256,7 @@ public class GeneUpgradePanel : MonoBehaviour
         // Gene exp bar
         UpdateExpBar(_playerData.gene_exp, _config.geneExpRequired);
 
-        Debug.Log($"[GeneUpgradePanel] RefreshUI — " +
-                  $"gene_exp={_playerData.gene_exp}/{_config.geneExpRequired} | " +
-                  $"gold={_playerData.gold} (need {_config.goldCost}) | " +
-                  $"itemsMin={_config.itemsMin} itemsNeeded={_config.itemsNeeded} itemName='{_config.itemName}'");
+        { /* RefreshUI */ }
 
         // Chi phí vàng
         goldCostText.text = $"Bạn Cần: {_config.goldCost:N0} vàng";
@@ -361,7 +353,7 @@ public class GeneUpgradePanel : MonoBehaviour
         var sprite = config.GetSpriteOrLog(elementId, ElementIconConfig.SpriteKind.Icon, this, nameof(GeneUpgradePanel));
         if (sprite == null)
         {
-            Debug.LogWarning($"[GeneUpgradePanel] Thiếu icon cho hệ '{elementType}'.", this);
+            { /* Cảnh báo: Thiếu icon cho hệ '{elementType}' */ }
             return;
         }
 
@@ -524,7 +516,7 @@ public class GeneUpgradePanel : MonoBehaviour
             // Hiển thị skill mới mở khoá
             if (response.newlyUnlockedSkills != null)
                 foreach (var skill in response.newlyUnlockedSkills)
-                    Debug.Log($"[GeneUpgradePanel] Skill mới mở khoá: {skill.skillName}");
+                    { /* Skill mới mở khoá: {skill.skillName} */ }
 
             // Tier 5 → ẩn nút
             if (response.newGeneTier >= 5)

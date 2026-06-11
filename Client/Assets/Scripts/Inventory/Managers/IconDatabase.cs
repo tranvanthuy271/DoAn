@@ -46,7 +46,7 @@ public class IconDatabase : MonoBehaviour
             }
         }
 
-        Debug.Log($"[IconDatabase] Loaded {_icons.Count} item icons from Resources/{resourcesFolder}");
+        { /* Loaded {_icons.Count} item icons from Resources/{resourcesFolder} */ }
     }
 
     // Lấy Sprite theo iconId.
@@ -61,7 +61,7 @@ public class IconDatabase : MonoBehaviour
             return sprite;
         }
 
-        Debug.LogWarning($"[IconDatabase] IconId '{iconId}' not found in cache.");
+        { /* Cảnh báo: IconId '{iconId}' not found in cache */ }
         return null;
     }
 }

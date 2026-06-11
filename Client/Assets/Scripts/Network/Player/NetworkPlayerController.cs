@@ -51,7 +51,7 @@ public class NetworkPlayerController : NetworkBehaviour
         ulong localClientId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : ulong.MaxValue;
         bool isLocalPlayer = NetworkObject != null && NetworkObject.IsLocalPlayer;
         bool isPlayerObject = NetworkObject != null && NetworkObject.IsPlayerObject;
-        Debug.Log($"[NetworkPlayerController] OnNetworkSpawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, localClient={localClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}, isLocalPlayer={isLocalPlayer}, isPlayerObject={isPlayerObject}");
+        { /* OnNetworkSpawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, localClient={localClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}, isLocalPlayer={isLocalPlayer}, isPlayerObject={isPlayerObject} */ }
 
         DisableConflictingNetworkTransform();
 
@@ -93,18 +93,18 @@ public class NetworkPlayerController : NetworkBehaviour
             {
                 cameraFollow.RefreshMaxMapBounds();
                 cameraFollow.SetTarget(transform, true);
-                Debug.Log($"[NetworkPlayerController] Camera target set to {gameObject.name}");
+                { /* Camera target set to {gameObject.name} */ }
             }
             else
             {
-                Debug.LogWarning("[NetworkPlayerController] CameraFollow not found! Client player will not be followed by camera.");
+                { /* Cảnh báo: CameraFollow not found! Client player will not be followed by camera */ }
             }
         }
     }
 
     public override void OnNetworkDespawn()
     {
-        Debug.Log($"[NetworkPlayerController] OnNetworkDespawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner}");
+        { /* OnNetworkDespawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner} */ }
         networkScaleX.OnValueChanged -= OnScaleXChanged;
         base.OnNetworkDespawn();
     }

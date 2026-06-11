@@ -36,9 +36,7 @@ public class NpcPrefabConfig : ScriptableObject
         NpcPrefabConfig loadedConfig = Resources.Load<NpcPrefabConfig>(DefaultResourcesPath);
         if (loadedConfig == null)
         {
-            Debug.LogWarning(
-                $"[{owner}] Chưa gán NpcPrefabConfig và không tìm thấy asset mặc định tại Resources/{DefaultResourcesPath}.",
-                context);
+            { /* Cảnh báo: Chưa gán NpcPrefabConfig và không tìm thấy asset mặc định tại Resources/{DefaultResourcesPath} */ }
         }
 
         return loadedConfig;

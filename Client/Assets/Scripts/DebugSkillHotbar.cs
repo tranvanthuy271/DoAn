@@ -8,9 +8,9 @@ public class DebugSkillHotbar : MonoBehaviour {
                     var s = ui.slots[i];
                     var bound = (SkillData)s.GetType().GetField("boundSkill", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(s);
                     if (bound != null) {
-                        Debug.LogError($"Slot {i}: {bound.skillName} | canUse: {bound.CanUse()} | cd: {bound.GetCooldownRemaining()} | type: {bound.skillType}");
+                        { /* Lỗi: Slot {i}: {bound.skillName} | canUse: {bound.CanUse()} | cd: {bound.GetCooldownRemaining()} | type: {bound.skillType} */ }
                     } else {
-                        Debug.LogError($"Slot {i}: NULL");
+                        { /* Lỗi: Slot {i}: NULL */ }
                     }
                 }
             }

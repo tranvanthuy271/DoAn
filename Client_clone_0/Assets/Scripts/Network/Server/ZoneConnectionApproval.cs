@@ -25,7 +25,7 @@ public class ZoneConnectionApproval : MonoBehaviour
     {
         _config = config;
         NetworkManager.Singleton.ConnectionApprovalCallback = HandleApproval;
-        Debug.Log("[ZoneConnectionApproval] Connection Approval đã đăng ký.");
+        { /* Connection Approval đã đăng ký */ }
     }
 
     // Payload format (JSON, UTF-8):
@@ -80,7 +80,7 @@ public class ZoneConnectionApproval : MonoBehaviour
 
         if (room.MapId != mapId || room.ZoneId != zoneId)
         {
-            Debug.Log($"[ZoneConnectionApproval] Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback ({room.MapId},{room.ZoneId})");
+            { /* Client {request.ClientNetworkId}: zone ({mapId},{zoneId}) → fallback ({room.MapId},{room.ZoneId}) */ }
         }
 
         // 5 — Kiểm tra room đầy
@@ -100,12 +100,11 @@ public class ZoneConnectionApproval : MonoBehaviour
         registry.AssignClientToRoom(clientId, room);
 
         // 7 — Lưu session (userId, username)
-        Debug.Log($"[ZoneConnectionApproval] geneSlot={geneSlot} parsed from payload for client {clientId}");
+        { /* geneSlot={geneSlot} parsed from payload for client {clientId} */ }
         ZonePlayerSessionManager.RegisterSessionOrQueue(clientId, result.UserId, result.Username,
             room.MapId, room.ZoneId, token, geneSlot);
 
-        Debug.Log($"[ZoneConnectionApproval] ✓ Client {clientId} ({result.Username}) " +
-                  $"→ map{room.MapId}_zone{room.ZoneId}");
+        { /* ✓ Client {clientId} ({result.Username}) */ }
 
         // 8 — Approve
         response.Approved           = true;
@@ -120,7 +119,7 @@ public class ZoneConnectionApproval : MonoBehaviour
     {
         response.Approved = false;
         response.Reason   = reason;
-        Debug.LogWarning($"[ZoneConnectionApproval] Từ chối kết nối: {reason}");
+        { /* Cảnh báo: Từ chối kết nối: {reason} */ }
     }
 
     // Minimal JSON parser (không dùng thư viện ngoài)

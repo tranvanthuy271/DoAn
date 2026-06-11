@@ -37,7 +37,7 @@ public class MapWorldBootstrap : MonoBehaviour
     {
         if (_config == null)
         {
-            Debug.LogError("[MapWorldBootstrap] MapWorldConfig chưa gán! Dừng khởi động.");
+            { /* Lỗi: MapWorldConfig chưa gán! Dừng khởi động */ }
             enabled = false;
             return;
         }
@@ -55,7 +55,7 @@ public class MapWorldBootstrap : MonoBehaviour
 #if UNITY_SERVER || ZONE_SERVER || UNITY_EDITOR
         StartCoroutine(StartServerRoutine());
 #else
-        Debug.LogWarning("[MapWorldBootstrap] Không phải server build — disabled.");
+        { /* Cảnh báo: Không phải server build  disabled */ }
         enabled = false;
 #endif
     }
@@ -68,7 +68,7 @@ public class MapWorldBootstrap : MonoBehaviour
             ReadArg(arg, "--publicIp=", v => _publicIp = v);
             ReadArg(arg, "--apiUrl=",  v => _apiBaseUrl = v);
         }
-        Debug.Log($"[MapWorldBootstrap] Config → port={_port} publicIp={_publicIp} api={_apiBaseUrl}");
+        { /* Config → port={_port} publicIp={_publicIp} api={_apiBaseUrl} */ }
     }
 
     private void ApplyRuntimeOverridesToConfig()
@@ -113,7 +113,7 @@ public class MapWorldBootstrap : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(_apiBaseUrl))
         {
-            Debug.LogWarning("[MapWorldBootstrap] apiBaseUrl rỗng. Bỏ qua runtime map bootstrap.");
+            { /* Cảnh báo: apiBaseUrl rỗng. Bỏ qua runtime map bootstrap */ }
             yield break;
         }
 
@@ -135,30 +135,30 @@ public class MapWorldBootstrap : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[MapWorldBootstrap] Không parse được runtime map bootstrap JSON: {ex.Message}");
+                    { /* Cảnh báo: Không parse được runtime map bootstrap JSON: {ex.Message} */ }
                     break;
                 }
 
                 if (_config.ApplyRuntimeMapBootstrap(response))
                 {
-                    Debug.Log($"[MapWorldBootstrap] ✓ Loaded {_config.maps.Length} maps from API runtime bootstrap.");
+                    { /* ✓ Loaded {_config.maps.Length} maps from API runtime bootstrap */ }
                     yield break;
                 }
 
-                Debug.LogWarning("[MapWorldBootstrap] Runtime map bootstrap trả về 0 map hợp lệ. Giữ nguyên asset config.");
+                { /* Cảnh báo: Runtime map bootstrap trả về 0 map hợp lệ. Giữ nguyên asset config */ }
                 yield break;
             }
 
             string error = string.IsNullOrWhiteSpace(req.downloadHandler?.text)
                 ? req.error
                 : req.downloadHandler.text;
-            Debug.LogWarning($"[MapWorldBootstrap] Runtime map bootstrap thất bại ({attempt}/{_maxApiRetries}): {error}");
+            { /* Cảnh báo: Runtime map bootstrap thất bại ({attempt}/{_maxApiRetries}): {error} */ }
 
             if (attempt < _maxApiRetries)
                 yield return new WaitForSeconds(_apiRetryDelay);
         }
 
-        Debug.LogWarning($"[MapWorldBootstrap] Dùng fallback MapWorldConfig asset với {_config.maps.Length} maps.");
+        { /* Cảnh báo: Dùng fallback MapWorldConfig asset với {_config.maps.Length} maps */ }
     }
 
     private void LogSceneAvailabilityWarnings()
@@ -167,13 +167,13 @@ public class MapWorldBootstrap : MonoBehaviour
         {
             if (string.IsNullOrWhiteSpace(mapDef.sceneName))
             {
-                Debug.LogWarning($"[MapWorldBootstrap] Map {mapDef.mapId} ({mapDef.mapName}) chưa có sceneName.");
+                { /* Cảnh báo: Map {mapDef.mapId} ({mapDef.mapName}) chưa có sceneName */ }
                 continue;
             }
 
             if (!Application.CanStreamedLevelBeLoaded(mapDef.sceneName))
             {
-                Debug.LogWarning($"[MapWorldBootstrap] Scene '{mapDef.sceneName}' của map {mapDef.mapId} chưa có trong Build Settings hoặc chưa tồn tại. Client teleport vào map này sẽ fail.");
+                { /* Cảnh báo: Scene '{mapDef.sceneName}' của map {mapDef.mapId} chưa có trong Build Settings hoặc chưa tồn tại. Client teleport vào map này sẽ fail */ }
             }
         }
     }
@@ -201,13 +201,13 @@ public class MapWorldBootstrap : MonoBehaviour
 
         // 1c — WaveSessionManager phải luôn tồn tại để reconnect giữ được room + timer.
         var waveSessionMgr = WaveSessionManager.GetOrCreateInstance(gameObject);
-        Debug.Log($"[MapWorldBootstrap] ✓ WaveSessionManager ready on '{waveSessionMgr.gameObject.name}'.");
+        { /* ✓ WaveSessionManager ready on '{waveSessionMgr.gameObject.name}' */ }
 
         // 2 — Configure transport
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[MapWorldBootstrap] UnityTransport không tìm thấy!");
+            { /* Lỗi: UnityTransport không tìm thấy */ }
             yield break;
         }
 
@@ -220,8 +220,7 @@ public class MapWorldBootstrap : MonoBehaviour
             //   transport.SetServerSecrets(serverCert, serverPrivateKey);
             //   transport.ConnectionData.IsSecure = true;
             // TODO: Thay bằng cert thực tế khi production.
-            Debug.LogWarning("[MapWorldBootstrap] DTLS bật nhưng chưa có certificate. " +
-                             "Đặt cert trong transport.SetServerSecrets() trước khi build production.");
+            { /* Cảnh báo: DTLS bật nhưng chưa có certificate */ }
         }
 
         // 4 — Setup Connection Approval
@@ -233,29 +232,27 @@ public class MapWorldBootstrap : MonoBehaviour
         bool started = NetworkManager.Singleton.StartServer();
         if (!started)
         {
-            Debug.LogError($"[MapWorldBootstrap] StartServer() thất bại (port={_port}). " +
-                           "Kiểm tra port không bị chiếm, firewall, NetworkManager config.");
+            { /* Lỗi: StartServer() thất bại (port={_port}) */ }
             yield break;
         }
 
-        Debug.Log($"[MapWorldBootstrap] ✓ Server started — 1 port {_port} cho {_config.maps.Length} maps");
+        { /* ✓ Server started  1 port {_port} cho {_config.maps.Length} maps */ }
 
         // 6 — Spawn NetworkManagers (ZoneTransitionController + ZonePlayerSessionManager)
         if (_networkManagersPrefab != null)
         {
             if (_networkManagersPrefab.GetComponent<GameplayCommandService>() == null)
             {
-                Debug.LogError("[MapWorldBootstrap] NetworkManagers prefab thiếu GameplayCommandService. " +
-                               "Luồng item/skill/inventory ServerRpc sẽ không hoạt động đúng.");
+                { /* Lỗi: NetworkManagers prefab thiếu GameplayCommandService */ }
             }
 
             var go = Instantiate(_networkManagersPrefab);
             go.GetComponent<Unity.Netcode.NetworkObject>()?.Spawn();
-            Debug.Log("[MapWorldBootstrap] ✓ NetworkManagers spawned.");
+            { /* ✓ NetworkManagers spawned */ }
         }
         else
         {
-            Debug.LogWarning("[MapWorldBootstrap] _networkManagersPrefab chưa gán — ZoneTransitionController sẽ không nhận được RPC từ client!");
+            { /* Cảnh báo: _networkManagersPrefab chưa gán  ZoneTransitionController sẽ không nhận được RPC từ client */ }
         }
 
         // 7 — Register với API (optional — để API biết server đang online)
@@ -291,16 +288,15 @@ public class MapWorldBootstrap : MonoBehaviour
 
             if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
-                Debug.Log("[MapWorldBootstrap] ✓ Đã đăng ký server với API.");
+                { /* ✓ Đã đăng ký server với API */ }
                 yield break;
             }
 
-            Debug.LogWarning($"[MapWorldBootstrap] API register thất bại ({attempt}/{_maxApiRetries}): " +
-                             $"{req.error}. Retry sau {_apiRetryDelay}s...");
+            { /* Cảnh báo: API register thất bại ({attempt}/{_maxApiRetries}) */ }
             yield return new WaitForSeconds(_apiRetryDelay);
         }
 
-        Debug.LogWarning("[MapWorldBootstrap] Không đăng ký được với API — server vẫn hoạt động bình thường.");
+        { /* Cảnh báo: Không đăng ký được với API  server vẫn hoạt động bình thường */ }
     }
 
     private void OnApplicationQuit()

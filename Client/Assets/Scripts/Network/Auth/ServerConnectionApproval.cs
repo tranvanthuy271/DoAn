@@ -24,7 +24,7 @@ public class ServerConnectionApproval : MonoBehaviour
     {
         if (HasMapWorldBootstrap())
         {
-            Debug.Log("[ServerConnectionApproval] MapWorldBootstrap detected — disabling legacy approval handler.");
+            { /* MapWorldBootstrap detected  disabling legacy approval handler */ }
             return;
         }
 

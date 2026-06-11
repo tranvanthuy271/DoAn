@@ -93,7 +93,7 @@ public class BenchmarkLogger : MonoBehaviour
         _sampleCount = 0;
 
         StartCoroutine(SampleLoop());
-        Debug.Log($"[BenchmarkLogger] Bắt đầu ghi vào: {_csvPath}");
+        { /* Bắt đầu ghi vào: {_csvPath} */ }
     }
 
     public void StopLogging()
@@ -109,8 +109,8 @@ public class BenchmarkLogger : MonoBehaviour
             _writer = null;
         }
 
-        Debug.Log($"[BenchmarkLogger] Đã ghi {_sampleCount} mẫu vào: {_csvPath}");
-        Debug.Log($"[BenchmarkLogger] Tóm tắt: xem file CSV tại {_csvPath}");
+        { /* Đã ghi {_sampleCount} mẫu vào: {_csvPath} */ }
+        { /* Tóm tắt: xem file CSV tại {_csvPath} */ }
     }
 
     // Sample coroutine

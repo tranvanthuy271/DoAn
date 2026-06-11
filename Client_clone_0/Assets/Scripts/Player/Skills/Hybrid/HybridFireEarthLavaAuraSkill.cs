@@ -84,7 +84,7 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
 
             // 1. Gây sát thương cho quái vật
             Collider2D[] enemyHits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, center, auraRadius, enemyLayer.value);
-            Debug.Log($"[HybridFireEarthLavaAuraSkill] Aura tick enemyHits={enemyHits.Length} center={center} radius={auraRadius}");
+            { /* Aura tick enemyHits={enemyHits.Length} center={center} radius={auraRadius} */ }
             foreach (var col in enemyHits)
             {
                 // Ưu tiên NetworkEnemyHealth (multiplayer)
@@ -126,12 +126,12 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
     [ClientRpc]
     private void ShowAuraClientRpc(bool show)
     {
-        Debug.Log($"[HybridFireEarthLavaAuraSkill] Lava Aura {(show ? "BẬT" : "TẮT")} — transform={name}, root={transform.root.name}");
+        { /* Lava Aura {(show ? */ }
 
         var skillEffectTransform = FindSkillEffectInHierarchy();
         if (skillEffectTransform == null)
         {
-            Debug.LogWarning("[HybridFireEarthLavaAuraSkill] Không tìm thấy SkillEffect trong hierarchy!");
+            { /* Cảnh báo: Không tìm thấy SkillEffect trong hierarchy */ }
             return;
         }
 
@@ -146,11 +146,11 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
             {
                 animator.ResetTrigger("Skill4");
                 animator.SetTrigger("Skill4");
-                Debug.Log($"[HybridFireEarthLavaAuraSkill] SetTrigger Skill4 trên SkillEffect={skillEffectTransform.name}");
+                { /* SetTrigger Skill4 trên SkillEffect={skillEffectTransform.name} */ }
             }
             else
             {
-                Debug.LogWarning($"[HybridFireEarthLavaAuraSkill] SkillEffect '{skillEffectTransform.name}' không có Animator hoặc runtimeAnimatorController là null!");
+                { /* Cảnh báo: SkillEffect '{skillEffectTransform.name}' không có Animator hoặc runtimeAnimatorController là null */ }
             }
         }
         else

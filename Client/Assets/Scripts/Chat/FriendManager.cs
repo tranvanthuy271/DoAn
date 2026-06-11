@@ -32,7 +32,7 @@ public class FriendManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Debug.Log($"[FriendManager] Awake root='{gameObject.name}' active={gameObject.activeInHierarchy} scene='{gameObject.scene.name}'");
+        { /* Awake root='{gameObject.name}' active={gameObject.activeInHierarchy} scene='{gameObject.scene.name}' */ }
     }
 
     // Store delegate so we can properly unsubscribe later
@@ -45,7 +45,7 @@ public class FriendManager : MonoBehaviour
 
         if (HasToken())
         {
-            Debug.Log("[FriendManager] Start found JWT token. Priming friend cache.");
+            { /* Start found JWT token. Priming friend cache */ }
             LoadFriends();
         }
     }
@@ -55,7 +55,7 @@ public class FriendManager : MonoBehaviour
         if (Instance == this)
             Instance = null;
 
-        Debug.Log($"[FriendManager] OnDestroy root='{gameObject.name}'");
+        { /* OnDestroy root='{gameObject.name}' */ }
         GameManager.OnPlayerDataSet -= _onPlayerDataSet;
     }
 
@@ -76,7 +76,7 @@ public class FriendManager : MonoBehaviour
                 existing.gameObject.SetActive(true);
 
             DontDestroyOnLoad(existing.gameObject);
-            Debug.Log($"[FriendManager] EnsureInstance resolved existing scene object '{existing.gameObject.name}' active={existing.gameObject.activeInHierarchy} scene='{existing.gameObject.scene.name}'");
+            { /* EnsureInstance resolved existing scene object '{existing.gameObject.name}' active={existing.gameObject.activeInHierarchy} scene='{existing.gameObject.scene.name}' */ }
             return Instance;
         }
 
@@ -94,7 +94,7 @@ public class FriendManager : MonoBehaviour
                 chatManager.gameObject.SetActive(true);
 
             DontDestroyOnLoad(chatManager.gameObject);
-            Debug.Log($"[FriendManager] EnsureInstance attached to existing ChatManager '{chatManager.gameObject.name}'.");
+            { /* EnsureInstance attached to existing ChatManager '{chatManager.gameObject.name}' */ }
             return Instance;
         }
 
@@ -104,13 +104,13 @@ public class FriendManager : MonoBehaviour
             var instanceGo = Instantiate(prefab);
             instanceGo.name = prefab.name;
             Instance = instanceGo.GetComponent<FriendManager>();
-            Debug.Log($"[FriendManager] EnsureInstance instantiated prefab '{ChatManagerResourcePath}' -> hasFriendManager={Instance != null}");
+            { /* EnsureInstance instantiated prefab '{ChatManagerResourcePath}' -> hasFriendManager={Instance != null} */ }
             return Instance;
         }
 
         var go = new GameObject("FriendManager [Auto]");
         Instance = go.AddComponent<FriendManager>();
-        Debug.LogWarning("[FriendManager] EnsureInstance created standalone fallback GameObject because ChatManager prefab was not found.");
+        { /* Cảnh báo: EnsureInstance created standalone fallback GameObject because ChatManager prefab was not found */ }
         return Instance;
     }
 
@@ -121,11 +121,11 @@ public class FriendManager : MonoBehaviour
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
         if (string.IsNullOrEmpty(token))
         {
-            Debug.LogWarning("[FriendManager] LoadFriends skipped because JWT_TOKEN is empty.");
+            { /* Cảnh báo: LoadFriends skipped because JWT_TOKEN is empty */ }
             return;
         }
 
-        Debug.Log("[FriendManager] LoadFriends requested.");
+        { /* LoadFriends requested */ }
         StartCoroutine(LoadFriendsRoutine(token));
     }
 
@@ -133,13 +133,13 @@ public class FriendManager : MonoBehaviour
     {
         using var req = UnityWebRequest.Get(ApiUrl("friends"));
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] GET {req.url}");
+        { /* GET {req.url} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("LoadFriends", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
             yield break;
         }
@@ -172,14 +172,14 @@ public class FriendManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"[FriendManager] LoadFriends success count={Friends.Count} accepted={accepted} pendingReceived={pendingReceived} pendingSent={pendingSent}");
+        { /* LoadFriends success count={Friends.Count} accepted={accepted} pendingReceived={pendingReceived} pendingSent={pendingSent} */ }
         OnFriendListLoaded?.Invoke(Friends);
     }
 
     public void SendFriendRequest(int targetUserId, Action onSuccess = null)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
-        Debug.Log($"[FriendManager] SendFriendRequest targetUserId={targetUserId}");
+        { /* SendFriendRequest targetUserId={targetUserId} */ }
         StartCoroutine(SendRequestRoutine(token, targetUserId, onSuccess));
     }
 
@@ -193,18 +193,18 @@ public class FriendManager : MonoBehaviour
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type",  "application/json");
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] POST {req.url} body={body}");
+        { /* POST {req.url} body={body} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("SendFriendRequest", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
         }
         else
         {
-            Debug.Log($"[FriendManager] SendFriendRequest success response={req.downloadHandler.text}");
+            { /* SendFriendRequest success response={req.downloadHandler.text} */ }
             OnRequestSent?.Invoke();
             onSuccess?.Invoke();
             LoadFriends(); // refresh
@@ -214,7 +214,7 @@ public class FriendManager : MonoBehaviour
     public void AcceptFriendRequest(int relationId, Action onSuccess = null)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
-        Debug.Log($"[FriendManager] AcceptFriendRequest relationId={relationId}");
+        { /* AcceptFriendRequest relationId={relationId} */ }
         StartCoroutine(AcceptRoutine(token, relationId, onSuccess));
     }
 
@@ -224,18 +224,18 @@ public class FriendManager : MonoBehaviour
         req.downloadHandler = new DownloadHandlerBuffer();
         req.uploadHandler   = new UploadHandlerRaw(Array.Empty<byte>());
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] PUT {req.url}");
+        { /* PUT {req.url} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("AcceptFriendRequest", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
         }
         else
         {
-            Debug.Log($"[FriendManager] AcceptFriendRequest success relationId={relationId} response={req.downloadHandler.text}");
+            { /* AcceptFriendRequest success relationId={relationId} response={req.downloadHandler.text} */ }
             onSuccess?.Invoke();
             LoadFriends();
         }
@@ -244,7 +244,7 @@ public class FriendManager : MonoBehaviour
     public void RemoveFriend(int relationId, Action onSuccess = null)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
-        Debug.Log($"[FriendManager] RemoveFriend relationId={relationId}");
+        { /* RemoveFriend relationId={relationId} */ }
         StartCoroutine(RemoveRoutine(token, relationId, onSuccess));
     }
 
@@ -253,18 +253,18 @@ public class FriendManager : MonoBehaviour
         using var req = UnityWebRequest.Delete(ApiUrl($"friends/{relationId}"));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] DELETE {req.url}");
+        { /* DELETE {req.url} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("RemoveFriend", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
         }
         else
         {
-            Debug.Log($"[FriendManager] RemoveFriend success relationId={relationId} response={req.downloadHandler.text}");
+            { /* RemoveFriend success relationId={relationId} response={req.downloadHandler.text} */ }
             onSuccess?.Invoke();
             LoadFriends();
         }
@@ -273,7 +273,7 @@ public class FriendManager : MonoBehaviour
     public void SearchUsers(string query, Action<List<UserSearchResult>> onResult)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
-        Debug.Log($"[FriendManager] SearchUsers query='{query}'");
+        { /* SearchUsers query='{query}' */ }
         StartCoroutine(SearchRoutine(token, query, onResult));
     }
 
@@ -281,13 +281,13 @@ public class FriendManager : MonoBehaviour
     {
         using var req = UnityWebRequest.Get(ApiUrl($"friends/search?q={Uri.EscapeUriString(q)}"));
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] GET {req.url}");
+        { /* GET {req.url} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("SearchUsers", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
             yield break;
         }
@@ -296,7 +296,7 @@ public class FriendManager : MonoBehaviour
         var wrapped  = WrapArray(json, "results");
         var response = JsonUtility.FromJson<UserSearchWrapper>(wrapped);
         var list     = new List<UserSearchResult>(response?.results ?? Array.Empty<UserSearchResult>());
-        Debug.Log($"[FriendManager] SearchUsers success query='{q}' resultCount={list.Count}");
+        { /* SearchUsers success query='{q}' resultCount={list.Count} */ }
         onResult?.Invoke(list);
     }
 
@@ -355,7 +355,7 @@ public class FriendManager : MonoBehaviour
     public void GetPlayerProfile(int userId, Action<PlayerProfileDto> onResult)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
-        Debug.Log($"[FriendManager] GetPlayerProfile userId={userId}");
+        { /* GetPlayerProfile userId={userId} */ }
         StartCoroutine(GetProfileRoutine(token, userId, onResult));
     }
 
@@ -363,20 +363,20 @@ public class FriendManager : MonoBehaviour
     {
         using var req = UnityWebRequest.Get(ApiUrl($"player/by-user/{userId}"));
         req.SetRequestHeader("Authorization", $"Bearer {token}");
-        Debug.Log($"[FriendManager] GET {req.url}");
+        { /* GET {req.url} */ }
         yield return req.SendWebRequest();
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             string err = BuildApiError("GetPlayerProfile", req);
-            Debug.LogWarning($"[FriendManager] {err}");
+            { /* Cảnh báo: {err} */ }
             OnError?.Invoke(err);
             onResult?.Invoke(null);
             yield break;
         }
 
         var dto = JsonUtility.FromJson<PlayerProfileDto>(req.downloadHandler.text);
-        Debug.Log($"[FriendManager] GetPlayerProfile success userId={userId} hasDto={dto != null}");
+        { /* GetPlayerProfile success userId={userId} hasDto={dto != null} */ }
         onResult?.Invoke(dto);
     }
 }

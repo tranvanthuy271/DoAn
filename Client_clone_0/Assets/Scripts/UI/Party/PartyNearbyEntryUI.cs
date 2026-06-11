@@ -26,7 +26,7 @@ public class PartyNearbyEntryUI : MonoBehaviour
         _targetUserId        = dto?.userId ?? string.Empty;
         _targetCharacterName = dto?.characterName ?? string.Empty;
 
-        Debug.Log($"{LogPrefix} Setup | userId={dto?.userId} characterName={dto?.characterName} level={dto?.level} inParty={dto?.inParty}", this);
+        { /* {LogPrefix} Setup | userId={dto?.userId} characterName={dto?.characterName} level={dto?.level} inParty={dto?.inParty} */ }
 
         if (infoText != null)
             infoText.text = $"Tên: {dto?.characterName}, Cấp: {Mathf.Max(1, dto?.level ?? 1)}, Lớp: {ResolveClass(dto)}";
@@ -46,7 +46,7 @@ public class PartyNearbyEntryUI : MonoBehaviour
                 && !isSelf
                 && !dto.inParty;
 
-            Debug.Log($"{LogPrefix} InviteVisibility | localIsLeader={localIsLeader} isSelf={isSelf} canInvite={canInvite}", this);
+            { /* {LogPrefix} InviteVisibility | localIsLeader={localIsLeader} isSelf={isSelf} canInvite={canInvite} */ }
 
             inviteButton.gameObject.SetActive(canInvite);
             inviteButton.interactable = canInvite;
@@ -62,28 +62,28 @@ public class PartyNearbyEntryUI : MonoBehaviour
 
     private void ApplyElementIcon(string elementType)
     {
-        Debug.Log($"[PartyNearbyEntryUI] ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? "NULL" : elementIcon.name)}", this);
+        { /* ApplyElementIcon | elementType='{elementType}' elementIcon={(elementIcon == null ? */ }
         if (elementIcon == null)
         {
-            Debug.LogWarning("[PartyNearbyEntryUI] elementIcon is NULL – runtime resolution failed.", this);
+            { /* Cảnh báo: elementIcon is NULL  runtime resolution failed */ }
             return;
         }
         elementIconConfig = ElementIconConfig.Resolve(elementIconConfig, this, nameof(PartyNearbyEntryUI));
         int elementId = ElementHelper.ToId(elementType);
         bool hasConfig = elementIconConfig != null;
         bool validId   = ElementHelper.IsValid(elementId);
-        Debug.Log($"[PartyNearbyEntryUI] ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId}", this);
+        { /* ApplyElementIcon | resolved elementId={elementId} hasConfig={hasConfig} validId={validId} */ }
         if (hasConfig && validId)
         {
             var sprite = elementIconConfig.GetIcon(elementId);
-            Debug.Log($"[PartyNearbyEntryUI] ApplyElementIcon | sprite={(sprite == null ? "NULL" : sprite.name)}", this);
+            { /* ApplyElementIcon | sprite={(sprite == null ? */ }
             elementIcon.sprite  = sprite;
             elementIcon.color   = sprite != null ? Color.white : elementIconConfig.GetColor(elementId);
             elementIcon.enabled = true;
         }
         else
         {
-            Debug.LogWarning($"[PartyNearbyEntryUI] ApplyElementIcon | SKIPPED – hasConfig={hasConfig} validId={validId} elementType='{elementType}'", this);
+            { /* Cảnh báo: ApplyElementIcon | SKIPPED  hasConfig={hasConfig} validId={validId} elementType='{elementType}' */ }
             elementIcon.enabled = false;
         }
     }
@@ -92,11 +92,11 @@ public class PartyNearbyEntryUI : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(_targetUserId))
         {
-            Debug.LogWarning($"{LogPrefix} Invite ignored because targetUserId is empty.", this);
+            { /* Cảnh báo: {LogPrefix} Invite ignored because targetUserId is empty */ }
             return;
         }
 
-        Debug.Log($"{LogPrefix} Invite clicked | userId={_targetUserId} characterName={_targetCharacterName}", this);
+        { /* {LogPrefix} Invite clicked | userId={_targetUserId} characterName={_targetCharacterName} */ }
 
         PartyManager.EnsureInstance()?.InviteMember(_targetUserId);
     }

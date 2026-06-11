@@ -16,31 +16,31 @@ public class ItemTemplateManagerBootstrap : MonoBehaviour
         // 1. Kiểm tra và tạo APIClient nếu chưa có (QUAN TRỌNG!)
         if (APIClient.Instance == null)
         {
-            Debug.Log("[ItemTemplateManagerBootstrap] APIClient chưa có, đang tạo...");
+            { /* APIClient chưa có, đang tạo */ }
             
             GameObject apiClientObj = new GameObject("APIClient");
             apiClientObj.AddComponent<APIClient>();
             
-            Debug.Log("[ItemTemplateManagerBootstrap] ✅ Đã tạo APIClient");
+            { /* Đã tạo APIClient */ }
         }
         else
         {
-            Debug.Log("[ItemTemplateManagerBootstrap] APIClient đã tồn tại");
+            { /* APIClient đã tồn tại */ }
         }
 
         // 2. Kiểm tra và tạo ItemTemplateManager nếu chưa có
         if (ItemTemplateManager.Instance == null)
         {
-            Debug.Log("[ItemTemplateManagerBootstrap] ItemTemplateManager chưa có, đang tạo...");
+            { /* ItemTemplateManager chưa có, đang tạo */ }
             
             GameObject obj = new GameObject("ItemTemplateManager");
             obj.AddComponent<ItemTemplateManager>();
             
-            Debug.Log("[ItemTemplateManagerBootstrap] ✅ Đã tạo ItemTemplateManager");
+            { /* Đã tạo ItemTemplateManager */ }
         }
         else
         {
-            Debug.Log("[ItemTemplateManagerBootstrap] ItemTemplateManager đã tồn tại");
+            { /* ItemTemplateManager đã tồn tại */ }
         }
     }
 }

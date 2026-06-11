@@ -28,14 +28,14 @@ namespace GameServerApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetAllItemTemplates()
         {
-            Console.WriteLine($"[ItemController] 📥 GET /api/item/templates - Request received");
+            { /* GET /api/item/templates - Request received */ }
             try
             {
                 var itemTemplates = await _db.ItemTemplates
                     .OrderBy(i => i.Id)
                     .ToListAsync();
 
-                Console.WriteLine($"[ItemController] 📊 Found {itemTemplates.Count} item templates in database");
+                { /* Found {itemTemplates.Count} item templates in database */ }
 
                 // Convert sang format phù hợp cho Unity (DB v3.0 – LangLa schema)
                 var response = itemTemplates.Select(item => new
@@ -54,15 +54,15 @@ namespace GameServerApi.Controllers
                     sellPrice   = item.SellPrice
                 }).ToList();
 
-                Console.WriteLine($"[ItemController] ✅ Returning {response.Count} item templates");
+                { /* Returning {response.Count} item templates */ }
                 
                 // Log first 5 items for debugging
                 int logCount = Math.Min(5, response.Count);
-                Console.WriteLine($"[ItemController] 📋 Sample items (first {logCount}):");
+                { /* Sample items (first {logCount}) */ }
                 for (int i = 0; i < logCount; i++)
                 {
                     var item = response[i];
-                    Console.WriteLine($"  [{i+1}] ID={item.id}, Name='{item.name}', type={item.type}, idIcon={item.idIcon}");
+                    { /* ID={item.id}, Name='{item.name}', type={item.type}, idIcon={item.idIcon} */ }
                 }
 
                 return Ok(new
@@ -73,8 +73,8 @@ namespace GameServerApi.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ItemController] ❌ Error in GetAllItemTemplates: {ex.Message}");
-                Console.WriteLine($"[ItemController] Stack trace: {ex.StackTrace}");
+                { /* Error in GetAllItemTemplates: {ex.Message} */ }
+                { /* Stack trace: {ex.StackTrace} */ }
                 return BadRequest(new
                 {
                     error = "Lỗi khi lấy item templates",

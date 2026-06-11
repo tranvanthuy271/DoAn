@@ -25,7 +25,7 @@ namespace GameServerApi.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+                { /* Lỗi: Unhandled exception on {Method} {Path} */ }
                 await WriteErrorResponseAsync(context, ex);
             }
         }

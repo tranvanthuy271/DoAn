@@ -23,21 +23,21 @@ public class ItemSpawner : MonoBehaviour
     {
         if (itemPickupPrefab == null)
         {
-            Debug.LogError("[ItemSpawner] ItemPickupPrefab chưa được gán!");
+            { /* Lỗi: ItemPickupPrefab chưa được gán */ }
             return;
         }
 
         ItemData itemData = GetItemData(itemID);
         if (itemData == null)
         {
-            Debug.LogError($"[ItemSpawner] ItemID {itemID} không tồn tại!");
+            { /* Lỗi: ItemID {itemID} không tồn tại */ }
             return;
         }
 
         // Chỉ server mới spawn được
         if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
         {
-            Debug.LogWarning("[ItemSpawner] Chỉ server mới spawn được item!");
+            { /* Cảnh báo: Chỉ server mới spawn được item */ }
             return;
         }
 
@@ -57,7 +57,7 @@ public class ItemSpawner : MonoBehaviour
             itemPickup.SetItemData(itemData, quantity);
         }
 
-        Debug.Log($"[ItemSpawner] Spawned {quantity}x {itemData.itemName} at {position}");
+        { /* Spawned {quantity}x {itemData.itemName} at {position} */ }
     }
 
     // Spawn item với ItemData

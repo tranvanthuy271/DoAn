@@ -26,7 +26,7 @@ namespace ParrelSync
                 projectSettings = AssetDatabase.LoadAssetAtPath<ParrelSyncProjectSettings>(ParrelSyncSettingsPath);
 
                 if (projectSettings == null)
-                    Debug.LogError("File Exists, but failed to load: " + ParrelSyncSettingsPath);
+                    { /* Lỗi: File Exists, but failed to load */ }
 
                 return projectSettings;
             }
@@ -102,7 +102,7 @@ namespace ParrelSync
                     }
                     else if (result != "")
                     {
-                        Debug.LogWarning("Symbolic Link folder must be within the project directory");
+                        { /* Cảnh báo: Symbolic Link folder must be within the project directory */ }
                     }
                 }
                 if (GUILayout.Button("Clear", GUILayout.Width(60)))

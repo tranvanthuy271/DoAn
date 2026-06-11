@@ -56,7 +56,7 @@ public class ZoneConnectionHandler : MonoBehaviour
     {
         if (_isTransferring)
         {
-            Debug.LogWarning("[ZoneConnectionHandler] Đang trong quá trình transfer — bỏ qua lệnh connect.");
+            { /* Cảnh báo: Đang trong quá trình transfer  bỏ qua lệnh connect */ }
             return;
         }
         StartCoroutine(ConnectRoutine(ip, port, jwt, entryPointId, sceneName: null));
@@ -69,11 +69,11 @@ public class ZoneConnectionHandler : MonoBehaviour
     {
         if (_isTransferring)
         {
-            Debug.LogWarning("[ZoneConnectionHandler] Zone transfer đang xử lý, bỏ lệnh transfer mới.");
+            { /* Cảnh báo: Zone transfer đang xử lý, bỏ lệnh transfer mới */ }
             return;
         }
 
-        Debug.Log($"[ZoneConnectionHandler] Bắt đầu transfer → {newIp}:{newPort} scene={targetSceneName}");
+        { /* Bắt đầu transfer → {newIp}:{newPort} scene={targetSceneName} */ }
         StartCoroutine(TransferRoutine(newIp, newPort, entryPointId, targetSceneName));
     }
 
@@ -109,7 +109,7 @@ public class ZoneConnectionHandler : MonoBehaviour
         string jwt = UnityEngine.PlayerPrefs.GetString("JWT_TOKEN", "");
         if (string.IsNullOrEmpty(jwt))
         {
-            Debug.LogError("[ZoneConnectionHandler] JWT_TOKEN rỗng — không thể kết nối zone mới!");
+            { /* Lỗi: JWT_TOKEN rỗng  không thể kết nối zone mới */ }
             _isTransferring = false;
             ZoneTransitionUI.Instance?.Hide();
             // TODO: chuyển về màn login
@@ -128,7 +128,7 @@ public class ZoneConnectionHandler : MonoBehaviour
         var transport = NetworkManager.Singleton?.GetComponent<UnityTransport>();
         if (transport == null)
         {
-            Debug.LogError("[ZoneConnectionHandler] UnityTransport không tìm thấy!");
+            { /* Lỗi: UnityTransport không tìm thấy */ }
             _isTransferring = false;
             yield break;
         }
@@ -154,7 +154,7 @@ public class ZoneConnectionHandler : MonoBehaviour
         bool started = NetworkManager.Singleton.StartClient();
         if (!started)
         {
-            Debug.LogError($"[ZoneConnectionHandler] StartClient() thất bại ({ip}:{port}).");
+            { /* Lỗi: StartClient() thất bại ({ip}:{port}) */ }
             NetworkManager.Singleton.OnClientConnectedCallback    -= OnConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback   -= OnDisconnected;
             _isTransferring = false;
@@ -181,12 +181,12 @@ public class ZoneConnectionHandler : MonoBehaviour
 
         if (failed)
         {
-            Debug.LogError($"[ZoneConnectionHandler] Kết nối tới {ip}:{port} thất bại/timeout.");
+            { /* Lỗi: Kết nối tới {ip}:{port} thất bại/timeout */ }
             // TODO: hiện thông báo lỗi, retry hoặc về main menu
         }
         else
         {
-            Debug.Log($"[ZoneConnectionHandler] ✓ Kết nối thành công → {ip}:{port}");
+            { /* ✓ Kết nối thành công → {ip}:{port} */ }
         }
 
         _isTransferring = false;

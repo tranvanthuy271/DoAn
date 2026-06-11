@@ -39,12 +39,12 @@ public class PlayerAnimatorTester : MonoBehaviour
         if (!enableTester) return;
 
         if (playerAnimator == null)
-            Debug.LogWarning("[PlayerAnimatorTester] Không tìm thấy PlayerAnimator trên GameObject này!");
+            { /* Cảnh báo: Không tìm thấy PlayerAnimator trên GameObject này */ }
 
         if (animator == null)
-            Debug.LogWarning("[PlayerAnimatorTester] Không tìm thấy Animator trên GameObject này!");
+            { /* Cảnh báo: Không tìm thấy Animator trên GameObject này */ }
 
-        Debug.Log("[PlayerAnimatorTester] Đang chạy. Xem header của script để biết phím tắt.");
+        { /* Đang chạy. Xem header của script để biết phím tắt */ }
     }
 
     private void Update()
@@ -117,14 +117,14 @@ public class PlayerAnimatorTester : MonoBehaviour
         {
             isJumping  = true;
             jumpTimer  = 0.5f;   // tổng thời gian bay lên + rơi xuống (giây)
-            Debug.Log("[PlayerAnimatorTester] Jump!");
+            { /* Jump */ }
         }
 
         // Tấn công (N)
         if (Input.GetKeyDown(KeyCode.N))
         {
             playerAnimator.TriggerAttack();
-            Debug.Log("[PlayerAnimatorTester] Attack triggered!");
+            { /* Attack triggered */ }
         }
 
         // Die (K)
@@ -134,7 +134,7 @@ public class PlayerAnimatorTester : MonoBehaviour
             simulatedSpeed      = 0f;
             simulatedVelocityY  = 0f;
             simulatedIsGrounded = true;
-            Debug.Log("[PlayerAnimatorTester] Die!");
+            { /* Die */ }
         }
 
         // Reset (R)
@@ -146,7 +146,7 @@ public class PlayerAnimatorTester : MonoBehaviour
             simulatedIsGrounded = true;
             simulatedIsFlying   = false;
             isJumping           = false;
-            Debug.Log("[PlayerAnimatorTester] Reset → Idle");
+            { /* Reset → Idle */ }
         }
 
         // In trạng thái hiện tại ra Console (Space)
@@ -155,9 +155,7 @@ public class PlayerAnimatorTester : MonoBehaviour
             if (animator != null)
             {
                 var info = animator.GetCurrentAnimatorStateInfo(0);
-                Debug.Log($"[PlayerAnimatorTester] Current state hash={info.shortNameHash} | " +
-                          $"Speed={simulatedSpeed} VelocityY={simulatedVelocityY} " +
-                          $"IsGrounded={simulatedIsGrounded} IsFlying={simulatedIsFlying}");
+                { /* Current state hash={info.shortNameHash} | */ }
             }
         }
     }

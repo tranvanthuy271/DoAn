@@ -56,7 +56,7 @@ public class ZoneRoomRegistry : MonoBehaviour
 
             if (!mapDef.UsesPublicZones(config))
             {
-                Debug.Log($"[ZoneRoomRegistry] Map {mapDef.mapId} ({mapDef.mapName}) không auto-create public zones.");
+                { /* Map {mapDef.mapId} ({mapDef.mapName}) không auto-create public zones */ }
                 continue;
             }
 
@@ -65,12 +65,11 @@ public class ZoneRoomRegistry : MonoBehaviour
             {
                 var room = new ZoneRoom(mapDef, mapDef.CreatePublicZone(config, zoneId));
                 zoneDict[zoneId] = room;
-                Debug.Log($"[ZoneRoomRegistry] Loaded {room}");
+                { /* Loaded {room} */ }
             }
         }
 
-        Debug.Log($"[ZoneRoomRegistry] ✓ Initialized {_rooms.Count} maps, " +
-                  $"{TotalRoomCount} total rooms.");
+        { /* ✓ Initialized {_rooms.Count} maps */ }
     }
 
     // Room lookup
@@ -98,7 +97,7 @@ public class ZoneRoomRegistry : MonoBehaviour
         if (!zones.ContainsKey(room.ZoneId))
         {
             zones[room.ZoneId] = room;
-            Debug.Log($"[ZoneRoomRegistry] Re-registered custom room {room.ZoneKey} for active wave session.");
+            { /* Re-registered custom room {room.ZoneKey} for active wave session */ }
         }
 
         if (room.IsCustom)
@@ -120,13 +119,13 @@ public class ZoneRoomRegistry : MonoBehaviour
         var mapDef = Config?.GetMap(mapId);
         if (mapDef == null)
         {
-            Debug.LogWarning($"[ZoneRoomRegistry] Không thể khôi phục custom room: map {mapId} không tồn tại.");
+            { /* Cảnh báo: Không thể khôi phục custom room: map {mapId} không tồn tại */ }
             return null;
         }
 
         if (!mapDef.SupportsCustomZones)
         {
-            Debug.LogWarning($"[ZoneRoomRegistry] Map {mapId} không hỗ trợ custom room để restore zone {zoneId}.");
+            { /* Cảnh báo: Map {mapId} không hỗ trợ custom room để restore zone {zoneId} */ }
             return null;
         }
 
@@ -143,7 +142,7 @@ public class ZoneRoomRegistry : MonoBehaviour
         if (!_nextCustomZoneIdByMap.TryGetValue(mapId, out int nextZoneId) || zoneId <= nextZoneId)
             _nextCustomZoneIdByMap[mapId] = zoneId - 1;
 
-        Debug.Log($"[ZoneRoomRegistry] Recreated custom room {room.ZoneKey} from preserved wave session.");
+        { /* Recreated custom room {room.ZoneKey} from preserved wave session */ }
         return room;
     }
 
@@ -156,7 +155,7 @@ public class ZoneRoomRegistry : MonoBehaviour
         _preservedEmptyCustomRooms[room.ZoneKey] = room;
 
         string suffix = string.IsNullOrWhiteSpace(reason) ? string.Empty : $" | reason={reason}";
-        Debug.Log($"[ZoneRoomRegistry] Preserving custom room {room.ZoneKey}{suffix}");
+        { /* Preserving custom room {room.ZoneKey}{suffix} */ }
     }
 
     public void ReleasePreservedRoom(int mapId, int zoneId)
@@ -171,7 +170,7 @@ public class ZoneRoomRegistry : MonoBehaviour
             room.PlayerCount <= 0)
         {
             zones.Remove(zoneId);
-            Debug.Log($"[ZoneRoomRegistry] Released preserved empty custom room {zoneKey}");
+            { /* Released preserved empty custom room {zoneKey} */ }
         }
     }
 
@@ -255,13 +254,13 @@ public class ZoneRoomRegistry : MonoBehaviour
         var mapDef = Config?.GetMap(mapId);
         if (mapDef == null)
         {
-            Debug.LogWarning($"[ZoneRoomRegistry] Không tạo được custom room: map {mapId} không tồn tại.");
+            { /* Cảnh báo: Không tạo được custom room: map {mapId} không tồn tại */ }
             return null;
         }
 
         if (!mapDef.SupportsCustomZones)
         {
-            Debug.LogWarning($"[ZoneRoomRegistry] Map {mapId} không cho phép custom/private zones.");
+            { /* Cảnh báo: Map {mapId} không cho phép custom/private zones */ }
             return null;
         }
 
@@ -277,7 +276,7 @@ public class ZoneRoomRegistry : MonoBehaviour
 
         var room = new ZoneRoom(mapDef, mapDef.CreateCustomZone(Config, zoneId, customRoomName, maxPlayersOverride));
         zones[zoneId] = room;
-        Debug.Log($"[ZoneRoomRegistry] Created {room}");
+        { /* Created {room} */ }
         return room;
     }
 
@@ -322,23 +321,20 @@ public class ZoneRoomRegistry : MonoBehaviour
     {
         if (room == null || !room.IsCustom || room.PlayerCount > 0)
         {
-            Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] Skip: room={room?.ZoneKey ?? "null"} IsCustom={room?.IsCustom} PlayerCount={room?.PlayerCount}");
+            { /* [3-Cleanup] Skip: room={room?.ZoneKey ?? */ }
             return;
         }
 
         bool isPreserved     = _preservedEmptyCustomRooms.ContainsKey(room.ZoneKey);
         bool hasActiveSession = WaveSessionManager.Instance != null && WaveSessionManager.Instance.HasActiveSessionRoom(room);
 
-        Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] room={room.ZoneKey} isEmpty=true " +
-                  $"isPreservedInDict={isPreserved} " +
-                  $"hasActiveSessionRoom={hasActiveSession} " +
-                  $"WaveSessionManager.Instance={(WaveSessionManager.Instance != null ? "OK" : "NULL!")}");
+        { /* [3-Cleanup] room={room.ZoneKey} isEmpty=true */ }
 
         if (isPreserved || hasActiveSession)
         {
             MarkRoomPreserved(room, "active wave session");
-            Debug.Log($"[RECONNECT-DEBUG][3-Cleanup] PRESERVED room {room.ZoneKey} → room giữ lại, reconnect sẽ thấy room này.");
-            Debug.Log($"[ZoneRoomRegistry] Preserve empty custom room {room.ZoneKey} vì vẫn còn active wave session.");
+            { /* [3-Cleanup] PRESERVED room {room.ZoneKey} → room giữ lại, reconnect sẽ thấy room này */ }
+            { /* Preserve empty custom room {room.ZoneKey} vì vẫn còn active wave session */ }
             return;
         }
 
@@ -346,8 +342,8 @@ public class ZoneRoomRegistry : MonoBehaviour
 
         if (_rooms.TryGetValue(room.MapId, out var zones) && zones.Remove(room.ZoneId))
         {
-            Debug.LogWarning($"[RECONNECT-DEBUG][3-Cleanup] REMOVED room {room.ZoneKey} → reconnect vào room này sẽ THẤT BẠI, sẽ tạo zone mới!");
-            Debug.Log($"[ZoneRoomRegistry] Removed empty custom room {room.ZoneKey}");
+            { /* Cảnh báo: [3-Cleanup] REMOVED room {room.ZoneKey} → reconnect vào room này sẽ THẤT BẠI, sẽ tạo zone mới */ }
+            { /* Removed empty custom room {room.ZoneKey} */ }
         }
     }
 
@@ -379,6 +375,6 @@ public class ZoneRoomRegistry : MonoBehaviour
     {
         foreach (var zones in _rooms.Values)
             foreach (var room in zones.Values)
-                Debug.Log($"[ZoneRoomRegistry] Status: {room}");
+                { /* Status: {room} */ }
     }
 }

@@ -476,7 +476,7 @@ public class APIClient : MonoBehaviour
             byte[] payloadBytes = System.Convert.FromBase64String(payload);
             string payloadJson = System.Text.Encoding.UTF8.GetString(payloadBytes);
             
-            Debug.Log($"JWT Payload: {payloadJson}");
+            { /* JWT Payload: {payloadJson} */ }
             
             // Parse JSON ─æß╗â lß║Ñy user_id
             // JWT payload c├│ thß╗â c├│: {"sub":"1","unique_name":"1","user_id":"1",...}
@@ -522,7 +522,7 @@ public class APIClient : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"Error parsing JWT token: {ex.Message}");
+            { /* Lỗi: Error parsing JWT token: {ex.Message} */ }
         }
         
         return 0;
@@ -556,7 +556,7 @@ public class APIClient : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string responseText = www.downloadHandler.text;
-                Debug.Log($"Login API Response: {responseText}");
+                { /* Login API Response: {responseText} */ }
                 
                 LoginResponse response = new LoginResponse();
                 
@@ -569,7 +569,7 @@ public class APIClient : MonoBehaviour
                     // Nß║â”u user_id = 0, parse thß╗Âº c├┤ng tß╗Â½ JSON string
                     if (response.user_id == 0)
                     {
-                        Debug.LogWarning("user_id = 0 from JsonUtility, trying manual parse...");
+                        { /* Cảnh báo: user_id = 0 from JsonUtility, trying manual parse */ }
                         
                         // Parse thß╗Âº c├┤ng: t├Â¼m "user_id":X trong JSON
                         if (responseText.Contains("\"user_id\""))
@@ -586,7 +586,7 @@ public class APIClient : MonoBehaviour
                                 string userIdStr = responseText.Substring(startIndex, endIndex - startIndex).Trim().Trim(':').Trim();
                                 if (int.TryParse(userIdStr, out int userId))
                                 {
-                                    Debug.Log($"Parsed user_id manually: {userId}");
+                                    { /* Parsed user_id manually: {userId} */ }
                                     response.user_id = userId;
                                 }
                             }
@@ -599,17 +599,17 @@ public class APIClient : MonoBehaviour
                         int userIdFromToken = ParseUserIdFromJWT(response.token);
                         if (userIdFromToken > 0)
                         {
-                            Debug.Log($"Got user_id from JWT token: {userIdFromToken}");
+                            { /* Got user_id from JWT token: {userIdFromToken} */ }
                             response.user_id = userIdFromToken;
                         }
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"Error parsing login response: {ex.Message}");
+                    { /* Lỗi: Error parsing login response: {ex.Message} */ }
                 }
                 
-                Debug.Log($"Final LoginResponse - user_id: {response.user_id}, username: {response.username}, token length: {response.token?.Length ?? 0}");
+                { /* Final LoginResponse - user_id: {response.user_id}, username: {response.username}, token length: {response.token?.Length ?? 0} */ }
                 
                 SetToken(response.token);
                 onSuccess?.Invoke(response);

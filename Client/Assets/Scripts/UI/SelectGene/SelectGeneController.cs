@@ -152,7 +152,7 @@ public class SelectGeneController : MonoBehaviour
     {
         PlayerPrefs.SetInt(KeyActiveGeneSlot, slot);
         PlayerPrefs.Save();
-        Debug.Log("==== [GENE2_DEBUG] SelectGene: OnSlotPlayClicked slot=" + slot + " saved ACTIVE_GENE_SLOT");
+        { /* ==== [GENE2_DEBUG] SelectGene: OnSlotPlayClicked slot= */ }
 
         if (slot == 1)
         {
@@ -259,7 +259,7 @@ public class SelectGeneController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[SelectGeneController] {msg}");
+            { /* Cảnh báo: {msg} */ }
         }
     }
 

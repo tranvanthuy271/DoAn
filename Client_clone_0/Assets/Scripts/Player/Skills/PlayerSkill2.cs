@@ -84,7 +84,7 @@ public class PlayerSkill2 : NetworkBehaviour
 
         if (skillEffectObject == null)
         {
-            Debug.LogWarning("[PlayerSkill2] Không tìm thấy SkillEffect object!");
+            { /* Cảnh báo: Không tìm thấy SkillEffect object */ }
             return;
         }
 
@@ -92,11 +92,11 @@ public class PlayerSkill2 : NetworkBehaviour
         skillEffectAnimator = skillEffectObject.GetComponent<Animator>();
         if (skillEffectAnimator == null)
         {
-            Debug.LogWarning("[PlayerSkill2] SkillEffect object không có Animator component!");
+            { /* Cảnh báo: SkillEffect object không có Animator component */ }
         }
         else if (skillEffectAnimator.runtimeAnimatorController == null)
         {
-            Debug.LogError("[PlayerSkill2] SkillEffect Animator KHÔNG CÓ Controller được gán!");
+            { /* Lỗi: SkillEffect Animator KHÔNG CÓ Controller được gán */ }
         }
 
         // Tìm NetworkAnimator (nếu có) - cần disable khi SkillEffect inactive để tránh lỗi
@@ -209,7 +209,7 @@ public class PlayerSkill2 : NetworkBehaviour
         // Validate SkillEffect
         if (skillEffectObject == null)
         {
-            Debug.LogError("[PlayerSkill2] SkillEffect object là NULL!");
+            { /* Lỗi: SkillEffect object là NULL */ }
             isUsingSkill2 = false;
             return;
         }
@@ -232,7 +232,7 @@ public class PlayerSkill2 : NetworkBehaviour
             skillEffectAnimator = skillEffectObject.GetComponent<Animator>();
             if (skillEffectAnimator == null)
             {
-                Debug.LogError("[PlayerSkill2] Không tìm thấy Animator component trên SkillEffect object!");
+                { /* Lỗi: Không tìm thấy Animator component trên SkillEffect object */ }
                 isUsingSkill2 = false;
                 return;
             }
@@ -300,14 +300,14 @@ public class PlayerSkill2 : NetworkBehaviour
         {
             if (skillEffectAnimator == null)
             {
-                Debug.LogError("[PlayerSkill2] skillEffectAnimator là NULL!");
+                { /* Lỗi: skillEffectAnimator là NULL */ }
             }
             return;
         }
 
         if (skillEffectAnimator.runtimeAnimatorController == null)
         {
-            Debug.LogError("[PlayerSkill2] SkillEffect Animator KHÔNG CÓ Controller!");
+            { /* Lỗi: SkillEffect Animator KHÔNG CÓ Controller */ }
             return;
         }
 
@@ -324,7 +324,7 @@ public class PlayerSkill2 : NetworkBehaviour
 
         if (!hasParameter)
         {
-            Debug.LogError($"[PlayerSkill2] Parameter '{triggerToUse}' KHÔNG TỒN TẠI trong Animator Controller!");
+            { /* Lỗi: Parameter '{triggerToUse}' KHÔNG TỒN TẠI trong Animator Controller */ }
             return;
         }
 
@@ -341,7 +341,7 @@ public class PlayerSkill2 : NetworkBehaviour
     {
         if (projectilePrefab == null)
         {
-            Debug.LogWarning("[PlayerSkill2] Projectile prefab chưa được gán!");
+            { /* Cảnh báo: Projectile prefab chưa được gán */ }
             return;
         }
 
@@ -376,7 +376,7 @@ public class PlayerSkill2 : NetworkBehaviour
             // Kiểm tra controller đã được gán chưa
             if (projectileAnimator.runtimeAnimatorController == null)
             {
-                Debug.LogWarning("[PlayerSkill2] Projectile có Animator nhưng chưa có Controller được gán! Vui lòng gán SkillEffect.controller vào Animator component của Projectile Prefab.");
+                { /* Cảnh báo: Projectile có Animator nhưng chưa có Controller được gán! Vui lòng gán SkillEffect.controller vào Animator component của Projectile Prefab */ }
             }
             else
             {
@@ -399,7 +399,7 @@ public class PlayerSkill2 : NetworkBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"[PlayerSkill2] Projectile có Animator và Controller nhưng không có parameter '{skill2TriggerName}' (Trigger)! Kiểm tra lại Animator Controller.");
+                    { /* Cảnh báo: Projectile có Animator và Controller nhưng không có parameter '{skill2TriggerName}' (Trigger)! Kiểm tra lại Animator Controller */ }
                 }
             }
         }
@@ -447,7 +447,7 @@ public class PlayerSkill2 : NetworkBehaviour
         {
             // Nếu không có Rigidbody2D, thêm vào
             projectileRb = projectile.AddComponent<Rigidbody2D>();
-            Debug.LogWarning("[PlayerSkill2] Projectile không có Rigidbody2D, đã tự động thêm vào. Vui lòng cấu hình Rigidbody2D trong Prefab!");
+            { /* Cảnh báo: Projectile không có Rigidbody2D, đã tự động thêm vào. Vui lòng cấu hình Rigidbody2D trong Prefab */ }
         }
         
         if (projectileRb != null)
@@ -456,14 +456,14 @@ public class PlayerSkill2 : NetworkBehaviour
             if (projectileRb.constraints.HasFlag(RigidbodyConstraints2D.FreezePositionX))
             {
                 projectileRb.constraints &= ~RigidbodyConstraints2D.FreezePositionX;
-                Debug.LogWarning("[PlayerSkill2] Rigidbody2D của projectile bị freeze position X, đã tự động bỏ freeze!");
+                { /* Cảnh báo: Rigidbody2D của projectile bị freeze position X, đã tự động bỏ freeze */ }
             }
             
             // Đảm bảo Rigidbody2D là Kinematic hoặc Dynamic (không phải Static)
             if (projectileRb.bodyType == RigidbodyType2D.Static)
             {
                 projectileRb.bodyType = RigidbodyType2D.Dynamic;
-                Debug.LogWarning("[PlayerSkill2] Rigidbody2D của projectile là Static, đã đổi sang Dynamic!");
+                { /* Cảnh báo: Rigidbody2D của projectile là Static, đã đổi sang Dynamic */ }
             }
             
             // Set gravity scale = 0 để projectile bay ngang (không rơi)
@@ -496,7 +496,7 @@ public class PlayerSkill2 : NetworkBehaviour
             }
             else
             {
-                Debug.LogError("[PlayerSkill2] Không thể setup movement cho projectile! Thiếu cả ProjectileMovement và Rigidbody2D!");
+                { /* Lỗi: Không thể setup movement cho projectile! Thiếu cả ProjectileMovement và Rigidbody2D */ }
             }
 
             // Tự động hủy projectile sau một khoảng thời gian (nếu có set lifetime)
@@ -539,7 +539,7 @@ public class PlayerSkill2 : NetworkBehaviour
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"[PlayerSkill2] Không thể reset animation: {e.Message}");
+                { /* Cảnh báo: Không thể reset animation: {e.Message} */ }
             }
         }
 
@@ -576,16 +576,16 @@ public class PlayerSkill2 : NetworkBehaviour
             try
             {
                 animator.SetTrigger(triggerName);
-                Debug.Log($"[PlayerSkill2] Đã trigger animation '{triggerName}' trên projectile!");
+                { /* Đã trigger animation '{triggerName}' trên projectile */ }
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[PlayerSkill2] Lỗi khi trigger animation trên projectile: {e.Message}");
+                { /* Lỗi: Lỗi khi trigger animation trên projectile: {e.Message} */ }
             }
         }
         else
         {
-            Debug.LogWarning("[PlayerSkill2] Không thể trigger animation trên projectile: Animator không hợp lệ!");
+            { /* Cảnh báo: Không thể trigger animation trên projectile: Animator không hợp lệ */ }
         }
     }
 

@@ -24,7 +24,7 @@ public class GameSceneClientInitializer : MonoBehaviour
     {
         if (FindObjectOfType<GameSceneNetworkInitializer>() != null)
         {
-            Debug.Log("[GameSceneClientInitializer] GameSceneNetworkInitializer đã tồn tại — tắt initializer cũ để tránh double-connect.");
+            { /* GameSceneNetworkInitializer đã tồn tại  tắt initializer cũ để tránh double-connect */ }
             enabled = false;
         }
     }

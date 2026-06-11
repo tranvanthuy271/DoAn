@@ -61,7 +61,7 @@ public class FusionCoreDebugAdder : MonoBehaviour
         if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
         {
             SetStatus("✅ +10 Lõi Đột Biến đã thêm vào túi!", Color.green);
-            Debug.Log($"[FusionCoreDebugAdder] {req.downloadHandler.text}");
+            { /* {req.downloadHandler.text} */ }
         }
         else
         {

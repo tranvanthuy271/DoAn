@@ -64,12 +64,11 @@ public class ZoneTransitionTrigger : MonoBehaviour
         var transController = FindAnyObjectByType<ZoneTransitionController>();
         if (transController == null)
         {
-            Debug.LogWarning("[ZoneTransitionTrigger] Không tìm thấy ZoneTransitionController trong scene!");
+            { /* Cảnh báo: Không tìm thấy ZoneTransitionController trong scene */ }
             return;
         }
 
-        Debug.Log($"[ZoneTransitionTrigger] '{transitionLabel}' → " +
-                  $"map={targetMapId} zone={targetZoneId} entry={entryPointId}");
+        { /* '{transitionLabel}' → */ }
 
         transController.RequestZoneTransferServerRpc(targetMapId, targetZoneId, entryPointId);
     }

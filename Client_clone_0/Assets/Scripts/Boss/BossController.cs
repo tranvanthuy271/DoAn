@@ -89,7 +89,7 @@ public class BossController : MonoBehaviour
     {
         if (data == null)
         {
-            Debug.LogError("[BossController] BossData chưa được gán!", this);
+            { /* Lỗi: BossData chưa được gán */ }
             enabled = false;
             return;
         }
@@ -304,7 +304,7 @@ public class BossController : MonoBehaviour
         Vector2 attackCenter = transform.position + Vector3.right * (_facingRight ? data.normalAttack.range : -data.normalAttack.range);
         Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, attackCenter, data.normalAttack.range, mask.value);
 
-        Debug.Log($"[BossController] NormalAttack hits={hits.Length} center={attackCenter} range={data.normalAttack.range}");
+        { /* NormalAttack hits={hits.Length} center={attackCenter} range={data.normalAttack.range} */ }
 
         foreach (var hit in hits)
         {
@@ -338,7 +338,7 @@ public class BossController : MonoBehaviour
 
         if (prefab == null)
         {
-            Debug.LogWarning("[BossController] Fireball prefab chưa được gán!");
+            { /* Cảnh báo: Fireball prefab chưa được gán */ }
             SetAttackAnim(false);
             _state = BossState.Chase;
             yield break;
@@ -387,7 +387,7 @@ public class BossController : MonoBehaviour
 
         if (prefab == null)
         {
-            Debug.LogWarning("[BossController] Lightning prefab chưa được gán!");
+            { /* Cảnh báo: Lightning prefab chưa được gán */ }
             SetAttackAnim(false);
             _state = BossState.Chase;
             yield break;

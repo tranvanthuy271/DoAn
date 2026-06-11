@@ -25,7 +25,7 @@ public static class SkillPrefabCreator
         CreateSkillDetailPanelPrefab();
 
         AssetDatabase.Refresh();
-        Debug.Log("[SkillPrefabCreator] ✓ Tạo xong SkillRowPrefab + SkillDetailPanel tại " + PREFAB_DIR);
+        { /* ✓ Tạo xong SkillRowPrefab + SkillDetailPanel tại */ }
     }
 
     // SKILL ROW PREFAB
@@ -391,9 +391,9 @@ public static class SkillPrefabCreator
         string path = $"{PREFAB_DIR}/{prefabName}.prefab";
         var saved = PrefabUtility.SaveAsPrefabAsset(go, path);
         if (saved != null)
-            Debug.Log($"[SkillPrefabCreator] ✓ Đã lưu: {path}");
+            { /* ✓ Đã lưu: {path} */ }
         else
-            Debug.LogError($"[SkillPrefabCreator] ✗ Lưu thất bại: {path}");
+            { /* Lỗi: ✗ Lưu thất bại: {path} */ }
     }
 }
 #endif

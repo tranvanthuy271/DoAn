@@ -82,12 +82,12 @@ public class EnemyItemDrop : MonoBehaviour
     {
         if (dropItems == null || dropItems.Count == 0)
         {
-            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: DropItems() — dropItems rỗng! Kiểm tra SetDropsFromConfig hoặc Inspector.");
+            { /* Cảnh báo: {gameObject.name}: DropItems()  dropItems rỗng! Kiểm tra SetDropsFromConfig hoặc Inspector */ }
             return;
         }
         if (itemPickupPrefab == null)
         {
-            Debug.LogWarning("[EnemyItemDrop] ItemPickupPrefab chưa được gán!");
+            { /* Cảnh báo: ItemPickupPrefab chưa được gán */ }
             return;
         }
 
@@ -101,7 +101,7 @@ public class EnemyItemDrop : MonoBehaviour
             // Random theo drop rate (dropRate đã là 0–100)
             float roll = Random.Range(0f, 100f);
             bool passed = roll <= dropItem.dropRate;
-            Debug.Log($"[EnemyItemDrop] item_id={dropItem.itemId} rate={dropItem.dropRate:F1}% roll={roll:F1} → {(passed ? "DROP" : "miss")}");
+            { /* item_id={dropItem.itemId} rate={dropItem.dropRate:F1}% roll={roll:F1} → {(passed ? */ }
             if (!passed) continue;
 
             // Random số lượng trong khoảng qty_min ~ qty_max
@@ -113,7 +113,7 @@ public class EnemyItemDrop : MonoBehaviour
             droppedCount++;
         }
 
-        Debug.Log($"[EnemyItemDrop] {gameObject.name}: Dropped {droppedCount}/{dropItems.Count} entries (0 = tất cả miss rate check, bình thường).");
+        { /* {gameObject.name}: Dropped {droppedCount}/{dropItems.Count} entries (0 = tất cả miss rate check, bình thường) */ }
     }
 
     // Spawn ItemPickup tại vị trí, dùng item_id trực tiếp (không cần ItemData ScriptableObject).
@@ -144,7 +144,7 @@ public class EnemyItemDrop : MonoBehaviour
                 var filter = itemObj.GetComponent<NetworkVisibilityZoneFilter>() ?? itemObj.AddComponent<NetworkVisibilityZoneFilter>();
                 filter.InitializeForServer();
 
-                Debug.Log($"[EnemyItemDrop] Move dropped item item_id={itemId} vào mapId={enemyZoneTag.MapId}, zoneId={enemyZoneTag.ZoneId}");
+                { /* Move dropped item item_id={itemId} vào mapId={enemyZoneTag.MapId}, zoneId={enemyZoneTag.ZoneId} */ }
             }
 
             NetworkObject networkObject = itemObj.GetComponent<NetworkObject>();
@@ -166,7 +166,7 @@ public class EnemyItemDrop : MonoBehaviour
         // Nếu muốn item rơi xuống ground: bật gravityScale=1 trong ItemPickup prefab
         // và đảm bảo ground có Collider2D không phải trigger.
 
-        Debug.Log($"[EnemyItemDrop] Dropped {quantity}x item_id={itemId} at {spawnPosition}");
+        { /* Dropped {quantity}x item_id={itemId} at {spawnPosition} */ }
     }
 
     // Thêm item vào drop list (dùng trong Inspector hoặc code)
@@ -191,7 +191,7 @@ public class EnemyItemDrop : MonoBehaviour
     {
         if (configItems == null || configItems.Count == 0)
         {
-            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig nhận null/empty — enemy này không có drop config trong DB!");
+            { /* Cảnh báo: {gameObject.name}: SetDropsFromConfig nhận null/empty  enemy này không có drop config trong DB */ }
             return;
         }
 
@@ -200,7 +200,7 @@ public class EnemyItemDrop : MonoBehaviour
         {
             if (entry.item_id <= 0)
             {
-                Debug.LogWarning($"[EnemyItemDrop] SetDropsFromConfig: item_id={entry.item_id} không hợp lệ → bỏ qua.");
+                { /* Cảnh báo: SetDropsFromConfig: item_id={entry.item_id} không hợp lệ → bỏ qua */ }
                 continue;
             }
 
@@ -216,11 +216,11 @@ public class EnemyItemDrop : MonoBehaviour
         if (newList.Count > 0)
         {
             dropItems = newList;
-            Debug.Log($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig: đã cập nhật {newList.Count} drop rules từ DB.");
+            { /* {gameObject.name}: SetDropsFromConfig: đã cập nhật {newList.Count} drop rules từ DB */ }
         }
         else
         {
-            Debug.LogWarning($"[EnemyItemDrop] {gameObject.name}: SetDropsFromConfig: không có item_id hợp lệ nào trong config!");
+            { /* Cảnh báo: {gameObject.name}: SetDropsFromConfig: không có item_id hợp lệ nào trong config */ }
         }
     }
 }

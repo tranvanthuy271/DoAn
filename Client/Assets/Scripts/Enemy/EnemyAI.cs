@@ -701,7 +701,7 @@ public class EnemyAI : MonoBehaviour
         if (player != null && Vector2.Distance(transform.position, player.position) <= meleeAttackRange + 0.5f)
         {
             ApplyDamageToTarget(player.gameObject, damage);
-            Debug.Log($"[EnemyAI] {gameObject.name} melee hit player for {damage} dmg");
+            { /* {gameObject.name} melee hit player for {damage} dmg */ }
         }
 
         yield return new WaitForSeconds(0.45f);
@@ -896,9 +896,7 @@ public class EnemyAI : MonoBehaviour
 
         NetworkObject netObj = GetComponent<NetworkObject>();
         string ownerInfo = netObj != null ? netObj.OwnerClientId.ToString() : "none";
-        Debug.Log(
-            $"[EnemyGroundDebug] evt={eventName} name={gameObject.name} scene={gameObject.scene.name} map={GetMyMapId()} owner={ownerInfo} pos={rb.position} vel={rb.velocity} gravity={rb.gravityScale:F2} useVirtual={ShouldUseServerVirtualGround()} anchorY={_serverAnchorY:F2} {details}",
-            this);
+        { /* evt={eventName} name={gameObject.name} scene={gameObject.scene.name} map={GetMyMapId()} owner={ownerInfo} pos={rb.position} vel={rb.velocity} gravity={rb.gravityScale:F2} useVirtual={ShouldUseServerVirtualGround()} anchorY={_serverAnchorY:F2} {details} */ }
     }
 
     private bool HasProjectileSkillConfigured()
@@ -1299,7 +1297,7 @@ public class EnemyAI : MonoBehaviour
         if (!projectileSpawned && !string.IsNullOrWhiteSpace(skill.projectile_prefab_key)
             && HasInspectorProjectilePrefabs())
         {
-            Debug.Log($"[EnemyAI] {gameObject.name} skill '{skill.skill_id}' DB prefab fail → fallback Inspector projectile.");
+            { /* {gameObject.name} skill '{skill.skill_id}' DB prefab fail → fallback Inspector projectile */ }
             projectileSpawned = TryFireInspectorProjectile();
         }
 
@@ -1415,7 +1413,7 @@ public class EnemyAI : MonoBehaviour
         if (netObj != null && !netObj.IsSpawned)
             netObj.Spawn();
 
-        Debug.Log($"[EnemyAI] {gameObject.name} bắn projectile (Inspector prefab) → damage={damage}");
+        { /* {gameObject.name} bắn projectile (Inspector prefab) → damage={damage} */ }
         return true;
     }
 
@@ -1432,7 +1430,7 @@ public class EnemyAI : MonoBehaviour
         // Kiểm tra cùng map: không được tấn công player ở map khác
         if (!IsSameMapAsTarget(target.transform))
         {
-            Debug.LogWarning($"[EnemyAI] {gameObject.name} bỏ qua damage cross-map (enemy map={GetMyMapId()}, target={target.name})");
+            { /* Cảnh báo: {gameObject.name} bỏ qua damage cross-map (enemy map={GetMyMapId()}, target={target.name}) */ }
             return;
         }
         var netHealth = target.GetComponentInParent<NetworkPlayerHealth>();
@@ -1471,7 +1469,7 @@ public class EnemyAI : MonoBehaviour
         GameObject projectilePrefab = ResolveProjectilePrefab(skill.projectile_prefab_key);
         if (projectilePrefab == null)
         {
-            Debug.LogWarning($"[EnemyAI] {gameObject.name} thiếu projectile prefab cho key '{skill.projectile_prefab_key}' (skill '{skill.skill_id}').");
+            { /* Cảnh báo: {gameObject.name} thiếu projectile prefab cho key '{skill.projectile_prefab_key}' (skill '{skill.skill_id}') */ }
             return false;
         }
 
@@ -1515,7 +1513,7 @@ public class EnemyAI : MonoBehaviour
         if (projectilePrefab != null)
         {
             _projectilePrefabLookup[normalizedKey] = projectilePrefab;
-            Debug.Log($"[EnemyAI] {gameObject.name} dùng network prefab '{projectilePrefab.name}' cho projectile key '{normalizedKey}'.");
+            { /* {gameObject.name} dùng network prefab '{projectilePrefab.name}' cho projectile key '{normalizedKey}' */ }
             return projectilePrefab;
         }
 
@@ -1527,7 +1525,7 @@ public class EnemyAI : MonoBehaviour
             {
                 if (entry != null && entry.prefab != null)
                 {
-                    Debug.Log($"[EnemyAI] {gameObject.name} key '{normalizedKey}' không tìm thấy → fallback Inspector prefab '{entry.prefab.name}'.");
+                    { /* {gameObject.name} key '{normalizedKey}' không tìm thấy → fallback Inspector prefab '{entry.prefab.name}' */ }
                     _projectilePrefabLookup[normalizedKey] = entry.prefab;
                     return entry.prefab;
                 }
@@ -1756,7 +1754,7 @@ public class EnemyAI : MonoBehaviour
         }
 
         _initialPatrolDirectionInitialized = true;
-        Debug.Log($"[EnemyAI] {gameObject.name}: initial patrol direction={(facingRight ? "right" : "left")}");
+        { /* {gameObject.name}: initial patrol direction={(facingRight ? */ }
     }
 
     // Giảm tốc độ di chuyển trong khoảng thời gian nhất định (50% speed).
@@ -1902,9 +1900,9 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator SnapToGroundAfterSpawn()
     {
         yield return null;
-        Debug.Log($"[SnapToGroundAfterSpawn] {gameObject.name} scene={gameObject.scene.name} pos={rb?.position} gravity={rb?.gravityScale} groundMask={_groundLayerMask}");
+        { /* {gameObject.name} scene={gameObject.scene.name} pos={rb?.position} gravity={rb?.gravityScale} groundMask={_groundLayerMask} */ }
         bool snapped = TrySnapToGround();
-        Debug.Log($"[SnapToGroundAfterSpawn] {gameObject.name} snapped={snapped} posAfter={rb?.position}");
+        { /* {gameObject.name} snapped={snapped} posAfter={rb?.position} */ }
 
         if (!snapped && useServerVirtualGround && rb != null && _serverAnchorSet)
         {
@@ -1942,7 +1940,7 @@ public class EnemyAI : MonoBehaviour
             hitFromBelow = hit.collider != null;
         }
 
-        Debug.Log($"[TrySnapToGround] {gameObject.name} scene={gameObject.scene.name} downOrigin={downOrigin} dist={rayDistance+topPadding:F2} hit={(hit.collider != null ? $"{hit.collider.name} @ {hit.point}" : "NONE")} hitFromBelow={hitFromBelow} vel={rb.velocity} gravity={rb.gravityScale}");
+        { /* {gameObject.name} scene={gameObject.scene.name} downOrigin={downOrigin} dist={rayDistance+topPadding:F2} hit={(hit.collider != null ? $ */ }
 
         if (hit.collider == null)
             return false;
@@ -1954,7 +1952,7 @@ public class EnemyAI : MonoBehaviour
         rb.velocity = Vector2.zero;
         CacheSupportedGroundPosition(rb.position);
         ResetServerGroundAnchor(rb.position);
-        Debug.Log($"[TrySnapToGround] SNAPPED {gameObject.name} → Y={snappedY:F2} (hitPointY={hit.point.y:F2} bottomOffset={currentBottomOffset:F2}) collider={hit.collider.name} isTrigger={hit.collider.isTrigger} usedByEffector={hit.collider.usedByEffector}");
+        { /* SNAPPED {gameObject.name} → Y={snappedY:F2} (hitPointY={hit.point.y:F2} bottomOffset={currentBottomOffset:F2}) collider={hit.collider.name} isTrigger={hit.collider.isTrigger} usedByEffector={hit.collider.usedByEffector} */ }
         return true;
     }
 
@@ -1989,14 +1987,14 @@ public class EnemyAI : MonoBehaviour
         if (!fellTooFar && !fellTooLong)
             return;
 
-        Debug.Log($"[MaintainGroundFailSafe] TRIGGERED {gameObject.name} scene={gameObject.scene.name} pos={rb.position} vel={rb.velocity} referenceY={referenceY:F2} fell={referenceY - rb.position.y:F2} fellTooFar={fellTooFar} fellTooLong={fellTooLong} time={Time.time - _unsupportedFallStartTime:F2}s");
+        { /* TRIGGERED {gameObject.name} scene={gameObject.scene.name} pos={rb.position} vel={rb.velocity} referenceY={referenceY:F2} fell={referenceY - rb.position.y:F2} fellTooFar={fellTooFar} fellTooLong={fellTooLong} time={Time.time - _unsupportedFallStartTime:F2}s */ }
         bool snappedToGround = TrySnapToGround();
         if (!snappedToGround)
         {
             Vector2 fallbackPosition = _hasSupportedGroundPosition
                 ? _lastSupportedGroundPosition
                 : new Vector2(rb.position.x, _serverAnchorSet ? _serverAnchorY : rb.position.y);
-            Debug.Log($"[MaintainGroundFailSafe] TrySnap FAILED — fallback to {fallbackPosition}");
+            { /* TrySnap FAILED  fallback to {fallbackPosition} */ }
             rb.position = fallbackPosition;
             rb.velocity = Vector2.zero;
             CacheSupportedGroundPosition(fallbackPosition);

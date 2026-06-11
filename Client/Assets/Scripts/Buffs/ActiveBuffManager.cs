@@ -92,7 +92,7 @@ public class ActiveBuffManager : MonoBehaviour
         if (buffs != null)
             _activeBuffs.AddRange(buffs.Where(b => !b.IsExpired()));
         FireChanged();
-        Debug.Log($"[ActiveBuffManager] Nhận {_activeBuffs.Count} buff(s) từ server.");
+        { /* Nhận {_activeBuffs.Count} buff(s) từ server */ }
     }
 
     // Thêm buff mới vào danh sách (từ new_buffs trong UseItemResponse).
@@ -141,7 +141,7 @@ public class ActiveBuffManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[ActiveBuffManager] Không load được buff: {json}");
+                { /* Cảnh báo: Không load được buff: {json} */ }
                 StartCoroutine(LoadFromServerDirectCoroutine());
             }
         }
@@ -166,7 +166,7 @@ public class ActiveBuffManager : MonoBehaviour
             string error = !string.IsNullOrWhiteSpace(req.downloadHandler?.text)
                 ? req.downloadHandler.text
                 : $"HTTP {(long)req.responseCode}: {req.error}";
-            Debug.LogWarning($"[ActiveBuffManager] Direct buff load failed: {error}");
+            { /* Cảnh báo: Direct buff load failed: {error} */ }
             yield break;
         }
 
@@ -265,7 +265,7 @@ public class ActiveBuffManager : MonoBehaviour
             _activeBuffs.RemoveAll(b => b.IsExpired());
             if (_activeBuffs.Count != before)
             {
-                Debug.Log($"[ActiveBuffManager] Xóa {before - _activeBuffs.Count} buff hết hạn.");
+                { /* Xóa {before - _activeBuffs.Count} buff hết hạn */ }
                 FireChanged();
             }
         }

@@ -69,21 +69,21 @@ public class InventoryTestManager : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"[InventoryTestManager] Phím {testKey} được nhấn - Bắt đầu thêm test items...");
+            { /* Phím {testKey} được nhấn - Bắt đầu thêm test items */ }
         }
 
         // Tìm NetworkInventory của local player
         var localPlayer = GetLocalPlayerObject();
         if (localPlayer == null)
         {
-            Debug.LogWarning("[InventoryTestManager] Không tìm thấy local player object!");
+            { /* Cảnh báo: Không tìm thấy local player object */ }
             return;
         }
 
         var networkInventory = localPlayer.GetComponent<NetworkInventory>();
         if (networkInventory == null)
         {
-            Debug.LogWarning("[InventoryTestManager] Local player không có NetworkInventory component!");
+            { /* Cảnh báo: Local player không có NetworkInventory component */ }
             return;
         }
 
@@ -96,13 +96,13 @@ public class InventoryTestManager : MonoBehaviour
     {
         if (testItems == null || testItems.Count == 0)
         {
-            Debug.LogWarning("[InventoryTestManager] testItems rỗng! Vui lòng cấu hình trong Inspector.");
+            { /* Cảnh báo: testItems rỗng! Vui lòng cấu hình trong Inspector */ }
             return;
         }
 
         if (enableDebugLog)
         {
-            Debug.Log($"[InventoryTestManager] Đang thêm {testItems.Count} test items vào inventory...");
+            { /* Đang thêm {testItems.Count} test items vào inventory */ }
         }
 
         // ✅ Bước 1: Thêm tất cả items vào NetworkVariable (KHÔNG sync DB từng item)
@@ -122,11 +122,11 @@ public class InventoryTestManager : MonoBehaviour
 
             if (enableDebugLog)
             {
-                Debug.Log($"[InventoryTestManager] Đã gửi request thêm: {testItem.itemCode} x{testItem.quantity}");
+                { /* Đã gửi request thêm: {testItem.itemCode} x{testItem.quantity} */ }
             }
         }
 
-        Debug.Log($"[InventoryTestManager] ✅ Đã gửi {testItems.Count} items lên server!");
+        { /* Đã gửi {testItems.Count} items lên server */ }
 
         // ✅ Bước 2: Sync TẤT CẢ items với DB trong 1 request duy nhất (tránh race condition)
         StartCoroutine(SyncInventoryToDBAfterDelay(testItems));
@@ -137,14 +137,14 @@ public class InventoryTestManager : MonoBehaviour
     {
         if (NetworkManager.Singleton == null)
         {
-            Debug.LogWarning("[InventoryTestManager] NetworkManager.Singleton is null");
+            { /* Cảnh báo: NetworkManager.Singleton is null */ }
             return null;
         }
 
         var spawnManager = NetworkManager.Singleton.SpawnManager;
         if (spawnManager == null || spawnManager.SpawnedObjectsList == null)
         {
-            Debug.LogWarning("[InventoryTestManager] SpawnManager or SpawnedObjectsList is null");
+            { /* Cảnh báo: SpawnManager or SpawnedObjectsList is null */ }
             return null;
         }
 
@@ -152,7 +152,7 @@ public class InventoryTestManager : MonoBehaviour
         
         if (enableDebugLog)
         {
-            Debug.Log($"[InventoryTestManager] Tìm local player với LocalClientId={localClientId}, Spawned objects count={spawnManager.SpawnedObjectsList.Count}");
+            { /* Tìm local player với LocalClientId={localClientId}, Spawned objects count={spawnManager.SpawnedObjectsList.Count} */ }
         }
 
         // Tìm NetworkObject thuộc về local client
@@ -165,7 +165,7 @@ public class InventoryTestManager : MonoBehaviour
                 {
                     if (enableDebugLog)
                     {
-                        Debug.Log($"[InventoryTestManager] ✅ Tìm thấy local player: {netObj.name}, IsLocalPlayer={netObj.IsLocalPlayer}, OwnerClientId={netObj.OwnerClientId}");
+                        { /* Tìm thấy local player: {netObj.name}, IsLocalPlayer={netObj.IsLocalPlayer}, OwnerClientId={netObj.OwnerClientId} */ }
                     }
                     return netObj.gameObject;
                 }
@@ -181,13 +181,13 @@ public class InventoryTestManager : MonoBehaviour
             {
                 if (enableDebugLog)
                 {
-                    Debug.Log($"[InventoryTestManager] ✅ Tìm thấy local player qua Tag: {playerObj.name}");
+                    { /* Tìm thấy local player qua Tag: {playerObj.name} */ }
                 }
                 return playerObj;
             }
         }
 
-        Debug.LogWarning($"[InventoryTestManager] Không tìm thấy local player trong {spawnManager.SpawnedObjectsList.Count} spawned objects");
+        { /* Cảnh báo: Không tìm thấy local player trong {spawnManager.SpawnedObjectsList.Count} spawned objects */ }
         return null;
     }
 
@@ -197,7 +197,7 @@ public class InventoryTestManager : MonoBehaviour
         // Đợi 1 giây để đảm bảo tất cả items đã được add vào NetworkInventory
         yield return new WaitForSeconds(1f);
 
-        Debug.Log("[InventoryTestManager] 🔄 Bắt đầu sync toàn bộ inventory với DB...");
+        { /* 🔄 Bắt đầu sync toàn bộ inventory với DB */ }
 
         // ✅ FIX: Lấy playerId từ GameManager (in-memory) thay vì PlayerPrefs
         int playerId = 0;
@@ -210,7 +210,7 @@ public class InventoryTestManager : MonoBehaviour
         
         if (playerId == 0)
         {
-            Debug.LogWarning("[InventoryTestManager] playerId = 0, không thể sync DB!");
+            { /* Cảnh báo: playerId = 0, không thể sync DB */ }
             yield break;
         }
 
@@ -239,9 +239,9 @@ public class InventoryTestManager : MonoBehaviour
         if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
         yield return req.SendWebRequest();
         if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-            Debug.Log($"[InventoryTestManager] \u2705 \u0110\u00e3 sync {itemRequests.Count} items v\u1edbi DB th\u00e0nh c\u00f4ng!");
+            { /* \u2705 \u0110\u00e3 sync {itemRequests.Count} items v\u1edbi DB th\u00e0nh c\u00f4ng */ }
         else
-            Debug.LogError($"[InventoryTestManager] \u274c L\u1ed7i khi sync DB: {req.error}");
+            { /* Lỗi: \u274c L\u1ed7i khi sync DB: {req.error} */ }
     }
 
     // Thêm test item thủ công (gọi từ Button UI nếu cần)
@@ -249,21 +249,21 @@ public class InventoryTestManager : MonoBehaviour
     {
         if (testItems == null || index < 0 || index >= testItems.Count)
         {
-            Debug.LogWarning($"[InventoryTestManager] Index {index} không hợp lệ!");
+            { /* Cảnh báo: Index {index} không hợp lệ */ }
             return;
         }
 
         var localPlayer = GetLocalPlayerObject();
         if (localPlayer == null)
         {
-            Debug.LogWarning("[InventoryTestManager] Không tìm thấy local player!");
+            { /* Cảnh báo: Không tìm thấy local player */ }
             return;
         }
 
         var networkInventory = localPlayer.GetComponent<NetworkInventory>();
         if (networkInventory == null)
         {
-            Debug.LogWarning("[InventoryTestManager] Local player không có NetworkInventory!");
+            { /* Cảnh báo: Local player không có NetworkInventory */ }
             return;
         }
 
@@ -275,7 +275,7 @@ public class InventoryTestManager : MonoBehaviour
             testItem.quantity
         );
 
-        Debug.Log($"[InventoryTestManager] Đã thêm item: {testItem.itemCode} x{testItem.quantity}");
+        { /* Đã thêm item: {testItem.itemCode} x{testItem.quantity} */ }
     }
 }
 

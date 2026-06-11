@@ -85,13 +85,11 @@ public class PlayerMovement : MonoBehaviour
             if (layerId >= 0)
             {
                 groundLayer = LayerMask.GetMask("Ground");
-                Debug.Log("[PlayerMovement] groundLayer tự động gán vào layer 'Ground'");
+                { /* groundLayer tự động gán vào layer 'Ground' */ }
             }
             else
             {
-                Debug.LogWarning("[PlayerMovement] groundLayer chưa được gán và không tìm thấy layer 'Ground'. " +
-                    "Hãy tạo layer 'Ground', gán cho Tilemap/Ground objects, " +
-                    "rồi chọn nó trong PlayerMovement → Ground Layer.");
+                { /* Cảnh báo: groundLayer chưa được gán và không tìm thấy layer 'Ground' */ }
             }
         }
 
@@ -102,7 +100,7 @@ public class PlayerMovement : MonoBehaviour
             zeroFriction.friction = 0f;
             zeroFriction.bounciness = 0f;
             rb.sharedMaterial = zeroFriction;
-            Debug.Log("[PlayerMovement] Đã gán PhysicsMaterial2D friction=0 cho Rigidbody2D.");
+            { /* Đã gán PhysicsMaterial2D friction=0 cho Rigidbody2D */ }
         }
     }
 
@@ -355,7 +353,7 @@ public class PlayerMovement : MonoBehaviour
         if (platform == null) return;
         if (!HasGroundBelow(platform))
         {
-            Debug.Log("[PlayerMovement] Fall-through bị chặn: không có ground bên dưới platform này.");
+            { /* Fall-through bị chặn: không có ground bên dưới platform này */ }
             return;
         }
         StartCoroutine(FallThroughCoroutine(platform));

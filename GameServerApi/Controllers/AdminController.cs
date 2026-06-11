@@ -124,7 +124,7 @@ namespace GameServerApi.Controllers
 
             m.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Admin updated map {MapId}.", mapId);
+            { /* Admin updated map {MapId} */ }
             return Ok(new { message = "Đã cập nhật map.", mapId });
         }
 
@@ -198,7 +198,7 @@ namespace GameServerApi.Controllers
             }
 
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Admin updated dungeon {DungeonId}.", id);
+            { /* Admin updated dungeon {DungeonId} */ }
             return Ok(new { message = "Đã cập nhật phó bản.", dungeonId = id });
         }
 
@@ -212,7 +212,7 @@ namespace GameServerApi.Controllers
 
             d.IsActive = req.IsActive;
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Admin set dungeon {DungeonId} active={Active}.", id, req.IsActive);
+            { /* Admin set dungeon {DungeonId} active={Active} */ }
             return Ok(new { message = req.IsActive ? "Phó bản đã bật." : "Phó bản đã tắt.", dungeonId = id, isActive = req.IsActive });
         }
 

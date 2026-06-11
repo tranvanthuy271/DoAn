@@ -134,7 +134,7 @@ public class PlayerSkillManager : NetworkBehaviour
         if (teleportSkillComponent != null)
         {
             teleportSkillData = skills.Find(s => s != null && s.skillType == SkillType.Teleport);
-            Debug.Log("[PlayerSkillManager] Detected TeleportSkill component.");
+            { /* Detected TeleportSkill component */ }
         }
 
         // Auto-detect WindStepSkill và đồng bộ cooldown vào SkillData có type WindStep
@@ -147,7 +147,7 @@ public class PlayerSkillManager : NetworkBehaviour
             {
                 windStepSkillData.cooldown = windStepComponent.cooldown;
             }
-            Debug.Log("[PlayerSkillManager] Đã phát hiện WindStepSkill component.");
+            { /* Đã phát hiện WindStepSkill component */ }
         }
 
         // Auto-detect MetalShieldSkill và đồng bộ cooldown
@@ -157,7 +157,7 @@ public class PlayerSkillManager : NetworkBehaviour
             metalShieldSkillData = skills.Find(s => s != null && s.skillType == SkillType.MetalShield);
             if (metalShieldSkillData != null)
                 metalShieldSkillData.cooldown = metalShieldComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện MetalShieldSkill component.");
+            { /* Đã phát hiện MetalShieldSkill component */ }
         }
 
         // Auto-detect WaterPillarSkill và đồng bộ cooldown
@@ -167,7 +167,7 @@ public class PlayerSkillManager : NetworkBehaviour
             waterPillarSkillData = skills.Find(s => s != null && s.skillType == SkillType.WaterPillar);
             if (waterPillarSkillData != null)
                 waterPillarSkillData.cooldown = waterPillarComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện WaterPillarSkill component.");
+            { /* Đã phát hiện WaterPillarSkill component */ }
         }
 
         // Auto-detect WaterArmorBuffSkill và đồng bộ cooldown
@@ -177,7 +177,7 @@ public class PlayerSkillManager : NetworkBehaviour
             waterArmorBuffSkillData = skills.Find(s => s != null && s.skillType == SkillType.WaterArmorBuff);
             if (waterArmorBuffSkillData != null)
                 waterArmorBuffSkillData.cooldown = waterArmorBuffComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện WaterArmorBuffSkill component.");
+            { /* Đã phát hiện WaterArmorBuffSkill component */ }
         }
 
         // Auto-detect FireRainSkill
@@ -187,7 +187,7 @@ public class PlayerSkillManager : NetworkBehaviour
             fireRainSkillData = skills.Find(s => s != null && s.skillType == SkillType.FireRain);
             if (fireRainSkillData != null)
                 fireRainSkillData.cooldown = fireRainComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện FireRainSkill component.");
+            { /* Đã phát hiện FireRainSkill component */ }
         }
 
         // Auto-detect EarthAttackBuffSkill
@@ -197,7 +197,7 @@ public class PlayerSkillManager : NetworkBehaviour
             earthAuraSkillData = skills.Find(s => s != null && s.skillType == SkillType.EarthAura);
             if (earthAuraSkillData != null)
                 earthAuraSkillData.cooldown = earthAuraComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện EarthAttackBuffSkill component.");
+            { /* Đã phát hiện EarthAttackBuffSkill component */ }
         }
 
         // Auto-detect EarthBoomerangSkill
@@ -207,7 +207,7 @@ public class PlayerSkillManager : NetworkBehaviour
             earthBoomerangSkillData = skills.Find(s => s != null && s.skillType == SkillType.EarthBoomerang);
             if (earthBoomerangSkillData != null)
                 earthBoomerangSkillData.cooldown = earthBoomerangComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện EarthBoomerangSkill component.");
+            { /* Đã phát hiện EarthBoomerangSkill component */ }
         }
 
         // Auto-detect EarthBlinkStrikeSkill
@@ -217,7 +217,7 @@ public class PlayerSkillManager : NetworkBehaviour
             earthBlinkStrikeSkillData = skills.Find(s => s != null && s.skillType == SkillType.EarthBlinkStrike);
             if (earthBlinkStrikeSkillData != null)
                 earthBlinkStrikeSkillData.cooldown = earthBlinkStrikeComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Đã phát hiện EarthBlinkStrikeSkill component.");
+            { /* Đã phát hiện EarthBlinkStrikeSkill component */ }
         }
 
         // Auto-detect HybridMetalWindBarrageSkill
@@ -227,7 +227,7 @@ public class PlayerSkillManager : NetworkBehaviour
             hybridMetalWindBarrageSkillData = skills.Find(s => s != null && s.skillType == SkillType.HybridBarrage);
             if (hybridMetalWindBarrageSkillData != null)
                 hybridMetalWindBarrageSkillData.cooldown = hybridMetalWindBarrageComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Detected HybridMetalWindBarrageSkill component.");
+            { /* Detected HybridMetalWindBarrageSkill component */ }
         }
 
         // Auto-detect HybridFireEarthLavaAuraSkill
@@ -239,7 +239,7 @@ public class PlayerSkillManager : NetworkBehaviour
             hybridLavaAuraSkillData = skills.Find(s => s != null && s.skillType == SkillType.HybridLavaAura);
             if (hybridLavaAuraSkillData != null)
                 hybridLavaAuraSkillData.cooldown = hybridLavaAuraComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Detected HybridFireEarthLavaAuraSkill component.");
+            { /* Detected HybridFireEarthLavaAuraSkill component */ }
         }
 
         // Auto-detect HybridWaterWoodVenomSkill
@@ -249,7 +249,7 @@ public class PlayerSkillManager : NetworkBehaviour
             hybridVenomSkillData = skills.Find(s => s != null && s.skillType == SkillType.HybridVenom);
             if (hybridVenomSkillData != null)
                 hybridVenomSkillData.cooldown = hybridVenomComponent.cooldown;
-            Debug.Log("[PlayerSkillManager] Detected HybridWaterWoodVenomSkill component.");
+            { /* Detected HybridWaterWoodVenomSkill component */ }
         }
 
         // Auto-detect PlayerDash và đồng bộ cooldown
@@ -259,7 +259,7 @@ public class PlayerSkillManager : NetworkBehaviour
             dashSkillData = skills.Find(s => s != null && s.skillType == SkillType.Dash);
             if (dashSkillData != null)
                 dashSkillData.cooldown = 1f; // đồng bộ với PlayerDash.dashCooldown
-            Debug.Log("[PlayerSkillManager] Detected PlayerDash component.");
+            { /* Detected PlayerDash component */ }
         }
 
         // Auto-detect PlayerCombat (đánh thường)
@@ -267,7 +267,7 @@ public class PlayerSkillManager : NetworkBehaviour
         if (playerCombatComponent != null)
         {
             normalAttackSkillData = skills.Find(s => s != null && s.skillType == SkillType.NormalAttack);
-            Debug.Log("[PlayerSkillManager] Detected PlayerCombat component (NormalAttack).");
+            { /* Detected PlayerCombat component (NormalAttack) */ }
         }
 
         SortSkillsForHotbar();
@@ -284,7 +284,7 @@ public class PlayerSkillManager : NetworkBehaviour
             // Check for duplicate keys
             if (skillByKey.ContainsKey(skill.activationKey))
             {
-                Debug.LogWarning($"[PlayerSkillManager] Cảnh báo: Skill '{skill.skillName}' và skill khác đều dùng phím '{skill.activationKey}'!");
+                { /* Cảnh báo: Cảnh báo: Skill '{skill.skillName}' và skill khác đều dùng phím '{skill.activationKey}' */ }
             }
             else
             {
@@ -295,7 +295,7 @@ public class PlayerSkillManager : NetworkBehaviour
             InitializeSkillEffect(skill);
         }
         
-        Debug.Log($"[PlayerSkillManager] Đã khởi tạo {skillByKey.Count} skill(s) (bao gồm Teleport nếu có)");
+        { /* Đã khởi tạo {skillByKey.Count} skill(s) (bao gồm Teleport nếu có) */ }
     }
 
     public void SortSkillsForHotbar()
@@ -470,7 +470,7 @@ public class PlayerSkillManager : NetworkBehaviour
         if (skill == null) return;
         if (!skill.CanUse() || skill.IsUsing()) return;
 
-        Debug.Log("[PlayerSkillManager] UseSkill: " + skill.skillName + " | IsOwner=" + IsOwner + " | IsServer=" + IsServer + " | MP=" + dataSync?.networkMp.Value + "/" + dataSync?.networkMaxMp.Value + " | Cost=" + skill.currentMpCost);
+        { /* UseSkill */ }
 
         // Kiểm tra và trừ MP
         if (!TryConsumeMP(skill.currentMpCost)) return;
@@ -685,7 +685,7 @@ public class PlayerSkillManager : NetworkBehaviour
 
         if (skill.projectilePrefab == null)
         {
-            Debug.LogWarning($"[PlayerSkillManager] Skill '{skill.skillName}' không có projectile prefab!");
+            { /* Cảnh báo: Skill '{skill.skillName}' không có projectile prefab */ }
             return;
         }
         
@@ -820,7 +820,7 @@ public class PlayerSkillManager : NetworkBehaviour
             dmg = stats != null ? stats.baseDamage : 10;
         }
 
-        Debug.Log($"[PlayerSkillManager] ApplyMeleeDamage | center={center} range={range} dmg={dmg}");
+        { /* ApplyMeleeDamage | center={center} range={range} dmg={dmg} */ }
 
         // Không lọc LayerMask ở đây vì collider của enemy có thể nằm ở bất kỳ layer nào
         Collider2D[] hits = MapPhysicsQuery2D.OverlapCircleAll(gameObject, center, range);
@@ -843,7 +843,7 @@ public class PlayerSkillManager : NetworkBehaviour
             var netEnemy = hit.GetComponentInParent<NetworkEnemyHealth>();
             if (netEnemy != null)
             {
-                Debug.Log($"[PlayerSkillManager] Melee hit NetworkEnemyHealth: {hit.transform.root.name} for {dmg}");
+                { /* Melee hit NetworkEnemyHealth: {hit.transform.root.name} for {dmg} */ }
                 netEnemy.TakeDamage(dmg, OwnerClientId);
                 damaged.Add(rootId);
                 continue;
@@ -851,7 +851,7 @@ public class PlayerSkillManager : NetworkBehaviour
             var localEnemy = hit.GetComponentInParent<EnemyHealth>();
             if (localEnemy != null)
             {
-                Debug.Log($"[PlayerSkillManager] Melee hit EnemyHealth: {hit.transform.root.name} for {dmg}");
+                { /* Melee hit EnemyHealth: {hit.transform.root.name} for {dmg} */ }
                 localEnemy.TakeDamage(dmg);
                 damaged.Add(rootId);
                 continue;
@@ -869,7 +869,7 @@ public class PlayerSkillManager : NetworkBehaviour
             }
         }
 
-        Debug.Log($"[PlayerSkillManager] ApplyMeleeDamage done | {damaged.Count} targets hit.");
+        { /* ApplyMeleeDamage done | {damaged.Count} targets hit */ }
     }
 
     private float pendingClearDelay;
@@ -1088,7 +1088,7 @@ public class PlayerSkillManager : NetworkBehaviour
         if (projectileNetworkObject == null)
         {
             projectileNetworkObject = projectile.AddComponent<NetworkObject>();
-            Debug.LogWarning($"[PlayerSkillManager] Projectile '{skill.skillName}' không có NetworkObject, đã tự động thêm vào. Nên thêm NetworkObject vào Prefab!");
+            { /* Cảnh báo: Projectile '{skill.skillName}' không có NetworkObject, đã tự động thêm vào. Nên thêm NetworkObject vào Prefab */ }
         }
 
         int projectileMapId = ResolveProjectileMapId();
@@ -1096,11 +1096,11 @@ public class PlayerSkillManager : NetworkBehaviour
         {
             MapSceneManager.Instance?.MoveToMapScene(projectile, projectileMapId);
             ApplyProjectileMapVisibility(projectile, projectileMapId);
-            Debug.Log($"[PlayerSkillManager] SpawnProjectile '{skill.skillName}' -> mapId={projectileMapId}, pos={spawnPosition}, facingRight={facingRight}");
+            { /* SpawnProjectile '{skill.skillName}' -> mapId={projectileMapId}, pos={spawnPosition}, facingRight={facingRight} */ }
         }
         else
         {
-            Debug.LogWarning($"[PlayerSkillManager] Không resolve được mapId cho projectile '{skill.skillName}'. Projectile sẽ dùng physics scene mặc định.");
+            { /* Cảnh báo: Không resolve được mapId cho projectile '{skill.skillName}'. Projectile sẽ dùng physics scene mặc định */ }
         }
         
         // Spawn projectile trên network (chỉ server mới spawn được)
@@ -1140,7 +1140,7 @@ public class PlayerSkillManager : NetworkBehaviour
         else
         {
             // Nếu không phải server, chỉ spawn local (hoặc gọi RPC để server spawn)
-            Debug.LogWarning("[PlayerSkillManager] Chỉ server mới spawn được projectile trên network!");
+            { /* Cảnh báo: Chỉ server mới spawn được projectile trên network */ }
         }
         
         // Setup Animator cho projectile (tắt Apply Root Motion)
@@ -1297,11 +1297,11 @@ public class PlayerSkillManager : NetworkBehaviour
             try
             {
                 animator.SetTrigger(triggerName);
-                Debug.Log($"[PlayerSkillManager] Đã trigger animation '{triggerName}' trên projectile!");
+                { /* Đã trigger animation '{triggerName}' trên projectile */ }
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[PlayerSkillManager] Lỗi khi trigger animation trên projectile: {e.Message}");
+                { /* Lỗi: Lỗi khi trigger animation trên projectile: {e.Message} */ }
             }
         }
     }
@@ -1483,7 +1483,7 @@ public class PlayerSkillManager : NetworkBehaviour
 
         if (dataSync.networkMp.Value < cost)
         {
-            Debug.Log($"[PlayerSkillManager] Không đủ MP! Cần {cost}, hiện có {dataSync.networkMp.Value}");
+            { /* Không đủ MP! Cần {cost}, hiện có {dataSync.networkMp.Value} */ }
             return false;
         }
 
@@ -1500,7 +1500,7 @@ public class PlayerSkillManager : NetworkBehaviour
             // Không sửa trực tiếp vì NetworkVariable chỉ server mới ghi được
         }
 
-        Debug.Log($"[PlayerSkillManager] Trừ {cost} MP. Còn lại: {dataSync.networkMp.Value}");
+        { /* Trừ {cost} MP. Còn lại: {dataSync.networkMp.Value} */ }
         return true;
     }
 }

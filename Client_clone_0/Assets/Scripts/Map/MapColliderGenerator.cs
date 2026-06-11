@@ -45,16 +45,14 @@ public class MapColliderGenerator : MonoBehaviour
 
         if (sr.sprite == null)
         {
-            Debug.LogError("[MapColliderGenerator] Không có sprite — gán sprite vào SpriteRenderer trước.");
+            { /* Lỗi: Không có sprite  gán sprite vào SpriteRenderer trước */ }
             return;
         }
 
         Texture2D tex = sr.sprite.texture;
         if (!tex.isReadable)
         {
-            Debug.LogError(
-                $"[MapColliderGenerator] Texture '{tex.name}' chưa bật Read/Write.\n" +
-                "→ Project Window → chọn PNG → Inspector → Advanced → Read/Write Enabled ✅ → Apply");
+            { /* Lỗi: Texture '{tex.name}' chưa bật Read/Write.\n */ }
             return;
         }
 
@@ -62,7 +60,7 @@ public class MapColliderGenerator : MonoBehaviour
 
         if (points.Count < 2)
         {
-            Debug.LogWarning("[MapColliderGenerator] Không đủ điểm để tạo EdgeCollider2D. Kiểm tra Alpha Threshold.");
+            { /* Cảnh báo: Không đủ điểm để tạo EdgeCollider2D. Kiểm tra Alpha Threshold */ }
             return;
         }
 
@@ -79,7 +77,7 @@ public class MapColliderGenerator : MonoBehaviour
         col.SetPoints(points);
         generatedPointCount = points.Count;
 
-        Debug.Log($"[MapColliderGenerator] Tạo EdgeCollider2D: {generatedPointCount} điểm.");
+        { /* Tạo EdgeCollider2D: {generatedPointCount} điểm */ }
     }
 
     [ContextMenu("Clear Collider")]

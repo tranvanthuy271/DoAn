@@ -156,7 +156,7 @@ public class WaterPillarSkill : NetworkBehaviour
                 return;
             }
         }
-        Debug.LogWarning($"[WaterPillarSkill] Animator không có trigger '{animTriggerName}'.");
+        { /* Cảnh báo: Animator không có trigger '{animTriggerName}' */ }
     }
 
     private IEnumerator ClearSkillEffectAfterDelay()
@@ -232,7 +232,7 @@ public class WaterPillarSkill : NetworkBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
-        Debug.LogWarning($"[WaterPillarSkill] Timeout chờ pillar {pillarNetId} trong SpawnedObjects.");
+        { /* Cảnh báo: Timeout chờ pillar {pillarNetId} trong SpawnedObjects */ }
     }
 
     //  Core sequence (server-only)
@@ -288,7 +288,7 @@ public class WaterPillarSkill : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning("[WaterPillarSkill] pillarPrefab chưa được gán! Hãy gán trong Unity Inspector.");
+            { /* Cảnh báo: pillarPrefab chưa được gán! Hãy gán trong Unity Inspector */ }
         }
 
         // 3. Chờ ngắn rồi reset isUsing

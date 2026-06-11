@@ -45,7 +45,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
     {
         if (FindObjectOfType<MapWorldBootstrap>() != null)
         {
-            Debug.Log("[NetworkPlayerSpawner] MapWorldBootstrap detected — disabling legacy player spawner.");
+            { /* MapWorldBootstrap detected  disabling legacy player spawner */ }
             enabled = false;
             return;
         }
@@ -153,14 +153,14 @@ public class NetworkPlayerSpawner : MonoBehaviour
         networkManager.OnServerStarted += OnServerStarted;
         hasSubscribed = false; // reset để SubscribeToEvents() chạy lại khi OnServerStarted
 
-        Debug.Log($"[NetworkPlayerSpawner] Scene '{scene.name}' loaded — re-subscribed OnServerStarted to new NetworkManager");
+        { /* Scene '{scene.name}' loaded  re-subscribed OnServerStarted to new NetworkManager */ }
     }
 
     private void OnServerStarted()
     {
         if (this == null) return;
 
-        Debug.Log("[NetworkPlayerSpawner] OnServerStarted — reset state & re-subscribe");
+        { /* OnServerStarted  reset state & re-subscribe */ }
 
         // Reset lại để dùng cho session mới (quan trọng khi persist qua scene)
         spawnedClients.Clear();
@@ -260,9 +260,9 @@ public class NetworkPlayerSpawner : MonoBehaviour
         int maxRetries = 120;
         float retryInterval = 0.1f; // 0.1 giây mỗi lần = 12 giây tổng cộng
 
-        Debug.Log($"[NetworkPlayerSpawner] ===== WAITING FOR PLAYER DATA =====");
-        Debug.Log($"[NetworkPlayerSpawner] ClientId: {clientId}");
-        Debug.Log($"[NetworkPlayerSpawner] Max retries: {maxRetries}, Interval: {retryInterval}s");
+        { /* ===== WAITING FOR PLAYER DATA ===== */ }
+        { /* ClientId: {clientId} */ }
+        { /* Max retries: {maxRetries}, Interval: {retryInterval}s */ }
 
         for (int i = 0; i < maxRetries; i++)
         {
@@ -274,12 +274,12 @@ public class NetworkPlayerSpawner : MonoBehaviour
                 
                 if (i % 10 == 0) // Log mỗi 10 lần để không spam
                 {
-                    Debug.Log($"[NetworkPlayerSpawner] Attempt {i + 1}/{maxRetries} - Checking ServerPlayerDataManager for clientId {clientId}...");
-                    Debug.Log($"[NetworkPlayerSpawner] ServerPlayerDataManager.Instance exists: {ServerPlayerDataManager.Instance != null}");
-                    Debug.Log($"[NetworkPlayerSpawner] PlayerData found: {playerData != null}");
+                    { /* Attempt {i + 1}/{maxRetries} - Checking ServerPlayerDataManager for clientId {clientId} */ }
+                    { /* ServerPlayerDataManager.Instance exists: {ServerPlayerDataManager.Instance != null} */ }
+                    { /* PlayerData found: {playerData != null} */ }
                     if (playerData != null)
                     {
-                        Debug.Log($"[NetworkPlayerSpawner] ✓ PlayerData preview - Character: {playerData.character_name}, Element: {playerData.element_type}");
+                        { /* ✓ PlayerData preview - Character: {playerData.character_name}, Element: {playerData.element_type} */ }
                     }
                 }
             }
@@ -287,18 +287,18 @@ public class NetworkPlayerSpawner : MonoBehaviour
             {
                 if (i % 20 == 0)
                 {
-                    Debug.LogWarning($"[NetworkPlayerSpawner] ⚠️ ServerPlayerDataManager.Instance is NULL at attempt {i + 1}");
+                    { /* Cảnh báo: ⚠️ ServerPlayerDataManager.Instance is NULL at attempt {i + 1} */ }
                 }
             }
             
             if (playerData != null)
             {
-                Debug.Log($"[NetworkPlayerSpawner] ===== PLAYER DATA READY =====");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Player data ready for client {clientId} after {i + 1} attempts ({(i + 1) * retryInterval}s)");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Character: {playerData.character_name}");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Element: {playerData.element_type}");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Gender: {playerData.gender}");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Spawning player now...");
+                { /* ===== PLAYER DATA READY ===== */ }
+                { /* ✓ Player data ready for client {clientId} after {i + 1} attempts ({(i + 1) * retryInterval}s) */ }
+                { /* ✓ Character: {playerData.character_name} */ }
+                { /* ✓ Element: {playerData.element_type} */ }
+                { /* ✓ Gender: {playerData.gender} */ }
+                { /* ✓ Spawning player now */ }
                 SpawnPlayerNow(clientId, playerData);
                 spawningClients.Remove(clientId); // Remove khỏi danh sách đang spawn
                 yield break;
@@ -308,13 +308,13 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
 
         // Nếu sau 12 giây vẫn chưa có data, spawn với default prefab
-        Debug.LogError($"[NetworkPlayerSpawner] ===== PLAYER DATA TIMEOUT =====");
-        Debug.LogError($"[NetworkPlayerSpawner] ✗ Player data NOT loaded after {maxRetries} attempts ({maxRetries * retryInterval} seconds) for clientId {clientId}");
-        Debug.LogError($"[NetworkPlayerSpawner] ✗ Possible issues:");
-        Debug.LogError($"[NetworkPlayerSpawner]   1. Client did not send auth (check ClientAuthSender logs)");
-        Debug.LogError($"[NetworkPlayerSpawner]   2. Server failed to load player data from DB (check ServerPlayerDataManager logs)");
-        Debug.LogError($"[NetworkPlayerSpawner]   3. Player data was loaded but not cached correctly");
-        Debug.LogError($"[NetworkPlayerSpawner] ✗ Spawning with DEFAULT prefab as fallback");
+        { /* Lỗi: ===== PLAYER DATA TIMEOUT ===== */ }
+        { /* Lỗi: ✗ Player data NOT loaded after {maxRetries} attempts ({maxRetries * retryInterval} seconds) for clientId {clientId} */ }
+        { /* Lỗi: ✗ Possible issues */ }
+        { /* Lỗi: 1. Client did not send auth (check ClientAuthSender logs) */ }
+        { /* Lỗi: 2. Server failed to load player data from DB (check ServerPlayerDataManager logs) */ }
+        { /* Lỗi: 3. Player data was loaded but not cached correctly */ }
+        { /* Lỗi: ✗ Spawning with DEFAULT prefab as fallback */ }
         SpawnPlayerNow(clientId, null);
         spawningClients.Remove(clientId); // Remove khỏi danh sách đang spawn
     }
@@ -335,7 +335,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         if (PortalArrivalHandler.PendingMapId >= 0)
         {
             spawnPos = new Vector3(PortalArrivalHandler.PendingDestX, PortalArrivalHandler.PendingDestY, 0f);
-            Debug.Log($"[NetworkPlayerSpawner] Spawn tại cổng đến: {spawnPos}");
+            { /* Spawn tại cổng đến: {spawnPos} */ }
         }
         // Ưu tiên 2: vị trí đã lưu trong DB (playerData)
         else if (playerData != null && (playerData.position_x != 0 || playerData.position_y != 0))
@@ -356,7 +356,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"[NetworkPlayerSpawner] spawnPoints[{spawnIndex}] is null — check Inspector assignments!");
+                    { /* Cảnh báo: spawnPoints[{spawnIndex}] is null  check Inspector assignments */ }
                 }
             }
             if (!foundSpawnPoint)
@@ -366,12 +366,12 @@ public class NetworkPlayerSpawner : MonoBehaviour
                 if (taggedSpawn != null)
                 {
                     spawnPos = taggedSpawn.transform.position;
-                    Debug.LogWarning("[NetworkPlayerSpawner] Dùng GameObject có tag 'Respawn' làm spawn point.");
+                    { /* Cảnh báo: Dùng GameObject có tag 'Respawn' làm spawn point */ }
                 }
                 else
                 {
                     spawnPos = Vector3.zero;
-                    Debug.LogWarning("[NetworkPlayerSpawner] Không có spawn point hợp lệ — spawn tại (0,0,0). Hãy gán spawnPoints trong Inspector!");
+                    { /* Cảnh báo: Không có spawn point hợp lệ  spawn tại (0,0,0). Hãy gán spawnPoints trong Inspector */ }
                 }
             }
         }
@@ -381,10 +381,10 @@ public class NetworkPlayerSpawner : MonoBehaviour
         GameObject prefabToSpawn = GetPrefabForPlayerData(playerData) ?? GetPlayerPrefabForClient(clientId);
         if (prefabToSpawn == null)
         {
-            Debug.LogError($"[NetworkPlayerSpawner] Không tìm được prefab cho client {clientId}! Dùng default.");
+            { /* Lỗi: Không tìm được prefab cho client {clientId}! Dùng default */ }
             prefabToSpawn = networkPlayerPrefab;
         }
-        Debug.Log($"[NetworkPlayerSpawner] Spawn: element={playerData?.element_type} → prefab='{prefabToSpawn.name}' pos={spawnPos}");
+        { /* Spawn: element={playerData?.element_type} → prefab='{prefabToSpawn.name}' pos={spawnPos} */ }
 
         if (spawnIndex >= 0)
         {
@@ -401,7 +401,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         
         if (networkObj != null)
         {
-            Debug.Log($"[NetworkPlayerSpawner] NetworkObject found, spawning with ownership for client {clientId}");
+            { /* NetworkObject found, spawning with ownership for client {clientId} */ }
             
             // Spawn với ownership của client này
             networkObj.SpawnWithOwnership(clientId);
@@ -412,7 +412,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[NetworkPlayerSpawner] NetworkPlayer prefab missing NetworkObject component!");
+            { /* Lỗi: NetworkPlayer prefab missing NetworkObject component */ }
             Destroy(playerObj);
         }
     }
@@ -518,29 +518,29 @@ public class NetworkPlayerSpawner : MonoBehaviour
         // Lấy player data từ ServerPlayerDataManager (server-side)
         PlayerDataResponse playerData = null;
 
-        Debug.Log($"[NetworkPlayerSpawner] ===== GET PLAYER PREFAB FOR CLIENT =====");
-        Debug.Log($"[NetworkPlayerSpawner] ClientId: {clientId}");
+        { /* ===== GET PLAYER PREFAB FOR CLIENT ===== */ }
+        { /* ClientId: {clientId} */ }
 
         if (ServerPlayerDataManager.Instance != null)
         {
-            Debug.Log($"[NetworkPlayerSpawner] Calling ServerPlayerDataManager.GetPlayerDataForClient({clientId})...");
+            { /* Calling ServerPlayerDataManager.GetPlayerDataForClient({clientId}) */ }
             playerData = ServerPlayerDataManager.Instance.GetPlayerDataForClient(clientId);
             
             if (playerData != null)
             {
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Got PlayerData from ServerPlayerDataManager");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Character: {playerData.character_name}");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Element: {playerData.element_type}");
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Gender: {playerData.gender}");
+                { /* ✓ Got PlayerData from ServerPlayerDataManager */ }
+                { /* ✓ Character: {playerData.character_name} */ }
+                { /* ✓ Element: {playerData.element_type} */ }
+                { /* ✓ Gender: {playerData.gender} */ }
             }
             else
             {
-                Debug.LogWarning($"[NetworkPlayerSpawner] ⚠️ ServerPlayerDataManager returned NULL for clientId {clientId}");
+                { /* Cảnh báo: ⚠️ ServerPlayerDataManager returned NULL for clientId {clientId} */ }
             }
         }
         else
         {
-            Debug.LogError($"[NetworkPlayerSpawner] ✗ ServerPlayerDataManager.Instance is NULL!");
+            { /* Lỗi: ✗ ServerPlayerDataManager.Instance is NULL */ }
         }
 
         // Fallback: Nếu không có ServerPlayerDataManager, dùng GameManager (cho local player)
@@ -574,11 +574,11 @@ public class NetworkPlayerSpawner : MonoBehaviour
 
             if (hybridPrefab != null)
             {
-                Debug.Log($"[NetworkPlayerSpawner] ✓ Hybrid player: hybrid_id={playerData.hybrid_id}, primary={primary} → prefab '{hybridPrefab.name}'");
+                { /* ✓ Hybrid player: hybrid_id={playerData.hybrid_id}, primary={primary} → prefab '{hybridPrefab.name}' */ }
                 return hybridPrefab;
             }
 
-            Debug.LogWarning($"[NetworkPlayerSpawner] ⚠️ hybrid_id={playerData.hybrid_id} primary={primary} chưa có prefab được gán. Fallback sang prefab hệ đơn.");
+            { /* Cảnh báo: ⚠️ hybrid_id={playerData.hybrid_id} primary={primary} chưa có prefab được gán. Fallback sang prefab hệ đơn */ }
         }
 
         string elementType = playerData.element_type ?? "Fire";

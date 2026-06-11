@@ -31,8 +31,7 @@ public class ZoneClientInitializer : MonoBehaviour
 
         if (_connectionHandler == null || _registryClient == null)
         {
-            Debug.LogError("[ZoneClientInitializer] Thiếu dependency! " +
-                           "Đảm bảo ZoneConnectionHandler và ZoneRegistryClient tồn tại trong scene.");
+            { /* Lỗi: Thiếu dependency */ }
             return;
         }
 
@@ -45,7 +44,7 @@ public class ZoneClientInitializer : MonoBehaviour
         string jwt = PlayerPrefs.GetString("JWT_TOKEN", "");
         if (string.IsNullOrEmpty(jwt))
         {
-            Debug.LogError("[ZoneClientInitializer] JWT_TOKEN rỗng — chuyển về màn Login.");
+            { /* Lỗi: JWT_TOKEN rỗng  chuyển về màn Login */ }
             UnityEngine.SceneManagement.SceneManager.LoadScene("LoginScene");
             yield break;
         }
@@ -55,7 +54,7 @@ public class ZoneClientInitializer : MonoBehaviour
         int mapId  = PlayerPrefs.GetInt("PLAYER_MAP_ID",  0);
         int zoneId = PlayerPrefs.GetInt("PLAYER_ZONE_ID", 0);
 
-        Debug.Log($"[ZoneClientInitializer] Kết nối → map={mapId} zone={zoneId}");
+        { /* Kết nối → map={mapId} zone={zoneId} */ }
 
         // 3 — Fetch zone server address
         ZoneRegistryClient.ZoneAddress addr = null;
@@ -66,14 +65,12 @@ public class ZoneClientInitializer : MonoBehaviour
         {
             if (_enableDevFallback)
             {
-                Debug.LogWarning("[ZoneClientInitializer] API không trả về zone address — " +
-                                 "dùng dev fallback.");
+                { /* Cảnh báo: API không trả về zone address */ }
                 _connectionHandler.ConnectToZone(_devFallbackIp, _devFallbackPort, jwt);
             }
             else
             {
-                Debug.LogError("[ZoneClientInitializer] Zone server không online. " +
-                               "Kiểm tra ZoneServer process đang chạy.");
+                { /* Lỗi: Zone server không online */ }
                 // TODO: hiện thông báo lỗi cho user
             }
             yield break;

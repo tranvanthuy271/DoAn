@@ -64,15 +64,15 @@ public class NetworkPrefabRegistrar : MonoBehaviour
             if (spawner != null)
             {
                 if (!validationOnly)
-                    Debug.Log("[NetworkPrefabRegistrar] ✓ Found NetworkPlayerSpawner, registering prefabs...");
+                    { /* ✓ Found NetworkPlayerSpawner, registering prefabs */ }
                 
                 // Lấy tất cả prefab từ spawner
                 RegisterPrefabFromSpawner(spawner, networkManager, ref registeredCount, missingSharedPrefabs, validationOnly);
             }
             else if (!validationOnly)
             {
-                Debug.LogError("[NetworkPrefabRegistrar] ❌ NetworkPlayerSpawner NOT FOUND in scene!");
-                Debug.LogError("[NetworkPrefabRegistrar] ❌ This will cause connection errors! Add NetworkPlayerSpawner to scene or use manual prefabs.");
+                { /* Lỗi: NetworkPlayerSpawner NOT FOUND in scene */ }
+                { /* Lỗi: This will cause connection errors! Add NetworkPlayerSpawner to scene or use manual prefabs */ }
             }
         }
 
@@ -103,13 +103,12 @@ public class NetworkPrefabRegistrar : MonoBehaviour
             {
                 // Chỉ warning — prefab có thể đã nằm trong DefaultNetworkPrefabs.asset
                 // nhưng chưa resolve reference tại thời điểm validation.
-                Debug.LogWarning(
-                    $"[NetworkPrefabRegistrar] Shared prefab mode: {missingSharedPrefabs.Count} prefab(s) chưa xác nhận trong DefaultNetworkPrefabs.asset (có thể false-positive): {string.Join(", ", missingSharedPrefabs)}");
+                { /* Cảnh báo: Shared prefab mode: {missingSharedPrefabs.Count} prefab(s) chưa xác nhận trong DefaultNetworkPrefabs.asset (có thể false-positive): {string.Join( */ }
             }
         }
         else
         {
-            Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered {registeredCount} prefab(s) to NetworkManager");
+            { /* ✓ Registered {registeredCount} prefab(s) to NetworkManager */ }
             LogRegisteredPrefabs(networkManager);
         }
     }
@@ -153,8 +152,8 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         var prefabsList = networkManager.NetworkConfig.Prefabs;
         if (prefabsList != null && prefabsList.Prefabs != null)
         {
-            Debug.Log("[NetworkPrefabRegistrar] ===== REGISTERED PREFABS LIST =====");
-            Debug.Log($"[NetworkPrefabRegistrar] Total registered prefabs: {prefabsList.Prefabs.Count}");
+            { /* ===== REGISTERED PREFABS LIST ===== */ }
+            { /* Total registered prefabs: {prefabsList.Prefabs.Count} */ }
             foreach (var registeredPrefab in prefabsList.Prefabs)
             {
                 if (registeredPrefab != null && registeredPrefab.Prefab != null)
@@ -162,15 +161,15 @@ public class NetworkPrefabRegistrar : MonoBehaviour
                     NetworkObject netObj = registeredPrefab.Prefab.GetComponent<NetworkObject>();
                     if (netObj != null)
                     {
-                        Debug.Log($"[NetworkPrefabRegistrar]   - Prefab: '{registeredPrefab.Prefab.name}' (has NetworkObject)");
+                        { /* Prefab: '{registeredPrefab.Prefab.name}' (has NetworkObject) */ }
                     }
                     else
                     {
-                        Debug.Log($"[NetworkPrefabRegistrar]   - Prefab: '{registeredPrefab.Prefab.name}'");
+                        { /* Prefab: '{registeredPrefab.Prefab.name}' */ }
                     }
                 }
             }
-            Debug.Log("[NetworkPrefabRegistrar] ===== END PREFABS LIST =====");
+            { /* ===== END PREFABS LIST ===== */ }
         }
     }
 
@@ -182,9 +181,9 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         
         if (prefabs.Count == 0)
         {
-            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ NetworkPlayerSpawner.GetAllPlayerPrefabs() returned EMPTY list!");
-            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ Make sure player prefabs are assigned in NetworkPlayerSpawner Inspector!");
-            Debug.LogWarning($"[NetworkPrefabRegistrar] ⚠️ This will cause 'NetworkPrefab could not be found' errors when connecting!");
+            { /* Cảnh báo: ⚠️ NetworkPlayerSpawner.GetAllPlayerPrefabs() returned EMPTY list */ }
+            { /* Cảnh báo: ⚠️ Make sure player prefabs are assigned in NetworkPlayerSpawner Inspector */ }
+            { /* Cảnh báo: ⚠️ This will cause 'NetworkPrefab could not be found' errors when connecting */ }
         }
         
         foreach (GameObject prefab in prefabs)
@@ -212,7 +211,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         {
             prefabToRegister = itemPickupPrefab;
             if (!validationOnly)
-                Debug.Log($"[NetworkPrefabRegistrar] Using direct reference for ItemPickup prefab: {itemPickupPrefab.name}");
+                { /* Using direct reference for ItemPickup prefab: {itemPickupPrefab.name} */ }
         }
         // 2. Fallback: Tìm trong scene từ ItemSpawner hoặc EnemyItemDrop
         else
@@ -230,7 +229,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
                     if (prefabToRegister != null)
                     {
                         if (!validationOnly)
-                            Debug.Log($"[NetworkPrefabRegistrar] Found ItemPickup prefab from ItemSpawner: {prefabToRegister.name}");
+                            { /* Found ItemPickup prefab from ItemSpawner: {prefabToRegister.name} */ }
                     }
                 }
             }
@@ -249,7 +248,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
                         if (prefabToRegister != null)
                         {
                             if (!validationOnly)
-                                Debug.Log($"[NetworkPrefabRegistrar] Found ItemPickup prefab from EnemyItemDrop: {prefabToRegister.name}");
+                                { /* Found ItemPickup prefab from EnemyItemDrop: {prefabToRegister.name} */ }
                         }
                     }
                 }
@@ -263,7 +262,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
         else if (!validationOnly)
         {
-            Debug.LogWarning($"[NetworkPrefabRegistrar] ItemPickup prefab not found! Please assign it in Inspector or make sure ItemSpawner/EnemyItemDrop exists in scene.");
+            { /* Cảnh báo: ItemPickup prefab not found! Please assign it in Inspector or make sure ItemSpawner/EnemyItemDrop exists in scene */ }
         }
     }
 
@@ -324,16 +323,16 @@ public class NetworkPrefabRegistrar : MonoBehaviour
             NetworkObject netObj = prefab.GetComponent<NetworkObject>();
             if (netObj != null)
             {
-                Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered prefab: '{prefab.name}' (has NetworkObject)");
+                { /* ✓ Registered prefab: '{prefab.name}' (has NetworkObject) */ }
             }
             else
             {
-                Debug.Log($"[NetworkPrefabRegistrar] ✓ Registered prefab: '{prefab.name}' (no NetworkObject?)");
+                { /* ✓ Registered prefab: '{prefab.name}' (no NetworkObject?) */ }
             }
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[NetworkPrefabRegistrar] ❌ Failed to register prefab '{prefab.name}': {ex.Message}");
+            { /* Lỗi: Failed to register prefab '{prefab.name}': {ex.Message} */ }
         }
     }
 
@@ -368,6 +367,6 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
 
         if (!validationOnly && npcPrefabs.Count > 0)
-            Debug.Log($"[NetworkPrefabRegistrar] ✓ Đăng ký {npcPrefabs.Count} NPC prefab(s)");
+            { /* ✓ Đăng ký {npcPrefabs.Count} NPC prefab(s) */ }
     }
 }

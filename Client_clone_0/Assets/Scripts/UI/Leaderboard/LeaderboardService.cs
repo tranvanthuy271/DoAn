@@ -50,51 +50,51 @@ public class LeaderboardService : MonoBehaviour
         Action<LeaderboardEntryDto[]> onDone, Action<string> onError)
     {
         string url = ApiUrl($"leaderboard/{categoryId}");
-        Debug.Log($"[BXH] Gọi API: {url}");
+        { /* Gọi API: {url} */ }
 
         using var req = UnityWebRequest.Get(url);
         AuthHelper.AddAuthHeader(req);
 
         yield return req.SendWebRequest();
 
-        Debug.Log($"[BXH] Response code={req.responseCode} result={req.result}");
+        { /* Response code={req.responseCode} result={req.result} */ }
 
         if (req.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[BXH] Lỗi mạng: {req.responseCode} – {req.error}");
+            { /* Cảnh báo: Lỗi mạng: {req.responseCode}  {req.error} */ }
             onError?.Invoke($"Lỗi mạng: {req.responseCode} – {req.error}");
             yield break;
         }
 
         string raw = req.downloadHandler.text;
-        Debug.Log($"[BXH] Raw response ({raw.Length} chars): {raw.Substring(0, Mathf.Min(300, raw.Length))}");
+        { /* Raw response ({raw.Length} chars): {raw.Substring(0, Mathf.Min(300, raw.Length))} */ }
 
         // Server trả về { id, name, list: "[ ... ]" }
         // list là một string JSON lồng bên trong
         var wrapper = JsonUtility.FromJson<LeaderboardCategoryDto>(raw);
         if (wrapper == null)
         {
-            Debug.LogWarning($"[BXH] Parse LeaderboardCategoryDto thất bại (null). Raw: {raw}");
+            { /* Cảnh báo: Parse LeaderboardCategoryDto thất bại (null). Raw: {raw} */ }
             onDone?.Invoke(Array.Empty<LeaderboardEntryDto>());
             yield break;
         }
 
-        Debug.Log($"[BXH] wrapper.id={wrapper.id} wrapper.name={wrapper.name} list='{(wrapper.list?.Length > 0 ? wrapper.list.Substring(0, Mathf.Min(100, wrapper.list.Length)) : "(empty)")}'" );
+        { /* wrapper.id={wrapper.id} wrapper.name={wrapper.name} list='{(wrapper.list?.Length > 0 ? wrapper.list.Substring(0, Mathf.Min(100, wrapper.list.Length)) */ }
 
         if (string.IsNullOrEmpty(wrapper.list) || wrapper.list == "[]")
         {
-            Debug.Log($"[BXH] list rỗng cho catId={categoryId}");
+            { /* list rỗng cho catId={categoryId} */ }
             onDone?.Invoke(Array.Empty<LeaderboardEntryDto>());
             yield break;
         }
 
         // Parse mảng entries từ list string
         string wrapped = $"{{\"items\":{wrapper.list}}}";
-        Debug.Log($"[BXH] Wrapped JSON: {wrapped.Substring(0, Mathf.Min(200, wrapped.Length))}");
+        { /* Wrapped JSON: {wrapped.Substring(0, Mathf.Min(200, wrapped.Length))} */ }
 
         var result = JsonUtility.FromJson<LeaderboardResponseWrapper>(wrapped);
         int count = result?.items?.Length ?? 0;
-        Debug.Log($"[BXH] Parse xong: {count} entries cho catId={categoryId}");
+        { /* Parse xong: {count} entries cho catId={categoryId} */ }
         onDone?.Invoke(result?.items ?? Array.Empty<LeaderboardEntryDto>());
     }
 

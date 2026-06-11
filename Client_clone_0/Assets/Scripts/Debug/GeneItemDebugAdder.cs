@@ -42,13 +42,13 @@ public class GeneItemDebugAdder : MonoBehaviour
     private IEnumerator AddGeneItemsCoroutine()
     {
         _isBusy = true;
-        Debug.Log("[GeneItemDebugAdder] ===== Bắt đầu thêm x10 item đột biến mỗi hệ =====");
+        { /* ===== Bắt đầu thêm x10 item đột biến mỗi hệ ===== */ }
 
         // Tìm NetworkInventory của local player
         var localPlayerObj = GetLocalPlayerObject();
         if (localPlayerObj == null)
         {
-            Debug.LogWarning("[GeneItemDebugAdder] Không tìm thấy local player!");
+            { /* Cảnh báo: Không tìm thấy local player */ }
             _isBusy = false;
             yield break;
         }
@@ -56,14 +56,14 @@ public class GeneItemDebugAdder : MonoBehaviour
         var networkInventory = localPlayerObj.GetComponent<NetworkInventory>();
         if (networkInventory == null)
         {
-            Debug.LogWarning("[GeneItemDebugAdder] Local player không có NetworkInventory!");
+            { /* Cảnh báo: Local player không có NetworkInventory */ }
             _isBusy = false;
             yield break;
         }
 
         if (APIClient.Instance == null && ServerAddressConfig.Instance == null)
         {
-            Debug.LogWarning("[GeneItemDebugAdder] ServerAddressConfig chưa sẵn sàng!");
+            { /* Cảnh báo: ServerAddressConfig chưa sẵn sàng */ }
             _isBusy = false;
             yield break;
         }
@@ -88,13 +88,13 @@ public class GeneItemDebugAdder : MonoBehaviour
                 if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
                     cfg = JsonUtility.FromJson<GeneConfigDto>(req.downloadHandler.text);
                 else
-                    Debug.LogWarning($"[GeneItemDebugAdder] Không lấy được config hệ {elementType}: {req.error}");
+                    { /* Cảnh báo: Không lấy được config hệ {elementType}: {req.error} */ }
             }
             yield return StartCoroutine(fetchConfig());
 
             if (cfg == null || cfg.itemId <= 0)
             {
-                Debug.LogWarning($"[GeneItemDebugAdder] Bỏ qua hệ {elementType} — itemId không hợp lệ.");
+                { /* Cảnh báo: Bỏ qua hệ {elementType}  itemId không hợp lệ */ }
                 continue;
             }
 
@@ -115,10 +115,10 @@ public class GeneItemDebugAdder : MonoBehaviour
                 quantity       = amountPerElement
             });
 
-            Debug.Log($"[GeneItemDebugAdder] ✓ Đã thêm x{amountPerElement} {cfg.itemName} (id={cfg.itemId}) — hệ {elementType}");
+            { /* ✓ Đã thêm x{amountPerElement} {cfg.itemName} (id={cfg.itemId})  hệ {elementType} */ }
         }
 
-        Debug.Log($"[GeneItemDebugAdder] ✅ Đã thêm {addedItems.Count}/6 loại item đột biến vào túi!");
+        { /* Đã thêm {addedItems.Count}/6 loại item đột biến vào túi */ }
 
         if (addedItems.Count > 0)
         {
@@ -140,7 +140,7 @@ public class GeneItemDebugAdder : MonoBehaviour
 
         if (playerId == 0)
         {
-            Debug.LogWarning("[GeneItemDebugAdder] playerId = 0, không thể sync DB!");
+            { /* Cảnh báo: playerId = 0, không thể sync DB */ }
             yield break;
         }
 
@@ -161,9 +161,9 @@ public class GeneItemDebugAdder : MonoBehaviour
             if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
             yield return req.SendWebRequest();
             if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-                Debug.Log($"[GeneItemDebugAdder] ✅ Đã sync {items.Count} item gene vào DB!");
+                { /* Đã sync {items.Count} item gene vào DB */ }
             else
-                Debug.LogError($"[GeneItemDebugAdder] ❌ Lỗi sync DB: {req.error}");
+                { /* Lỗi: Lỗi sync DB: {req.error} */ }
             done2 = true;
         }
         yield return StartCoroutine(doSync());

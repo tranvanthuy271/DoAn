@@ -32,7 +32,7 @@ public class PartyManager : MonoBehaviour
 
             DontDestroyOnLoad(existing.gameObject);
             existing.AutoConnect();
-            Debug.Log($"{LogPrefix} EnsureInstance resolved existing scene object '{existing.gameObject.name}' active={existing.gameObject.activeInHierarchy} scene='{existing.gameObject.scene.name}'", existing);
+            { /* {LogPrefix} EnsureInstance resolved existing scene object '{existing.gameObject.name}' active={existing.gameObject.activeInHierarchy} scene='{existing.gameObject.scene.name}' */ }
             return Instance;
         }
 
@@ -51,7 +51,7 @@ public class PartyManager : MonoBehaviour
 
             DontDestroyOnLoad(chatManager.gameObject);
             Instance.AutoConnect();
-            Debug.Log($"{LogPrefix} EnsureInstance attached to existing ChatManager '{chatManager.gameObject.name}'.", chatManager);
+            { /* {LogPrefix} EnsureInstance attached to existing ChatManager '{chatManager.gameObject.name}' */ }
             return Instance;
         }
 
@@ -66,14 +66,14 @@ public class PartyManager : MonoBehaviour
                 Instance = instanceGo.AddComponent<PartyManager>();
 
             Instance.AutoConnect();
-            Debug.Log($"{LogPrefix} EnsureInstance instantiated prefab '{ChatManagerResourcePath}' -> hasPartyManager={Instance != null}", instanceGo);
+            { /* {LogPrefix} EnsureInstance instantiated prefab '{ChatManagerResourcePath}' -> hasPartyManager={Instance != null} */ }
             return Instance;
         }
 
         var go = new GameObject("PartyManager [Auto]");
         Instance = go.AddComponent<PartyManager>();
         Instance.AutoConnect();
-        Debug.LogWarning($"{LogPrefix} EnsureInstance created standalone fallback GameObject because ChatManager prefab was not found.", go);
+        { /* Cảnh báo: {LogPrefix} EnsureInstance created standalone fallback GameObject because ChatManager prefab was not found */ }
         return Instance;
     }
 
@@ -134,7 +134,7 @@ public class PartyManager : MonoBehaviour
     {
         InvokeOrQueue(nameof(CreateParty), () =>
         {
-            Debug.Log($"{LogPrefix} Invoke CreateParty | user={ResolveLocalUserId()} map={ResolveCurrentMapId()} zone={ResolveCurrentZoneId()}", this);
+            { /* {LogPrefix} Invoke CreateParty | user={ResolveLocalUserId()} map={ResolveCurrentMapId()} zone={ResolveCurrentZoneId()} */ }
             _client.Invoke("CreateParty");
         });
     }
@@ -146,7 +146,7 @@ public class PartyManager : MonoBehaviour
         string trimmedTargetUserId = targetUserId.Trim();
         InvokeOrQueue($"{nameof(InviteMember)}:{trimmedTargetUserId}", () =>
         {
-            Debug.Log($"{LogPrefix} Invoke InviteMember | targetUserId={trimmedTargetUserId}", this);
+            { /* {LogPrefix} Invoke InviteMember | targetUserId={trimmedTargetUserId} */ }
             _client.Invoke("InviteMember", trimmedTargetUserId);
         });
     }
@@ -158,7 +158,7 @@ public class PartyManager : MonoBehaviour
         string trimmedPartyId = partyId.Trim();
         InvokeOrQueue($"{nameof(RequestJoinParty)}:{trimmedPartyId}", () =>
         {
-            Debug.Log($"{LogPrefix} Invoke RequestJoinParty | partyId={trimmedPartyId}", this);
+            { /* {LogPrefix} Invoke RequestJoinParty | partyId={trimmedPartyId} */ }
             _client.Invoke("RequestJoinParty", trimmedPartyId);
         });
     }
@@ -169,7 +169,7 @@ public class PartyManager : MonoBehaviour
         string safeRequesterUserId = requesterUserId ?? string.Empty;
         InvokeOrQueue($"{nameof(AcceptJoinRequest)}:{safePartyId}:{safeRequesterUserId}", () =>
         {
-            Debug.Log($"{LogPrefix} Invoke AcceptJoinRequest | partyId={safePartyId} requesterUserId={safeRequesterUserId}", this);
+            { /* {LogPrefix} Invoke AcceptJoinRequest | partyId={safePartyId} requesterUserId={safeRequesterUserId} */ }
             _client.Invoke("AcceptJoinRequest", safePartyId, safeRequesterUserId);
         });
     }
@@ -180,7 +180,7 @@ public class PartyManager : MonoBehaviour
         string safeRequesterUserId = requesterUserId ?? string.Empty;
         InvokeOrQueue($"{nameof(RejectJoinRequest)}:{safePartyId}:{safeRequesterUserId}", () =>
         {
-            Debug.Log($"{LogPrefix} Invoke RejectJoinRequest | partyId={safePartyId} requesterUserId={safeRequesterUserId}", this);
+            { /* {LogPrefix} Invoke RejectJoinRequest | partyId={safePartyId} requesterUserId={safeRequesterUserId} */ }
             _client.Invoke("RejectJoinRequest", safePartyId, safeRequesterUserId);
         });
     }
@@ -189,7 +189,7 @@ public class PartyManager : MonoBehaviour
     {
         InvokeOrQueue(nameof(LeaveParty), () =>
         {
-            Debug.Log($"{LogPrefix} Invoke LeaveParty | currentPartyId={CurrentParty?.partyId}", this);
+            { /* {LogPrefix} Invoke LeaveParty | currentPartyId={CurrentParty?.partyId} */ }
             _client.Invoke("LeaveParty");
         });
     }
@@ -198,7 +198,7 @@ public class PartyManager : MonoBehaviour
     {
         InvokeOrQueue(nameof(DisbandParty), () =>
         {
-            Debug.Log($"{LogPrefix} Invoke DisbandParty | currentPartyId={CurrentParty?.partyId}", this);
+            { /* {LogPrefix} Invoke DisbandParty | currentPartyId={CurrentParty?.partyId} */ }
             _client.Invoke("DisbandParty");
         });
     }
@@ -207,7 +207,7 @@ public class PartyManager : MonoBehaviour
     {
         InvokeOrQueue(nameof(SetLock), () =>
         {
-            Debug.Log($"{LogPrefix} Invoke SetLock | currentPartyId={CurrentParty?.partyId} locked={locked}", this);
+            { /* {LogPrefix} Invoke SetLock | currentPartyId={CurrentParty?.partyId} locked={locked} */ }
             _client.Invoke("SetLock", locked ? "true" : "false");
         });
     }
@@ -216,7 +216,7 @@ public class PartyManager : MonoBehaviour
     {
         InvokeOrQueue(nameof(SetAutoAccept), () =>
         {
-            Debug.Log($"{LogPrefix} Invoke SetAutoAccept | currentPartyId={CurrentParty?.partyId} autoAccept={autoAccept}", this);
+            { /* {LogPrefix} Invoke SetAutoAccept | currentPartyId={CurrentParty?.partyId} autoAccept={autoAccept} */ }
             _client.Invoke("SetAutoAccept", autoAccept ? "true" : "false");
         });
     }
@@ -227,7 +227,7 @@ public class PartyManager : MonoBehaviour
         {
             int mapId = ResolveCurrentMapId();
             int zoneId = ResolveCurrentZoneId();
-            Debug.Log($"{LogPrefix} Invoke GetPartiesInZone | map={mapId} zone={zoneId}", this);
+            { /* {LogPrefix} Invoke GetPartiesInZone | map={mapId} zone={zoneId} */ }
             _client.Invoke("GetPartiesInZone", mapId.ToString(), zoneId.ToString());
         });
     }
@@ -238,7 +238,7 @@ public class PartyManager : MonoBehaviour
         {
             int mapId = ResolveCurrentMapId();
             int zoneId = ResolveCurrentZoneId();
-            Debug.Log($"{LogPrefix} Invoke GetNearbyPlayers | map={mapId} zone={zoneId} localName={ResolveCharacterName()} level={ResolveLevel()}", this);
+            { /* {LogPrefix} Invoke GetNearbyPlayers | map={mapId} zone={zoneId} localName={ResolveCharacterName()} level={ResolveLevel()} */ }
             _client.Invoke("GetNearbyPlayers", mapId.ToString(), zoneId.ToString());
         });
     }
@@ -248,7 +248,7 @@ public class PartyManager : MonoBehaviour
         string safeDungeonType = string.IsNullOrWhiteSpace(dungeonType) ? "multi" : dungeonType;
         InvokeOrQueue($"{nameof(StartPartyDungeon)}:{dungeonId}:{mapId}:{safeDungeonType}", () =>
         {
-            Debug.Log($"{LogPrefix} Invoke StartPartyDungeon | dungeonId={dungeonId} mapId={mapId} dungeonType={safeDungeonType}", this);
+            { /* {LogPrefix} Invoke StartPartyDungeon | dungeonId={dungeonId} mapId={mapId} dungeonType={safeDungeonType} */ }
             _client.Invoke("StartPartyDungeon", dungeonId.ToString(), mapId.ToString(), safeDungeonType);
         });
     }
@@ -263,13 +263,13 @@ public class PartyManager : MonoBehaviour
         string token = ResolveJwtToken();
         if (string.IsNullOrWhiteSpace(token))
         {
-            Debug.LogWarning($"{LogPrefix} AutoConnect skipped because JWT token is empty.", this);
+            { /* Cảnh báo: {LogPrefix} AutoConnect skipped because JWT token is empty */ }
             return;
         }
 
         _hubUrl = ServerAddressConfig.Instance.ApiRoot.TrimEnd('/') + "/partyhub";
         _isConnecting = true;
-        Debug.Log($"{LogPrefix} AutoConnect -> {_hubUrl}", this);
+        { /* {LogPrefix} AutoConnect -> {_hubUrl} */ }
         ConnectToHub(token);
     }
 
@@ -316,7 +316,7 @@ public class PartyManager : MonoBehaviour
         });
         _client.On("PartyDisbanded", _ =>
         {
-            Debug.Log($"{LogPrefix} Event PartyDisbanded | clearing current party.", this);
+            { /* {LogPrefix} Event PartyDisbanded | clearing current party */ }
             CurrentParty = null;
             SyncChatGroup();
             OnPartyStateChanged?.Invoke(null);
@@ -326,23 +326,23 @@ public class PartyManager : MonoBehaviour
             var payload = PartyDungeonRequestPayload.FromJson(json);
             OnPartyDungeonRequested?.Invoke(payload);
             // Transfer thực tế do leader gửi RequestPartyDungeonEntryServerRpc — server tự transfer tất cả members
-            Debug.Log($"{LogPrefix} PartyDungeonRequested received | dungeonId={payload?.dungeonId} — server sẽ transfer", this);
+            { /* {LogPrefix} PartyDungeonRequested received | dungeonId={payload?.dungeonId}  server sẽ transfer */ }
         });
         _client.On("PartyError", json =>
         {
             string message = PartyErrorPayload.FromJson(json).message;
-            Debug.LogWarning($"{LogPrefix} Event PartyError | message={(string.IsNullOrWhiteSpace(message) ? json : message)} raw={json}", this);
+            { /* Cảnh báo: {LogPrefix} Event PartyError | message={(string.IsNullOrWhiteSpace(message) ? json : message)} raw={json} */ }
             OnError?.Invoke(string.IsNullOrWhiteSpace(message) ? json : message);
         });
 
-        Debug.Log($"{LogPrefix} ConnectToHub called.", this);
+        { /* {LogPrefix} ConnectToHub called */ }
         _client.Connect(_hubUrl, jwtToken);
     }
 
     private void HandleConnected()
     {
         _isConnecting = false;
-        Debug.Log($"{LogPrefix} Connected to party hub.", this);
+        { /* {LogPrefix} Connected to party hub */ }
         OnConnectionChanged?.Invoke(true);
 
         FlushPendingConnectedActions();
@@ -359,7 +359,7 @@ public class PartyManager : MonoBehaviour
     private void HandleDisconnected(string reason)
     {
         _isConnecting = false;
-        Debug.LogWarning($"{LogPrefix} Disconnected from party hub. reason={reason}", this);
+        { /* Cảnh báo: {LogPrefix} Disconnected from party hub. reason={reason} */ }
         OnConnectionChanged?.Invoke(false);
 
         if (_presenceCoroutine != null)
@@ -374,7 +374,7 @@ public class PartyManager : MonoBehaviour
     private void HandleError(string error)
     {
         _isConnecting = false;
-        Debug.LogError($"{LogPrefix} SignalR error: {error}", this);
+        { /* Lỗi: {LogPrefix} SignalR error: {error} */ }
         OnError?.Invoke(error);
         StartCoroutine(ReconnectAfterDelay(6f));
     }
@@ -417,7 +417,7 @@ public class PartyManager : MonoBehaviour
         string className = ResolveClassName();
         string elementType = ResolveElementType();
 
-        Debug.Log($"{LogPrefix} UpdatePresence | map={mapId} zone={zoneId} level={level} name={characterName} class={className} element={elementType}", this);
+        { /* {LogPrefix} UpdatePresence | map={mapId} zone={zoneId} level={level} name={characterName} class={className} element={elementType} */ }
 
         _client.Invoke(
             "UpdatePresence",
@@ -435,7 +435,7 @@ public class PartyManager : MonoBehaviour
         if (_joinedChatGroupId == newGroupId)
             return;
 
-        Debug.Log($"{LogPrefix} SyncChatGroup | old={_joinedChatGroupId} new={newGroupId}", this);
+        { /* {LogPrefix} SyncChatGroup | old={_joinedChatGroupId} new={newGroupId} */ }
 
         if (ChatManager.Instance != null)
         {
@@ -472,12 +472,10 @@ public class PartyManager : MonoBehaviour
         {
             bool replaced = _pendingConnectedActions.ContainsKey(actionName);
             _pendingConnectedActions[actionName] = deferredAction;
-            Debug.Log($"{LogPrefix} {(replaced ? "Updated" : "Queued")} deferred action '{actionName}' until connection is ready.", this);
+            { /* {LogPrefix} {(replaced ? */ }
         }
 
-        Debug.LogWarning(
-            $"{LogPrefix} '{actionName}' skipped because PartyManager is not connected. connecting={_isConnecting} hubUrl={_hubUrl} jwtExists={!string.IsNullOrWhiteSpace(ResolveJwtToken())}",
-            this);
+        { /* Cảnh báo: {LogPrefix} '{actionName}' skipped because PartyManager is not connected. connecting={_isConnecting} hubUrl={_hubUrl} jwtExists={!string.IsNullOrWhiteSpace(ResolveJwtToken())} */ }
 
         if (!_isConnecting)
             AutoConnect();
@@ -498,12 +496,12 @@ public class PartyManager : MonoBehaviour
         {
             try
             {
-                Debug.Log($"{LogPrefix} Flushing deferred action '{pendingAction.Key}'.", this);
+                { /* {LogPrefix} Flushing deferred action '{pendingAction.Key}' */ }
                 pendingAction.Value?.Invoke();
             }
             catch (Exception ex)
             {
-                Debug.LogError($"{LogPrefix} Deferred action '{pendingAction.Key}' failed: {ex}", this);
+                { /* Lỗi: {LogPrefix} Deferred action '{pendingAction.Key}' failed: {ex} */ }
             }
         }
     }

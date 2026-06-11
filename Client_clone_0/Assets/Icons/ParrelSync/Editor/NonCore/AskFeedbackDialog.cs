@@ -42,20 +42,20 @@
             {
                 // First parameter.
                 case 0:
-                    Debug.Log("AskFeedbackDialog: Star on GitHub selected");
+                    { /* AskFeedbackDialog: Star on GitHub selected */ }
                     EditorPrefs.SetBool(StopShowingKey, true);
                     EditorPrefs.DeleteKey(InitializeOnLoadCountKey);
                     Application.OpenURL(ExternalLinks.GitHubHome);
                     break;
                 // Second parameter.
                 case 1:
-                    Debug.Log("AskFeedbackDialog: Close and never show again.");
+                    { /* AskFeedbackDialog: Close and never show again */ }
                     EditorPrefs.SetBool(StopShowingKey, true);
                     EditorPrefs.DeleteKey(InitializeOnLoadCountKey);
                     break;
                 // Third parameter.
                 case 2:
-                    Debug.Log("AskFeedbackDialog: Remind me next time");
+                    { /* AskFeedbackDialog: Remind me next time */ }
                     EditorPrefs.SetInt(InitializeOnLoadCountKey, 0);
                     break;
                 default:

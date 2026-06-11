@@ -111,7 +111,7 @@ public class BagQuickActionPanel : MonoBehaviour
         {
             transform.SetParent(bestCanvas.transform, false);
             transform.SetAsLastSibling();
-            Debug.Log($"[BagQuickActionPanel] Đã chuyển parent → '{bestCanvas.name}' để tránh lệch canvas/inactive parent.");
+            { /* Đã chuyển parent → '{bestCanvas.name}' để tránh lệch canvas/inactive parent */ }
         }
     }
 

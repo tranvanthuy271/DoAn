@@ -30,7 +30,7 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
         _netObj ??= GetComponent<NetworkObject>();
         if (_netObj == null)
         {
-            Debug.LogWarning("[NetworkVisibilityZoneFilter] Thiếu NetworkObject, không thể khởi tạo visibility filter.");
+            { /* Cảnh báo: Thiếu NetworkObject, không thể khởi tạo visibility filter */ }
             return;
         }
 
@@ -43,8 +43,7 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
         _initialized = true;
 
         var zoneTag = GetComponent<ZoneOwnerTag>();
-        Debug.Log($"[NetworkVisibilityZoneFilter] Initialized on '{gameObject.name}' " +
-                  $"(netId={_netObj.NetworkObjectId}, zoneTag={zoneTag?.MapId}_{zoneTag?.ZoneId})");
+        { /* Initialized on '{gameObject.name}' */ }
     }
 
     // Core visibility logic
@@ -64,7 +63,7 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
         var registry = ZoneRoomRegistry.Instance;
         if (registry == null)
         {
-            Debug.LogWarning($"[NetworkVisibilityZoneFilter] registry=null → default visible for '{gameObject.name}' client={clientId}");
+            { /* Cảnh báo: registry=null → default visible for '{gameObject.name}' client={clientId} */ }
             return true; // Default open khi chưa init
         }
 
@@ -116,12 +115,12 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
             if (shouldBeVisible && !isCurrentlyVisible)
             {
                 _netObj.NetworkShow(clientId);
-                Debug.Log($"[NetworkVisibilityZoneFilter] SHOW '{gameObject.name}' to client {clientId}");
+                { /* SHOW '{gameObject.name}' to client {clientId} */ }
             }
             else if (!shouldBeVisible && isCurrentlyVisible)
             {
                 _netObj.NetworkHide(clientId);
-                Debug.Log($"[NetworkVisibilityZoneFilter] HIDE '{gameObject.name}' from client {clientId}");
+                { /* HIDE '{gameObject.name}' from client {clientId} */ }
             }
         }
     }

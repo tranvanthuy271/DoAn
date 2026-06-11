@@ -59,7 +59,7 @@ public class MapSceneManager : MonoBehaviour
     {
         if (config?.maps == null)
         {
-            Debug.LogError("[MapSceneManager] MapWorldConfig is null or has no maps.");
+            { /* Lỗi: MapWorldConfig is null or has no maps */ }
             return;
         }
 
@@ -79,7 +79,7 @@ public class MapSceneManager : MonoBehaviour
             _mapScenes[mapDef.mapId] = scene;
             _mapSceneNames[mapDef.mapId] = mapDef.sceneName;
 
-            Debug.Log($"[MapSceneManager] Created physics scene for map {mapDef.mapId} ({mapDef.mapName ?? "unnamed"}).");
+            { /* Created physics scene for map {mapDef.mapId} ({mapDef.mapName ?? */ }
         }
 
         BuildGroundProxiesFromDatabase();
@@ -91,14 +91,14 @@ public class MapSceneManager : MonoBehaviour
         if (enemyLayer >= 0 && groundLayer >= 0)
         {
             bool ignored = Physics2D.GetIgnoreLayerCollision(enemyLayer, groundLayer);
-            Debug.Log($"[MapSceneManager] Layer collision Enemy({enemyLayer}) vs Ground({groundLayer}) = {(ignored ? "IGNORED \u26a0\ufe0f" : "ENABLED \u2713")}, gravity2D={Physics2D.gravity}");
+            { /* Layer collision Enemy({enemyLayer}) vs Ground({groundLayer}) = {(ignored ? */ }
         }
         else
         {
-            Debug.LogError($"[MapSceneManager] Layer m\u1ea5t: Enemy={enemyLayer} Ground={groundLayer}");
+            { /* Lỗi: Layer m\u1ea5t: Enemy={enemyLayer} Ground={groundLayer} */ }
         }
 
-        Debug.Log($"[MapSceneManager] Ready with {_mapScenes.Count} map physics scene(s). proxiesBuilt={_groundProxyRoots.Count}");
+        { /* Ready with {_mapScenes.Count} map physics scene(s). proxiesBuilt={_groundProxyRoots.Count} */ }
     }
 
     // Move a GameObject into the target map physics scene before NetworkObject.Spawn().
@@ -116,22 +116,22 @@ public class MapSceneManager : MonoBehaviour
 
             if (obj.scene == scene)
             {
-                Debug.Log($"[MapSceneManager][MoveToMapScene] obj='{obj.name}' đã ở physicsScene='{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount}");
+                { /* [MoveToMapScene] obj='{obj.name}' đã ở physicsScene='{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount} */ }
                 return;
             }
 
             string oldSceneName = obj.scene.IsValid() ? obj.scene.name : "<invalid>";
             SceneManager.MoveGameObjectToScene(obj, scene);
-            Debug.Log($"[MapSceneManager][MoveToMapScene] obj='{obj.name}' từ '{oldSceneName}' → '{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount}");
+            { /* [MoveToMapScene] obj='{obj.name}' từ '{oldSceneName}' → '{scene.name}' (mapId={mapId}). groundProxy={hasGroundProxy} children={proxyChildCount} */ }
 
             if (!hasGroundProxy || proxyChildCount == 0)
             {
-                Debug.LogError($"[MapSceneManager][MoveToMapScene] mapId={mapId} KHÔNG CÓ GROUND PROXY → boss/enemy sẽ rơi mãi mãi! Hãy chạy Tools/DoAn/Bake Server Ground Colliders.");
+                { /* Lỗi: [MoveToMapScene] mapId={mapId} KHÔNG CÓ GROUND PROXY → boss/enemy sẽ rơi mãi mãi! Hãy chạy Tools/DoAn/Bake Server Ground Colliders */ }
             }
         }
         else
         {
-            Debug.LogWarning($"[MapSceneManager] Missing physics scene for map {mapId}. Object stays in main scene. (knownMaps=[{string.Join(",", _mapScenes.Keys)}])");
+            { /* Cảnh báo: Missing physics scene for map {mapId}. Object stays in main scene. (knownMaps=[{string.Join( */ }
         }
     }
 
@@ -198,9 +198,7 @@ public class MapSceneManager : MonoBehaviour
     {
         if (_groundDatabase == null)
         {
-            Debug.LogWarning(
-                "[MapSceneManager] ServerGroundColliderDatabase not found. " +
-                "Dedicated server maps will have no ground until the database is baked.");
+            { /* Cảnh báo: ServerGroundColliderDatabase not found */ }
             return;
         }
 
@@ -208,7 +206,7 @@ public class MapSceneManager : MonoBehaviour
         {
             if (!_groundDatabase.TryGetMap(kvp.Key, out ServerGroundColliderDatabase.MapGroundData mapData))
             {
-                Debug.LogWarning($"[MapSceneManager] Ground database has no data for map {kvp.Key}.");
+                { /* Cảnh báo: Ground database has no data for map {kvp.Key} */ }
                 continue;
             }
 
@@ -251,7 +249,7 @@ public class MapSceneManager : MonoBehaviour
             float halfH = (c.size.y * c.scale.y) * 0.5f;
             sb.AppendLine($"  [{i}] {c.name} pos=({c.position.x:F2},{c.position.y:F2}) scale=({c.scale.x:F2},{c.scale.y:F2}) offset=({c.offset.x:F2},{c.offset.y:F2}) size=({c.size.x:F2},{c.size.y:F2}) → worldCenter=({worldCenterX:F2},{worldCenterY:F2}) topY={worldCenterY + halfH:F2} bottomY={worldCenterY - halfH:F2} oneWay={c.useOneWay} trigger={c.isTrigger}");
         }
-        Debug.Log(sb.ToString());
+        { /* Ghi nhận: sb.ToString() */ }
     }
 
     private void BuildGroundProxyForMap(int mapId, Scene sourceScene)
@@ -263,7 +261,7 @@ public class MapSceneManager : MonoBehaviour
         int maxMapLayer = LayerMask.NameToLayer("MaxMap");
         if (groundLayer < 0)
         {
-            Debug.LogWarning("[MapSceneManager] Layer 'Ground' not found. Skipping ground proxy build.");
+            { /* Cảnh báo: Layer 'Ground' not found. Skipping ground proxy build */ }
             return;
         }
 
@@ -293,11 +291,11 @@ public class MapSceneManager : MonoBehaviour
 
         if (clonedCount > 0)
         {
-            Debug.Log($"[MapSceneManager] Built {clonedCount} server obstacle proxy collider(s) for map {mapId} from scene '{sourceScene.name}'.");
+            { /* Built {clonedCount} server obstacle proxy collider(s) for map {mapId} from scene '{sourceScene.name}' */ }
         }
         else
         {
-            Debug.LogWarning($"[MapSceneManager] No Ground/MaxMap BoxCollider2D found in scene '{sourceScene.name}' for map {mapId}.");
+            { /* Cảnh báo: No Ground/MaxMap BoxCollider2D found in scene '{sourceScene.name}' for map {mapId} */ }
         }
     }
 
@@ -359,7 +357,7 @@ public class MapSceneManager : MonoBehaviour
         proxyCollider.size = colliderData.size;
         proxyCollider.edgeRadius = colliderData.edgeRadius;
         proxyCollider.usedByEffector = false;
-        Debug.Log($"[GroundProxy] Created solid proxy '{colliderData.name}' layer={LayerMask.LayerToName(proxy.layer)} in scene '{parent.gameObject.scene.name}' pos={proxyTransform.position} scale={proxyTransform.localScale} offset={proxyCollider.offset} size={proxyCollider.size}");
+        { /* Created solid proxy '{colliderData.name}' layer={LayerMask.LayerToName(proxy.layer)} in scene '{parent.gameObject.scene.name}' pos={proxyTransform.position} scale={proxyTransform.localScale} offset={proxyCollider.offset} size={proxyCollider.size} */ }
     }
 
     private static bool IsServerObstacleLayer(int layer, int groundLayer, int maxMapLayer)

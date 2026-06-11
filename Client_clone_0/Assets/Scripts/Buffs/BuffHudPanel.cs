@@ -62,8 +62,7 @@ public class BuffHudPanel : MonoBehaviour
         if (ActiveBuffManager.Instance != null)
             ActiveBuffManager.Instance.LoadFromServer();
         else
-            Debug.LogWarning("[BuffHudPanel] ActiveBuffManager.Instance is null. " +
-                             "Đảm bảo ActiveBuffManager đã có trong scene và là DontDestroyOnLoad.");
+            { /* Cảnh báo: ActiveBuffManager.Instance is null */ }
     }
 
     private void OnDisable()

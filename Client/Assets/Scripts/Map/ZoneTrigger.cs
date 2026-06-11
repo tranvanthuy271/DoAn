@@ -45,7 +45,7 @@ public class ZoneTrigger : MonoBehaviour
     {
         if (string.IsNullOrEmpty(roomId))
         {
-            Debug.LogError("[ZoneTrigger] roomId chưa được set trong Inspector!");
+            { /* Lỗi: roomId chưa được set trong Inspector */ }
             _triggered = false;
             return;
         }
@@ -53,7 +53,7 @@ public class ZoneTrigger : MonoBehaviour
         if (playerObj.TryGetComponent<PlayerZoneHandler>(out var handler))
         {
             handler.RequestZoneChangeServerRpc(new FixedString64Bytes(roomId), spawnX, spawnY);
-            Debug.Log($"[ZoneTrigger] Chuyển zone → '{roomId}' @ ({spawnX},{spawnY})");
+            { /* Chuyển zone → '{roomId}' @ ({spawnX},{spawnY}) */ }
 
             // Hiện tên zone trên UI nếu đã set
             if (!string.IsNullOrEmpty(zoneName))
@@ -61,7 +61,7 @@ public class ZoneTrigger : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[ZoneTrigger] Player Prefab thiếu PlayerZoneHandler component!");
+            { /* Lỗi: Player Prefab thiếu PlayerZoneHandler component */ }
             _triggered = false;
             return;
         }

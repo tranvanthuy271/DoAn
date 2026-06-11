@@ -39,12 +39,7 @@ public class NpcMenuItemRow : MonoBehaviour
         var cg      = GetComponentInParent<CanvasGroup>();
         var canvas  = GetComponentInParent<Canvas>();
         var raycaster = canvas != null ? canvas.GetComponent<GraphicRaycaster>() : null;
-        Debug.Log($"{LogPrefix} Awake '{gameObject.name}' | " +
-            $"Button={(_button != null ? $"OK interactable={_button.interactable} enabled={_button.enabled}" : "NULL")} " +
-            $"Mask={(mask != null ? $"{mask.gameObject.name} enabled={mask.enabled}" : "none")} " +
-            $"CanvasGroup={(cg != null ? $"{cg.gameObject.name} interactable={cg.interactable} blocksRaycasts={cg.blocksRaycasts}" : "none")} " +
-            $"Canvas={(canvas != null ? canvas.renderMode.ToString() : "NULL")} " +
-            $"GraphicRaycaster={(raycaster != null ? "OK" : "NULL")}", this);
+        { /* {LogPrefix} Awake '{gameObject.name}' | */ }
     }
 
     // Khởi tạo hàng menu với nhãn và callback khi bấm.
@@ -70,17 +65,17 @@ public class NpcMenuItemRow : MonoBehaviour
         {
             _button.onClick.RemoveAllListeners();
             _button.onClick.AddListener(HandleClick);
-            Debug.Log($"{LogPrefix} Init '{label}' | button OK interactable={_button.interactable} enabled={_button.enabled} go.active={gameObject.activeSelf}", this);
+            { /* {LogPrefix} Init '{label}' | button OK interactable={_button.interactable} enabled={_button.enabled} go.active={gameObject.activeSelf} */ }
         }
         else
         {
-            Debug.LogError($"{LogPrefix} Init '{label}' | _button is NULL — click sẽ không hoạt động!", this);
+            { /* Lỗi: {LogPrefix} Init '{label}' | _button is NULL  click sẽ không hoạt động */ }
         }
     }
 
     private void HandleClick()
     {
-        Debug.Log($"{LogPrefix} HandleClick '{(labelText != null ? labelText.text : "?")}'", this);
+        { /* {LogPrefix} HandleClick '{(labelText != null ? labelText.text */ }
         _onClick?.Invoke();
     }
 }

@@ -110,19 +110,19 @@ public class FriendListUI : MonoBehaviour
         });
         searchInput?.onEndEdit.AddListener(t =>
         {
-            Debug.Log($"[FriendUI] SearchInput EndEdit text='{t}' returnPressed={Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)}");
+            { /* SearchInput EndEdit text='{t}' returnPressed={Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)} */ }
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
                 OnSearchRequested("EndEditReturn");
         });
 
         AttachSearchDebugTriggers();
 
-        Debug.Log($"[FriendUI] Awake refs: close={closeButton != null} tabs={tabFriendsBtn != null}/{tabAddBtn != null}/{tabPendingBtn != null} searchInput={searchInput != null} searchButton={searchButton != null} searchHint={searchHintLabel != null} friendContent={friendListContent != null} pendingContent={pendingContent != null} friendEntryPrefab={DescribeObject(friendEntryPrefab)} searchResultEntryPrefab={DescribeObject(searchResultEntryPrefab)} pendingEntryPrefab={DescribeObject(pendingEntryPrefab)}");
+        { /* Awake refs: close={closeButton != null} tabs={tabFriendsBtn != null}/{tabAddBtn != null}/{tabPendingBtn != null} searchInput={searchInput != null} searchButton={searchButton != null} searchHint={searchHintLabel != null} friendContent={friendListContent != null} pendingContent={pendingContent != null} friendEntryPrefab={DescribeObject(friendEntryPrefab)} searchResultEntryPrefab={DescribeObject(searchResultEntryPrefab)} pendingEntryPrefab={DescribeObject(pendingEntryPrefab)} */ }
     }
 
     private void OnEnable()
     {
-        Debug.Log($"[FriendUI] OnEnable activeTab={_activeTab} activeSelf={gameObject.activeSelf}");
+        { /* OnEnable activeTab={_activeTab} activeSelf={gameObject.activeSelf} */ }
         EnsureBackdrop();
         BringToFront();
         EnsurePanelVisible();
@@ -152,13 +152,13 @@ public class FriendListUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[FriendUI] FriendManager.EnsureInstance returned NULL when panel opened.");
+            { /* Cảnh báo: FriendManager.EnsureInstance returned NULL when panel opened */ }
         }
     }
 
     private void OnDisable()
     {
-        Debug.Log("[FriendUI] OnDisable");
+        { /* OnDisable */ }
         SetBackdropActive(false);
         InputManager.Instance?.SetGameplayInputBlocked(GameplayBlockSource, false);
         InputManager.Instance?.SetInputEnabled(true);  // đảm bảo input được mở lại
@@ -180,7 +180,7 @@ public class FriendListUI : MonoBehaviour
 
     private void SetPanelVisible(bool visible, string source)
     {
-        Debug.Log($"[FriendUI] SetPanelVisible source={source} visible={visible} currentActive={gameObject.activeSelf}");
+        { /* SetPanelVisible source={source} visible={visible} currentActive={gameObject.activeSelf} */ }
 
         if (visible)
         {
@@ -225,7 +225,7 @@ public class FriendListUI : MonoBehaviour
         if (tab == 1)
             FocusSearchInput();
 
-        Debug.Log($"[FriendUI] Switched tab -> {tab} friendsActive={panelFriends != null && panelFriends.activeSelf} addActive={panelAdd != null && panelAdd.activeSelf} pendingActive={panelPending != null && panelPending.activeSelf} hintActive={searchHintLabel != null && searchHintLabel.gameObject.activeSelf}");
+        { /* Switched tab -> {tab} friendsActive={panelFriends != null && panelFriends.activeSelf} addActive={panelAdd != null && panelAdd.activeSelf} pendingActive={panelPending != null && panelPending.activeSelf} hintActive={searchHintLabel != null && searchHintLabel.gameObject.activeSelf} */ }
     }
 
     private static void SetTabHighlight(Button btn, bool active)
@@ -266,7 +266,7 @@ public class FriendListUI : MonoBehaviour
                     if (sent != null) _pendingRows.Add(sent);
                     break;
                 default:
-                    Debug.LogWarning($"[FriendUI] Unknown friend status '{f.status}' for user '{f.username}' relationId={f.relationId}");
+                    { /* Cảnh báo: Unknown friend status '{f.status}' for user '{f.username}' relationId={f.relationId} */ }
                     break;
             }
         }
@@ -286,7 +286,7 @@ public class FriendListUI : MonoBehaviour
             tabPendingBadge.text = pendingReceivedCount > 9 ? "9+" : pendingReceivedCount.ToString();
         }
 
-        Debug.Log($"[FriendUI] RefreshAllTabs friends={_friendRows.Count} pendingRows={_pendingRows.Count} pendingReceived={pendingReceivedCount} pendingSent={pendingSentCount} pendingContentChildren={pendingContent?.childCount ?? -1} emptyPendingActive={emptyPendingLabel != null && emptyPendingLabel.gameObject.activeSelf}");
+        { /* RefreshAllTabs friends={_friendRows.Count} pendingRows={_pendingRows.Count} pendingReceived={pendingReceivedCount} pendingSent={pendingSentCount} pendingContentChildren={pendingContent?.childCount ?? -1} emptyPendingActive={emptyPendingLabel != null && emptyPendingLabel.gameObject.activeSelf} */ }
     }
 
     // Search
@@ -300,12 +300,12 @@ public class FriendListUI : MonoBehaviour
     private void OnSearchRequested(string source)
     {
         var q = searchInput?.text?.Trim();
-        Debug.Log($"[FriendUI] Search requested source={source} query='{q}' activeTab={_activeTab} panelAddActive={panelAdd != null && panelAdd.activeSelf} buttonActive={searchButton != null && searchButton.gameObject.activeInHierarchy} buttonInteractable={searchButton != null && searchButton.interactable} resultContent={searchResultContent != null}");
+        { /* Search requested source={source} query='{q}' activeTab={_activeTab} panelAddActive={panelAdd != null && panelAdd.activeSelf} buttonActive={searchButton != null && searchButton.gameObject.activeInHierarchy} buttonInteractable={searchButton != null && searchButton.interactable} resultContent={searchResultContent != null} */ }
 
         if (string.IsNullOrEmpty(q) || q.Length < 2)
         {
             SetSearchFeedback("Nhập ít nhất 2 ký tự để tìm người chơi.", new Color(1f, 0.85f, 0.35f));
-            Debug.LogWarning($"[FriendUI] Search aborted source={source} because query is too short.");
+            { /* Cảnh báo: Search aborted source={source} because query is too short */ }
             return;
         }
 
@@ -314,15 +314,15 @@ public class FriendListUI : MonoBehaviour
         var friendManager = FriendManager.EnsureInstance();
         if (friendManager == null)
         {
-            Debug.LogWarning($"[FriendUI] Search aborted source={source} because FriendManager.EnsureInstance returned NULL.");
+            { /* Cảnh báo: Search aborted source={source} because FriendManager.EnsureInstance returned NULL */ }
             SetSearchFeedback("Hệ thống bạn bè chưa sẵn sàng. Vui lòng thử lại sau.", new Color(1f, 0.45f, 0.45f));
             return;
         }
 
-        Debug.Log($"[FriendUI] Dispatching SearchUsers query='{q}' source={source}");
+        { /* Dispatching SearchUsers query='{q}' source={source} */ }
         friendManager.SearchUsers(q, results =>
         {
-            Debug.Log($"[FriendUI] Search result count={results.Count} query='{q}' source={source}");
+            { /* Search result count={results.Count} query='{q}' source={source} */ }
             ClearRows(_searchRows);
 
             if (results.Count == 0)
@@ -389,13 +389,13 @@ public class FriendListUI : MonoBehaviour
             SetButtonLabel(go, "AcceptButton", "Nhan");
             BindButton(go, "AcceptButton", () =>
             {
-                Debug.Log($"[FriendUI] Accept friend request relationId={f.relationId} username={f.username} displayName={displayName}");
+                { /* Accept friend request relationId={f.relationId} username={f.username} displayName={displayName} */ }
                 FriendManager.Instance?.AcceptFriendRequest(f.relationId, () => FriendManager.Instance.LoadFriends());
             });
 
             BindButton(go, "DeleteButton", () =>
             {
-                Debug.Log($"[FriendUI] Reject friend request relationId={f.relationId} username={f.username} displayName={displayName}");
+                { /* Reject friend request relationId={f.relationId} username={f.username} displayName={displayName} */ }
                 FriendManager.Instance?.RemoveFriend(f.relationId, () => FriendManager.Instance.LoadFriends());
             });
             SetButtonLabel(go, "DeleteButton", "Tu choi");
@@ -404,7 +404,7 @@ public class FriendListUI : MonoBehaviour
         {
             BindButton(go, "DeleteButton", () =>
             {
-                Debug.Log($"[FriendUI] Cancel sent friend request relationId={f.relationId} username={f.username} displayName={displayName}");
+                { /* Cancel sent friend request relationId={f.relationId} username={f.username} displayName={displayName} */ }
                 FriendManager.Instance?.RemoveFriend(f.relationId, () => FriendManager.Instance.LoadFriends());
             });
             SetButtonLabel(go, "DeleteButton", "Huy");
@@ -416,7 +416,7 @@ public class FriendListUI : MonoBehaviour
         SetChildActive(go, "AddButton",     false);
         ApplyRowPresentation(go);
 
-        Debug.Log($"[FriendUI] Built pending row username='{f.username}' displayName='{displayName}' relationId={f.relationId} isIncoming={isIncoming} rowName={go.name} parentChildCount={parent.childCount} activeInHierarchy={go.activeInHierarchy}");
+        { /* Built pending row username='{f.username}' displayName='{displayName}' relationId={f.relationId} isIncoming={isIncoming} rowName={go.name} parentChildCount={parent.childCount} activeInHierarchy={go.activeInHierarchy} */ }
 
         return go;
     }
@@ -441,19 +441,19 @@ public class FriendListUI : MonoBehaviour
             int uid = r.userId;
             addBtn.onClick.AddListener(() =>
             {
-                Debug.Log($"[FriendUI] Send friend request button clicked targetUserId={uid} username={r.username} displayName={displayName}");
+                { /* Send friend request button clicked targetUserId={uid} username={r.username} displayName={displayName} */ }
                 addBtn.interactable = false;
                 SetText(go, "AddButton/Label", "Đã gửi");
                 ApplyRowPresentation(go);
                 FriendManager.Instance?.SendFriendRequest(uid, () =>
                 {
-                    Debug.Log($"[FriendUI] Send friend request success targetUserId={uid} username={r.username} displayName={displayName}");
+                    { /* Send friend request success targetUserId={uid} username={r.username} displayName={displayName} */ }
                     SetSearchFeedback($"Đã gửi lời mời kết bạn tới {displayName}.", new Color(0.55f, 1f, 0.55f), 2.5f);
                 });
             });
         }
 
-        Debug.Log($"[FriendUI] Built search row username='{r.username}' displayName='{displayName}' userId={r.userId} rowName={go.name} parentChildCount={parent.childCount} activeInHierarchy={go.activeInHierarchy}");
+        { /* Built search row username='{r.username}' displayName='{displayName}' userId={r.userId} rowName={go.name} parentChildCount={parent.childCount} activeInHierarchy={go.activeInHierarchy} */ }
 
         SetChildActive(go, "ChatButton",    false);
         SetChildActive(go, "ProfileButton", false);
@@ -479,12 +479,12 @@ public class FriendListUI : MonoBehaviour
 
     private void OpenProfile(int userId, string username)
     {
-        Debug.Log($"[FriendUI] OpenProfile userId={userId} username='{username}'");
+        { /* OpenProfile userId={userId} username='{username}' */ }
         if (profilePanel == null)
             profilePanel = FindObjectOfType<PlayerProfilePanelUI>(includeInactive: true);
         if (profilePanel == null)
         {
-            Debug.LogWarning("[FriendUI] PlayerProfilePanelUI bridge not found in scene.");
+            { /* Cảnh báo: PlayerProfilePanelUI bridge not found in scene */ }
             return;
         }
 
@@ -496,14 +496,14 @@ public class FriendListUI : MonoBehaviour
 
     private void OnRequestSent()
     {
-        Debug.Log("[FriendUI] OnRequestSent fired.");
+        { /* OnRequestSent fired */ }
         if (_activeTab == 1 && searchHintLabel != null)
             SetSearchFeedback("Đã gửi lời mời kết bạn.", new Color(0.55f, 1f, 0.55f), 2.5f);
     }
 
     private void OnFriendError(string err)
     {
-        Debug.LogWarning($"[FriendUI] {err}");
+        { /* Cảnh báo: {err} */ }
         if (_activeTab == 1 && searchHintLabel != null)
             SetSearchFeedback(BuildUserFacingFriendError(err), new Color(1f, 0.45f, 0.45f));
     }
@@ -515,7 +515,7 @@ public class FriendListUI : MonoBehaviour
         var parent = transform.parent as RectTransform;
         if (parent == null)
         {
-            Debug.LogWarning("[FriendUI] Cannot create backdrop because panel has no RectTransform parent.");
+            { /* Cảnh báo: Cannot create backdrop because panel has no RectTransform parent */ }
             return;
         }
 
@@ -574,20 +574,20 @@ public class FriendListUI : MonoBehaviour
             return;
 
         if (UIDraggablePanel.ClampToRootCanvas(_rectTransform))
-            Debug.LogWarning("[FriendUI] Panel position was adjusted to stay inside the root canvas.");
+            { /* Cảnh báo: Panel position was adjusted to stay inside the root canvas */ }
     }
 
     private void FocusSearchInput()
     {
         if (searchInput == null)
         {
-            Debug.LogWarning("[FriendUI] FocusSearchInput skipped because searchInput is NULL.");
+            { /* Cảnh báo: FocusSearchInput skipped because searchInput is NULL */ }
             return;
         }
 
         if (!searchInput.gameObject.activeInHierarchy)
         {
-            Debug.LogWarning("[FriendUI] FocusSearchInput skipped because searchInput is not active in hierarchy.");
+            { /* Cảnh báo: FocusSearchInput skipped because searchInput is not active in hierarchy */ }
             return;
         }
 
@@ -611,7 +611,7 @@ public class FriendListUI : MonoBehaviour
         if (!text.raycastTarget)
             return;
 
-        Debug.LogWarning($"[FriendUI] {labelName} had raycastTarget=true and could block clicks. Forcing raycastTarget=false.", text);
+        { /* Cảnh báo: {labelName} had raycastTarget=true and could block clicks. Forcing raycastTarget=false */ }
         text.raycastTarget = false;
     }
 
@@ -635,23 +635,21 @@ public class FriendListUI : MonoBehaviour
         var searchScrollRect = searchResultContent != null ? searchResultContent.GetComponentInParent<ScrollRect>() : null;
         if (searchScrollRect == null)
         {
-            Debug.LogWarning("[FriendUI] Could not resolve SearchResultScrollView from searchResultContent.");
+            { /* Cảnh báo: Could not resolve SearchResultScrollView from searchResultContent */ }
             return;
         }
 
         var rootGraphic = searchScrollRect.GetComponent<Graphic>();
         if (rootGraphic == null)
         {
-            Debug.LogWarning("[FriendUI] SearchResultScrollView has no root Graphic to configure.", searchScrollRect);
+            { /* Cảnh báo: SearchResultScrollView has no root Graphic to configure */ }
             return;
         }
 
         if (!rootGraphic.raycastTarget)
             return;
 
-        Debug.LogWarning(
-            $"[FriendUI] SearchResultScrollView root graphic '{rootGraphic.GetType().Name}' had raycastTarget=true and was covering SearchBar/SearchButton. Forcing raycastTarget=false.",
-            rootGraphic);
+        { /* Cảnh báo: SearchResultScrollView root graphic '{rootGraphic.GetType().Name}' had raycastTarget=true and was covering SearchBar/SearchButton. Forcing raycastTarget=false */ }
         rootGraphic.raycastTarget = false;
     }
 
@@ -682,7 +680,7 @@ public class FriendListUI : MonoBehaviour
         }
 
         var contentSize = searchResultContent is RectTransform rect ? rect.rect.size.ToString() : "n/a";
-        Debug.Log($"[FriendUI] RefreshSearchResultsLayout childCount={searchResultContent.childCount} contentSize={contentSize}");
+        { /* RefreshSearchResultsLayout childCount={searchResultContent.childCount} contentSize={contentSize} */ }
     }
 
     private void RefreshListLayout(Transform content, string listName)
@@ -710,7 +708,7 @@ public class FriendListUI : MonoBehaviour
         }
 
         var size = content is RectTransform rect ? rect.rect.size.ToString() : "n/a";
-        Debug.Log($"[FriendUI] RefreshListLayout list={listName} childCount={content.childCount} contentSize={size}");
+        { /* RefreshListLayout list={listName} childCount={content.childCount} contentSize={size} */ }
     }
 
     private void SetSearchFeedback(string message, Color color, float autoHideAfterSeconds = -1f)
@@ -835,11 +833,7 @@ public class FriendListUI : MonoBehaviour
             ? EventSystem.current.currentSelectedGameObject.name
             : "NULL";
 
-        Debug.Log(
-            $"[FriendUI] {elementName} {eventName} pointer={pointerPos} selected={selectedName} activeTab={_activeTab} panelAddActive={panelAdd != null && panelAdd.activeSelf} " +
-            $"inputActive={searchInput != null && searchInput.gameObject.activeInHierarchy} inputInteractable={searchInput != null && searchInput.interactable} inputReadOnly={searchInput != null && searchInput.readOnly} " +
-            $"buttonActive={searchButton != null && searchButton.gameObject.activeInHierarchy} buttonInteractable={searchButton != null && searchButton.interactable} " +
-            $"hintActive={searchHintLabel != null && searchHintLabel.gameObject.activeInHierarchy} hintRaycast={searchHintLabel != null && searchHintLabel.raycastTarget}");
+        { /* {elementName} {eventName} pointer={pointerPos} selected={selectedName} activeTab={_activeTab} panelAddActive={panelAdd != null && panelAdd.activeSelf} */ }
     }
 
     private static void ClearRows(List<GameObject> list)
@@ -995,7 +989,7 @@ public class FriendListUI : MonoBehaviour
         if (row != null)
             return row;
 
-        Debug.LogWarning("[FriendUI] Could not resolve any row prefab for search results. Falling back to MakeDefaultRow.");
+        { /* Cảnh báo: Could not resolve any row prefab for search results. Falling back to MakeDefaultRow */ }
         return null;
     }
 
@@ -1022,7 +1016,7 @@ public class FriendListUI : MonoBehaviour
 
         if (configuredPrefab == null)
         {
-            Debug.LogWarning($"[FriendUI] Row prefab source='{source}' is NULL.");
+            { /* Cảnh báo: Row prefab source='{source}' is NULL */ }
             return false;
         }
 
@@ -1033,7 +1027,7 @@ public class FriendListUI : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"[FriendUI] Failed to instantiate row prefab source='{source}' prefab={DescribeObject(configuredPrefab)} error={ex.GetType().Name}: {ex.Message}");
+            { /* Cảnh báo: Failed to instantiate row prefab source='{source}' prefab={DescribeObject(configuredPrefab)} error={ex.GetType().Name}: {ex.Message} */ }
             return false;
         }
     }
@@ -1044,7 +1038,7 @@ public class FriendListUI : MonoBehaviour
             return _fallbackRowEntryPrefab;
 
         _fallbackRowEntryPrefab = Resources.Load<GameObject>(FriendRowEntryResourcePath);
-        Debug.Log($"[FriendUI] Loaded fallback row prefab path='{FriendRowEntryResourcePath}' result={DescribeObject(_fallbackRowEntryPrefab)}");
+        { /* Loaded fallback row prefab path='{FriendRowEntryResourcePath}' result={DescribeObject(_fallbackRowEntryPrefab)} */ }
         return _fallbackRowEntryPrefab;
     }
 
@@ -1056,21 +1050,21 @@ public class FriendListUI : MonoBehaviour
         if (source.StartsWith(nameof(pendingEntryPrefab)) && !ReferenceEquals(pendingEntryPrefab, fallbackPrefab))
         {
             pendingEntryPrefab = fallbackPrefab;
-            Debug.Log($"[FriendUI] Overrode broken pendingEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)}.");
+            { /* Overrode broken pendingEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)} */ }
             return;
         }
 
         if (source.StartsWith(nameof(friendEntryPrefab)) && !ReferenceEquals(friendEntryPrefab, fallbackPrefab))
         {
             friendEntryPrefab = fallbackPrefab;
-            Debug.Log($"[FriendUI] Overrode broken friendEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)}.");
+            { /* Overrode broken friendEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)} */ }
             return;
         }
 
         if (source.StartsWith(nameof(searchResultEntryPrefab)) && !ReferenceEquals(searchResultEntryPrefab, fallbackPrefab))
         {
             searchResultEntryPrefab = fallbackPrefab;
-            Debug.Log($"[FriendUI] Overrode broken searchResultEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)}.");
+            { /* Overrode broken searchResultEntryPrefab with fallback prefab {DescribeObject(fallbackPrefab)} */ }
         }
     }
 

@@ -353,7 +353,7 @@ public class BlacksmithTabPanel : MonoBehaviour
     {
         if (button == null)
         {
-            Debug.LogWarning($"[BlacksmithTabPanel] Missing tab button '{expectedName}'. Check BlacksmithPanel hierarchy or assign it in Inspector.", this);
+            { /* Cảnh báo: Missing tab button '{expectedName}'. Check BlacksmithPanel hierarchy or assign it in Inspector */ }
             return;
         }
 
@@ -384,7 +384,7 @@ public class BlacksmithTabPanel : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[BlacksmithTabPanel] {expectedChildName} dang bi gan nham vao chinh BlacksmithPanel root. Bo qua SetActive de tranh tat root.");
+                { /* Cảnh báo: {expectedChildName} dang bi gan nham vao chinh BlacksmithPanel root. Bo qua SetActive de tranh tat root */ }
                 return;
             }
         }

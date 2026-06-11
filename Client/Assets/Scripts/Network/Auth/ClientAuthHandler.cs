@@ -69,7 +69,7 @@ public class ClientAuthHandler : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"==== [GENE2_DEBUG] ClientAuthHandler.SendAuthToServer: ACTIVE_GENE_SLOT = {geneSlot} ====");
+        { /* ==== [GENE2_DEBUG] ClientAuthHandler.SendAuthToServer: ACTIVE_GENE_SLOT = {geneSlot} ==== */ }
         SendAuthServerRpc(token, userId, geneSlot);
         hasSentAuth = true;
     }
@@ -78,7 +78,7 @@ public class ClientAuthHandler : NetworkBehaviour
     [ServerRpc(RequireOwnership = true)]
     private void SendAuthServerRpc(string token, int userId, int geneSlot)
     {
-        Debug.Log($"[ClientAuthHandler] Server received auth from client {OwnerClientId}: userId={userId} geneSlot={geneSlot}");
+        { /* Server received auth from client {OwnerClientId}: userId={userId} geneSlot={geneSlot} */ }
 
         // Verify token vÃ  load player data
         if (ServerPlayerDataManager.Instance != null)
@@ -88,18 +88,18 @@ public class ClientAuthHandler : NetworkBehaviour
                 userId,
                 onSuccess: (playerData) =>
                 {
-                    Debug.Log($"[ClientAuthHandler] âœ“ Player data loaded for client {OwnerClientId}: {playerData.character_name} (slot {geneSlot})");
+                    { /* âœ“ Player data loaded for client {OwnerClientId}: {playerData.character_name} (slot {geneSlot}) */ }
                 },
                 onError: (error) =>
                 {
-                    Debug.LogError($"[ClientAuthHandler] âœ— Failed to load player data for client {OwnerClientId}: {error}");
+                    { /* Lỗi: âœ Failed to load player data for client {OwnerClientId}: {error} */ }
                 },
                 geneSlot: geneSlot
             );
         }
         else
         {
-            Debug.LogError("[ClientAuthHandler] ServerPlayerDataManager.Instance is null!");
+            { /* Lỗi: ServerPlayerDataManager.Instance is null */ }
         }
     }
 }
