@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// InventoryDebugHelper - Debug tool để kiểm tra inventory system
-/// Nhấn phím I để debug
-/// </summary>
+// InventoryDebugHelper - Debug tool để kiểm tra inventory system
+// Nhấn phím I để debug
 public class InventoryDebugHelper : MonoBehaviour
 {
     [Header("Debug Settings")]
@@ -131,9 +129,7 @@ public class InventoryDebugHelper : MonoBehaviour
         Debug.Log("==================== [InventoryDebug] END STATUS ====================");
     }
 
-    /// <summary>
-    /// Force sync inventory UI - gọi từ button
-    /// </summary>
+    // Force sync inventory UI - gọi từ button
     public void ForceSyncInventoryUI()
     {
         var bridge = FindObjectOfType<InventoryNetworkBridge>();

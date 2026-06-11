@@ -6,10 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Bảng quest_config — cấu hình nhiệm vụ (1 bảng duy nhất, inspired by LangLa task table).
-    /// Tiến trình của người chơi được lưu trong player_data.info_char (không có bảng riêng).
-    /// </summary>
+    // Bảng quest_config — cấu hình nhiệm vụ (1 bảng duy nhất, inspired by LangLa task table).
+    // Tiến trình của người chơi được lưu trong player_data.info_char (không có bảng riêng).
     [Table("quest_config")]
     public class QuestConfig
     {
@@ -24,19 +22,19 @@ namespace GameServerApi.Models.Entities
         [Column("level_need")]
         public int LevelNeed { get; set; } = 1;
 
-        /// <summary>NPC nhận và giao nhiệm vụ (cùng 1 NPC).</summary>
+        // NPC nhận và giao nhiệm vụ (cùng 1 NPC).
         [Column("npc_id")]
         public int NpcId { get; set; } = 0;
 
-        /// <summary>Hội thoại khi nhận nhiệm vụ.</summary>
+        // Hội thoại khi nhận nhiệm vụ.
         [Column("str1")]
         public string Str1 { get; set; } = "";
 
-        /// <summary>Hội thoại khi nộp/hoàn thành nhiệm vụ.</summary>
+        // Hội thoại khi nộp/hoàn thành nhiệm vụ.
         [Column("str2")]
         public string Str2 { get; set; } = "";
 
-        /// <summary>Ghi chú / hướng dẫn.</summary>
+        // Ghi chú / hướng dẫn.
         [Column("str3")]
         public string Str3 { get; set; } = "";
 
@@ -49,15 +47,13 @@ namespace GameServerApi.Models.Entities
         [Column("silver_reward")]
         public int SilverReward { get; set; } = 0;
 
-        /// <summary>Vật phẩm thưởng. Format: "itemId@quantity,itemId@quantity".</summary>
+        // Vật phẩm thưởng. Format: "itemId@quantity,itemId@quantity".
         [Column("item_reward")]
         [MaxLength(500)]
         public string ItemReward { get; set; } = "";
 
-        /// <summary>
-        /// JSON steps: [{id,name,idMob,idNpc,idItem,idMap,x,y,require,STR}]
-        /// id type: 0=kill mob, 1=collect item, 5=talk to NPC, 9=reach map
-        /// </summary>
+        // JSON steps: [{id,name,idMob,idNpc,idItem,idMap,x,y,require,STR}]
+        // id type: 0=kill mob, 1=collect item, 5=talk to NPC, 9=reach map
         [Column("step")]
         public string StepJson { get; set; } = "[]";
 
@@ -67,7 +63,7 @@ namespace GameServerApi.Models.Entities
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
-        // ── Helper (not mapped) ───────────────────────────────────────
+        // Helper (not mapped)
 
         [NotMapped]
         public List<QuestStep> Steps =>
@@ -76,32 +72,30 @@ namespace GameServerApi.Models.Entities
             ?? new List<QuestStep>();
     }
 
-    /// <summary>
-    /// Bước nhiệm vụ — theo format JSON của LangLa.
-    /// id type: 0=kill mob, 1=collect item, 5=talk to NPC, 9=reach map.
-    /// </summary>
+    // Bước nhiệm vụ — theo format JSON của LangLa.
+    // id type: 0=kill mob, 1=collect item, 5=talk to NPC, 9=reach map.
     public class QuestStep
     {
-        /// <summary>Loại bước: 0=kill, 1=collect, 5=talk, 9=reach map.</summary>
+        // Loại bước: 0=kill, 1=collect, 5=talk, 9=reach map.
         [JsonPropertyName("id")]
         public int Id { get; set; } = 0;
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = "";
 
-        /// <summary>ID quái cần giết (-1 = không áp dụng).</summary>
+        // ID quái cần giết (-1 = không áp dụng).
         [JsonPropertyName("idMob")]
         public int IdMob { get; set; } = -1;
 
-        /// <summary>ID NPC cần nói chuyện (-1 = không áp dụng).</summary>
+        // ID NPC cần nói chuyện (-1 = không áp dụng).
         [JsonPropertyName("idNpc")]
         public int IdNpc { get; set; } = -1;
 
-        /// <summary>ID item cần thu thập (-1 = không áp dụng).</summary>
+        // ID item cần thu thập (-1 = không áp dụng).
         [JsonPropertyName("idItem")]
         public int IdItem { get; set; } = -1;
 
-        /// <summary>ID map (-1 = bất kỳ map).</summary>
+        // ID map (-1 = bất kỳ map).
         [JsonPropertyName("idMap")]
         public int IdMap { get; set; } = -1;
 
@@ -111,11 +105,11 @@ namespace GameServerApi.Models.Entities
         [JsonPropertyName("y")]
         public int Y { get; set; } = 0;
 
-        /// <summary>Số lần / số lượng cần để hoàn thành bước.</summary>
+        // Số lần / số lượng cần để hoàn thành bước.
         [JsonPropertyName("require")]
         public int Require { get; set; } = 1;
 
-        /// <summary>Hội thoại phụ (dùng cho bước loại talk=5).</summary>
+        // Hội thoại phụ (dùng cho bước loại talk=5).
         [JsonPropertyName("STR")]
         public string Str { get; set; } = "";
     }

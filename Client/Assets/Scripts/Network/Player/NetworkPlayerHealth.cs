@@ -2,10 +2,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using Unity.Netcode;
 
-/// <summary>
-/// NetworkPlayerHealth - Server-Authoritative Health System
-/// HP được quản lý bởi server, sync cho tất cả clients qua NetworkVariable
-/// </summary>
+// NetworkPlayerHealth - Server-Authoritative Health System
+// HP được quản lý bởi server, sync cho tất cả clients qua NetworkVariable
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkPlayerHealth : NetworkBehaviour
 {
@@ -27,7 +25,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
     private float invincibilityTimer;
     private bool isInvincible;
 
-    // ── Heal Block (Lava Aura) ────────────────────────────────────────────────
+    // Heal Block (Lava Aura)
     private bool isHealBlocked = false;
     private float healBlockTimer = 0f;
 
@@ -151,10 +149,8 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Callback khi NetworkVariable health thay đổi
-    /// Tự động sync cho tất cả clients
-    /// </summary>
+    // Callback khi NetworkVariable health thay đổi
+    // Tự động sync cho tất cả clients
     private void OnHealthValueChanged(int oldValue, int newValue)
     {
         // Use networkMaxHp from NetworkPlayerDataSync when available — it is a proper NetworkVariable
@@ -174,10 +170,8 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Internal: Xử lý damage trên server (không qua RPC).
-    /// Gọi bởi TakeDamage (khi IsServer) và TakeDamageServerRpc (khi client gửi RPC).
-    /// </summary>
+    // Internal: Xử lý damage trên server (không qua RPC).
+    // Gọi bởi TakeDamage (khi IsServer) và TakeDamageServerRpc (khi client gửi RPC).
     private void TakeDamageInternal(int damage)
     {
         if (isDead) return;
@@ -224,30 +218,22 @@ public class NetworkPlayerHealth : NetworkBehaviour
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} took {damage} damage. Health: {newHealth}/{maxHealth}");
     }
 
-    /// <summary>
-    /// ServerRpc: Client yêu cầu server gây damage
-    /// </summary>
+    // ServerRpc: Client yêu cầu server gây damage
     [ServerRpc(RequireOwnership = false)]
     public void TakeDamageServerRpc(int damage, ServerRpcParams rpcParams = default)
     {
         TakeDamageInternal(damage);
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về damage (để play sound/effect)
-    /// </summary>
+    // ClientRpc: Notify clients về damage (để play sound/effect)
     [ClientRpc]
     private void OnTakeDamageClientRpc(int damage)
     {
         OnTakeDamage?.Invoke();
     }
 
-    /// <summary>
-    /// ServerRpc: Client yêu cầu server heal
-    /// </summary>
-    /// <summary>
-    /// ServerRpc: Chặn hồi máu trong thời gian nhất định (dùng bởi Lava Aura)
-    /// </summary>
+    // ServerRpc: Client yêu cầu server heal
+    // ServerRpc: Chặn hồi máu trong thời gian nhất định (dùng bởi Lava Aura)
     [ServerRpc(RequireOwnership = false)]
     public void BlockHealServerRpc(float duration)
     {
@@ -284,18 +270,14 @@ public class NetworkPlayerHealth : NetworkBehaviour
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} healed {amount}. Health: {newHealth}/{maxHealth}");
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về heal
-    /// </summary>
+    // ClientRpc: Notify clients về heal
     [ClientRpc]
     private void OnHealClientRpc(int amount)
     {
         OnHeal?.Invoke();
     }
 
-    /// <summary>
-    /// ServerRpc: Heal full HP
-    /// </summary>
+    // ServerRpc: Heal full HP
     [ServerRpc(RequireOwnership = false)]
     public void HealFullServerRpc()
     {
@@ -313,9 +295,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         OnHealClientRpc(maxHealth);
     }
 
-    /// <summary>
-    /// Xử lý death trên server
-    /// </summary>
+    // Xử lý death trên server
     private void HandleDeath()
     {
         if (isDead) return;
@@ -333,9 +313,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về death
-    /// </summary>
+    // ClientRpc: Notify clients về death
     [ClientRpc]
     private void OnDeathClientRpc()
     {
@@ -349,9 +327,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         OnDeath?.Invoke();
     }
 
-    /// <summary>
-    /// Server xử lý respawn
-    /// </summary>
+    // Server xử lý respawn
     private void RespawnServer()
     {
         if (!IsServer) return;
@@ -400,9 +376,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         Debug.Log($"[NetworkPlayerHealth] Player {NetworkObjectId} respawned at {spawnPosition} HP={fullHp}/{fullHp}");
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về respawn
-    /// </summary>
+    // ClientRpc: Notify clients về respawn
     [ClientRpc]
     private void OnRespawnClientRpc(Vector3 spawnPosition)
     {
@@ -431,9 +405,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
     public bool IsInvincible() => isInvincible;
     public bool IsDead() => isDead;
 
-    /// <summary>
-    /// Public method để các script khác gọi (tự động chuyển thành ServerRpc)
-    /// </summary>
+    // Public method để các script khác gọi (tự động chuyển thành ServerRpc)
     public void TakeDamage(int damage)
     {
         if (IsServer)
@@ -446,12 +418,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Nhận sát thương có xét hệ nguyên tố của kẻ tấn công.
-    /// - Nếu attackerElement khắc hệ của người chơi bị tấn công → +30% sát thương.
-    /// - Nếu người chơi là Hybrid và attackerElement nằm trong HybridImmuneElements → bỏ qua bổ sung.
-    /// Gọi từ quái/enemy có elementType xác định (MobPatrolAI, EnemyAI…).
-    /// </summary>
+    // Nhận sát thương có xét hệ nguyên tố của kẻ tấn công.
+    // - Nếu attackerElement khắc hệ của người chơi bị tấn công → +30% sát thương.
+    // - Nếu người chơi là Hybrid và attackerElement nằm trong HybridImmuneElements → bỏ qua bổ sung.
+    // Gọi từ quái/enemy có elementType xác định (MobPatrolAI, EnemyAI…).
     public void TakeDamageWithElement(int rawDamage, string attackerElement)
     {
         if (IsServer)
@@ -491,9 +461,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
             HealFullServerRpc();
     }
 
-    /// <summary>
-    /// ServerRpc: Set max health (chỉ server mới có quyền)
-    /// </summary>
+    // ServerRpc: Set max health (chỉ server mới có quyền)
     [ServerRpc(RequireOwnership = false)]
     public void SetMaxHealthServerRpc(int newMaxHealth)
     {
@@ -510,9 +478,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         Debug.Log($"[NetworkPlayerHealth] Max health set to {maxHealth} for player {NetworkObjectId}");
     }
 
-    /// <summary>
-    /// ServerRpc: Set current health (chỉ server mới có quyền)
-    /// </summary>
+    // ServerRpc: Set current health (chỉ server mới có quyền)
     [ServerRpc(RequireOwnership = false)]
     public void SetHealthServerRpc(int newHealth)
     {
@@ -524,9 +490,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         Debug.Log($"[NetworkPlayerHealth] Health set to {newHealth}/{maxHealth} for player {NetworkObjectId}");
     }
 
-    /// <summary>
-    /// Public method để set max health (tự động chuyển thành ServerRpc nếu cần)
-    /// </summary>
+    // Public method để set max health (tự động chuyển thành ServerRpc nếu cần)
     public void SetMaxHealth(int newMaxHealth)
     {
         if (IsServer)
@@ -543,9 +507,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Public method để set current health (tự động chuyển thành ServerRpc nếu cần)
-    /// </summary>
+    // Public method để set current health (tự động chuyển thành ServerRpc nếu cần)
     public void SetHealth(int newHealth)
     {
         if (IsServer)

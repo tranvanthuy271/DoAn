@@ -5,13 +5,10 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Xử lý chuyển vùng (zone/map) mà KHÔNG cần disconnect.
-/// Giống hệt LangLa: zone.removeChar() + Map.maps[newId].addChar() — in-process, instant.
-///
-/// Gắn vào: "ServerBootstrap" GameObject cùng với MapWorldBootstrap.
-/// Dependencies: ZoneRoomRegistry, ClientSceneController (client-side), NetworkVisibilityZoneFilter
-/// </summary>
+// Xử lý chuyển vùng (zone/map) mà KHÔNG cần disconnect.
+// Giống hệt LangLa: zone.removeChar() + Map.maps[newId].addChar() — in-process, instant.
+// Gắn vào: "ServerBootstrap" GameObject cùng với MapWorldBootstrap.
+// Dependencies: ZoneRoomRegistry, ClientSceneController (client-side), NetworkVisibilityZoneFilter
 [DisallowMultipleComponent]
 public class ZoneTransitionController : NetworkBehaviour
 {
@@ -28,9 +25,7 @@ public class ZoneTransitionController : NetworkBehaviour
     // Rate-limit: clientId → serverTime lần transfer gần nhất
     private readonly Dictionary<ulong, float> _lastTransferTime = new();
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     public override void OnNetworkSpawn()
     {
@@ -102,13 +97,9 @@ public class ZoneTransitionController : NetworkBehaviour
         BeginDungeonReturnFlowClientRpc(completed, countdownSeconds, returnMapId, string.IsNullOrWhiteSpace(returnSceneName) ? "GameScene" : returnSceneName, rpcParams);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Public API (gọi từ ZoneTransitionTrigger)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Server-side direct call — dùng khi server muốn force-teleport một client.
-    /// </summary>
+    // Server-side direct call — dùng khi server muốn force-teleport một client.
     public void ServerTransferClient(ulong clientId, int targetMapId, int targetZoneId, int entryPointId = 0)
     {
         if (!IsServer) return;
@@ -165,10 +156,8 @@ public class ZoneTransitionController : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Tạo custom/private zone runtime và đưa client vào đó.
-    /// Dùng cho phó bản/party-room thay vì để client tự chọn zone.
-    /// </summary>
+    // Tạo custom/private zone runtime và đưa client vào đó.
+    // Dùng cho phó bản/party-room thay vì để client tự chọn zone.
     public ZoneRoom ServerTransferClientToCustomRoom(
         ulong clientId,
         int targetMapId,
@@ -185,9 +174,7 @@ public class ZoneTransitionController : NetworkBehaviour
         return room;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ServerRpc — client trigger khi bước vào ZoneTransitionTrigger
-    // ─────────────────────────────────────────────────────────────────────────
 
     [ServerRpc(RequireOwnership = false)]
     public void RequestZoneTransferServerRpc(
@@ -248,14 +235,10 @@ public class ZoneTransitionController : NetworkBehaviour
         ExecuteTransferToRoom(clientId, requestedRoom, explicitPosition: new Vector2(targetX, targetY));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ServerRpc — Dungeon entry/exit (zone-based, không disconnect)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Client yêu cầu vào phó bản solo.
-    /// Server tạo custom room trên dungeon map rồi transfer client vào.
-    /// </summary>
+    // Client yêu cầu vào phó bản solo.
+    // Server tạo custom room trên dungeon map rồi transfer client vào.
     [ServerRpc(RequireOwnership = false)]
     public void RequestDungeonEntryServerRpc(
         int dungeonMapId,
@@ -267,7 +250,7 @@ public class ZoneTransitionController : NetworkBehaviour
         if (!CanProcessTransferRequest(clientId))
             return;
 
-        // ── Wave session management ─────────────────────────────────────────
+        // Wave session management
         var sessionMgrWave = ZonePlayerSessionManager.Instance;
         var waveMgr        = WaveSessionManager.GetOrCreateInstance(gameObject);
         string userId      = sessionMgrWave?.GetPlayerId(clientId);
@@ -283,7 +266,6 @@ public class ZoneTransitionController : NetworkBehaviour
                   $"existingZoneRoom={(dbgExisting?.ZoneRoom != null ? dbgExisting.ZoneRoom.ZoneKey : "null")} " +
                   $"existingMapId={dbgExisting?.MapId} existingZoneId={dbgExisting?.ZoneId} " +
                   $"existingRound={dbgExisting?.CurrentRound} existingRemaining={dbgExisting?.RemainingSeconds}");
-        // ──────────────────────────────────────────────────────────────────────
 
         // 1. Kiểm tra phiên đang hoạt động (reconnect restore)
         if (!string.IsNullOrEmpty(userId) && waveMgr != null && waveMgr.HasActiveSession(userId))
@@ -328,7 +310,6 @@ public class ZoneTransitionController : NetworkBehaviour
                 BuildSingleClientRpcParams(clientId));
             return;
         }
-        // ──────────────────────────────────────────────────────────────────────
 
         MapDefinition mapDef = _config?.GetMap(dungeonMapId);
         if (mapDef == null || mapDef.zoneTopology != MapZoneTopology.InstanceOnly)
@@ -347,14 +328,13 @@ public class ZoneTransitionController : NetworkBehaviour
 
         Debug.Log($"[ZoneTransitionController] Dungeon entry | client={clientId} userId={userId} dungeonConfigId={dungeonConfigId} map={dungeonMapId} zone={room.ZoneId}");
 
-        // ── Đăng ký phiên và tiêu thụ lượt ──────────────────────────────────
+        // Đăng ký phiên và tiêu thụ lượt
         if (!string.IsNullOrEmpty(userId) && waveMgr != null)
         {
             waveMgr.BeginSession(userId, dungeonConfigId, dungeonMapId, room.ZoneId, room);
             waveMgr.ConsumeEntry(userId, dungeonConfigId);
             Debug.Log($"[ZoneTransitionController] Wave session started userId={userId} dungeonId={dungeonConfigId} zone={room.ZoneId} used={waveMgr.GetDailyUsedCount(userId, dungeonConfigId)} remaining={waveMgr.GetDailyRemainingCount(userId, dungeonConfigId)}");
         }
-        // ──────────────────────────────────────────────────────────────────────
 
         // Thông báo client đã vào dungeon (trước khi transfer)
         NotifyDungeonEnteredClientRpc(dungeonConfigId, dungeonMapId, room.ZoneId, BuildSingleClientRpcParams(clientId));
@@ -372,11 +352,9 @@ public class ZoneTransitionController : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Party leader yêu cầu cả tổ đội vào phó bản.
-    /// Server tạo 1 custom room, tra userId → clientId rồi transfer tất cả vào cùng room.
-    /// partyMemberUserIdsCsv: chuỗi userId ngăn cách bởi dấu phẩy, ví dụ "16,17,18"
-    /// </summary>
+    // Party leader yêu cầu cả tổ đội vào phó bản.
+    // Server tạo 1 custom room, tra userId → clientId rồi transfer tất cả vào cùng room.
+    // partyMemberUserIdsCsv: chuỗi userId ngăn cách bởi dấu phẩy, ví dụ "16,17,18"
     [ServerRpc(RequireOwnership = false)]
     public void RequestPartyDungeonEntryServerRpc(
         int dungeonMapId,
@@ -443,6 +421,13 @@ public class ZoneTransitionController : NetworkBehaviour
             ExecuteTransferToRoom(memberId, room);
         }
 
+        PartyDungeonRuntime partyRuntime = FindAnyObjectByType<PartyDungeonRuntime>();
+        if (partyRuntime != null)
+        {
+            partyRuntime.BeginEncounter(dungeonConfigId, dungeonMapId, room.ZoneId);
+            return;
+        }
+
         WaveDungeonRuntime waveRuntime = FindAnyObjectByType<WaveDungeonRuntime>();
         if (waveRuntime != null)
         {
@@ -450,14 +435,12 @@ public class ZoneTransitionController : NetworkBehaviour
         }
         else
         {
-            Debug.LogWarning($"[ZoneTransitionController] WaveDungeonRuntime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
+            Debug.LogWarning($"[ZoneTransitionController] Dungeon runtime not found on server. dungeonConfigId={dungeonConfigId}, map={dungeonMapId}, zone={room.ZoneId}");
         }
     }
 
-    /// <summary>
-    /// Client yêu cầu rời phó bản, quay về overworld map.
-    /// Server transfer client về map mặc định (map 0) hoặc map lưu trước đó.
-    /// </summary>
+    // Client yêu cầu rời phó bản, quay về overworld map.
+    // Server transfer client về map mặc định (map 0) hoặc map lưu trước đó.
     [ServerRpc(RequireOwnership = false)]
     public void RequestDungeonExitServerRpc(
         int returnMapId,
@@ -499,9 +482,7 @@ public class ZoneTransitionController : NetworkBehaviour
         ExecuteTransferToRoom(clientId, targetRoom);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Core transfer logic (server-side only)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void ExecuteTransferToRoom(
         ulong clientId,
@@ -659,9 +640,7 @@ public class ZoneTransitionController : NetworkBehaviour
         return _registry.FindLeastLoadedZone(targetMapId, preferredZoneId < 0 ? 0 : preferredZoneId);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ClientRpc — gửi đến đúng 1 client (NO broadcast)
-    // ─────────────────────────────────────────────────────────────────────────
 
     [ClientRpc]
     private void NotifyDungeonEnteredClientRpc(int dungeonConfigId, int mapId, int zoneId, ClientRpcParams rpcParams = default)
@@ -745,14 +724,10 @@ public class ZoneTransitionController : NetworkBehaviour
         GlobalNotificationUI.Show(MapTransferFailureMessage(reason), "Không thể chuyển map", 2.5f, "Đóng");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>
-    /// Refresh NGO CheckObjectVisibility cho tất cả NetworkObjects liên quan đến client này.
-    /// Gọi sau mỗi lần thay đổi zone.
-    /// </summary>
+    // Refresh NGO CheckObjectVisibility cho tất cả NetworkObjects liên quan đến client này.
+    // Gọi sau mỗi lần thay đổi zone.
     private void RefreshVisibilityForClient(ulong movedClientId)
     {
         foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))

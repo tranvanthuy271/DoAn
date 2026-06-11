@@ -2,11 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Hiển thị bubble tin nhắn nổi phía trên đầu nhân vật (WorldSpace Canvas).
-/// Dùng cho kênh Lân cận – tin hiển thị ngắn rồi tự biến mất.
-/// Attach vào Player prefab hoặc spawn từ ChatManager.
-/// </summary>
+// Hiển thị bubble tin nhắn nổi phía trên đầu nhân vật (WorldSpace Canvas).
+// Dùng cho kênh Lân cận – tin hiển thị ngắn rồi tự biến mất.
+// Attach vào Player prefab hoặc spawn từ ChatManager.
 public class ProximityChatBubble : MonoBehaviour
 {
     [Header("Layout")]
@@ -20,7 +18,7 @@ public class ProximityChatBubble : MonoBehaviour
     [SerializeField] private Color    bgColor      = new Color(0f, 0f, 0f, 0.6f);
     [SerializeField] private float    displayTime  = 5f;   // giây trước khi tự ẩn
 
-    // ── Runtime ───────────────────────────────────────────────────────────────
+    // Runtime
 
     private TextMeshProUGUI _tmp;
     private Image           _bg;
@@ -28,7 +26,7 @@ public class ProximityChatBubble : MonoBehaviour
     private Camera          _cam;
     private float           _hideTimer;
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -61,9 +59,9 @@ public class ProximityChatBubble : MonoBehaviour
         }
     }
 
-    // ── Public ────────────────────────────────────────────────────────────────
+    // Public
 
-    /// <summary>Hiển thị tin nhắn trên bubble (gọi từ bên ngoài nếu muốn).</summary>
+    // Hiển thị tin nhắn trên bubble (gọi từ bên ngoài nếu muốn).
     public void ShowMessage(string senderName, string message)
     {
         if (_tmp == null) return;
@@ -72,7 +70,7 @@ public class ProximityChatBubble : MonoBehaviour
         SetVisible(true);
     }
 
-    // ── Private ───────────────────────────────────────────────────────────────
+    // Private
 
     private void OnMessageReceived(ChatMessageDto msg)
     {

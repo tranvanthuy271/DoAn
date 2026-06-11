@@ -5,40 +5,31 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 
-/// <summary>
-/// UpgradePanel v2 – Panel cường hóa trang bị với layout mới.
-///
-/// ══════════════════════════════════════════════════════════════════
-/// LAYOUT TỔNG QUAN:
-///   ┌─ [Ô Trang Bị]     [Ô Bùa id=8]  ─┐
-///   │  [Btn Lấy Ra][Xem]  [Btn Lấy Ra]  │
-///   ├──────────────────────────────────  ┤
-///   │         16 ÔĐÁ (4 × 4)            │
-///   ├──────────────────────────────────  ┤
-///   │  [XEM TRƯỚC]    [CƯỜNG HÓA]        │
-///   │  ▓▓▓▓░░░ 72%   Bạc cần: 5000      │
-///   └────────────────────────────────── ┘
-///
-/// LUỒNG CHỌN ĐÁ (type=21):
-///   Click ô đá trống
-///     → BlacksmithTabPanel.SwitchTabToInventoryWithFilter(filterItemType=21)
-///     → InventoryUI vào StoneSelectMode
-///     → item type=21 hiện btn "Chọn"
-///     → Chọn → đá vào ô, slotId ghi lại
-///
-/// LUỒNG CHỌN TRANG BỊ:
-///   Click ô Trang Bị trống → tab Trang Bị
-///   Khi ô có item → [Lấy Ra] + [Xem TT]
-///
-/// LUỒNG BÙA (itemId=8):
-///   Click ô Bùa trống → tab Túi filter id=8
-///   Khi ô có bùa → [Lấy Ra] + [Xem] + +3% rate
-///
-/// PREVIEW:
-///   Chưa có trang bị → không làm gì
-///   Có trang bị → hiện stats dự đoán +1
-/// ══════════════════════════════════════════════════════════════════
-/// </summary>
+// UpgradePanel v2 – Panel cường hóa trang bị với layout mới.
+// LAYOUT TỔNG QUAN:
+// ┌─ [Ô Trang Bị]     [Ô Bùa id=8]  ─┐
+// [Btn Lấy Ra][Xem]  [Btn Lấy Ra]
+// ├──────────────────────────────────  ┤
+// 16 ÔĐÁ (4 × 4)
+// ├──────────────────────────────────  ┤
+// [XEM TRƯỚC]    [CƯỜNG HÓA]
+// ▓▓▓▓░░░ 72%   Bạc cần: 5000
+// └────────────────────────────────── ┘
+// LUỒNG CHỌN ĐÁ (type=21):
+// Click ô đá trống
+// → BlacksmithTabPanel.SwitchTabToInventoryWithFilter(filterItemType=21)
+// → InventoryUI vào StoneSelectMode
+// → item type=21 hiện btn "Chọn"
+// → Chọn → đá vào ô, slotId ghi lại
+// LUỒNG CHỌN TRANG BỊ:
+// Click ô Trang Bị trống → tab Trang Bị
+// Khi ô có item → [Lấy Ra] + [Xem TT]
+// LUỒNG BÙA (itemId=8):
+// Click ô Bùa trống → tab Túi filter id=8
+// Khi ô có bùa → [Lấy Ra] + [Xem] + +3% rate
+// PREVIEW:
+// Chưa có trang bị → không làm gì
+// Có trang bị → hiện stats dự đoán +1
 public class UpgradePanel : MonoBehaviour
 {
     public static UpgradePanel Instance { get; private set; }
@@ -103,15 +94,11 @@ public class UpgradePanel : MonoBehaviour
     [SerializeField] private TMP_Text   charmInfoTitleText;
     [Tooltip("Nút X để đóng popup bùa.")]
     [SerializeField] private Button     charmInfoCloseButton;
-    // ══════════════════════════════════════════════════════════════
-    // CONSTANTS
-    // ══════════════════════════════════════════════════════════════
+    // Hằng số dùng chung trong file.
     public const int CHARM_ITEM_ID   = 8;
     public const int STONE_ITEM_TYPE = 21;
 
-    // ══════════════════════════════════════════════════════════════
-    // RUNTIME STATE
-    // ══════════════════════════════════════════════════════════════
+    // Trạng thái runtime được cập nhật khi game đang chạy.
     private EquipmentItemDto        _equippedItem;
     private string                  _slotKey;
     private bool                    _isFromInventory;
@@ -127,9 +114,7 @@ public class UpgradePanel : MonoBehaviour
 
     private ItemDetailPanel _detailPanelInstance;
 
-    // ══════════════════════════════════════════════════════════════
-    // LIFECYCLE
-    // ══════════════════════════════════════════════════════════════
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -167,11 +152,9 @@ public class UpgradePanel : MonoBehaviour
         RefreshRateDisplay();
     }
 
-    // ══════════════════════════════════════════════════════════════
     // PUBLIC OPEN API
-    // ══════════════════════════════════════════════════════════════
 
-    /// <summary>Mở panel trống – từ NPC blacksmith.</summary>
+    // Mở panel trống – từ NPC blacksmith.
     public void OpenEmpty(InventorySlotDto[] inventory)
     {
         ClearReservedMaterialCounts();
@@ -190,7 +173,7 @@ public class UpgradePanel : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-    /// <summary>Mở từ trang bị đang mặc.</summary>
+    // Mở từ trang bị đang mặc.
     public void OpenForEquipped(EquipmentItemDto item, string equipSlotKey, InventorySlotDto[] inventory)
     {
         ClearReservedMaterialCounts();
@@ -209,7 +192,7 @@ public class UpgradePanel : MonoBehaviour
         StartCoroutine(LoadConfigAndRefresh());
     }
 
-    /// <summary>Mở từ túi đồ.</summary>
+    // Mở từ túi đồ.
     public void OpenForInventory(InventorySlotDto slot, InventorySlotDto[] inventory)
     {
         ClearReservedMaterialCounts();
@@ -234,7 +217,7 @@ public class UpgradePanel : MonoBehaviour
         StartCoroutine(LoadConfigAndRefresh());
     }
 
-    /// <summary>Gọi từ BlacksmithTabPanel khi đóng.</summary>
+    // Gọi từ BlacksmithTabPanel khi đóng.
     public void CloseFromTabPanel()
     {
         ClearReservedMaterialCounts();
@@ -248,9 +231,7 @@ public class UpgradePanel : MonoBehaviour
         HidePreview();
     }
 
-    // ══════════════════════════════════════════════════════════════
     // Ô TRANG BỊ
-    // ══════════════════════════════════════════════════════════════
 
     private void OnEquipSlotClicked()
     {
@@ -284,9 +265,7 @@ public class UpgradePanel : MonoBehaviour
             ShowPreview(showCurrentLevel: true);
     }
 
-    /// <summary>
-    /// Gọi từ tab Trang Bị khi player chọn trang bị để nâng.
-    /// </summary>
+    // Gọi từ tab Trang Bị khi player chọn trang bị để nâng.
     public void SetChosenEquipItem(EquipmentItemDto item, string slotKey, bool fromInventory, InventorySlotDto[] inventory)
     {
         ClearReservedMaterialCounts();
@@ -333,9 +312,7 @@ public class UpgradePanel : MonoBehaviour
         upgradeButton.interactable = false;
     }
 
-    // ══════════════════════════════════════════════════════════════
     // Ô BÙA (itemId=8)
-    // ══════════════════════════════════════════════════════════════
 
     private void OnCharmSlotClicked()
     {
@@ -361,7 +338,7 @@ public class UpgradePanel : MonoBehaviour
         GetOrCreateDetailPanel()?.ShowItem(_charmSlot);
     }
 
-    /// <summary>Người chơi chọn bùa (id=8) từ túi đồ.</summary>
+    // Người chơi chọn bùa (id=8) từ túi đồ.
     public void SetCharmFromInventory(InventorySlotDto slot)
     {
         TrySetCharmFromInventory(slot);
@@ -407,18 +384,16 @@ public class UpgradePanel : MonoBehaviour
         HideCharmInfoBox();
     }
 
-    // ══════════════════════════════════════════════════════════════
     // 16 Ô ĐÁ – callback từ UpgradeStoneSlot
-    // ══════════════════════════════════════════════════════════════
 
-    /// <summary>Click ô đá trống → chuyển sang tab Túi (stone selection mode).</summary>
+    // Click ô đá trống → chuyển sang tab Túi (stone selection mode).
     public void OnStoneSlotClicked(UpgradeStoneSlot slot)
     {
         _pendingStoneSlot = slot;
         BlacksmithTabPanel.Instance?.SwitchTabToInventoryWithFilter(filterItemType: STONE_ITEM_TYPE);
     }
 
-    /// <summary>Click ô đá có đá → tháo ra.</summary>
+    // Click ô đá có đá → tháo ra.
     public void OnStoneSlotRemoved(UpgradeStoneSlot slot)
     {
         int idx = System.Array.IndexOf(stoneSlots, slot);
@@ -428,9 +403,7 @@ public class UpgradePanel : MonoBehaviour
         RefreshRateDisplay();
     }
 
-    /// <summary>
-    /// InventoryUI (stone-selection mode) gọi khi người chơi bấm "Chọn" trên đá.
-    /// </summary>
+    // InventoryUI (stone-selection mode) gọi khi người chơi bấm "Chọn" trên đá.
     public void OnStoneSelectedFromInventory(InventorySlotDto stone)
     {
         TrySetStoneFromInventory(stone);
@@ -527,9 +500,7 @@ public class UpgradePanel : MonoBehaviour
         return result;
     }
 
-    // ══════════════════════════════════════════════════════════════
     // XEM TRƯỚC
-    // ══════════════════════════════════════════════════════════════
 
     private void OnPreviewClicked()
     {
@@ -586,9 +557,7 @@ public class UpgradePanel : MonoBehaviour
         if (previewPanel != null) previewPanel.SetActive(false);
     }
 
-    // ══════════════════════════════════════════════════════════════
     // LOAD CONFIG
-    // ══════════════════════════════════════════════════════════════
 
     private IEnumerator LoadConfigAndRefresh()
     {
@@ -662,9 +631,7 @@ public class UpgradePanel : MonoBehaviour
         onDone?.Invoke(success);
     }
 
-    // ══════════════════════════════════════════════════════════════
     // TỰ ĐIỀN ĐÁ
-    // ══════════════════════════════════════════════════════════════
 
     private void AutoFillStones()
     {
@@ -689,9 +656,7 @@ public class UpgradePanel : MonoBehaviour
         foreach (var s in stoneSlots) s?.Clear();
     }
 
-    // ══════════════════════════════════════════════════════════════
     // RATE DISPLAY
-    // ══════════════════════════════════════════════════════════════
 
     private void RefreshRateDisplay()
     {
@@ -754,9 +719,7 @@ public class UpgradePanel : MonoBehaviour
         return ids;
     }
 
-    // ══════════════════════════════════════════════════════════════
     // CƯỜNG HÓA
-    // ══════════════════════════════════════════════════════════════
 
     public void OnUpgradeClicked()
     {
@@ -894,9 +857,7 @@ public class UpgradePanel : MonoBehaviour
         RefreshRateDisplay();
     }
 
-    // ══════════════════════════════════════════════════════════════
     // HỦY
-    // ══════════════════════════════════════════════════════════════
 
     private void OnCancelClicked()
     {
@@ -910,9 +871,7 @@ public class UpgradePanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // HELPERS
-    // ══════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void NormalizeStoneSlots()
     {
@@ -1151,7 +1110,7 @@ public class UpgradePanel : MonoBehaviour
         statusText.color = color;
     }
 
-    // ── Item Detail Popup ─────────────────────────────────────────
+    // Item Detail Popup
 
     private ItemDetailPanel GetOrCreateDetailPanel()
     {
@@ -1161,7 +1120,7 @@ public class UpgradePanel : MonoBehaviour
         return _detailPanelInstance;
     }
 
-    // ── Equip Info Box ────────────────────────────────────────────
+    // Equip Info Box
 
     private void ShowEquipInfoBox()
     {
@@ -1177,7 +1136,7 @@ public class UpgradePanel : MonoBehaviour
         if (equipInfoBox != null) equipInfoBox.SetActive(false);
     }
 
-    // ── Charm Info Box ────────────────────────────────────────────
+    // Charm Info Box
 
     private void ShowCharmInfoBox()
     {
@@ -1194,9 +1153,7 @@ public class UpgradePanel : MonoBehaviour
     }
 }
 
-// ════════════════════════════════════════════════════════════════
 // INSPECTOR CHECKLIST – UpgradePanel (gắn lên BlacksmithPanel/PanelCuongHoa)
-// ════════════════════════════════════════════════════════════════
 //
 // [Ô Trang Bị]
 //   Equip Slot Button       → Button (root ô, click khi trống → tab Trang Bị)

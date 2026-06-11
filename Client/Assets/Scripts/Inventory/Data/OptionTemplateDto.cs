@@ -52,11 +52,9 @@ public class OptionTemplateDto
     // 20 giá trị cách nhau ';': index N = stat value tại bậc +N
     public string strOption;
 
-    // ---- Helpers ----
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>
-    /// Lấy giá trị stat tại upgradeLevel chỉ định.
-    /// </summary>
+    // Lấy giá trị stat tại upgradeLevel chỉ định.
     public int GetValueAt(int upgradeLevel)
     {
         if (string.IsNullOrEmpty(strOption)) return 0;
@@ -65,14 +63,10 @@ public class OptionTemplateDto
         return int.TryParse(parts[idx], out int v) ? v : 0;
     }
 
-    /// <summary>
-    /// Option đang hoạt động (sáng màu) khi item đạt đủ bậc nâng cấp.
-    /// </summary>
+    // Option đang hoạt động (sáng màu) khi item đạt đủ bậc nâng cấp.
     public bool IsActive(int itemUpgradeLevel) => itemUpgradeLevel >= level;
 
-    /// <summary>
-    /// Xây chuỗi hiển thị đầy đủ, ví dụ "(+4) HP tối đa: +79"
-    /// </summary>
+    // Xây chuỗi hiển thị đầy đủ, ví dụ "(+4) HP tối đa: +79"
     public string BuildLabel(int value)
     {
         string label = name.Replace("#", value.ToString());
@@ -84,19 +78,15 @@ public class OptionTemplateDto
 // EquippedOptionDisplay  –  helper để ItemDetailPanel dùng
 // ============================================================
 
-/// <summary>
-/// Một option đã parse từ EquipmentItemDto.strOptions hoặc InventorySlotDto.strOptions.
-/// </summary>
+// Một option đã parse từ EquipmentItemDto.strOptions hoặc InventorySlotDto.strOptions.
 [Serializable]
 public struct EquippedOptionDisplay
 {
     public int optionId;
     public int value;   // giá trị đã tính (= strOption[upgradeLevel] từ server)
 
-    /// <summary>
-    /// Parse strOptions string thành array EquippedOptionDisplay.
-    /// strOptions format: "optId,value;optId,value;..."
-    /// </summary>
+    // Parse strOptions string thành array EquippedOptionDisplay.
+    // strOptions format: "optId,value;optId,value;..."
     public static EquippedOptionDisplay[] ParseAll(string strOptions)
     {
         if (string.IsNullOrEmpty(strOptions))

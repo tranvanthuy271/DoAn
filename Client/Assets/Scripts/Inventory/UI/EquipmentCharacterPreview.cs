@@ -1,36 +1,31 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Hiển thị prefab nhân vật idle ở giữa Equipment Panel.
-/// Nhân vật chỉ để xem, không điều khiển được.
-///
-/// ═══ Auto-resolve prefab (KHUYẾN NGHỊ) ═══
-///   - Để trống characterPrefab.
-///   - Tạo asset PlayerPreviewPrefabConfig tại
-///     Assets/Resources/ScriptableObjects/PlayerPreviewPrefabConfig
-///   - Điền đủ entry cho từng hệ/giới tính → script tự lookup từ GameManager.
-///
-/// ═══ Manual prefab (override) ═══
-///   - Kéo trực tiếp 1 prefab cụ thể vào characterPrefab.
-///   - Script dùng prefab đó bất kể hệ nhân vật.
-///
-/// ═══ MODE A – RenderTexture (KHUYẾN NGHỊ cho Screen Space Canvas) ═══
-///   1. Tạo Layer mới tên "UICharacter" (Edit → Project Settings → Tags and Layers)
-///   2. Tạo Camera con tên "PreviewCamera" bên ngoài Canvas:
-///      - Clear Flags: Solid Color, Background: alpha=0
-///      - Culling Mask: chỉ tick "UICharacter"
-///      - Depth > main camera
-///   3. Tạo RawImage trong Equipment Panel để hiển thị nhân vật
-///   4. Gắn script EquipmentCharacterPreview lên 1 GameObject trống trong Panel
-///   5. Kéo PreviewCamera → previewCamera, RawImage → renderTargetImage
-///   6. Đặt overrideLayer = index của layer "UICharacter"
-///
-/// ═══ MODE B – World Space Canvas (đơn giản hơn) ═══
-///   - Không gán previewCamera / renderTargetImage
-///   - Canvas phải là World Space
-///   - Nhân vật spawn là con của transform này
-/// </summary>
+// Hiển thị prefab nhân vật idle ở giữa Equipment Panel.
+// Nhân vật chỉ để xem, không điều khiển được.
+// Auto-resolve prefab (KHUYẾN NGHỊ)
+// - Để trống characterPrefab.
+// - Tạo asset PlayerPreviewPrefabConfig tại
+// Assets/Resources/ScriptableObjects/PlayerPreviewPrefabConfig
+// - Điền đủ entry cho từng hệ/giới tính → script tự lookup từ GameManager.
+// Manual prefab (override)
+// - Kéo trực tiếp 1 prefab cụ thể vào characterPrefab.
+// - Script dùng prefab đó bất kể hệ nhân vật.
+// MODE A – RenderTexture (KHUYẾN NGHỊ cho Screen Space Canvas)
+// 1. Tạo Layer mới tên "UICharacter" (Edit → Project Settings → Tags and Layers)
+// 2. Tạo Camera con tên "PreviewCamera" bên ngoài Canvas:
+// - Clear Flags: Solid Color, Background: alpha=0
+// - Culling Mask: chỉ tick "UICharacter"
+// - Depth > main camera
+// 3. Tạo RawImage trong Equipment Panel để hiển thị nhân vật
+// 4. Gắn script EquipmentCharacterPreview lên 1 GameObject trống trong Panel
+// 5. Kéo PreviewCamera → previewCamera, RawImage → renderTargetImage
+// 6. Đặt overrideLayer = index của layer "UICharacter"
+// MODE B – World Space Canvas (đơn giản hơn)
+// - Không gán previewCamera / renderTargetImage
+// - Canvas phải là World Space
+// - Nhân vật spawn là con của transform này
 public class EquipmentCharacterPreview : MonoBehaviour
 {
     [Header("Prefab (để trống = tự động tra theo hệ nhân vật)")]
@@ -86,8 +81,11 @@ public class EquipmentCharacterPreview : MonoBehaviour
     private RenderTexture _renderTexture;
     private bool _usingRenderTexture;
     private Animator _previewAnimator;
+    private Coroutine _retryCoroutine;
+    private bool _subscribedToPlayerData;
+    private string _lastResolvedKey;
 
-    // ───────────────────────── Unity lifecycle ─────────────────────────
+    // Unity lifecycle
 
     private void Awake()
     {
@@ -104,6 +102,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
     private void OnEnable()
     {
         Debug.Log($"[EquipPreview] OnEnable | _previewInstance={((_previewInstance != null) ? _previewInstance.name : "null")}");
+        SubscribePlayerData();
         SpawnPreview();
         if (_usingRenderTexture && previewCamera != null)
             previewCamera.enabled = true;
@@ -112,15 +111,17 @@ public class EquipmentCharacterPreview : MonoBehaviour
     private void OnDisable()
     {
         Debug.Log("[EquipPreview] OnDisable");
+        UnsubscribePlayerData();
+        StopRetry();
         // Luôn tắt camera — không để nó render to screen khi panel ẩn
         if (previewCamera != null)
             previewCamera.enabled = false;
         DestroyPreview();
     }
 
-    // ───────────────────────── Public API ──────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Đổi prefab nhân vật (VD: khi đổi nhân vật / trang phục).</summary>
+    // Đổi prefab nhân vật (VD: khi đổi nhân vật / trang phục).
     public void SetCharacterPrefab(GameObject newPrefab)
     {
         characterPrefab = newPrefab;
@@ -128,24 +129,52 @@ public class EquipmentCharacterPreview : MonoBehaviour
         SpawnPreview();
     }
 
-    /// <summary>
-    /// Gọi khi player data thay đổi (VD: sau khi login xong lần đầu).
-    /// Re-spawn preview với đúng prefab theo hệ mới.
-    /// </summary>
+    // Gọi khi player data thay đổi (VD: sau khi login xong lần đầu).
+    // Re-spawn preview với đúng prefab theo hệ mới.
     public void RefreshForLocalPlayer()
     {
+        StopRetry();
         DestroyPreview();
         SpawnPreview();
     }
 
-    // ───────────────────────── Internal ────────────────────────────────
+    private void OnPlayerDataSet(PlayerDataResponse data)
+    {
+        if (!isActiveAndEnabled)
+            return;
 
-    /// <summary>
-    /// Tra cứu prefab phù hợp:
-    ///   1. characterPrefab gán tay (override)
-    ///   2. PlayerPreviewPrefabConfig.Resolve(GameManager.playerData)
-    ///   3. null → cảnh báo
-    /// </summary>
+        string newKey = BuildPlayerDataKey(data);
+        if (_previewInstance != null && string.Equals(_lastResolvedKey, newKey, System.StringComparison.Ordinal))
+            return;
+
+        Debug.Log($"[EquipPreview] PlayerDataSet -> refresh preview key '{_lastResolvedKey}' -> '{newKey}'");
+        RefreshForLocalPlayer();
+    }
+
+    private void SubscribePlayerData()
+    {
+        if (_subscribedToPlayerData)
+            return;
+
+        GameManager.OnPlayerDataSet += OnPlayerDataSet;
+        _subscribedToPlayerData = true;
+    }
+
+    private void UnsubscribePlayerData()
+    {
+        if (!_subscribedToPlayerData)
+            return;
+
+        GameManager.OnPlayerDataSet -= OnPlayerDataSet;
+        _subscribedToPlayerData = false;
+    }
+
+    // Xử lý nội bộ phục vụ các hàm public.
+
+    // Tra cứu prefab phù hợp:
+    // 1. characterPrefab gán tay (override)
+    // 2. PlayerPreviewPrefabConfig.Resolve(GameManager.playerData)
+    // 3. null → cảnh báo
     private GameObject ResolveCharacterPrefab()
     {
         // 1. Manual override
@@ -203,13 +232,18 @@ public class EquipmentCharacterPreview : MonoBehaviour
             return;
         }
 
+        SetRenderTargetVisible(false);
+
         var prefabToSpawn = ResolveCharacterPrefab();
         if (prefabToSpawn == null)
         {
             Debug.LogWarning("[EquipPreview] SpawnPreview: prefabToSpawn = null, dừng lại.");
+            ScheduleRetry();
             return;
         }
 
+        StopRetry();
+        _lastResolvedKey = BuildCurrentPlayerDataKey();
         Debug.Log($"[EquipPreview] SpawnPreview: dùng prefab '{prefabToSpawn.name}'");
 
         _usingRenderTexture = (previewCamera != null && renderTargetImage != null);
@@ -217,7 +251,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
 
         if (_usingRenderTexture)
         {
-            // ── MODE A: RenderTexture ──
+            // MODE A: RenderTexture
             _previewInstance = Instantiate(prefabToSpawn);
             _previewInstance.transform.position  = previewWorldPosition;
             _previewInstance.transform.localScale = previewScale;
@@ -240,8 +274,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
             previewCamera.targetTexture   = _renderTexture;
             renderTargetImage.texture     = _renderTexture;
             // Hiện RawImage (đã transparent by default từ setup)
-            var c = renderTargetImage.color;
-            renderTargetImage.color = new Color(c.r, c.g, c.b, 1f);
+            SetRenderTargetVisible(true);
             // Đảm bảo RawImage render trên cùng (trên mọi sibling như BeDa)
             int siblingBefore = renderTargetImage.transform.GetSiblingIndex();
             renderTargetImage.transform.SetAsLastSibling();
@@ -260,7 +293,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         }
         else
         {
-            // ── MODE B: World Space Canvas ──
+            // MODE B: World Space Canvas
             _previewInstance = Instantiate(prefabToSpawn, transform);
             _previewInstance.transform.localPosition = localOffset;
             _previewInstance.transform.localScale    = previewScale;
@@ -332,7 +365,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         }
     }
 
-    /// <summary>Tự động căn chỉnh camera để nhân vật nằm ở giữa frame và đủ kích thước.</summary>
+    // Tự động căn chỉnh camera để nhân vật nằm ở giữa frame và đủ kích thước.
     private void AutoCenterCamera()
     {
         if (previewCamera == null || _previewInstance == null) return;
@@ -373,7 +406,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
         LockIdleParameters(_previewAnimator);
     }
 
-    /// <summary>Reset Animator parameters mỗi frame để tránh transition sang jump/run/die.</summary>
+    // Reset Animator parameters mỗi frame để tránh transition sang jump/run/die.
     private static void LockIdleParameters(Animator animator)
     {
         foreach (var param in animator.parameters)
@@ -402,6 +435,7 @@ public class EquipmentCharacterPreview : MonoBehaviour
     private void DestroyPreview()
     {
         _previewAnimator = null;
+        _lastResolvedKey = null;
         if (_previewInstance != null)
         {
             Destroy(_previewInstance);
@@ -416,6 +450,71 @@ public class EquipmentCharacterPreview : MonoBehaviour
             Destroy(_renderTexture);
             _renderTexture = null;
         }
+
+        SetRenderTargetVisible(false);
+    }
+
+    private void SetRenderTargetVisible(bool visible)
+    {
+        if (renderTargetImage == null)
+            return;
+
+        var c = renderTargetImage.color;
+        renderTargetImage.color = new Color(c.r, c.g, c.b, visible ? 1f : 0f);
+
+        if (!visible)
+            renderTargetImage.texture = null;
+    }
+
+    private void ScheduleRetry()
+    {
+        if (!isActiveAndEnabled || _retryCoroutine != null)
+            return;
+
+        _retryCoroutine = StartCoroutine(RetrySpawnPreview());
+    }
+
+    private IEnumerator RetrySpawnPreview()
+    {
+        for (int attempt = 1; attempt <= 20 && _previewInstance == null; attempt++)
+        {
+            yield return new WaitForSeconds(0.1f);
+
+            if (!isActiveAndEnabled || _previewInstance != null)
+                break;
+
+            if (GameManager.Instance == null || !GameManager.Instance.HasPlayerData())
+                continue;
+
+            Debug.Log($"[EquipPreview] Retry spawn preview attempt={attempt}");
+            SpawnPreview();
+        }
+
+        _retryCoroutine = null;
+    }
+
+    private void StopRetry()
+    {
+        if (_retryCoroutine == null)
+            return;
+
+        StopCoroutine(_retryCoroutine);
+        _retryCoroutine = null;
+    }
+
+    private static string BuildPlayerDataKey(PlayerDataResponse data)
+    {
+        if (data == null)
+            return string.Empty;
+
+        return $"{data.player_id}|{data.element_type}|{data.gender}|{data.is_hybrid}|{data.hybrid_prefab_path}";
+    }
+
+    private static string BuildCurrentPlayerDataKey()
+    {
+        return GameManager.Instance != null && GameManager.Instance.HasPlayerData()
+            ? BuildPlayerDataKey(GameManager.Instance.GetPlayerData())
+            : string.Empty;
     }
 
     private static void ForceIdleAnimation(GameObject root)
@@ -493,11 +592,9 @@ public class EquipmentCharacterPreview : MonoBehaviour
         animator.Update(0f);
     }
 
-    /// <summary>
-    /// Tắt mọi MonoBehaviour gameplay để nhân vật chỉ hiển thị,
-    /// không di chuyển và không nhận input.
-    /// Animator là Behaviour (không phải MonoBehaviour) nên không bị tắt.
-    /// </summary>
+    // Tắt mọi MonoBehaviour gameplay để nhân vật chỉ hiển thị,
+    // không di chuyển và không nhận input.
+    // Animator là Behaviour (không phải MonoBehaviour) nên không bị tắt.
     private void DisableAllControlScripts(GameObject root)
     {
         int disabledCount = 0;

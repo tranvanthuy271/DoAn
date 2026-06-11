@@ -2,11 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// WaveHUD — Hiển thị thông tin vòng hiện tại và thời gian còn lại trên client.
-/// Vị trí: góc trên bên phải màn hình.
-/// Có nút "Thoát phó bản" bên dưới để exit và đóng dungeon.
-/// </summary>
+// WaveHUD — Hiển thị thông tin vòng hiện tại và thời gian còn lại trên client.
+// Vị trí: góc trên bên phải màn hình.
+// Có nút "Thoát phó bản" bên dưới để exit và đóng dungeon.
 public class WaveHUD : MonoBehaviour
 {
     [Header("UI Labels (gán trong Inspector hoặc để trống để tự tạo)")]
@@ -32,7 +30,7 @@ public class WaveHUD : MonoBehaviour
     private int _lastMaxRounds = -1;
     private bool _exitRequested;
 
-    // ── Unity lifecycle ───────────────────────────────────────────────────────
+    // Unity lifecycle
 
     private void Start()
     {
@@ -47,7 +45,7 @@ public class WaveHUD : MonoBehaviour
         SetHudVisible(false);
     }
 
-    // ── AutoCreateUI (programmatic) ───────────────────────────────────────────
+    // AutoCreateUI (programmatic)
 
     private void AutoCreateUI()
     {
@@ -158,7 +156,7 @@ public class WaveHUD : MonoBehaviour
         return btn;
     }
 
-    // ── Exit handler ──────────────────────────────────────────────────────────
+    // Exit handler
 
     private void OnExitClicked()
     {
@@ -180,7 +178,7 @@ public class WaveHUD : MonoBehaviour
         if (exitButton != null) exitButton.interactable = false;
     }
 
-    // ── Update ────────────────────────────────────────────────────────────────
+    // Update
 
     private void Update()
     {
@@ -232,7 +230,7 @@ public class WaveHUD : MonoBehaviour
         _dungeonManager = null;
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void SetHudVisible(bool visible)
     {

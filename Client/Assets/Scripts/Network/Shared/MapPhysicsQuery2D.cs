@@ -2,10 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Physics2D query helpers that always query the same physics scene as the
-/// provided context object.
-/// </summary>
+// Physics2D query helpers that always query the same physics scene as the
+// provided context object.
 public static class MapPhysicsQuery2D
 {
     private const int InitialBufferSize = 16;

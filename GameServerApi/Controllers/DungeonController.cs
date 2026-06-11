@@ -21,15 +21,11 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        // ─────────────────────────────────────────────────────────────
         //  CONFIG ENDPOINTS
-        // ─────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET /api/dungeon/list
-        /// Lấy danh sách tất cả phó bản đang active, sắp xếp theo level yêu cầu.
-        /// Client dùng để render danh sách nút bấm vào phó bản.
-        /// </summary>
+        // GET /api/dungeon/list
+        // Lấy danh sách tất cả phó bản đang active, sắp xếp theo level yêu cầu.
+        // Client dùng để render danh sách nút bấm vào phó bản.
         [HttpGet("list")]
         public async Task<IActionResult> GetDungeonList()
         {
@@ -59,10 +55,8 @@ namespace GameServerApi.Controllers
             return Ok(new { dungeons });
         }
 
-        /// <summary>
-        /// GET /api/dungeon/{dungeonId}
-        /// Lấy chi tiết một phó bản (kèm danh sách enemy spawns thuộc map đó).
-        /// </summary>
+        // GET /api/dungeon/{dungeonId}
+        // Lấy chi tiết một phó bản (kèm danh sách enemy spawns thuộc map đó).
         [HttpGet("{dungeonId:int}")]
         public async Task<IActionResult> GetDungeonDetail(int dungeonId)
         {
@@ -148,16 +142,12 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ─────────────────────────────────────────────────────────────
         //  SESSION ENDPOINTS (chỉ dùng cho phó bản "multi")
-        // ─────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET /api/dungeon/session/active/{dungeonConfigId}
-        /// Lấy session đang chờ/active cho phó bản multi.
-        /// Client dùng để check trước khi vào: còn chỗ không? Host ở đâu?
-        /// Trả về has_session=false nếu chưa có ai tạo session.
-        /// </summary>
+        // GET /api/dungeon/session/active/{dungeonConfigId}
+        // Lấy session đang chờ/active cho phó bản multi.
+        // Client dùng để check trước khi vào: còn chỗ không? Host ở đâu?
+        // Trả về has_session=false nếu chưa có ai tạo session.
         [HttpGet("session/active/{dungeonConfigId:int}")]
         public async Task<IActionResult> GetActiveSession(int dungeonConfigId)
         {
@@ -178,11 +168,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/session/create
-        /// Host Unity gọi endpoint này ngay sau khi StartHost() thành công để đăng ký session.
-        /// Body: { dungeon_config_id, host_ip, host_port }
-        /// </summary>
+        // POST /api/dungeon/session/create
+        // Host Unity gọi endpoint này ngay sau khi StartHost() thành công để đăng ký session.
+        // Body: { dungeon_config_id, host_ip, host_port }
         [HttpPost("session/create")]
         public async Task<IActionResult> CreateSession([FromBody] CreateDungeonSessionDto dto)
         {
@@ -216,11 +204,9 @@ namespace GameServerApi.Controllers
             return Ok(MapSession(session));
         }
 
-        /// <summary>
-        /// POST /api/dungeon/session/{sessionId}/join
-        /// Client gọi khi chuẩn bị connect tới host của session đã có sẵn.
-        /// Server tăng current_players và chuyển status → active nếu đầy.
-        /// </summary>
+        // POST /api/dungeon/session/{sessionId}/join
+        // Client gọi khi chuẩn bị connect tới host của session đã có sẵn.
+        // Server tăng current_players và chuyển status → active nếu đầy.
         [HttpPost("session/{sessionId:int}/join")]
         public async Task<IActionResult> JoinSession(int sessionId)
         {
@@ -237,10 +223,8 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true, current_players = session.CurrentPlayers, session = MapSession(session) });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/session/{sessionId}/leave
-        /// Client gọi khi rời phó bản. Nếu không còn ai → session "ended".
-        /// </summary>
+        // POST /api/dungeon/session/{sessionId}/leave
+        // Client gọi khi rời phó bản. Nếu không còn ai → session "ended".
         [HttpPost("session/{sessionId:int}/leave")]
         public async Task<IActionResult> LeaveSession(int sessionId)
         {
@@ -257,10 +241,8 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true, current_players = session.CurrentPlayers });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/session/{sessionId}/end
-        /// Host gọi khi phó bản kết thúc (boss chết / timeout / host disconnect).
-        /// </summary>
+        // POST /api/dungeon/session/{sessionId}/end
+        // Host gọi khi phó bản kết thúc (boss chết / timeout / host disconnect).
         [HttpPost("session/{sessionId:int}/end")]
         public async Task<IActionResult> EndSession(int sessionId)
         {
@@ -274,17 +256,13 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true });
         }
 
-        // ─────────────────────────────────────────────────────────────
         //  MAP CONFIG ENDPOINT (player spawn points + enemy spawns)
-        // ─────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET /api/dungeon/map/{mapId}/setup
-        /// Unity host gọi ngay sau StartHost() để lấy:
-        ///   - Vị trí spawn cầu thủ (spawn_points của map)
-        ///   - Danh sách quái và vị trí spawn theo DB (enemy_spawns)
-        /// Dùng để EnemySpawner tự động init theo config DB thay vì hard-code trong scene.
-        /// </summary>
+        // GET /api/dungeon/map/{mapId}/setup
+        // Unity host gọi ngay sau StartHost() để lấy:
+        // - Vị trí spawn cầu thủ (spawn_points của map)
+        // - Danh sách quái và vị trí spawn theo DB (enemy_spawns)
+        // Dùng để EnemySpawner tự động init theo config DB thay vì hard-code trong scene.
         [HttpGet("map/{mapId:int}/setup")]
         public async Task<IActionResult> GetMapSetup(int mapId)
         {
@@ -326,11 +304,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/dungeon/wave/{dungeonId}/config
-        /// Runtime config chuyên biệt cho WaveDungeonRuntime.
-        /// Trả về flow config từ dungeon_wave_config và spawn/stat data đã resolve từ DB.
-        /// </summary>
+        // GET /api/dungeon/wave/{dungeonId}/config
+        // Runtime config chuyên biệt cho WaveDungeonRuntime.
+        // Trả về flow config từ dungeon_wave_config và spawn/stat data đã resolve từ DB.
         [HttpGet("wave/{dungeonId:int}/config")]
         public async Task<IActionResult> GetWaveRuntimeConfig(int dungeonId)
         {
@@ -396,11 +372,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/dungeon/boss/{bossId}/config
-        /// Lấy cấu hình đầy đủ của boss (chỉ số, kỹ năng, giai đoạn, spawn config)
-        /// BossAI.cs trong Unity gọi sau khi spawn boss để load config.
-        /// </summary>
+        // GET /api/dungeon/boss/{bossId}/config
+        // Lấy cấu hình đầy đủ của boss (chỉ số, kỹ năng, giai đoạn, spawn config)
+        // BossAI.cs trong Unity gọi sau khi spawn boss để load config.
         [HttpGet("boss/{bossId:int}/config")]
         public async Task<IActionResult> GetBossConfig(int bossId)
         {
@@ -443,15 +417,11 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ─────────────────────────────────────────────────────────────
         //  WAVE ENTRY – giới hạn lượt vào + vé phó bản
-        // ─────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET /api/dungeon/wave/{dungeonId}/entry-status/{playerId}
-        /// Trả về entries_used, entries_limit và seconds_remaining_in_wave (nếu có session).
-        /// Client hiển thị để player biết còn bao nhiêu lượt.
-        /// </summary>
+        // GET /api/dungeon/wave/{dungeonId}/entry-status/{playerId}
+        // Trả về entries_used, entries_limit và seconds_remaining_in_wave (nếu có session).
+        // Client hiển thị để player biết còn bao nhiêu lượt.
         [HttpGet("wave/{dungeonId:int}/entry-status/{playerId:int}")]
         public async Task<IActionResult> GetWaveEntryStatus(int dungeonId, int playerId)
         {
@@ -499,12 +469,10 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/wave/{dungeonId}/enter
-        /// Validate lượt vào, optionally dùng vé (+1 hoặc +2), tạo session.
-        /// Body: { player_id, use_ticket_item_id? }
-        ///   use_ticket_item_id = 409 (vé +1) hoặc 410 (vé +2) hoặc 0 (không dùng vé)
-        /// </summary>
+        // POST /api/dungeon/wave/{dungeonId}/enter
+        // Validate lượt vào, optionally dùng vé (+1 hoặc +2), tạo session.
+        // Body: { player_id, use_ticket_item_id? }
+        // use_ticket_item_id = 409 (vé +1) hoặc 410 (vé +2) hoặc 0 (không dùng vé)
         [HttpPost("wave/{dungeonId:int}/enter")]
         public async Task<IActionResult> WaveEnter(int dungeonId, [FromBody] System.Text.Json.JsonElement body)
         {
@@ -627,11 +595,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/wave/{dungeonId}/session/update
-        /// Unity host gọi mỗi khi bắt đầu vòng mới để server lưu trạng thái reconnect.
-        /// Body: { player_id, current_wave, current_phase }
-        /// </summary>
+        // POST /api/dungeon/wave/{dungeonId}/session/update
+        // Unity host gọi mỗi khi bắt đầu vòng mới để server lưu trạng thái reconnect.
+        // Body: { player_id, current_wave, current_phase }
         [HttpPost("wave/{dungeonId:int}/session/update")]
         public async Task<IActionResult> UpdateWaveSession(int dungeonId, [FromBody] System.Text.Json.JsonElement body)
         {
@@ -651,11 +617,9 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true, current_wave = session.CurrentWave, current_phase = session.CurrentPhase });
         }
 
-        /// <summary>
-        /// POST /api/dungeon/wave/{dungeonId}/session/end
-        /// Unity host gọi khi phó bản kết thúc (hoàn thành / timeout / rời).
-        /// Body: { player_id, exit_reason } — exit_reason: "completed" | "timeout" | "left"
-        /// </summary>
+        // POST /api/dungeon/wave/{dungeonId}/session/end
+        // Unity host gọi khi phó bản kết thúc (hoàn thành / timeout / rời).
+        // Body: { player_id, exit_reason } — exit_reason: "completed" | "timeout" | "left"
         [HttpPost("wave/{dungeonId:int}/session/end")]
         public async Task<IActionResult> EndWaveSession(int dungeonId, [FromBody] System.Text.Json.JsonElement body)
         {
@@ -675,15 +639,13 @@ namespace GameServerApi.Controllers
             session.UpdatedAt  = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            // ── Cập nhật kỷ lục phó bản (best_wave) ───────────────────────
+            // Cập nhật kỷ lục phó bản (best_wave)
             await UpdateDungeonRecordAsync(playerId, dungeonId, reachedWave);
 
             return Ok(new { success = true });
         }
 
-        // ─────────────────────────────────────────────────────────────
         //  PRIVATE HELPERS
-        // ─────────────────────────────────────────────────────────────
 
         // Keyless projection cho dungeon_wave_config raw query
         private class WaveConfigProjection
@@ -707,7 +669,7 @@ namespace GameServerApi.Controllers
             public string milestone_reward_json { get; set; } = "[]";
         }
 
-        // ── Cập nhật kỷ lục phó bản ───────────────────────────────────────────
+        // Cập nhật kỷ lục phó bản
         private async Task UpdateDungeonRecordAsync(int characterId, int dungeonId, int reachedWave)
         {
             try

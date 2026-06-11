@@ -1,2 +1,0 @@
-54: - *Mạng & Bảo mật*: Kiến trúc Server-Authoritative đồng bộ realtime qua UDP, xác thực JWT và ảo hóa Docker.
-499: - **Đánh giá bảo mật**: Thực nghiệm sử dụng các công cụ thay đổi bộ nhớ tại Client Cheat Engine để hack vàng và HP; Dedicated Server phát hiện và từ chối ghi nhận, chứng minh mô hình Server-Authoritative chống gian lận thành công.

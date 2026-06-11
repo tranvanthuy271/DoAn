@@ -1,23 +1,17 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Base class cho tất cả Hybrid Skill (skill combo đặc biệt chỉ xuất hiện khi Hybrid Fusion).
-///
-/// ═══════════════════════════════════════════════════════════
-/// CÁCH TẠO HYBRID SKILL MỚI:
-///   1. Tạo class mới kế thừa HybridSkillBase
-///   2. Override ExecuteSkill(Vector2 direction)
-///   3. Gắn component vào Hybrid Prefab tương ứng
-///   4. SkillRuntimeLoader tự động nhận diện qua prefix HYBRID_ trong skill_code
-///
-/// Ví dụ:
-///   public class HybridMetalWindGaleSkill : HybridSkillBase
-///   {
-///       protected override void ExecuteSkill(Vector2 direction) { ... }
-///   }
-/// ═══════════════════════════════════════════════════════════
-/// </summary>
+// Base class cho tất cả Hybrid Skill (skill combo đặc biệt chỉ xuất hiện khi Hybrid Fusion).
+// CÁCH TẠO HYBRID SKILL MỚI:
+// 1. Tạo class mới kế thừa HybridSkillBase
+// 2. Override ExecuteSkill(Vector2 direction)
+// 3. Gắn component vào Hybrid Prefab tương ứng
+// 4. SkillRuntimeLoader tự động nhận diện qua prefix HYBRID_ trong skill_code
+// Ví dụ:
+// public class HybridMetalWindGaleSkill : HybridSkillBase
+// {
+// protected override void ExecuteSkill(Vector2 direction) { ... }
+// }
 public abstract class HybridSkillBase : NetworkBehaviour
 {
     [Header("Hybrid Skill Base")]
@@ -33,7 +27,7 @@ public abstract class HybridSkillBase : NetworkBehaviour
     [Tooltip("Giá trị sát thương / hiệu ứng cơ bản")]
     [SerializeField] public float effectValue = 300f;
 
-    // ── Runtime state ─────────────────────────────────────────────
+    // Trạng thái runtime được cập nhật khi game đang chạy.
     private float _cooldownTimer;
     private bool  _canUse = true;
 
@@ -43,7 +37,7 @@ public abstract class HybridSkillBase : NetworkBehaviour
 
     protected PlayerAnimator PlayerAnimator { get; private set; }
 
-    // ── Lifecycle ─────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
     protected virtual void Awake()
     {
         PlayerAnimator = GetComponentInParent<PlayerAnimator>();
@@ -62,12 +56,10 @@ public abstract class HybridSkillBase : NetworkBehaviour
         }
     }
 
-    // ── Public API (gọi từ PlayerSkillManager) ────────────────────
+    // Public API (gọi từ PlayerSkillManager)
 
-    /// <summary>
-    /// Cố gắng dùng skill. Kiểm tra cooldown. Chỉ gọi trên Owner.
-    /// Trả về true nếu thực sự kích hoạt.
-    /// </summary>
+    // Cố gắng dùng skill. Kiểm tra cooldown. Chỉ gọi trên Owner.
+    // Trả về true nếu thực sự kích hoạt.
     public bool TryUse(Vector2 direction)
     {
         if (!IsOwner || !_canUse) return false;
@@ -97,9 +89,7 @@ public abstract class HybridSkillBase : NetworkBehaviour
         PlayerAnimator?.TriggerAttack();
     }
 
-    /// <summary>
-    /// Logic chính của skill — chạy trên Server.
-    /// Spawn projectile, áp buff, v.v.
-    /// </summary>
+    // Logic chính của skill — chạy trên Server.
+    // Spawn projectile, áp buff, v.v.
     protected abstract void ExecuteSkill(Vector2 direction);
 }

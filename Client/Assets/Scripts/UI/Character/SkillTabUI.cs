@@ -3,14 +3,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tab "Kỹ Năng" trong CharacterPanel.
-///
-/// Layout:
-///   - Danh sách skill chiếm toàn bộ chiá»u rộng (ScrollView full-width).
-///   - Khi nhấn vào một dòng → SkillDetailPanel hiện lên như overlay riêng
-///     (được đặt ở cấp parent của ContentSkill, không phải bên trong).
-/// </summary>
+// Tab "Kỹ Năng" trong CharacterPanel.
+// Layout:
+// - Danh sách skill chiếm toàn bộ chiá»u rộng (ScrollView full-width).
+// - Khi nhấn vào một dòng → SkillDetailPanel hiện lên như overlay riêng
+// (được đặt ở cấp parent của ContentSkill, không phải bên trong).
 public class SkillTabUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -46,7 +43,7 @@ public class SkillTabUI : MonoBehaviour
         GameplayCommandService.OnSkillUpgraded  -= HandleSkillUpgraded;
     }
 
-    // ── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void SetPlayerId(int id) => _playerId = id;
 
@@ -105,7 +102,7 @@ public class SkillTabUI : MonoBehaviour
         GameplayCommandService.Instance.GetPlayerSkillsServerRpc();
     }
 
-    // ── Private helpers ─────────────────────────────────────────────────────
+    // Private helpers
 
     private void HandleSkillsReceived(string json)
     {
@@ -272,7 +269,7 @@ public class SkillTabUI : MonoBehaviour
         txtStatus.enabled = !string.IsNullOrEmpty(msg);
     }
 
-    // ── Layout bootstrap ────────────────────────────────────────────────────
+    // Layout bootstrap
 
     private void EnsureRuntimeLayout()
     {

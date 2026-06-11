@@ -1,27 +1,23 @@
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Bảng map_enemy_drop — Tỉ lệ drop item ghi đè theo từng map.
-    ///
-    /// Khi enemy chết ở một map cụ thể, server sẽ dùng bảng này thay vì
-    /// drop_items_json mặc định trong bảng enemy.
-    ///
-    /// Pattern từ LangLa: Map.DropConfig + BossDropConfig
-    /// </summary>
+    // Bảng map_enemy_drop — Tỉ lệ drop item ghi đè theo từng map.
+    // Khi enemy chết ở một map cụ thể, server sẽ dùng bảng này thay vì
+    // drop_items_json mặc định trong bảng enemy.
+    // Pattern từ LangLa: Map.DropConfig + BossDropConfig
     public class MapEnemyDrop
     {
         public int Id { get; set; }
 
-        /// <summary>Map áp dụng tỉ lệ</summary>
+        // Map áp dụng tỉ lệ
         public int MapId { get; set; }
 
-        /// <summary>FK → enemy.enemy_id</summary>
+        // FK → enemy.enemy_id
         public int EnemyId { get; set; }
 
-        /// <summary>FK → item_template.id</summary>
+        // FK → item_template.id
         public int ItemId { get; set; }
 
-        /// <summary>Tỉ lệ rơi (0.0 – 1.0). Ví dụ: 0.05 = 5%</summary>
+        // Tỉ lệ rơi (0.0 – 1.0). Ví dụ: 0.05 = 5%
         public float DropChance { get; set; } = 0.1f;
 
         public int QtyMin { get; set; } = 1;

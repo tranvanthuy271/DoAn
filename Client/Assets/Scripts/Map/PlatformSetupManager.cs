@@ -1,24 +1,19 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Tự động tìm và cấu hình tất cả nền nổi (platform) trong scene khi game bắt đầu.
-///
-/// LOGIC phát hiện platform:
-///   - Collider2D thuộc layer "Ground"
-///   - Bề ngang > bề dọc * 1.5 (vật nằm ngang, không phải tường dọc)
-///   → Chỉ apply cho collider nằm ngang để tường dọc vẫn solid bình thường.
-///
-/// Kết quả:
-///   - Player nhảy từ dưới lên xuyên qua.
-///   - Đứng từ trên xuống được.
-///   - Đi NGANG qua cũng được (không bị dính cạnh bên).
-///
-/// CÁCH DÙNG:
-/// 1. Tạo GameObject rỗng trong scene (ví dụ "MapSetup")
-/// 2. Add Component → PlatformSetupManager
-/// 3. Lưu scene
-/// </summary>
+// Tự động tìm và cấu hình tất cả nền nổi (platform) trong scene khi game bắt đầu.
+// LOGIC phát hiện platform:
+// - Collider2D thuộc layer "Ground"
+// - Bề ngang > bề dọc * 1.5 (vật nằm ngang, không phải tường dọc)
+// → Chỉ apply cho collider nằm ngang để tường dọc vẫn solid bình thường.
+// Kết quả:
+// - Player nhảy từ dưới lên xuyên qua.
+// - Đứng từ trên xuống được.
+// - Đi NGANG qua cũng được (không bị dính cạnh bên).
+// CÁCH DÙNG:
+// 1. Tạo GameObject rỗng trong scene (ví dụ "MapSetup")
+// 2. Add Component → PlatformSetupManager
+// 3. Lưu scene
 public class PlatformSetupManager : MonoBehaviour
 {
     private static PlatformSetupManager instance;

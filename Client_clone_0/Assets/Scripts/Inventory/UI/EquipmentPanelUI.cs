@@ -5,20 +5,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// EquipmentPanelUI - Panel UI hiển thị trang bị của player
-/// Gồm 6 ô: 1 Vũ khí + 5 Phụ kiện (Mũ, Giáp, Quần, Giày, Phụ kiện)
-/// 
-/// Setup trong Unity:
-/// 1. Tạo Panel "EquipmentPanel" trong Canvas
-/// 2. Tạo 6 ô slot con (dùng prefab EquipmentSlotUI hoặc tạo thủ công)
-/// 3. Kéo reference vào Inspector
-/// 4. Gắn script này lên Panel
-/// 
-/// Có 2 cách setup slots:
-/// A) Tự động: Gán slotPrefab + slotContainer → Script tự tạo 6 slots
-/// B) Thủ công: Kéo 6 EquipmentSlotUI vào array manualSlots trong Inspector
-/// </summary>
+// EquipmentPanelUI - Panel UI hiển thị trang bị của player
+// Gồm 6 ô: 1 Vũ khí + 5 Phụ kiện (Mũ, Giáp, Quần, Giày, Phụ kiện)
+// Setup trong Unity:
+// 1. Tạo Panel "EquipmentPanel" trong Canvas
+// 2. Tạo 6 ô slot con (dùng prefab EquipmentSlotUI hoặc tạo thủ công)
+// 3. Kéo reference vào Inspector
+// 4. Gắn script này lên Panel
+// Có 2 cách setup slots:
+// A) Tự động: Gán slotPrefab + slotContainer → Script tự tạo 6 slots
+// B) Thủ công: Kéo 6 EquipmentSlotUI vào array manualSlots trong Inspector
 public class EquipmentPanelUI : MonoBehaviour
 {
     [Header("Panel")]
@@ -72,9 +68,7 @@ public class EquipmentPanelUI : MonoBehaviour
     private bool _upgradeSelectMode;
     private Action<EquipmentItemDto, EquipmentSlotType> _upgradeSelectCallback;
 
-    /// <summary>
-    /// Event khi người dùng muốn tháo trang bị
-    /// </summary>
+    // Event khi người dùng muốn tháo trang bị
     public event Action<EquipmentSlotType> OnUnequipRequested;
 
     private void Awake()
@@ -130,9 +124,7 @@ public class EquipmentPanelUI : MonoBehaviour
         ReplayPendingTierEffectsIfActive();
     }
 
-    /// <summary>
-    /// Khởi tạo các slot UI
-    /// </summary>
+    // Khởi tạo các slot UI
     private void InitSlots()
     {
         slotUIs.Clear();
@@ -182,9 +174,7 @@ public class EquipmentPanelUI : MonoBehaviour
         Debug.Log($"[EquipmentPanelUI] Đã khởi tạo {slotUIs.Count} equipment slots");
     }
 
-    /// <summary>
-    /// Bật/tắt panel trang bị
-    /// </summary>
+    // Bật/tắt panel trang bị
     public void TogglePanel()
     {
         if (panelRoot == null) return;
@@ -205,9 +195,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Mở panel
-    /// </summary>
+    // Mở panel
     public void Show()
     {
         if (panelRoot != null)
@@ -217,9 +205,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đóng panel
-    /// </summary>
+    // Đóng panel
     public void Hide()
     {
         if (panelRoot != null)
@@ -229,18 +215,14 @@ public class EquipmentPanelUI : MonoBehaviour
         HideUnequipConfirm();
     }
 
-    /// <summary>
-    /// Kiểm tra panel có đang mở không
-    /// </summary>
+    // Kiểm tra panel có đang mở không
     public bool IsVisible()
     {
         return panelRoot != null && panelRoot.activeSelf;
     }
 
-    /// <summary>
-    /// Vào chế độ chọn trang bị để nâng cấp.
-    /// Callback nhận (item, slotType) khi người chơi click vào slot có item.
-    /// </summary>
+    // Vào chế độ chọn trang bị để nâng cấp.
+    // Callback nhận (item, slotType) khi người chơi click vào slot có item.
     public void EnterUpgradeSelectMode(Action<EquipmentItemDto, EquipmentSlotType> callback)
     {
         _upgradeSelectMode     = true;
@@ -250,9 +232,7 @@ public class EquipmentPanelUI : MonoBehaviour
         RefreshFromBridge();
     }
 
-    /// <summary>
-    /// Thoát chế độ chọn trang bị để nâng cấp, trở về hành vi bình thường.
-    /// </summary>
+    // Thoát chế độ chọn trang bị để nâng cấp, trở về hành vi bình thường.
     public void ExitUpgradeSelectMode()
     {
         _upgradeSelectMode     = false;
@@ -261,9 +241,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if (titleText != null) titleText.text = "Trang Bị";
     }
 
-    /// <summary>
-    /// Cập nhật toàn bộ UI từ PlayerEquipmentDto
-    /// </summary>
+    // Cập nhật toàn bộ UI từ PlayerEquipmentDto
     public void SetEquipmentData(PlayerEquipmentDto equipment)
     {
         currentEquipment = equipment;
@@ -299,9 +277,7 @@ public class EquipmentPanelUI : MonoBehaviour
         HideUnequipConfirm();
     }
 
-    /// <summary>
-    /// Refresh UI từ InventoryNetworkBridge
-    /// </summary>
+    // Refresh UI từ InventoryNetworkBridge
     public void RefreshFromBridge()
     {
         var bridge = InventoryNetworkBridge.GetExisting(true);
@@ -315,9 +291,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Refresh tất cả slot UI
-    /// </summary>
+    // Refresh tất cả slot UI
     private void RefreshAllSlots()
     {
         if (slotUIs.Count == 0)
@@ -367,9 +341,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Callback khi click vào 1 slot trang bị
-    /// </summary>
+    // Callback khi click vào 1 slot trang bị
     private void OnEquipmentSlotClicked(EquipmentSlotType slotType, EquipmentItemDto item)
     {
         if (_isExternalProfileView)
@@ -394,9 +366,7 @@ public class EquipmentPanelUI : MonoBehaviour
         ShowUnequipConfirm(slotType, item);
     }
 
-    /// <summary>
-    /// Hiện panel xác nhận tháo trang bị
-    /// </summary>
+    // Hiện panel xác nhận tháo trang bị
     private void ShowUnequipConfirm(EquipmentSlotType slotType, EquipmentItemDto item)
     {
         pendingUnequipSlot = slotType;
@@ -418,9 +388,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Ẩn panel xác nhận
-    /// </summary>
+    // Ẩn panel xác nhận
     private void HideUnequipConfirm()
     {
         pendingUnequipSlot = null;
@@ -430,9 +398,7 @@ public class EquipmentPanelUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Xác nhận tháo trang bị
-    /// </summary>
+    // Xác nhận tháo trang bị
     private void OnConfirmUnequip()
     {
         if (pendingUnequipSlot.HasValue)
@@ -454,9 +420,7 @@ public class EquipmentPanelUI : MonoBehaviour
         HideUnequipConfirm();
     }
 
-    /// <summary>
-    /// Hủy tháo trang bị
-    /// </summary>
+    // Hủy tháo trang bị
     private void OnCancelUnequip()
     {
         HideUnequipConfirm();

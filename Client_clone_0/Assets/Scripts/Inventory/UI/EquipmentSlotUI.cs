@@ -4,15 +4,12 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 
-/// <summary>
-/// EquipmentSlotUI - Hiển thị 1 ô trang bị trong UI Equipment Panel
-/// Mỗi slot đại diện cho 1 loại trang bị (Weapon, Helmet, Armor, Pants, Boots, Accessory)
-/// 
-/// Setup trong Unity:
-/// 1. Tạo prefab với Image (icon), TMP_Text (slot label), Button (click)
-/// 2. Gắn script này lên prefab
-/// 3. Kéo reference vào Inspector
-/// </summary>
+// EquipmentSlotUI - Hiển thị 1 ô trang bị trong UI Equipment Panel
+// Mỗi slot đại diện cho 1 loại trang bị (Weapon, Helmet, Armor, Pants, Boots, Accessory)
+// Setup trong Unity:
+// 1. Tạo prefab với Image (icon), TMP_Text (slot label), Button (click)
+// 2. Gắn script này lên prefab
+// 3. Kéo reference vào Inspector
 public class EquipmentSlotUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -64,9 +61,7 @@ public class EquipmentSlotUI : MonoBehaviour
     private EquipmentItemDto currentItem;
     private Vector2 iconMaxSize;
 
-    /// <summary>
-    /// Event khi click vào slot (để mở chi tiết hoặc tháo trang bị)
-    /// </summary>
+    // Event khi click vào slot (để mở chi tiết hoặc tháo trang bị)
     public event Action<EquipmentSlotType, EquipmentItemDto> OnSlotClicked;
 
     public EquipmentSlotType SlotType => slotType;
@@ -117,9 +112,7 @@ public class EquipmentSlotUI : MonoBehaviour
             bgImage.sprite = _bgSR.sprite;
     }
 
-    /// <summary>
-    /// Khởi tạo slot với loại trang bị
-    /// </summary>
+    // Khởi tạo slot với loại trang bị
     public void Init(EquipmentSlotType type)
     {
         slotType = type;
@@ -131,9 +124,7 @@ public class EquipmentSlotUI : MonoBehaviour
         Clear();
     }
 
-    /// <summary>
-    /// Cập nhật label của slot
-    /// </summary>
+    // Cập nhật label của slot
     private void UpdateSlotLabel()
     {
         if (slotLabelText != null)
@@ -142,9 +133,7 @@ public class EquipmentSlotUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Xóa item khỏi slot (hiển thị trống)
-    /// </summary>
+    // Xóa item khỏi slot (hiển thị trống)
     public void Clear()
     {
         currentItem = null;
@@ -182,9 +171,7 @@ public class EquipmentSlotUI : MonoBehaviour
         _bgSR = null;
     }
 
-    /// <summary>
-    /// Gán item vào slot
-    /// </summary>
+    // Gán item vào slot
     public void SetItem(EquipmentItemDto item)
     {
         currentItem = item;
@@ -236,34 +223,26 @@ public class EquipmentSlotUI : MonoBehaviour
         Debug.Log($"[EquipmentSlotUI] Slot {slotType}: Đã gán {item.itemName} (id={item.itemTemplateId})");
     }
 
-    /// <summary>
-    /// Lấy item đang trang bị
-    /// </summary>
+    // Lấy item đang trang bị
     public EquipmentItemDto GetCurrentItem()
     {
         return currentItem;
     }
 
-    /// <summary>
-    /// Kiểm tra slot có item không
-    /// </summary>
+    // Kiểm tra slot có item không
     public bool HasItem()
     {
         return currentItem != null && currentItem.itemTemplateId > 0;
     }
 
-    /// <summary>
-    /// Gọi từ Button OnClick trên prefab
-    /// </summary>
+    // Gọi từ Button OnClick trên prefab
     public void OnClick()
     {
         Debug.Log($"[EquipmentSlotUI] Click slot {slotType}, hasItem={HasItem()}");
         OnSlotClicked?.Invoke(slotType, currentItem);
     }
 
-    /// <summary>
-    /// Gọi từ nút "Nâng Cấp" – mở UpgradePanel cho item đang trang bị
-    /// </summary>
+    // Gọi từ nút "Nâng Cấp" – mở UpgradePanel cho item đang trang bị
     public void OnUpgradeClick()
     {
         if (!HasItem()) return;
@@ -287,7 +266,7 @@ public class EquipmentSlotUI : MonoBehaviour
         NormalizeTierImageReferences();
         ApplyTierLayerOrder();
 
-        // --- Guard: thiếu config ---
+        // Guard: thiếu config
         if (tierConfig == null)
         {
             HideTierImage(borderImage);
@@ -296,7 +275,7 @@ public class EquipmentSlotUI : MonoBehaviour
             return;
         }
 
-        // --- Guard: thiếu image references ---
+        // Guard: thiếu image references
         if (borderImage == null)
             Debug.LogWarning($"[TierEffect] {name} ({slotType}): borderImage chưa gán!");
         if (bgImage == null)
@@ -326,7 +305,7 @@ public class EquipmentSlotUI : MonoBehaviour
                   $"borderAnimator={(tier.borderAnimator != null ? tier.borderAnimator.name : "NULL")}, " +
                   $"bgAnimator={(tier.bgAnimator != null ? tier.bgAnimator.name : "NULL")}");
 
-        // --- Border ---
+        // Border
         if (borderImage != null)
         {
             bool hasBorderAnim   = tier.borderAnimator != null;
@@ -350,7 +329,7 @@ public class EquipmentSlotUI : MonoBehaviour
             }
         }
 
-        // --- Background ---
+        // Background
         if (bgImage != null)
         {
             bool hasBgAnim   = tier.bgAnimator != null;
@@ -626,9 +605,7 @@ public class EquipmentSlotUI : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Debug trong Editor: Right-click component → "Debug Tier State"
-    /// </summary>
+    // Debug trong Editor: Right-click component → "Debug Tier State"
     [ContextMenu("Debug Tier State")]
     private void DebugTierState()
     {

@@ -4,16 +4,14 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tạo prefab BlacksmithFunctionMenuCanvas.prefab.
-/// Menu: Tools → Blacksmith → Create BlacksmithFunctionMenu Prefab
-/// </summary>
+// Tạo prefab BlacksmithFunctionMenuCanvas.prefab.
+// Menu: Tools → Blacksmith → Create BlacksmithFunctionMenu Prefab
 public static class CreateBlacksmithFunctionMenuPrefab
 {
     private const string PREFAB_PATH       = "Assets/Resources/UI/BlacksmithFunctionMenuCanvas.prefab";
     private const string NOTO_SANS_PATH    = "Assets/TextMesh Pro/Resources/Fonts & Materials/NotoSans-Regular SDF.asset";
 
-    // ─── Màu ────────────────────────────────────────────────────────────────
+    // Màu
     private static readonly Color BackdropColor   = new Color(0.03f, 0.04f, 0.07f, 0.78f);
     private static readonly Color CardColor       = new Color(0.08f, 0.09f, 0.12f, 0.96f);
     private static readonly Color TitleColor      = new Color(1.00f, 0.92f, 0.72f, 1.00f);
@@ -35,7 +33,7 @@ public static class CreateBlacksmithFunctionMenuPrefab
         if (notoSans == null)
             Debug.LogWarning("[CreateBlacksmithFunctionMenuPrefab] NotoSans font asset không tìm thấy tại " + NOTO_SANS_PATH + ". Text sẽ dùng font mặc định.");
 
-        // ── Canvas root ─────────────────────────────────────────────────────
+        // Canvas root
         var root = new GameObject("BlacksmithFunctionMenuCanvas");
         var canvas = root.AddComponent<Canvas>();
         canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
@@ -58,14 +56,14 @@ public static class CreateBlacksmithFunctionMenuPrefab
         // BlacksmithFunctionMenuPanel component (trên root)
         var panel = root.AddComponent<BlacksmithFunctionMenuPanel>();
 
-        // ── Backdrop (fullscreen dim) ────────────────────────────────────────
+        // Backdrop (fullscreen dim)
         var backdropGO = MakeRT("Backdrop", root.transform, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.one);
         backdropGO.offsetMin = Vector2.zero;
         backdropGO.offsetMax = Vector2.zero;
         var backdropImg = backdropGO.gameObject.AddComponent<Image>();
         backdropImg.color = BackdropColor;
 
-        // ── Card (nền hộp thoại 900×640) ────────────────────────────────────
+        // Card (nền hộp thoại 900×640)
         var card = MakeRT("BlacksmithFunctionCard", root.transform,
             new Vector2(900f, 640f), Vector2.zero,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
@@ -76,33 +74,33 @@ public static class CreateBlacksmithFunctionMenuPrefab
         outline.effectColor    = new Color(0.95f, 0.76f, 0.32f, 0.45f);
         outline.effectDistance = new Vector2(2f, -2f);
 
-        // ── Title ────────────────────────────────────────────────────────────
+        // Title
         var titleTMP = MakeTMP("Title", card,
             "Thợ Rèn Hắc Long", 44, FontStyles.Bold, TitleColor,
             new Vector2(0f, 245f), new Vector2(720f, 60f), notoSans);
 
-        // ── Subtitle ─────────────────────────────────────────────────────────
+        // Subtitle
         var subtitleTMP = MakeTMP("Subtitle", card,
             "Chọn chức năng muốn dùng khi nói chuyện với thợ rèn.", 25, FontStyles.Normal, BodyColor,
             new Vector2(0f, 185f), new Vector2(760f, 72f), notoSans);
 
-        // ── Buttons ──────────────────────────────────────────────────────────
+        // Buttons
         Button btnEquipment   = MakeButton("EquipmentUpgradeButton",   card, new Vector2(0f,   78f), BtnEquipment,  "Cường Hóa Trang Bị",         new Vector2(650f, 68f), 30, notoSans);
         Button btnGeneMain    = MakeButton("PrimaryGeneUpgradeButton", card, new Vector2(0f,   -4f), BtnGeneMain,   "Nâng Tier Gene Chính",        new Vector2(650f, 68f), 30, notoSans);
         Button btnSecSelect   = MakeButton("SecondarySelectButton",    card, new Vector2(0f,  -86f), BtnSecSelect,  "Chọn Hệ Thứ 2",              new Vector2(650f, 68f), 30, notoSans);
         Button btnSecUpgrade  = MakeButton("SecondaryUpgradeButton",   card, new Vector2(0f, -168f), BtnSecUpgrade, "Cường Hóa Tier Hệ Thứ 2",   new Vector2(650f, 68f), 30, notoSans);
 
-        // ── Status text ──────────────────────────────────────────────────────
+        // Status text
         var statusTMP = MakeTMP("Status", card,
             "Mang gene và nguyên liệu tới đây, ta lo phần còn lại.", 24, FontStyles.Normal, StatusColor,
             new Vector2(0f, -252f), new Vector2(780f, 72f), notoSans);
 
-        // ── Close button (X, góc trên phải) ─────────────────────────────────
+        // Close button (X, góc trên phải)
         Button btnClose = MakeButton("CloseButton", card,
             new Vector2(395f, 264f), BtnClose, "X",
             new Vector2(58f, 58f), 26, notoSans);
 
-        // ── Gán SerializeField qua SerializedObject ──────────────────────────
+        // Gán SerializeField qua SerializedObject
         var so = new SerializedObject(panel);
         so.FindProperty("cardTransform")              .objectReferenceValue = card;
         so.FindProperty("titleText")                  .objectReferenceValue = titleTMP;
@@ -115,7 +113,7 @@ public static class CreateBlacksmithFunctionMenuPrefab
         so.FindProperty("closeButton")                .objectReferenceValue = btnClose;
         so.ApplyModifiedPropertiesWithoutUndo();
 
-        // ── Lưu prefab ───────────────────────────────────────────────────────
+        // Lưu prefab
         bool overwrite = true;
         if (File.Exists(Application.dataPath + "/../" + PREFAB_PATH))
         {
@@ -136,7 +134,7 @@ public static class CreateBlacksmithFunctionMenuPrefab
         Object.DestroyImmediate(root);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static RectTransform MakeRT(string name, Transform parent,
         Vector2 sizeDelta, Vector2 anchoredPos, Vector2 anchorMin, Vector2 anchorMax)

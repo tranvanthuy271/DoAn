@@ -4,19 +4,15 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-/// <summary>
-/// BuffIconEntry — 1 ô buff icon trong HUD bar.
-/// Hiển thị icon, countdown ring (radial fill Image), khi click mở BuffDetailTooltip.
-///
-/// Cấu trúc Prefab cần tạo trong Unity Editor:
-///   BuffIconEntry (RectTransform 48×48) ← gắn script này
-///   ├── Background   (Image – Color dark semi-transparent)
-///   ├── Icon         (Image – sprite buff, PreserveAspect=true)
-///   ├── CountdownRing(Image – Type=Filled, FillMethod=Radial360, FillOrigin=Top)
-///   └── TimeLabel    (TMP_Text – FontSize=10, Anchor BottomCenter)
-///
-/// Tham khảo: StatusEffect.renderHudIcon() trong LangLa Client_base
-/// </summary>
+// BuffIconEntry — 1 ô buff icon trong HUD bar.
+// Hiển thị icon, countdown ring (radial fill Image), khi click mở BuffDetailTooltip.
+// Cấu trúc Prefab cần tạo trong Unity Editor:
+// BuffIconEntry (RectTransform 48×48) ← gắn script này
+// ├── Background   (Image – Color dark semi-transparent)
+// ├── Icon         (Image – sprite buff, PreserveAspect=true)
+// ├── CountdownRing(Image – Type=Filled, FillMethod=Radial360, FillOrigin=Top)
+// └── TimeLabel    (TMP_Text – FontSize=10, Anchor BottomCenter)
+// Tham khảo: StatusEffect.renderHudIcon() trong LangLa Client_base
 public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
 {
     [Header("UI References")]
@@ -51,21 +47,17 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
     // Tooltip instance đã tạo (dùng lại, không Instantiate liên tục)
     private BuffDetailTooltip _tooltipInstance;
 
-    /// <summary>
-    /// Callback tùy chọn — BuffHudPanel có thể đăng ký để tập trung xử lý tooltip.
-    /// Nếu null và tooltipPrefab được gán, BuffIconEntry tự show tooltip.
-    /// </summary>
+    // Callback tùy chọn — BuffHudPanel có thể đăng ký để tập trung xử lý tooltip.
+    // Nếu null và tooltipPrefab được gán, BuffIconEntry tự show tooltip.
     public System.Action<ActiveBuffDto, RectTransform> OnClicked;
 
     // Track entry nào đang mở tooltip (dùng chung giữa tất cả entry trong scene)
     private static BuffIconEntry _currentOpenEntry;
 
-    // ── Public API ────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gán dữ liệu buff mới và khởi động vòng update.
-    /// Gọi từ BuffHudPanel.OnBuffListChanged().
-    /// </summary>
+    // Gán dữ liệu buff mới và khởi động vòng update.
+    // Gọi từ BuffHudPanel.OnBuffListChanged().
     public void Bind(ActiveBuffDto buff)
     {
         _buffData = buff;
@@ -90,7 +82,7 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
             CloseTooltip();
     }
 
-    // ── IPointerClickHandler ──────────────────────────────────────────────
+    // IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -105,7 +97,7 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        // ── Toggle / Switch logic ──────────────────────────────────────────
+        // Toggle / Switch logic
         // Click lại cùng icon đang mở → đóng lại
         if (_currentOpenEntry == this)
         {
@@ -121,7 +113,7 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
         ShowTooltipSelf(rt);
     }
 
-    /// <summary>Đóng tooltip đang mở của entry này (nếu có).</summary>
+    // Đóng tooltip đang mở của entry này (nếu có).
     public void CloseTooltip()
     {
         if (_tooltipInstance != null)
@@ -131,10 +123,8 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
             _currentOpenEntry = null;
     }
 
-    /// <summary>
-    /// Hiển thị BuffDetailTooltip trực tiếp từ BuffIconEntry (chế độ standalone).
-    /// Dùng khi icon không được quản lý bởi BuffHudPanel.
-    /// </summary>
+    // Hiển thị BuffDetailTooltip trực tiếp từ BuffIconEntry (chế độ standalone).
+    // Dùng khi icon không được quản lý bởi BuffHudPanel.
     public void ShowTooltipSelf(RectTransform iconRt = null)
     {
         if (_buffData == null || tooltipPrefab == null) return;
@@ -157,9 +147,9 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
         _tooltipInstance.Show(_buffData);
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
-    /// <summary>Load sprite icon từ Resources/ItemIcons/ theo iconId (dùng chung folder với icon item).</summary>
+    // Load sprite icon từ Resources/ItemIcons/ theo iconId (dùng chung folder với icon item).
     private void LoadIcon(int iconId)
     {
         if (iconImage == null) return;
@@ -172,7 +162,7 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
         // Nếu không tìm thấy, giữ nguyên sprite mặc định đã gán trong Prefab
     }
 
-    /// <summary>Coroutine cập nhật countdown ring và time label mỗi 0.5 giây.</summary>
+    // Coroutine cập nhật countdown ring và time label mỗi 0.5 giây.
     private IEnumerator UpdateLoop()
     {
         while (true)
@@ -187,14 +177,14 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    /// <summary>Cập nhật fillAmount của CountdownRing và text của TimeLabel.</summary>
+    // Cập nhật fillAmount của CountdownRing và text của TimeLabel.
     private void UpdateVisuals()
     {
         if (_buffData == null) return;
 
         float remaining = _buffData.GetRemainingSeconds();
 
-        // ── Countdown Ring ─────────────────────────────────────────────────
+        // Countdown Ring
         // Tương đương 4-quadrant clock-wipe trong LangLa (icon 315 overlay)
         if (countdownRing != null)
         {
@@ -209,7 +199,7 @@ public class BuffIconEntry : MonoBehaviour, IPointerClickHandler
             }
         }
 
-        // ── Time Label ─────────────────────────────────────────────────────
+        // Time Label
         if (timeLabel != null)
         {
             if (remaining < 0f)

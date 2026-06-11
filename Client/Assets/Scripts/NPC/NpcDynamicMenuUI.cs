@@ -5,23 +5,18 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-/// <summary>
-/// NPC Dynamic Menu UI — hiển thị danh sách menu do server gửi về.
-///
-/// Luồng (giống LangLa):
-///   Server gửi menu_items "Mua đồ;Tẩy tiềm năng;Cáo từ" → OpenMenuClientRpc →
-///   NpcDynamicMenuUI.Open() hiện panel + populate list →
-///   Player click item → SelectMenuItemServerRpc(index) → server execute action.
-///
-/// Inspector setup:
-///   mainPanel       — root panel (ảnh nền gỗ, v.v.)
-///   titleText       — TMP_Text "Xin chào {playerName}"
-///   menuListContent — Transform (Content trong ScrollRect)
-///   menuItemRowPrefab — prefab NpcMenuItemRow
-///   btnClose        — Button "Cáo từ"
-///
-/// Nếu chưa có prefab trong scene, dùng GetOrFind() hoặc GetOrCreate() để load từ Resources.
-/// </summary>
+// NPC Dynamic Menu UI — hiển thị danh sách menu do server gửi về.
+// Luồng (giống LangLa):
+// Server gửi menu_items "Mua đồ;Tẩy tiềm năng;Cáo từ" → OpenMenuClientRpc →
+// NpcDynamicMenuUI.Open() hiện panel + populate list →
+// Player click item → SelectMenuItemServerRpc(index) → server execute action.
+// Inspector setup:
+// mainPanel       — root panel (ảnh nền gỗ, v.v.)
+// titleText       — TMP_Text "Xin chào {playerName}"
+// menuListContent — Transform (Content trong ScrollRect)
+// menuItemRowPrefab — prefab NpcMenuItemRow
+// btnClose        — Button "Cáo từ"
+// Nếu chưa có prefab trong scene, dùng GetOrFind() hoặc GetOrCreate() để load từ Resources.
 public class NpcDynamicMenuUI : MonoBehaviour
 {
     private const string LogPrefix   = "[NpcDynamicMenuUI]";
@@ -30,7 +25,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
 
     public static NpcDynamicMenuUI Instance { get; private set; }
 
-    // ── Inspector ─────────────────────────────────────────────────────
+    // Inspector
     [Header("Panel")]
     [SerializeField] private GameObject mainPanel;
 
@@ -44,16 +39,15 @@ public class NpcDynamicMenuUI : MonoBehaviour
     [Header("Nút đóng")]
     [SerializeField] private Button btnClose;
 
-    // ── Runtime ────────────────────────────────────────────────────────
+    // Runtime
     private NpcInteraction          _currentInteraction;
     private readonly List<GameObject> _rows = new();
 
-    /// <summary>NpcData dùng để mở panel lần cuối — dùng bởi NpcInteraction.ExecuteMenuActionClientRpc.</summary>
+    // NpcData dùng để mở panel lần cuối — dùng bởi NpcInteraction.ExecuteMenuActionClientRpc.
     public NpcData LastOpenedNpcData { get; private set; }
 
     public bool IsOpen => mainPanel != null && mainPanel.activeSelf;
 
-    // ──────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -82,7 +76,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         // (Start chạy trễ hơn — sau SetActive(true) trong Open).
     }
 
-    // ── Singleton helpers ──────────────────────────────────────────────
+    // Singleton helpers
 
     public static NpcDynamicMenuUI GetOrFind()
     {
@@ -132,13 +126,11 @@ public class NpcDynamicMenuUI : MonoBehaviour
         return Instance;
     }
 
-    // ── Open / Close ───────────────────────────────────────────────────
+    // Open / Close
 
-    /// <summary>
-    /// Mở dynamic menu với danh sách item từ server.
-    /// <param name="data">NpcData với menu_items = "Mua đồ;Nâng cấp;Cáo từ" (labels only).</param>
-    /// <param name="interaction">NpcInteraction để gọi SelectMenuItemServerRpc sau khi chọn.</param>
-    /// </summary>
+    // Mở dynamic menu với danh sách item từ server.
+    // Tham số data: NpcData với menu_items = "Mua đồ;Nâng cấp;Cáo từ" (labels only).
+    // Tham số interaction: NpcInteraction để gọi SelectMenuItemServerRpc sau khi chọn.
     public void Open(NpcData data, NpcInteraction interaction)
     {
         if (data == null) { Debug.LogWarning($"{LogPrefix} Open: data null."); return; }
@@ -204,7 +196,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    // ── Rows ───────────────────────────────────────────────────────────
+    // Rows
 
     private void SpawnRow(string label, int index)
     {
@@ -269,7 +261,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         _rows.Clear();
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static string ResolveLocalPlayerName()
     {
@@ -279,12 +271,10 @@ public class NpcDynamicMenuUI : MonoBehaviour
         return name;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>
-    /// Fix Viewport RectTransform về anchor (0,0)-(1,1) nếu prefab cũ lưu sai.
-    /// Viewport có Mask component — nếu RT = 0×0 thì mask block tất cả click trong ScrollRect.
-    /// </summary>
+    // Fix Viewport RectTransform về anchor (0,0)-(1,1) nếu prefab cũ lưu sai.
+    // Viewport có Mask component — nếu RT = 0×0 thì mask block tất cả click trong ScrollRect.
     private static void FixViewportRt(GameObject panelRoot)
     {
         // Tìm ScrollRect → lấy .viewport trực tiếp (chính xác nhất)
@@ -305,8 +295,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Tìm Screen Space (Overlay hoặc Camera) canvas gốc để làm parent.
+    // Tìm Screen Space (Overlay hoặc Camera) canvas gốc để làm parent.
     private static Transform FindScreenSpaceCanvas()
     {
         Canvas best = null;
@@ -328,7 +317,7 @@ public class NpcDynamicMenuUI : MonoBehaviour
         return null;
     }
 
-    // ── Runtime creation (khi chưa có prefab trong scene/Resources) ──────
+    // Runtime creation (khi chưa có prefab trong scene/Resources)
 
     private static NpcDynamicMenuUI CreateRuntime()
     {

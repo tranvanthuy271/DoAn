@@ -3,34 +3,29 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// HybridFusionPanel — Xác nhận Hybrid Fusion khi cả 2 hệ đạt Tier 5.
-///
-/// ═══════════════════════════════════════════════════════════════
-/// INSPECTOR SETUP:
-///   1.  HybridNameText       → TMP_Text (tên hybrid ví dụ "Kim Phong Thoán Thế")
-///   2.  HybridDescText       → TMP_Text
-///   3.  ElementAIcon         → Image (hệ chính)
-///   4.  ElementBIcon         → Image (hệ phụ)
-///   5.  ElementANameText     → TMP_Text "Hỏa Tier 5"
-///   6.  ElementBNameText     → TMP_Text "Thủy Tier 5"
-///   7.  StatHpText           → TMP_Text "+2000 HP"
-///   8.  StatMpText           → TMP_Text "+500 MP"
-///   9.  StatAtkText          → TMP_Text "+500 ATK"
-///  10.  StatDefText          → TMP_Text "+200 DEF"
-///  11.  ImmuneElementsText   → TMP_Text "Thủy, Kim"
-///  12.  BonusTargetsText     → TMP_Text "Thổ, Hỏa"
-///  13.  GoldCostText         → TMP_Text "2,000,000 Vàng"
-///  14.  ItemIcon             → Image (icon Lõi Đột Biến)
-///  15.  ItemCostText         → TMP_Text "x5 Lõi Đột Biến"
-///  16.  ItemCountText        → TMP_Text "Bạn có: 3/5 Lõi Đột Biến"
-///  17.  FuseButton           → Button
-///  18.  CloseButton          → Button
-///  19.  StatusText           → TMP_Text
-///  20.  LoadingOverlay       → GameObject
-///  21.  SuccessEffect        → GameObject (Particle/animation, ẩn mặc định)
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// HybridFusionPanel — Xác nhận Hybrid Fusion khi cả 2 hệ đạt Tier 5.
+// INSPECTOR SETUP:
+// 1.  HybridNameText       → TMP_Text (tên hybrid ví dụ "Kim Phong Thoán Thế")
+// 2.  HybridDescText       → TMP_Text
+// 3.  ElementAIcon         → Image (hệ chính)
+// 4.  ElementBIcon         → Image (hệ phụ)
+// 5.  ElementANameText     → TMP_Text "Hỏa Tier 5"
+// 6.  ElementBNameText     → TMP_Text "Thủy Tier 5"
+// 7.  StatHpText           → TMP_Text "+2000 HP"
+// 8.  StatMpText           → TMP_Text "+500 MP"
+// 9.  StatAtkText          → TMP_Text "+500 ATK"
+// 10.  StatDefText          → TMP_Text "+200 DEF"
+// 11.  ImmuneElementsText   → TMP_Text "Thủy, Kim"
+// 12.  BonusTargetsText     → TMP_Text "Thổ, Hỏa"
+// 13.  GoldCostText         → TMP_Text "2,000,000 Vàng"
+// 14.  ItemIcon             → Image (icon Lõi Đột Biến)
+// 15.  ItemCostText         → TMP_Text "x5 Lõi Đột Biến"
+// 16.  ItemCountText        → TMP_Text "Bạn có: 3/5 Lõi Đột Biến"
+// 17.  FuseButton           → Button
+// 18.  CloseButton          → Button
+// 19.  StatusText           → TMP_Text
+// 20.  LoadingOverlay       → GameObject
+// 21.  SuccessEffect        → GameObject (Particle/animation, ẩn mặc định)
 public class HybridFusionPanel : MonoBehaviour
 {
     public static HybridFusionPanel Instance { get; private set; }
@@ -67,11 +62,11 @@ public class HybridFusionPanel : MonoBehaviour
     [Header("Shared Element Visuals")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Runtime ──────────────────────────────────────────────────
+    // Runtime
     private HybridConfigDto _config;
     private PlayerDataResponse _playerData;
 
-    // ── Lifecycle ────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -86,7 +81,7 @@ public class HybridFusionPanel : MonoBehaviour
         if (successEffect != null) successEffect.SetActive(false);
     }
 
-    // ── Public API ───────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Open()
     {
@@ -98,17 +93,15 @@ public class HybridFusionPanel : MonoBehaviour
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         if (successEffect != null) successEffect.SetActive(false);
 
-        // ─── Xoá các giá trị Inspector mặc định, prefill từ player data ngay lập tức ───
+        // Xoá các giá trị Inspector mặc định, prefill từ player data ngay lập tức
         ClearAndPrefill();
 
         SetStatus("", Color.white);
         StartCoroutine(LoadHybridConfig());
     }
 
-    /// <summary>
-    /// Xoá tất cả text cứng từ Inspector và điền ngay tên hệ chính/phụ từ GameManager
-    /// trước khi API trả về. Tránh hiển thị dữ liệu ví dụ (ví dụ "Hỏa Tier 5") của prefab.
-    /// </summary>
+    // Xoá tất cả text cứng từ Inspector và điền ngay tên hệ chính/phụ từ GameManager
+    // trước khi API trả về. Tránh hiển thị dữ liệu ví dụ (ví dụ "Hỏa Tier 5") của prefab.
     private void ClearAndPrefill()
     {
         // Reset tên hybrid
@@ -154,7 +147,7 @@ public class HybridFusionPanel : MonoBehaviour
         }
     }
 
-    // ── Load ─────────────────────────────────────────────────────
+    // Load
 
     private IEnumerator LoadHybridConfig()
     {
@@ -231,7 +224,7 @@ public class HybridFusionPanel : MonoBehaviour
         }
     }
 
-    // ── Fuse ─────────────────────────────────────────────────────
+    // Fuse
 
     private void OnFuseClicked()
     {
@@ -325,7 +318,7 @@ public class HybridFusionPanel : MonoBehaviour
         return elementIconConfig;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private string FriendlyElements(string csv)
     {
@@ -403,7 +396,7 @@ public class HybridFusionPanel : MonoBehaviour
         if (loadingOverlay != null) loadingOverlay.SetActive(show);
     }
 
-    // ── DTOs ─────────────────────────────────────────────────────
+    // DTOs
 
     [System.Serializable] private class FuseRequest { public int playerId; public int itemCount; }
     [System.Serializable] private class ErrorResponse { public string message; }

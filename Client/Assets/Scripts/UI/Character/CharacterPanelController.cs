@@ -2,15 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// CharacterPanelController – Panel nhân vật 4 tab.
-///
-/// Thứ tự tab (trái → phải):
-///   0 = Thông Số   (StatsTabUI)
-///   1 = Trang Bị   (contentEquipment – EquipmentTabUI)
-///   2 = Kỹ Năng    (SkillTabUI)
-///   3 = Tiềm Năng  (PotentialTabUI)
-/// </summary>
+// CharacterPanelController – Panel nhân vật 4 tab.
+// Thứ tự tab (trái → phải):
+// 0 = Thông Số   (StatsTabUI)
+// 1 = Trang Bị   (contentEquipment – EquipmentTabUI)
+// 2 = Kỹ Năng    (SkillTabUI)
+// 3 = Tiềm Năng  (PotentialTabUI)
 public class CharacterPanelController : MonoBehaviour
 {
     [Header("Panel Root")]
@@ -44,7 +41,6 @@ public class CharacterPanelController : MonoBehaviour
     private bool[] _panelRootGraphicInitialStates;
     private bool _panelRootGraphicsCached;
 
-    // ───────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -100,7 +96,6 @@ public class CharacterPanelController : MonoBehaviour
 
     #endregion
 
-    // ───────────────────────────────────────────────
     #region Public API
 
     public void SetPlayerId(int id)
@@ -173,7 +168,7 @@ public class CharacterPanelController : MonoBehaviour
         else Show();
     }
 
-    /// <summary>Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
+    // Hiện toàn bộ panel (CharacterPanelToggleButton sử dụng).
     public void Show()
     {
         EnsurePanelRootReady();
@@ -200,7 +195,7 @@ public class CharacterPanelController : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
     }
 
-    /// <summary>Tắt toàn bộ panel (CharacterPanelToggleButton sử dụng).</summary>
+    // Tắt toàn bộ panel (CharacterPanelToggleButton sử dụng).
     public void Hide()
     {
         if (panelRoot != null)
@@ -211,10 +206,8 @@ public class CharacterPanelController : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    /// <summary>
-    /// Hiện panel nhân vật và chuyển thẳng vào tab Trang Bị (index 1).
-    /// Gọi từ BlacksmithTabPanel khi bấm tab "Trang Bị".
-    /// </summary>
+    // Hiện panel nhân vật và chuyển thẳng vào tab Trang Bị (index 1).
+    // Gọi từ BlacksmithTabPanel khi bấm tab "Trang Bị".
     public void ShowEquipmentTab()
     {
         EnsurePanelRootReady();
@@ -225,10 +218,8 @@ public class CharacterPanelController : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
     }
 
-    /// <summary>
-    /// Chỉ hiện phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
-    /// Dùng bởi InformationPanelController khi bấm BtnThongTin.
-    /// </summary>
+    // Chỉ hiện phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
+    // Dùng bởi InformationPanelController khi bấm BtnThongTin.
     public void ShowContent()
     {
         EnsurePanelRootReady();
@@ -238,10 +229,8 @@ public class CharacterPanelController : MonoBehaviour
         SwitchTab(activeTab);
     }
 
-    /// <summary>
-    /// Chỉ ẩn phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
-    /// Dùng bởi InformationPanelController khi bấm BtnTuiDo.
-    /// </summary>
+    // Chỉ ẩn phần nội dung (Window), giữ nguyên panelRoot để BtnThongTin/BtnTuiDo vẫn hiện.
+    // Dùng bởi InformationPanelController khi bấm BtnTuiDo.
     public void HideContent()
     {
         EnsurePanelRootReady();
@@ -258,7 +247,6 @@ public class CharacterPanelController : MonoBehaviour
 
     #endregion
 
-    // ───────────────────────────────────────────────
     #region Tab switching
 
     private void SwitchTab(int tabIndex)

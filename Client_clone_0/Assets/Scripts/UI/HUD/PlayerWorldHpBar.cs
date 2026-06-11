@@ -4,21 +4,17 @@ using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 
-/// <summary>
-/// Thanh HP thế giới (World Space) hiển thị trên đầu mỗi player.
-///
-/// Cách cài đặt trong Unity:
-///   1. Tạo child Canvas (World Space) trong Player Prefab
-///   2. Đặt tên "PlayerHpBarCanvas" và Scale nhỏ (ví dụ 0.01, 0.01, 0.01)
-///   3. LocalPosition = (0, 1.2, 0) để hiện trên đầu
-///   4. Gắn script này lên Canvas đó
-///   5. Kéo Slider + Text vào Inspector
-///
-/// Tính năng:
-///   - Tự động ẩn cho local player (hideForLocalPlayer = true)
-///   - Hiển thị tên nhân vật (tùy chọn)
-///   - Cập nhật real-time khi HP thay đổi
-/// </summary>
+// Thanh HP thế giới (World Space) hiển thị trên đầu mỗi player.
+// Cách cài đặt trong Unity:
+// 1. Tạo child Canvas (World Space) trong Player Prefab
+// 2. Đặt tên "PlayerHpBarCanvas" và Scale nhỏ (ví dụ 0.01, 0.01, 0.01)
+// 3. LocalPosition = (0, 1.2, 0) để hiện trên đầu
+// 4. Gắn script này lên Canvas đó
+// 5. Kéo Slider + Text vào Inspector
+// Tính năng:
+// - Tự động ẩn cho local player (hideForLocalPlayer = true)
+// - Hiển thị tên nhân vật (tùy chọn)
+// - Cập nhật real-time khi HP thay đổi
 public class PlayerWorldHpBar : MonoBehaviour
 {
     [Header("UI References")]
@@ -47,7 +43,7 @@ public class PlayerWorldHpBar : MonoBehaviour
     [Tooltip("Canvas luôn quay về phía camera")]
     [SerializeField] private bool faceCamera = true;
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private NetworkObject networkObject;
     private NetworkPlayerDataSync dataSync;
     private Camera mainCamera;
@@ -108,7 +104,7 @@ public class PlayerWorldHpBar : MonoBehaviour
         UnsubscribeEvents();
     }
 
-    // ── Binding ───────────────────────────────────────────────────────────────
+    // Binding
 
     private void TryBind()
     {
@@ -148,7 +144,7 @@ public class PlayerWorldHpBar : MonoBehaviour
         dataSync.networkCharacterName.OnValueChanged -= OnNameChanged;
     }
 
-    // ── Callbacks ─────────────────────────────────────────────────────────────
+    // Callbacks
 
     private void OnHpChanged(int prev, int current)
     {
@@ -168,7 +164,7 @@ public class PlayerWorldHpBar : MonoBehaviour
             playerNameText.text = current.ToString();
     }
 
-    // ── UI Update ─────────────────────────────────────────────────────────────
+    // UI Update
 
     private void UpdateBar(int current, int max)
     {

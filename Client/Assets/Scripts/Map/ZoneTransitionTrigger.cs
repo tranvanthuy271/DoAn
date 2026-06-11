@@ -1,23 +1,19 @@
 using UnityEngine;
 
-/// <summary>
-/// Gắn vào BoxCollider2D tại ranh giới zone/map trong Scene.
-/// Khi player (client) bước vào → gửi ServerRpc xin chuyển zone.
-///
-/// Kiến trúc 1-port (LangLa model):
-///   - KHÔNG disconnect/reconnect khi chuyển zone
-///   - Client gửi RequestZoneTransferServerRpc → ZoneTransitionController xử lý server-side
-///   - Server in-process reassign room → ClientRpc(sceneName, x, y) chỉ đến client đó
-///
-/// Inspector setup:
-///   BoxCollider2D:  IsTrigger = true, layer = "ZoneTrigger" (tạo layer mới)
-///   ZoneTransitionTrigger:
-///     targetMapId     = ID của map đích
-///     targetZoneId    = ID của zone đích
-///     entryPointId    = Index của entry point trong zone đích
-///     transitionLabel = "Làng → Cánh Đồng Lửa" (chỉ dùng để debug)
-///     playerLayerMask = Layer của player
-/// </summary>
+// Gắn vào BoxCollider2D tại ranh giới zone/map trong Scene.
+// Khi player (client) bước vào → gửi ServerRpc xin chuyển zone.
+// Kiến trúc 1-port (LangLa model):
+// - KHÔNG disconnect/reconnect khi chuyển zone
+// - Client gửi RequestZoneTransferServerRpc → ZoneTransitionController xử lý server-side
+// - Server in-process reassign room → ClientRpc(sceneName, x, y) chỉ đến client đó
+// Inspector setup:
+// BoxCollider2D:  IsTrigger = true, layer = "ZoneTrigger" (tạo layer mới)
+// ZoneTransitionTrigger:
+// targetMapId     = ID của map đích
+// targetZoneId    = ID của zone đích
+// entryPointId    = Index của entry point trong zone đích
+// transitionLabel = "Làng → Cánh Đồng Lửa" (chỉ dùng để debug)
+// playerLayerMask = Layer của player
 [RequireComponent(typeof(BoxCollider2D))]
 public class ZoneTransitionTrigger : MonoBehaviour
 {

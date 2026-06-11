@@ -5,25 +5,21 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// QuestDialogueUI — Hộp thoại nhiệm vụ kiểu màn hình tối + hộp chat dưới cùng.
-///
-/// Flow:
-///   1. ShowAccept(quest, npcName, callback)  — hiện str1, cuối có Nhận / Hủy
-///   2. ShowComplete(quest, npcName, callback) — hiện str2, cuối có Nhận thưởng / Đóng
-///
-/// Canvas hierarchy (tạo bằng menu DoAn > Quest > Create Quest Dialogue UI):
-///   QuestDialogueCanvas [Canvas sortOrder=100, QuestDialogueUI component]
-///   └── Overlay [Image – full-screen dark]
-///       └── DialoguePanel [Image – bottom strip]
-///           ├── NpcPortrait  [Image – circle avatar]
-///           ├── NpcName      [TMP_Text]
-///           ├── DialogueText [TMP_Text]
-///           ├── ContinueHint [TMP_Text – "▼ Nhấn để tiếp"]
-///           └── ActionButtons [GameObject]
-///               ├── BtnAccept  [Button + TMP_Text]
-///               └── BtnDecline [Button + TMP_Text]
-/// </summary>
+// QuestDialogueUI — Hộp thoại nhiệm vụ kiểu màn hình tối + hộp chat dưới cùng.
+// Flow:
+// 1. ShowAccept(quest, npcName, callback)  — hiện str1, cuối có Nhận / Hủy
+// 2. ShowComplete(quest, npcName, callback) — hiện str2, cuối có Nhận thưởng / Đóng
+// Canvas hierarchy (tạo bằng menu DoAn > Quest > Create Quest Dialogue UI):
+// QuestDialogueCanvas [Canvas sortOrder=100, QuestDialogueUI component]
+// └── Overlay [Image – full-screen dark]
+// └── DialoguePanel [Image – bottom strip]
+// ├── NpcPortrait  [Image – circle avatar]
+// ├── NpcName      [TMP_Text]
+// ├── DialogueText [TMP_Text]
+// ├── ContinueHint [TMP_Text – "▼ Nhấn để tiếp"]
+// └── ActionButtons [GameObject]
+// ├── BtnAccept  [Button + TMP_Text]
+// └── BtnDecline [Button + TMP_Text]
 public class QuestDialogueUI : MonoBehaviour
 {
     public static QuestDialogueUI Instance { get; private set; }
@@ -47,7 +43,7 @@ public class QuestDialogueUI : MonoBehaviour
     [SerializeField] private Button     btnDecline;
     [SerializeField] private TMP_Text   btnDeclineLabel;
 
-    // ─── Runtime ────────────────────────────────────────────────────────────
+    // Runtime
     private readonly List<string> _lines = new();
     private int          _currentLine;
     private Action<bool> _callback;
@@ -56,7 +52,7 @@ public class QuestDialogueUI : MonoBehaviour
 
     private const float TYPEWRITER_SPEED = 0.025f; // seconds per char
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -109,7 +105,7 @@ public class QuestDialogueUI : MonoBehaviour
         }
     }
 
-    // ─── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public static QuestDialogueUI GetOrCreate()
     {
@@ -124,13 +120,13 @@ public class QuestDialogueUI : MonoBehaviour
         return Instance;
     }
 
-    /// <summary>Hiện hội thoại nhận nhiệm vụ (str1). callback(true) = đã nhận.</summary>
+    // Hiện hội thoại nhận nhiệm vụ (str1). callback(true) = đã nhận.
     public void ShowAccept(QuestManager.QuestStatusDto quest, string npcName, Action<bool> callback)
     {
         Show(quest.str1, npcName, "Nhận", "Hủy", callback);
     }
 
-    /// <summary>Hiện hội thoại hoàn thành nhiệm vụ (str2). callback(true) = xác nhận nộp.</summary>
+    // Hiện hội thoại hoàn thành nhiệm vụ (str2). callback(true) = xác nhận nộp.
     public void ShowComplete(QuestManager.QuestStatusDto quest, string npcName, Action<bool> callback)
     {
         Show(quest.str2, npcName, "Nhận thưởng", "Đóng", callback);
@@ -142,7 +138,7 @@ public class QuestDialogueUI : MonoBehaviour
         SetCanvasActive(false);
     }
 
-    // ─── Internal ────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void Show(string text, string npcName,
                       string acceptLabel, string declineLabel, Action<bool> callback)
@@ -235,7 +231,7 @@ public class QuestDialogueUI : MonoBehaviour
         }
     }
 
-    // ─── AutoWire ────────────────────────────────────────────────────────────
+    // AutoWire
 
     private void AutoWire()
     {

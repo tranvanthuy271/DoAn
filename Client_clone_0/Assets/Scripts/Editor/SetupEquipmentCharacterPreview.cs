@@ -3,20 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 
-/// <summary>
-/// Editor tool: Tự động tạo toàn bộ cấu trúc Character Preview
-/// trong tab Trang Bị (ContentEquipment) của InformationCanvas.
-///
-/// Chạy từ menu:  Tools ▸ Setup Equipment Character Preview
-///
-/// Cấu trúc sẽ tạo ra:
-///   InformationCanvas
-///   ├── CharacterPanel / Window / TabContents / ContentEquipment
-///   │   ├── [EquipmentPanelUI]
-///   │   └── CharPreviewSlot       ← NEW (EquipmentCharacterPreview)
-///   │       └── RawImage_CharPreview ← NEW (RawImage hiển thị nhân vật)
-///   └── PreviewCamera            ← NEW (Camera ngoài Canvas)
-/// </summary>
+// Editor tool: Tự động tạo toàn bộ cấu trúc Character Preview
+// trong tab Trang Bị (ContentEquipment) của InformationCanvas.
+// Chạy từ menu:  Tools ▸ Setup Equipment Character Preview
+// Cấu trúc sẽ tạo ra:
+// InformationCanvas
+// ├── CharacterPanel / Window / TabContents / ContentEquipment
+// ├── [EquipmentPanelUI]
+// └── CharPreviewSlot       ← NEW (EquipmentCharacterPreview)
+// └── RawImage_CharPreview ← NEW (RawImage hiển thị nhân vật)
+// └── PreviewCamera            ← NEW (Camera ngoài Canvas)
 public static class SetupEquipmentCharacterPreview
 {
     private const string MENU = "Tools/Setup Equipment Character Preview";
@@ -26,7 +22,7 @@ public static class SetupEquipmentCharacterPreview
     {
         Debug.Log("[SetupPreview] ══════════ BẮT ĐẦU SETUP ══════════");
 
-        // ─── 1. Tìm ContentEquipment ──────────────────────────────
+        // 1. Tìm ContentEquipment
         Debug.Log("[SetupPreview] Đang tìm ContentEquipment...");
         var contentEquipment = FindContentEquipment();
         if (contentEquipment == null)
@@ -46,22 +42,22 @@ public static class SetupEquipmentCharacterPreview
 
         Debug.Log($"[SetupPreview] ✓ Tìm thấy ContentEquipment: {GetPath(contentEquipment.transform)}");
 
-        // ─── 2. Tạo Camera preview (ngoài Canvas) ─────────────────
+        // 2. Tạo Camera preview (ngoài Canvas)
         Debug.Log("[SetupPreview] Đang tạo EquipPreviewCamera...");
         var cam = SetupPreviewCamera();
         Debug.Log($"[SetupPreview] ✓ Camera: {(cam != null ? cam.gameObject.name : "NULL")}");
 
-        // ─── 3. Tạo CharPreviewSlot trong ContentEquipment ────────
+        // 3. Tạo CharPreviewSlot trong ContentEquipment
         Debug.Log("[SetupPreview] Đang tạo CharPreviewSlot...");
         var slotGO = SetupCharPreviewSlot(contentEquipment, cam);
         Debug.Log($"[SetupPreview] ✓ Slot: {(slotGO != null ? slotGO.name : "NULL")}");
 
-        // ─── 4. Tạo RawImage con của CharPreviewSlot ──────────────
+        // 4. Tạo RawImage con của CharPreviewSlot
         Debug.Log("[SetupPreview] Đang tạo RawImage_CharPreview...");
         var rawImage = SetupRawImage(slotGO);
         Debug.Log($"[SetupPreview] ✓ RawImage: {(rawImage != null ? rawImage.gameObject.name : "NULL")}");
 
-        // ─── 5. Wire references vào EquipmentCharacterPreview ─────
+        // 5. Wire references vào EquipmentCharacterPreview
         var preview = slotGO.GetComponent<EquipmentCharacterPreview>();
         if (preview != null)
         {
@@ -76,7 +72,7 @@ public static class SetupEquipmentCharacterPreview
             Debug.LogError("[SetupPreview] EquipmentCharacterPreview component là NULL!");
         }
 
-        // ─── 6. Wire CharPreviewSlot vào EquipmentPanelUI ─────────
+        // 6. Wire CharPreviewSlot vào EquipmentPanelUI
         var panelUI = contentEquipment.GetComponent<EquipmentPanelUI>();
         Debug.Log($"[SetupPreview] EquipmentPanelUI trên ContentEquipment: {(panelUI != null ? "CÓ" : "KHÔNG TÌM THẤY")}");
         if (panelUI != null)
@@ -95,7 +91,7 @@ public static class SetupEquipmentCharacterPreview
             }
         }
 
-        // ─── 7. Đánh dấu scene dirty ──────────────────────────────
+        // 7. Đánh dấu scene dirty
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene());
 
@@ -118,14 +114,10 @@ public static class SetupEquipmentCharacterPreview
         Debug.Log("[SetupPreview] ══════════ SETUP HOÀN TẤT ══════════");
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>
-    /// Tìm ContentEquipment: ưu tiên tìm theo đường dẫn chuẩn,
-    /// fallback tìm bất kỳ GameObject nào có EquipmentPanelUI.
-    /// </summary>
+    // Tìm ContentEquipment: ưu tiên tìm theo đường dẫn chuẩn,
+    // fallback tìm bất kỳ GameObject nào có EquipmentPanelUI.
     private static GameObject FindContentEquipment()
     {
         // Thử đường dẫn chuẩn
@@ -153,7 +145,7 @@ public static class SetupEquipmentCharacterPreview
         return null;
     }
 
-    /// <summary>Tạo hoặc tái dùng PreviewCamera trong scene (ngoài Canvas).</summary>
+    // Tạo hoặc tái dùng PreviewCamera trong scene (ngoài Canvas).
     private static Camera SetupPreviewCamera()
     {
         const string CAM_NAME = "EquipPreviewCamera";
@@ -179,7 +171,7 @@ public static class SetupEquipmentCharacterPreview
         camGO.transform.position = new Vector3(1000f, 1f, 998f);   // nhìn về phía +Z
         camGO.transform.rotation = Quaternion.Euler(0f, 0f, 0f);   // nhìn thẳng
 
-        // ── Cấu hình Camera ──────────────────────────────────────
+        // Cấu hình Camera
         cam.clearFlags       = CameraClearFlags.SolidColor;
         cam.backgroundColor  = new Color(0, 0, 0, 0);              // trong suốt
         cam.cullingMask      = 0;                                   // CHƯA set layer – hướng dẫn user tự set
@@ -203,7 +195,7 @@ public static class SetupEquipmentCharacterPreview
         return cam;
     }
 
-    /// <summary>Tạo hoặc tái dùng CharPreviewSlot trong ContentEquipment.</summary>
+    // Tạo hoặc tái dùng CharPreviewSlot trong ContentEquipment.
     private static GameObject SetupCharPreviewSlot(GameObject parent, Camera cam)
     {
         const string SLOT_NAME = "CharPreviewSlot";
@@ -250,7 +242,7 @@ public static class SetupEquipmentCharacterPreview
         return slotGO;
     }
 
-    /// <summary>Tạo hoặc tái dùng RawImage con của CharPreviewSlot.</summary>
+    // Tạo hoặc tái dùng RawImage con của CharPreviewSlot.
     private static RawImage SetupRawImage(GameObject slotParent)
     {
         const string RI_NAME = "RawImage_CharPreview";

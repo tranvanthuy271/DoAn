@@ -6,9 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// ItemDetailPanel - hiển thị chi tiết vật phẩm/trang bị khi nhấn vào slot inventory.
-/// </summary>
+// ItemDetailPanel - hiển thị chi tiết vật phẩm/trang bị khi nhấn vào slot inventory.
 public class ItemDetailPanel : MonoBehaviour
 {
     private const string Red = "#ff4040";
@@ -138,9 +136,7 @@ public class ItemDetailPanel : MonoBehaviour
         ShowPanel();
     }
 
-    /// <summary>
-    /// Hiển thị trang bị đang mặc hoặc trang bị từ flow nâng cấp.
-    /// </summary>
+    // Hiển thị trang bị đang mặc hoặc trang bị từ flow nâng cấp.
     public void ShowEquipmentItem(EquipmentItemDto item, List<OptionTemplateDto> optTemplates = null)
     {
         if (item == null)

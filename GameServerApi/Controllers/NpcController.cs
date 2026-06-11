@@ -18,10 +18,8 @@ namespace GameServerApi.Controllers
 
         public NpcController(GameDbContext db) => _db = db;
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/npc/list?mapId=0
         //  Lấy danh sách NPC active trên một map
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("list")]
         public async Task<IActionResult> GetNpcList([FromQuery] int mapId = 0)
         {
@@ -42,11 +40,9 @@ namespace GameServerApi.Controllers
             return Ok(npcs);
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/npc/interact
         //  Body: { "playerId": 1, "npcId": 1 }
         //  Trả về dialogue node đầu tiên và action của NPC
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("interact")]
         public async Task<IActionResult> Interact([FromBody] JsonElement body)
         {
@@ -102,11 +98,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/npc/dialogue/next
         //  Body: { "npcId": 1, "dialogueKey": "quest_intro" }
         //  Lấy node kế tiếp trong cây hội thoại
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("dialogue/next")]
         public async Task<IActionResult> NextDialogue([FromBody] System.Text.Json.JsonElement body)
         {
@@ -132,11 +126,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/npc/shop?npcId=1&playerId=1
         //  Lấy danh sách item của shop NPC — đọc từ npc_config.shop_items_json.
         //  Response per item có thêm: shop_name, element_class (idClass).
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("shop")]
         public async Task<IActionResult> GetShop([FromQuery] int npcId, [FromQuery] int playerId)
         {
@@ -157,7 +149,7 @@ namespace GameServerApi.Controllers
             var info        = player.GetInfoChar();
             int playerLevel = info.Level;
 
-            // ── Thử đọc từ JSON config (LangLa-style) ──────────────────
+            // Thử đọc từ JSON config (LangLa-style)
             if (!string.IsNullOrWhiteSpace(npc.ShopItemsJson))
             {
                 ShopConfigDto? shopConfig = null;
@@ -213,13 +205,11 @@ namespace GameServerApi.Controllers
             return BadRequest("Shop NPC này chưa được cấu hình.");
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/npc/shop/buy
         //  Headers: Authorization: Bearer <JWT>
         //  Body: { "npcId": 1, "shopItemId": 1, "quantity": 1 }
         //  Mua item từ shop NPC — server-authoritative
         //  playerId lấy từ JWT claim (không tin body)
-        // ══════════════════════════════════════════════════════════════
         [Authorize]
         [HttpPost("shop/buy")]
         public async Task<IActionResult> BuyItem([FromBody] System.Text.Json.JsonElement body)
@@ -243,7 +233,7 @@ namespace GameServerApi.Controllers
             if (npc == null || !npc.IsActive)
                 return NotFound("NPC không tồn tại.");
 
-            // ── Resolve giá từ JSON config (shopItemId = item_template_id) ──
+            // Resolve giá từ JSON config (shopItemId = item_template_id)
             int    resolvedPriceSilver = 0;
             int    resolvedPriceGold   = 0;
             int    resolvedStock       = -1;
@@ -361,7 +351,7 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ── Helpers ──────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
         private static bool TryGetIntProperty(JsonElement body, string primaryName, string alternateName, out int value)
         {
             if (TryReadInt(body, primaryName, out value))
@@ -389,7 +379,7 @@ namespace GameServerApi.Controllers
             return false;
         }
 
-        // ── Shop config DTOs (JSON-per-NPC) ──────────────────────────
+        // Shop config DTOs (JSON-per-NPC)
         private class ShopConfigDto
         {
             [System.Text.Json.Serialization.JsonPropertyName("shop_name")]

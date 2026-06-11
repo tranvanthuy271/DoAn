@@ -3,17 +3,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Một hàng trong NpcDynamicMenuUI — icon chat bubble + label text + nút bấm.
-///
-/// Inspector setup (trên prefab NpcMenuItemRow):
-///   labelText — TMP_Text hiển thị tên mục menu
-///   iconImage — Image chat bubble (optional)
-///   btn       — Button (có thể là component trên root GO)
-///
-/// Prefab layout (HorizontalLayoutGroup trên root):
-///   [Icon 28×28] | [Label (flex)]
-/// </summary>
+// Một hàng trong NpcDynamicMenuUI — icon chat bubble + label text + nút bấm.
+// Inspector setup (trên prefab NpcMenuItemRow):
+// labelText — TMP_Text hiển thị tên mục menu
+// iconImage — Image chat bubble (optional)
+// btn       — Button (có thể là component trên root GO)
+// Prefab layout (HorizontalLayoutGroup trên root):
+// [Icon 28×28] | [Label (flex)]
 [RequireComponent(typeof(Button))]
 public class NpcMenuItemRow : MonoBehaviour
 {
@@ -51,7 +47,7 @@ public class NpcMenuItemRow : MonoBehaviour
             $"GraphicRaycaster={(raycaster != null ? "OK" : "NULL")}", this);
     }
 
-    /// <summary>Khởi tạo hàng menu với nhãn và callback khi bấm.</summary>
+    // Khởi tạo hàng menu với nhãn và callback khi bấm.
     public void Init(string label, Action onClick)
     {
         _onClick = onClick;

@@ -5,26 +5,20 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// HostSpawnConfigLoader — Fetch cấu hình spawn enemy từ DB qua API,
-/// validate toàn bộ entries, rồi spawn enemy với thông số ghi đè (HP, EXP, is_boss, drops).
-///
-/// CHỈ CHẠY TRÊN HOST/SERVER — mọi logic đều guard bởi IsServer check.
-/// Thứ tự hoạt động:
-///   1. OnNetworkSpawn() (IsServer=true) → StartCoroutine(LoadAndApplyConfig)
-///   2. Fetch GET /api/map/{mapId}/spawn-config
-///   3. Validate từng SpawnEntry + DropEntry
-///   4. Với mỗi SpawnEntry: spawn enemy, apply EnemyStatOverride, set drops
-///   5. Fire OnSpawnComplete event
-///   6. Nếu API trả về rỗng hoặc lỗi → fallback NetworkEnemySpawner (cũ)
-///
-/// Gắn component này vào cùng GameObject với NetworkEnemySpawner trong HostScene.
-/// </summary>
+// HostSpawnConfigLoader — Fetch cấu hình spawn enemy từ DB qua API,
+// validate toàn bộ entries, rồi spawn enemy với thông số ghi đè (HP, EXP, is_boss, drops).
+// CHỈ CHẠY TRÊN HOST/SERVER — mọi logic đều guard bởi IsServer check.
+// Thứ tự hoạt động:
+// 1. OnNetworkSpawn() (IsServer=true) → StartCoroutine(LoadAndApplyConfig)
+// 2. Fetch GET /api/map/{mapId}/spawn-config
+// 3. Validate từng SpawnEntry + DropEntry
+// 4. Với mỗi SpawnEntry: spawn enemy, apply EnemyStatOverride, set drops
+// 5. Fire OnSpawnComplete event
+// 6. Nếu API trả về rỗng hoặc lỗi → fallback NetworkEnemySpawner (cũ)
+// Gắn component này vào cùng GameObject với NetworkEnemySpawner trong HostScene.
 public class HostSpawnConfigLoader : NetworkBehaviour
 {
-    // ─────────────────────────────────────────────────────────────────────
     //  Inspector fields
-    // ─────────────────────────────────────────────────────────────────────
 
     [Header("API")]
     [Tooltip("Base URL của GameServerApi. Ví dụ: http://localhost:5000/api")]
@@ -55,9 +49,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     [Tooltip("Fired khi API lỗi hoặc data không hợp lệ — trước khi fallback.")]
     public UnityEvent<string> OnSpawnError;
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Private state
-    // ─────────────────────────────────────────────────────────────────────
 
     // Skills lookup: enemy_id → EnemySkillsEntry đã validate
     private Dictionary<int, EnemySkillsEntry> _skillLookup
@@ -78,9 +70,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
     // Thời điểm TẤT CẢ enemy trong group đều chết (để đếm respawn_time từ lúc chết).
     private readonly Dictionary<int, float> _spawnGroupDeathTime = new Dictionary<int, float>();
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Lifecycle
-    // ─────────────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     public override void OnNetworkSpawn()
     {
@@ -107,9 +97,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Main coroutine
-    // ─────────────────────────────────────────────────────────────────────
 
     private IEnumerator LoadAndApplyConfig()
     {
@@ -191,9 +179,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         StartCoroutine(CheckRespawnLoop());
     }
 
-    /// <summary>
-    /// Coroutine kiểm tra respawn cho mỗi SpawnEntry. Chạy mỗi 5s trên server.
-    /// </summary>
+    // Coroutine kiểm tra respawn cho mỗi SpawnEntry. Chạy mỗi 5s trên server.
     private IEnumerator CheckRespawnLoop()
     {
         Debug.Log($"[RESPAWN] CheckRespawnLoop STARTED — mapId={mapId} entries={_spawnEntries.Count}");
@@ -263,11 +249,9 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Validation
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>Validate một SpawnEntry. Trả về false nếu phải bỏ qua.</summary>
+    // Validate một SpawnEntry. Trả về false nếu phải bỏ qua.
     private bool ValidateSpawnEntry(SpawnEntry e, int index)
     {
         if (e.enemy_id <= 0)
@@ -292,17 +276,15 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         return true;
     }
 
-    /// <summary>Áp dụng giá trị mặc định nếu field bằng 0 / âm.</summary>
+    // Áp dụng giá trị mặc định nếu field bằng 0 / âm.
     private void ApplySpawnEntryDefaults(SpawnEntry e)
     {
         if (e.count <= 0)        e.count        = 1;
         if (e.respawn_time <= 0) e.respawn_time = 30;
     }
 
-    /// <summary>
-    /// Validate + build dictionary {enemy_id → EnemySkillsEntry} từ EnemySkillsEntry[].
-    /// EnemySkillsEntry cũng chứa base_hp, exp_reward, drops — dùng cho spawn và drop setup.
-    /// </summary>
+    // Validate + build dictionary {enemy_id → EnemySkillsEntry} từ EnemySkillsEntry[].
+    // EnemySkillsEntry cũng chứa base_hp, exp_reward, drops — dùng cho spawn và drop setup.
     private void BuildSkillLookup(EnemySkillsEntry[] enemySkills)
     {
         _skillLookup.Clear();
@@ -317,11 +299,9 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         Debug.Log($"[HostSpawnConfigLoader] Skill/reward lookup built: {_skillLookup.Count} enemy types.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Spawning
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>Spawn `entry.count` enemy tại (cx, cy) với spread nhỏ nếu count > 1.</summary>
+    // Spawn `entry.count` enemy tại (cx, cy) với spread nhỏ nếu count > 1.
     private void SpawnEnemyGroup(SpawnEntry entry, int entryIdx)
     {
         // Fallback to singleton instance if serialized reference is null
@@ -355,7 +335,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         _spawnGroupLastTime[entryIdx] = Time.time;
     }
 
-    /// <summary>Tính vị trí spread cho nhiều enemy cùng điểm.</summary>
+    // Tính vị trí spread cho nhiều enemy cùng điểm.
     private Vector3 CalculateSpawnPosition(float cx, float cy, int index, int total)
     {
         if (total <= 1)
@@ -370,7 +350,7 @@ public class HostSpawnConfigLoader : NetworkBehaviour
             0f);
     }
 
-    /// <summary>Instantiate, Spawn qua Network, áp dụng override stats + drops + skills.</summary>
+    // Instantiate, Spawn qua Network, áp dụng override stats + drops + skills.
     private GameObject SpawnSingleEnemy(GameObject prefab, Vector3 pos, SpawnEntry entry,
         EnemySkillsEntry skillsEntry)
     {
@@ -525,13 +505,9 @@ public class HostSpawnConfigLoader : NetworkBehaviour
         return enemyObj;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Fallback
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Gắn map-based visibility: enemy visible cho TẤT CẢ player cùng map.
-    /// </summary>
+    // Gắn map-based visibility: enemy visible cho TẤT CẢ player cùng map.
     private static void ApplyMapVisibility(GameObject enemyObj, int targetMapId)
     {
         var zoneTag = enemyObj.GetComponent<ZoneOwnerTag>() ?? enemyObj.AddComponent<ZoneOwnerTag>();

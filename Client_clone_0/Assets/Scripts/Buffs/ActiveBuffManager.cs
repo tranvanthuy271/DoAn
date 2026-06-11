@@ -6,21 +6,17 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// ActiveBuffManager – Singleton quản lý danh sách buff đang active trên client local.
-///
-/// Luồng dữ liệu:
-///   1. UseInventoryItem API trả về active_buffs → ItemUseHandler gọi OnBuffsReceived()
-///   2. Khi vào game / scene change → gọi LoadFromServer() để đồng bộ từ DB
-///   3. Mỗi giây: coroutine TrimExpiredBuffs() xóa buff hết hạn + cập nhật HUD
-///
-/// Tích hợp buff vào combat:
-///   - GetBonusPct("GeneExpBuff") → trả về % cộng thêm vào gene EXP
-///   - GetBonusPct("ExpBuff")     → cộng vào EXP kill
-///   - GetBonusPct("PhucBuff")    → cộng vào vàng + EXP
-///   - GetBonusPct("AttackBuff")  → cộng vào damage deal
-///   - GetBonusPct("DefenseBuff") → cộng vào damage reduce
-/// </summary>
+// ActiveBuffManager – Singleton quản lý danh sách buff đang active trên client local.
+// Luồng dữ liệu:
+// 1. UseInventoryItem API trả về active_buffs → ItemUseHandler gọi OnBuffsReceived()
+// 2. Khi vào game / scene change → gọi LoadFromServer() để đồng bộ từ DB
+// 3. Mỗi giây: coroutine TrimExpiredBuffs() xóa buff hết hạn + cập nhật HUD
+// Tích hợp buff vào combat:
+// - GetBonusPct("GeneExpBuff") → trả về % cộng thêm vào gene EXP
+// - GetBonusPct("ExpBuff")     → cộng vào EXP kill
+// - GetBonusPct("PhucBuff")    → cộng vào vàng + EXP
+// - GetBonusPct("AttackBuff")  → cộng vào damage deal
+// - GetBonusPct("DefenseBuff") → cộng vào damage reduce
 public class ActiveBuffManager : MonoBehaviour
 {
     public static ActiveBuffManager Instance { get; private set; }
@@ -46,13 +42,11 @@ public class ActiveBuffManager : MonoBehaviour
     // Interval kiểm tra buff hết hạn (giây)
     private const float TrimInterval = 1f;
 
-    /// <summary>
-    /// Fired mỗi giây với tổng HP/s và MP/s cần hồi từ HpRestoreOverTime / MpRestoreOverTime buff.
-    /// InventoryNetworkBridge subscribe để gửi HealTickServerRpc lên NGO.
-    /// </summary>
+    // Fired mỗi giây với tổng HP/s và MP/s cần hồi từ HpRestoreOverTime / MpRestoreOverTime buff.
+    // InventoryNetworkBridge subscribe để gửi HealTickServerRpc lên NGO.
     public static event System.Action<int, int> OnHealTick;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -88,12 +82,10 @@ public class ActiveBuffManager : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // ── Public API ────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Thay thế toàn bộ danh sách buff bằng dữ liệu từ server.
-    /// Gọi sau UseInventoryItem hoặc khi load game.
-    /// </summary>
+    // Thay thế toàn bộ danh sách buff bằng dữ liệu từ server.
+    // Gọi sau UseInventoryItem hoặc khi load game.
     public void OnBuffsReceived(ActiveBuffDto[] buffs)
     {
         _activeBuffs.Clear();
@@ -103,10 +95,8 @@ public class ActiveBuffManager : MonoBehaviour
         Debug.Log($"[ActiveBuffManager] Nhận {_activeBuffs.Count} buff(s) từ server.");
     }
 
-    /// <summary>
-    /// Thêm buff mới vào danh sách (từ new_buffs trong UseItemResponse).
-    /// Stacking: cùng effectType thì cập nhật expiry.
-    /// </summary>
+    // Thêm buff mới vào danh sách (từ new_buffs trong UseItemResponse).
+    // Stacking: cùng effectType thì cập nhật expiry.
     public void OnBuffsAdded(ActiveBuffDto[] newBuffs)
     {
         if (newBuffs == null) return;
@@ -127,10 +117,8 @@ public class ActiveBuffManager : MonoBehaviour
         FireChanged();
     }
 
-    /// <summary>
-    /// Load danh sách buff từ server (GET /active-buffs).
-    /// Gọi khi vào game / sau scene transition.
-    /// </summary>
+    // Load danh sách buff từ server (GET /active-buffs).
+    // Gọi khi vào game / sau scene transition.
     public void LoadFromServer()
     {
         if (GameplayCommandService.Instance == null || !GameplayCommandService.Instance.IsSpawned)
@@ -165,7 +153,8 @@ public class ActiveBuffManager : MonoBehaviour
         if (playerId <= 0)
             yield break;
 
-        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/active-buffs";
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1;
+        string url = $"{APIClient.BASE_URL}/api/player/{playerId}/active-buffs?geneSlot={geneSlot}";
         using var req = UnityWebRequest.Get(url);
         req.timeout = 10;
         AuthHelper.AddAuthHeader(req);
@@ -186,18 +175,16 @@ public class ActiveBuffManager : MonoBehaviour
             OnBuffsReceived(wrapper.active_buffs);
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
-    /// <summary>
-    /// Callback khi GameManager.OnPlayerDataSet fire — reload buff từ server.
-    /// Xử lý trường hợp player data load xong sau Start() (async).
-    /// </summary>
+    // Callback khi GameManager.OnPlayerDataSet fire — reload buff từ server.
+    // Xử lý trường hợp player data load xong sau Start() (async).
     private void OnPlayerDataReady(PlayerDataResponse data)
     {
         LoadFromServer();
     }
 
-    /// <summary>Trả về tổng % bonus của effectType (e.g. GeneExpBuff → 0.20 nếu value=20).</summary>
+    // Trả về tổng % bonus của effectType (e.g. GeneExpBuff → 0.20 nếu value=20).
     public float GetBonusPct(string effectType)
     {
         float total = 0;
@@ -207,18 +194,16 @@ public class ActiveBuffManager : MonoBehaviour
         return total;
     }
 
-    /// <summary>Kiểm tra xem có buff loại này đang active không.</summary>
+    // Kiểm tra xem có buff loại này đang active không.
     public bool HasBuff(string effectType)
         => _activeBuffs.Any(b => b.effectType == effectType && !b.IsExpired());
 
-    /// <summary>Lấy snapshot bất biến để HUD render.</summary>
+    // Lấy snapshot bất biến để HUD render.
     public List<ActiveBuffDto> GetActiveBuffs() => new List<ActiveBuffDto>(_activeBuffs);
 
-    /// <summary>
-    /// Push buff từ skill (WaterArmor, EarthAura) vào HUD.
-    /// Gọi từ PlayerBuffSync khi local player nhận buff từ skill.
-    /// Không persist lên server — chỉ là visual UI.
-    /// </summary>
+    // Push buff từ skill (WaterArmor, EarthAura) vào HUD.
+    // Gọi từ PlayerBuffSync khi local player nhận buff từ skill.
+    // Không persist lên server — chỉ là visual UI.
     public void PushSkillBuff(ActiveBuffDto dto)
     {
         if (dto == null || dto.IsExpired()) return;
@@ -256,7 +241,7 @@ public class ActiveBuffManager : MonoBehaviour
         return 0;
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private IEnumerator TrimExpiredBuffsLoop()
     {
@@ -264,7 +249,7 @@ public class ActiveBuffManager : MonoBehaviour
         {
             yield return new WaitForSeconds(TrimInterval);
 
-            // ── Heal-over-time tick ───────────────────────────────────────
+            // Heal-over-time tick
             int hpTick = 0, mpTick = 0;
             foreach (var b in _activeBuffs)
             {
@@ -275,7 +260,7 @@ public class ActiveBuffManager : MonoBehaviour
             if (hpTick > 0 || mpTick > 0)
                 OnHealTick?.Invoke(hpTick, mpTick);
 
-            // ── Trim expired ──────────────────────────────────────────────
+            // Trim expired
             int before = _activeBuffs.Count;
             _activeBuffs.RemoveAll(b => b.IsExpired());
             if (_activeBuffs.Count != before)

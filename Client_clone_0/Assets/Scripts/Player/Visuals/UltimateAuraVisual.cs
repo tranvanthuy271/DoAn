@@ -1,20 +1,19 @@
 using UnityEngine;
 
-/// <summary>
-/// Quản lý aura "Gene Tối Thượng" hiển thị phía sau lưng nhân vật.
-/// Được điều khiển bởi <see cref="NetworkPlayerDataSync"/> qua <see cref="Apply"/>
-/// nên aura xuất hiện đồng bộ trên mọi client (host + remote).
-///
-/// Cách hoạt động:
-///   - Khi kích hoạt, lấy aura prefab theo HỆ từ <see cref="UltimateAuraDatabase"/>
-///     (fallback Resources path nếu database không có entry) và gắn làm con của player.
-///   - Aura được đặt lệch về phía sau (localPosition = backOffset) và sorting order
-///     thấp hơn sprite nhân vật để nằm sau lưng.
-///   - Khi tắt, huỷ instance aura.
-/// </summary>
+// Quản lý aura "Gene Tối Thượng" hiển thị phía sau lưng nhân vật.
+// Được điều khiển bởi NetworkPlayerDataSync qua Apply
+// nên aura xuất hiện đồng bộ trên mọi client (host + remote).
+// Cách hoạt động:
+// - Khi kích hoạt, lấy aura prefab theo HỆ từ UltimateAuraDatabase
+// (fallback Resources path nếu database không có entry) và gắn làm con của player.
+// - Aura được đặt lệch về phía sau (localPosition = backOffset) và sorting order
+// thấp hơn sprite nhân vật để nằm sau lưng.
+// - Khi tắt, huỷ instance aura.
 [DisallowMultipleComponent]
 public class UltimateAuraVisual : MonoBehaviour
 {
+    private const string AuraDatabaseResourcePath = "ScriptableObjects/UltimateAuraDatabase";
+
     [Header("Aura theo hệ (ScriptableObject)")]
     [Tooltip("Database map mỗi hệ Fusion → 1 prefab aura riêng. Ưu tiên dùng cái này.")]
     [SerializeField] private UltimateAuraDatabase auraDatabase;
@@ -34,12 +33,10 @@ public class UltimateAuraVisual : MonoBehaviour
     private string currentPath;
     private bool currentActive;
 
-    /// <summary>
-    /// Bật/tắt aura. Gọi mỗi khi NetworkVariable Ultimate (hoặc hệ) thay đổi.
-    /// </summary>
-    /// <param name="isUltimate">True để hiện aura, false để ẩn.</param>
-    /// <param name="elementKey">Hệ của nhân vật (Fire/Earth/...) — key tra trong <see cref="auraDatabase"/>.</param>
-    /// <param name="auraResourcePathOverride">Resources path do server gửi (fallback khi database không có entry).</param>
+    // Bật/tắt aura. Gọi mỗi khi NetworkVariable Ultimate (hoặc hệ) thay đổi.
+    // Tham số isUltimate: True để hiện aura, false để ẩn.
+    // Tham số elementKey: Hệ của nhân vật (Fire/Earth/...) — key tra trong auraDatabase.
+    // Tham số auraResourcePathOverride: Resources path do server gửi (fallback khi database không có entry).
     public void Apply(bool isUltimate, string elementKey, string auraResourcePathOverride = null)
     {
         // Không có thay đổi → bỏ qua
@@ -68,6 +65,9 @@ public class UltimateAuraVisual : MonoBehaviour
         GameObject prefab = null;
 
         // 1) Ưu tiên database ScriptableObject: mỗi hệ Fusion 1 aura riêng.
+        if (auraDatabase == null)
+            auraDatabase = Resources.Load<UltimateAuraDatabase>(AuraDatabaseResourcePath);
+
         if (auraDatabase != null)
             prefab = auraDatabase.GetAura(elementKey);
 
@@ -91,9 +91,7 @@ public class UltimateAuraVisual : MonoBehaviour
         ApplySortingBehind();
     }
 
-    /// <summary>
-    /// Đặt sorting order của aura thấp hơn sprite nhân vật để nằm sau lưng.
-    /// </summary>
+    // Đặt sorting order của aura thấp hơn sprite nhân vật để nằm sau lưng.
     private void ApplySortingBehind()
     {
         if (auraInstance == null)

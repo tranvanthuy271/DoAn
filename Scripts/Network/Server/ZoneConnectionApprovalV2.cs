@@ -3,21 +3,16 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Connection Approval v2 — dùng với kiến trúc 1-port (MapWorldBootstrap).
-/// Thay thế ZoneConnectionApproval cũ (per-process model).
-///
-/// Validate:
-///   1. Payload tối thiểu (JWT token + mapId + zoneId)
-///   2. JWT hợp lệ + chưa hết hạn + secret đúng (HS256)
-///   3. Zone tồn tại trong ZoneRoomRegistry
-///   4. Zone chưa đầy (hoặc có fallback)
-///
-/// DTLS (Issue #6): Bật UnityTransport.UseEncryption = true ở MapWorldBootstrap
-/// để mã hóa toàn bộ UDP traffic (DTLS 1.2/1.3).
-///
-/// Gắn vào: "ServerBootstrap" GameObject.
-/// </summary>
+// Connection Approval v2 — dùng với kiến trúc 1-port (MapWorldBootstrap).
+// Thay thế ZoneConnectionApproval cũ (per-process model).
+// Validate:
+// 1. Payload tối thiểu (JWT token + mapId + zoneId)
+// 2. JWT hợp lệ + chưa hết hạn + secret đúng (HS256)
+// 3. Zone tồn tại trong ZoneRoomRegistry
+// 4. Zone chưa đầy (hoặc có fallback)
+// DTLS (Issue #6): Bật UnityTransport.UseEncryption = true ở MapWorldBootstrap
+// để mã hóa toàn bộ UDP traffic (DTLS 1.2/1.3).
+// Gắn vào: "ServerBootstrap" GameObject.
 [DisallowMultipleComponent]
 public class ZoneConnectionApprovalV2 : MonoBehaviour
 {
@@ -26,7 +21,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
     // Max size payload để phòng buffer overflow
     private const int MaxPayloadBytes = 2048;
 
-    /// <summary>Gọi từ MapWorldBootstrap.StartServerRoutine()</summary>
+    // Gọi từ MapWorldBootstrap.StartServerRoutine()
     public void Initialize(MapWorldConfig config)
     {
         _config = config;
@@ -34,10 +29,8 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         Debug.Log("[ZoneConnectionApprovalV2] Connection Approval đã đăng ký.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Payload format (JSON, UTF-8):
     //   { "token": "<JWT>", "mapId": 0, "zoneId": 0 }
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void HandleApproval(
         NetworkManager.ConnectionApprovalRequest  request,
@@ -130,9 +123,7 @@ public class ZoneConnectionApprovalV2 : MonoBehaviour
         Debug.LogWarning($"[ZoneConnectionApprovalV2] Từ chối kết nối: {reason}");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Minimal JSON parser (không dùng thư viện ngoài)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private static bool TryParsePayload(string json, out string token, out int mapId, out int zoneId)
     {

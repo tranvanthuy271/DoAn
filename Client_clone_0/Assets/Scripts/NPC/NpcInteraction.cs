@@ -6,17 +6,13 @@ using UnityEngine.EventSystems;
 using UnityEngine.Networking;
 using Unity.Netcode;
 
-/// <summary>
-/// NPC click handler — NGO server-authoritative.
-///
-/// Luồng: Client click → InteractServerRpc → Server validate + fetch dialogue → OpenMenuClientRpc về đúng client.
-/// Tương tự cho shop (LoadShopServerRpc) và mua hàng (BuyItemServerRpc).
-///
-/// Yêu cầu:
-///   - Gắn trên NPC Prefab cùng với NetworkObject component.
-///   - Camera cần có Physics2DRaycaster để IPointerClickHandler hoạt động.
-///   - NpcServerManager phải có trong scene (server-side, để validate và lấy cache).
-/// </summary>
+// NPC click handler — NGO server-authoritative.
+// Luồng: Client click → InteractServerRpc → Server validate + fetch dialogue → OpenMenuClientRpc về đúng client.
+// Tương tự cho shop (LoadShopServerRpc) và mua hàng (BuyItemServerRpc).
+// Yêu cầu:
+// - Gắn trên NPC Prefab cùng với NetworkObject component.
+// - Camera cần có Physics2DRaycaster để IPointerClickHandler hoạt động.
+// - NpcServerManager phải có trong scene (server-side, để validate và lấy cache).
 public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 {
     private const string LogPrefix = "[NpcInteraction]";
@@ -33,7 +29,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
 
     private NpcNameLabel _nameLabel;
 
-    // ── Selection (chọn NPC lần 1 → hiện info, lần 2 → mở menu) ─────────────
+    // Selection (chọn NPC lần 1 → hiện info, lần 2 → mở menu)
     [Tooltip("Child GameObject mũi tên chỉ thị, mặc định ẩn. Nếu để trống sẽ tự tìm theo tên 'SelectionIndicator'.")]
     [SerializeField] private GameObject selectionIndicator;
 
@@ -45,7 +41,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     private const float MAX_DIST = 3.5f;    // khoảng cách tối đa tương tác (units)
     private const float LENIENCY = 1.5f;    // hệ số khoan nhượng bù lag mạng
 
-    /// <summary>Gọi bởi NpcServerManager ngay sau NetworkObject.Spawn(). Chỉ chạy trên server.</summary>
+    // Gọi bởi NpcServerManager ngay sau NetworkObject.Spawn(). Chỉ chạy trên server.
     public void InitOnServer(NpcData data)
     {
         _npcData = data;
@@ -83,7 +79,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         base.OnNetworkDespawn();
     }
 
-    // ── CLIENT — Click / Tap ──────────────────────────────────
+    // CLIENT — Click / Tap
 
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -148,9 +144,9 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         OnPointerClick(null);
     }
 
-    // ── SELECTION — Chọn NPC (click 1) / bỏ chọn ────────────────────────────
+    // SELECTION — Chọn NPC (click 1) / bỏ chọn
 
-    /// <summary>Chọn NPC này: hiển thị mũi tên, info panel và đặt làm target auto-move.</summary>
+    // Chọn NPC này: hiển thị mũi tên, info panel và đặt làm target auto-move.
     private void SelectThis()
     {
         // Bỏ chọn enemy đang được chọn
@@ -172,7 +168,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         Debug.Log($"{LogPrefix} Selected | {DescribeNpcForLog()}", this);
     }
 
-    /// <summary>Bỏ chọn NPC này: ẩn mũi tên, ẩn info panel.</summary>
+    // Bỏ chọn NPC này: ẩn mũi tên, ẩn info panel.
     private void DeselectThis()
     {
         if (selectionIndicator != null)
@@ -184,7 +180,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         Debug.Log($"{LogPrefix} Deselected | {DescribeNpcForLog()}", this);
     }
 
-    /// <summary>Bỏ chọn NPC hiện tại (gọi từ EnemyClickHandler khi enemy được chọn).</summary>
+    // Bỏ chọn NPC hiện tại (gọi từ EnemyClickHandler khi enemy được chọn).
     public static void DeselectCurrent()
     {
         if (_currentSelected != null)
@@ -194,7 +190,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         }
     }
 
-    /// <summary>Xây thông số NPC để hiển thị trên EnemyInfoPanel.</summary>
+    // Xây thông số NPC để hiển thị trên EnemyInfoPanel.
     private EnemyStats BuildNpcStats()
     {
         string npcName = (!_networkNpcName.Value.IsEmpty)
@@ -214,7 +210,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         };
     }
 
-    // ── INTERACT — Server validate + fetch dialogue ───────────
+    // INTERACT — Server validate + fetch dialogue
 
     [ServerRpc(RequireOwnership = false)]
     private void InteractServerRpc(ulong npcNetworkId, ServerRpcParams rpcParams = default)
@@ -375,7 +371,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         return $"scene={sceneName} map={mapId} zone={zoneId}";
     }
 
-    // ── LOAD SHOP — Server fetch shop items + gửi về client ──
+    // LOAD SHOP — Server fetch shop items + gửi về client
 
     [ServerRpc(RequireOwnership = false)]
     public void LoadShopServerRpc(ServerRpcParams rpcParams = default)
@@ -421,7 +417,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         }
     }
 
-    // ── SELECT MENU ITEM — Client gửi lựa chọn, server thực thi action ──
+    // SELECT MENU ITEM — Client gửi lựa chọn, server thực thi action
 
     [ServerRpc(RequireOwnership = false)]
     public void SelectMenuItemServerRpc(int menuIndex, ServerRpcParams rpcParams = default)
@@ -469,7 +465,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
                 ExecuteMenuActionClientRpc("open_dungeon", TargetClient(clientId));
                 break;
 
-            // ── NPC actions xử lý server-side qua NpcAction ──────────
+            // NPC actions xử lý server-side qua NpcAction
             case "reset_potential":
             case "reset_skill":
             case "learn_skill":
@@ -573,7 +569,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         }
     }
 
-    // ── BUY — Server gọi API mua, trả kết quả về client ─────
+    // BUY — Server gọi API mua, trả kết quả về client
 
     [ServerRpc(RequireOwnership = false)]
     public void BuyItemServerRpc(int itemId, int quantity, ServerRpcParams rpcParams = default)
@@ -642,7 +638,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         NpcMenuUI.GetOrFind()?.OnBuyResult(success, message, newGold);
     }
 
-    // ── Utility ──────────────────────────────────────────────
+    // Utility
 
     private static ClientRpcParams TargetClient(ulong clientId) => new()
     {
@@ -754,10 +750,8 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
             : string.Empty;
     }
 
-    /// <summary>
-    /// Từ chuỗi "label:action_type;label2:action_type2" trả về "label;label2"
-    /// (chỉ labels để gửi về client — action_type giữ lại phía server).
-    /// </summary>
+    // Từ chuỗi "label:action_type;label2:action_type2" trả về "label;label2"
+    // (chỉ labels để gửi về client — action_type giữ lại phía server).
     private static string ExtractMenuItemLabels(string menuItemsRaw)
     {
         if (string.IsNullOrWhiteSpace(menuItemsRaw))
@@ -789,17 +783,15 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
     [System.Serializable] private class BuyPayload       { public int npcId, shopItemId, quantity; }
     [System.Serializable] private class BuyResponse      { public bool success; public string message; public int playerGold; }
 
-    // ── Public static wrappers — dùng bởi NpcAction.cs ──────────────────
+    // Public static wrappers — dùng bởi NpcAction.cs
 
     public static int ResolveClientUserIdStatic(ulong clientId) => ResolveClientUserId(clientId);
     public static string ResolveClientJwtStatic(ulong clientId) => ResolveClientJwt(clientId);
 
-    // ── SendActionResultRpc — gửi kết quả action về client (gọi bởi NpcAction) ──
+    // SendActionResultRpc — gửi kết quả action về client (gọi bởi NpcAction)
 
-    /// <summary>
-    /// Gửi kết quả xử lý NPC action (reset_potential, lock_level, ...) về client.
-    /// playerDataJson: JSON của NpcAction.NpcActionPlayerData, có thể null/empty nếu không cần cập nhật.
-    /// </summary>
+    // Gửi kết quả xử lý NPC action (reset_potential, lock_level, ...) về client.
+    // playerDataJson: JSON của NpcAction.NpcActionPlayerData, có thể null/empty nếu không cần cập nhật.
     public void SendActionResultRpc(ulong clientId, bool success, string message, string playerDataJson)
     {
         if (IsServer)

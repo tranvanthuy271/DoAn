@@ -1,17 +1,13 @@
 using UnityEngine;
 
-/// <summary>
-/// Gắn script này vào GameObject có BoxCollider2D để biến nó thành
-/// "nền một chiều": nhảy xuyên qua từ dưới lên, đứng được từ trên xuống,
-/// đi ngang qua cũng được (không bị dính cạnh bên).
-///
-/// CÁCH DÙNG:
-/// 1. Chọn GameObject có BoxCollider2D (nền nổi, platform, ...)
-/// 2. Add Component → OneWayPlatform
-/// 3. Lưu scene/prefab
-///
-/// Script tự động thêm PlatformEffector2D với cài đặt phù hợp.
-/// </summary>
+// Gắn script này vào GameObject có BoxCollider2D để biến nó thành
+// "nền một chiều": nhảy xuyên qua từ dưới lên, đứng được từ trên xuống,
+// đi ngang qua cũng được (không bị dính cạnh bên).
+// CÁCH DÙNG:
+// 1. Chọn GameObject có BoxCollider2D (nền nổi, platform, ...)
+// 2. Add Component → OneWayPlatform
+// 3. Lưu scene/prefab
+// Script tự động thêm PlatformEffector2D với cài đặt phù hợp.
 [RequireComponent(typeof(Collider2D))]
 public class OneWayPlatform : MonoBehaviour
 {

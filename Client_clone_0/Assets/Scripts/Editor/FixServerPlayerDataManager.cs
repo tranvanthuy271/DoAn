@@ -3,10 +3,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Remove and recreate ServerPlayerDataManager to fix hash issue
-/// Menu: Tools > Fix ServerPlayerDataManager Hash
-/// </summary>
+// Remove and recreate ServerPlayerDataManager to fix hash issue
+// Menu: Tools > Fix ServerPlayerDataManager Hash
 public class FixServerPlayerDataManager : Editor
 {
     [MenuItem("Tools/Fix ServerPlayerDataManager Hash")]

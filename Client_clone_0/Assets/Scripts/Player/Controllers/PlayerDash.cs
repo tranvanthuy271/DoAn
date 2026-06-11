@@ -62,10 +62,10 @@ public class PlayerDash : NetworkBehaviour
     private float lastScaleX = 1f;
     private bool hasDamagedThisDash = false; // Flag để tránh damage nhiều lần trong một lần dash
 
-    /// <summary>Kiểm tra dash có thể sử dụng không (chưa cooldown, chưa đang dash)</summary>
+    // Kiểm tra dash có thể sử dụng không (chưa cooldown, chưa đang dash)
     public bool CanUseNow => canDash && !isDashing;
 
-    // Constants
+    // Hằng số dùng chung trong file.
     private const float SKILL_EFFECT_POSITION_OFFSET_RIGHT = 1f; // Position offset cho bên phải
     private const float SKILL_EFFECT_POSITION_OFFSET_LEFT = -1f; // Position offset cho bên trái
     private const float SCALE_THRESHOLD = 0.01f;
@@ -264,9 +264,7 @@ public class PlayerDash : NetworkBehaviour
 
     #region SkillEffect Transform
 
-    /// <summary>
-    /// Set SkillEffect transform (scale và position) dựa trên hướng player
-    /// </summary>
+    // Set SkillEffect transform (scale và position) dựa trên hướng player
     private void SetSkillEffectTransform(bool facingRight)
     {
         if (skillEffectObject == null) return;
@@ -292,9 +290,7 @@ public class PlayerDash : NetworkBehaviour
     }
 
 
-    /// <summary>
-    /// Đảm bảo SkillEffect transform không bị animation override (trong LateUpdate)
-    /// </summary>
+    // Đảm bảo SkillEffect transform không bị animation override (trong LateUpdate)
     private void EnsureSkillEffectTransform()
     {
         if (skillEffectObject == null) return;
@@ -326,9 +322,7 @@ public class PlayerDash : NetworkBehaviour
 
     #region Dash Logic
 
-    /// <summary>
-    /// Kích hoạt dash. Gọi từ PlayerSkillManager khi nhấn nút hotbar.
-    /// </summary>
+    // Kích hoạt dash. Gọi từ PlayerSkillManager khi nhấn nút hotbar.
     public void Dash()
     {
         if (!canDash || isDashing) return;
@@ -563,10 +557,8 @@ public class PlayerDash : NetworkBehaviour
 
     #region Dash Damage
 
-    /// <summary>
-    /// Kiểm tra và damage enemy khi đang dash
-    /// Gọi trong FixedUpdate khi đang dash
-    /// </summary>
+    // Kiểm tra và damage enemy khi đang dash
+    // Gọi trong FixedUpdate khi đang dash
     private void CheckDashDamage()
     {
         if (!enableDashDamage || !isDashing || hasDamagedThisDash) return;

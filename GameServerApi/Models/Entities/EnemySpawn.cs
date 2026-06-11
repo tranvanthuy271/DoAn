@@ -2,9 +2,7 @@ using System;
 
 namespace GameServerApi.Models
 {
-    /// <summary>
-    /// Bảng enemy_spawns - Lưu thông tin spawn enemy trong map (tọa độ, enemy_type_id, số lượng, respawn time)
-    /// </summary>
+    // Bảng enemy_spawns - Lưu thông tin spawn enemy trong map (tọa độ, enemy_type_id, số lượng, respawn time)
     public class EnemySpawn
     {
         public int SpawnId { get; set; }

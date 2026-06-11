@@ -3,32 +3,27 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// SecondaryGeneUpgradePanel — Nâng cấp hệ gene phụ (layout giống GeneUpgradePanel).
-/// Gọi /api/gene/multi/config và /api/gene/secondary/upgrade.
-///
-/// ═══════════════════════════════════════════════════════════════
-/// INSPECTOR SETUP:
-///   1. TierDisplayText    → TMP_Text "Hệ Phụ [Tên] — Tier 1 → 2"
-///   2. SecondaryElemIcon  → Image (icon hệ phụ)
-///   3. GeneExpBar         → Slider (readonly)
-///   4. GeneExpText        → TMP_Text "1000 / 5000 exp"
-///   5. GoldCostText       → TMP_Text
-///   6. ItemCostText       → TMP_Text
-///   7. ItemIcon           → Image
-///   8. SuccessRateText    → TMP_Text
-///   9. ItemCountSlider    → Slider (tương tác)
-///  10. ItemCountText      → TMP_Text
-///  11. StatHpText         → TMP_Text
-///  12. StatMpText         → TMP_Text
-///  13. StatAtkText        → TMP_Text
-///  14. StatDefText        → TMP_Text
-///  15. UpgradeButton      → Button
-///  16. CloseButton        → Button
-///  17. StatusText         → TMP_Text
-///  18. LoadingOverlay     → GameObject
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// SecondaryGeneUpgradePanel — Nâng cấp hệ gene phụ (layout giống GeneUpgradePanel).
+// Gọi /api/gene/multi/config và /api/gene/secondary/upgrade.
+// INSPECTOR SETUP:
+// 1. TierDisplayText    → TMP_Text "Hệ Phụ [Tên] — Tier 1 → 2"
+// 2. SecondaryElemIcon  → Image (icon hệ phụ)
+// 3. GeneExpBar         → Slider (readonly)
+// 4. GeneExpText        → TMP_Text "1000 / 5000 exp"
+// 5. GoldCostText       → TMP_Text
+// 6. ItemCostText       → TMP_Text
+// 7. ItemIcon           → Image
+// 8. SuccessRateText    → TMP_Text
+// 9. ItemCountSlider    → Slider (tương tác)
+// 10. ItemCountText      → TMP_Text
+// 11. StatHpText         → TMP_Text
+// 12. StatMpText         → TMP_Text
+// 13. StatAtkText        → TMP_Text
+// 14. StatDefText        → TMP_Text
+// 15. UpgradeButton      → Button
+// 16. CloseButton        → Button
+// 17. StatusText         → TMP_Text
+// 18. LoadingOverlay     → GameObject
 public class SecondaryGeneUpgradePanel : MonoBehaviour
 {
     public static SecondaryGeneUpgradePanel Instance { get; private set; }
@@ -64,12 +59,12 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
     [Header("Shared Element Visuals")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Runtime ──────────────────────────────────────────────────
+    // Runtime
     private GeneMultiConfigDto _config;
     private PlayerDataResponse _playerData;
     private int _itemCount;
 
-    // ── Lifecycle ────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -86,7 +81,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
             itemCountSlider.onValueChanged.AddListener(OnItemCountChanged);
     }
 
-    // ── Public API ───────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Open()
     {
@@ -99,7 +94,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         StartCoroutine(LoadAndRefresh());
     }
 
-    // ── Load + Refresh ───────────────────────────────────────────
+    // Load + Refresh
 
     private IEnumerator LoadAndRefresh()
     {
@@ -243,7 +238,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         return elementIconConfig;
     }
 
-    // ── Upgrade ──────────────────────────────────────────────────
+    // Upgrade
 
     private void OnUpgradeClicked()
     {
@@ -297,7 +292,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void SetStatus(string msg, Color color)
     {
@@ -311,7 +306,7 @@ public class SecondaryGeneUpgradePanel : MonoBehaviour
         if (loadingOverlay != null) loadingOverlay.SetActive(show);
     }
 
-    // ── DTOs ─────────────────────────────────────────────────────
+    // DTOs
 
     [System.Serializable]
     private class SecondaryUpgradeRequest   { public int playerId; public int itemCount; }

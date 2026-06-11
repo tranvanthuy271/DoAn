@@ -3,35 +3,33 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Singleton quản lý toàn bộ chat:
-///  - Kết nối SignalR ChatHub
-///  - Gửi/nhận tin theo từng kênh
-///  - Phát event cho UI đăng ký lắng nghe
-/// </summary>
+// Singleton quản lý toàn bộ chat:
+// - Kết nối SignalR ChatHub
+// - Gửi/nhận tin theo từng kênh
+// - Phát event cho UI đăng ký lắng nghe
 public class ChatManager : MonoBehaviour
 {
     public static ChatManager Instance { get; private set; }
 
-    // ── Events ────────────────────────────────────────────────────────────────
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
 
-    /// <summary>Khi nhận được tin nhắn bất kỳ.</summary>
+    // Khi nhận được tin nhắn bất kỳ.
     public event Action<ChatMessageDto> OnMessageReceived;
 
-    /// <summary>Khi nhận tin riêng.</summary>
+    // Khi nhận tin riêng.
     public event Action<ChatMessageDto> OnPrivateMessageReceived;
 
-    /// <summary>Khi kết nối thay đổi trạng thái.</summary>
+    // Khi kết nối thay đổi trạng thái.
     public event Action<bool> OnConnectionChanged;   // true = connected
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     public bool IsConnected => _client != null && _client.IsConnected;
 
-    /// <summary>Channel đang chọn để gửi tin.</summary>
+    // Channel đang chọn để gửi tin.
     public ChatChannel CurrentSendChannel { get; set; } = ChatChannel.World;
 
-    /// <summary>Khi chat riêng: userId của người đang chat.</summary>
+    // Khi chat riêng: userId của người đang chat.
     public string PrivateChatTargetId   { get; set; } = "";
     public string PrivateChatTargetName { get; set; } = "";
 
@@ -49,7 +47,7 @@ public class ChatManager : MonoBehaviour
     private string        _hubUrl;
     private bool          _isConnecting;  // tránh gọi ConnectToHub song song
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -88,7 +86,7 @@ public class ChatManager : MonoBehaviour
         GameManager.OnPlayerDataSet -= OnPlayerDataSet;
     }
 
-    // ── Connection ────────────────────────────────────────────────────────────
+    // Connection
 
     private void OnPlayerDataSet(PlayerDataResponse data)
     {
@@ -145,7 +143,7 @@ public class ChatManager : MonoBehaviour
         _client.Connect(_hubUrl, jwtToken);
     }
 
-    // ── Hub callbacks ─────────────────────────────────────────────────────────
+    // Hub callbacks
 
     private void HandleConnected()
     {
@@ -176,14 +174,14 @@ public class ChatManager : MonoBehaviour
         StartCoroutine(ReconnectAfterDelay(8f));
     }
 
-    /// <summary>Thử kết nối lại sau một khoảng thời gian.</summary>
+    // Thử kết nối lại sau một khoảng thời gian.
     private IEnumerator ReconnectAfterDelay(float delaySec)
     {
         yield return new WaitForSeconds(delaySec);
         AutoConnect();
     }
 
-    /// <summary>Cứ 3 giây kiểm tra một lần — nếu chưa kết nối và có JWT thì thử lại.</summary>
+    // Cứ 3 giây kiểm tra một lần — nếu chưa kết nối và có JWT thì thử lại.
     private IEnumerator PeriodicConnectionCheck()
     {
         var wait = new WaitForSeconds(3f);
@@ -202,7 +200,7 @@ public class ChatManager : MonoBehaviour
         }
     }
 
-    // ── Receive ───────────────────────────────────────────────────────────────
+    // Receive
 
     private void ReceiveMessage(string json, ChatChannel ch)
     {
@@ -269,7 +267,7 @@ public class ChatManager : MonoBehaviour
         _client.Invoke("UpdateDisplayName", displayName.Trim());
     }
 
-    // ── Send ──────────────────────────────────────────────────────────────────
+    // Send
 
     public void SendChatMessage(string text)
     {
@@ -347,7 +345,7 @@ public class ChatManager : MonoBehaviour
         _client.Invoke("SendPrivateMessage", targetUserId, text.Trim());
     }
 
-    // ── Group Management ──────────────────────────────────────────────────────
+    // Group Management
 
     public void JoinMap(string mapId)
     {
@@ -385,7 +383,7 @@ public class ChatManager : MonoBehaviour
         if (CurrentGroupId == groupId) CurrentGroupId = "";
     }
 
-    // ── History ───────────────────────────────────────────────────────────────
+    // History
 
     public IReadOnlyList<ChatMessageDto> GetHistory(ChatChannel ch)
         => _history.TryGetValue(ch, out var list) ? list : Array.AsReadOnly(Array.Empty<ChatMessageDto>());

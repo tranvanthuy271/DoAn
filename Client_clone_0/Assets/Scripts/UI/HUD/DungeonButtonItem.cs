@@ -2,18 +2,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// DungeonButtonItem — Component gắn lên mỗi nút phó bản trong DungeonListUI.
-/// Prefab cần có cấu trúc:
-///   DungeonButtonItem (Button + DungeonButtonItem)
-///   ├─ Icon          (Image)
-///   ├─ NameText      (Text)
-///   ├─ TypeBadge     (Text) — "THỬ THÁCH" hoặc "NHIỀU NGƯỜI"
-///   ├─ LevelText     (Text) — "Yêu cầu Lv.X"
-///   ├─ DescText      (Text)
-///   ├─ SlotText      (Text) — "1/1" hoặc "0/4" (multi only)
-///   └─ LockOverlay   (GameObject) — hiện khi player chưa đủ level
-/// </summary>
+// DungeonButtonItem — Component gắn lên mỗi nút phó bản trong DungeonListUI.
+// Prefab cần có cấu trúc:
+// DungeonButtonItem (Button + DungeonButtonItem)
+// ├─ Icon          (Image)
+// ├─ NameText      (Text)
+// ├─ TypeBadge     (Text) — "THỬ THÁCH" hoặc "NHIỀU NGƯỜI"
+// ├─ LevelText     (Text) — "Yêu cầu Lv.X"
+// ├─ DescText      (Text)
+// ├─ SlotText      (Text) — "1/1" hoặc "0/4" (multi only)
+// └─ LockOverlay   (GameObject) — hiện khi player chưa đủ level
 public class DungeonButtonItem : MonoBehaviour
 {
     [Header("UI References")]
@@ -40,9 +38,7 @@ public class DungeonButtonItem : MonoBehaviour
         button       = GetComponent<Button>();
     }
 
-    /// <summary>
-    /// Khởi tạo dữ liệu cho nút này.
-    /// </summary>
+    // Khởi tạo dữ liệu cho nút này.
     public void Setup(DungeonConfigData config, int playerLevel, DungeonSessionData liveSession = null)
     {
         _config      = config;
@@ -51,7 +47,7 @@ public class DungeonButtonItem : MonoBehaviour
         Refresh();
     }
 
-    /// <summary>Cập nhật số người online cho phó bản multi (gọi định kỳ).</summary>
+    // Cập nhật số người online cho phó bản multi (gọi định kỳ).
     public void UpdateSession(DungeonSessionData session)
     {
         _liveSession = session;

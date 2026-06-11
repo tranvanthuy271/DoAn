@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// Service để periodic sync (checkpoint) player data lên API Server
-/// Chạy mỗi 30-60 giây để đảm bảo data consistency
-/// </summary>
+// Service để periodic sync (checkpoint) player data lên API Server
+// Chạy mỗi 30-60 giây để đảm bảo data consistency
 public class PeriodicSyncService : NetworkBehaviour
 {
     public static PeriodicSyncService Instance { get; private set; }
@@ -47,9 +45,7 @@ public class PeriodicSyncService : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Save checkpoint cho tất cả players đang online
-    /// </summary>
+    // Save checkpoint cho tất cả players đang online
     private void SaveCheckpoint()
     {
         if (isSyncing) return;
@@ -106,9 +102,7 @@ public class PeriodicSyncService : NetworkBehaviour
         isSyncing = false;
     }
 
-    /// <summary>
-    /// Save checkpoint cho một player cụ thể
-    /// </summary>
+    // Save checkpoint cho một player cụ thể
     private void SavePlayerCheckpoint(int playerId, int mapId, float posX, float posY,
         int hp, int mp, int maxHp, int maxMp, int level, string jwtOverride,
         System.Action onSuccess = null, System.Action<string> onError = null)
@@ -118,9 +112,7 @@ public class PeriodicSyncService : NetworkBehaviour
         onSuccess?.Invoke();
     }
 
-    /// <summary>
-    /// Lấy MapId từ MapManager hoặc GameManager
-    /// </summary>
+    // Lấy MapId từ MapManager hoặc GameManager
     private int GetMapId()
     {
         // Ưu tiên: Lấy từ GameManager
@@ -145,9 +137,7 @@ public class PeriodicSyncService : NetworkBehaviour
         return 0;
     }
 
-    /// <summary>
-    /// Force sync ngay lập tức (không đợi interval)
-    /// </summary>
+    // Force sync ngay lập tức (không đợi interval)
     public void ForceSync()
     {
         if (!IsServer) return;
@@ -156,9 +146,7 @@ public class PeriodicSyncService : NetworkBehaviour
         checkpointTimer = checkpointInterval; // Trigger sync ngay
     }
 
-    /// <summary>
-    /// Sync cho một player cụ thể
-    /// </summary>
+    // Sync cho một player cụ thể
     public void SyncPlayer(int playerId, Vector3 position, int mapId, int hp, int level)
     {
         if (!IsServer) return;
@@ -207,9 +195,7 @@ public class PeriodicSyncService : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// Set checkpoint interval (có thể config runtime)
-    /// </summary>
+    // Set checkpoint interval (có thể config runtime)
     public void SetCheckpointInterval(float interval)
     {
         if (interval < 5f) interval = 5f; // Minimum 5 seconds
@@ -219,9 +205,7 @@ public class PeriodicSyncService : NetworkBehaviour
         // Debug.Log($"[PeriodicSyncService] Checkpoint interval set to {interval} seconds");
     }
 
-    /// <summary>
-    /// Enable/disable auto sync
-    /// </summary>
+    // Enable/disable auto sync
     public void SetAutoSync(bool enabled)
     {
         autoSync = enabled;

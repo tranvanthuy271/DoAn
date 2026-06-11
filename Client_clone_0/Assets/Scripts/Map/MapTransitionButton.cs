@@ -5,15 +5,12 @@ using System.Collections;
 using UnityEngine.Networking;
 using TMPro;
 
-/// <summary>
-/// Gắn vào Button UI "← Trái" hoặc "Phải →" để chuyển map qua portal.
-///
-/// Setup trong Inspector:
-///   - isRightButton: true = nút phải (map tiếp), false = nút trái (map trước)
-///   - currentMapId: mapId của scene hiện tại
-///   - button: kéo Button component vào
-///   - loadingPanel (tuỳ chọn): panel loading hiện khi đang chuyển
-/// </summary>
+// Gắn vào Button UI "← Trái" hoặc "Phải →" để chuyển map qua portal.
+// Setup trong Inspector:
+// - isRightButton: true = nút phải (map tiếp), false = nút trái (map trước)
+// - currentMapId: mapId của scene hiện tại
+// - button: kéo Button component vào
+// - loadingPanel (tuỳ chọn): panel loading hiện khi đang chuyển
 public class MapTransitionButton : MonoBehaviour
 {
     [Header("Loại nút")]
@@ -242,7 +239,7 @@ public class MapTransitionButton : MonoBehaviour
         return 0f;
     }
 
-    // ── DTOs ─────────────────────────────────────────────────
+    // DTOs
 
     [System.Serializable]
     private class PortalData

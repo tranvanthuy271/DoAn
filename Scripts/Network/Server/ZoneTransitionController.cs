@@ -4,13 +4,10 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Xử lý chuyển vùng (zone/map) mà KHÔNG cần disconnect.
-/// Giống hệt LangLa: zone.removeChar() + Map.maps[newId].addChar() — in-process, instant.
-///
-/// Gắn vào: "ServerBootstrap" GameObject cùng với MapWorldBootstrap.
-/// Dependencies: ZoneRoomRegistry, ClientSceneController (client-side), NetworkVisibilityZoneFilter
-/// </summary>
+// Xử lý chuyển vùng (zone/map) mà KHÔNG cần disconnect.
+// Giống hệt LangLa: zone.removeChar() + Map.maps[newId].addChar() — in-process, instant.
+// Gắn vào: "ServerBootstrap" GameObject cùng với MapWorldBootstrap.
+// Dependencies: ZoneRoomRegistry, ClientSceneController (client-side), NetworkVisibilityZoneFilter
 [DisallowMultipleComponent]
 public class ZoneTransitionController : NetworkBehaviour
 {
@@ -27,9 +24,7 @@ public class ZoneTransitionController : NetworkBehaviour
     // Rate-limit: clientId → serverTime lần transfer gần nhất
     private readonly Dictionary<ulong, float> _lastTransferTime = new();
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     public override void OnNetworkSpawn()
     {
@@ -41,22 +36,16 @@ public class ZoneTransitionController : NetworkBehaviour
             Debug.LogError("[ZoneTransitionController] ZoneRoomRegistry chưa khởi tạo!");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Public API (gọi từ ZoneTransitionTrigger)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Server-side direct call — dùng khi server muốn force-teleport một client.
-    /// </summary>
+    // Server-side direct call — dùng khi server muốn force-teleport một client.
     public void ServerTransferClient(ulong clientId, int targetMapId, int targetZoneId, int entryPointId = 0)
     {
         if (!IsServer) return;
         ExecuteTransfer(clientId, targetMapId, targetZoneId, entryPointId);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ServerRpc — client trigger khi bước vào ZoneTransitionTrigger
-    // ─────────────────────────────────────────────────────────────────────────
 
     [ServerRpc(RequireOwnership = false)]
     public void RequestZoneTransferServerRpc(
@@ -78,9 +67,7 @@ public class ZoneTransitionController : NetworkBehaviour
         ExecuteTransfer(clientId, targetMapId, targetZoneId, entryPointId);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Core transfer logic (server-side only)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void ExecuteTransfer(ulong clientId, int targetMapId, int targetZoneId, int entryPointId)
     {
@@ -136,9 +123,7 @@ public class ZoneTransitionController : NetworkBehaviour
         StartCoroutine(SavePositionFireAndForget(clientId, targetRoom.MapId, targetRoom.ZoneId, entry));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ClientRpc — gửi đến đúng 1 client (NO broadcast)
-    // ─────────────────────────────────────────────────────────────────────────
 
     [ClientRpc]
     private void TeleportToZoneClientRpc(
@@ -160,14 +145,10 @@ public class ZoneTransitionController : NetworkBehaviour
         Debug.LogWarning($"[ZoneTransitionController] Zone transfer thất bại: {reason}");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>
-    /// Refresh NGO CheckObjectVisibility cho tất cả NetworkObjects liên quan đến client này.
-    /// Gọi sau mỗi lần thay đổi zone.
-    /// </summary>
+    // Refresh NGO CheckObjectVisibility cho tất cả NetworkObjects liên quan đến client này.
+    // Gọi sau mỗi lần thay đổi zone.
     private void RefreshVisibilityForClient(ulong movedClientId)
     {
         foreach (var filter in FindObjectsByType<NetworkVisibilityZoneFilter>(FindObjectsSortMode.None))

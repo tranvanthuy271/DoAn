@@ -5,11 +5,9 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tạo nhanh các prefab UI cho login:
-/// - LoadingPanel.prefab: spinner overlay mới, không còn progress %
-/// - ErrorNotifyPanel.prefab: giữ lại để tương thích scene cũ nếu cần
-/// </summary>
+// Tạo nhanh các prefab UI cho login:
+// - LoadingPanel.prefab: spinner overlay mới, không còn progress %
+// - ErrorNotifyPanel.prefab: giữ lại để tương thích scene cũ nếu cần
 public static class LoginPanelPrefabCreator
 {
     private const string PrefabDir = "Assets/Prefabs/UI";

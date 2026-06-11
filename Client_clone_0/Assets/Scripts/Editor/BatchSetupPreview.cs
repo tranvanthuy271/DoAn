@@ -2,10 +2,8 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
-/// <summary>
-/// Batch mode entry point: mở GameScene rồi chạy SetupEquipmentCharacterPreview.
-/// Dùng: Unity.exe -batchmode -projectPath ... -executeMethod BatchSetupPreview.Run -quit
-/// </summary>
+// Batch mode entry point: mở GameScene rồi chạy SetupEquipmentCharacterPreview.
+// Dùng: Unity.exe -batchmode -projectPath ... -executeMethod BatchSetupPreview.Run -quit
 public static class BatchSetupPreview
 {
     public static void Run()

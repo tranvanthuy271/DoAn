@@ -2,21 +2,17 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 3 của hệ Kim — "Kim Cang Khiên" (Bất Tử Khiên)
-///
-/// Cơ chế:
-///   1. Kích hoạt khiên: player bất tử hoàn toàn trong shieldDuration giây.
-///   2. Bất kỳ projectile nào (tag "Projectile" hoặc "EnemyProjectile") chạm vào collider
-///      của shield sẽ bị xóa ngay lập tức.
-///   3. Sau khi hết thời gian, khiên tắt và cooldown bắt đầu.
-///
-/// Gắn vào player:
-///   - Gắn component này vào cùng GameObject với PlayerSkillManager
-///   - Gán shieldVisualObject (GameObject hiệu ứng khiên, sẽ bật/tắt theo skill)
-///   - Gán shieldCollider (CircleCollider2D trigger bao quanh player, dùng để xóa projectile)
-///   - PlayerSkillManager sẽ tự phát hiện qua GetComponent khi skillType = MetalShield
-/// </summary>
+// Skill 3 của hệ Kim — "Kim Cang Khiên" (Bất Tử Khiên)
+// Cơ chế:
+// 1. Kích hoạt khiên: player bất tử hoàn toàn trong shieldDuration giây.
+// 2. Bất kỳ projectile nào (tag "Projectile" hoặc "EnemyProjectile") chạm vào collider
+// của shield sẽ bị xóa ngay lập tức.
+// 3. Sau khi hết thời gian, khiên tắt và cooldown bắt đầu.
+// Gắn vào player:
+// - Gắn component này vào cùng GameObject với PlayerSkillManager
+// - Gán shieldVisualObject (GameObject hiệu ứng khiên, sẽ bật/tắt theo skill)
+// - Gán shieldCollider (CircleCollider2D trigger bao quanh player, dùng để xóa projectile)
+// - PlayerSkillManager sẽ tự phát hiện qua GetComponent khi skillType = MetalShield
 public class MetalShieldSkill : NetworkBehaviour
 {
     [Header("Shield Settings")]
@@ -42,7 +38,7 @@ public class MetalShieldSkill : NetworkBehaviour
              "Nếu để trống, sẽ tự tìm CircleCollider2D/CapsuleCollider2D có isTrigger=true trên child 'ShieldCollider'.")]
     [SerializeField] private Collider2D shieldCollider;
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;
@@ -53,9 +49,7 @@ public class MetalShieldSkill : NetworkBehaviour
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - cooldownTimer / cooldown);
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     public override void OnNetworkSpawn()
     {
@@ -125,9 +119,7 @@ public class MetalShieldSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Public API — gọi từ PlayerSkillManager
-    // ════════════════════════════════════════════════════════════════════════
 
     public void UseMetalShield()
     {
@@ -143,9 +135,7 @@ public class MetalShieldSkill : NetworkBehaviour
             StartMetalShieldServerRpc();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Network RPCs
-    // ════════════════════════════════════════════════════════════════════════
 
     [ServerRpc]
     private void StartMetalShieldServerRpc()
@@ -208,9 +198,7 @@ public class MetalShieldSkill : NetworkBehaviour
         isUsing = false;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Core sequence (runs on server)
-    // ════════════════════════════════════════════════════════════════════════
 
     private IEnumerator MetalShieldSequence()
     {
@@ -237,7 +225,7 @@ public class MetalShieldSkill : NetworkBehaviour
         ResetIsUsingClientRpc();
     }
 
-    /// <summary>Tô màu vàng kim loại khi khiên bật — visual feedback tức thì, không cần art asset.</summary>
+    // Tô màu vàng kim loại khi khiên bật — visual feedback tức thì, không cần art asset.
     [ClientRpc]
     private void TintPlayerClientRpc(bool active)
     {
@@ -247,7 +235,7 @@ public class MetalShieldSkill : NetworkBehaviour
             sr.color = active ? new Color(1f, 0.85f, 0.2f, 0.9f) : Color.white;
     }
 
-    /// <summary>Xóa sprite SkillEffect sau khi animation kết thúc.</summary>
+    // Xóa sprite SkillEffect sau khi animation kết thúc.
     [ClientRpc]
     private void ClearSkillEffectClientRpc()
     {
@@ -275,9 +263,7 @@ public class MetalShieldSkill : NetworkBehaviour
         Debug.Log("[MetalShieldSkill] Khiên tắt — cooldown bắt đầu.");
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void SetShieldActive(bool active)
     {

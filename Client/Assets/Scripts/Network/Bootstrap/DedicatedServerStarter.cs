@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 
-/// <summary>
-/// DedicatedServerStarter - Tự động start server khi build server
-/// Chỉ chạy khi có define UNITY_SERVER hoặc khi được gọi từ code
-/// </summary>
+// DedicatedServerStarter - Tự động start server khi build server
+// Chỉ chạy khi có define UNITY_SERVER hoặc khi được gọi từ code
 public class DedicatedServerStarter : MonoBehaviour
 {
     [Header("Server Config")]
@@ -31,9 +29,7 @@ public class DedicatedServerStarter : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Start dedicated server
-    /// </summary>
+    // Start dedicated server
     public void StartDedicatedServer()
     {
         if (networkManager == null)
@@ -65,9 +61,7 @@ public class DedicatedServerStarter : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Stop server
-    /// </summary>
+    // Stop server
     public void StopServer()
     {
         if (networkManager != null && networkManager.IsServer)
@@ -77,9 +71,7 @@ public class DedicatedServerStarter : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set server port (có thể gọi từ command line arguments)
-    /// </summary>
+    // Set server port (có thể gọi từ command line arguments)
     public void SetServerPort(ushort port)
     {
         serverPort = port;

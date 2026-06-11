@@ -2,10 +2,8 @@ using Unity.Netcode;
 using UnityEngine;
 using Unity.Collections;
 
-/// <summary>
-/// Đồng bộ player data (element_type, gender, character_name, stats) từ API qua NetworkVariable
-/// Shared script - dùng cho cả client và server
-/// </summary>
+// Đồng bộ player data (element_type, gender, character_name, stats) từ API qua NetworkVariable
+// Shared script - dùng cho cả client và server
 public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 {
     [Header("Player Data (Synced)")]
@@ -23,30 +21,28 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
     public NetworkVariable<float> networkMoveSpeed = new NetworkVariable<float>(5f);
     public NetworkVariable<int> networkGeneTier = new NetworkVariable<int>(1);
 
-    // ── Gene Tối Thượng (Ultimate Gene) ─────────────────────────────────
-    /// <summary>True khi player đã kích hoạt Gene Tối Thượng (hiển thị aura sau lưng).</summary>
+    // Gene Tối Thượng (Ultimate Gene)
+    // True khi player đã kích hoạt Gene Tối Thượng (hiển thị aura sau lưng).
     public NetworkVariable<bool> networkIsUltimate = new NetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    /// <summary>Resources path của aura prefab gắn sau lưng khi Ultimate kích hoạt.</summary>
+    // Resources path của aura prefab gắn sau lưng khi Ultimate kích hoạt.
     public NetworkVariable<FixedString128Bytes> networkUltimateAuraPath = new NetworkVariable<FixedString128Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // ── Buff stat modifiers (set by server from ActiveBuff) ──────────────
-    /// <summary>% bonus EXP gene nạp vào (e.g. 20 = +20%). Set bởi server khi dùng GeneExpBuff item.</summary>
+    // Buff stat modifiers (set by server from ActiveBuff)
+    // % bonus EXP gene nạp vào (e.g. 20 = +20%). Set bởi server khi dùng GeneExpBuff item.
     public NetworkVariable<int> networkGeneExpBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    /// <summary>% bonus EXP khi kill enemy (e.g. 25 = +25%).</summary>
+    // % bonus EXP khi kill enemy (e.g. 25 = +25%).
     public NetworkVariable<int> networkExpBonusPct      = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    /// <summary>% bonus vàng và EXP drop (Phúc buff).</summary>
+    // % bonus vàng và EXP drop (Phúc buff).
     public NetworkVariable<int> networkPhucBonusPct     = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    /// <summary>% tăng sát thương (AttackBuff).</summary>
+    // % tăng sát thương (AttackBuff).
     public NetworkVariable<int> networkAttackBonusPct   = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    /// <summary>% giảm sát thương nhận (DefenseBuff).</summary>
+    // % giảm sát thương nhận (DefenseBuff).
     public NetworkVariable<int> networkDefenseBonusPct  = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    /// <summary>
-    /// ID nhóm (party) mà player đang ở. Rỗng nếu không có nhóm.
-    /// Dùng server-side để kiểm tra 2 player có cùng nhóm không trước khi áp buff đồng đội.
-    /// </summary>
+    // ID nhóm (party) mà player đang ở. Rỗng nếu không có nhóm.
+    // Dùng server-side để kiểm tra 2 player có cùng nhóm không trước khi áp buff đồng đội.
     public NetworkVariable<FixedString64Bytes> networkPartyId = new NetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -113,9 +109,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] OnNetworkSpawn applied initial data {BuildNetworkIdentity()} state={BuildStateSnapshot()}");
     }
 
-    /// <summary>
-    /// Client: Gửi auth (userId + token) lên server ngay khi player spawn
-    /// </summary>
+    // Client: Gửi auth (userId + token) lên server ngay khi player spawn
     private void SendAuthToServer()
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");
@@ -138,9 +132,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         SendAuthServerRpc(token, userId, geneSlot);
     }
 
-    /// <summary>
-    /// ServerRpc: Nhận auth từ client và load player data
-    /// </summary>
+    // ServerRpc: Nhận auth từ client và load player data
     [ServerRpc(RequireOwnership = true)]
     private void SendAuthServerRpc(string token, int userId, int geneSlot, ServerRpcParams rpcParams = default)
     {
@@ -196,9 +188,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         }
     }
 
-    /// <summary>
-    /// Server: Update NetworkVariables từ PlayerDataResponse
-    /// </summary>
+    // Server: Update NetworkVariables từ PlayerDataResponse
     private void UpdateNetworkVariablesFromPlayerData(PlayerDataResponse playerData)
     {
         if (playerData == null)
@@ -274,9 +264,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         base.OnNetworkDespawn();
     }
 
-    /// <summary>
-    /// Server: Load player data từ ServerPlayerDataManager (hoặc GameManager fallback) và set vào NetworkVariable
-    /// </summary>
+    // Server: Load player data từ ServerPlayerDataManager (hoặc GameManager fallback) và set vào NetworkVariable
     private void LoadPlayerDataFromGameManager()
     {
         PlayerDataResponse playerData = null;
@@ -342,10 +330,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] Server loaded {networkCharacterName.Value} | HP={networkHp.Value}/{networkMaxHp.Value} | MP={networkMp.Value}/{networkMaxMp.Value}");
     }
 
-    /// <summary>
-    /// IPlayerDataReceiver — gọi bởi ZonePlayerSessionManager ngay sau khi spawn.
-    /// Đẩy data từ API trực tiếp vào NetworkVariable mà không cần ServerPlayerDataManager.
-    /// </summary>
+    // IPlayerDataReceiver — gọi bởi ZonePlayerSessionManager ngay sau khi spawn.
+    // Đẩy data từ API trực tiếp vào NetworkVariable mà không cần ServerPlayerDataManager.
     public void OnPlayerDataLoaded(PlayerDataResponse data, ulong clientId)
     {
         if (!IsServer)
@@ -391,9 +377,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] IPlayerDataReceiver → {data.character_name} HP={networkHp.Value}/{networkMaxHp.Value} MP={networkMp.Value}/{networkMaxMp.Value} ATK={networkAttack.Value}");
     }
 
-    /// <summary>
-    /// Apply player data vào PlayerController và các components khác
-    /// </summary>
+    // Apply player data vào PlayerController và các components khác
     private void ApplyPlayerData()
     {
         if (playerController == null)
@@ -427,9 +411,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] ApplyPlayerData complete. hasPlayerController={playerController != null}, hasStats={playerController?.stats != null}, hasPlayerHealth={playerHealth != null} | {BuildNetworkIdentity()} | state={BuildStateSnapshot()}");
     }
 
-    /// <summary>
-    /// Thay đổi visual (sprite, animator) dựa trên element_type + gender
-    /// </summary>
+    // Thay đổi visual (sprite, animator) dựa trên element_type + gender
     private void ApplyVisuals()
     {
         Debug.Log($"[NetworkPlayerDataSync] ApplyVisuals element={networkElementType.Value}, gender={networkGender.Value}, character={networkCharacterName.Value} | {BuildNetworkIdentity()}");
@@ -552,7 +534,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         }
     }
 
-    // ── Gene Tối Thượng handlers ─────────────────────────────────────────
+    // Gene Tối Thượng handlers
     private void OnUltimateChanged(bool oldValue, bool newValue)
     {
         RefreshUltimateAura();
@@ -570,17 +552,15 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         RefreshUltimateAura();
     }
 
-    /// <summary>
-    /// Bật/tắt aura Gene Tối Thượng dựa trên NetworkVariable hiện tại.
-    /// Chạy trên mọi client (host + remote) nên ai cũng thấy aura.
-    /// </summary>
+    // Bật/tắt aura Gene Tối Thượng dựa trên NetworkVariable hiện tại.
+    // Chạy trên mọi client (host + remote) nên ai cũng thấy aura.
     private void RefreshUltimateAura()
     {
         if (ultimateAura == null)
             ultimateAura = GetComponent<UltimateAuraVisual>();
 
         if (ultimateAura == null)
-            return; // Prefab chưa gắn UltimateAuraVisual
+            ultimateAura = gameObject.AddComponent<UltimateAuraVisual>();
 
         ultimateAura.Apply(
             networkIsUltimate.Value,
@@ -588,10 +568,8 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             networkUltimateAuraPath.Value.ToString());
     }
 
-    /// <summary>
-    /// Owner-only: đồng bộ NetworkVariable hiện tại vào GameManager.currentPlayerData rồi refresh StatsTabUI.
-    /// Được gọi khi bất kỳ stat NetworkVariable nào thay đổi.
-    /// </summary>
+    // Owner-only: đồng bộ NetworkVariable hiện tại vào GameManager.currentPlayerData rồi refresh StatsTabUI.
+    // Được gọi khi bất kỳ stat NetworkVariable nào thay đổi.
     private void SyncStatToGameManagerAndUI()
     {
         var pd = GameManager.Instance?.currentPlayerData;
@@ -614,13 +592,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
 
     #endregion
 
-    /// <summary>
-    /// ServerRpc để client request update player data (khi level up, stats change, etc.)
-    /// </summary>
-    /// <summary>
-    /// Client gọi RPC này sau khi upgrade gene/trang bị thành công.
-    /// Host nhận được, ghi vào NetworkVariable → tự động sync sang tất cả client.
-    /// </summary>
+    // ServerRpc để client request update player data (khi level up, stats change, etc.)
+    // Client gọi RPC này sau khi upgrade gene/trang bị thành công.
+    // Host nhận được, ghi vào NetworkVariable → tự động sync sang tất cả client.
     [ServerRpc(RequireOwnership = true)]
     public void UpdatePlayerDataServerRpc(int playerId, string elementType, string gender, string characterName,
         int level, int hp, int maxHp, int mp, int maxMp, int attack, int defense, float moveSpeed, int geneTier)
@@ -641,9 +615,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] ServerRpc: stats updated → atk={attack} def={defense} maxHp={maxHp} spd={moveSpeed} tier={geneTier}");
     }
 
-    /// <summary>
-    /// ServerRpc nhẹ: chỉ cập nhật Max HP / Max MP (dùng sau khi HpBuff / MpBuff áp dụng).
-    /// </summary>
+    // ServerRpc nhẹ: chỉ cập nhật Max HP / Max MP (dùng sau khi HpBuff / MpBuff áp dụng).
     [ServerRpc(RequireOwnership = false)]
     public void UpdateMaxHpMpServerRpc(int newMaxHp, int newMaxMp, ServerRpcParams rpcParams = default)
     {
@@ -660,19 +632,15 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] UpdateMaxHpMp → maxHp={newMaxHp} maxMp={newMaxMp}");
     }
 
-    /// <summary>
-    /// Get player data (để hiển thị trong UI, name tag, etc.)
-    /// </summary>
+    // Get player data (để hiển thị trong UI, name tag, etc.)
     public string GetCharacterName() => networkCharacterName.Value.ToString();
     public string GetElementType() => networkElementType.Value.ToString();
     public string GetGender() => networkGender.Value.ToString();
     public int GetLevel() => networkLevel.Value;
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  MP / HP Consume & Restore (dùng bởi PlayerSkillManager & PotionUsage)
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>Trừ MP khi dùng skill. Chỉ owner gọi.</summary>
+    // Trừ MP khi dùng skill. Chỉ owner gọi.
     [ServerRpc(RequireOwnership = true)]
     public void ConsumeMpServerRpc(int amount)
     {
@@ -680,7 +648,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] ConsumeMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
     }
 
-    /// <summary>Hồi MP (bình mana). Chỉ owner gọi.</summary>
+    // Hồi MP (bình mana). Chỉ owner gọi.
     [ServerRpc(RequireOwnership = true)]
     public void RestoreMpServerRpc(int amount)
     {
@@ -688,7 +656,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] RestoreMp {amount} → MP={networkMp.Value}/{networkMaxMp.Value}");
     }
 
-    /// <summary>Hồi HP (bình máu). Chỉ owner gọi.</summary>
+    // Hồi HP (bình máu). Chỉ owner gọi.
     [ServerRpc(RequireOwnership = true)]
     public void RestoreHpServerRpc(int amount)
     {
@@ -696,14 +664,10 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] RestoreHp {amount} → HP={networkHp.Value}/{networkMaxHp.Value}");
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  EXP AWARD (gọi từ NetworkEnemyHealth khi quái chết)
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Server-only: Cộng EXP cho player này và lưu vào DB.
-    /// Được gọi bởi NetworkEnemyHealth.HandleDeath() khi player kill quái.
-    /// </summary>
+    // Server-only: Cộng EXP cho player này và lưu vào DB.
+    // Được gọi bởi NetworkEnemyHealth.HandleDeath() khi player kill quái.
     public void AwardExpOnServer(int expAmount, int enemyMaxHp = 0)
     {
         if (!IsServer) return;
@@ -722,7 +686,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         public int experience;
         public int level;
         public bool leveled_up;
-        // ── Gene Tối Thượng ──
+        // Gene Tối Thượng
         public int  ultimate_gene_exp;
         public bool is_ultimate;
         public bool ultimate_activated;
@@ -790,7 +754,7 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         }
     }
 
-    /// <summary>ClientRpc: thông báo owner client nhận EXP để refresh UI.</summary>
+    // ClientRpc: thông báo owner client nhận EXP để refresh UI.
     [ClientRpc]
     private void NotifyExpGainClientRpc(int expAmount, int newLevel, bool leveledUp, ClientRpcParams rpcParams = default)
     {
@@ -803,12 +767,10 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
             FindObjectOfType<StatsTabUI>()?.Load();
     }
 
-    // ── Quest Refresh Notify ──────────────────────────────────────────────────
+    // Quest Refresh Notify
 
-    /// <summary>
-    /// Server gọi sau khi QuestProgressReporter.Report() thành công.
-    /// Gửi ClientRpc đến owner client để refresh QuestHudWidget.
-    /// </summary>
+    // Server gọi sau khi QuestProgressReporter.Report() thành công.
+    // Gửi ClientRpc đến owner client để refresh QuestHudWidget.
     public void NotifyQuestKillOnServer()
     {
         NotifyQuestProgressOnServer("kill");
@@ -831,12 +793,10 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         QuestManager.Instance?.RefreshPlayerOverview();
     }
 
-    // ── Proximity Chat Bubble ─────────────────────────────────────────────────
+    // Proximity Chat Bubble
 
-    /// <summary>
-    /// Gọi từ owner khi gửi tin lân cận.
-    /// Broadcast bubble lên tất cả client (mọi người thấy bubble trên đầu nhân vật này).
-    /// </summary>
+    // Gọi từ owner khi gửi tin lân cận.
+    // Broadcast bubble lên tất cả client (mọi người thấy bubble trên đầu nhân vật này).
     [ServerRpc(RequireOwnership = true)]
     public void ShowProximityBubbleServerRpc(FixedString128Bytes senderName, FixedString512Bytes message)
     {
@@ -849,21 +809,17 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         GetComponentInChildren<ProximityChatBubble>()?.ShowMessage(senderName.ToString(), message.ToString());
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  Party ID Sync — dùng để server kiểm tra 2 player có cùng nhóm không
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Owner client gọi khi PartyManager.OnPartyStateChanged fire.
-    /// Sync partyId của bản thân lên server để server có thể kiểm tra party membership.
-    /// </summary>
+    // Owner client gọi khi PartyManager.OnPartyStateChanged fire.
+    // Sync partyId của bản thân lên server để server có thể kiểm tra party membership.
     private void OnPartyStateChanged_Sync(PartyStatePayload state)
     {
         string pid = state?.partyId ?? string.Empty;
         SyncPartyIdServerRpc(pid);
     }
 
-    /// <summary>Server nhận partyId từ owner và set vào networkPartyId.</summary>
+    // Server nhận partyId từ owner và set vào networkPartyId.
     [ServerRpc(RequireOwnership = false)]
     public void SyncPartyIdServerRpc(string partyId, ServerRpcParams rpc = default)
     {
@@ -871,11 +827,9 @@ public class NetworkPlayerDataSync : NetworkBehaviour, IPlayerDataReceiver
         Debug.Log($"[NetworkPlayerDataSync] SyncPartyId clientId={rpc.Receive.SenderClientId} partyId={partyId}");
     }
 
-    /// <summary>
-    /// Kiểm tra xem NetworkObject khác có cùng party với object này không.
-    /// Dùng server-side trước khi áp buff đồng đội.
-    /// Trả về true nếu cả hai đều có partyId giống nhau (không rỗng).
-    /// </summary>
+    // Kiểm tra xem NetworkObject khác có cùng party với object này không.
+    // Dùng server-side trước khi áp buff đồng đội.
+    // Trả về true nếu cả hai đều có partyId giống nhau (không rỗng).
     public bool IsInSameParty(NetworkObject other)
     {
         if (other == null) return false;

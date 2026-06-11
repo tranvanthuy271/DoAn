@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Netcode;
 
-/// <summary>
-/// Script xử lý damage enemy khi fireball va chạm.
-/// Hỗ trợ cả PvP: gây damage cho player khác khi trúng skill.
-/// </summary>
+// Script xử lý damage enemy khi fireball va chạm.
+// Hỗ trợ cả PvP: gây damage cho player khác khi trúng skill.
 [RequireComponent(typeof(Collider2D))]
 public class FireballDamage : MonoBehaviour
 {
@@ -28,22 +26,18 @@ public class FireballDamage : MonoBehaviour
     // NetworkObjectId của player sử dụng skill (Ä'ể tránh tự bán)
     private ulong ownerNetworkObjectId = 0;
 
-    /// <summary>Set owner NetworkObjectId để projectile không tự gây damage cho chính người bắn.</summary>
+    // Set owner NetworkObjectId để projectile không tự gây damage cho chính người bắn.
     public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
 
-    // ── Debuff Config ─────────────────────────────────────────────────────────
+    // Debuff Config
     private SkillEffectConfig _debuffConfig;
 
-    /// <summary>
-    /// Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
-    /// Gọi từ skill script ngay sau khi Instantiate projectile.
-    /// </summary>
+    // Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
+    // Gọi từ skill script ngay sau khi Instantiate projectile.
     public void SetDebuffConfig(SkillEffectConfig cfg) => _debuffConfig = cfg;
 
-    /// <summary>
-    /// Lấy MapId của player sở hữu projectile này qua ZoneRoomRegistry.
-    /// Trả về -999 nếu không tra được (registry chưa sẵn sàng).
-    /// </summary>
+    // Lấy MapId của player sở hữu projectile này qua ZoneRoomRegistry.
+    // Trả về -999 nếu không tra được (registry chưa sẵn sàng).
     private int GetOwnerMapId()
     {
         if (ownerNetworkObjectId == 0) return -999;
@@ -170,9 +164,7 @@ public class FireballDamage : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.
-    /// </summary>
+    // Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.
     private void ApplyDebuffToTarget(GameObject target)
     {
         if (_debuffConfig == null) return;
@@ -192,7 +184,7 @@ public class FireballDamage : MonoBehaviour
         );
     }
 
-    /// <summary>Set attack bonus % from owner's EarthAura buff.</summary>
+    // Set attack bonus % from owner's EarthAura buff.
     public void SetAttackBonus(int bonusPercent) => attackBonusPercent = bonusPercent;
 
     public void SetDamage(int newDamage)
@@ -200,8 +192,6 @@ public class FireballDamage : MonoBehaviour
         damage = newDamage;
     }
 
-    /// <summary>
-    /// Get sát thương hiện tại
-    /// </summary>
+    // Get sát thương hiện tại
     public int GetDamage() => damage;
 }

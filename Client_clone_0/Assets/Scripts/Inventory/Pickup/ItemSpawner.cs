@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// ItemSpawner - Helper class để spawn item pickup dễ dàng
-/// Có thể dùng để spawn item từ code hoặc trong Inspector
-/// </summary>
+// ItemSpawner - Helper class để spawn item pickup dễ dàng
+// Có thể dùng để spawn item từ code hoặc trong Inspector
 public class ItemSpawner : MonoBehaviour
 {
     [Header("Spawn Settings")]
@@ -14,17 +12,13 @@ public class ItemSpawner : MonoBehaviour
     [Tooltip("Vị trí spawn (nếu để trống sẽ dùng transform.position)")]
     [SerializeField] private Transform spawnPoint;
 
-    /// <summary>
-    /// Spawn item tại vị trí hiện tại
-    /// </summary>
+    // Spawn item tại vị trí hiện tại
     public void SpawnItem(int itemID, int quantity)
     {
         SpawnItemAt(itemID, quantity, spawnPoint != null ? spawnPoint.position : transform.position);
     }
 
-    /// <summary>
-    /// Spawn item tại vị trí cụ thể
-    /// </summary>
+    // Spawn item tại vị trí cụ thể
     public void SpawnItemAt(int itemID, int quantity, Vector3 position)
     {
         if (itemPickupPrefab == null)
@@ -66,18 +60,14 @@ public class ItemSpawner : MonoBehaviour
         Debug.Log($"[ItemSpawner] Spawned {quantity}x {itemData.itemName} at {position}");
     }
 
-    /// <summary>
-    /// Spawn item với ItemData
-    /// </summary>
+    // Spawn item với ItemData
     public void SpawnItem(ItemData itemData, int quantity)
     {
         if (itemData == null) return;
         SpawnItemAt(itemData.itemID, quantity, spawnPoint != null ? spawnPoint.position : transform.position);
     }
 
-    /// <summary>
-    /// Lấy ItemData từ ItemID
-    /// </summary>
+    // Lấy ItemData từ ItemID
     private ItemData GetItemData(int itemID)
     {
         if (ItemManager.Instance != null)

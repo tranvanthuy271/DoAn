@@ -2,47 +2,45 @@ using System;
 
 namespace GameServerApi.Models
 {
-    /// <summary>
-    /// Bảng dungeon_config — cấu hình phó bản (dungeon / instance)
-    /// </summary>
+    // Bảng dungeon_config — cấu hình phó bản (dungeon / instance)
     public class DungeonConfig
     {
         public int DungeonId { get; set; }
 
-        /// <summary>Tên phó bản hiển thị cho người chơi</summary>
+        // Tên phó bản hiển thị cho người chơi
         public string DungeonName { get; set; } = "";
 
-        /// <summary>"solo" = thử thách 1 mình | "multi" = cho phép nhiều người</summary>
+        // "solo" = thử thách 1 mình | "multi" = cho phép nhiều người
         public string DungeonType { get; set; } = "multi";
 
-        /// <summary>FK -> map_config.map_id — map/scene Unity sẽ load khi vào phó bản</summary>
+        // FK -> map_config.map_id — map/scene Unity sẽ load khi vào phó bản
         public int MapId { get; set; }
 
-        /// <summary>Tên scene Unity (phải khớp với Build Settings). VD: "Dungeon_FireCave"</summary>
+        // Tên scene Unity (phải khớp với Build Settings). VD: "Dungeon_FireCave"
         public string SceneName { get; set; } = "";
 
-        /// <summary>Số người chơi tối đa (1 với solo, N với multi)</summary>
+        // Số người chơi tối đa (1 với solo, N với multi)
         public int MaxPlayers { get; set; } = 4;
 
-        /// <summary>Level tối thiểu để vào phó bản</summary>
+        // Level tối thiểu để vào phó bản
         public int MinLevelRequired { get; set; } = 1;
 
-        /// <summary>Giới hạn thời gian (giây). 0 = không giới hạn</summary>
+        // Giới hạn thời gian (giây). 0 = không giới hạn
         public int TimeLimitSeconds { get; set; } = 0;
 
-        /// <summary>Mô tả phó bản</summary>
+        // Mô tả phó bản
         public string Description { get; set; } = "";
 
-        /// <summary>FK -> enemy.enemy_id — boss của phó bản (null = không có boss riêng)</summary>
+        // FK -> enemy.enemy_id — boss của phó bản (null = không có boss riêng)
         public int? BossEnemyId { get; set; }
 
-        /// <summary>JSON phần thưởng hoàn thành. VD: {"gold":1000,"items":[{"id":5,"qty":2}]}</summary>
+        // JSON phần thưởng hoàn thành. VD: {"gold":1000,"items":[{"id":5,"qty":2}]}
         public string RewardJson { get; set; } = "{}";
 
-        /// <summary>ID icon thumbnail hiển thị trong UI danh sách phó bản</summary>
+        // ID icon thumbnail hiển thị trong UI danh sách phó bản
         public string ThumbnailIconId { get; set; } = "";
 
-        /// <summary>Có mở phó bản này cho người chơi không</summary>
+        // Có mở phó bản này cho người chơi không
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

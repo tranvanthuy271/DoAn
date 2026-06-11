@@ -2,17 +2,12 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-/// <summary>
-/// Lightweight JWT validator chạy trong Unity (không cần external library).
-/// Chỉ hỗ trợ HMAC-SHA256 (HS256) — thuật toán mặc định của ASP.NET Core JWT.
-///
-/// Dùng cùng secret với appsettings.json > JwtSettings > Key.
-/// </summary>
+// Lightweight JWT validator chạy trong Unity (không cần external library).
+// Chỉ hỗ trợ HMAC-SHA256 (HS256) — thuật toán mặc định của ASP.NET Core JWT.
+// Dùng cùng secret với appsettings.json > JwtSettings > Key.
 public static class JwtValidator
 {
-    /// <summary>
-    /// Kết quả sau khi validate JWT.
-    /// </summary>
+    // Kết quả sau khi validate JWT.
     public readonly struct Result
     {
         public readonly bool IsValid;
@@ -32,12 +27,10 @@ public static class JwtValidator
         public static Result Ok(string userId, string username) => new Result(true, userId, username, null);
     }
 
-    /// <summary>
-    /// Validate JWT token.
-    /// </summary>
-    /// <param name="token">JWT string (3 phần cách nhau bởi dấu chấm)</param>
-    /// <param name="secret">HMAC-SHA256 secret key (phải khớp với API)</param>
-    /// <returns>Result chứa IsValid, UserId, Username</returns>
+    // Validate JWT token.
+    // Tham số token: JWT string (3 phần cách nhau bởi dấu chấm)
+    // Tham số secret: HMAC-SHA256 secret key (phải khớp với API)
+    // Trả về: Result chứa IsValid, UserId, Username
     public static Result Validate(string token, string secret)
     {
         if (string.IsNullOrEmpty(token))
@@ -88,7 +81,7 @@ public static class JwtValidator
         return Result.Ok(userId, username ?? "unknown");
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
+    // Private helpers
 
     private static string ComputeHmacSha256Base64Url(string input, string secret)
     {
@@ -116,10 +109,8 @@ public static class JwtValidator
         return Convert.FromBase64String(padded);
     }
 
-    /// <summary>
-    /// Trích claim value từ JSON payload string.
-    /// Hỗ trợ string ("key":"value") và number ("key":123).
-    /// </summary>
+    // Trích claim value từ JSON payload string.
+    // Hỗ trợ string ("key":"value") và number ("key":123).
     private static string ExtractClaim(string json, string claimName)
     {
         // Tìm "claimName": sau đó lấy value
@@ -152,16 +143,12 @@ public static class JwtValidator
         }
     }
 
-    /// <summary>
-    /// Public overload — dùng để trích claim từ JSON bất kỳ (không phải JWT payload).
-    /// Ví dụ: lấy "token" từ ConnectionData JSON.
-    /// </summary>
+    // Public overload — dùng để trích claim từ JSON bất kỳ (không phải JWT payload).
+    // Ví dụ: lấy "token" từ ConnectionData JSON.
     public static string ExtractClaimPublic(string json, string claimName)
         => ExtractClaim(json, claimName);
 
-    /// <summary>
-    /// So sánh constant-time để tránh timing attacks.
-    /// </summary>
+    // So sánh constant-time để tránh timing attacks.
     private static bool SecureEquals(string a, string b)
     {
         if (a == null || b == null || a.Length != b.Length)

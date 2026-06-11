@@ -1,10 +1,8 @@
 using UnityEngine;
 
-/// <summary>
-/// Bootstrap để tự động tạo APIClient và ItemTemplateManager nếu chưa có
-/// Attach script này vào GameObject trong scene (ví dụ: GameManager hoặc bất kỳ GameObject nào)
-/// QUAN TRỌNG: Script này phải được thực thi TRƯỚC các script khác cần dùng APIClient/ItemTemplateManager
-/// </summary>
+// Bootstrap để tự động tạo APIClient và ItemTemplateManager nếu chưa có
+// Attach script này vào GameObject trong scene (ví dụ: GameManager hoặc bất kỳ GameObject nào)
+// QUAN TRỌNG: Script này phải được thực thi TRƯỚC các script khác cần dùng APIClient/ItemTemplateManager
 public class ItemTemplateManagerBootstrap : MonoBehaviour
 {
     [Header("Settings")]

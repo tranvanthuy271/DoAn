@@ -2,9 +2,7 @@ using System;
 
 namespace GameServerApi.Models
 {
-    /// <summary>
-    /// Bảng enemy — thông tin đầy đủ quái vật và boss.
-    /// </summary>
+    // Bảng enemy — thông tin đầy đủ quái vật và boss.
     public class Enemy
     {
         public int EnemyId { get; set; }
@@ -24,10 +22,10 @@ namespace GameServerApi.Models
         public string? ElementType { get; set; }
         public string? EnemyType { get; set; }
 
-        /// <summary>JSON array skill của quái (áp dụng cả quái thường lẫn boss).</summary>
+        // JSON array skill của quái (áp dụng cả quái thường lẫn boss).
         public string? SkillsJson { get; set; }
 
-        // ── Kháng nguyên tố (%) ──
+        // Kháng nguyên tố (%)
         public int KhangHoa { get; set; } = 0;
         public int KhangThuy { get; set; } = 0;
         public int KhangTho { get; set; } = 0;
@@ -35,7 +33,7 @@ namespace GameServerApi.Models
         public int KhangKim { get; set; } = 0;
         public int KhangPhong { get; set; } = 0;
 
-        // ── Tăng sát thương nguyên tố (%) ──
+        // Tăng sát thương nguyên tố (%)
         public int TangDameHoa { get; set; } = 0;
         public int TangDameThuy { get; set; } = 0;
         public int TangDameTho { get; set; } = 0;
@@ -43,12 +41,12 @@ namespace GameServerApi.Models
         public int TangDameKim { get; set; } = 0;
         public int TangDamePhong { get; set; } = 0;
 
-        // ── Chỉ số phụ ──
+        // Chỉ số phụ
         public int HpRegenPerSec { get; set; } = 0;
         public int EvasionRate { get; set; } = 0;
         public int CounterRate { get; set; } = 0;
 
-        /// <summary>JSON giai đoạn boss: [{"hp_pct_threshold":50,"action":"enrage",...}]</summary>
+        // JSON giai đoạn boss: [{"hp_pct_threshold":50,"action":"enrage",...}]
         public string? PhasesJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

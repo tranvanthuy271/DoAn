@@ -1,17 +1,13 @@
 using UnityEngine;
 
-/// <summary>
-/// Đọc file server_config.json từ StreamingAssets hoặc cùng thư mục build.
-/// Cho phép thay đổi IP/port mà không cần rebuild Unity.
-/// </summary>
+// Đọc file server_config.json từ StreamingAssets hoặc cùng thư mục build.
+// Cho phép thay đổi IP/port mà không cần rebuild Unity.
 public static class ServerConfigFileReader
 {
     private const string FileName = "server_config.json";
 
-    /// <summary>
-    /// Trả về nội dung JSON hoặc null nếu file không tồn tại.
-    /// Ưu tiên: StreamingAssets → cùng thư mục exe → null.
-    /// </summary>
+    // Trả về nội dung JSON hoặc null nếu file không tồn tại.
+    // Ưu tiên: StreamingAssets → cùng thư mục exe → null.
     public static string ReadConfigJson()
     {
         return TryReadConfig(out string json, out _, out _) ? json : null;

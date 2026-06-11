@@ -1,22 +1,17 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// Gắn script này vào root GameObject của mỗi Canvas cần tồn tại qua scene load.
-/// 
-/// Ví dụ gắn vào: ScreenSpaceCanvas, InformationCanvas, SkillHotbar (root canvas), EventSystem.
-///
-/// Cơ chế:
-///   - Awake(): DontDestroyOnLoad(gameObject) — object persist khi LoadScene
-///   - Singleton theo tên: nếu scene mới cũng có object cùng tên có GameUIPersist,
-///     instance MỚI tự hủy để tránh duplicate.
-///
-/// LƯU Ý:
-///   - Chỉ gắn vào ROOT GameObject của canvas (không phải canvas con).
-///   - Đảm bảo Canvas dùng render mode "Screen Space - Overlay" hoặc
-///     camera reference còn tồn tại sau khi scene load.
-///   - EventSystem cũng nên persist (gắn script này vào EventSystem object).
-/// </summary>
+// Gắn script này vào root GameObject của mỗi Canvas cần tồn tại qua scene load.
+// Ví dụ gắn vào: ScreenSpaceCanvas, InformationCanvas, SkillHotbar (root canvas), EventSystem.
+// Cơ chế:
+// - Awake(): DontDestroyOnLoad(gameObject) — object persist khi LoadScene
+// - Singleton theo tên: nếu scene mới cũng có object cùng tên có GameUIPersist,
+// instance MỚI tự hủy để tránh duplicate.
+// LƯU Ý:
+// - Chỉ gắn vào ROOT GameObject của canvas (không phải canvas con).
+// - Đảm bảo Canvas dùng render mode "Screen Space - Overlay" hoặc
+// camera reference còn tồn tại sau khi scene load.
+// - EventSystem cũng nên persist (gắn script này vào EventSystem object).
 public class GameUIPersist : MonoBehaviour
 {
     private static System.Collections.Generic.Dictionary<string, GameUIPersist> _instances

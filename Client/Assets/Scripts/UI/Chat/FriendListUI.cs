@@ -4,16 +4,14 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel quản lý bạn bè với 3 tab:
-///   0 = Bạn Bè  |  1 = Kết Bạn Mới  |  2 = Lời Mời
-/// </summary>
+// Panel quản lý bạn bè với 3 tab:
+// 0 = Bạn Bè  |  1 = Kết Bạn Mới  |  2 = Lời Mời
 public class FriendListUI : MonoBehaviour
 {
     private const string GameplayBlockSource = "FriendListUI";
     private const string FriendRowEntryResourcePath = "Prefabs/Chat/FriendRowEntry";
 
-    // ── Inspector Refs ────────────────────────────────────────────────────────
+    // Inspector Refs
 
     [Header("Header")]
     [SerializeField] private Button            closeButton;
@@ -50,7 +48,7 @@ public class FriendListUI : MonoBehaviour
     [Header("Player Profile Panel (tuỳ chọn)")]
     [SerializeField] private PlayerProfilePanelUI profilePanel;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     private int                          _activeTab = 0;
     private readonly List<GameObject>    _friendRows  = new();
@@ -63,7 +61,7 @@ public class FriendListUI : MonoBehaviour
     private Coroutine                    _searchFeedbackCoroutine;
     private GameObject                   _fallbackRowEntryPrefab;
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -207,7 +205,7 @@ public class FriendListUI : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    // ── Tab switching ─────────────────────────────────────────────────────────
+    // Tab switching
 
     private void SwitchTab(int tab)
     {
@@ -240,7 +238,7 @@ public class FriendListUI : MonoBehaviour
                 : new Color(0.25f, 0.18f, 0.07f, 1f);
     }
 
-    // ── Refresh tất cả tabs ───────────────────────────────────────────────────
+    // Refresh tất cả tabs
 
     private void RefreshAllTabs(List<FriendEntryDto> friends)
     {
@@ -291,7 +289,7 @@ public class FriendListUI : MonoBehaviour
         Debug.Log($"[FriendUI] RefreshAllTabs friends={_friendRows.Count} pendingRows={_pendingRows.Count} pendingReceived={pendingReceivedCount} pendingSent={pendingSentCount} pendingContentChildren={pendingContent?.childCount ?? -1} emptyPendingActive={emptyPendingLabel != null && emptyPendingLabel.gameObject.activeSelf}");
     }
 
-    // ── Search ────────────────────────────────────────────────────────────────
+    // Search
 
     private void HandleSearchButtonClicked()
     {
@@ -343,7 +341,7 @@ public class FriendListUI : MonoBehaviour
         });
     }
 
-    // ── Row Builders ──────────────────────────────────────────────────────────
+    // Row Builders
 
     private GameObject BuildFriendRow(FriendEntryDto f, Transform parent)
     {
@@ -467,7 +465,7 @@ public class FriendListUI : MonoBehaviour
         return go;
     }
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    // Actions
 
     private void OnChatWithFriend(int userId, string username)
     {
@@ -494,7 +492,7 @@ public class FriendListUI : MonoBehaviour
         profilePanel.LoadProfile(userId, username);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void OnRequestSent()
     {
@@ -1084,9 +1082,9 @@ public class FriendListUI : MonoBehaviour
         return $"{obj.name}<{obj.GetType().Name}>";
     }
 
-    // ── Mở chat riêng từ ChatPanelUI ─────────────────────────────────────────
+    // Mở chat riêng từ ChatPanelUI
 
-    /// <summary>Gọi từ ChatPanelUI khi tab "Riêng" được chọn mà chưa có target.</summary>
+    // Gọi từ ChatPanelUI khi tab "Riêng" được chọn mà chưa có target.
     public void SetPrivateChatTarget(int userId, string username)
     {
         if (ChatManager.Instance != null)
@@ -1098,7 +1096,7 @@ public class FriendListUI : MonoBehaviour
         HidePanel("SetPrivateChatTarget");
     }
 
-    // ── Default Row Builder (fallback khi chưa gán prefab) ───────────────────
+    // Default Row Builder (fallback khi chưa gán prefab)
 
     private static GameObject MakeDefaultRow(Transform parent)
     {

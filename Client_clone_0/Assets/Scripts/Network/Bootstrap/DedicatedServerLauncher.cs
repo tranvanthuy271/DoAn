@@ -4,10 +4,8 @@ using Unity.Netcode.Transports.UTP;
 using System.Diagnostics;
 using System.IO;
 
-/// <summary>
-/// Dedicated Server Launcher: Tự động start API Server và Netcode Server
-/// Chạy độc lập, không cần UI
-/// </summary>
+// Dedicated Server Launcher: Tự động start API Server và Netcode Server
+// Chạy độc lập, không cần UI
 public class DedicatedServerLauncher : MonoBehaviour
 {
     [Header("Server Config")]
@@ -61,9 +59,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Start cả API Server và Netcode Server
-    /// </summary>
+    // Start cả API Server và Netcode Server
     public void StartDedicatedServer()
     {
         if (isServerRunning)
@@ -82,9 +78,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         Invoke(nameof(StartNetcodeServer), 3f);
     }
 
-    /// <summary>
-    /// Start API Server (GameServerApi.exe)
-    /// </summary>
+    // Start API Server (GameServerApi.exe)
     private void StartAPIServer()
     {
         // Tìm path đến GameServerApi.exe
@@ -135,9 +129,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Start Netcode Server (chỉ start nếu chưa có server nào đang chạy)
-    /// </summary>
+    // Start Netcode Server (chỉ start nếu chưa có server nào đang chạy)
     private void StartNetcodeServer()
     {
         if (networkManager == null)
@@ -180,9 +172,7 @@ public class DedicatedServerLauncher : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Stop server
-    /// </summary>
+    // Stop server
     public void StopDedicatedServer()
     {
         // Stop Netcode Server/Host

@@ -4,37 +4,31 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// SecondaryGeneSelectPanel — Popup XÁC NHẬN hệ phụ CỐ ĐỊNH (không cho tự chọn).
-///
-/// Cặp hệ cố định theo cấu hình hybrid của game:
-///   Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
-///
-/// ═══════════════════════════════════════════════════════════════
-/// INSPECTOR SETUP:
-///   Header:
-///     1. TitleText          → TMP "Hệ Phụ Cố Định"
-///     2. WarningText        → TMP cảnh báo 1 lần
-///   Pair Display:
-///     3. PrimaryIcon        → Image icon hệ chính
-///     4. PrimaryNameText    → TMP tên + tier hệ chính
-///     5. SecondaryIcon      → Image icon hệ phụ
-///     6. SecondaryNameText  → TMP tên hệ phụ
-///   Preview:
-///     7. PreviewPanel       → GameObject (ẩn cho đến khi load xong)
-///     8. HybridNameText     → TMP tên hybrid
-///     9. StatBonusText      → TMP chỉ số bonus
-///    10. BonusTargetsText   → TMP hệ bị +50% sát thương
-///    11. ImmuneText         → TMP hệ miễn nhiễm
-///   Controls:
-///    12. StatusText         → TMP
-///    13. LoadingOverlay     → GameObject
-///    14. ConfirmButton      → Button
-///    15. CloseButton        → Button
-///   Sprites:
-///    16. ElementSprites     → Sprite[6] theo thứ tự ElementHelper.EnglishKeys
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// SecondaryGeneSelectPanel — Popup XÁC NHẬN hệ phụ CỐ ĐỊNH (không cho tự chọn).
+// Cặp hệ cố định theo cấu hình hybrid của game:
+// Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
+// INSPECTOR SETUP:
+// Header:
+// 1. TitleText          → TMP "Hệ Phụ Cố Định"
+// 2. WarningText        → TMP cảnh báo 1 lần
+// Pair Display:
+// 3. PrimaryIcon        → Image icon hệ chính
+// 4. PrimaryNameText    → TMP tên + tier hệ chính
+// 5. SecondaryIcon      → Image icon hệ phụ
+// 6. SecondaryNameText  → TMP tên hệ phụ
+// Preview:
+// 7. PreviewPanel       → GameObject (ẩn cho đến khi load xong)
+// 8. HybridNameText     → TMP tên hybrid
+// 9. StatBonusText      → TMP chỉ số bonus
+// 10. BonusTargetsText   → TMP hệ bị +50% sát thương
+// 11. ImmuneText         → TMP hệ miễn nhiễm
+// Controls:
+// 12. StatusText         → TMP
+// 13. LoadingOverlay     → GameObject
+// 14. ConfirmButton      → Button
+// 15. CloseButton        → Button
+// Sprites:
+// 16. ElementSprites     → Sprite[6] theo thứ tự ElementHelper.EnglishKeys
 public class SecondaryGeneSelectPanel : MonoBehaviour
 {
     public static SecondaryGeneSelectPanel Instance { get; private set; }
@@ -65,11 +59,11 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
     [Header("Shared Element Visuals")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Runtime ──────────────────────────────────────────────────
+    // Runtime
     private string _fixedSecondary;
     private PlayerDataResponse _playerData;
 
-    // ── Lifecycle ────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -85,7 +79,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         confirmButton.interactable = false;
     }
 
-    // ── Public API ───────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Open()
     {
@@ -131,7 +125,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         StartCoroutine(LoadHybridPreview());
     }
 
-    // ── Load preview ─────────────────────────────────────────────
+    // Load preview
 
     private IEnumerator LoadHybridPreview()
     {
@@ -205,7 +199,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         return elementIconConfig;
     }
 
-    // ── Confirm ──────────────────────────────────────────────────
+    // Confirm
 
     private void OnConfirmClicked()
     {
@@ -260,7 +254,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private string FriendlyElements(string csv)
     {
@@ -284,7 +278,7 @@ public class SecondaryGeneSelectPanel : MonoBehaviour
         if (loadingOverlay != null) loadingOverlay.SetActive(show);
     }
 
-    // ── Helper DTOs (chỉ dùng để parse JSON) ────────────────────
+    // Helper DTOs (chỉ dùng để parse JSON)
 
     [System.Serializable]
     private class SecondarySelectRequest

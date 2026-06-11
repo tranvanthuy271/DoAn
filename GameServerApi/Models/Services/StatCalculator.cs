@@ -3,9 +3,7 @@ using System.Text.Json;
 
 namespace GameServerApi.Models.Services
 {
-    /// <summary>
-    /// Kết quả sau khi tính toán final_stats
-    /// </summary>
+    // Kết quả sau khi tính toán final_stats
     public class FinalStats
     {
         public int   MaxHp     { get; set; }
@@ -17,28 +15,23 @@ namespace GameServerApi.Models.Services
         public float MoveSpeed { get; set; }
     }
 
-    /// <summary>
-    /// Tính toán final_stats = base_stats (đã bao gồm gene bonus) + equipment bonus + potential bonus
-    ///
-    /// Công thức:
-    ///   final.max_hp    = info.MaxHp    + equip_bonus.max_hp    + potential.max_hp
-    ///   final.max_mp    = info.MaxMp    + equip_bonus.max_mp    + potential.max_mp
-    ///   final.attack    = info.Attack   + equip_bonus.attack    + potential.attack
-    ///   final.defense   = info.Defense  + equip_bonus.defense   + potential.defense
-    ///   final.move_speed= 5.0           + equip_bonus.move_speed+ potential.move_speed
-    ///   final.hp        = min(info.Hp,  final.max_hp)  (HP hiện tại không vượt max sau khi buff)
-    ///
-    /// Equipment strOptions format: "optId,value;optId,value"  (value đã tính sẵn theo upgrade level)
-    ///   optId 1 → attack       optId 5 → attack (secondary)
-    ///   optId 2 → defense      optId 6 → defense (secondary)
-    ///   optId 3 → max_hp
-    ///   optId 4 → move_speed   (đơn vị nguyên, ví dụ 5 = +5 tốc)
-    ///
-    /// PotentialStats JSON format: { "max_hp": int, "max_mp": int, "attack": int, "defense": int, "move_speed": float }
-    /// </summary>
+    // Tính toán final_stats = base_stats (đã bao gồm gene bonus) + equipment bonus + potential bonus
+    // Công thức:
+    // final.max_hp    = info.MaxHp    + equip_bonus.max_hp    + potential.max_hp
+    // final.max_mp    = info.MaxMp    + equip_bonus.max_mp    + potential.max_mp
+    // final.attack    = info.Attack   + equip_bonus.attack    + potential.attack
+    // final.defense   = info.Defense  + equip_bonus.defense   + potential.defense
+    // final.move_speed= 5.0           + equip_bonus.move_speed+ potential.move_speed
+    // final.hp        = min(info.Hp,  final.max_hp)  (HP hiện tại không vượt max sau khi buff)
+    // Equipment strOptions format: "optId,value;optId,value"  (value đã tính sẵn theo upgrade level)
+    // optId 1 → attack       optId 5 → attack (secondary)
+    // optId 2 → defense      optId 6 → defense (secondary)
+    // optId 3 → max_hp
+    // optId 4 → move_speed   (đơn vị nguyên, ví dụ 5 = +5 tốc)
+    // PotentialStats JSON format: { "max_hp": int, "max_mp": int, "attack": int, "defense": int, "move_speed": float }
     public static class StatCalculator
     {
-        /// <summary>Hệ số nhân mặc định cho Gene Tối Thượng khi không truyền giá trị từ config.</summary>
+        // Hệ số nhân mặc định cho Gene Tối Thượng khi không truyền giá trị từ config.
         public const float DefaultUltimateMultiplier = 1.5f;
 
         public static FinalStats Compute(InfoChar baseInfo, string equipmentJson, string potentialStatsJson,
@@ -53,7 +46,7 @@ namespace GameServerApi.Models.Services
             int def    = baseInfo.Defense + eqDef + ptDef;
             float spd  = 5f              + eqSpd + ptSpd;
 
-            // ── Gene Tối Thượng: nhân toàn bộ final_stats (HP/MP/ATK/DEF) một lần ──
+            // Gene Tối Thượng: nhân toàn bộ final_stats (HP/MP/ATK/DEF) một lần
             if (baseInfo.IsUltimate && ultimateMultiplier > 0f)
             {
                 maxHp  = (int)MathF.Round(maxHp  * ultimateMultiplier);
@@ -74,7 +67,7 @@ namespace GameServerApi.Models.Services
             };
         }
 
-        // ─── Equipment bonus ────────────────────────────────────────
+        // Equipment bonus
         private static (int hp, int mp, int atk, int def, float spd)
             ParseEquipBonus(string equipmentJson)
         {
@@ -114,7 +107,7 @@ namespace GameServerApi.Models.Services
             return (hp, mp, atk, def, spd);
         }
 
-        // ─── Potential bonus ─────────────────────────────────────────
+        // Potential bonus
         // JSON lưu số điểm đã đầu tư với key: "hp", "mp", "attack", "defense", "gene"
         // Mỗi điểm có giá trị: attack=5, hp=50, mp=30, defense=3
         private const int PtValueAtk = 5;

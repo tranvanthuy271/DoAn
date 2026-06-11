@@ -115,7 +115,7 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    /// <summary>Cho phép hệ thống skill (PlayerSkillManager) kích hoạt đòn đánh thường.</summary>
+    // Cho phép hệ thống skill (PlayerSkillManager) kích hoạt đòn đánh thường.
     public void TriggerAttack(int overrideDamage = -1)
     {
         if (!canAttack) return;
@@ -133,7 +133,7 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    /// <returns>True nếu skill đánh thường hiện đang sẵn sàng.</returns>
+    // Trả về: True nếu skill đánh thường hiện đang sẵn sàng.
     public bool CanAttackNow => canAttack;
 
     private void Attack()
@@ -150,7 +150,6 @@ public class PlayerCombat : MonoBehaviour
             if (attackBonusPct > 0f)
                 damage = Mathf.RoundToInt(damage * (1f + attackBonusPct));
         }
-        // ──────────────────────────────────────────────────────────────────
 
         Debug.Log("Player attacks!");
 

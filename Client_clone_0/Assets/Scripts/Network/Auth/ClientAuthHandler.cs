@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Client-side: Gá»­i JWT token vÃ  user_id lÃªn server sau khi connect thÃ nh cÃ´ng
-/// CÃ³ thá»ƒ dÃ¹ng nhÆ° NetworkBehaviour (attach vÃ o NetworkObject) hoáº·c MonoBehaviour (gá»i trá»±c tiáº¿p)
-/// </summary>
+// Client-side: Gá»­i JWT token vÃ  user_id lÃªn server sau khi connect thÃ nh cÃ´ng
+// CÃ³ thá»ƒ dÃ¹ng nhÆ° NetworkBehaviour (attach vÃ o NetworkObject) hoáº·c MonoBehaviour (gá»i trá»±c tiáº¿p)
 public class ClientAuthHandler : NetworkBehaviour
 {
     private bool hasSentAuth = false;
@@ -21,9 +19,7 @@ public class ClientAuthHandler : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Static method Ä‘á»ƒ gá»­i auth tá»« báº¥t ká»³ Ä‘Ã¢u (khÃ´ng cáº§n NetworkObject)
-    /// </summary>
+    // Static method Ä‘á»ƒ gá»­i auth tá»« báº¥t ká»³ Ä‘Ã¢u (khÃ´ng cáº§n NetworkObject)
     public static void SendAuthAfterConnection(ulong clientId)
     {
         if (instance != null && instance.hasSentAuth)
@@ -55,9 +51,7 @@ public class ClientAuthHandler : NetworkBehaviour
         handler.SendAuthToServer();
     }
 
-    /// <summary>
-    /// Gá»­i JWT token vÃ  user_id lÃªn server Ä‘á»ƒ verify vÃ  load player data
-    /// </summary>
+    // Gá»­i JWT token vÃ  user_id lÃªn server Ä‘á»ƒ verify vÃ  load player data
     private void SendAuthToServer()
     {
         if (hasSentAuth)
@@ -80,9 +74,7 @@ public class ClientAuthHandler : NetworkBehaviour
         hasSentAuth = true;
     }
 
-    /// <summary>
-    /// ServerRpc: Gá»­i token vÃ  user_id lÃªn server
-    /// </summary>
+    // ServerRpc: Gá»­i token vÃ  user_id lÃªn server
     [ServerRpc(RequireOwnership = true)]
     private void SendAuthServerRpc(string token, int userId, int geneSlot)
     {

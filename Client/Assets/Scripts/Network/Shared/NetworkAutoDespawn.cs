@@ -1,10 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Despawns a NetworkObject after a short lifetime, or destroys a normal GameObject.
-/// Useful for transient boss/enemy effects spawned on the server.
-/// </summary>
+// Despawns a NetworkObject after a short lifetime, or destroys a normal GameObject.
+// Useful for transient boss/enemy effects spawned on the server.
 public class NetworkAutoDespawn : MonoBehaviour
 {
     [SerializeField] private float lifetime = 1f;

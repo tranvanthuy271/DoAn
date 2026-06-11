@@ -3,27 +3,21 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Linq;
 
-/// <summary>
-/// ItemTemplateManager - Quản lý item templates từ server/DB
-/// 
-/// Chức năng:
-/// - Load tất cả item templates từ API khi Start
-/// - Cache trong RAM để truy cập nhanh
-/// - Cung cấp API để lấy item template theo ID/Code
-/// - Singleton pattern để dễ dàng truy cập từ bất kỳ đâu
-/// 
-/// Setup:
-/// 1. Gắn script này vào GameObject trong scene (hoặc tạo GameObject mới tên "ItemTemplateManager")
-/// 2. Script sẽ tự động load item templates từ API khi Start
-/// 3. Các script khác có thể lấy item template: ItemTemplateManager.Instance.GetItemTemplate(id)
-/// </summary>
+// ItemTemplateManager - Quản lý item templates từ server/DB
+// Chức năng:
+// - Load tất cả item templates từ API khi Start
+// - Cache trong RAM để truy cập nhanh
+// - Cung cấp API để lấy item template theo ID/Code
+// - Singleton pattern để dễ dàng truy cập từ bất kỳ đâu
+// Setup:
+// 1. Gắn script này vào GameObject trong scene (hoặc tạo GameObject mới tên "ItemTemplateManager")
+// 2. Script sẽ tự động load item templates từ API khi Start
+// 3. Các script khác có thể lấy item template: ItemTemplateManager.Instance.GetItemTemplate(id)
 public class ItemTemplateManager : MonoBehaviour
 {
     public static ItemTemplateManager Instance { get; private set; }
 
-    /// <summary>
-    /// Đảm bảo singleton tồn tại (dành cho dedicated server, tự tạo nếu chưa có).
-    /// </summary>
+    // Đảm bảo singleton tồn tại (dành cho dedicated server, tự tạo nếu chưa có).
     public static void EnsureInstance()
     {
         if (Instance != null) return;
@@ -78,9 +72,7 @@ public class ItemTemplateManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đợi APIClient sẵn sàng rồi mới load item templates
-    /// </summary>
+    // Đợi APIClient sẵn sàng rồi mới load item templates
     private System.Collections.IEnumerator LoadItemTemplatesWhenReady()
     {
         Debug.Log("[ItemTemplateManager] ⏳ Đang đợi APIClient sẵn sàng...");
@@ -107,9 +99,7 @@ public class ItemTemplateManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Fallback: load templates trực tiếp bằng UnityWebRequest (dành cho dedicated server không có APIClient).
-    /// </summary>
+    // Fallback: load templates trực tiếp bằng UnityWebRequest (dành cho dedicated server không có APIClient).
     private System.Collections.IEnumerator LoadItemTemplatesDirect()
     {
         if (isLoading || isLoaded) yield break;
@@ -172,9 +162,7 @@ public class ItemTemplateManager : MonoBehaviour
         public ItemTemplateDto[] item_templates;
     }
 
-    /// <summary>
-    /// Load tất cả item templates từ API
-    /// </summary>
+    // Load tất cả item templates từ API
     public void LoadItemTemplatesFromAPI()
     {
         Debug.Log($"[ItemTemplateManager] 📥 LoadItemTemplatesFromAPI() called - isLoading={isLoading}, isLoaded={isLoaded}");
@@ -195,9 +183,7 @@ public class ItemTemplateManager : MonoBehaviour
         StartCoroutine(LoadItemTemplatesDirect());
     }
 
-    /// <summary>
-    /// Callback khi item templates được load thành công
-    /// </summary>
+    // Callback khi item templates được load thành công
     private void OnItemTemplatesLoaded(ItemTemplateDto[] templates)
     {
         Debug.Log($"[ItemTemplateManager] 📦 OnItemTemplatesLoaded() - Received {templates.Length} templates");
@@ -228,9 +214,7 @@ public class ItemTemplateManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Lấy item template theo ID
-    /// </summary>
+    // Lấy item template theo ID
     public ItemTemplateDto GetItemTemplate(int id)
     {
         if (!isLoaded)
@@ -252,9 +236,7 @@ public class ItemTemplateManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Lấy item template theo code
-    /// </summary>
+    // Lấy item template theo code
     public ItemTemplateDto GetItemTemplateByCode(string code)
     {
         if (!isLoaded)
@@ -277,9 +259,7 @@ public class ItemTemplateManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Lấy tất cả item templates
-    /// </summary>
+    // Lấy tất cả item templates
     public ItemTemplateDto[] GetAllItemTemplates()
     {
         if (!isLoaded)
@@ -291,49 +271,37 @@ public class ItemTemplateManager : MonoBehaviour
         return itemTemplatesById.Values.ToArray();
     }
 
-    /// <summary>
-    /// Kiểm tra item template có tồn tại không
-    /// </summary>
+    // Kiểm tra item template có tồn tại không
     public bool HasItemTemplate(int id)
     {
         return isLoaded && itemTemplatesById.ContainsKey(id);
     }
 
-    /// <summary>
-    /// Kiểm tra item template có tồn tại không (theo code)
-    /// </summary>
+    // Kiểm tra item template có tồn tại không (theo code)
     public bool HasItemTemplateByCode(string code)
     {
         return isLoaded && !string.IsNullOrEmpty(code) && itemTemplatesByCode.ContainsKey(code);
     }
 
-    /// <summary>
-    /// Lấy số lượng item templates đã load
-    /// </summary>
+    // Lấy số lượng item templates đã load
     public int GetItemTemplateCount()
     {
         return itemTemplatesById.Count;
     }
 
-    /// <summary>
-    /// Kiểm tra đã load xong chưa
-    /// </summary>
+    // Kiểm tra đã load xong chưa
     public bool IsLoaded()
     {
         return isLoaded;
     }
 
-    /// <summary>
-    /// Kiểm tra đang loading không
-    /// </summary>
+    // Kiểm tra đang loading không
     public bool IsLoading()
     {
         return isLoading;
     }
 
-    /// <summary>
-    /// Force reload item templates từ API (reset cả isLoading để tránh bị block)
-    /// </summary>
+    // Force reload item templates từ API (reset cả isLoading để tránh bị block)
     public void Reload()
     {
         isLoaded = false;

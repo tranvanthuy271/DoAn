@@ -2,14 +2,10 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Script để update position của player lên server khi disconnect hoặc out game
-/// </summary>
+// Script để update position của player lên server khi disconnect hoặc out game
 public class PlayerPositionUpdater : NetworkBehaviour
 {
-    /// <summary>
-    /// Update position lên server
-    /// </summary>
+    // Update position lên server
     private void UpdatePositionToServer(bool useCoroutine = true)
     {
         // Hybrid architecture: server persists player position on disconnect via
@@ -17,25 +13,19 @@ public class PlayerPositionUpdater : NetworkBehaviour
         // pushes are no longer used.
     }
 
-    /// <summary>
-    /// Update position trực tiếp không dùng coroutine (cho OnDestroy)
-    /// </summary>
+    // Update position trực tiếp không dùng coroutine (cho OnDestroy)
     private void UpdatePositionDirect(int userId, int mapId, float positionX, float positionY)
     {
         return;
     }
 
-    /// <summary>
-    /// Coroutine để update position
-    /// </summary>
+    // Coroutine để update position
     private IEnumerator UpdatePositionCoroutine(int userId, int mapId, float positionX, float positionY)
     {
         yield break;
     }
 
-    /// <summary>
-    /// Update position ngay lập tức (gọi khi disconnect)
-    /// </summary>
+    // Update position ngay lập tức (gọi khi disconnect)
     public void UpdatePositionOnDisconnect()
     {
         UpdatePositionToServer(useCoroutine: false); // Không dùng coroutine khi disconnect

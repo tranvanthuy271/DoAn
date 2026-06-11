@@ -3,18 +3,14 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Server-side NetworkBehaviour: xử lý yêu cầu chuyển zone từ client.
-///
-/// Flow:
-///   1. Client bước vào ZoneTransitionTrigger (BoxCollider2D)
-///   2. Client gọi RequestZoneTransferServerRpc(targetZoneId, targetEntryPointId)
-///   3. Server validate → save position qua API → fetch địa chỉ zone mới
-///   4. Server gọi BeginZoneTransferClientRpc(ip, port, entryPointId) đến đúng client đó
-///   5. Client ngắt kết nối → kết nối lại zone mới
-///
-/// Gắn vào: persistent NetworkObject trong server scene.
-/// </summary>
+// Server-side NetworkBehaviour: xử lý yêu cầu chuyển zone từ client.
+// Flow:
+// 1. Client bước vào ZoneTransitionTrigger (BoxCollider2D)
+// 2. Client gọi RequestZoneTransferServerRpc(targetZoneId, targetEntryPointId)
+// 3. Server validate → save position qua API → fetch địa chỉ zone mới
+// 4. Server gọi BeginZoneTransferClientRpc(ip, port, entryPointId) đến đúng client đó
+// 5. Client ngắt kết nối → kết nối lại zone mới
+// Gắn vào: persistent NetworkObject trong server scene.
 [DisallowMultipleComponent]
 public class ZoneTransitionManager : NetworkBehaviour
 {
@@ -27,14 +23,12 @@ public class ZoneTransitionManager : NetworkBehaviour
     // Theo dõi cooldown mỗi client
     private readonly System.Collections.Generic.Dictionary<ulong, float> _lastTransferTime = new();
 
-    // ── Server RPCs ───────────────────────────────────────────────────────────
+    // Server RPCs
 
-    /// <summary>
-    /// Client gọi khi muốn chuyển zone.
-    /// </summary>
-    /// <param name="targetMapId">Map ID đích</param>
-    /// <param name="targetZoneId">Zone ID đích trong map đó</param>
-    /// <param name="entryPointId">Entry point index trong zone đích</param>
+    // Client gọi khi muốn chuyển zone.
+    // Tham số targetMapId: Map ID đích
+    // Tham số targetZoneId: Zone ID đích trong map đó
+    // Tham số entryPointId: Entry point index trong zone đích
     [ServerRpc(RequireOwnership = false)]
     public void RequestZoneTransferServerRpc(int targetMapId, int targetZoneId, int entryPointId,
                                               ServerRpcParams rpcParams = default)
@@ -66,11 +60,9 @@ public class ZoneTransitionManager : NetworkBehaviour
         StartCoroutine(ProcessZoneTransfer(clientId, targetMapId, targetZoneId, entryPointId, playerPos));
     }
 
-    // ── Client RPCs ───────────────────────────────────────────────────────────
+    // Client RPCs
 
-    /// <summary>
-    /// Server gửi cho đúng client: thông tin zone server mới để kết nối.
-    /// </summary>
+    // Server gửi cho đúng client: thông tin zone server mới để kết nối.
     [ClientRpc]
     private void BeginZoneTransferClientRpc(string zoneServerIp, ushort zoneServerPort,
                                              int entryPointId, string targetSceneName,
@@ -81,9 +73,7 @@ public class ZoneTransitionManager : NetworkBehaviour
                                                             entryPointId, targetSceneName);
     }
 
-    /// <summary>
-    /// Server thông báo transfer thất bại — client hiển thị thông báo lỗi.
-    /// </summary>
+    // Server thông báo transfer thất bại — client hiển thị thông báo lỗi.
     [ClientRpc]
     private void ZoneTransferFailedClientRpc(string reason, ClientRpcParams rpcParams = default)
     {
@@ -91,7 +81,7 @@ public class ZoneTransitionManager : NetworkBehaviour
         // TODO: client hiển thị UI thông báo lỗi
     }
 
-    // ── Internal: Process Transfer ────────────────────────────────────────────
+    // Internal: Process Transfer
 
     private System.Collections.IEnumerator ProcessZoneTransfer(
         ulong clientId, int targetMapId, int targetZoneId, int entryPointId, Vector3 playerPos)
@@ -195,7 +185,7 @@ public class ZoneTransitionManager : NetworkBehaviour
         return Vector3.zero;
     }
 
-    // ── DTO ───────────────────────────────────────────────────────────────────
+    // DTO
 
     [Serializable]
     private class ZoneAddressResponse

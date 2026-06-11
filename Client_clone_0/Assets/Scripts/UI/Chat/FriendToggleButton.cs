@@ -2,11 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Nút HUD để mở/đóng Friend List Panel.
-/// Gắn script này lên Button trong Canvas HUD.
-/// Hiển thị badge khi có lời mời kết bạn đang chờ.
-/// </summary>
+// Nút HUD để mở/đóng Friend List Panel.
+// Gắn script này lên Button trong Canvas HUD.
+// Hiển thị badge khi có lời mời kết bạn đang chờ.
 [RequireComponent(typeof(Button))]
 public class FriendToggleButton : MonoBehaviour
 {
@@ -17,7 +15,7 @@ public class FriendToggleButton : MonoBehaviour
     [SerializeField] private GameObject      badgeRoot;
     [SerializeField] private TextMeshProUGUI badgeText;
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -53,7 +51,7 @@ public class FriendToggleButton : MonoBehaviour
             FriendManager.Instance.OnFriendListLoaded -= OnFriendListLoaded;
     }
 
-    // ── Click ─────────────────────────────────────────────────────────────────
+    // Click
 
     private void OnClicked()
     {
@@ -85,7 +83,7 @@ public class FriendToggleButton : MonoBehaviour
         return panel != null && panel.gameObject.scene.IsValid() && panel.gameObject.scene.isLoaded;
     }
 
-    // ── Badge ─────────────────────────────────────────────────────────────────
+    // Badge
 
     private void OnFriendListLoaded(System.Collections.Generic.List<FriendEntryDto> friends)
     {

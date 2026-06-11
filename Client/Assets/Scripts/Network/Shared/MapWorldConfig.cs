@@ -1,13 +1,10 @@
 using System;
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject duy nhất chứa toàn bộ config maps + zones + server network.
-/// Thay thế nhiều ZoneServerConfig riêng lẻ — học từ LangLa Map[] maps pattern.
-///
-/// Tạo: Assets → Create → DoAn → MapWorldConfig
-/// Chỉ cần 1 asset cho toàn bộ game.
-/// </summary>
+// ScriptableObject duy nhất chứa toàn bộ config maps + zones + server network.
+// Thay thế nhiều ZoneServerConfig riêng lẻ — học từ LangLa Map[] maps pattern.
+// Tạo: Assets → Create → DoAn → MapWorldConfig
+// Chỉ cần 1 asset cho toàn bộ game.
 [CreateAssetMenu(fileName = "MapWorldConfig", menuName = "DoAn/MapWorldConfig")]
 public class MapWorldConfig : ScriptableObject
 {
@@ -28,10 +25,8 @@ public class MapWorldConfig : ScriptableObject
     [Tooltip("IP public mà client dùng để kết nối")]
     public string publicIp = "127.0.0.1";
 
-    /// <summary>
-    /// Đồng bộ runtime endpoints từ ServerAddressConfig.
-    /// CLI args trong MapWorldBootstrap vẫn có thể override lại sau bước này.
-    /// </summary>
+    // Đồng bộ runtime endpoints từ ServerAddressConfig.
+    // CLI args trong MapWorldBootstrap vẫn có thể override lại sau bước này.
     public void ResolveFromGlobalConfig()
     {
         var cfg = ServerAddressConfig.Instance;
@@ -86,9 +81,9 @@ public class MapWorldConfig : ScriptableObject
     [Tooltip("Danh sách toàn bộ map. Map thường tự sinh zone mặc định khi server start; map phó bản chỉ tạo zone riêng khi cần.")]
     public MapDefinition[] maps = Array.Empty<MapDefinition>();
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>JWT secret từ env var → fallback dev field.</summary>
+    // JWT secret từ env var → fallback dev field.
     public string GetJwtSecret()
     {
         string v = System.Environment.GetEnvironmentVariable("JWT_SECRET");
@@ -99,7 +94,7 @@ public class MapWorldConfig : ScriptableObject
             "Đặt env var JWT_SECRET hoặc điền jwtSecretDevOnly (chỉ dev).");
     }
 
-    /// <summary>API key từ env var → fallback dev field.</summary>
+    // API key từ env var → fallback dev field.
     public string GetZoneApiKey()
     {
         string v = System.Environment.GetEnvironmentVariable("ZONE_API_KEY");
@@ -182,7 +177,7 @@ public class MapWorldConfig : ScriptableObject
             : new[] { Vector2.zero };
     }
 
-    /// <summary>Tìm MapDefinition theo mapId.</summary>
+    // Tìm MapDefinition theo mapId.
     public MapDefinition GetMap(int mapId)
     {
         foreach (var m in maps)
@@ -190,7 +185,7 @@ public class MapWorldConfig : ScriptableObject
         return null;
     }
 
-    /// <summary>Tìm ZoneDefinition theo mapId + zoneId.</summary>
+    // Tìm ZoneDefinition theo mapId + zoneId.
     public ZoneDefinition GetZone(int mapId, int zoneId)
     {
         var map = GetMap(mapId);
@@ -210,11 +205,9 @@ public class MapWorldConfig : ScriptableObject
     }
 }
 
-// ── Data classes ──────────────────────────────────────────────────────────────
+// Data classes
 
-/// <summary>
-/// Định nghĩa 1 map (tương đương MapTemplate + Map trong LangLa).
-/// </summary>
+// Định nghĩa 1 map (tương đương MapTemplate + Map trong LangLa).
 [Serializable]
 public class MapDefinition
 {
@@ -315,10 +308,8 @@ public enum MapZoneTopology
     InstanceOnly = 1
 }
 
-/// <summary>
-/// Định nghĩa 1 zone trong map (tương đương Zone trong LangLa).
-/// Zone là logical room — không phải separate process hay port.
-/// </summary>
+// Định nghĩa 1 zone trong map (tương đương Zone trong LangLa).
+// Zone là logical room — không phải separate process hay port.
 [Serializable]
 public class ZoneDefinition
 {
@@ -337,7 +328,7 @@ public class ZoneDefinition
     [Tooltip("True nếu đây là zone riêng runtime (phó bản / party / solo room).")]
     public bool isCustom = false;
 
-    /// <summary>Key dùng để nhận diện zone duy nhất, giống roomId trong LangLa.</summary>
+    // Key dùng để nhận diện zone duy nhất, giống roomId trong LangLa.
     public string GetZoneKey(int mapId) => $"map{mapId}_zone{zoneId}";
 }
 

@@ -36,6 +36,7 @@ GameObject:
   - component: {fileID: -2009725894336423313}
   - component: {fileID: -4355781942378072889}
   - component: {fileID: 9016549966096875141}
+  - component: {fileID: 6520275398537850801}
   m_Layer: 8
   m_Name: F_Hoa
   m_TagString: Player
@@ -196,7 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1772348032
+  GlobalObjectIdHash: 913027327
   InScenePlacedSourceGlobalObjectIdHash: 3881043348
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -295,6 +296,8 @@ MonoBehaviour:
     effectConfig: {fileID: 0}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -316,6 +319,8 @@ MonoBehaviour:
     effectConfig: {fileID: 0}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -337,6 +342,8 @@ MonoBehaviour:
     effectConfig: {fileID: 11400000, guid: 4cb0adaadb7fecb43806cc370205de32, type: 2}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -358,6 +365,8 @@ MonoBehaviour:
     effectConfig: {fileID: 11400000, guid: 4cb0adaadb7fecb43806cc370205de32, type: 2}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -379,6 +388,8 @@ MonoBehaviour:
     effectConfig: {fileID: 11400000, guid: 4cb0adaadb7fecb43806cc370205de32, type: 2}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -400,6 +411,8 @@ MonoBehaviour:
     effectConfig: {fileID: 11400000, guid: 4cb0adaadb7fecb43806cc370205de32, type: 2}
     currentEffectValue: 0
     currentMpCost: 0
+    isUnlocked: 1
+    requiredPlayerLevel: 1
     cooldownTimer: 0
     canUse: 0
     isUsing: 0
@@ -483,6 +496,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxSlots: 20
+  verboseInventoryLogs: 0
   OnItemAdded:
     m_PersistentCalls:
       m_Calls: []
@@ -666,6 +680,145 @@ MonoBehaviour:
     m_InternalValue: 5
   networkGeneTier:
     m_InternalValue: 1
+  networkIsUltimate:
+    m_InternalValue: 0
+  networkUltimateAuraPath:
+    m_InternalValue:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0048:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0064:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0080:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0096:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0112: 0
+        byte0113: 0
+        byte0114: 0
+        byte0115: 0
+        byte0116: 0
+        byte0117: 0
+        byte0118: 0
+        byte0119: 0
+        byte0120: 0
+        byte0121: 0
+        byte0122: 0
+        byte0123: 0
+        byte0124: 0
+        byte0125: 0
   networkGeneExpBonusPct:
     m_InternalValue: 0
   networkExpBonusPct:
@@ -1219,6 +1372,22 @@ MonoBehaviour:
   defenseDownColor: {r: 0.5, g: 0, b: 0, a: 0.5}
   armorBuffColor: {r: 0.2, g: 0.8, b: 1, a: 0.6}
   attackBuffColor: {r: 1, g: 0.85, b: 0.1, a: 0.5}
+--- !u!114 &6520275398537850801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 516947175467335845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2ece97258a465043a99c00a6fef015a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  auraDatabase: {fileID: 0}
+  defaultAuraResourcePath: Prefabs/Player/Aura/UltimateAura
+  backOffset: {x: 0, y: 1.17, z: 0}
+  sortingOrderOffset: -1
 --- !u!1 &922029050707760895
 GameObject:
   m_ObjectHideFlags: 0

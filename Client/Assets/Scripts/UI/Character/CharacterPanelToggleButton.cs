@@ -1,14 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// CharacterPanelToggleButton – Nút mở/đóng toàn bộ panel nhân vật + túi.
-///
-/// Setup:
-/// 1. Gắn script này lên Button trong UI (ví dụ: nút hình nhân vật/kiếm).
-/// 2. Kéo InformationPanelController vào slot informationPanel (ưu tiên).
-///    Nếu không dùng InformationPanelController, kéo CharacterPanelController vào slot characterPanel.
-/// </summary>
+// CharacterPanelToggleButton – Nút mở/đóng toàn bộ panel nhân vật + túi.
+// Setup:
+// 1. Gắn script này lên Button trong UI (ví dụ: nút hình nhân vật/kiếm).
+// 2. Kéo InformationPanelController vào slot informationPanel (ưu tiên).
+// Nếu không dùng InformationPanelController, kéo CharacterPanelController vào slot characterPanel.
 [RequireComponent(typeof(Button))]
 public class CharacterPanelToggleButton : MonoBehaviour
 {

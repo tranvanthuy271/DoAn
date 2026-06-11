@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Normalized player equipment — replaces equipment JSON blob in player_data.
-    /// One row per equipped slot per player.
-    /// </summary>
+    // Normalized player equipment — replaces equipment JSON blob in player_data.
+    // One row per equipped slot per player.
     [Table("player_equipment")]
     public class PlayerEquipment
     {
@@ -17,7 +15,7 @@ namespace GameServerApi.Models.Entities
         [Column("player_id")]
         public int PlayerId { get; set; }
 
-        /// <summary>Slot name: helmet, weapon, armor, pants, boots, ring</summary>
+        // Slot name: helmet, weapon, armor, pants, boots, ring
         [Column("slot")]
         [MaxLength(20)]
         public string Slot { get; set; } = "";
@@ -28,7 +26,7 @@ namespace GameServerApi.Models.Entities
         [Column("upgrade_level")]
         public int UpgradeLevel { get; set; } = 0;
 
-        /// <summary>Format: "optId,tierVal;optId,tierVal" — same as legacy strOptions.</summary>
+        // Format: "optId,tierVal;optId,tierVal" — same as legacy strOptions.
         [Column("str_options")]
         [MaxLength(500)]
         public string StrOptions { get; set; } = "";

@@ -1,18 +1,14 @@
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Hệ thống bình hồi phục HP/MP cho player.
-///
-/// Cách dùng:
-///   - Gắn script này lên Player Prefab (cùng object với NetworkPlayerDataSync)
-///   - Config phím và lượng hồi phục trong Inspector
-///   - Nhấn phím để uống bình (có cooldown để tránh spam)
-///
-/// Phím mặc định:
-///   H = Bình máu (HP Potion)
-///   M = Bình mana (MP Potion)
-/// </summary>
+// Hệ thống bình hồi phục HP/MP cho player.
+// Cách dùng:
+// - Gắn script này lên Player Prefab (cùng object với NetworkPlayerDataSync)
+// - Config phím và lượng hồi phục trong Inspector
+// - Nhấn phím để uống bình (có cooldown để tránh spam)
+// Phím mặc định:
+// H = Bình máu (HP Potion)
+// M = Bình mana (MP Potion)
 public class PotionUsage : NetworkBehaviour
 {
     [Header("HP Potion (Bình Máu)")]
@@ -35,7 +31,7 @@ public class PotionUsage : NetworkBehaviour
     [Tooltip("Cooldown bình mana (giây)")]
     [SerializeField] private float mpPotionCooldown = 5f;
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private float hpCooldownTimer;
     private float mpCooldownTimer;
     private NetworkPlayerDataSync dataSync;
@@ -64,7 +60,7 @@ public class PotionUsage : NetworkBehaviour
             UseMpPotion();
     }
 
-    // ── Potion Actions ────────────────────────────────────────────────────────
+    // Potion Actions
 
     private void UseHpPotion()
     {
@@ -103,19 +99,19 @@ public class PotionUsage : NetworkBehaviour
         Debug.Log($"[PotionUsage] Uống bình MP – hồi {mpRestoreAmount} MP");
     }
 
-    // ── Public API (dùng cho UI) ──────────────────────────────────────────────
+    // Public API (dùng cho UI)
 
-    /// <summary>% cooldown bình HP (0 = sẵn sàng, 1 = đang CD).</summary>
+    // % cooldown bình HP (0 = sẵn sàng, 1 = đang CD).
     public float GetHpCooldownPercent() =>
         hpPotionCooldown > 0f ? Mathf.Clamp01(hpCooldownTimer / hpPotionCooldown) : 0f;
 
-    /// <summary>% cooldown bình MP (0 = sẵn sàng, 1 = đang CD).</summary>
+    // % cooldown bình MP (0 = sẵn sàng, 1 = đang CD).
     public float GetMpCooldownPercent() =>
         mpPotionCooldown > 0f ? Mathf.Clamp01(mpCooldownTimer / mpPotionCooldown) : 0f;
 
-    /// <summary>Giây còn lại của cooldown bình HP.</summary>
+    // Giây còn lại của cooldown bình HP.
     public float GetHpCooldownRemaining() => Mathf.Max(0f, hpCooldownTimer);
 
-    /// <summary>Giây còn lại của cooldown bình MP.</summary>
+    // Giây còn lại của cooldown bình MP.
     public float GetMpCooldownRemaining() => Mathf.Max(0f, mpCooldownTimer);
 }

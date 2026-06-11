@@ -13,69 +13,65 @@ using Microsoft.Extensions.Logging;
 
 namespace GameServerApi.Services
 {
-    /// <summary>
-    /// Cache tất cả config tables vào memory khi server khởi động.
-    /// Giảm latency cho API không cần query DB mỗi request.
-    ///
-    /// Sử dụng: inject IGameConfigCache vào controller.
-    ///   var enemy = _cache.GetEnemy(enemyId);
-    ///   var spawns = _cache.GetSpawnsByMap(mapId);
-    ///
-    /// Reload: POST /api/admin/reload-config hoặc gọi ReloadAllAsync()
-    /// </summary>
+    // Cache tất cả config tables vào memory khi server khởi động.
+    // Giảm latency cho API không cần query DB mỗi request.
+    // Sử dụng: inject IGameConfigCache vào controller.
+    // var enemy = _cache.GetEnemy(enemyId);
+    // var spawns = _cache.GetSpawnsByMap(mapId);
+    // Reload: POST /api/admin/reload-config hoặc gọi ReloadAllAsync()
     public interface IGameConfigCache
     {
-        // ── Enemy ──
+        // Enemy
         Enemy? GetEnemy(int enemyId);
         IReadOnlyList<Enemy> GetAllEnemies();
 
-        // ── Spawn ──
+        // Spawn
         IReadOnlyList<EnemySpawn> GetSpawnsByMap(int mapId);
         IReadOnlyList<EnemySpawn> GetAllSpawns();
 
-        // ── Boss ──
+        // Boss
         BossConfig? GetBossConfig(int bossId);
 
-        // ── Item ──
+        // Item
         ItemTemplate? GetItem(int itemId);
         IReadOnlyList<ItemTemplate> GetAllItems();
         IReadOnlyList<ItemEffectTemplate> GetItemEffects(int itemTemplateId);
 
-        // ── Skill ──
+        // Skill
         SkillTemplate? GetSkill(int skillId);
         SkillTemplate? GetSkillByCode(string skillCode);
         IReadOnlyList<SkillTemplate> GetAllSkills();
 
-        // ── Option Template ──
+        // Option Template
         OptionTemplate? GetOption(int optionId);
         IReadOnlyList<OptionTemplate> GetAllOptions();
 
-        // ── Upgrade ──
+        // Upgrade
         EquipmentUpgradeConfig? GetUpgradeConfig(int level);
 
-        // ── Exp ──
+        // Exp
         ExpRequirement? GetExpRequirement(int level);
 
-        // ── Gene ──
+        // Gene
         GeneUpgradeConfig? GetGeneUpgrade(int tierFrom, string elementType);
         GeneMultiConfig? GetGeneMulti(int tierFrom, string elementType);
         GeneTierStatConfig? GetGeneTierStat(string elementType, int tierTo);
         GeneHybridConfig? GetHybrid(int hybridId);
         IReadOnlyList<GeneHybridSkill> GetHybridSkills(int hybridId);
 
-        // ── Map ──
+        // Map
         MapConfig? GetMap(int mapId);
         IReadOnlyList<MapPortal> GetPortalsBySourceMap(int sourceMapId);
 
-        // ── NPC ──
+        // NPC
         NpcConfig? GetNpc(int npcId);
         IReadOnlyList<NpcDialogue> GetDialogues(int npcId);
 
-        // ── Dungeon ──
+        // Dungeon
         DungeonConfig? GetDungeon(int dungeonId);
         IReadOnlyList<DungeonConfig> GetAllDungeons();
 
-        // ── Reload ──
+        // Reload
         Task ReloadAllAsync(CancellationToken ct = default);
     }
 
@@ -84,7 +80,7 @@ namespace GameServerApi.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<GameConfigCache> _logger;
 
-        // ── Dictionaries ──
+        // Dictionaries
         private ConcurrentDictionary<int, Enemy> _enemies = new();
         private ConcurrentDictionary<int, List<EnemySpawn>> _spawnsByMap = new();
         private List<EnemySpawn> _allSpawns = new();
@@ -113,7 +109,7 @@ namespace GameServerApi.Services
             _logger = logger;
         }
 
-        // ── IHostedService ──────────────────────────────────
+        // IHostedService
         public async Task StartAsync(CancellationToken ct)
         {
             _logger.LogInformation("GameConfigCache: Loading all config tables...");
@@ -123,7 +119,7 @@ namespace GameServerApi.Services
 
         public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
 
-        // ── Reload ──────────────────────────────────────────
+        // Reload
         public async Task ReloadAllAsync(CancellationToken ct = default)
         {
             using var scope = _scopeFactory.CreateScope();
@@ -219,7 +215,7 @@ namespace GameServerApi.Services
                 _enemies.Count, _allSpawns.Count, _items.Count, _skills.Count, _options.Count);
         }
 
-        // ── Getters ─────────────────────────────────────────
+        // Getters
 
         public Enemy? GetEnemy(int enemyId) => _enemies.GetValueOrDefault(enemyId);
         public IReadOnlyList<Enemy> GetAllEnemies() => _enemies.Values.ToList();

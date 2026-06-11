@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Loại skill — dùng để phân biệt cách kích hoạt trong PlayerSkillManager.</summary>
+// Loại skill — dùng để phân biệt cách kích hoạt trong PlayerSkillManager.
 public enum SkillType
 {
     Projectile,    // Bắn đạn theo hướng player
@@ -21,10 +21,8 @@ public enum SkillType
     NormalAttack     // Đánh thường: delegate sang PlayerCombat, kích hoạt bằng Z / LMB
 }
 
-/// <summary>
-/// Class chứa thông tin của một skill projectile
-/// Mỗi skill có thể có projectile prefab, key, cooldown, animation riêng
-/// </summary>
+// Class chứa thông tin của một skill projectile
+// Mỗi skill có thể có projectile prefab, key, cooldown, animation riêng
 [System.Serializable]
 public class SkillData
 {
@@ -101,29 +99,19 @@ public class SkillData
     [SerializeField] private bool canUse = true;
     [SerializeField] private bool isUsing = false;
     
-    /// <summary>
-    /// Kiểm tra xem skill có thể sử dụng không
-    /// </summary>
+    // Kiểm tra xem skill có thể sử dụng không
     public bool CanUse() => isUnlocked && canUse;
     
-    /// <summary>
-    /// Kiểm tra xem skill đang được sử dụng không
-    /// </summary>
+    // Kiểm tra xem skill đang được sử dụng không
     public bool IsUsing() => isUsing;
     
-    /// <summary>
-    /// Lấy phần trăm cooldown (0 = đang cooldown, 1 = sẵn sàng)
-    /// </summary>
+    // Lấy phần trăm cooldown (0 = đang cooldown, 1 = sẵn sàng)
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - (cooldownTimer / cooldown));
 
-    /// <summary>
-    /// Lấy thời gian cooldown còn lại (giây). Trả về 0 nếu skill sẵn sàng.
-    /// </summary>
+    // Lấy thời gian cooldown còn lại (giây). Trả về 0 nếu skill sẵn sàng.
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
     
-    /// <summary>
-    /// Update cooldown timer
-    /// </summary>
+    // Update cooldown timer
     public void UpdateCooldown(float deltaTime)
     {
         if (!canUse)
@@ -137,9 +125,7 @@ public class SkillData
         }
     }
     
-    /// <summary>
-    /// Bắt đầu sử dụng skill
-    /// </summary>
+    // Bắt đầu sử dụng skill
     public void StartUsing()
     {
         isUsing = true;
@@ -147,17 +133,13 @@ public class SkillData
         cooldownTimer = cooldown;
     }
     
-    /// <summary>
-    /// Kết thúc sử dụng skill
-    /// </summary>
+    // Kết thúc sử dụng skill
     public void StopUsing()
     {
         isUsing = false;
     }
     
-    /// <summary>
-    /// Reset skill state
-    /// </summary>
+    // Reset skill state
     public void Reset()
     {
         isUsing = false;

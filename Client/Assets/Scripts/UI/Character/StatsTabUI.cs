@@ -3,21 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// StatsTabUI – Tab "Nhân vật" (tab 0 trong CharacterPanel).
-///
-/// Hiển thị:
-///  • Tên / Level / Element / Gene Tier
-///  • Thanh HP live (realtime) + Thanh MP
-///  • ATK, Move Speed, Vàng
-///  • Danh sách trang bị đang mặc (weapon/armor/pants/boots + helmet/accessory nếu có)
-///    mỗi slot có tên, level nâng cấp, nút "Nâng cấp"
-///
-/// Setup Inspector:
-///   1-7.  Các TMP_Text + Slider như cũ.
-///   8.    equipListContainer  – Transform cha chứa các dòng trang bị (VLG)
-///   9.    equipRowPrefab      – Prefab EquipRowUI
-/// </summary>
+// StatsTabUI – Tab "Nhân vật" (tab 0 trong CharacterPanel).
+// Hiển thị:
+// • Tên / Level / Element / Gene Tier
+// • Thanh HP live (realtime) + Thanh MP
+// • ATK, Move Speed, Vàng
+// • Danh sách trang bị đang mặc (weapon/armor/pants/boots + helmet/accessory nếu có)
+// mỗi slot có tên, level nâng cấp, nút "Nâng cấp"
+// Setup Inspector:
+// 1-7.  Các TMP_Text + Slider như cũ.
+// 8.    equipListContainer  – Transform cha chứa các dòng trang bị (VLG)
+// 9.    equipRowPrefab      – Prefab EquipRowUI
 public class StatsTabUI : MonoBehaviour
 {
     [Header("Nhân vật")]
@@ -52,7 +48,7 @@ public class StatsTabUI : MonoBehaviour
     // EXP cần để tự lên Gene Tối Thượng — khớp GeneUltimateSettings.DefaultExpRequired bên server.
     private const int GeneUltimateExpRequired = 1_000_000;
 
-    // ── Runtime ──────────────────────────────────────────────
+    // Runtime
     private int   _playerId = -1;
     private int   _maxHp;
     private int   _maxMp;
@@ -64,7 +60,7 @@ public class StatsTabUI : MonoBehaviour
 
     private readonly List<EquipRowUI> _equipRows = new List<EquipRowUI>();
 
-    // ── Lifecycle ─────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -75,7 +71,7 @@ public class StatsTabUI : MonoBehaviour
     private void OnEnable()  => Load();
     private void OnDisable() => UnsubscribeHealth();
 
-    // ── Public API ────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void SetPlayerId(int id) => _playerId = id;
 
@@ -111,7 +107,7 @@ public class StatsTabUI : MonoBehaviour
 
         SetStatus("");
 
-        // ─── Tên / Level ─────────────────────────────────────
+        // Tên / Level
         if (txtCharacterName != null)
             txtCharacterName.text = string.IsNullOrEmpty(pd.character_name) ? "Chưa đặt tên" : pd.character_name;
 
@@ -128,7 +124,7 @@ public class StatsTabUI : MonoBehaviour
                 txtLevel.text = $"Lv. {pd.level} (MAX)";
         }
 
-        // ─── Element / Gene ────────────────────────────────────
+        // Element / Gene
         if (txtElement != null)
         {
             string stars  = new string('★', pd.gene_tier) + new string('☆', Mathf.Max(0, 5 - pd.gene_tier));
@@ -137,7 +133,7 @@ public class StatsTabUI : MonoBehaviour
             txtElement.text = $"Hệ {pd.element_type}{hybrid}  {stars}  (Gene Tier {pd.gene_tier}){ultimate}";
         }
 
-        // ─── Stats ────────────────────────────────────────────
+        // Stats
         bool hasFinal = pd.final_stats != null;
         _maxHp = hasFinal ? pd.final_stats.max_hp : (pd.base_stats?.max_hp ?? 0);
         _maxMp = hasFinal ? pd.final_stats.max_mp : (pd.base_stats?.max_mp ?? 0);
@@ -152,11 +148,11 @@ public class StatsTabUI : MonoBehaviour
         UpdateMpBar(_maxMp, _maxMp);
         FindAndSubscribeHealth();
 
-        // ─── Trang bị ─────────────────────────────────────────
+        // Trang bị
         LoadEquipmentSection(pd.equipment);
     }
 
-    // ── Equipment section ─────────────────────────────────────
+    // Equipment section
 
     private void LoadEquipmentSection(EquipmentData eq)
     {
@@ -311,7 +307,7 @@ public class StatsTabUI : MonoBehaviour
         _equipRows.Clear();
     }
 
-    // ── HP live ───────────────────────────────────────────────
+    // HP live
 
     private void FindAndSubscribeHealth()
     {
@@ -352,13 +348,11 @@ public class StatsTabUI : MonoBehaviour
         UpdateHpBar(current, _maxHp);
     }
 
-    // ── UI helpers ────────────────────────────────────────────
+    // UI helpers
 
-    /// <summary>
-    /// Gợi tiến độ Gene Tối Thượng để gắn vào cuối dòng Hệ/Gene trong bảng thông số.
-    /// Chỉ nhân vật Hybrid mới tích lũy; khi đạt mốc sẽ tự động kích hoạt.
-    /// Trả về chuỗi rỗng nếu chưa Hybrid.
-    /// </summary>
+    // Gợi tiến độ Gene Tối Thượng để gắn vào cuối dòng Hệ/Gene trong bảng thông số.
+    // Chỉ nhân vật Hybrid mới tích lũy; khi đạt mốc sẽ tự động kích hoạt.
+    // Trả về chuỗi rỗng nếu chưa Hybrid.
     private string BuildUltimateSuffix(bool isHybrid, bool isUltimate, int ultimateExp)
     {
         if (!isHybrid)

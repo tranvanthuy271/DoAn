@@ -4,24 +4,19 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Unity.Netcode;
 
-/// <summary>
-/// Server-authoritative NPC manager — thay thế NpcSpawner.cs.
-///
-/// Chỉ chạy spawn logic khi IsServer (đúng với cả Host và dedicated server sau này).
-/// Client không cần làm gì — NGO tự replicate NetworkObject sang client khi server Spawn().
-///
-/// Setup Inspector:
-///   apiBase  = "http://localhost:5000"
-///   mapId    = mapId của scene này (đặt số cụ thể, ví dụ: 1)
-///   npcPrefabs[0] = NPC_Shop_Prefab        (npc_type = "shop")
-///   npcPrefabs[1] = NPC_Blacksmith_Prefab  (npc_type = "blacksmith")
-///   npcPrefabs[2] = NPC_Quest_Prefab       (npc_type = "quest")
-///   npcPrefabs[3] = NPC_Exchange_Prefab    (npc_type = "exchange")
-///   npcPrefabs[4] = NPC_Event_Prefab       (npc_type = "event")
-///
-/// BẮT BUỘC: tất cả NPC prefab phải có NetworkObject component
-///           VÀ phải đăng ký trong NetworkManager → NetworkPrefabs list.
-/// </summary>
+// Server-authoritative NPC manager — thay thế NpcSpawner.cs.
+// Chỉ chạy spawn logic khi IsServer (đúng với cả Host và dedicated server sau này).
+// Client không cần làm gì — NGO tự replicate NetworkObject sang client khi server Spawn().
+// Setup Inspector:
+// apiBase  = "http://localhost:5000"
+// mapId    = mapId của scene này (đặt số cụ thể, ví dụ: 1)
+// npcPrefabs[0] = NPC_Shop_Prefab        (npc_type = "shop")
+// npcPrefabs[1] = NPC_Blacksmith_Prefab  (npc_type = "blacksmith")
+// npcPrefabs[2] = NPC_Quest_Prefab       (npc_type = "quest")
+// npcPrefabs[3] = NPC_Exchange_Prefab    (npc_type = "exchange")
+// npcPrefabs[4] = NPC_Event_Prefab       (npc_type = "event")
+// BẮT BUỘC: tất cả NPC prefab phải có NetworkObject component
+// VÀ phải đăng ký trong NetworkManager → NetworkPrefabs list.
 public class NpcServerManager : MonoBehaviour
 {
     private const string LogPrefix = "[NpcServerManager]";
@@ -45,7 +40,7 @@ public class NpcServerManager : MonoBehaviour
     [Header("NPC Prefabs theo ID (ưu tiên hơn type — dùng khi cùng type nhưng khác prefab)")]
     [SerializeField] private NpcIdPrefabEntry[] npcPrefabsById;
 
-    /// <summary>Server-side cache: NetworkObjectId → NpcData (dùng để validate trong NpcInteraction).</summary>
+    // Server-side cache: NetworkObjectId → NpcData (dùng để validate trong NpcInteraction).
     private readonly Dictionary<ulong, NpcData> _npcCache = new();
     private readonly HashSet<string> _spawnedNpcKeys = new();
     private NpcPrefabConfig _resolvedPrefabConfig;
@@ -53,7 +48,6 @@ public class NpcServerManager : MonoBehaviour
 
     public string ApiBase => apiBase;
 
-    // ─────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -105,7 +99,6 @@ public class NpcServerManager : MonoBehaviour
         StartCoroutine(LoadAndSpawnConfiguredMaps());
     }
 
-    // ─────────────────────────────────────────────────────────
 
     private IEnumerator LoadAndSpawnConfiguredMaps()
     {
@@ -246,10 +239,8 @@ public class NpcServerManager : MonoBehaviour
             this);
     }
 
-    /// <summary>
-    /// Gắn map-based visibility: NPC visible cho TẤT CẢ player cùng map (bất kể zone).
-    /// Zone chỉ dùng để isolate player-to-player, không dùng cho NPC/Enemy.
-    /// </summary>
+    // Gắn map-based visibility: NPC visible cho TẤT CẢ player cùng map (bất kể zone).
+    // Zone chỉ dùng để isolate player-to-player, không dùng cho NPC/Enemy.
     private static void ApplyMapVisibility(GameObject obj, int targetMapId)
     {
         var zoneTag = obj.GetComponent<ZoneOwnerTag>() ?? obj.AddComponent<ZoneOwnerTag>();
@@ -334,7 +325,7 @@ public class NpcServerManager : MonoBehaviour
         return npcPrefabs != null && idx < npcPrefabs.Length ? npcPrefabs[idx] : null;
     }
 
-    /// <summary>Được dùng bởi NpcInteraction để validate và lấy NpcData từ server cache.</summary>
+    // Được dùng bởi NpcInteraction để validate và lấy NpcData từ server cache.
     public bool TryGetNpcData(ulong networkObjectId, out NpcData data)
         => _npcCache.TryGetValue(networkObjectId, out data);
 }

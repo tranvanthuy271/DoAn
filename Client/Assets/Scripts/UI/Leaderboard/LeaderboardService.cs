@@ -3,11 +3,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Gọi REST /api/leaderboard/* trực tiếp từ client (không qua ServerRpc).
-/// Mỗi category BXH có một ID cố định (khớp với leaderboard_cache trong DB):
-///   1 = Cấp Độ | 2 = Nhiệm Vụ | 3 = Chuyên Cần | 4 = Phó Bản | 5 = Vàng
-/// </summary>
+// Gọi REST /api/leaderboard/* trực tiếp từ client (không qua ServerRpc).
+// Mỗi category BXH có một ID cố định (khớp với leaderboard_cache trong DB):
+// 1 = Cấp Độ | 2 = Nhiệm Vụ | 3 = Chuyên Cần | 4 = Phó Bản | 5 = Vàng
 public class LeaderboardService : MonoBehaviour
 {
     public static LeaderboardService Instance { get; private set; }
@@ -18,14 +16,14 @@ public class LeaderboardService : MonoBehaviour
         Instance = this;
     }
 
-    // ── Category IDs ──────────────────────────────────────────────────────────
+    // Category IDs
     public const int CatLevel      = 1;
     public const int CatQuest      = 2;
     public const int CatAttendance = 3;
     public const int CatDungeon    = 4;
     public const int CatGold       = 5;
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void FetchLevel(int _, Action<LeaderboardEntryDto[]> onDone, Action<string> onError)
         => StartCoroutine(FetchCategoryRoutine(CatLevel, onDone, onError));
@@ -42,11 +40,11 @@ public class LeaderboardService : MonoBehaviour
     public void FetchGold(int _, Action<LeaderboardEntryDto[]> onDone, Action<string> onError)
         => StartCoroutine(FetchCategoryRoutine(CatGold, onDone, onError));
 
-    /// <summary>Lấy bảng xếp hạng theo ID danh mục (1-5).</summary>
+    // Lấy bảng xếp hạng theo ID danh mục (1-5).
     public void FetchCategory(int categoryId, Action<LeaderboardEntryDto[]> onDone, Action<string> onError)
         => StartCoroutine(FetchCategoryRoutine(categoryId, onDone, onError));
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private IEnumerator FetchCategoryRoutine(int categoryId,
         Action<LeaderboardEntryDto[]> onDone, Action<string> onError)

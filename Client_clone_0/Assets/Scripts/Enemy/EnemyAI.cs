@@ -326,7 +326,7 @@ public class EnemyAI : MonoBehaviour
             true);
     }
 
-    // ── Freeze (DebuffManager gọi qua ClientRpc) ─────────────────────────────
+    // Freeze (DebuffManager gọi qua ClientRpc)
     private bool _isFrozen;
 
     public void ApplyFreeze(float duration)
@@ -342,23 +342,21 @@ public class EnemyAI : MonoBehaviour
         _isFrozen = false;
     }
 
-    /// <summary>DebuffManager.GetSlowFactor() hoặc IsFrozen() không accessible trực tiếp từ đây
-    /// vì EnemyAI có thể chạy trên client. Thay vào đó, DebuffManager gọi ApplyFreeze để tắt movement.</summary>
+    // DebuffManager.GetSlowFactor() hoặc IsFrozen() không accessible trực tiếp từ đây
+    // vì EnemyAI có thể chạy trên client. Thay vào đó, DebuffManager gọi ApplyFreeze để tắt movement.
     public bool IsFrozen => _isFrozen;
 
-    // ── Map isolation helpers ────────────────────────────────────────────────
+    // Map isolation helpers
 
-    /// <summary>Trả về MapId của enemy này (qua ZoneOwnerTag). -999 nếu chưa gắn tag.</summary>
+    // Trả về MapId của enemy này (qua ZoneOwnerTag). -999 nếu chưa gắn tag.
     private int GetMyMapId()
     {
         var tag = GetComponent<ZoneOwnerTag>();
         return tag != null ? tag.MapId : -999;
     }
 
-    /// <summary>
-    /// Kiểm tra một player Transform có cùng map với enemy này không.
-    /// Dùng ZoneRoomRegistry để tra map của client sở hữu NetworkObject của player.
-    /// </summary>
+    // Kiểm tra một player Transform có cùng map với enemy này không.
+    // Dùng ZoneRoomRegistry để tra map của client sở hữu NetworkObject của player.
     private bool IsSameMapAsTarget(Transform targetTransform)
     {
         if (targetTransform == null) return false;
@@ -371,7 +369,7 @@ public class EnemyAI : MonoBehaviour
         return GetMyMapId() == room.MapId;
     }
 
-    // ── End map isolation helpers ─────────────────────────────────────────────
+    // End map isolation helpers
 
     private void FindPlayerInNetwork()
     {
@@ -589,7 +587,7 @@ public class EnemyAI : MonoBehaviour
         PatrolLoop();
     }
 
-    /// <summary>Bật animation attack theo bool isAttacking; vẫn tương thích config cũ dùng Attack trigger.</summary>
+    // Bật animation attack theo bool isAttacking; vẫn tương thích config cũ dùng Attack trigger.
     private void TriggerAttackAnimation()
     {
         _activeAttackBoolParameter = DefaultAttackBoolParameter;
@@ -759,7 +757,7 @@ public class EnemyAI : MonoBehaviour
 
         _patrolFlipCooldown -= Time.deltaTime;
 
-        // ── Stuck detection: không di chuyển ≥ 0.4s → force flip ────────────────
+        // Stuck detection: không di chuyển ≥ 0.4s → force flip
         if (Mathf.Abs(transform.position.x - _patrolLastX) > 0.04f)
         {
             _patrolStuckTimer = 0f;
@@ -788,7 +786,7 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        // ── Edge / wall detection ─────────────────────────────────────────────────
+        // Edge / wall detection
         // Luôn kiểm tra mọi frame — nếu cooldown còn thì chỉ STOP (không flip),
         // tránh enemy tiếp tục đi vào tường / rơi khỏi mép dù chưa được flip.
         float patrolDir = facingRight ? 1f : -1f;
@@ -804,7 +802,7 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // ── Di chuyển bình thường đến patrol point ────────────────────────────────
+        // Di chuyển bình thường đến patrol point
         Vector2 targetPos = facingRight ? (Vector2)rightPoint.position : (Vector2)leftPoint.position;
         RunTowards(targetPos.x);
         if (Mathf.Abs(transform.position.x - targetPos.x) < 0.1f)
@@ -917,10 +915,8 @@ public class EnemyAI : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Kiểm tra xem enemy có projectile prefab được gán trong Inspector không (không cần DB skill).
-    /// Dùng để cho phép bay/di chuyển ranged khi không có DB skill config.
-    /// </summary>
+    // Kiểm tra xem enemy có projectile prefab được gán trong Inspector không (không cần DB skill).
+    // Dùng để cho phép bay/di chuyển ranged khi không có DB skill config.
     private bool HasInspectorProjectilePrefabs()
     {
         if (projectilePrefabs == null || projectilePrefabs.Count == 0)
@@ -1283,7 +1279,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    /// <summary>Thực thi skill từ EnemySkillSet: trigger animation Attack, thả đạn hoặc gây damage, reset state.</summary>
+    // Thực thi skill từ EnemySkillSet: trigger animation Attack, thả đạn hoặc gây damage, reset state.
     private IEnumerator UseSkillCoroutine(SkillEntry skill)
     {
         // Chuẩn mới: melee và ranged đều bật bool isAttacking.
@@ -1345,10 +1341,8 @@ public class EnemyAI : MonoBehaviour
         ForceResetAttackState();
     }
 
-    /// <summary>
-    /// Bắn projectile từ Inspector prefab list khi không có DB skill config.
-    /// Dùng prefab đầu tiên có sẵn, tầm bắn mặc định, tốc độ mặc định.
-    /// </summary>
+    // Bắn projectile từ Inspector prefab list khi không có DB skill config.
+    // Dùng prefab đầu tiên có sẵn, tầm bắn mặc định, tốc độ mặc định.
     private bool TryFireInspectorProjectile()
     {
         if (player == null || projectilePrefabs == null || projectilePrefabs.Count == 0)
@@ -1431,8 +1425,8 @@ public class EnemyAI : MonoBehaviour
         ForceResetAttackState();
     }
 
-    /// <summary>Shared helper: apply damage to player by checking NetworkPlayerHealth first.
-    /// Kiểm tra cùng map trước khi gây damage — ngăn cross-map damage.</summary>
+    // Shared helper: apply damage to player by checking NetworkPlayerHealth first.
+    // Kiểm tra cùng map trước khi gây damage — ngăn cross-map damage.
     private void ApplyDamageToTarget(GameObject target, int dmg, string attackerElement = null)
     {
         // Kiểm tra cùng map: không được tấn công player ở map khác
@@ -1701,10 +1695,8 @@ public class EnemyAI : MonoBehaviour
         // Nếu là network mode: NetworkEnemyHealth.HandleDeath() đã lên lịch Despawn — không Destroy ở đây
     }
 
-    /// <summary>
-    /// Gán ZoneOwnerTag + NetworkVisibilityZoneFilter cho projectile
-    /// để client ở map khác không thấy (giống enemy).
-    /// </summary>
+    // Gán ZoneOwnerTag + NetworkVisibilityZoneFilter cho projectile
+    // để client ở map khác không thấy (giống enemy).
     private static void ApplyProjectileVisibility(GameObject projObj, int mapId)
     {
         if (projObj == null || mapId < 0) return;
@@ -1767,9 +1759,7 @@ public class EnemyAI : MonoBehaviour
         Debug.Log($"[EnemyAI] {gameObject.name}: initial patrol direction={(facingRight ? "right" : "left")}");
     }
 
-    /// <summary>
-    /// Giảm tốc độ di chuyển trong khoảng thời gian nhất định (50% speed).
-    /// </summary>
+    // Giảm tốc độ di chuyển trong khoảng thời gian nhất định (50% speed).
     public void ApplySlow(float duration)
     {
         if (_slowCoroutine != null)
@@ -1820,7 +1810,7 @@ public class EnemyAI : MonoBehaviour
         return grounded;
     }
 
-    /// <summary>Returns true if there is a solid obstacle (Ground, Wall, or MaxMap) directly ahead in moveDir.</summary>
+    // Returns true if there is a solid obstacle (Ground, Wall, or MaxMap) directly ahead in moveDir.
     private bool IsWallAhead(float moveDir)
     {
         if (canFly || bodyCollider == null || (_groundLayerMask | _wallLayerMask) == 0) return false;
@@ -1835,11 +1825,9 @@ public class EnemyAI : MonoBehaviour
         return hitHigh.collider != null || hitLow.collider != null;
     }
 
-    /// <summary>
-    /// Returns true if there is ground under the enemy's leading edge (no real cliff).
-    /// Casts from slightly INSIDE the collider edge — NOT ahead of it — so gaps between
-    /// adjacent tiles do not produce false positives.
-    /// </summary>
+    // Returns true if there is ground under the enemy's leading edge (no real cliff).
+    // Casts from slightly INSIDE the collider edge — NOT ahead of it — so gaps between
+    // adjacent tiles do not produce false positives.
     private bool IsGroundAheadForPatrol(float moveDir)
     {
         if (canFly || bodyCollider == null || _groundLayerMask == 0) return true;

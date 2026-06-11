@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-// ── Dungeon System DTOs ─────────────────────────────────────────────────────
+// Dungeon System DTOs
 [System.Serializable]
 public class DungeonConfigData
 {
@@ -54,7 +54,6 @@ public class CreateDungeonSessionRequest
     public string host_ip;
     public int    host_port;
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 [System.Serializable]
 public class LoginRequest
@@ -116,7 +115,7 @@ public class PlayerDataResponse
     public bool is_hybrid;
     public string gender;
     public string character_name;
-    // ── Hybrid Gene fields ──────────────────────────────────────────
+    // Hybrid Gene fields
     public string secondary_element;
     public int secondary_gene_tier;
     public int secondary_gene_exp;
@@ -127,7 +126,7 @@ public class PlayerDataResponse
     public string hybrid_immune_elements;  // CSV "Water,Metal"
     public float hybrid_atk_bonus_pct;
     public string hybrid_prefab_path;      // Resources path cho CharacterLoader
-    // ── Gene Tối Thượng (Ultimate Gene) fields ──────────────────────
+    // Gene Tối Thượng (Ultimate Gene) fields
     public bool is_ultimate;               // Đã kích hoạt Gene Tối Thượng chưa
     public int ultimate_gene_exp;          // EXP tích lũy cho Gene Tối Thượng
     public string ultimate_aura_path;      // Resources path cho aura sau lưng
@@ -274,7 +273,7 @@ public class ApiSkillData
     public bool unlocked;
 }
 
-// ── Skill tab DTOs ────────────────────────────────────────────────
+// Skill tab DTOs
 [System.Serializable]
 public class PlayerSkillInfo
 {
@@ -293,7 +292,7 @@ public class PlayerSkillInfo
     public string icon_id;
     public int    gene_tier_required;
     public SkillLevelInfo[] level_details;
-    // ── Runtime stats — client dùng để apply vào SkillData khi load ─────────
+    // Runtime stats — client dùng để apply vào SkillData khi load
     public float  current_cooldown_sec;   // cooldown (giây) tại level hiện tại
     public float  current_effect_value;   // sát thương / heal / khoảng cách
     public int    current_mp_cost;        // MP tiêu khi dùng skill
@@ -322,10 +321,8 @@ public class PlayerSkillsResponse
 {
     public int              skill_points_available;
     public int              player_level;
-    /// <summary>
-    /// Final attack stat của player (base + equipment + gene + potential).
-    /// SkillRuntimeLoader cộng vào current_effect_value của các skill gây sát thương.
-    /// </summary>
+    // Final attack stat của player (base + equipment + gene + potential).
+    // SkillRuntimeLoader cộng vào current_effect_value của các skill gây sát thương.
     public int              player_final_attack;
     public PlayerSkillInfo[] skills;
 }
@@ -368,7 +365,7 @@ public class APIClient : MonoBehaviour
     [Header("API Config")]
     public string baseURL = "http://localhost:5000/api";
 
-    /// <summary>Server root without the /api path segment (used by panels that construct /api/... URLs themselves).</summary>
+    // Server root without the /api path segment (used by panels that construct /api/... URLs themselves).
     public static string BASE_URL
     {
         get
@@ -453,9 +450,7 @@ public class APIClient : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// Parse user_id tß╗Â½ JWT token (base64 decode payload)
-    /// </summary>
+    // Parse user_id tß╗Â½ JWT token (base64 decode payload)
     private int ParseUserIdFromJWT(string token)
     {
         try
@@ -743,7 +738,7 @@ public class APIClient : MonoBehaviour
         }
     }
 
-    // ── Inventory DTOs (used by NetworkInventory server-side direct API calls) ────────────────
+    // Inventory DTOs (used by NetworkInventory server-side direct API calls)
     [System.Serializable]
     public class AddInventoryItemRequest
     {
@@ -760,11 +755,9 @@ public class APIClient : MonoBehaviour
         public AddInventoryItemRequest[] items;
     }
 
-    // ═══════════════════════════════════════════════════════════════
     // GENE SLOT 2 METHODS
-    // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>Tải thông tin tóm tắt cả 2 gene slot để hiển thị màn SelectGene.</summary>
+    // Tải thông tin tóm tắt cả 2 gene slot để hiển thị màn SelectGene.
     public void LoadGeneSlots(int playerId, Action<GeneSlotsResponse> onSuccess, Action<string> onError)
     {
         StartCoroutine(LoadGeneSlotsCoroutine(playerId, onSuccess, onError));
@@ -783,7 +776,7 @@ public class APIClient : MonoBehaviour
         }
     }
 
-    /// <summary>Tạo nhân vật hệ gene 2 mới.</summary>
+    // Tạo nhân vật hệ gene 2 mới.
     public void CreatePlayer2(string elementType, string characterName, Action<PlayerDataResponse> onSuccess, Action<string> onError)
     {
         StartCoroutine(CreatePlayer2Coroutine(elementType, characterName, onSuccess, onError));
@@ -809,7 +802,7 @@ public class APIClient : MonoBehaviour
         }
     }
 
-    /// <summary>Tải full dữ liệu nhân vật hệ gene 2.</summary>
+    // Tải full dữ liệu nhân vật hệ gene 2.
     public void LoadPlayer2Data(int playerId, Action<PlayerDataResponse> onSuccess, Action<string> onError)
     {
         StartCoroutine(LoadPlayer2DataCoroutine(playerId, onSuccess, onError));
@@ -829,9 +822,7 @@ public class APIClient : MonoBehaviour
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════
 // Gene Slot DTOs  (SelectGene scene)
-// ══════════════════════════════════════════════════════════════════════
 [System.Serializable]
 public class GeneSlotInfo
 {

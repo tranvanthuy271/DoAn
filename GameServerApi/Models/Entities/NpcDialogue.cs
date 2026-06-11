@@ -3,9 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Cây hội thoại cho NPC. Mỗi row là một node trong cây.
-    /// </summary>
+    // Cây hội thoại cho NPC. Mỗi row là một node trong cây.
     [Table("npc_dialogue")]
     public class NpcDialogue
     {
@@ -16,7 +14,7 @@ namespace GameServerApi.Models.Entities
         [Column("npc_id")]
         public int NpcId { get; set; }
 
-        /// <summary>Key định danh node, VD: "greet", "quest_intro", "shop_open".</summary>
+        // Key định danh node, VD: "greet", "quest_intro", "shop_open".
         [Column("dialogue_key")]
         [MaxLength(50)]
         public string DialogueKey { get; set; } = "";
@@ -25,12 +23,12 @@ namespace GameServerApi.Models.Entities
         [MaxLength(1000)]
         public string TextVi { get; set; } = "";
 
-        /// <summary>Key của node tiếp theo (null = kết thúc hội thoại).</summary>
+        // Key của node tiếp theo (null = kết thúc hội thoại).
         [Column("next_key")]
         [MaxLength(50)]
         public string? NextKey { get; set; }
 
-        /// <summary>none | open_shop | give_quest | teleport</summary>
+        // none | open_shop | give_quest | teleport
         [Column("action_type")]
         [MaxLength(20)]
         public string ActionType { get; set; } = "none";

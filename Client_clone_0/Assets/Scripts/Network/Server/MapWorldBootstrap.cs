@@ -6,18 +6,14 @@ using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Entry point duy nhất của toàn bộ game server.
-/// 1 port — quản lý tất cả maps và zones như LangLa.
-///
-/// Command line args:
-///   --port=7777        Port lắng nghe
-///   --publicIp=x.x.x  IP public
-///   --apiUrl=http://...
-///
-/// Gắn vào: "ServerBootstrap" GameObject trong ServerScene.
-/// Dependencies: MapWorldConfig (assign inspector), ZoneRoomRegistry, ZoneConnectionApproval
-/// </summary>
+// Entry point duy nhất của toàn bộ game server.
+// 1 port — quản lý tất cả maps và zones như LangLa.
+// Command line args:
+// --port=7777        Port lắng nghe
+// --publicIp=x.x.x  IP public
+// --apiUrl=http://...
+// Gắn vào: "ServerBootstrap" GameObject trong ServerScene.
+// Dependencies: MapWorldConfig (assign inspector), ZoneRoomRegistry, ZoneConnectionApproval
 [DisallowMultipleComponent]
 public class MapWorldBootstrap : MonoBehaviour
 {
@@ -182,7 +178,7 @@ public class MapWorldBootstrap : MonoBehaviour
         }
     }
 
-    // ── Start server routine ──────────────────────────────────────────────────
+    // Start server routine
 
     private IEnumerator StartServerRoutine()
     {

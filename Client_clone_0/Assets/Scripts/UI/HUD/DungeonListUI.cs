@@ -4,19 +4,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// DungeonListUI — Panel hiển thị danh sách phó bản để người chơi tham gia.
-///
-/// SETUP TRONG SCENE:
-///   1. Tạo Canvas > Panel gọi là "DungeonPanel", gắn DungeonListUI.
-///   2. Trong Panel:
-///      ├─ ScrollView > Content  ← dùng làm dungeonListContent
-///      ├─ StatusText (Text)     ← thông báo trạng thái
-///      ├─ CloseButton (Button)
-///      └─ DungeonEntryButton (Button) — nút mở panel (đặt ở HUD chính)
-///   3. Tạo Prefab "DungeonButtonItemPrefab" (có DungeonButtonItem component)
-///      và assign vào dungeonItemPrefab.
-/// </summary>
+// DungeonListUI — Panel hiển thị danh sách phó bản để người chơi tham gia.
+// SETUP TRONG SCENE:
+// 1. Tạo Canvas > Panel gọi là "DungeonPanel", gắn DungeonListUI.
+// 2. Trong Panel:
+// ├─ ScrollView > Content  ← dùng làm dungeonListContent
+// ├─ StatusText (Text)     ← thông báo trạng thái
+// ├─ CloseButton (Button)
+// └─ DungeonEntryButton (Button) — nút mở panel (đặt ở HUD chính)
+// 3. Tạo Prefab "DungeonButtonItemPrefab" (có DungeonButtonItem component)
+// và assign vào dungeonItemPrefab.
 public class DungeonListUI : MonoBehaviour
 {
     public static DungeonListUI Instance { get; private set; }
@@ -47,9 +44,7 @@ public class DungeonListUI : MonoBehaviour
 
     private int _playerLevel = 1; // Lấy từ PlayerDataManager nếu có
 
-    // ──────────────────────────────────────────────────────────
     //  UNITY LIFECYCLE
-    // ──────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -92,9 +87,7 @@ public class DungeonListUI : MonoBehaviour
         }
     }
 
-    // ──────────────────────────────────────────────────────────
     //  OPEN / CLOSE
-    // ──────────────────────────────────────────────────────────
 
     public void OpenPanel()
     {
@@ -110,9 +103,7 @@ public class DungeonListUI : MonoBehaviour
         confirmDialog?.SetActive(false);
     }
 
-    // ──────────────────────────────────────────────────────────
     //  LOAD & RENDER DUNGEON LIST
-    // ──────────────────────────────────────────────────────────
 
     private IEnumerator LoadAndRenderDungeons()
     {
@@ -181,11 +172,9 @@ public class DungeonListUI : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    // ──────────────────────────────────────────────────────────
     //  SELECTION & CONFIRM
-    // ──────────────────────────────────────────────────────────
 
-    /// <summary>Gọi bởi DungeonButtonItem khi người chơi click.</summary>
+    // Gọi bởi DungeonButtonItem khi người chơi click.
     public void OnDungeonSelected(DungeonConfigData config)
     {
         _selectedDungeon = config;
@@ -219,9 +208,7 @@ public class DungeonListUI : MonoBehaviour
         DungeonManager.Instance?.EnterDungeon(_selectedDungeon);
     }
 
-    // ──────────────────────────────────────────────────────────
-    //  HELPERS
-    // ──────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void ShowStatus(string msg)
     {

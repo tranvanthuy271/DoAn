@@ -3,16 +3,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// UI chính cho Chat Panel.
-/// Layout: Header | ScrollView (messages) | TabBar (Chung/Riêng/GiaToc/Nhom/Lop) | InputBar
-/// Attach script này lên root GameObject "ChatPanel".
-/// </summary>
+// UI chính cho Chat Panel.
+// Layout: Header | ScrollView (messages) | TabBar (Chung/Riêng/GiaToc/Nhom/Lop) | InputBar
+// Attach script này lên root GameObject "ChatPanel".
 public class ChatPanelUI : MonoBehaviour
 {
     public static ChatPanelUI Instance { get; private set; }
 
-    // ── Inspector Refs ────────────────────────────────────────────────────────
+    // Inspector Refs
 
     [Header("Message Area")]
     [SerializeField] private ScrollRect        messageScrollRect;
@@ -39,7 +37,7 @@ public class ChatPanelUI : MonoBehaviour
     [Header("Friend Panel")]
     [SerializeField] private GameObject        friendListPanel;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     private const int MAX_DISPLAYED = 80;
     private const string DefaultMessageEntryResourcesPath = "Prefabs/Chat/MsgEntry";
@@ -52,7 +50,7 @@ public class ChatPanelUI : MonoBehaviour
     private bool _attemptedMessageEntryPrefabResolve;
     private const string GameplayBlockSource = "ChatPanelUI";
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -132,10 +130,8 @@ public class ChatPanelUI : MonoBehaviour
             Instance = null;
     }
 
-    /// <summary>
-    /// Đăng ký nhận event từ ChatManager. Gọi nhiều lần được — chỉ đăng ký 1 lần.
-    /// Cần gọi cả trong OnEnable lẫn trước khi gửi vì ChatManager có thể khởi tạo muộn.
-    /// </summary>
+    // Đăng ký nhận event từ ChatManager. Gọi nhiều lần được — chỉ đăng ký 1 lần.
+    // Cần gọi cả trong OnEnable lẫn trước khi gửi vì ChatManager có thể khởi tạo muộn.
     private void EnsureSubscribed()
     {
         if (_chatManagerSubscribed) return;
@@ -147,7 +143,7 @@ public class ChatPanelUI : MonoBehaviour
         ReloadHistory();
     }
 
-    // ── Tab ───────────────────────────────────────────────────────────────────
+    // Tab
 
     private void OnTabSelected(ChatChannel ch)
     {
@@ -172,7 +168,7 @@ public class ChatPanelUI : MonoBehaviour
         ReloadHistory();
     }
 
-    // ── Channel Icon (Dropdown) ───────────────────────────────────────────────
+    // Channel Icon (Dropdown)
 
     private void OnChannelIconClicked()
     {
@@ -279,7 +275,7 @@ public class ChatPanelUI : MonoBehaviour
         return resolved;
     }
 
-    // ── Receiving ─────────────────────────────────────────────────────────────
+    // Receiving
 
     private void OnMessageReceived(ChatMessageDto msg)
     {
@@ -296,7 +292,7 @@ public class ChatPanelUI : MonoBehaviour
         UpdateChannelLabel();
     }
 
-    // ── Message Display ───────────────────────────────────────────────────────
+    // Message Display
 
     private void AppendMessage(ChatMessageDto msg)
     {
@@ -336,7 +332,7 @@ public class ChatPanelUI : MonoBehaviour
                 AppendMessage(msg);
     }
 
-    // ── Sending ───────────────────────────────────────────────────────────────
+    // Sending
 
     private void OnSendClicked()
     {
@@ -369,7 +365,7 @@ public class ChatPanelUI : MonoBehaviour
         chatInputField.ActivateInputField();
     }
 
-    // ── Toggle visibility ─────────────────────────────────────────────────────
+    // Toggle visibility
 
     public void Toggle() => gameObject.SetActive(!gameObject.activeSelf);
 
@@ -384,7 +380,7 @@ public class ChatPanelUI : MonoBehaviour
         ReloadHistory();
     }
 
-    /// <summary>Mở thẳng tab chat riêng với người dùng chỉ định.</summary>
+    // Mở thẳng tab chat riêng với người dùng chỉ định.
     public void OpenPrivateChat(int targetUserId, string targetUsername)
     {
         gameObject.SetActive(true);

@@ -3,14 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// UpgradeItemCard – Hiển thị trang bị (hiện tại hoặc preview sau nâng cấp).
-/// 
-/// Gắn vào: CurrentCard  và PreviewCard trong UpgradePanel.
-/// 
-/// isPreview = false → hiển thị bậc hiện tại, stat màu trắng/xám
-/// isPreview = true  → hiển thị bậc +N+1, stat tăng màu vàng, stat mở khoá màu xanh
-/// </summary>
+// UpgradeItemCard – Hiển thị trang bị (hiện tại hoặc preview sau nâng cấp).
+// Gắn vào: CurrentCard  và PreviewCard trong UpgradePanel.
+// isPreview = false → hiển thị bậc hiện tại, stat màu trắng/xám
+// isPreview = true  → hiển thị bậc +N+1, stat tăng màu vàng, stat mở khoá màu xanh
 public class UpgradeItemCard : MonoBehaviour
 {
     [Header("Header")]
@@ -22,25 +18,23 @@ public class UpgradeItemCard : MonoBehaviour
     [SerializeField] private Transform    statsContainer;  // VerticalLayoutGroup
     [SerializeField] private StatRowEntry statRowPrefab;   // prefab 1 dòng stat
 
-    // ── Màu sắc ──────────────────────────────────────────────────
+    // Màu sắc
     private static readonly Color ColorActive   = Color.white;
     private static readonly Color ColorDim      = new Color(0.55f, 0.55f, 0.55f);
     private static readonly Color ColorUpgraded = new Color(1f, 0.85f, 0f);   // vàng – stat tăng
     private static readonly Color ColorNewUnlock = new Color(0.4f, 1f, 0.5f); // xanh – vừa mở khoá
 
-    // ── Public API ────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Hiển thị card với dữ liệu item và danh sách option templates.
-    /// </summary>
-    /// <param name="item">Item đang xét (hiện tại hoặc base cho preview)</param>
-    /// <param name="templates">Option templates từ server (đã cache)</param>
-    /// <param name="isPreview">true = hiển thị bậc +1 so với item.upgradeLevel</param>
+    // Hiển thị card với dữ liệu item và danh sách option templates.
+    // Tham số item: Item đang xét (hiện tại hoặc base cho preview)
+    // Tham số templates: Option templates từ server (đã cache)
+    // Tham số isPreview: true = hiển thị bậc +1 so với item.upgradeLevel
     public void Display(EquipmentItemDto item, List<OptionTemplateDto> templates, bool isPreview)
     {
         if (item == null) return;
 
-        // ── Header ───────────────────────────────────────────────
+        // Header
         var tmpl = ItemTemplateManager.Instance != null
             ? ItemTemplateManager.Instance.GetItemTemplate(item.id)
             : null;
@@ -59,13 +53,13 @@ public class UpgradeItemCard : MonoBehaviour
         int displayLevel = isPreview ? item.upgradeLevel + 1 : item.upgradeLevel;
         upgradeLevelText.text = $"+{displayLevel}";
 
-        // ── Xoá rows cũ ──────────────────────────────────────────
+        // Xoá rows cũ
         foreach (Transform child in statsContainer)
             Destroy(child.gameObject);
 
         if (string.IsNullOrEmpty(item.strOptions)) return;
 
-        // ── Parse options ─────────────────────────────────────────
+        // Parse options
         var equipped = EquippedOptionDisplay.ParseAll(item.strOptions);
         foreach (var opt in equipped)
         {
@@ -77,12 +71,12 @@ public class UpgradeItemCard : MonoBehaviour
             int showValue    = isPreview ? previewValue : currentValue;
             int delta        = previewValue - currentValue;
 
-            // ── Label ─────────────────────────────────────────────
+            // Label
             string label = optTmpl.BuildLabel(showValue);
             if (isPreview && delta > 0)
                 label += $"  <color=#88cc88>(+{delta})</color>";
 
-            // ── Màu ──────────────────────────────────────────────
+            // Màu
             Color color;
             if (!isPreview)
             {
@@ -99,13 +93,13 @@ public class UpgradeItemCard : MonoBehaviour
                 else                            color = ColorDim;
             }
 
-            // ── Tạo row ───────────────────────────────────────────
+            // Tạo row
             var row = Instantiate(statRowPrefab, statsContainer);
             row.Set(label, color);
         }
     }
 
-    /// <summary>Xoá toàn bộ hiển thị (dùng khi panel chưa chọn item)</summary>
+    // Xoá toàn bộ hiển thị (dùng khi panel chưa chọn item)
     public void Clear()
     {
         if (itemNameText)    itemNameText.text     = "—";

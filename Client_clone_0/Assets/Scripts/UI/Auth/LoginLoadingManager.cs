@@ -4,11 +4,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// Overlay loading dùng chung cho login, reconnect và chuyển map.
-/// Ưu tiên dùng prefab được gán trong Inspector.
-/// Nếu prefab cũ vẫn là dạng progress/panel, script sẽ tự fallback sang spinner runtime.
-/// </summary>
+// Overlay loading dùng chung cho login, reconnect và chuyển map.
+// Ưu tiên dùng prefab được gán trong Inspector.
+// Nếu prefab cũ vẫn là dạng progress/panel, script sẽ tự fallback sang spinner runtime.
 public class LoginLoadingManager : MonoBehaviour
 {
     public static LoginLoadingManager Instance { get; private set; }

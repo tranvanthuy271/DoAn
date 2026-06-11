@@ -2,10 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Thanh HP dùng Slider — đọc từ NetworkPlayerDataSync (giống tab thông tin PlayerInfoUI).
-/// Script tự động tìm NetworkPlayerDataSync trong scene, không cần gán thủ công.
-/// </summary>
+// Thanh HP dùng Slider — đọc từ NetworkPlayerDataSync (giống tab thông tin PlayerInfoUI).
+// Script tự động tìm NetworkPlayerDataSync trong scene, không cần gán thủ công.
 public class HealthBar : MonoBehaviour
 {
     [Header("UI References")]

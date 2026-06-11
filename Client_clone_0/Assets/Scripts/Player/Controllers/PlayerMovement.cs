@@ -106,7 +106,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    /// <summary>Thực hiện ground check và trả về kết quả.</summary>
+    // Thực hiện ground check và trả về kết quả.
     private bool DoGroundCheck()
     {
         if (groundCheck == null) return false;
@@ -271,9 +271,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Refresh ground check ngay lập tức (dùng cho server-side check trong NetworkPlayerController)
-    /// </summary>
+    // Refresh ground check ngay lập tức (dùng cho server-side check trong NetworkPlayerController)
     public void RefreshGroundCheck()
     {
         isGrounded = DoGroundCheck();
@@ -291,11 +289,9 @@ public class PlayerMovement : MonoBehaviour
     public bool CanFly() => canFly;
     public float GetFlightCooldown() => flightCooldown;
 
-    /// <summary>
-    /// Leo qua bậc thang nhỏ (step climb): khi player đang ở mặt đất và đi ngang mà gặp 
-    /// một collider thấp hơn stepHeight, tự động đẩy player lên trên để di chuyển qua được.
-    /// Gọi method này từ FixedUpdate TRƯỚC khi gán rb.velocity ngang.
-    /// </summary>
+    // Leo qua bậc thang nhỏ (step climb): khi player đang ở mặt đất và đi ngang mà gặp
+    // một collider thấp hơn stepHeight, tự động đẩy player lên trên để di chuyển qua được.
+    // Gọi method này từ FixedUpdate TRƯỚC khi gán rb.velocity ngang.
     public void HandleStepClimb(float horizInput)
     {
         if (!isGrounded) return;
@@ -341,13 +337,9 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Fall-through one-way platform (S / ↓ / mobile button)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Dùng bởi NetworkPlayerController để consume flag shouldFallThrough và gọi TryFallThroughPlatform.
-    /// </summary>
+    // Dùng bởi NetworkPlayerController để consume flag shouldFallThrough và gọi TryFallThroughPlatform.
     public bool ConsumePendingFallThrough()
     {
         bool v = shouldFallThrough;
@@ -355,10 +347,8 @@ public class PlayerMovement : MonoBehaviour
         return v;
     }
 
-    /// <summary>
-    /// Thực hiện rơi xuyên qua one-way platform đang đứng trên, nếu có ground phía dưới nó.
-    /// Gọi từ HandleMovement() (standalone) hoặc NetworkPlayerController.FixedUpdate() (network).
-    /// </summary>
+    // Thực hiện rơi xuyên qua one-way platform đang đứng trên, nếu có ground phía dưới nó.
+    // Gọi từ HandleMovement() (standalone) hoặc NetworkPlayerController.FixedUpdate() (network).
     public void TryFallThroughPlatform()
     {
         Collider2D platform = GetCurrentOneWayPlatform();
@@ -371,7 +361,7 @@ public class PlayerMovement : MonoBehaviour
         StartCoroutine(FallThroughCoroutine(platform));
     }
 
-    /// <summary>Tìm one-way platform trực tiếp bên dưới player (nơi đang đứng).</summary>
+    // Tìm one-way platform trực tiếp bên dưới player (nơi đang đứng).
     private Collider2D GetCurrentOneWayPlatform()
     {
         if (groundCheck == null) return null;
@@ -391,10 +381,8 @@ public class PlayerMovement : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Kiểm tra có ground nào khác bên dưới platform hiện tại không.
-    /// Nếu KHÔNG có → đây là ground cuối cùng → không cho rơi xuống.
-    /// </summary>
+    // Kiểm tra có ground nào khác bên dưới platform hiện tại không.
+    // Nếu KHÔNG có → đây là ground cuối cùng → không cho rơi xuống.
     private bool HasGroundBelow(Collider2D currentPlatform)
     {
         float startY = currentPlatform.bounds.min.y - 0.05f;
@@ -411,7 +399,7 @@ public class PlayerMovement : MonoBehaviour
         return false;
     }
 
-    /// <summary>Tắt collision với platform 0.35s để player rơi xuyên qua, rồi bật lại.</summary>
+    // Tắt collision với platform 0.35s để player rơi xuyên qua, rồi bật lại.
     private System.Collections.IEnumerator FallThroughCoroutine(Collider2D platform)
     {
         Collider2D playerCol = GetComponent<Collider2D>();
@@ -446,13 +434,13 @@ public class PlayerMovement : MonoBehaviour
             Physics2D.IgnoreCollision(playerCol, platform, false);
     }
 
-    /// <summary>Áp dụng bất động cho player (chặn input) trong thời gian duration giây.</summary>
+    // Áp dụng bất động cho player (chặn input) trong thời gian duration giây.
     public void SetStunned(float duration)
     {
         isStunned = true;
         stunTimer = Mathf.Max(stunTimer, duration);
     }
 
-    /// <summary>Kiểm tra player có đang bị stun không.</summary>
+    // Kiểm tra player có đang bị stun không.
     public bool IsStunned => isStunned;
 }

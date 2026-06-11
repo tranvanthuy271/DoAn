@@ -8,11 +8,9 @@ using UnityEngine.UI;
 using TMPro;
 #endif
 
-/// <summary>
-/// Script chung cho GameScene: Xử lý cả Host và Client
-/// - Host: Bấm button StartHost để start host
-/// - Client: Tự động StartClient sau khi login/tạo nhân vật thành công
-/// </summary>
+// Script chung cho GameScene: Xử lý cả Host và Client
+// - Host: Bấm button StartHost để start host
+// - Client: Tự động StartClient sau khi login/tạo nhân vật thành công
 public class GameSceneNetworkInitializer : MonoBehaviour
 {
     private const ushort ModernZoneServerPort = 7777;
@@ -84,9 +82,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         CheckAutoStartClient();
     }
 
-    /// <summary>
-    /// Setup UI buttons
-    /// </summary>
+    // Setup UI buttons
     private void SetupUI()
     {
         if (startHostButton != null)
@@ -102,9 +98,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         UpdateUI();
     }
 
-    /// <summary>
-    /// Update UI state
-    /// </summary>
+    // Update UI state
     private void UpdateUI()
     {
         bool isConnected = NetworkManager.Singleton != null && 
@@ -137,9 +131,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         UpdateUI();
     }
 
-    /// <summary>
-    /// Đăng ký tất cả NetworkPrefab trước khi start host/client
-    /// </summary>
+    // Đăng ký tất cả NetworkPrefab trước khi start host/client
     private void RegisterNetworkPrefabs()
     {
         // Tìm NetworkPrefabRegistrar trong scene
@@ -157,9 +149,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         // Debug.Log("[GameSceneNetworkInitializer] NetworkPrefabs registered.");
     }
 
-    /// <summary>
-    /// Setup các component cần thiết cho Host
-    /// </summary>
+    // Setup các component cần thiết cho Host
     private void SetupHostComponents()
     {
         Debug.Log("[GameSceneNetworkInitializer] Setting up host components...");
@@ -198,9 +188,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Load player data nếu chưa có, rồi tự động StartClient không cần bấm nút.
-    /// </summary>
+    // Load player data nếu chưa có, rồi tự động StartClient không cần bấm nút.
     private void CheckAutoStartClient()
     {
         if (HasActiveClientSession())
@@ -226,9 +214,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Load player data từ API
-    /// </summary>
+    // Load player data từ API
     private void LoadPlayerDataFromAPI()
     {
         if (isInitializing)
@@ -309,9 +295,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// Start Client Mode: Connect đến host (sẽ tự động gửi userid sau khi connect)
-    /// </summary>
+    // Start Client Mode: Connect đến host (sẽ tự động gửi userid sau khi connect)
     private void StartClientMode()
     {
         if (isHostMode)
@@ -350,9 +334,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         StartCoroutine(StartClientAfterDelay());
     }
 
-    /// <summary>
-    /// Thực hiện connect đến host (sau khi đã có player data)
-    /// </summary>
+    // Thực hiện connect đến host (sau khi đã có player data)
     private void StartClientConnection()
     {
         if (HasActiveClientSession())
@@ -370,9 +352,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         networkManager.ConnectToServer();
     }
 
-    /// <summary>
-    /// Đợi một chút để đảm bảo tất cả prefabs đã được đăng ký trước khi start client
-    /// </summary>
+    // Đợi một chút để đảm bảo tất cả prefabs đã được đăng ký trước khi start client
     private System.Collections.IEnumerator StartClientAfterDelay()
     {
         // Đợi một frame để NetworkPlayerSpawner và NetworkPrefabRegistrar có thời gian đăng ký prefabs
@@ -394,9 +374,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         StartClientConnection();
     }
 
-    /// <summary>
-    /// Button click: Start Host
-    /// </summary>
+    // Button click: Start Host
     public void OnStartHostButtonClicked()
     {
         if (isHostMode)
@@ -435,10 +413,8 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         return serverPort;
     }
 
-    /// <summary>
-    /// Button click: Start Client (manual)
-    /// Sau khi connect, sẽ tự động gửi userid lên host qua ClientAuthSender
-    /// </summary>
+    // Button click: Start Client (manual)
+    // Sau khi connect, sẽ tự động gửi userid lên host qua ClientAuthSender
     public void OnStartClientButtonClicked()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
@@ -461,9 +437,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         StartClientMode();
     }
 
-    /// <summary>
-    /// Đợi một frame để đảm bảo ServerConnectionApproval đã register callback trước khi start host
-    /// </summary>
+    // Đợi một frame để đảm bảo ServerConnectionApproval đã register callback trước khi start host
     private System.Collections.IEnumerator StartHostAfterDelay()
     {
         // Đợi một frame để ServerConnectionApproval có thời gian register callback
@@ -492,9 +466,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         StartHost();
     }
 
-    /// <summary>
-    /// Start host
-    /// </summary>
+    // Start host
     private void StartHost()
     {
         // Debug.Log($"[GameSceneNetworkInitializer] Starting HOST on port {serverPort}...");
@@ -526,9 +498,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         // Debug.Log("[GameSceneNetworkInitializer] Host started. Waiting for clients to connect...");
     }
 
-    /// <summary>
-    /// Callback khi server đã start - spawn NetworkObject để làm auth sender
-    /// </summary>
+    // Callback khi server đã start - spawn NetworkObject để làm auth sender
     private void OnServerStarted()
     {
         Debug.Log("[GameSceneNetworkInitializer] Server started. Host is ready to accept clients.");
@@ -541,9 +511,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         // NOTE: AuthSenderNetworkObject không còn cần thiết vì auth giờ dùng Named Messages
     }
 
-    /// <summary>
-    /// Đăng ký authSenderPrefab với NetworkManager
-    /// </summary>
+    // Đăng ký authSenderPrefab với NetworkManager
     private void RegisterAuthSenderPrefab(GameObject prefab)
     {
         if (prefab == null)
@@ -588,9 +556,7 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Spawn AuthSenderNetworkObject khi server start
-    /// </summary>
+    // Spawn AuthSenderNetworkObject khi server start
     private void SpawnAuthSenderNetworkObject()
     {
         var networkManagerSingleton = NetworkManager.Singleton;
@@ -664,19 +630,16 @@ public class GameSceneNetworkInitializer : MonoBehaviour
         }
     }
 
-    // ── Connection error panel ────────────────────────────────────────────
+    // Connection error panel
 
     private bool _connectionErrorShown; // guard: only show once per session
 
-    /// <summary>
-    /// Callback khi client bị ngắt kết nối hoặc socket thất bại.
-    ///
-    /// NGO fires callback với:
-    ///  - clientId = LocalClientId   → khách nhận disconnect sau khi đã kết nối
-    ///  - clientId = 0               → socket fail trước khi được cấp id
-    ///  - clientId = ulong.MaxValue  → client không bao giờ connect được (connection refused / timeout)
-    /// Khi IsHost = true → callback nhận ID của các client khác — bỏ qua.
-    /// </summary>
+    // Callback khi client bị ngắt kết nối hoặc socket thất bại.
+    // NGO fires callback với:
+    // - clientId = LocalClientId   → khách nhận disconnect sau khi đã kết nối
+    // - clientId = 0               → socket fail trước khi được cấp id
+    // - clientId = ulong.MaxValue  → client không bao giờ connect được (connection refused / timeout)
+    // Khi IsHost = true → callback nhận ID của các client khác — bỏ qua.
     private void OnNetworkClientDisconnected(ulong clientId)
     {
         if (_connectionErrorShown) return;

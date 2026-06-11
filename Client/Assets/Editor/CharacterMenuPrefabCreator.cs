@@ -4,16 +4,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool – tự động tạo prefabs cho:
-///   • CharacterMenuPanel      (avatar + tên + level + exp% + nút chức năng, neo trái)
-///   • CharacterMenuHudButton  (nút HUD góc trên trái → mở CharacterMenuPanel)
-///   • SocialPanel             (4 tab ngoài: Đồng đội / Bạn bè / Kẻ thù / Tin nhắn)
-///   • PartyPanel              (nội dung "Đồng đội": 3 sub-tab)
-///   • Entry prefabs           (MemberEntry, SearchEntry, NearbyEntry)
-///
-/// Menu: GameTools → CharacterMenu → Create Character &amp; Social Prefabs
-/// </summary>
+// Editor tool – tự động tạo prefabs cho:
+// • CharacterMenuPanel      (avatar + tên + level + exp% + nút chức năng, neo trái)
+// • CharacterMenuHudButton  (nút HUD góc trên trái → mở CharacterMenuPanel)
+// • SocialPanel             (4 tab ngoài: Đồng đội / Bạn bè / Kẻ thù / Tin nhắn)
+// • PartyPanel              (nội dung "Đồng đội": 3 sub-tab)
+// • Entry prefabs           (MemberEntry, SearchEntry, NearbyEntry)
+// Menu: GameTools → CharacterMenu → Create Character &amp; Social Prefabs
 public static class CharacterMenuPrefabCreator
 {
     private const string PREFAB_DIR        = "Assets/Resources/Prefabs/UI";
@@ -42,11 +39,9 @@ public static class CharacterMenuPrefabCreator
         Debug.Log("[CharacterMenuPrefabCreator] ✓ Tạo xong tất cả prefabs trong " + PREFAB_DIR);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // ENTRY PREFABS
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>Hàng thành viên trong Tab "Nhóm riêng".</summary>
+    // Hàng thành viên trong Tab "Nhóm riêng".
     private static void CreateMemberEntryPrefab()
     {
         var root = new GameObject("MemberEntryPrefab");
@@ -128,7 +123,7 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    /// <summary>Hàng kết quả tìm nhóm trong Tab "Tìm nhóm".</summary>
+    // Hàng kết quả tìm nhóm trong Tab "Tìm nhóm".
     private static void CreateSearchEntryPrefab()
     {
         var root = new GameObject("PartySearchEntryPrefab");
@@ -208,7 +203,7 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    /// <summary>Hàng người chơi gần đây trong Tab "Gần đây".</summary>
+    // Hàng người chơi gần đây trong Tab "Gần đây".
     private static void CreateNearbyEntryPrefab()
     {
         var root = new GameObject("NearbyPlayerEntryPrefab");
@@ -275,9 +270,7 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // PARTY PANEL (nội dung Đồng đội – 3 sub-tab)
-    // ══════════════════════════════════════════════════════════════════════════
 
     private static void CreatePartyPanelPrefab()
     {
@@ -286,7 +279,7 @@ public static class CharacterMenuPrefabCreator
         rootRt.sizeDelta = new Vector2(400, 420);
         root.AddComponent<Image>().color = new Color(0.13f, 0.09f, 0.03f, 0.98f);
 
-        // ── Sub-tab bar ──────────────────────────────────────────────────────
+        // Sub-tab bar
         var subTabBar = MakeChild(root, "SubTabBar");
         SetAnchors(subTabBar.GetComponent<RectTransform>(), 0, 1, 1, 1, 0, -36, 0, 0);
         subTabBar.AddComponent<Image>().color = new Color(0.10f, 0.07f, 0.02f);
@@ -300,18 +293,18 @@ public static class CharacterMenuPrefabCreator
         var btnSearch = MakeTabButton(subTabBar, "BtnTabSearch", "Tìm nhóm",  false);
         var btnNearby = MakeTabButton(subTabBar, "BtnTabNearby", "Gần đây",   false);
 
-        // ── Content area ─────────────────────────────────────────────────────
+        // Content area
         float footerH = 48f;
         float tabH    = 36f;
 
-        // ── PanelParty (Tab 0) ────────────────────────────────────────────
+        // PanelParty (Tab 0)
         var panelParty = MakeChild(root, "PanelParty");
         SetAnchors(panelParty.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, -tabH);
 
         var (svParty, contentParty) = MakeScrollView(panelParty, "ScrollView");
         SetAnchors(svParty.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, footerH, 0, 0);
 
-        // ── Footer Tab 0 ──────────────────────────────────────────────────
+        // Footer Tab 0
         var footerParty = MakeChild(panelParty, "Footer");
         SetAnchors(footerParty.GetComponent<RectTransform>(), 0, 1, 0, 0, 0, 0, 0, footerH);
         footerParty.AddComponent<Image>().color = new Color(0.10f, 0.07f, 0.02f);
@@ -374,7 +367,7 @@ public static class CharacterMenuPrefabCreator
         var chatGo = MakeActionButton(footerParty, "BtnChatGroup", "Chat nhóm",
             new Color(0.18f, 0.45f, 0.78f));
 
-        // ── PanelSearch (Tab 1) ───────────────────────────────────────────
+        // PanelSearch (Tab 1)
         var panelSearch = MakeChild(root, "PanelSearch");
         SetAnchors(panelSearch.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, -tabH);
         panelSearch.SetActive(false);
@@ -390,7 +383,7 @@ public static class CharacterMenuPrefabCreator
         var rsRt = refreshSearchGo.GetComponent<RectTransform>();
         SetAnchors(rsRt, 1, 1, 0, 1, -90, 4, -4, -4);
 
-        // ── PanelNearby (Tab 2) ───────────────────────────────────────────
+        // PanelNearby (Tab 2)
         var panelNearby = MakeChild(root, "PanelNearby");
         SetAnchors(panelNearby.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, -tabH);
         panelNearby.SetActive(false);
@@ -410,7 +403,7 @@ public static class CharacterMenuPrefabCreator
         var rnRt = refreshNearbyGo.GetComponent<RectTransform>();
         SetAnchors(rnRt, 1, 1, 0, 1, -90, 4, -4, -4);
 
-        // ── Wire PartyPanelUI ─────────────────────────────────────────────
+        // Wire PartyPanelUI
         var ui = root.AddComponent<PartyPanelUI>();
         var so = new SerializedObject(ui);
 
@@ -459,19 +452,14 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════    // JOIN REQUEST NOTIFICATION PANEL
-    // ════════════════════════════════════════════════════════════════════════════
+    // Tạo popup thông báo khi có người chơi gửi yêu cầu xin vào nhóm.
 
-    /// <summary>
-    /// Panel thông báo xin vào nhóm: hiển thị tên/level/hệ người xin + nút Đồng ý / Từ chối.
-    /// Tư động ẩn khi khởi tạo. Gắn vào PartyPanel trong scene.
-    /// </summary>
-    // ══ JOIN REQUEST NOTIFICATION PANEL (menu riêng — không nằm trong CreateAll) ══
+    // Panel thông báo xin vào nhóm: hiển thị tên/level/hệ người xin + nút Đồng ý / Từ chối.
+    // Tư động ẩn khi khởi tạo. Gắn vào PartyPanel trong scene.
+    // JOIN REQUEST NOTIFICATION PANEL (menu riêng — không nằm trong CreateAll)
 
-    /// <summary>
-    /// Tạo prefab PartyJoinRequestPopup độc lập.
-    /// Menu riêng để không đè lên prefab đã cài đặt tay trong scene.
-    /// </summary>
+    // Tạo prefab PartyJoinRequestPopup độc lập.
+    // Menu riêng để không đè lên prefab đã cài đặt tay trong scene.
     [MenuItem("GameTools/CharacterMenu/Create Party Join Request Popup")]
     public static void CreateJoinRequestPopupStandalone()
     {
@@ -556,8 +544,7 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ════════════════════════════════════════════════════════════════════════════    // SOCIAL PANEL (4 tab ngoài)
-    // ══════════════════════════════════════════════════════════════════════════
+    // Tạo panel xã hội gồm các tab bạn bè, nhóm và thông báo liên quan.
 
     private static void CreateSocialPanelPrefab()
     {
@@ -566,7 +553,7 @@ public static class CharacterMenuPrefabCreator
         rt.sizeDelta = new Vector2(420, 520);
         root.AddComponent<Image>().color = new Color(0.15f, 0.10f, 0.04f, 0.97f);
 
-        // ── Header ──────────────────────────────────────────────────────────
+        // Header
         var header = MakeChild(root, "Header");
         SetAnchors(header.GetComponent<RectTransform>(), 0, 1, 1, 1, 0, -44, 0, 0);
         header.AddComponent<Image>().color = new Color(0.50f, 0.32f, 0f, 1f);
@@ -596,7 +583,7 @@ public static class CharacterMenuPrefabCreator
         SetFill(cTxt.GetComponent<RectTransform>());
         cTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Content area ─────────────────────────────────────────────────────
+        // Content area
         // PanelParty – load PartyPanel prefab content or placeholder
         var panelParty = MakeChild(root, "PanelParty");
         SetAnchors(panelParty.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, -44);
@@ -635,7 +622,7 @@ public static class CharacterMenuPrefabCreator
         mpLbl.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
         panelMessage.SetActive(false);
 
-        // ── Wire SocialPanelUI ────────────────────────────────────────────
+        // Wire SocialPanelUI
         var ui = root.AddComponent<SocialPanelUI>();
         var so = new SerializedObject(ui);
         so.FindProperty("closeButton")  .objectReferenceValue = closeGo.GetComponent<Button>();
@@ -658,9 +645,7 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // CHARACTER MENU PANEL
-    // ══════════════════════════════════════════════════════════════════════════
 
     private static void CreateCharacterMenuPanelPrefab()
     {
@@ -674,7 +659,7 @@ public static class CharacterMenuPrefabCreator
         rt.anchoredPosition = new Vector2(10f, 0f); // offset 10px từ mép trái
         root.AddComponent<Image>().color = new Color(0.15f, 0.10f, 0.04f, 0.97f);
 
-        // ── Header / avatar area ──────────────────────────────────────────
+        // Header / avatar area
         var headerArea = MakeChild(root, "AvatarArea");
         SetAnchors(headerArea.GetComponent<RectTransform>(), 0, 1, 1, 1, 0, -110, 0, 0);
         headerArea.AddComponent<Image>().color = new Color(0.22f, 0.14f, 0.04f, 1f);
@@ -725,7 +710,7 @@ public static class CharacterMenuPrefabCreator
         SetAnchors(expTxtGo.GetComponent<RectTransform>(), 0, 1, 1, 1, 6, -136, -6, -120);
         expTxtGo.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Menu buttons ──────────────────────────────────────────────────
+        // Menu buttons
         var menuArea = MakeChild(root, "MenuArea");
         SetAnchors(menuArea.GetComponent<RectTransform>(), 0, 1, 0, 1, 6, 6, -6, -140);
         var vlg = menuArea.AddComponent<VerticalLayoutGroup>();
@@ -756,7 +741,7 @@ public static class CharacterMenuPrefabCreator
         SetFill(closeTxt.GetComponent<RectTransform>());
         closeTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Wire CharacterMenuPanelUI ─────────────────────────────────────
+        // Wire CharacterMenuPanelUI
         var ui = root.AddComponent<CharacterMenuPanelUI>();
         var so = new SerializedObject(ui);
         so.FindProperty("avatarImage")       .objectReferenceValue = avatarGo.GetComponent<Image>();
@@ -787,14 +772,10 @@ public static class CharacterMenuPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // CHARACTER MENU HUD BUTTON
-    // ══════════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Nút HUD góc trên trái → click mở / đóng CharacterMenuPanel.
-    /// Neo anchor = top-left, cạnh trên canvas HUD.
-    /// </summary>
+    // Nút HUD góc trên trái → click mở / đóng CharacterMenuPanel.
+    // Neo anchor = top-left, cạnh trên canvas HUD.
     private static void CreateCharacterMenuHudButtonPrefab()
     {
         var root = new GameObject("CharacterMenuHudButton");

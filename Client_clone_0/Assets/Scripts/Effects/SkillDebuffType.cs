@@ -1,9 +1,7 @@
 using System;
 using Unity.Netcode;
 
-/// <summary>
-/// Các loại debuff (hiệu ứng bất lợi) áp dụng từ skill lên player hoặc enemy.
-/// </summary>
+// Các loại debuff (hiệu ứng bất lợi) áp dụng từ skill lên player hoặc enemy.
 public enum SkillDebuffType
 {
     None       = 0,
@@ -14,28 +12,26 @@ public enum SkillDebuffType
     DefenseDown = 5,  // Giảm defense %
 }
 
-/// <summary>
-/// Một debuff entry đang active trên target.
-/// Dùng trong NetworkList nên phải implement INetworkSerializable.
-/// </summary>
+// Một debuff entry đang active trên target.
+// Dùng trong NetworkList nên phải implement INetworkSerializable.
 public struct DebuffEntry : INetworkSerializable, IEquatable<DebuffEntry>
 {
-    /// <summary>Loại debuff.</summary>
+    // Loại debuff.
     public SkillDebuffType Type;
 
-    /// <summary>Giá trị hiệu ứng: % giảm tốc, % giảm attack, damage/tick, % giảm defense...</summary>
+    // Giá trị hiệu ứng: % giảm tốc, % giảm attack, damage/tick, % giảm defense...
     public int Value;
 
-    /// <summary>Icon ID để hiển thị (dùng chung với Resources/ItemIcons/{iconId}.png).</summary>
+    // Icon ID để hiển thị (dùng chung với Resources/ItemIcons/{iconId}.png).
     public int IconId;
 
-    /// <summary>Tên debuff hiển thị trên UI.</summary>
+    // Tên debuff hiển thị trên UI.
     public Unity.Collections.FixedString64Bytes Name;
 
-    /// <summary>Thời điểm hết hạn tính từ NetworkManager.ServerTime.TimeAsFloat (server time).</summary>
+    // Thời điểm hết hạn tính từ NetworkManager.ServerTime.TimeAsFloat (server time).
     public float ExpireServerTime;
 
-    /// <summary>Tổng thời gian duration (giây) — dùng để tính % outline fade.</summary>
+    // Tổng thời gian duration (giây) — dùng để tính % outline fade.
     public float TotalDuration;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter

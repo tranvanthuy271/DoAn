@@ -2,20 +2,16 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 3 của hệ Hỏa — "Thiên Hỏa" (Mưa Lửa Từ Trên Trời)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill3 trên SkillEffect cho tất cả client.
-///   2. Server spawn nhiều fireball prefab từ trên cao rơi xuống vùng phía trước player.
-///   3. Mỗi fireball rơi thẳng xuống, gây sát thương khi chạm enemy.
-///   4. Tự hủy sau lifetime.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào Hoa.prefab.
-///   - Gán firePrefab: prefab có Rigidbody2D + Collider2D trigger + FireballDamage.
-///   - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = FireRain.
-/// </summary>
+// Skill 3 của hệ Hỏa — "Thiên Hỏa" (Mưa Lửa Từ Trên Trời)
+// Cơ chế:
+// 1. Trigger animation Skill3 trên SkillEffect cho tất cả client.
+// 2. Server spawn nhiều fireball prefab từ trên cao rơi xuống vùng phía trước player.
+// 3. Mỗi fireball rơi thẳng xuống, gây sát thương khi chạm enemy.
+// 4. Tự hủy sau lifetime.
+// Setup trong Unity:
+// - Gắn component này vào Hoa.prefab.
+// - Gán firePrefab: prefab có Rigidbody2D + Collider2D trigger + FireballDamage.
+// - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = FireRain.
 public class FireRainSkill : NetworkBehaviour
 {
     [Header("Fire Rain Settings")]
@@ -47,7 +43,7 @@ public class FireRainSkill : NetworkBehaviour
     [Tooltip("Trigger name trong Animator SkillEffect để phát animation Skill3")]
     [SerializeField] private string animTriggerName = "Skill3";
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;
@@ -57,9 +53,7 @@ public class FireRainSkill : NetworkBehaviour
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - cooldownTimer / cooldown);
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ══════════════════════════════════════════════════════════════════════════
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -91,9 +85,7 @@ public class FireRainSkill : NetworkBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  Public API — gọi từ PlayerSkillManager
-    // ══════════════════════════════════════════════════════════════════════════
     public void UseFireRain()
     {
         if (!CanUseNow) return;
@@ -115,9 +107,7 @@ public class FireRainSkill : NetworkBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  Network RPCs
-    // ══════════════════════════════════════════════════════════════════════════
     [ServerRpc]
     private void StartFireRainServerRpc(bool facingRight)
     {
@@ -168,9 +158,7 @@ public class FireRainSkill : NetworkBehaviour
         isUsing = false;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  Core sequence (server-only)
-    // ══════════════════════════════════════════════════════════════════════════
     private IEnumerator FireRainSequence(bool facingRight)
     {
         TriggerFireRainAnimationClientRpc(facingRight);

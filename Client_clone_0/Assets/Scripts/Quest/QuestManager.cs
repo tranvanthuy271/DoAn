@@ -5,13 +5,11 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 
-/// <summary>
-/// QuestManager — Singleton quản lý trạng thái nhiệm vụ phía client.
-/// Giữ ActiveQuest của người chơi và phát sự kiện khi trạng thái thay đổi.
-/// </summary>
+// QuestManager — Singleton quản lý trạng thái nhiệm vụ phía client.
+// Giữ ActiveQuest của người chơi và phát sự kiện khi trạng thái thay đổi.
 public class QuestManager : MonoBehaviour
 {
-    // ─── Singleton ────────────────────────────────────────────────────────────
+    // Singleton
     public static QuestManager Instance { get; private set; }
 
     private void Awake()
@@ -23,16 +21,16 @@ public class QuestManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    // ─── State ────────────────────────────────────────────────────────────────
+    // State
     public QuestStatusDto ActiveQuest   { get; private set; }
     public List<QuestStatusDto> AllQuests { get; private set; } = new();
-    /// <summary>Quest cần hiển thị trên HUD: active nếu có, không thì quest available đầu tiên.</summary>
+    // Quest cần hiển thị trên HUD: active nếu có, không thì quest available đầu tiên.
     public QuestStatusDto HintQuest     { get; private set; }
 
-    /// <summary>Phát khi danh sách / tiến trình nhiệm vụ thay đổi.</summary>
+    // Phát khi danh sách / tiến trình nhiệm vụ thay đổi.
     public event Action OnQuestListChanged;
 
-    // ─── API helpers ─────────────────────────────────────────────────────────
+    // API helpers
     private static string ApiUrl(string path)
     {
         var root = ServerAddressConfig.Instance != null
@@ -43,11 +41,9 @@ public class QuestManager : MonoBehaviour
 
     private static string JwtToken => PlayerPrefs.GetString("JWT_TOKEN", "");
 
-    // ─── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Tải danh sách quest từ NPC (hoặc trạng thái hiện tại khi npcId=0).
-    /// </summary>
+    // Tải danh sách quest từ NPC (hoặc trạng thái hiện tại khi npcId=0).
     public void RefreshFromServer(int npcId = 0, Action<List<QuestStatusDto>> onDone = null)
     {
         StartCoroutine(LoadQuestListRoutine(npcId, onDone));
@@ -63,16 +59,14 @@ public class QuestManager : MonoBehaviour
         StartCoroutine(CompleteQuestRoutine(questId, onDone));
     }
 
-    /// <summary>
-    /// Tải trạng thái tổng hợp: quest đang active hoặc quest available đầu tiên.
-    /// Dùng để cập nhật HintQuest cho QuestHudWidget.
-    /// </summary>
+    // Tải trạng thái tổng hợp: quest đang active hoặc quest available đầu tiên.
+    // Dùng để cập nhật HintQuest cho QuestHudWidget.
     public void RefreshPlayerOverview(Action onDone = null)
     {
         StartCoroutine(LoadPlayerOverviewRoutine(onDone));
     }
 
-    // ─── Coroutines ──────────────────────────────────────────────────────────
+    // Coroutines
 
     private IEnumerator LoadQuestListRoutine(int npcId, Action<List<QuestStatusDto>> onDone)
     {
@@ -183,7 +177,7 @@ public class QuestManager : MonoBehaviour
         onDone?.Invoke();
     }
 
-    // ─── JSON Parsing ─────────────────────────────────────────────────────────
+    // JSON Parsing
     // JsonUtility doesn't support top-level arrays, so parse manually.
     private static List<QuestStatusDto> ParseQuestList(string json)
     {
@@ -277,7 +271,7 @@ public class QuestManager : MonoBehaviour
             bridge.RefreshInventoryFromDB();
     }
 
-    // ─── DTOs ─────────────────────────────────────────────────────────────────
+    // DTOs
     [Serializable]
     public class QuestStatusDto
     {

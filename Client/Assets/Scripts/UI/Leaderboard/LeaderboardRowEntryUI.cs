@@ -2,10 +2,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Mot dong trong bang xep hang - 4 o: Hang | Ten | Gia tri | Thong tin.
-/// Prefab can co children: RankText, NameText, ValueText, ExtraText (TMP).
-/// </summary>
+// Mot dong trong bang xep hang - 4 o: Hang | Ten | Gia tri | Thong tin.
+// Prefab can co children: RankText, NameText, ValueText, ExtraText (TMP).
 public class LeaderboardRowEntryUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text rankText;

@@ -2,11 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Nút HUD để mở/đóng Chat Panel.
-/// Gắn script này lên Button trong Canvas HUD.
-/// Tự tìm ChatPanelUI trong scene, hoặc gán tay trong Inspector.
-/// </summary>
+// Nút HUD để mở/đóng Chat Panel.
+// Gắn script này lên Button trong Canvas HUD.
+// Tự tìm ChatPanelUI trong scene, hoặc gán tay trong Inspector.
 [RequireComponent(typeof(Button))]
 public class ChatToggleButton : MonoBehaviour
 {
@@ -18,13 +16,13 @@ public class ChatToggleButton : MonoBehaviour
     [SerializeField] private GameObject  badgeRoot;        // GameObject chứa số đếm
     [SerializeField] private TextMeshProUGUI badgeText;    // text số tin
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     private Button _btn;
     private int    _unreadCount;
     private bool   _chatManagerSubscribed;
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -61,7 +59,7 @@ public class ChatToggleButton : MonoBehaviour
         _chatManagerSubscribed = true;
     }
 
-    // ── Click Handler ─────────────────────────────────────────────────────────
+    // Click Handler
 
     private void OnClicked()
     {
@@ -78,7 +76,7 @@ public class ChatToggleButton : MonoBehaviour
         }
     }
 
-    // ── Badge ─────────────────────────────────────────────────────────────────
+    // Badge
 
     private void OnNewMessage(ChatMessageDto msg)
     {
@@ -96,9 +94,9 @@ public class ChatToggleButton : MonoBehaviour
             badgeText.text = _unreadCount > 9 ? "9+" : _unreadCount.ToString();
     }
 
-    // ── Public ────────────────────────────────────────────────────────────────
+    // Public
 
-    /// <summary>Mở thẳng tab tin riêng với một người chơi.</summary>
+    // Mở thẳng tab tin riêng với một người chơi.
     public void OpenPrivateChat(int targetUserId, string targetUsername)
     {
         ResolveChatPanel();
@@ -108,7 +106,7 @@ public class ChatToggleButton : MonoBehaviour
         UpdateBadge();
     }
 
-    /// <summary>Mở/đóng panel bạn bè.</summary>
+    // Mở/đóng panel bạn bè.
     public void ToggleFriendPanel()
     {
         ResolveFriendPanel();

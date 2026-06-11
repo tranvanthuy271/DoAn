@@ -3,16 +3,12 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// Component gắn vào boomerang projectile prefab.
-///
-/// Hành vi:
-///   1. Bay thẳng theo hướng được set khi Spawn.
-///   2. Sau returnDelay giây, đổi hướng quay về owner.
-///   3. Khi chạm owner hoặc hết lifetime thì Despawn.
-///
-/// Damage được xử lý bởi FireballDamage component trên cùng prefab.
-/// </summary>
+// Component gắn vào boomerang projectile prefab.
+// Hành vi:
+// 1. Bay thẳng theo hướng được set khi Spawn.
+// 2. Sau returnDelay giây, đổi hướng quay về owner.
+// 3. Khi chạm owner hoặc hết lifetime thì Despawn.
+// Damage được xử lý bởi FireballDamage component trên cùng prefab.
 [RequireComponent(typeof(Rigidbody2D))]
 public class EarthBoomerangProjectile : NetworkBehaviour
 {
@@ -25,16 +21,16 @@ public class EarthBoomerangProjectile : NetworkBehaviour
     [Tooltip("Tổng thời gian sống tối đa (giây)")]
     [SerializeField] private float maxLifetime = 4f;
 
-    /// <summary>Sát thương gây ra khi chạm — set từ EarthBoomerangSkill (ghi đè FireballDamage).</summary>
+    // Sát thương gây ra khi chạm — set từ EarthBoomerangSkill (ghi đè FireballDamage).
     [HideInInspector] public int damage = 100;
-    /// <summary>NetworkObjectId của caster để tránh tự gây damage cho mình.</summary>
+    // NetworkObjectId của caster để tránh tự gây damage cho mình.
     [HideInInspector] public ulong ownerNetworkObjectId = 0;
 
     // Cooldown per-target: tránh spam damage lên cùng 1 mục tiêu trong vòng 0.8s
     private const float PER_TARGET_HIT_COOLDOWN = 0.8f;
     private readonly Dictionary<ulong, float> _recentHits = new Dictionary<ulong, float>();
 
-    // ── Runtime state ─────────────────────────────────────────────────────────
+    // Trạng thái runtime được cập nhật khi game đang chạy.
     private Rigidbody2D rb;
     private bool returning = false;
     private float timer = 0f;
@@ -43,9 +39,9 @@ public class EarthBoomerangProjectile : NetworkBehaviour
     private Transform _ownerTransform;
     private ulong _ownerNetworkObjectId;
 
-    // ── Server setup (gọi từ EarthBoomerangSkill TRƯỚC khi Spawn()) ───────────
+    // Server setup (gọi từ EarthBoomerangSkill TRƯỚC khi Spawn())
 
-    /// <summary>Server-side init: set velocity + cache owner Transform.</summary>
+    // Server-side init: set velocity + cache owner Transform.
     public void InitializeOnServer(Transform ownerTransform, Vector2 velocity)
     {
         rb = GetComponent<Rigidbody2D>();
@@ -54,7 +50,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         _ownerTransform = ownerTransform;
     }
 
-    // ── Unity lifecycle ──────────────────────────────────────────────────────
+    // Unity lifecycle
 
     private void Awake()
     {
@@ -68,7 +64,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         if (fbd != null) fbd.enabled = false;
     }
 
-    // ── Network lifecycle ─────────────────────────────────────────────────────
+    // Network lifecycle
 
     public override void OnNetworkSpawn()
     {
@@ -98,7 +94,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         rb = rb != null ? rb : GetComponent<Rigidbody2D>();
     }
 
-    // ── Damage (Server-only, KHÔNG despawn khi trúng) ─────────────────────────
+    // Damage (Server-only, KHÔNG despawn khi trúng)
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -148,7 +144,7 @@ public class EarthBoomerangProjectile : NetworkBehaviour
         }
     }
 
-    // ── Movement (Server-only — NetworkTransform đồng bộ vị trí sang client) ──
+    // Movement (Server-only — NetworkTransform đồng bộ vị trí sang client)
 
     private void Update()
     {

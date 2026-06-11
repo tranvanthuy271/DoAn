@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Normalized player inventory — replaces inventory JSON blob in player_data.
-    /// One row per item slot per player.
-    /// </summary>
+    // Normalized player inventory — replaces inventory JSON blob in player_data.
+    // One row per item slot per player.
     [Table("player_inventory")]
     public class PlayerInventory
     {

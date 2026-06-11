@@ -1,10 +1,8 @@
 using System;
 using UnityEngine;
 
-/// <summary>
-/// DTO nhận từ SignalR Hub.
-/// Phải match với ChatMessagePayload trên server.
-/// </summary>
+// DTO nhận từ SignalR Hub.
+// Phải match với ChatMessagePayload trên server.
 [Serializable]
 public class ChatMessageDto
 {
@@ -15,20 +13,18 @@ public class ChatMessageDto
     public string message    = "";
     public string timestamp  = "";   // "HH:mm" từ server
 
-    /// <summary>Parse từ JSON (JsonUtility).</summary>
+    // Parse từ JSON (JsonUtility).
     public static ChatMessageDto FromJson(string json)
     {
         try   { return JsonUtility.FromJson<ChatMessageDto>(json); }
         catch { return new ChatMessageDto { message = json }; }
     }
 
-    /// <summary>Chuyển sang ChatChannel enum.</summary>
+    // Chuyển sang ChatChannel enum.
     public ChatChannel GetChannel() => ChatChannelHelper.FromString(channel);
 }
 
-/// <summary>
-/// DTO bạn bè nhận từ REST API.
-/// </summary>
+// DTO bạn bè nhận từ REST API.
 [Serializable]
 public class FriendEntryDto
 {

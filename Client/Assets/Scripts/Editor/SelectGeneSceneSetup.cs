@@ -6,27 +6,24 @@ using UnityEngine.UI;
 using TMPro;
 using System.IO;
 
-/// <summary>
-/// Editor tool — tạo tự động scene SelectGene với đầy đủ UI hierarchy.
-/// Chạy từ menu Unity: Tools ▸ Game ▸ Create SelectGene Scene
-///
-/// Scene hierarchy được tạo:
-///   SelectGeneRoot (SelectGeneController)
-///   Canvas (Screen Space - Overlay)
-///     Background (Image – nền tối)
-///     Header
-///       Title ("Chọn Hệ Gene" – TMP)
-///     SlotsContainer (HorizontalLayoutGroup)
-///       Slot1 (GeneSlotUI)
-///         SlotTitle, ExistingPanel (Name/Level/Element/PlayBtn), EmptyPanel (CreateBtn), LockedPanel
-///       Slot2 (GeneSlotUI)
-///         SlotTitle, ExistingPanel, EmptyPanel, LockedPanel
-///     ErrorText (TMP)
-///     LoadingOverlay
-///       LoadingText (TMP)
-///     ExitButton
-///     CreateGene2Panel (tạo nhân vật mới)
-/// </summary>
+// Editor tool — tạo tự động scene SelectGene với đầy đủ UI hierarchy.
+// Chạy từ menu Unity: Tools ▸ Game ▸ Create SelectGene Scene
+// Scene hierarchy được tạo:
+// SelectGeneRoot (SelectGeneController)
+// Canvas (Screen Space - Overlay)
+// Background (Image – nền tối)
+// Header
+// Title ("Chọn Hệ Gene" – TMP)
+// SlotsContainer (HorizontalLayoutGroup)
+// Slot1 (GeneSlotUI)
+// SlotTitle, ExistingPanel (Name/Level/Element/PlayBtn), EmptyPanel (CreateBtn), LockedPanel
+// Slot2 (GeneSlotUI)
+// SlotTitle, ExistingPanel, EmptyPanel, LockedPanel
+// ErrorText (TMP)
+// LoadingOverlay
+// LoadingText (TMP)
+// ExitButton
+// CreateGene2Panel (tạo nhân vật mới)
 public static class SelectGeneSceneSetup
 {
     private const string ScenePath    = "Assets/Scenes/SelectGene.unity";
@@ -60,11 +57,11 @@ public static class SelectGeneSceneSetup
                 Object.DestroyImmediate(go);
         }
 
-        // ── Root Controller ──────────────────────────────────────────────
+        // Root Controller
         var root = new GameObject("SelectGeneRoot");
         var controller = root.AddComponent<SelectGeneController>();
 
-        // ── Canvas ──────────────────────────────────────────────────────
+        // Canvas
         var canvasGO = new GameObject("Canvas");
         var canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -77,11 +74,11 @@ public static class SelectGeneSceneSetup
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // ── Background ──────────────────────────────────────────────────
+        // Background
         var bg = CreateUIImage(canvasGO.transform, "Background", BgColor);
         SetStretch(bg.GetComponent<RectTransform>());
 
-        // ── Header ──────────────────────────────────────────────────────
+        // Header
         var header = new GameObject("Header");
         header.transform.SetParent(canvasGO.transform, false);
         var headerRect = header.AddComponent<RectTransform>();
@@ -97,7 +94,7 @@ public static class SelectGeneSceneSetup
         titleRect.offsetMin = titleRect.offsetMax = Vector2.zero;
         titleText.alignment = TextAlignmentOptions.Center;
 
-        // ── Slots Container ──────────────────────────────────────────────
+        // Slots Container
         var slotsContainerGO = new GameObject("SlotsContainer");
         slotsContainerGO.transform.SetParent(canvasGO.transform, false);
         var slotsRect = slotsContainerGO.AddComponent<RectTransform>();
@@ -114,15 +111,15 @@ public static class SelectGeneSceneSetup
         hlg.childForceExpandHeight = true;
         hlg.padding = new RectOffset(20, 20, 20, 20);
 
-        // ── Slot 1 ────────────────────────────────────────────────────────
+        // Slot 1
         var slot1GO = BuildSlotUI(slotsContainerGO.transform, "Slot1", slotIndex: 1);
         var slot1UI = slot1GO.GetComponent<GeneSlotUI>();
 
-        // ── Slot 2 ────────────────────────────────────────────────────────
+        // Slot 2
         var slot2GO = BuildSlotUI(slotsContainerGO.transform, "Slot2", slotIndex: 2);
         var slot2UI = slot2GO.GetComponent<GeneSlotUI>();
 
-        // ── Error Text ───────────────────────────────────────────────────
+        // Error Text
         var errorText = CreateText(canvasGO.transform, "ErrorText", "", fontSize: 28, color: new Color(1f, 0.4f, 0.4f));
         var errorRect = errorText.GetComponent<RectTransform>();
         errorRect.anchorMin = new Vector2(0.1f, 0.04f);
@@ -131,7 +128,7 @@ public static class SelectGeneSceneSetup
         errorText.alignment = TextAlignmentOptions.Center;
         errorText.gameObject.SetActive(false);
 
-        // ── Loading Overlay ──────────────────────────────────────────────
+        // Loading Overlay
         var loadingOverlay = CreateUIImage(canvasGO.transform, "LoadingOverlay", new Color(0, 0, 0, 0.7f));
         SetStretch(loadingOverlay.GetComponent<RectTransform>());
         loadingOverlay.GetComponent<RectTransform>().SetAsLastSibling();
@@ -145,15 +142,15 @@ public static class SelectGeneSceneSetup
         loadingText.alignment = TextAlignmentOptions.Center;
         loadingOverlay.SetActive(false);
 
-        // ── Exit Button ──────────────────────────────────────────────────
+        // Exit Button
         var exitBtn = CreateButton(canvasGO.transform, "ExitButton", "Thoát", ButtonRed,
             new Vector2(0.02f, 0.02f), new Vector2(0.12f, 0.10f));
 
-        // ── Create Gene2 Panel ────────────────────────────────────────────
+        // Create Gene2 Panel
         var createPanel = BuildCreateGene2Panel(canvasGO.transform);
         createPanel.SetActive(false);
 
-        // ── Wire SelectGeneController ─────────────────────────────────────
+        // Wire SelectGeneController
         controller.slot1UI         = slot1UI;
         controller.slot2UI         = slot2UI;
         controller.titleText       = titleText;
@@ -168,7 +165,7 @@ public static class SelectGeneSceneSetup
         controller.cancelCreateButton  = createPanel.transform.Find("ButtonRow/CancelCreate")?.GetComponent<Button>();
         controller.createErrorText     = createPanel.transform.Find("CreateError")?.GetComponent<TMP_Text>();
 
-        // ── Apply NotoSans font (supports Vietnamese) to all TMP_Text ────
+        // Apply NotoSans font (supports Vietnamese) to all TMP_Text
         var notoSans = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(NotoSansPath);
         if (notoSans != null)
         {
@@ -181,13 +178,13 @@ public static class SelectGeneSceneSetup
         }
 
         // ── EventSystem: NOT created here — GameUIPersist already provides
-        //    a DontDestroyOnLoad EventSystem from the Login/GameScene. ────
+        // a DontDestroyOnLoad EventSystem from the Login/GameScene.
 
-        // ── Save scene ───────────────────────────────────────────────────
+        // Save scene
         EditorSceneManager.SaveScene(scene, ScenePath);
         AssetDatabase.Refresh();
 
-        // ── Add to Build Settings ─────────────────────────────────────────
+        // Add to Build Settings
         AddSceneToBuildSettings(ScenePath);
 
         EditorUtility.DisplayDialog(
@@ -196,7 +193,7 @@ public static class SelectGeneSceneSetup
             "OK");
     }
 
-    // ─── Slot UI Builder ──────────────────────────────────────────────────
+    // Slot UI Builder
     private static GameObject BuildSlotUI(Transform parent, string name, int slotIndex)
     {
         var slotGO = CreateUIImage(parent, name, PanelColor);
@@ -300,7 +297,7 @@ public static class SelectGeneSceneSetup
         return slotGO;
     }
 
-    // ─── Create Gene2 Panel ────────────────────────────────────────────────
+    // Create Gene2 Panel
     private static GameObject BuildCreateGene2Panel(Transform parent)
     {
         var panel = CreateUIImage(parent, "CreateGene2Panel", new Color(0.12f, 0.08f, 0.03f, 0.97f));
@@ -390,7 +387,7 @@ public static class SelectGeneSceneSetup
         return panel;
     }
 
-    // ─── UI Helpers ────────────────────────────────────────────────────────
+    // UI Helpers
 
     private static GameObject CreateUIImage(Transform parent, string name, Color color)
     {

@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Skill dịch chuyển tức thời (Teleport/Blink) cho player
-/// Cho phép player dịch chuyển một khoảng cách theo hướng đang nhìn
-/// </summary>
+// Skill dịch chuyển tức thời (Teleport/Blink) cho player
+// Cho phép player dịch chuyển một khoảng cách theo hướng đang nhìn
 public class TeleportSkill : NetworkBehaviour
 {
     [Header("Components")]
@@ -22,7 +20,7 @@ public class TeleportSkill : NetworkBehaviour
     [Tooltip("Cooldown giữa các lần sử dụng teleport (seconds)")]
     [SerializeField] public float cooldown = 3f;
 
-    /// <summary>Trạng thái sẵn sàng — dùng bởi PlayerSkillManager để check trước khi gọi UseTeleport()</summary>
+    // Trạng thái sẵn sàng — dùng bởi PlayerSkillManager để check trước khi gọi UseTeleport()
     public bool CanUseNow => canUseTeleport;
     
     [Tooltip("Khoảng cách dịch chuyển (units)")]
@@ -129,7 +127,7 @@ public class TeleportSkill : NetworkBehaviour
         // Phím T đã được dùng cho SkillHotbar toggle — skill này chỉ kích hoạt qua hotbar UI
     }
 
-    /// <summary>Kích hoạt teleport từ bên ngoài (ví dụ: PlayerSkillManager, hotbar UI).</summary>
+    // Kích hoạt teleport từ bên ngoài (ví dụ: PlayerSkillManager, hotbar UI).
     public void UseTeleport()
     {
         if (isTeleporting) return;
@@ -331,7 +329,7 @@ public class TeleportSkill : NetworkBehaviour
         isTeleporting = false;
     }
 
-    // Public API
+    // Hàm public để script hoặc hệ thống khác gọi vào.
     public bool IsTeleporting() => isTeleporting;
     public bool CanUseTeleport() => canUseTeleport;
     public float GetCooldownPercent() => canUseTeleport ? 1f : Mathf.Clamp01(1f - (cooldownTimer / cooldown));

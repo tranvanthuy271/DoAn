@@ -5,13 +5,13 @@ namespace GameServerApi.Services.Interfaces
 {
     public interface IAuthService
     {
-        /// <summary>Hashes a plain-text password using BCrypt.</summary>
+        // Hashes a plain-text password using BCrypt.
         string HashPassword(string plainText);
 
-        /// <summary>Verifies a plain-text password against a stored BCrypt hash.</summary>
+        // Verifies a plain-text password against a stored BCrypt hash.
         bool VerifyPassword(string plainText, string hash);
 
-        /// <summary>Generates a signed JWT bearer token for the given user.</summary>
+        // Generates a signed JWT bearer token for the given user.
         string GenerateJwtToken(User user);
     }
 }

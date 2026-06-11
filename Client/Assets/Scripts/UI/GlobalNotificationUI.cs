@@ -3,16 +3,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel thông báo toàn cục — dùng cho mọi luồng (lỗi, cảnh báo, xác nhận đơn giản).
-///
-/// Gọi từ bất kỳ đâu:
-///   GlobalNotificationUI.Show("Cần phải có nhóm mới có thể tham gia phó bản này.");
-///   GlobalNotificationUI.Show("Tin nhắn", "Nhắc nhở", autoHideSeconds: 3f);
-///
-/// Prefab: Assets/Resources/Prefabs/UI/GlobalNotificationPanel.prefab
-/// — Tạo tự động bằng menu: Tools ▸ Create Dungeon UI Prefabs
-/// </summary>
+// Panel thông báo toàn cục — dùng cho mọi luồng (lỗi, cảnh báo, xác nhận đơn giản).
+// Gọi từ bất kỳ đâu:
+// GlobalNotificationUI.Show("Cần phải có nhóm mới có thể tham gia phó bản này.");
+// GlobalNotificationUI.Show("Tin nhắn", "Nhắc nhở", autoHideSeconds: 3f);
+// Prefab: Assets/Resources/Prefabs/UI/GlobalNotificationPanel.prefab
+// — Tạo tự động bằng menu: Tools ▸ Create Dungeon UI Prefabs
 public class GlobalNotificationUI : MonoBehaviour
 {
     private const string LogPrefix = "[GlobalNotificationUI]";
@@ -31,7 +27,7 @@ public class GlobalNotificationUI : MonoBehaviour
     private Coroutine _autoHideCoroutine;
     private bool _hasBeenShown;
 
-    // ── Unity lifecycle ───────────────────────────────────────
+    // Unity lifecycle
 
     private void Awake()
     {
@@ -65,15 +61,13 @@ public class GlobalNotificationUI : MonoBehaviour
             panel.SetActive(false);
     }
 
-    // ── Static API ────────────────────────────────────────────
+    // Static API
 
-    /// <summary>
-    /// Hiển thị thông báo.
-    /// <param name="message">Nội dung thông báo.</param>
-    /// <param name="title">Tiêu đề (mặc định "Nhắc nhở").</param>
-    /// <param name="autoHideSeconds">0 = chỉ ẩn khi nhấn Xác nhận.</param>
-    /// <param name="confirmLabel">Nhãn nút xác nhận (mặc định "Xác nhận").</param>
-    /// </summary>
+    // Hiển thị thông báo.
+    // Tham số message: Nội dung thông báo.
+    // Tham số title: Tiêu đề (mặc định "Nhắc nhở").
+    // Tham số autoHideSeconds: 0 = chỉ ẩn khi nhấn Xác nhận.
+    // Tham số confirmLabel: Nhãn nút xác nhận (mặc định "Xác nhận").
     public static void Show(string message, string title = "Nhắc nhở",
                             float autoHideSeconds = 0f, string confirmLabel = "Xác nhận")
     {
@@ -86,7 +80,7 @@ public class GlobalNotificationUI : MonoBehaviour
         inst.InternalShow(message, title, autoHideSeconds, confirmLabel);
     }
 
-    /// <summary>Lazy singleton — tìm trong scene kể cả inactive.</summary>
+    // Lazy singleton — tìm trong scene kể cả inactive.
     public static GlobalNotificationUI GetOrFind()
     {
         if (Instance != null) return Instance;
@@ -119,7 +113,7 @@ public class GlobalNotificationUI : MonoBehaviour
         return Instance;
     }
 
-    // ── Internal ──────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void InternalShow(string message, string title, float autoHideSeconds, string confirmLabel)
     {

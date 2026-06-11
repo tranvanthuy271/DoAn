@@ -5,7 +5,7 @@ namespace GameServerApi.Models.DTOs
         public int    Rank          { get; set; }
         public string CharacterName { get; set; } = "";
         public long   Value         { get; set; }
-        /// <summary>Thông tin phụ, ví dụ: tên phó bản, element type.</summary>
+        // Thông tin phụ, ví dụ: tên phó bản, element type.
         public string Extra         { get; set; } = "";
     }
 }

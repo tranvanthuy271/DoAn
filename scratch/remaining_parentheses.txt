@@ -1,4 +1,0 @@
-Line 97: - AI quái vật được mô hình hóa thành các trạng thái rời rạc: *Idle/Patrol* tuần tra, *Chase* đuổi theo người chơi, *Attack* tấn công khi đủ gần, và *Hit/Dead* (nhận sát thương/chết giải phóng tài nguyên).
-Line 204: # Slide 16: Sơ đồ Cơ sở dữ liệu vật lý (ERD)
-Line 335: - `web-api`: Container REST API & SignalR Hub ASP.NET Core 8, mở cổng HTTP (80/443) nhận kết nối.
-Line 420: - **Phó bản Wave**: Giao diện HUD hiển thị số đợt quái (Wave 3/5), số quái còn lại, và thanh máu Boss ở đỉnh màn hình.

@@ -5,37 +5,30 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// GameplayCommandService — Server-authoritative gateway cho mọi gameplay action in-game.
-///
-/// ╔══════════════════════════════════════════════════════════════════════╗
-/// ║  Hybrid Architecture Boundary:                                       ║
-/// ║  PRE-GAME  → Client gọi REST trực tiếp (Login/Register/CharSelect)  ║
-/// ║  IN-GAME   → Client gọi ServerRpc → Server gọi REST → ClientRpc    ║
-/// ╚══════════════════════════════════════════════════════════════════════╝
-///
-/// Flow cho mỗi action:
-///   1. Client UI gọi <c>GameplayCommandService.Instance.XxxServerRpc()</c>
-///   2. Server nhận, resolve playerId + JWT từ ZonePlayerSessionManager
-///   3. Server gọi GameServerApi (HTTPS) với JWT bearer
-///   4. Server gửi kết quả về đúng client qua targeted ClientRpc
-///   5. Static C# event fired → UI callback
-///
-/// Gắn vào: Singleton NetworkObject trong ServerScene (cùng GO với MapWorldBootstrap).
-/// </summary>
+// GameplayCommandService — Server-authoritative gateway cho mọi gameplay action in-game.
+// Hybrid Architecture Boundary:
+// PRE-GAME  → Client gọi REST trực tiếp (Login/Register/CharSelect)
+// IN-GAME   → Client gọi ServerRpc → Server gọi REST → ClientRpc
+// Flow cho mỗi action:
+// 1. Client UI gọi GameplayCommandService.Instance.XxxServerRpc()
+// 2. Server nhận, resolve playerId + JWT từ ZonePlayerSessionManager
+// 3. Server gọi GameServerApi (HTTPS) với JWT bearer
+// 4. Server gửi kết quả về đúng client qua targeted ClientRpc
+// 5. Static C# event fired → UI callback
+// Gắn vào: Singleton NetworkObject trong ServerScene (cùng GO với MapWorldBootstrap).
 [DisallowMultipleComponent]
 public class GameplayCommandService : NetworkBehaviour
 {
     public static GameplayCommandService Instance { get; private set; }
 
-    // ── Static C# events (client-side callbacks) ─────────────────────────────
+    // Static C# events (client-side callbacks)
     // Pattern sử dụng: subscribe → gọi ServerRpc → nhận event → unsubscribe
 
     public static event Action<string> OnPlayerDataReceived;      // RequestPlayerDataServerRpc
 
     public static event Action<string> OnSkillsReceived;          // GetPlayerSkillsServerRpc
     public static event Action<string> OnSkillUpgraded;           // UpgradeSkillServerRpc
-    /// <summary>Server đẩy skill data về ngay khi player spawn (pre-cache, không cần client request).</summary>
+    // Server đẩy skill data về ngay khi player spawn (pre-cache, không cần client request).
     public static event Action<string> OnInitialSkillsReceived;   // PushSkillsToClient (server-initiated)
 
     public static event Action<string> OnPotentialReceived;       // GetPlayerPotentialServerRpc
@@ -70,7 +63,7 @@ public class GameplayCommandService : NetworkBehaviour
         public string message;
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -89,11 +82,9 @@ public class GameplayCommandService : NetworkBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // PLAYER DATA — in-game reload (control-plane LoadPlayerData đã cover pre-game)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Client yêu cầu reload full player data từ DB (ví dụ: sau khi level up).</summary>
+    // Client yêu cầu reload full player data từ DB (ví dụ: sau khi level up).
     [ServerRpc(RequireOwnership = false)]
     public void RequestPlayerDataServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -101,8 +92,10 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ResolveClientGeneSlot(cid);
+        string endpoint = geneSlot == 2 ? $"{ApiBase}/player/{pid}/data2" : $"{ApiBase}/player/{pid}/data";
         StartCoroutine(DoGet(
-            $"{ApiBase}/player/{pid}/data", jwt,
+            endpoint, jwt,
             json => SendPlayerDataClientRpc(json, Target(cid)),
             err  => Debug.LogError($"[GameplayCmd] RequestPlayerData cid={cid}: {err}")
         ));
@@ -112,11 +105,9 @@ public class GameplayCommandService : NetworkBehaviour
     private void SendPlayerDataClientRpc(string json, ClientRpcParams p = default)
         => OnPlayerDataReceived?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // SKILLS
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy danh sách skill của player cùng level hiện tại.</summary>
+    // Lấy danh sách skill của player cùng level hiện tại.
     [ServerRpc(RequireOwnership = false)]
     public void GetPlayerSkillsServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -133,7 +124,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Nâng cấp 1 skill lên level kế tiếp.</summary>
+    // Nâng cấp 1 skill lên level kế tiếp.
     [ServerRpc(RequireOwnership = false)]
     public void UpgradeSkillServerRpc(int skillId, ServerRpcParams rpcParams = default)
     {
@@ -157,10 +148,8 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void UpgradeSkillResultClientRpc(string json, ClientRpcParams p = default)
         => OnSkillUpgraded?.Invoke(json);
 
-    /// <summary>
-    /// Server chủ động đẩy skill data về client ngay khi player spawn.
-    /// Gọi từ ZonePlayerSessionManager sau khi spawn xong — client không cần request riêng.
-    /// </summary>
+    // Server chủ động đẩy skill data về client ngay khi player spawn.
+    // Gọi từ ZonePlayerSessionManager sau khi spawn xong — client không cần request riêng.
     public void PushSkillsToClient(ulong clientId, int playerId, string jwt, int geneSlot = 1)
     {
         if (!IsServer) return;
@@ -176,11 +165,9 @@ public class GameplayCommandService : NetworkBehaviour
     private void SendInitialSkillsClientRpc(string json, ClientRpcParams p = default)
         => OnInitialSkillsReceived?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // POTENTIAL
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy thông tin tiềm năng của player.</summary>
+    // Lấy thông tin tiềm năng của player.
     [ServerRpc(RequireOwnership = false)]
     public void GetPlayerPotentialServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -195,9 +182,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>
-    /// Phân bổ tiềm năng. allocationsJson: {"allocations":[{"stat_name":"attack","points":3},...]}
-    /// </summary>
+    // Phân bổ tiềm năng. allocationsJson: {"allocations":[{"stat_name":"attack","points":3},...]}
     [ServerRpc(RequireOwnership = false)]
     public void AllocatePotentialStatsServerRpc(string allocationsJson, ServerRpcParams rpcParams = default)
     {
@@ -219,11 +204,9 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void AllocatePotentialResultClientRpc(string json, ClientRpcParams p = default)
         => OnPotentialAllocated?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // EQUIPMENT
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy thông tin trang bị đang đeo của player.</summary>
+    // Lấy thông tin trang bị đang đeo của player.
     [ServerRpc(RequireOwnership = false)]
     public void GetPlayerEquipmentServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -238,7 +221,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Trang bị item từ inventory theo slot index.</summary>
+    // Trang bị item từ inventory theo slot index.
     [ServerRpc(RequireOwnership = false)]
     public void EquipItemServerRpc(int inventorySlotIndex, ServerRpcParams rpcParams = default)
     {
@@ -254,7 +237,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Tháo trang bị theo slot name (weapon, armor, pants, boots).</summary>
+    // Tháo trang bị theo slot name (weapon, armor, pants, boots).
     [ServerRpc(RequireOwnership = false)]
     public void UnequipItemServerRpc(string equipmentSlot, ServerRpcParams rpcParams = default)
     {
@@ -297,11 +280,9 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void UnequipBagResultClientRpc(string json, ClientRpcParams p = default)
         => OnBagUnequipResult?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // GENE UPGRADE
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy config nâng gene cho element + tier.</summary>
+    // Lấy config nâng gene cho element + tier.
     [ServerRpc(RequireOwnership = false)]
     public void GetGeneConfigServerRpc(string elementType, int tier, ServerRpcParams rpcParams = default)
     {
@@ -316,7 +297,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Nâng cấp gene. requestJson: {"player_id":N,"element_type":"Fire",...}</summary>
+    // Nâng cấp gene. requestJson: {"player_id":N,"element_type":"Fire",...}
     [ServerRpc(RequireOwnership = false)]
     public void UpgradeGeneServerRpc(string requestJson, ServerRpcParams rpcParams = default)
     {
@@ -336,11 +317,9 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void GeneUpgradeResultClientRpc(string json, ClientRpcParams p = default)
         => OnGeneUpgraded?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // EQUIPMENT UPGRADE (Blacksmith)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy config nâng cấp trang bị cho 1 bậc cụ thể.</summary>
+    // Lấy config nâng cấp trang bị cho 1 bậc cụ thể.
     [ServerRpc(RequireOwnership = false)]
     public void GetUpgradeConfigServerRpc(int itemId, int targetLevel, ServerRpcParams rpcParams = default)
     {
@@ -354,7 +333,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Lấy danh sách tất cả option template cho trang bị.</summary>
+    // Lấy danh sách tất cả option template cho trang bị.
     [ServerRpc(RequireOwnership = false)]
     public void GetOptionTemplatesServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -368,7 +347,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Nâng cấp trang bị. requestJson: {"inventorySlotIndex":N,"targetLevel":M,...}</summary>
+    // Nâng cấp trang bị. requestJson: {"inventorySlotIndex":N,"targetLevel":M,...}
     [ServerRpc(RequireOwnership = false)]
     public void UpgradeEquipmentServerRpc(string requestJson, ServerRpcParams rpcParams = default)
     {
@@ -391,12 +370,10 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void EquipmentUpgradeResultClientRpc(string json, ClientRpcParams p = default)
         => OnEquipmentUpgraded?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // INVENTORY: USE ITEM
     // (Sort và GetInventory vẫn đi qua NetworkInventory.RequestSortInventoryServerRpc)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Sử dụng item trong inventory theo slot.</summary>
+    // Sử dụng item trong inventory theo slot.
     [ServerRpc(RequireOwnership = false)]
     public void UseInventoryItemServerRpc(int slotIndex, ServerRpcParams rpcParams = default)
     {
@@ -404,9 +381,10 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ResolveClientGeneSlot(cid);
         StartCoroutine(DoPost(
             $"{ApiBase}/player/{pid}/inventory/use-item",
-            $"{{\"slotIndex\":{slotIndex}}}", jwt,
+            $"{{\"slotIndex\":{slotIndex},\"geneSlot\":{geneSlot}}}", jwt,
             json =>
             {
                 TryApplyWaveTicketBonus(cid, json);
@@ -419,7 +397,7 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void UseItemResultClientRpc(string json, ClientRpcParams p = default)
         => OnUseItemResult?.Invoke(json);
 
-    /// <summary>Remove/drop item from one inventory slot.</summary>
+    // Remove/drop item from one inventory slot.
     [ServerRpc(RequireOwnership = false)]
     public void RemoveInventoryItemServerRpc(int slotIndex, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -465,11 +443,9 @@ public class GameplayCommandService : NetworkBehaviour
         Debug.Log($"[GameplayCmd] Applied wave ticket bonus client={clientId} userId={userId} itemTemplateId={response.item_template_id} add={response.wave_entry_bonus_added} msg='{response.message}'");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // ACTIVE BUFFS
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy danh sách buff đang active của player.</summary>
+    // Lấy danh sách buff đang active của player.
     [ServerRpc(RequireOwnership = false)]
     public void GetActiveBuffsServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -477,8 +453,9 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ResolveClientGeneSlot(cid);
         StartCoroutine(DoGet(
-            $"{ApiBase}/player/{pid}/active-buffs", jwt,
+            $"{ApiBase}/player/{pid}/active-buffs?geneSlot={geneSlot}", jwt,
             json => SendActiveBuffsClientRpc(json, Target(cid)),
             err  => SendActiveBuffsClientRpc(ErrorJson(err), Target(cid))
         ));
@@ -487,11 +464,9 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void SendActiveBuffsClientRpc(string json, ClientRpcParams p = default)
         => OnActiveBuffsReceived?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // DUNGEON LIST  (Phase 6: EnterDungeon đi qua ZoneTransitionController)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy danh sách phó bản từ DB.</summary>
+    // Lấy danh sách phó bản từ DB.
     [ServerRpc(RequireOwnership = false)]
     public void GetDungeonListServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -512,11 +487,9 @@ public class GameplayCommandService : NetworkBehaviour
         OnDungeonListReceived?.Invoke(json);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // INVENTORY
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy danh sách inventory của player (trả về full player data JSON, client parse inventory).</summary>
+    // Lấy danh sách inventory của player (trả về full player data JSON, client parse inventory).
     [ServerRpc(RequireOwnership = false)]
     public void GetPlayerInventoryServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -524,8 +497,10 @@ public class GameplayCommandService : NetworkBehaviour
         ulong cid = rpcParams.Receive.SenderClientId;
         int pid = ResolveClientUserId(cid);
         string jwt = ResolveClientJwt(cid);
+        int geneSlot = ResolveClientGeneSlot(cid);
+        string endpoint = geneSlot == 2 ? $"{ApiBase}/player/{pid}/data2" : $"{ApiBase}/player/{pid}/data";
         StartCoroutine(DoGet(
-            $"{ApiBase}/player/{pid}/data", jwt,
+            endpoint, jwt,
             json => SendInventoryClientRpc(json, Target(cid)),
             err  => SendInventoryClientRpc(ErrorJson(err), Target(cid))
         ));
@@ -534,13 +509,11 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void SendInventoryClientRpc(string json, ClientRpcParams p = default)
         => OnInventoryReceived?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // UTILITY SHOP (Virtual NPC 999 — accessible from anywhere via HUD)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private const int UtilityShopNpcId = 999;
 
-    /// <summary>Tải danh sách item của Cửa Hàng Tiện Ích (NPC ảo id=999).</summary>
+    // Tải danh sách item của Cửa Hàng Tiện Ích (NPC ảo id=999).
     [ServerRpc(RequireOwnership = false)]
     public void LoadUtilityShopServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -555,7 +528,7 @@ public class GameplayCommandService : NetworkBehaviour
         ));
     }
 
-    /// <summary>Mua item từ Cửa Hàng Tiện Ích.</summary>
+    // Mua item từ Cửa Hàng Tiện Ích.
     [ServerRpc(RequireOwnership = false)]
     public void BuyUtilityShopItemServerRpc(int shopItemId, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -576,11 +549,9 @@ public class GameplayCommandService : NetworkBehaviour
     [ClientRpc] private void UtilityShopBuyResultClientRpc(string json, ClientRpcParams p = default)
         => OnUtilityShopBuyResult?.Invoke(json);
 
-    // ─────────────────────────────────────────────────────────────────────────
     // UTILITY
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>API base URL (có /api ở cuối) từ ServerAddressConfig.</summary>
+    // API base URL (có /api ở cuối) từ ServerAddressConfig.
     private string ApiBase
     {
         get
@@ -598,7 +569,7 @@ public class GameplayCommandService : NetworkBehaviour
         Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
     };
 
-    /// <summary>Resolve numeric player ID từ NGO clientId.</summary>
+    // Resolve numeric player ID từ NGO clientId.
     private static int ResolveClientUserId(ulong clientId)
     {
         if (ServerPlayerDataManager.Instance != null)
@@ -614,7 +585,18 @@ public class GameplayCommandService : NetworkBehaviour
         return PlayerPrefs.GetInt("USER_ID", 0);
     }
 
-    /// <summary>Resolve JWT bearer token từ session manager của client.</summary>
+    // Resolve JWT bearer token từ session manager của client.
+    private static int ResolveClientGeneSlot(ulong clientId)
+    {
+        if (ZonePlayerSessionManager.Instance != null)
+        {
+            int slot = ZonePlayerSessionManager.Instance.GetClientGeneSlot(clientId);
+            if (slot == 2) return 2;
+        }
+
+        return PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1;
+    }
+
     private static string ResolveClientJwt(ulong clientId)
     {
         if (ServerPlayerDataManager.Instance != null)
@@ -678,7 +660,7 @@ public class GameplayCommandService : NetworkBehaviour
         return $"HTTP {(long)req.responseCode}: {transportError}";
     }
 
-    /// <summary>Tạo JSON error payload từ error message.</summary>
+    // Tạo JSON error payload từ error message.
     private static string ErrorJson(string err)
         => $"{{\"error\":\"{(err ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ")}\"}}";
 }

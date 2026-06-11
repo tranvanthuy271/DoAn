@@ -3,11 +3,9 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using System;
 
-/// <summary>
-/// Server-side manager: Load player data từ API cho mỗi client khi connect
-/// Map clientId -> userId và lưu player data trong memory
-/// Query DB khi nhận userid từ client
-/// </summary>
+// Server-side manager: Load player data từ API cho mỗi client khi connect
+// Map clientId -> userId và lưu player data trong memory
+// Query DB khi nhận userid từ client
 public class ServerPlayerDataManager : NetworkBehaviour
 {
     public static ServerPlayerDataManager Instance { get; private set; }
@@ -33,14 +31,14 @@ public class ServerPlayerDataManager : NetworkBehaviour
     // Dictionary để map clientId -> JWT token (để dùng khi sync DB cho client đúng token)
     private Dictionary<ulong, string> clientIdToJwt = new Dictionary<ulong, string>();
 
-    /// <summary>Lưu JWT token của client khi họ gửi auth</summary>
+    // Lưu JWT token của client khi họ gửi auth
     public void StoreClientJwt(ulong clientId, string jwt)
     {
         if (!string.IsNullOrEmpty(jwt))
             clientIdToJwt[clientId] = jwt;
     }
 
-    /// <summary>Lấy JWT token đã lưu của client. Trả về chuỗi rỗng nếu chưa có.</summary>
+    // Lấy JWT token đã lưu của client. Trả về chuỗi rỗng nếu chưa có.
     public string GetClientJwt(ulong clientId)
     {
         return clientIdToJwt.TryGetValue(clientId, out var jwt) ? jwt : "";
@@ -63,7 +61,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
             
             Debug.Log("[ServerPlayerDataManager] Creating new instance with DontDestroyOnLoad");
             
-            // QUAN TRỌNG: Tạo APIClient NGAY trong Awake() 
+            // QUAN TRỌNG: Tạo APIClient NGAY trong Awake()
             // Vì OnClientConnected có thể được trigger trước Start()
             InitializeAPIClient();
         }
@@ -82,9 +80,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Khởi tạo APIClient để query player data từ server API
-    /// </summary>
+    // Khởi tạo APIClient để query player data từ server API
     private void InitializeAPIClient()
     {
         if (apiClient == null)
@@ -129,10 +125,8 @@ public class ServerPlayerDataManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Load player data từ API cho client vừa connect.
-    /// geneSlot=1 → player_data, geneSlot=2 → player2_data.
-    /// </summary>
+    // Load player data từ API cho client vừa connect.
+    // geneSlot=1 → player_data, geneSlot=2 → player2_data.
     public void LoadPlayerDataForClient(ulong clientId, int userId, Action<PlayerDataResponse> onSuccess, Action<string> onError, int geneSlot = 1)
     {
         Debug.Log($"[ServerPlayerDataManager] ===== LOADING PLAYER DATA FOR CLIENT =====");
@@ -229,9 +223,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
     }
 
 
-    /// <summary>
-    /// Get player data cho clientId (từ cache)
-    /// </summary>
+    // Get player data cho clientId (từ cache)
     public PlayerDataResponse GetPlayerDataForClient(ulong clientId)
     {
         Debug.Log($"[ServerPlayerDataManager] GetPlayerDataForClient called for clientId: {clientId}");
@@ -253,17 +245,13 @@ public class ServerPlayerDataManager : NetworkBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Alias for GetPlayerDataForClient (for better naming consistency)
-    /// </summary>
+    // Alias for GetPlayerDataForClient (for better naming consistency)
     public PlayerDataResponse GetPlayerDataByClientId(ulong clientId)
     {
         return GetPlayerDataForClient(clientId);
     }
 
-    /// <summary>
-    /// Get userId từ clientId
-    /// </summary>
+    // Get userId từ clientId
     public int GetUserIdFromClientId(ulong clientId)
     {
         if (clientIdToUserId.ContainsKey(clientId))
@@ -273,9 +261,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
         return 0;
     }
 
-    /// <summary>
-    /// Update player data cache (khi có thay đổi như level up, equip item, etc.)
-    /// </summary>
+    // Update player data cache (khi có thay đổi như level up, equip item, etc.)
     public void UpdatePlayerDataCache(int userId, PlayerDataResponse newData)
     {
         if (playerDataCache.ContainsKey(userId))
@@ -294,9 +280,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Remove player data khi client disconnect
-    /// </summary>
+    // Remove player data khi client disconnect
     public void RemovePlayerData(ulong clientId)
     {
         if (clientIdToUserId.ContainsKey(clientId))
@@ -310,9 +294,7 @@ public class ServerPlayerDataManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Clear all data (khi server shutdown)
-    /// </summary>
+    // Clear all data (khi server shutdown)
     public void ClearAllData()
     {
         clientIdToUserId.Clear();

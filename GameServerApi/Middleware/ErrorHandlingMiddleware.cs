@@ -4,10 +4,8 @@ using GameServerApi.Models.Responses;
 
 namespace GameServerApi.Middleware
 {
-    /// <summary>
-    /// Global exception handler — catches unhandled exceptions and returns a consistent JSON error response.
-    /// Replaces ad-hoc try/catch + StatusCode(500, "...") patterns in controllers.
-    /// </summary>
+    // Global exception handler — catches unhandled exceptions and returns a consistent JSON error response.
+    // Replaces ad-hoc try/catch + StatusCode(500, "...") patterns in controllers.
     public class ErrorHandlingMiddleware
     {
         private readonly RequestDelegate _next;

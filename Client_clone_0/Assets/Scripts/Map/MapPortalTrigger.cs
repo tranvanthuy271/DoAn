@@ -5,21 +5,17 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Unity.Netcode;
 
-/// <summary>
-/// MapPortalTrigger — Cổng dịch chuyển giữa các map/phòng trong phó bản.
-///
-/// CÁCH HOẠT ĐỘNG (theo pattern WayPoint của LangLa):
-///   1. Đặt GameObject này tại vị trí cổng trong Unity scene
-///   2. Thêm BoxCollider2D (isTrigger = true) để define vùng trigger
-///   3. Khi LocalPlayer bước vào trigger → gọi API POST /api/map/travel
-///   4. API validate (vị trí hợp lệ, có chìa khóa không)
-///   5. Nếu được phép → load scene mới + dịch chuyển player đến dest_x, dest_y
-///
-/// SETUP TRONG EDITOR:
-///   - portalId: lấy từ DB bảng map_portal.portal_id
-///   - currentMapId: map hiện tại
-///   - Hoặc dùng DungeonManager.LoadPortalsFromServer() để auto-populate
-/// </summary>
+// MapPortalTrigger — Cổng dịch chuyển giữa các map/phòng trong phó bản.
+// CÁCH HOẠT ĐỘNG (theo pattern WayPoint của LangLa):
+// 1. Đặt GameObject này tại vị trí cổng trong Unity scene
+// 2. Thêm BoxCollider2D (isTrigger = true) để define vùng trigger
+// 3. Khi LocalPlayer bước vào trigger → gọi API POST /api/map/travel
+// 4. API validate (vị trí hợp lệ, có chìa khóa không)
+// 5. Nếu được phép → load scene mới + dịch chuyển player đến dest_x, dest_y
+// SETUP TRONG EDITOR:
+// - portalId: lấy từ DB bảng map_portal.portal_id
+// - currentMapId: map hiện tại
+// - Hoặc dùng DungeonManager.LoadPortalsFromServer() để auto-populate
 [RequireComponent(typeof(Collider2D))]
 public class MapPortalTrigger : MonoBehaviour
 {
@@ -186,7 +182,7 @@ public class MapPortalTrigger : MonoBehaviour
         return null;
     }
 
-    // ── Serializable payloads ──
+    // Serializable payloads
 
     [Serializable]
     private class TravelRequestPayload
@@ -212,19 +208,15 @@ public class MapPortalTrigger : MonoBehaviour
     }
 }
 
-/// <summary>
-/// Static holder: lưu vị trí đến khi cổng dịch chuyển thành công.
-/// PortalArrivalHandler.cs đọc sau khi scene mới load.
-/// </summary>
+// Static holder: lưu vị trí đến khi cổng dịch chuyển thành công.
+// PortalArrivalHandler.cs đọc sau khi scene mới load.
 public static class PortalArrivalHandler
 {
     public static float PendingDestX  = 0f;
     public static float PendingDestY  = 0f;
     public static int   PendingMapId  = -1;
 
-    /// <summary>
-    /// Gọi từ PlayerSpawner hoặc Start() để đặt player vào đúng vị trí đến.
-    /// </summary>
+    // Gọi từ PlayerSpawner hoặc Start() để đặt player vào đúng vị trí đến.
     public static void ApplyPendingArrival(Transform playerTransform)
     {
         if (PendingMapId >= 0)
@@ -235,17 +227,13 @@ public static class PortalArrivalHandler
     }
 }
 
-/// <summary>
-/// Placeholder — thay bằng script quản lý PlayerId thực tế trong dự án.
-/// </summary>
+// Placeholder — thay bằng script quản lý PlayerId thực tế trong dự án.
 public class PlayerDataHolder : MonoBehaviour
 {
     public int PlayerId = -1;
 }
 
-/// <summary>
-/// Placeholder config URL server.
-/// </summary>
+// Placeholder config URL server.
 public static class ServerConfig
 {
     public static string BaseUrl = "";

@@ -2,29 +2,23 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// HYBRID_METAL_WIND_BARRAGE — "Kim Phong Liên Tiễn"
-/// Bắn 5 viên đạn nhỏ theo chiều ngang, lần lượt cách nhau một khoảng thời gian ngắn.
-/// Mỗi viên đạn ở một vị trí Y khác nhau (cao hơn / thấp hơn một chút so với viên kề bên).
-///
-/// ═══════════════════════════════════════════════════════════════════════════╗
-/// SETUP TRONG UNITY — thực hiện trên F_Phong.prefab VÀ F_Kim.prefab         ║
-/// ───────────────────────────────────────────────────────────────────────── ║
-///  1. Chọn root GameObject → Add Component → HybridMetalWindBarrageSkill    ║
-///  2. Gán bulletPrefab  = MetalWindBullet.prefab (NetworkObject + Rigidbody2D ║
-///                          + BoxCollider2D trigger + BarrageBulletDamage)    ║
-///  3. skillCode         = "HYBRID_METAL_WIND_BARRAGE"                       ║
-///  4. cooldown          = 10                                                 ║
-///  5. mpCost            = 40                                                 ║
-///  6. effectValue       = 120   (damage mỗi viên đạn)                       ║
-///  7. bulletCount       = 5                                                  ║
-///  8. bulletSpeed       = 18                                                 ║
-///  9. bulletLifetime    = 2.5                                                ║
-/// 10. ySpacing          = 0.25  (khoảng cách Y giữa các viên)               ║
-/// 11. fireDelay         = 0.08  (giây giữa mỗi viên bắn)                   ║
-/// 12. spawnOffsetX      = 0.6   (khoảng cách từ player khi spawn)           ║
-/// ═══════════════════════════════════════════════════════════════════════════╝
-/// </summary>
+// HYBRID_METAL_WIND_BARRAGE — "Kim Phong Liên Tiễn"
+// Bắn 5 viên đạn nhỏ theo chiều ngang, lần lượt cách nhau một khoảng thời gian ngắn.
+// Mỗi viên đạn ở một vị trí Y khác nhau (cao hơn / thấp hơn một chút so với viên kề bên).
+// SETUP TRONG UNITY — thực hiện trên F_Phong.prefab VÀ F_Kim.prefab
+// 1. Chọn root GameObject → Add Component → HybridMetalWindBarrageSkill
+// 2. Gán bulletPrefab  = MetalWindBullet.prefab (NetworkObject + Rigidbody2D
+// + BoxCollider2D trigger + BarrageBulletDamage)
+// 3. skillCode         = "HYBRID_METAL_WIND_BARRAGE"
+// 4. cooldown          = 10
+// 5. mpCost            = 40
+// 6. effectValue       = 120   (damage mỗi viên đạn)
+// 7. bulletCount       = 5
+// 8. bulletSpeed       = 18
+// 9. bulletLifetime    = 2.5
+// 10. ySpacing          = 0.25  (khoảng cách Y giữa các viên)
+// 11. fireDelay         = 0.08  (giây giữa mỗi viên bắn)
+// 12. spawnOffsetX      = 0.6   (khoảng cách từ player khi spawn)
 public class HybridMetalWindBarrageSkill : HybridSkillBase
 {
     [Header("Barrage – Bullet")]
@@ -53,9 +47,7 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
     [Tooltip("Khoảng cách spawn đạn theo trục X tính từ vị trí player (theo chiều nhìn)")]
     [SerializeField] private float spawnOffsetX = 0.6f;
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  ExecuteSkill — chạy trên Server (gọi từ HybridSkillBase.UseSkillServerRpc)
-    // ─────────────────────────────────────────────────────────────────────────
 
     protected override void ExecuteSkill(Vector2 direction)
     {
@@ -69,9 +61,7 @@ public class HybridMetalWindBarrageSkill : HybridSkillBase
         StartCoroutine(FireSequence(direction));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Coroutine: bắn lần lượt từng viên đạn
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator FireSequence(Vector2 direction)
     {

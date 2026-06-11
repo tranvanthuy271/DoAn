@@ -1,22 +1,17 @@
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Helper tĩnh — gắn JWT header nhất quán cho mọi UnityWebRequest.
-///
-/// Cách dùng:
-///   using var req = UnityWebRequest.Get(url);
-///   AuthHelper.AddAuthHeader(req);
-///   yield return req.SendWebRequest();
-/// </summary>
+// Helper tĩnh — gắn JWT header nhất quán cho mọi UnityWebRequest.
+// Cách dùng:
+// using var req = UnityWebRequest.Get(url);
+// AuthHelper.AddAuthHeader(req);
+// yield return req.SendWebRequest();
 public static class AuthHelper
 {
     private const string PrefKey = "JWT_TOKEN";
 
-    /// <summary>
-    /// Đọc JWT từ PlayerPrefs và gắn Authorization header vào request.
-    /// Không làm gì nếu token rỗng.
-    /// </summary>
+    // Đọc JWT từ PlayerPrefs và gắn Authorization header vào request.
+    // Không làm gì nếu token rỗng.
     public static void AddAuthHeader(UnityWebRequest req)
     {
         string token = PlayerPrefs.GetString(PrefKey, "");
@@ -24,12 +19,12 @@ public static class AuthHelper
             req.SetRequestHeader("Authorization", $"Bearer {token}");
     }
 
-    /// <summary>Kiểm tra token hiện tại có tồn tại không.</summary>
+    // Kiểm tra token hiện tại có tồn tại không.
     public static bool HasToken() => !string.IsNullOrEmpty(PlayerPrefs.GetString(PrefKey, ""));
 
-    /// <summary>Lưu token mới vào PlayerPrefs.</summary>
+    // Lưu token mới vào PlayerPrefs.
     public static void SaveToken(string jwt) => PlayerPrefs.SetString(PrefKey, jwt);
 
-    /// <summary>Xóa token (đăng xuất).</summary>
+    // Xóa token (đăng xuất).
     public static void ClearToken() => PlayerPrefs.DeleteKey(PrefKey);
 }

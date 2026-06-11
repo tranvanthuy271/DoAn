@@ -5,20 +5,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel danh sach nhiem vu theo phong cach menu NPC.
-///
-/// Flow:
-///   1. NpcMenuUI.Open(npc) voi npc_type="quest" goi QuestNpcPanel.GetOrCreate().Open(npc).
-///   2. Panel hien thi danh sach nhiem vu duoi dang button.
-///   3. Click quest mo QuestDialogueUI de nhan, xem tien do hoac nop nhiem vu.
-///   4. Sau thao tac nhan/nop, panel refresh hoac dong theo ket qua API.
-///
-/// Hierarchy de xuat:
-///   QuestNpcPanelCanvas [Canvas sortOrder=50]
-///   QuestNpcPanelRoot [Image wood background]
-///   Header, BtnClose, QuestListScroll/Viewport/Content, BtnCaoTu
-/// </summary>
+// Panel danh sach nhiem vu theo phong cach menu NPC.
+// Flow:
+// 1. NpcMenuUI.Open(npc) voi npc_type="quest" goi QuestNpcPanel.GetOrCreate().Open(npc).
+// 2. Panel hien thi danh sach nhiem vu duoi dang button.
+// 3. Click quest mo QuestDialogueUI de nhan, xem tien do hoac nop nhiem vu.
+// 4. Sau thao tac nhan/nop, panel refresh hoac dong theo ket qua API.
+// Hierarchy de xuat:
+// QuestNpcPanelCanvas [Canvas sortOrder=50]
+// QuestNpcPanelRoot [Image wood background]
+// Header, BtnClose, QuestListScroll/Viewport/Content, BtnCaoTu
 public class QuestNpcPanel : MonoBehaviour
 {
     private const string LogPrefix      = "[QuestNpcPanel]";
@@ -26,7 +22,7 @@ public class QuestNpcPanel : MonoBehaviour
 
     public static QuestNpcPanel Instance { get; private set; }
 
-    // ─── Inspector references ────────────────────────────────────────────────
+    // Inspector references
     [Header("Root")]
     [SerializeField] private GameObject rootPanel;
 
@@ -41,11 +37,11 @@ public class QuestNpcPanel : MonoBehaviour
     [SerializeField] private Button     btnClose;           // nút X
     [SerializeField] private Button     btnCaoTu;           // "Cáo từ" ở dưới
 
-    // ─── Runtime ─────────────────────────────────────────────────────────────
+    // Runtime
     private NpcData _currentNpc;
     private bool    _initialized;
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -120,7 +116,7 @@ public class QuestNpcPanel : MonoBehaviour
         UIPanelManager.Register(rootPanel != null ? rootPanel : gameObject, Close);
     }
 
-    // ─── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public static QuestNpcPanel GetOrCreate()
     {
@@ -154,7 +150,7 @@ public class QuestNpcPanel : MonoBehaviour
         if (rootPanel) rootPanel.SetActive(true);
         Debug.Log($"{LogPrefix} After rootPanel.SetActive(true) | rootPanel.active={rootPanel?.activeSelf} rootPanel.activeInHierarchy={rootPanel?.activeInHierarchy}");
 
-        // --- DIAGNOSTIC + AUTO-FIX: Canvas info ---
+        // DIAGNOSTIC + AUTO-FIX: Canvas info
         var _c = GetComponent<Canvas>();
         if (_c != null)
         {
@@ -194,7 +190,7 @@ public class QuestNpcPanel : MonoBehaviour
         UIPanelManager.NotifyClosed(rootPanel != null ? rootPanel : gameObject);
     }
 
-    // ─── Internal ────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void LoadAndBuildList()
     {
@@ -360,7 +356,7 @@ public class QuestNpcPanel : MonoBehaviour
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private GameObject CreateListItem(string label)
     {

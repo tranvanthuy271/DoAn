@@ -38,7 +38,10 @@ public class DungeonEnemyRuntimeStats : MonoBehaviour
 
         var bossAi = GetComponent<BossAI>();
         if (bossAi != null)
+        {
+            bossAi.SetRuntimeBossId(config.enemyId);
             bossAi.ApplyRuntimeOverride(Attack, MoveSpeed);
+        }
     }
 
     public void ApplyDrops(List<DropItemEntry> drops)

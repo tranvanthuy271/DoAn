@@ -1,14 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject chứa config của một Zone Server (1 zone = 1 server process).
-/// Tạo: Assets → Create → DoAn → ZoneServerConfig
-/// 
-/// QUAN TRỌNG - Bảo mật:
-///   jwtSecret KHÔNG được lưu trong file này khi build production.
-///   Ưu tiên đọc từ environment variable JWT_SECRET (xem ZoneConnectionApproval.cs).
-///   Field jwtSecret ở đây chỉ dùng cho Editor/dev-mode.
-/// </summary>
+// ScriptableObject chứa config của một Zone Server (1 zone = 1 server process).
+// Tạo: Assets → Create → DoAn → ZoneServerConfig
+// QUAN TRỌNG - Bảo mật:
+// jwtSecret KHÔNG được lưu trong file này khi build production.
+// Ưu tiên đọc từ environment variable JWT_SECRET (xem ZoneConnectionApproval.cs).
+// Field jwtSecret ở đây chỉ dùng cho Editor/dev-mode.
 [CreateAssetMenu(fileName = "ZoneServerConfig", menuName = "DoAn/ZoneServerConfig")]
 public class ZoneServerConfig : ScriptableObject
 {
@@ -52,9 +49,7 @@ public class ZoneServerConfig : ScriptableObject
     [Tooltip("Số player tối đa trong zone này (0 = không giới hạn)")]
     public int maxPlayers = 50;
 
-    /// <summary>
-    /// Trả về JWT secret. Ưu tiên: env var > jwtSecretDevOnly field.
-    /// </summary>
+    // Trả về JWT secret. Ưu tiên: env var > jwtSecretDevOnly field.
     public string GetJwtSecret()
     {
         string envSecret = System.Environment.GetEnvironmentVariable("JWT_SECRET");

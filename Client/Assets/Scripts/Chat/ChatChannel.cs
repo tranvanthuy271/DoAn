@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Kenh chat trong game.</summary>
+// Kenh chat trong game.
 public enum ChatChannel
 {
     World     = 0,
@@ -13,7 +13,7 @@ public enum ChatChannel
 
 public static class ChatChannelHelper
 {
-    /// <summary>Ten hien thi tren Tab / Dropdown.</summary>
+    // Ten hien thi tren Tab / Dropdown.
     public static string DisplayName(this ChatChannel ch) => ch switch
     {
         ChatChannel.World     => "Thế giới",
@@ -25,7 +25,7 @@ public static class ChatChannelHelper
         _                     => ch.ToString()
     };
 
-    /// <summary>Ma viet tat cho icon badge.</summary>
+    // Ma viet tat cho icon badge.
     public static string ShortCode(this ChatChannel ch) => ch switch
     {
         ChatChannel.World     => "TG",
@@ -37,7 +37,7 @@ public static class ChatChannelHelper
         _                     => "?"
     };
 
-    /// <summary>Mau ten nguoi gui theo tung kenh, toi uu tren nen giay sang.</summary>
+    // Mau ten nguoi gui theo tung kenh, toi uu tren nen giay sang.
     public static Color MessageColor(this ChatChannel ch) => ch switch
     {
         ChatChannel.World     => new Color32(0xA3, 0x61, 0x10, 0xFF),
@@ -49,7 +49,7 @@ public static class ChatChannelHelper
         _                     => new Color32(0x3E, 0x29, 0x18, 0xFF)
     };
 
-    /// <summary>Mapping tu string channel name (server) sang enum.</summary>
+    // Mapping tu string channel name (server) sang enum.
     public static ChatChannel FromString(string s) => s?.ToLower() switch
     {
         "world"     => ChatChannel.World,

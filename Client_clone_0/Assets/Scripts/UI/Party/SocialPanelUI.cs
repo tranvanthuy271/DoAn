@@ -2,15 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Panel xã hội bao gồm 4 tab ngoài:
-///   0 – Đồng đội  (hiển thị nội dung PartyPanelUI)
-///   1 – Bạn bè    (placeholder – có thể gán FriendListUI)
-///   2 – Kẻ thù    (placeholder)
-///   3 – Tin nhắn  (placeholder – có thể gán ChatPanelUI)
-///
-/// Nút "Quan hệ" trong CharacterMenuPanelUI.socialPanel trỏ tới GameObject này.
-/// </summary>
+// Panel xã hội bao gồm 4 tab ngoài:
+// 0 – Đồng đội  (hiển thị nội dung PartyPanelUI)
+// 1 – Bạn bè    (placeholder – có thể gán FriendListUI)
+// 2 – Kẻ thù    (placeholder)
+// 3 – Tin nhắn  (placeholder – có thể gán ChatPanelUI)
+// Nút "Quan hệ" trong CharacterMenuPanelUI.socialPanel trỏ tới GameObject này.
 public class SocialPanelUI : MonoBehaviour
 {
     private const string GameplayBlockSource = "SocialPanelUI";
@@ -38,7 +35,7 @@ public class SocialPanelUI : MonoBehaviour
     [Tooltip("Dùng khi partyPanelPrefab chưa được gán.")]
     [SerializeField] private string partyPanelResourcesPath = "Prefabs/UI/PartyPanel";
 
-    // ── Tab button labels (để đổi màu khi active) ───────────────────────────
+    // Tab button labels (để đổi màu khi active)
     [Header("Tab Label Colors")]
     [SerializeField] private Color colorActiveTab   = new Color(1f,   0.85f, 0.1f, 1f);
     [SerializeField] private Color colorInactiveTab = new Color(0.8f, 0.8f,  0.8f, 1f);
@@ -49,7 +46,6 @@ public class SocialPanelUI : MonoBehaviour
     private readonly Button[] _tabButtons  = new Button[4];
     private readonly GameObject[] _panels  = new GameObject[4];
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -88,7 +84,6 @@ public class SocialPanelUI : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Public API
 
     public void Open(int tabIndex = 0)

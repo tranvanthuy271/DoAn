@@ -3,24 +3,19 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// PlayerBuffSync – NetworkBehaviour sync trạng thái buff có lợi từ skill lên tất cả clients.
-///
-/// Setup: Thêm vào Player prefab (không dùng cho Enemy).
-///
-/// Hai buff được sync:
-///   • Armor Buff (WaterArmorBuffSkill): armorBuffExpiry, armorBuffValue, armorIconId
-///   • Attack Buff (EarthAttackBuffSkill): attackBuffExpiry, attackBuffValue, attackIconId
-///
-/// Flow:
-///   1. WaterArmorBuffSkill / EarthAttackBuffSkill gọi SetArmorBuffServerRpc / SetAttackBuffServerRpc.
-///   2. Server set NetworkVariables → tự sync sang tất cả clients.
-///   3. OnValueChanged → fire OnBuffStateChanged → OverheadStatusDisplay + ActiveBuffManager update.
-/// </summary>
+// PlayerBuffSync – NetworkBehaviour sync trạng thái buff có lợi từ skill lên tất cả clients.
+// Setup: Thêm vào Player prefab (không dùng cho Enemy).
+// Hai buff được sync:
+// • Armor Buff (WaterArmorBuffSkill): armorBuffExpiry, armorBuffValue, armorIconId
+// • Attack Buff (EarthAttackBuffSkill): attackBuffExpiry, attackBuffValue, attackIconId
+// Flow:
+// 1. WaterArmorBuffSkill / EarthAttackBuffSkill gọi SetArmorBuffServerRpc / SetAttackBuffServerRpc.
+// 2. Server set NetworkVariables → tự sync sang tất cả clients.
+// 3. OnValueChanged → fire OnBuffStateChanged → OverheadStatusDisplay + ActiveBuffManager update.
 [DisallowMultipleComponent]
 public class PlayerBuffSync : NetworkBehaviour
 {
-    // ── Armor Buff (WaterArmor) ───────────────────────────────────────────────
+    // Armor Buff (WaterArmor)
     public NetworkVariable<float> armorBuffExpiry = new NetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -33,11 +28,11 @@ public class PlayerBuffSync : NetworkBehaviour
     public NetworkVariable<FixedString64Bytes> armorBuffName = new NetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    /// <summary>Tổng thời gian buff giáp (giây) — dùng để tính tỉ lệ fade khi tint sprite.</summary>
+    // Tổng thời gian buff giáp (giây) — dùng để tính tỉ lệ fade khi tint sprite.
     public NetworkVariable<float> armorBuffTotalDuration = new NetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // ── Attack Buff (EarthAura) ───────────────────────────────────────────────
+    // Attack Buff (EarthAura)
     public NetworkVariable<float> attackBuffExpiry = new NetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -50,15 +45,15 @@ public class PlayerBuffSync : NetworkBehaviour
     public NetworkVariable<FixedString64Bytes> attackBuffName = new NetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    /// <summary>Tổng thời gian buff tấn công (giây) — dùng để tính tỉ lệ fade khi tint sprite.</summary>
+    // Tổng thời gian buff tấn công (giây) — dùng để tính tỉ lệ fade khi tint sprite.
     public NetworkVariable<float> attackBuffTotalDuration = new NetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // ── Event (UI subscribe) ─────────────────────────────────────────────────
-    /// <summary>Fired khi bất kỳ NetworkVariable nào thay đổi.</summary>
+    // Event (UI subscribe)
+    // Fired khi bất kỳ NetworkVariable nào thay đổi.
     public event Action OnBuffStateChanged;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     public override void OnNetworkSpawn()
     {
@@ -89,11 +84,9 @@ public class PlayerBuffSync : NetworkBehaviour
 
     private void OnAnyChanged<T>(T prev, T next) => OnBuffStateChanged?.Invoke();
 
-    // ── Server RPCs ───────────────────────────────────────────────────────────
+    // Server RPCs
 
-    /// <summary>
-    /// WaterArmorBuffSkill gọi sau khi ApplyArmorBuff() để sync lên HUD mọi client.
-    /// </summary>
+    // WaterArmorBuffSkill gọi sau khi ApplyArmorBuff() để sync lên HUD mọi client.
     [ServerRpc(RequireOwnership = false)]
     public void SetArmorBuffServerRpc(int value, float duration, int iconId, FixedString64Bytes buffNameStr)
     {
@@ -109,9 +102,7 @@ public class PlayerBuffSync : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// EarthAttackBuffSkill gọi sau khi ApplyAttackBuff() để sync lên HUD mọi client.
-    /// </summary>
+    // EarthAttackBuffSkill gọi sau khi ApplyAttackBuff() để sync lên HUD mọi client.
     [ServerRpc(RequireOwnership = false)]
     public void SetAttackBuffServerRpc(int value, float duration, int iconId, FixedString64Bytes buffNameStr)
     {
@@ -126,16 +117,16 @@ public class PlayerBuffSync : NetworkBehaviour
         }
     }
 
-    // ── Queries (hoạt động trên mọi client) ──────────────────────────────────
+    // Queries (hoạt động trên mọi client)
 
-    /// <returns>Giây còn lại của ArmorBuff. 0 nếu không active.</returns>
+    // Trả về: Giây còn lại của ArmorBuff. 0 nếu không active.
     public float GetArmorBuffRemaining()
     {
         float now = (float)NetworkManager.Singleton.ServerTime.TimeAsFloat;
         return Mathf.Max(0f, armorBuffExpiry.Value - now);
     }
 
-    /// <returns>Giây còn lại của AttackBuff. 0 nếu không active.</returns>
+    // Trả về: Giây còn lại của AttackBuff. 0 nếu không active.
     public float GetAttackBuffRemaining()
     {
         float now = (float)NetworkManager.Singleton.ServerTime.TimeAsFloat;
@@ -145,7 +136,7 @@ public class PlayerBuffSync : NetworkBehaviour
     public bool IsArmorBuffActive()  => GetArmorBuffRemaining() > 0f;
     public bool IsAttackBuffActive() => GetAttackBuffRemaining() > 0f;
 
-    // ── Push to ActiveBuffManager (local player only) ─────────────────────────
+    // Push to ActiveBuffManager (local player only)
 
     private void PushArmorToActiveBuffManager(float prev, float next)
     {

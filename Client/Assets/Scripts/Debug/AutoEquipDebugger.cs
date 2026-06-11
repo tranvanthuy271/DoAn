@@ -4,11 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 
-/// <summary>
-/// AutoEquipDebugger – Nhấn Q để thêm đủ 6 món trang bị (type 0-5) vào túi đồ.
-/// Tự động tìm item đầu tiên của mỗi loại từ ItemTemplateManager cache – không phụ thuộc vào ID cứng.
-/// Setup: Gắn script này lên GameObject bất kỳ trong Game Scene (vd: DebugManager).
-/// </summary>
+// AutoEquipDebugger – Nhấn Q để thêm đủ 6 món trang bị (type 0-5) vào túi đồ.
+// Tự động tìm item đầu tiên của mỗi loại từ ItemTemplateManager cache – không phụ thuộc vào ID cứng.
+// Setup: Gắn script này lên GameObject bất kỳ trong Game Scene (vd: DebugManager).
 public class AutoEquipDebugger : MonoBehaviour
 {
     [Header("Settings")]
@@ -64,9 +62,7 @@ public class AutoEquipDebugger : MonoBehaviour
             StartCoroutine(AddGeneStonesToInventory());
     }
 
-    // ──────────────────────────────────────────────────────────────
     //  Phím T: Thêm đá nâng cấp vào túi đồ
-    // ──────────────────────────────────────────────────────────────
     private IEnumerator AddStonesToInventory()
     {
         isBusy = true;
@@ -151,9 +147,7 @@ public class AutoEquipDebugger : MonoBehaviour
         return stoneTemplate != null ? stoneTemplate.id : 0;
     }
 
-    // ──────────────────────────────────────────────────────────────
     //  Phím Y: Thêm Linh Thạch gene (id 17-20) vào túi đồ
-    // ──────────────────────────────────────────────────────────────
     private IEnumerator AddGeneStonesToInventory()
     {
         isBusy = true;
@@ -198,7 +192,7 @@ public class AutoEquipDebugger : MonoBehaviour
         isBusy = true;
         Debug.Log("[AutoEquipDebugger] ===== THÊM ITEM VÀO TÚI ĐỒ =====");
 
-        // ── 1. Lấy playerId ──────────────────────────────────────────────
+        // 1. Lấy playerId
         int playerId = GetPlayerId();
         if (playerId == 0)
         {
@@ -208,7 +202,7 @@ public class AutoEquipDebugger : MonoBehaviour
         }
         Debug.Log($"[AutoEquipDebugger] playerId = {playerId}");
 
-        // ── 2. Đợi ItemTemplateManager load xong ─────────────────────────
+        // 2. Đợi ItemTemplateManager load xong
         float timeout = 8f, elapsed = 0f;
         while (ItemTemplateManager.Instance == null || !ItemTemplateManager.Instance.IsLoaded())
         {
@@ -222,7 +216,7 @@ public class AutoEquipDebugger : MonoBehaviour
             yield return null;
         }
 
-        // ── 3. Tìm item đầu tiên của mỗi loại trang bị (type 0-5) ───────
+        // 3. Tìm item đầu tiên của mỗi loại trang bị (type 0-5)
         // type: 0=Helmet, 1=Weapon, 2=Armor, 3=Pants, 4=Boots, 5=Ring
         int[] equipTypes = { 0, 1, 2, 3, 4, 5 };
         var toAdd = new List<APIClient.AddInventoryItemRequest>();
@@ -258,7 +252,7 @@ public class AutoEquipDebugger : MonoBehaviour
             yield break;
         }
 
-        // ── 4. Xóa inventory cũ trước ────────────────────────────────────
+        // 4. Xóa inventory cũ trước
         bool clearDone = false;
         yield return StartCoroutine(ClearInventoryDirect(playerId,
             () => { clearDone = true; },
@@ -267,7 +261,7 @@ public class AutoEquipDebugger : MonoBehaviour
         yield return new WaitUntil(() => clearDone);
         Debug.Log("[AutoEquipDebugger] Đã clear inventory cũ!");
 
-        // ── 5. Gọi API thêm vào inventory ────────────────────────────────
+        // 5. Gọi API thêm vào inventory
         bool addDone = false, addSuccess = false;
         yield return StartCoroutine(AddItemsToInventoryDirect(playerId, toAdd.ToArray(),
             (_) => { addSuccess = true; addDone = true; },
@@ -277,7 +271,7 @@ public class AutoEquipDebugger : MonoBehaviour
         if (!addSuccess) { isBusy = false; yield break; }
         Debug.Log($"[AutoEquipDebugger] Đã thêm {toAdd.Count} item vào túi đồ!");
 
-        // ── 6. Refresh UI ─────────────────────────────────────────────────
+        // 6. Refresh UI
         var bridge = FindObjectOfType<InventoryNetworkBridge>();
         if (bridge != null)
         {

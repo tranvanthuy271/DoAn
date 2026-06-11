@@ -3,13 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Quan hệ bạn bè giữa hai người chơi.
-    /// Một hàng đại diện cho một chiều của quan hệ:
-    ///   - UserId = người gửi lời mời
-    ///   - FriendId = người nhận lời mời
-    ///   - Status: pending | accepted | blocked
-    /// </summary>
+    // Quan hệ bạn bè giữa hai người chơi.
+    // Một hàng đại diện cho một chiều của quan hệ:
+    // - UserId = người gửi lời mời
+    // - FriendId = người nhận lời mời
+    // - Status: pending | accepted | blocked
     [Table("friend_relations")]
     public class FriendRelation
     {

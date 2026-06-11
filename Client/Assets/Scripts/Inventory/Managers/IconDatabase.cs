@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// IconDatabase
-/// - Load toàn bộ Sprite icon item từ Resources/ItemIcons (mặc định).
-/// - Tra cứu Sprite theo iconId (trùng với tên sprite hoặc key bạn quy ước).
-/// - Nên để 1 instance duy nhất trong scene (DontDestroyOnLoad).
-/// </summary>
+// IconDatabase
+// - Load toàn bộ Sprite icon item từ Resources/ItemIcons (mặc định).
+// - Tra cứu Sprite theo iconId (trùng với tên sprite hoặc key bạn quy ước).
+// - Nên để 1 instance duy nhất trong scene (DontDestroyOnLoad).
 public class IconDatabase : MonoBehaviour
 {
     public static IconDatabase Instance { get; private set; }
@@ -31,9 +29,7 @@ public class IconDatabase : MonoBehaviour
         LoadAllIcons();
     }
 
-    /// <summary>
-    /// Load toàn bộ Sprite trong Resources/{resourcesFolder} vào dictionary
-    /// </summary>
+    // Load toàn bộ Sprite trong Resources/{resourcesFolder} vào dictionary
     private void LoadAllIcons()
     {
         _icons.Clear();
@@ -53,10 +49,8 @@ public class IconDatabase : MonoBehaviour
         Debug.Log($"[IconDatabase] Loaded {_icons.Count} item icons from Resources/{resourcesFolder}");
     }
 
-    /// <summary>
-    /// Lấy Sprite theo iconId.
-    /// iconId nên trùng tên sprite (hoặc bạn map theo quy ước riêng).
-    /// </summary>
+    // Lấy Sprite theo iconId.
+    // iconId nên trùng tên sprite (hoặc bạn map theo quy ước riêng).
     public Sprite GetIcon(string iconId)
     {
         if (string.IsNullOrEmpty(iconId))

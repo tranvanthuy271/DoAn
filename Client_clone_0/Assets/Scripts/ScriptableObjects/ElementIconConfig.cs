@@ -1,21 +1,15 @@
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject ánh xạ elementId → Sprite icon của hệ nguyên tố.
-///
-/// Thứ tự index phải khớp với ElementHelper:
-///   0 = Kim  | 1 = Mộc  | 2 = Thủy
-///   3 = Hỏa  | 4 = Thổ  | 5 = Phong
-///
-/// ═══════════════════════════════════════════════════════════
-/// CÁCH TẠO ASSET:
-///   1. Project window → chuột phải → Create → Game → ElementIconConfig
-///   2. Đặt tên: ElementIconConfig (trong Assets/ScriptableObjects/)
-///   3. Trong Inspector, kéo thả từng Sprite vào đúng slot hệ tương ứng
-///   4. Kéo asset này vào field [elementIconConfig] của các script cần dùng
-///      (hoặc dùng ElementIconConfig.Instance nếu đã assign vào GameSettings)
-/// ═══════════════════════════════════════════════════════════
-/// </summary>
+// ScriptableObject ánh xạ elementId → Sprite icon của hệ nguyên tố.
+// Thứ tự index phải khớp với ElementHelper:
+// 0 = Kim  | 1 = Mộc  | 2 = Thủy
+// 3 = Hỏa  | 4 = Thổ  | 5 = Phong
+// CÁCH TẠO ASSET:
+// 1. Project window → chuột phải → Create → Game → ElementIconConfig
+// 2. Đặt tên: ElementIconConfig (trong Assets/ScriptableObjects/)
+// 3. Trong Inspector, kéo thả từng Sprite vào đúng slot hệ tương ứng
+// 4. Kéo asset này vào field [elementIconConfig] của các script cần dùng
+// (hoặc dùng ElementIconConfig.Instance nếu đã assign vào GameSettings)
 [CreateAssetMenu(fileName = "ElementIconConfig", menuName = "Game/ElementIconConfig")]
 public class ElementIconConfig : ScriptableObject
 {
@@ -65,10 +59,8 @@ public class ElementIconConfig : ScriptableObject
         return loadedConfig;
     }
 
-    /// <summary>
-    /// Trả về Sprite icon của hệ theo elementId (0–5).
-    /// Trả về null nếu chưa gán hoặc id ngoài phạm vi.
-    /// </summary>
+    // Trả về Sprite icon của hệ theo elementId (0–5).
+    // Trả về null nếu chưa gán hoặc id ngoài phạm vi.
     public Sprite GetIcon(int elementId)
     {
         var entry = GetEntry(elementId);
@@ -109,10 +101,8 @@ public class ElementIconConfig : ScriptableObject
         return sprite;
     }
 
-    /// <summary>
-    /// Trả về Color đại diện của hệ theo elementId (0–5).
-    /// Trả về Color.white nếu ngoài phạm vi.
-    /// </summary>
+    // Trả về Color đại diện của hệ theo elementId (0–5).
+    // Trả về Color.white nếu ngoài phạm vi.
     public Color GetColor(int elementId)
     {
         if (elementId < 0 || elementId >= entries.Length) return Color.white;

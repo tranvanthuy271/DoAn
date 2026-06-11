@@ -5,41 +5,37 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// DebuffManager – NetworkBehaviour quản lý debuff (hiệu ứng bất lợi) trên một target (player hoặc enemy).
-///
-/// Setup:
-///   • Thêm vào Player prefab và tất cả Enemy prefabs.
-///   • Script tự detect xem nó đang trên player hay enemy qua PlayerMovement/EnemyAI.
-///
-/// Flow:
-///   1. Projectile/Skill gọi ApplyDebuffServerRpc() trên target.
-///   2. Server thêm DebuffEntry vào NetworkList (tự sync sang tất cả clients).
-///   3. NetworkList.OnListChanged → fire OnDebuffsChanged → UI cập nhật.
-///   4. PlayerMovement / EnemyAI đọc GetSlowFactor() / IsFrozen() mỗi frame.
-///   5. TakeDamageInternal đọc GetDefenseDebuffPct().
-/// </summary>
+// DebuffManager – NetworkBehaviour quản lý debuff (hiệu ứng bất lợi) trên một target (player hoặc enemy).
+// Setup:
+// • Thêm vào Player prefab và tất cả Enemy prefabs.
+// • Script tự detect xem nó đang trên player hay enemy qua PlayerMovement/EnemyAI.
+// Flow:
+// 1. Projectile/Skill gọi ApplyDebuffServerRpc() trên target.
+// 2. Server thêm DebuffEntry vào NetworkList (tự sync sang tất cả clients).
+// 3. NetworkList.OnListChanged → fire OnDebuffsChanged → UI cập nhật.
+// 4. PlayerMovement / EnemyAI đọc GetSlowFactor() / IsFrozen() mỗi frame.
+// 5. TakeDamageInternal đọc GetDefenseDebuffPct().
 [DisallowMultipleComponent]
 public class DebuffManager : NetworkBehaviour
 {
-    // ── Network State (syncs to all clients automatically) ────────────────────
+    // Trạng thái network được đồng bộ giữa server và client.
     public NetworkList<DebuffEntry> ActiveDebuffs { get; private set; }
 
-    // ── Events (UI subscribe) ────────────────────────────────────────────────
-    /// <summary>Fired mỗi khi danh sách debuff thay đổi (thêm / xóa).</summary>
+    // Events (UI subscribe)
+    // Fired mỗi khi danh sách debuff thay đổi (thêm / xóa).
     public event Action OnDebuffsChanged;
 
-    // ── Cached component refs ────────────────────────────────────────────────
+    // Cached component refs
     private PlayerMovement   _playerMovement;
     private EnemyAI          _enemyAI;
     private NetworkPlayerHealth _playerHealth;
     private NetworkEnemyHealth  _enemyHealth;
 
-    // ── Burn coroutine tracking (server-side, no double-burn) ─────────────────
+    // Burn coroutine tracking (server-side, no double-burn)
     private readonly Dictionary<SkillDebuffType, Coroutine> _activeCoroutines
         = new Dictionary<SkillDebuffType, Coroutine>();
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -72,7 +68,7 @@ public class DebuffManager : NetworkBehaviour
         OnDebuffsChanged?.Invoke();
     }
 
-    // ── Update: server tự expire entries ─────────────────────────────────────
+    // Update: server tự expire entries
     private void Update()
     {
         if (!IsServer) return;
@@ -92,12 +88,10 @@ public class DebuffManager : NetworkBehaviour
         }
     }
 
-    // ── API ───────────────────────────────────────────────────────────────────
+    // API public của component này.
 
-    /// <summary>
-    /// Server-RPC: Áp dụng debuff lên target này.
-    /// Gọi từ FireballDamage/DotDamage khi hit target.
-    /// </summary>
+    // Server-RPC: Áp dụng debuff lên target này.
+    // Gọi từ FireballDamage/DotDamage khi hit target.
     [ServerRpc(RequireOwnership = false)]
     public void ApplyDebuffServerRpc(
         SkillDebuffType type,
@@ -152,9 +146,9 @@ public class DebuffManager : NetworkBehaviour
         }
     }
 
-    // ── Stat Queries (đọc từ NetworkList, hoạt động trên mọi client) ─────────
+    // Stat Queries (đọc từ NetworkList, hoạt động trên mọi client)
 
-    /// <returns>Hệ số tốc độ [0..1]. 1 = bình thường, 0.5 = chậm 50%.</returns>
+    // Trả về: Hệ số tốc độ [0..1]. 1 = bình thường, 0.5 = chậm 50%.
     public float GetSlowFactor()
     {
         for (int i = 0; i < ActiveDebuffs.Count; i++)
@@ -166,7 +160,7 @@ public class DebuffManager : NetworkBehaviour
         return 1f;
     }
 
-    /// <returns>% giảm tấn công (0-100). 0 = không giảm.</returns>
+    // Trả về: % giảm tấn công (0-100). 0 = không giảm.
     public int GetAttackDebuffPct()
     {
         int max = 0;
@@ -178,7 +172,7 @@ public class DebuffManager : NetworkBehaviour
         return max;
     }
 
-    /// <returns>% giảm giáp (0-100). 0 = không giảm.</returns>
+    // Trả về: % giảm giáp (0-100). 0 = không giảm.
     public int GetDefenseDebuffPct()
     {
         int max = 0;
@@ -190,7 +184,7 @@ public class DebuffManager : NetworkBehaviour
         return max;
     }
 
-    /// <returns>true nếu target đang bị Freeze.</returns>
+    // Trả về: true nếu target đang bị Freeze.
     public bool IsFrozen()
     {
         for (int i = 0; i < ActiveDebuffs.Count; i++)
@@ -201,13 +195,13 @@ public class DebuffManager : NetworkBehaviour
         return false;
     }
 
-    /// <returns>true nếu có bất kỳ debuff active nào.</returns>
+    // Trả về: true nếu có bất kỳ debuff active nào.
     public bool HasAnyDebuff()
     {
         return ActiveDebuffs.Count > 0;
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void ApplyFreezeEffect(float duration)
     {

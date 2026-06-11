@@ -1,18 +1,14 @@
 using TMPro;
 using UnityEngine;
 
-/// <summary>
-/// Hiển thị tên NPC phía trên sprite bằng World-Space Canvas + TextMeshProUGUI.
-///
-/// Component tự tạo UI child object lúc Awake — không cần chỉnh prefab thủ công.
-/// NpcInteraction sẽ tự AddComponent nếu prefab chưa có.
-///
-/// Cách tuỳ chỉnh:
-///   - offset      : điều chỉnh vị trí label so với tâm NPC
-///   - fontSize    : cỡ chữ (đơn vị pixel tại scale 0.01)
-///   - textColor   : màu chữ
-///   - canvasSize  : chiều rộng/cao vùng text (pixel)
-/// </summary>
+// Hiển thị tên NPC phía trên sprite bằng World-Space Canvas + TextMeshProUGUI.
+// Component tự tạo UI child object lúc Awake — không cần chỉnh prefab thủ công.
+// NpcInteraction sẽ tự AddComponent nếu prefab chưa có.
+// Cách tuỳ chỉnh:
+// - offset      : điều chỉnh vị trí label so với tâm NPC
+// - fontSize    : cỡ chữ (đơn vị pixel tại scale 0.01)
+// - textColor   : màu chữ
+// - canvasSize  : chiều rộng/cao vùng text (pixel)
 public class NpcNameLabel : MonoBehaviour
 {
     [Header("Vị trí")]
@@ -25,7 +21,6 @@ public class NpcNameLabel : MonoBehaviour
     [SerializeField] private float fontSize  = 26f;
     [SerializeField] private Color textColor = new Color(1f, 0.95f, 0.3f, 1f); // vàng nhạt
 
-    // ─────────────────────────────────────────────────────────
 
     private TextMeshProUGUI _tmp;
     private Camera          _mainCam;
@@ -67,7 +62,7 @@ public class NpcNameLabel : MonoBehaviour
         UIRuntimeAssetHelper.ApplyNotoSans(_tmp);
     }
 
-    /// <summary>Cập nhật tên hiển thị trên label.</summary>
+    // Cập nhật tên hiển thị trên label.
     public void SetName(string npcName)
     {
         if (_tmp != null)

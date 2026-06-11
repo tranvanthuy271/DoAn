@@ -26,9 +26,7 @@ namespace GameServerApi.Controllers
             _db = db;
         }
 
-        // ──────────────────────────────────────────────────────────────
         //  HARDCODED DATA
-        // ──────────────────────────────────────────────────────────────
 
         // Option templates: id, name, type, level, strOption (20 values sep by ';')
         // level = item.upgradeLevel tối thiểu để activate
@@ -50,7 +48,7 @@ namespace GameServerApi.Controllers
         // Giá trị khớp với OptionTemplates[id-1].strOption[0]
         public static readonly Dictionary<int, string> DefaultStrOptions = new()
         {
-            // ── Trang bị cơ bản lv1 ──
+            // Trang bị cơ bản lv1
             [100] = "3,30",       // Mũ Da Nam:          HP+30
             [105] = "3,30",       // Mũ Lụa Nữ:          HP+30
             [110] = "2,8;3,30",   // Áo Da Nam:          DEF+8, HP+30
@@ -60,14 +58,14 @@ namespace GameServerApi.Controllers
             [140] = "3,30",       // Nhẫn Đá:            HP+30
             [150] = "4,5",        // Giày Da Nam:        SPD+5
             [155] = "4,5",        // Giày Lụa Nữ:        SPD+5
-            // ── Vũ khí lv1 (tất cả hệ) ──
+            // Vũ khí lv1 (tất cả hệ)
             [200] = "1,10",       // Kiếm Hỏa Sơ Cấp:   ATK+10
             [205] = "1,10",       // Cung Thủy Sơ Cấp:   ATK+10
             [210] = "1,10",       // Chùy Thổ Sơ Cấp:   ATK+10
             [215] = "1,10",       // Đao Kim Sơ Cấp:     ATK+10
             [220] = "1,10",       // Gậy Mộc Sơ Cấp:     ATK+10
             [225] = "1,10",       // Thương Phong Sơ Cấp: ATK+10
-            // ── Trang bị 3x (lv30 — Tier Ngân Tinh) ──
+            // Trang bị 3x (lv30 — Tier Ngân Tinh)
             [300] = "3,30",       // Mũ Ngân Tinh Nam:   HP+30
             [301] = "3,30",       // Mũ Ngân Tinh Nữ:    HP+30
             [302] = "2,8;3,30",   // Áo Ngân Tinh Nam:   DEF+8, HP+30
@@ -77,7 +75,7 @@ namespace GameServerApi.Controllers
             [306] = "3,30",       // Nhẫn Bạch Kim:      HP+30
             [307] = "4,5",        // Giày Ngân Tinh Nam: SPD+5
             [308] = "4,5",        // Giày Ngân Tinh Nữ:  SPD+5
-            // ── Trang bị 4x (lv40 — Tier Thiên Mệnh) ──
+            // Trang bị 4x (lv40 — Tier Thiên Mệnh)
             [400] = "3,30",       // Mũ Thiên Mệnh Nam:  HP+30
             [401] = "3,30",       // Mũ Thiên Mệnh Nữ:   HP+30
             [402] = "2,8;3,30",   // Áo Thiên Mệnh Nam:  DEF+8, HP+30
@@ -89,20 +87,16 @@ namespace GameServerApi.Controllers
             [408] = "4,5",        // Giày Thiên Mệnh Nữ:  SPD+5
         };
 
-        // ──────────────────────────────────────────────────────────────
         //  GET /api/upgrade/options
         //  Trả về toàn bộ option templates
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("options")]
         public IActionResult GetOptions()
         {
             return Ok(new { options = OptionTemplates });
         }
 
-        // ──────────────────────────────────────────────────────────────
         //  GET /api/upgrade/config?itemId=X&targetLevel=Y
         //  Trả về config nâng cấp cho bậc cụ thể
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("config")]
         public async System.Threading.Tasks.Task<IActionResult> GetConfig([FromQuery] int itemId, [FromQuery] int targetLevel)
         {
@@ -130,10 +124,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ──────────────────────────────────────────────────────────────
         //  POST /api/upgrade/equipment
         //  Body: { playerId, slotKey, isFromInventory, stoneSlotIndices }
-        // ──────────────────────────────────────────────────────────────
         [HttpPost("equipment")]
         public async System.Threading.Tasks.Task<IActionResult> UpgradeEquipment([FromBody] JsonElement body)
         {
@@ -389,9 +381,7 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        //  HELPERS
-        // ──────────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
         private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
         {
             playerId = requestedPlayerId;

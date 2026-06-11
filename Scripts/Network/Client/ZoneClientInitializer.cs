@@ -1,17 +1,13 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Thay thế MainSceneNetworkInitializer trong kiến trúc server+client mới.
-///
-/// Trách nhiệm:
-///   1. Đọc PlayerData đã lưu (GameManager hoặc PlayerPrefs)
-///   2. Fetch địa chỉ zone server từ ZoneRegistryClient
-///   3. Gọi ZoneConnectionHandler.ConnectToZone()
-///
-/// Gắn vào: persistent NetworkClient GameObject (DontDestroyOnLoad).
-/// Chạy khi chuyển từ LoginScene → MainScene.
-/// </summary>
+// Thay thế MainSceneNetworkInitializer trong kiến trúc server+client mới.
+// Trách nhiệm:
+// 1. Đọc PlayerData đã lưu (GameManager hoặc PlayerPrefs)
+// 2. Fetch địa chỉ zone server từ ZoneRegistryClient
+// 3. Gọi ZoneConnectionHandler.ConnectToZone()
+// Gắn vào: persistent NetworkClient GameObject (DontDestroyOnLoad).
+// Chạy khi chuyển từ LoginScene → MainScene.
 [DisallowMultipleComponent]
 public class ZoneClientInitializer : MonoBehaviour
 {

@@ -1,22 +1,17 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// EnemyClickHandler — Xử lý click chọn enemy trên client.
-/// Gắn vào root GameObject của enemy prefab.
-///
-/// Yêu cầu:
-///   - Collider2D (non-trigger) trên root enemy để OnMouseDown hoạt động.
-///   - Child GameObject "SelectionIndicator" (sprite mũi tên, mặc định ẩn).
-///   - EnemyInfoPanel tồn tại trong scene (singleton).
-///
-/// Khi click:
-///   1. Bỏ chọn enemy đang được chọn trước đó.
-///   2. Hiển thị SelectionIndicator (mũi tên bên dưới chân quái).
-///   3. Mở EnemyInfoPanel với thông số của enemy này.
-///
-/// Tự động bỏ chọn và đóng panel khi enemy bị destroy.
-/// </summary>
+// EnemyClickHandler — Xử lý click chọn enemy trên client.
+// Gắn vào root GameObject của enemy prefab.
+// Yêu cầu:
+// - Collider2D (non-trigger) trên root enemy để OnMouseDown hoạt động.
+// - Child GameObject "SelectionIndicator" (sprite mũi tên, mặc định ẩn).
+// - EnemyInfoPanel tồn tại trong scene (singleton).
+// Khi click:
+// 1. Bỏ chọn enemy đang được chọn trước đó.
+// 2. Hiển thị SelectionIndicator (mũi tên bên dưới chân quái).
+// 3. Mở EnemyInfoPanel với thông số của enemy này.
+// Tự động bỏ chọn và đóng panel khi enemy bị destroy.
 public class EnemyClickHandler : MonoBehaviour
 {
     [Header("References")]
@@ -27,10 +22,10 @@ public class EnemyClickHandler : MonoBehaviour
     [SerializeField] private float panelHideDistance = 12f;
     [SerializeField] private float panelIdleHideSeconds = 5f;
 
-    // ─── Static: chỉ một enemy được chọn tại một thời điểm ───────────
+    // Static: chỉ một enemy được chọn tại một thời điểm
     private static EnemyClickHandler _currentSelected;
 
-    // ─── Cached components ────────────────────────────────────────────
+    // Cached components
     private NetworkEnemyHealth _netHealth;
     private EnemySkillSet _skillSet;          // Chỉ có trên server/host
     private EnemyStatOverride _statOverride;  // Chỉ có trên server/host
@@ -79,9 +74,8 @@ public class EnemyClickHandler : MonoBehaviour
         Select();
     }
 
-    // ─────────────────────────────────────────────────────────────────
 
-    /// <summary>Chọn enemy này, bỏ chọn enemy trước đó.</summary>
+    // Chọn enemy này, bỏ chọn enemy trước đó.
     public void Select()
     {
         if (InputManager.Instance != null && InputManager.Instance.IsGameplayInputBlocked)
@@ -116,7 +110,7 @@ public class EnemyClickHandler : MonoBehaviour
         EnemyInfoPanel.Instance?.Show(BuildStats());
     }
 
-    /// <summary>Bỏ chọn enemy này (ẩn indicator).</summary>
+    // Bỏ chọn enemy này (ẩn indicator).
     public void Deselect()
     {
         if (selectionIndicator != null)
@@ -125,7 +119,7 @@ public class EnemyClickHandler : MonoBehaviour
         TargetSelector.ClearTarget(transform);
     }
 
-    /// <summary>Bỏ chọn enemy đang được chọn (gọi từ NpcInteraction khi NPC được chọn).</summary>
+    // Bỏ chọn enemy đang được chọn (gọi từ NpcInteraction khi NPC được chọn).
     public static void DeselectCurrent()
     {
         if (_currentSelected != null)
@@ -142,10 +136,8 @@ public class EnemyClickHandler : MonoBehaviour
             _currentSelected._lastSelectedSkillTime = Time.time;
     }
 
-    /// <summary>
-    /// Cập nhật lại HP trên panel nếu enemy này đang được chọn.
-    /// Gọi từ NetworkEnemyHealth.OnHealthChanged nếu cần real-time update.
-    /// </summary>
+    // Cập nhật lại HP trên panel nếu enemy này đang được chọn.
+    // Gọi từ NetworkEnemyHealth.OnHealthChanged nếu cần real-time update.
     public void RefreshPanelIfSelected()
     {
         if (_currentSelected == this)
@@ -154,7 +146,6 @@ public class EnemyClickHandler : MonoBehaviour
                 _netHealth != null ? _netHealth.GetMaxHealth()     : 0);
     }
 
-    // ─────────────────────────────────────────────────────────────────
 
         private EnemyStats BuildStats()
     {

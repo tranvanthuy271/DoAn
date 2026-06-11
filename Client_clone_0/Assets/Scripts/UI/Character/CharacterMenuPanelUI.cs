@@ -4,19 +4,16 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
-/// <summary>
-/// Panel nhân vật mini – hiển thị avatar, tên tài khoản, tên nhân vật,
-/// cấp độ + % EXP tới cấp tiếp theo và các nút chức năng.
-///
-/// Cách dùng: đặt trong Canvas, gán tất cả SerializedField, gán
-/// partyPanel tới PartyPanelUI để nút "Quan hệ" mở đúng panel.
-/// </summary>
+// Panel nhân vật mini – hiển thị avatar, tên tài khoản, tên nhân vật,
+// cấp độ + % EXP tới cấp tiếp theo và các nút chức năng.
+// Cách dùng: đặt trong Canvas, gán tất cả SerializedField, gán
+// partyPanel tới PartyPanelUI để nút "Quan hệ" mở đúng panel.
 public class CharacterMenuPanelUI : MonoBehaviour
 {
     private const string GameplayBlockSource = "CharacterMenuPanelUI";
     private const string LogPrefix = "[CharacterMenuPanelUI]";
 
-    // ── Character info ────────────────────────────────────────────────────────
+    // Character info
     [Header("Character Info")]
     [SerializeField] private Image        avatarImage;
     [SerializeField] private TMP_Text     accountNameText;
@@ -29,7 +26,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
     [Tooltip("Asset chung chứa icon hệ và avatar theo hệ. Nếu bỏ trống sẽ thử load từ Resources/ScriptableObjects/ElementIconConfig.")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Navigation buttons ───────────────────────────────────────────────────
+    // Navigation buttons
     [Header("Navigation Buttons")]
     [SerializeField] private Button closeButton;
     [SerializeField] private Button questButton;       // Nhiệm vụ
@@ -39,7 +36,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
     [SerializeField] private Button changeCharButton;  // Đổi nhân vật → về login
     [SerializeField] private Button quitButton;        // Thoát game
 
-    // ── Linked panels ────────────────────────────────────────────────────────
+    // Linked panels
     [Header("Linked Panels")]
     [Tooltip("Panel tổ đội (PartyPanelUI)")]
     [FormerlySerializedAs("socialPanel")]
@@ -52,14 +49,13 @@ public class CharacterMenuPanelUI : MonoBehaviour
     [Tooltip("Panel nhiệm vụ (tuỳ chọn)")]
     [SerializeField] private GameObject questPanel;
 
-    // ── Login scene name (có thể override trong Inspector) ───────────────────
+    // Login scene name (có thể override trong Inspector)
     [Header("Scene Names")]
     [SerializeField] private string loginSceneName = "Login";
 
-    // ── Internal ─────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private PlayerDataResponse _cachedData;
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -88,10 +84,9 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Public API
 
-    /// <summary>Mở panel và làm mới dữ liệu hiển thị.</summary>
+    // Mở panel và làm mới dữ liệu hiển thị.
     public void Open()
     {
         UIPanelManager.CloseOthers(gameObject);
@@ -99,7 +94,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
     }
 
-    /// <summary>Đóng panel.</summary>
+    // Đóng panel.
     public void Close()
     {
         gameObject.SetActive(false);
@@ -108,7 +103,6 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Data refresh
 
     private void RefreshData()
@@ -170,7 +164,6 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Button handlers
 
     private void OnQuestClicked()

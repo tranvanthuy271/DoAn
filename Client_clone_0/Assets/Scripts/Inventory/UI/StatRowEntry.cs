@@ -1,10 +1,8 @@
 using UnityEngine;
 using TMPro;
 
-/// <summary>
-/// StatRowEntry – 1 dòng stat trong UpgradeItemCard.
-/// Prefab: GameObject có Text (TMP_Text).
-/// </summary>
+// StatRowEntry – 1 dòng stat trong UpgradeItemCard.
+// Prefab: GameObject có Text (TMP_Text).
 public class StatRowEntry : MonoBehaviour
 {
     [SerializeField] private TMP_Text labelText;

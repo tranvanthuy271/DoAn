@@ -1,15 +1,11 @@
 using System;
 using UnityEngine;
 
-/// <summary>
-/// GameManager trung tâm: quản lý state game + giữ PlayerData (login từ API).
-/// </summary>
+// GameManager trung tâm: quản lý state game + giữ PlayerData (login từ API).
 public class GameManager : MonoBehaviour
 {
-    /// <summary>
-    /// Fired bất cứ khi nào player data được set (login, reconnect, scene load).
-    /// ActiveBuffManager subscribe để reload buff sau khi player ID đã sẵn sàng.
-    /// </summary>
+    // Fired bất cứ khi nào player data được set (login, reconnect, scene load).
+    // ActiveBuffManager subscribe để reload buff sau khi player ID đã sẵn sàng.
     public static event Action<PlayerDataResponse> OnPlayerDataSet;
 
     public static GameManager Instance { get; private set; }
@@ -107,9 +103,7 @@ public class GameManager : MonoBehaviour
 
     #region Player Data (API)
 
-    /// <summary>
-    /// Được gọi sau khi login & load player data từ API.
-    /// </summary>
+    // Được gọi sau khi login & load player data từ API.
     public void SetPlayerData(PlayerDataResponse data)
     {
         currentPlayerData = data;

@@ -4,20 +4,18 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel dropdown khi nhấn vào icon kênh ở thanh input.
-/// Mỗi row chỉ hiển thị một Image icon (kéo thả trong Inspector).
-/// Tắt/bật bằng Toggle().
-/// </summary>
+// Panel dropdown khi nhấn vào icon kênh ở thanh input.
+// Mỗi row chỉ hiển thị một Image icon (kéo thả trong Inspector).
+// Tắt/bật bằng Toggle().
 public class ChatChannelDropdownUI : MonoBehaviour
 {
     [System.Serializable]
     public struct ChannelItem
     {
         public ChatChannel channel;
-        /// <summary>Kéo Sprite icon vào đây trong Inspector.</summary>
+        // Kéo Sprite icon vào đây trong Inspector.
         public Sprite      icon;
-        /// <summary>Màu tô lên icon. White = giữ nguyên màu ảnh gốc.</summary>
+        // Màu tô lên icon. White = giữ nguyên màu ảnh gốc.
         public Color       iconTint;
     }
 
@@ -36,19 +34,19 @@ public class ChatChannelDropdownUI : MonoBehaviour
     [SerializeField] private GameObject rowPrefab;   // optional; sẽ tự tạo nếu null
     [SerializeField] private Transform  rowContainer;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     private Action<ChatChannel> _onSelected;
     private bool                _built;
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
         gameObject.SetActive(false);
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Toggle(Action<ChatChannel> onSelected)
     {
@@ -72,7 +70,7 @@ public class ChatChannelDropdownUI : MonoBehaviour
         return false;
     }
 
-    // ── Build Rows ────────────────────────────────────────────────────────────
+    // Build Rows
 
     private void Build()
     {

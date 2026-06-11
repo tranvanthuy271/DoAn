@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System;
 
-/// <summary>
-/// Connection Approval Handler: Verify JWT token và map clientId -> userId
-/// Chỉ chạy trên server
-/// </summary>
+// Connection Approval Handler: Verify JWT token và map clientId -> userId
+// Chỉ chạy trên server
 public class ServerConnectionApproval : MonoBehaviour
 {
     private NetworkManager networkManager;
@@ -130,9 +128,7 @@ public class ServerConnectionApproval : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Connection Approval Callback: Approve connection, client sẽ gửi user_id qua ServerRpc sau khi connect
-    /// </summary>
+    // Connection Approval Callback: Approve connection, client sẽ gửi user_id qua ServerRpc sau khi connect
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
         try
@@ -179,9 +175,7 @@ public class ServerConnectionApproval : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Approval data structure (client gửi lên)
-    /// </summary>
+    // Approval data structure (client gửi lên)
     [System.Serializable]
     public class ApprovalData
     {

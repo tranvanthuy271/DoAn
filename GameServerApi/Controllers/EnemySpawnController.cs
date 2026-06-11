@@ -20,10 +20,8 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// GET /api/enemyspawn/{mapId}/spawns
-        /// Lấy danh sách enemy spawns cho map (kèm thông tin enemy chi tiết)
-        /// </summary>
+        // GET /api/enemyspawn/{mapId}/spawns
+        // Lấy danh sách enemy spawns cho map (kèm thông tin enemy chi tiết)
         [HttpGet("{mapId}/spawns")]
         public async Task<IActionResult> GetEnemySpawns(int mapId)
         {

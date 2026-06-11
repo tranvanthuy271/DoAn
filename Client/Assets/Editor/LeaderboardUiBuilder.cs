@@ -4,13 +4,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tools > DoAn > [BXH] Tao Skeleton + HUD Button
-///   Tao panel skeleton (chi neu chua co) + HUD button.
-///   User tu config UI trong Unity Editor, khong bi overwrite.
-/// Tools > DoAn > [BXH] Reset Panel (xoa tao lai)
-///   Xoa va tao lai panel hoan toan tu code (mat config thu cong).
-/// </summary>
+// Tools > DoAn > [BXH] Tao Skeleton + HUD Button
+// Tao panel skeleton (chi neu chua co) + HUD button.
+// User tu config UI trong Unity Editor, khong bi overwrite.
+// Tools > DoAn > [BXH] Reset Panel (xoa tao lai)
+// Xoa va tao lai panel hoan toan tu code (mat config thu cong).
 public static class LeaderboardUiBuilder
 {
     private const string PanelPath  = "Assets/Resources/Prefabs/UI/LeaderboardPanel.prefab";
@@ -20,14 +18,14 @@ public static class LeaderboardUiBuilder
 
     private static TMP_FontAsset _font;
 
-    // --- kich thuoc ---
+    // kich thuoc
     private const float W     = 660f, H = 500f;
     private const float TAB1H = 46f;
     private const float TAB2H = 38f;
     private const float HDRH  = 32f;
     private const float DIVH  = 2f;
 
-    // --- mau ---
+    // mau
     private static Color C(string hex) { ColorUtility.TryParseHtmlString("#" + hex, out var c); return c; }
     private static readonly Color BgPanel    = C("3D1A06");
     private static readonly Color BgTab1     = C("1C0A02");
@@ -376,7 +374,7 @@ public static class LeaderboardUiBuilder
     }
 
     // =========================================================================
-    //  HELPERS
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
     // =========================================================================
     static GameObject Stripe(GameObject parent, string name, float yOffset, float height)
     {

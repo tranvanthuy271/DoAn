@@ -2,20 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// UpgradeStoneConfig – ScriptableObject cấu hình tỉ lệ cường hóa.
-///
-/// ══════════════════════════════════════════════════════════
-/// TẠO ASSET: Project → Create → Upgrade / Stone Config
-/// ══════════════════════════════════════════════════════════
-/// Dữ liệu nên mirror từ DB equipment_upgrade_config để client hiển thị
-/// đúng cùng tỉ lệ mà server dùng để validate.
-/// ══════════════════════════════════════════════════════════
-/// </summary>
+// UpgradeStoneConfig – ScriptableObject cấu hình tỉ lệ cường hóa.
+// TẠO ASSET: Project → Create → Upgrade / Stone Config
+// Dữ liệu nên mirror từ DB equipment_upgrade_config để client hiển thị
+// đúng cùng tỉ lệ mà server dùng để validate.
 [CreateAssetMenu(menuName = "Upgrade/Stone Config", fileName = "UpgradeStoneConfig")]
 public class UpgradeStoneConfig : ScriptableObject
 {
-    // ─── Đá nâng cấp ──────────────────────────────────────────────
+    // Đá nâng cấp
 
     [Serializable]
     public class StoneEntry
@@ -36,7 +30,7 @@ public class UpgradeStoneConfig : ScriptableObject
     [Header("Danh sách đá (type=21 + đặc biệt)")]
     public StoneEntry[] stones;
 
-    // ─── Bùa cường hóa ────────────────────────────────────────────
+    // Bùa cường hóa
 
     [Header("Bùa cường hóa (itemId=8)")]
     [Tooltip("item_template.id của bùa cường hóa")]
@@ -49,7 +43,7 @@ public class UpgradeStoneConfig : ScriptableObject
     [Tooltip("item_template.id của đá bảo vệ. Không tăng tỉ lệ, chỉ chặn fail policy.")]
     public int protectionItemId = 9;
 
-    // ─── Cấu hình từng món đồ ────────────────────────────────────
+    // Cấu hình từng món đồ
 
     [Serializable]
     public class ItemUpgradeEntry
@@ -110,7 +104,7 @@ public class UpgradeStoneConfig : ScriptableObject
     [Header("Dữ liệu theo từng bậc nâng (mirror equipment_upgrade_config)")]
     public LevelRateEntry[] levelConfigs;
 
-    // ─── Cài đặt chung ────────────────────────────────────────────
+    // Cài đặt chung
 
     [Header("Tổng điểm tỉ lệ cần để coi là 100% thành công")]
     [Tooltip("Điểm tỉ lệ đầy đủ (100%). Ví dụ 100 = cần 100 điểm để đạt 100%")]
@@ -120,9 +114,9 @@ public class UpgradeStoneConfig : ScriptableObject
     [Tooltip("Không cho phép vượt quá giới hạn này dù đá nhiều (0 = không giới hạn)")]
     public int maxSuccessPercent = 95;
 
-    // ─── Helpers ─────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>Lấy entry đá theo itemId. Trả null nếu không tìm thấy.</summary>
+    // Lấy entry đá theo itemId. Trả null nếu không tìm thấy.
     public StoneEntry GetStone(int itemId)
     {
         if (stones == null) return null;
@@ -131,7 +125,7 @@ public class UpgradeStoneConfig : ScriptableObject
         return null;
     }
 
-    /// <summary>Lấy config nâng cấp của item theo itemTemplateId.</summary>
+    // Lấy config nâng cấp của item theo itemTemplateId.
     public ItemUpgradeEntry GetItemConfig(int itemTemplateId)
     {
         if (itemConfigs == null) return null;
@@ -148,14 +142,12 @@ public class UpgradeStoneConfig : ScriptableObject
         return null;
     }
 
-    /// <summary>
-    /// Tính tỉ lệ % từ danh sách đá đã chọn + charm + level hiện tại của item.
-    /// Trả về giá trị 0-100 (int).
-    /// </summary>
-    /// <param name="itemTemplateId">ID item cần nâng</param>
-    /// <param name="currentLevel">Bậc hiện tại của item</param>
-    /// <param name="stoneIds">Danh sách itemId của các viên đá đặt vào 16 ô</param>
-    /// <param name="hasCharm">Có đặt bùa hay không</param>
+    // Tính tỉ lệ % từ danh sách đá đã chọn + charm + level hiện tại của item.
+    // Trả về giá trị 0-100 (int).
+    // Tham số itemTemplateId: ID item cần nâng
+    // Tham số currentLevel: Bậc hiện tại của item
+    // Tham số stoneIds: Danh sách itemId của các viên đá đặt vào 16 ô
+    // Tham số hasCharm: Có đặt bùa hay không
     public int CalcSuccessPercent(int itemTemplateId, int currentLevel, List<int> stoneIds, bool hasCharm)
     {
         int targetLevel = currentLevel + 1;

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Models
 {
-    // ----------------------------------------------------------------
     // gene_tier_stat_config
     //   element_type : 'Fire'|'Water'|'Earth'|'Metal'|'Wood'  (PK)
     //   tier_to      : tier đạt được sau khi nâng cấp (2..5)  (PK)
@@ -15,7 +14,6 @@ namespace GameServerApi.Models
     //
     // Mỗi hệ có thể có stat bonus riêng tại mỗi tier.
     // Server đọc bảng này thay vì dùng hardcode dictionary.
-    // ----------------------------------------------------------------
     [Table("gene_tier_stat_config")]
     [PrimaryKey(nameof(ElementType), nameof(TierTo))]
     public class GeneTierStatConfig
@@ -24,7 +22,7 @@ namespace GameServerApi.Models
         [MaxLength(10)]
         public string ElementType { get; set; } = "";
 
-        /// <summary>Tier mà player đạt được sau upgrade thành công (2, 3, 4, 5)</summary>
+        // Tier mà player đạt được sau upgrade thành công (2, 3, 4, 5)
         [Column("tier_to")]
         public int TierTo { get; set; }
 

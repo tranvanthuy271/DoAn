@@ -1,9 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Enemy Prefab Manager - Quản lý mapping giữa Enemy ID và Enemy Prefabs
-/// </summary>
+// Enemy Prefab Manager - Quản lý mapping giữa Enemy ID và Enemy Prefabs
 public class EnemyPrefabManager : MonoBehaviour
 {
     [System.Serializable]
@@ -72,9 +70,7 @@ public class EnemyPrefabManager : MonoBehaviour
         Debug.Log($"[EnemyPrefabManager] BuildDictionary DONE — registered keys: [{string.Join(",", enemyPrefabDict.Keys)}]");
     }
 
-    /// <summary>
-    /// Lấy Enemy Prefab theo Enemy ID
-    /// </summary>
+    // Lấy Enemy Prefab theo Enemy ID
     public GameObject GetEnemyPrefab(int enemyId)
     {
         if (enemyPrefabDict.TryGetValue(enemyId, out GameObject prefab))
@@ -95,17 +91,13 @@ public class EnemyPrefabManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Kiểm tra xem Enemy ID có tồn tại không
-    /// </summary>
+    // Kiểm tra xem Enemy ID có tồn tại không
     public bool HasEnemyPrefab(int enemyId)
     {
         return enemyPrefabDict.ContainsKey(enemyId);
     }
 
-    /// <summary>
-    /// Lấy tất cả Enemy IDs đã đăng ký
-    /// </summary>
+    // Lấy tất cả Enemy IDs đã đăng ký
     public List<int> GetAllEnemyIds()
     {
         return new List<int>(enemyPrefabDict.Keys);

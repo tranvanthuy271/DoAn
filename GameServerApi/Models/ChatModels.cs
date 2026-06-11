@@ -1,8 +1,8 @@
 namespace GameServerApi.Models
 {
-    // ── Chat DTOs ────────────────────────────────────────────────────────────
+    // Chat DTOs
 
-    /// <summary>Payload được gửi từ Hub đến client cho mỗi tin nhắn.</summary>
+    // Payload được gửi từ Hub đến client cho mỗi tin nhắn.
     public class ChatMessagePayload
     {
         public string senderId   { get; set; } = "";
@@ -13,7 +13,7 @@ namespace GameServerApi.Models
         public string timestamp  { get; set; } = "";   // "HH:mm"
     }
 
-    // ── Friend DTOs ──────────────────────────────────────────────────────────
+    // Friend DTOs
 
     public class SendFriendRequestDto
     {

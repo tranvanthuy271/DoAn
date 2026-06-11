@@ -1,4 +1,0 @@
-15: • Mục tiêu đề tài: Phát triển trò chơi multiplayer Mutants Arena góc nhìn 2D Platformer, tích hợp cơ chế tiến hóa Gene Ngũ Hành khắc chế linh hoạt, triển khai Dedicated Server theo kiến trúc Server-Authoritative để chống gian lận.
-20: - Giới thiệu trò chơi, các cơ chế di chuyển, FSM quái vật, kiến trúc Server-Authoritative, dự đoán client, đồng bộ qua Netcode for GameObjects và SignalR.
-55: Kiến trúc mạng Server-Authoritative
-209: - Triển khai Dedicated Server Server-Authoritative chống hack/cheat hiệu quả.

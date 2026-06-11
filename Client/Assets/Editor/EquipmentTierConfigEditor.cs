@@ -1,12 +1,10 @@
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>
-/// Custom Inspector cho EquipmentTierConfig:
-/// - Hiển thị warning nếu Tiers chưa cấu hình
-/// - Thêm nút "Auto-fill 4 Tiers (4/8/12/14)" để tạo nhanh
-/// - Preview màu tier ngay trong Inspector
-/// </summary>
+// Custom Inspector cho EquipmentTierConfig:
+// - Hiển thị warning nếu Tiers chưa cấu hình
+// - Thêm nút "Auto-fill 4 Tiers (4/8/12/14)" để tạo nhanh
+// - Preview màu tier ngay trong Inspector
 [CustomEditor(typeof(EquipmentTierConfig))]
 public class EquipmentTierConfigEditor : Editor
 {
@@ -14,7 +12,7 @@ public class EquipmentTierConfigEditor : Editor
     {
         var config = (EquipmentTierConfig)target;
 
-        // ── Validation warnings ──────────────────────────────────────────
+        // Validation warnings
         bool hasError = false;
 
         if (config.tiers == null || config.tiers.Length == 0)
@@ -42,7 +40,7 @@ public class EquipmentTierConfigEditor : Editor
             }
         }
 
-        // ── Nút auto-fill ───────────────────────────────────────────────
+        // Nút auto-fill
         EditorGUILayout.Space(4);
         if (GUILayout.Button("◆ Auto-fill 4 Tiers (minLevel = 4 / 8 / 12 / 14)", GUILayout.Height(28)))
         {
@@ -62,7 +60,7 @@ public class EquipmentTierConfigEditor : Editor
             Debug.Log("[TierConfig] Auto-fill 4 tiers xong. Nhớ kéo Sprite vào từng tier!");
         }
 
-        // ── Nút clear ───────────────────────────────────────────────────
+        // Nút clear
         if (!hasError && GUILayout.Button("✕ Xoá toàn bộ Tiers", GUILayout.Height(22)))
         {
             if (EditorUtility.DisplayDialog("Xác nhận", "Xoá toàn bộ Tiers?", "OK", "Huỷ"))
@@ -75,7 +73,7 @@ public class EquipmentTierConfigEditor : Editor
 
         EditorGUILayout.Space(6);
 
-        // ── Preview tier hiện tại ────────────────────────────────────────
+        // Preview tier hiện tại
         if (config.tiers != null && config.tiers.Length > 0)
         {
             EditorGUILayout.LabelField("Preview màu tier:", EditorStyles.boldLabel);
@@ -93,7 +91,7 @@ public class EquipmentTierConfigEditor : Editor
             EditorGUILayout.Space(4);
         }
 
-        // ── Inspector gốc ───────────────────────────────────────────────
+        // Inspector gốc
         DrawDefaultInspector();
     }
 

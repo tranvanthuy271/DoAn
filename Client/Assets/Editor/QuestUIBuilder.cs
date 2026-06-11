@@ -4,17 +4,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool: tự động tạo toàn bộ Canvas UI cho hệ thống nhiệm vụ.
-/// Menu: DoAn → Quest → Create All Quest UI
-/// </summary>
+// Editor tool: tự động tạo toàn bộ Canvas UI cho hệ thống nhiệm vụ.
+// Menu: DoAn → Quest → Create All Quest UI
 public static class QuestUIBuilder
 {
     private const string PREFAB_DIR = "Assets/Resources/UI";
 
-    // ═════════════════════════════════════════════════════════════════════════
     //  Entry Points
-    // ═════════════════════════════════════════════════════════════════════════
 
     [MenuItem("DoAn/Quest/Create All Quest UI")]
     public static void CreateAll()
@@ -65,10 +61,8 @@ public static class QuestUIBuilder
         Debug.Log("[QuestUIBuilder] ✓ QuestListItem prefab tạo xong.");
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
     //  QuestDialogueUI Canvas
     //  Full-screen dark overlay + bottom dialogue box + NPC portrait
-    // ═════════════════════════════════════════════════════════════════════════
 
     private static GameObject BuildDialogueCanvas()
     {
@@ -168,10 +162,8 @@ public static class QuestUIBuilder
         return root;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
     //  QuestNpcPanel Canvas
     //  Wood-style list panel (like NPC menu in screenshots)
-    // ═════════════════════════════════════════════════════════════════════════
 
     private static GameObject BuildNpcPanel()
     {
@@ -283,9 +275,7 @@ public static class QuestUIBuilder
         return root;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
     //  QuestHudWidget Canvas  (compact tracker top-left)
-    // ═════════════════════════════════════════════════════════════════════════
 
     private static GameObject BuildHudWidget()
     {
@@ -347,9 +337,7 @@ public static class QuestUIBuilder
         return root;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
     //  QuestListItem Prefab  (for QuestNpcPanel's scroll list)
-    // ═════════════════════════════════════════════════════════════════════════
 
     private static GameObject BuildQuestListItem()
     {
@@ -377,9 +365,7 @@ public static class QuestUIBuilder
         return item;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ═════════════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static GameObject MakeImage(GameObject parent, string name, Color color)
     {

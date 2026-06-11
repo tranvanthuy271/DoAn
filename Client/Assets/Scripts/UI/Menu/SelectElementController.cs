@@ -7,7 +7,7 @@ using TMPro;
 public class CharacterButtonData
 {
     public Button button;
-    /// <summary>0=Kim, 1=Mộc, 2=Thủy, 3=Hỏa, 4=Thổ, 5=Phong — giới tính tự động lấy từ ElementHelper</summary>
+    // 0=Kim, 1=Mộc, 2=Thủy, 3=Hỏa, 4=Thổ, 5=Phong — giới tính tự động lấy từ ElementHelper
     public int elementId;
     public Sprite previewSprite; // legacy fallback nếu chưa cấu hình ElementIconConfig
 }

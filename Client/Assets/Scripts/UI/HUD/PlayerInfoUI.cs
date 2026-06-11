@@ -3,10 +3,8 @@ using TMPro;
 using Unity.Netcode;
 using Unity.Collections;
 
-/// <summary>
-/// UI để hiển thị thông tin người chơi (name, level, stats)
-/// Gắn vào player prefab hoặc UI canvas
-/// </summary>
+// UI để hiển thị thông tin người chơi (name, level, stats)
+// Gắn vào player prefab hoặc UI canvas
 public class PlayerInfoUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -83,9 +81,7 @@ public class PlayerInfoUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set NetworkPlayerDataSync manually (nếu không dùng auto-find)
-    /// </summary>
+    // Set NetworkPlayerDataSync manually (nếu không dùng auto-find)
     public void SetDataSync(NetworkPlayerDataSync sync)
     {
         // Unsubscribe old

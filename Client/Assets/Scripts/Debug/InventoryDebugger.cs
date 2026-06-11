@@ -1,9 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// InventoryDebugger - Nhấn phím I để in toàn bộ túi đồ của Player ra Console.
-/// Gắn script này lên cùng GameObject có NetworkInventory (thường là Player prefab).
-/// </summary>
+// InventoryDebugger - Nhấn phím I để in toàn bộ túi đồ của Player ra Console.
+// Gắn script này lên cùng GameObject có NetworkInventory (thường là Player prefab).
 public class InventoryDebugger : MonoBehaviour
 {
     private NetworkInventory inventory;

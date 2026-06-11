@@ -1,34 +1,28 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// HYBRID_WATER_WOOD_VENOM — "Băng Độc Vĩnh Cửu"
-/// Bắn một viên đạn nước độc theo hướng player.
-/// Kẻ địch trúng đạn bị: Damage + Slow + chặn hồi HP.
-///
-/// ═══════════════════════════════════════════════════════════════════════════╗
-/// SETUP TRONG UNITY — thực hiện trên F_Thuy.prefab VÀ F_Moc.prefab         ║
-/// ───────────────────────────────────────────────────────────────────────── ║
-///  1. Chọn root GameObject → Add Component → HybridWaterWoodVenomSkill      ║
-///  2. Gán bulletPrefab  = Skill4_Water_Moc.prefab (NetworkObject +          ║
-///                          Rigidbody2D + BoxCollider2D trigger +             ║
-///                          VenomBulletDamage)                                ║
-///  3. skillCode         = "HYBRID_WATER_WOOD_VENOM"                         ║
-///  4. cooldown          = 16                                                 ║
-///  5. mpCost            = 50                                                 ║
-///  6. effectValue       = 250  (sát thương khi trúng)                       ║
-///  7. bulletSpeed       = 12                                                 ║
-///  8. bulletLifetime    = 3                                                   ║
-///  9. spawnOffsetX      = 0.6                                                ║
-/// 10. slowDuration      = 3    (thời gian slow khi trúng)                   ║
-/// 11. healBlockDuration = 3    (thời gian chặn hồi HP khi trúng)            ║
-/// 12. Trong PlayerSkillManager trên cùng prefab:                            ║
-///       → Thêm vào danh sách skills:                                        ║
-///           skillType = HybridVenom                                         ║
-///           activationKey = U (117)                                          ║
-///           animationTriggerName = "HybridSkill"                            ║
-/// ═══════════════════════════════════════════════════════════════════════════╝
-/// </summary>
+// HYBRID_WATER_WOOD_VENOM — "Băng Độc Vĩnh Cửu"
+// Bắn một viên đạn nước độc theo hướng player.
+// Kẻ địch trúng đạn bị: Damage + Slow + chặn hồi HP.
+// SETUP TRONG UNITY — thực hiện trên F_Thuy.prefab VÀ F_Moc.prefab
+// 1. Chọn root GameObject → Add Component → HybridWaterWoodVenomSkill
+// 2. Gán bulletPrefab  = Skill4_Water_Moc.prefab (NetworkObject +
+// Rigidbody2D + BoxCollider2D trigger +
+// VenomBulletDamage)
+// 3. skillCode         = "HYBRID_WATER_WOOD_VENOM"
+// 4. cooldown          = 16
+// 5. mpCost            = 50
+// 6. effectValue       = 250  (sát thương khi trúng)
+// 7. bulletSpeed       = 12
+// 8. bulletLifetime    = 3
+// 9. spawnOffsetX      = 0.6
+// 10. slowDuration      = 3    (thời gian slow khi trúng)
+// 11. healBlockDuration = 3    (thời gian chặn hồi HP khi trúng)
+// 12. Trong PlayerSkillManager trên cùng prefab:
+// → Thêm vào danh sách skills:
+// skillType = HybridVenom
+// activationKey = U (117)
+// animationTriggerName = "HybridSkill"
 public class HybridWaterWoodVenomSkill : HybridSkillBase
 {
     [Header("Venom – Bullet")]
@@ -53,9 +47,7 @@ public class HybridWaterWoodVenomSkill : HybridSkillBase
     [Tooltip("Thời gian chặn hồi HP kẻ địch khi trúng đạn (giây)")]
     [SerializeField] public float healBlockDuration = 3f;
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  ExecuteSkill — chạy trên Server (gọi từ HybridSkillBase.UseSkillServerRpc)
-    // ─────────────────────────────────────────────────────────────────────────
 
     protected override void ExecuteSkill(Vector2 direction)
     {

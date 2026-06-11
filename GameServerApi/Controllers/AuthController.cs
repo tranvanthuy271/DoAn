@@ -89,7 +89,7 @@ namespace GameServerApi.Controllers
             user.LastLogin = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            // ── Điểm danh chuyên cần (1 lần / ngày, INSERT IGNORE logic) ────
+            // Điểm danh chuyên cần (1 lần / ngày, INSERT IGNORE logic)
             await RecordDailyAttendanceAsync(user.UserId);
 
             var token = _authService.GenerateJwtToken(user);
@@ -103,7 +103,7 @@ namespace GameServerApi.Controllers
                 username = user.Username
             });
         }
-        // ── Điểm danh chuyên cần ─────────────────────────────────────────────
+        // Điểm danh chuyên cần
         private async Task RecordDailyAttendanceAsync(int userId)
         {
             try

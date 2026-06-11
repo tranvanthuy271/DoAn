@@ -18,10 +18,8 @@ namespace GameServerApi.Controllers
             _db = db;
         }
 
-        /// <summary>
-        /// GET /api/enemy
-        /// Lấy danh sách tất cả enemy
-        /// </summary>
+        // GET /api/enemy
+        // Lấy danh sách tất cả enemy
         [HttpGet]
         public async Task<IActionResult> GetAllEnemies()
         {
@@ -70,10 +68,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/enemy/{enemyId}
-        /// Lấy thông tin chi tiết của một enemy
-        /// </summary>
+        // GET /api/enemy/{enemyId}
+        // Lấy thông tin chi tiết của một enemy
         [HttpGet("{enemyId}")]
         public async Task<IActionResult> GetEnemy(int enemyId)
         {
@@ -122,10 +118,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/enemy/by-level/{level}
-        /// Lấy danh sách enemy theo level
-        /// </summary>
+        // GET /api/enemy/by-level/{level}
+        // Lấy danh sách enemy theo level
         [HttpGet("by-level/{level}")]
         public async Task<IActionResult> GetEnemiesByLevel(int level)
         {

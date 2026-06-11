@@ -5,18 +5,14 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
-/// <summary>
-/// Trigger biên map trái/phải — đặt tại rìa scene, player bước vào tự chuyển map.
-/// Không cần config portalId thủ công — tự lookup từ API theo direction.
-///
-/// Inspector:
-///   direction       = "left" hoặc "right"
-///   currentMapId    = -1 (auto-detect từ MapManager) | 0 = GameScene | 1 = Map1 | ...
-///   transitionDelay = 0.5 (giây chờ trước khi load)
-///
-/// LƯU Ý: currentMapId = -1 chỉ đáng tin khi player KHÔNG đứng ngay biên từ đầu game
-/// (MapManager cần vài giây fetch API). Khi không chắc, hãy set số cụ thể.
-/// </summary>
+// Trigger biên map trái/phải — đặt tại rìa scene, player bước vào tự chuyển map.
+// Không cần config portalId thủ công — tự lookup từ API theo direction.
+// Inspector:
+// direction       = "left" hoặc "right"
+// currentMapId    = -1 (auto-detect từ MapManager) | 0 = GameScene | 1 = Map1 | ...
+// transitionDelay = 0.5 (giây chờ trước khi load)
+// LƯU Ý: currentMapId = -1 chỉ đáng tin khi player KHÔNG đứng ngay biên từ đầu game
+// (MapManager cần vài giây fetch API). Khi không chắc, hãy set số cụ thể.
 [RequireComponent(typeof(Collider2D))]
 public class MapEdgeTrigger : MonoBehaviour
 {
@@ -54,7 +50,7 @@ public class MapEdgeTrigger : MonoBehaviour
         if (_isTransitioning) return;
         if (ClientSceneController.IsTransferTriggerBlocked()) return;
 
-        // ── Khớp cách ZoneTrigger detect: chỉ cần NetworkObject + IsOwner ──
+        // Khớp cách ZoneTrigger detect: chỉ cần NetworkObject + IsOwner
         // KHÔNG check CompareTag vì Player có thể chưa được tag đúng
         if (!other.TryGetComponent<NetworkObject>(out var netObj)) return;
         if (!netObj.IsOwner) return;
@@ -63,9 +59,7 @@ public class MapEdgeTrigger : MonoBehaviour
         StartCoroutine(DoTravel(other.gameObject));
     }
 
-    /// <summary>
-    /// Resolve mapId tại thời điểm cần (không phải Start) để MapManager kịp fetch API.
-    /// </summary>
+    // Resolve mapId tại thời điểm cần (không phải Start) để MapManager kịp fetch API.
     private int ResolveMapId()
     {
         if (currentMapId >= 0) return currentMapId;                      // Inspector value
@@ -81,7 +75,7 @@ public class MapEdgeTrigger : MonoBehaviour
         int mapId = ResolveMapId();
         yield return StartCoroutine(ResolveMapIdByActiveScene(mapId, resolved => mapId = resolved));
 
-        // ── Bước 1: tìm portal theo direction ──
+        // Bước 1: tìm portal theo direction
         string url = $"{apiBase}/api/map/portal/direction?mapId={mapId}&direction={direction}";
         Debug.Log($"[MapEdgeTrigger] Bước 1 — GET {url}");
         using var portalReq = UnityWebRequest.Get(url);
@@ -100,7 +94,7 @@ public class MapEdgeTrigger : MonoBehaviour
 
         var portal = JsonUtility.FromJson<PortalInfo>(portalReq.downloadHandler.text);
 
-        // ── Bước 2: validate travel với server ──
+        // Bước 2: validate travel với server
         Vector3 pos = player.transform.position;
         var payload = new TravelPayload
         {
@@ -155,7 +149,7 @@ public class MapEdgeTrigger : MonoBehaviour
         Vector2 arrivalPos = new Vector2(resp.dest_x, resp.dest_y);
         yield return StartCoroutine(ResolveDirectionalArrivalPosition(resp.dest_map_id, direction, arrivalPos, resolved => arrivalPos = resolved));
 
-        // ── Bước 3: gửi ServerRpc portal-transfer theo kiến trúc 1-port ──
+        // Bước 3: gửi ServerRpc portal-transfer theo kiến trúc 1-port
         var transitionController = FindAnyObjectByType<ZoneTransitionController>();
         if (transitionController == null)
         {
@@ -248,7 +242,7 @@ public class MapEdgeTrigger : MonoBehaviour
         onResolved?.Invoke(fallbackMapId);
     }
 
-    // ── DTOs ──
+    // DTOs
 
     [Serializable]
     private class PortalInfo
@@ -287,7 +281,7 @@ public class MapEdgeTrigger : MonoBehaviour
         public float  dest_x;
         public float  dest_y;
 
-        /// <summary>Lấy nội dung lỗi từ bất kỳ field nào có giá trị.</summary>
+        // Lấy nội dung lỗi từ bất kỳ field nào có giá trị.
         public string GetErrorMessage()
         {
             if (!string.IsNullOrEmpty(message)) return message;

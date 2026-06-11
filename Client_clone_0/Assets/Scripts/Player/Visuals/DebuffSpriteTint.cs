@@ -1,20 +1,16 @@
 using UnityEngine;
 
-/// <summary>
-/// DebuffSpriteTint – Đổi màu (tint) SpriteRenderer của nhân vật khi bị debuff HOẶC khi nhận buff đồng đội.
-///
-/// Setup:
-///   • Gắn component này vào cùng GameObject với SpriteRenderer (Player hoặc Enemy).
-///   • Script tự tìm DebuffManager và PlayerBuffSync trên cùng GameObject hoặc parent.
-///   • Không cần tạo thêm child object hay prefab gì thêm.
-///
-/// Hiệu ứng:
-///   DEBUFF — bị tô màu theo loại debuff, fade out theo countdown.
-///   BUFF   — bị tô màu buff (cyan hoặc vàng) khi đồng đội đang có buff active, fade out theo countdown.
-///            ✦ Buff tint CHỈ xuất hiện khi PlayerBuffSync (trên cùng root) có buff active.
-///            ✦ Tất cả clients đều thấy tint này vì PlayerBuffSync dùng NetworkVariable.
-///   Ưu tiên: Freeze > Burn > Slow > Weaken > DefenseDown > ArmorBuff > AttackBuff.
-/// </summary>
+// DebuffSpriteTint – Đổi màu (tint) SpriteRenderer của nhân vật khi bị debuff HOẶC khi nhận buff đồng đội.
+// Setup:
+// • Gắn component này vào cùng GameObject với SpriteRenderer (Player hoặc Enemy).
+// • Script tự tìm DebuffManager và PlayerBuffSync trên cùng GameObject hoặc parent.
+// • Không cần tạo thêm child object hay prefab gì thêm.
+// Hiệu ứng:
+// DEBUFF — bị tô màu theo loại debuff, fade out theo countdown.
+// BUFF   — bị tô màu buff (cyan hoặc vàng) khi đồng đội đang có buff active, fade out theo countdown.
+// ✦ Buff tint CHỈ xuất hiện khi PlayerBuffSync (trên cùng root) có buff active.
+// ✦ Tất cả clients đều thấy tint này vì PlayerBuffSync dùng NetworkVariable.
+// Ưu tiên: Freeze > Burn > Slow > Weaken > DefenseDown > ArmorBuff > AttackBuff.
 [RequireComponent(typeof(SpriteRenderer))]
 public class DebuffSpriteTint : MonoBehaviour
 {
@@ -31,13 +27,13 @@ public class DebuffSpriteTint : MonoBehaviour
     [Tooltip("Màu tint khi nhận buff tấn công (EarthAura).")]
     [SerializeField] private Color attackBuffColor = new Color(1f,   0.85f, 0.1f, 0.5f); // vàng gold
 
-    // ── Refs ──────────────────────────────────────────────────────────────────
+    // Refs
     private SpriteRenderer _sr;
     private DebuffManager  _debuffManager;
     private PlayerBuffSync _buffSync;
     private Color          _originalColor;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -84,7 +80,7 @@ public class DebuffSpriteTint : MonoBehaviour
         ApplyTint();
     }
 
-    // ── Core ──────────────────────────────────────────────────────────────────
+    // Core
 
     private void ApplyTint()
     {
@@ -137,7 +133,7 @@ public class DebuffSpriteTint : MonoBehaviour
         _sr.color = _originalColor;
     }
 
-    /// <summary>Trả về (màu, remaining, total) của debuff ưu tiên cao nhất.</summary>
+    // Trả về (màu, remaining, total) của debuff ưu tiên cao nhất.
     private (Color color, float remaining, float total) GetPriorityDebuffInfo()
     {
         float now = GetServerTime();

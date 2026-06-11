@@ -2,53 +2,39 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Collections;
 
-/// <summary>
-/// Gắn vào Player Prefab.
-/// Xử lý yêu cầu đổi zone từ client → server → cập nhật room assignment + teleport player.
-///
-/// Dùng FixedString64Bytes thay vì string vì NGO NetworkVariable/ServerRpc
-/// yêu cầu kiểu dữ liệu unmanaged (string là managed type).
-///
-/// Setup:
-///   - Kéo script này vào Player Prefab (cùng GameObject với NetworkObject).
-///   - Không cần setup thêm gì khác.
-/// </summary>
+// Gắn vào Player Prefab.
+// Xử lý yêu cầu đổi zone từ client → server → cập nhật room assignment + teleport player.
+// Dùng FixedString64Bytes thay vì string vì NGO NetworkVariable/ServerRpc
+// yêu cầu kiểu dữ liệu unmanaged (string là managed type).
+// Setup:
+// - Kéo script này vào Player Prefab (cùng GameObject với NetworkObject).
+// - Không cần setup thêm gì khác.
 public class PlayerZoneHandler : NetworkBehaviour
 {
-    // ──────────────────────────────────────────────────────────────────
     //  NetworkVariable — sync room hiện tại xuống tất cả client
-    // ──────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// room_id của zone player đang đứng. Server write, tất cả client đọc được.
-    /// Mặc định "" = chưa assign (giống lobby/default zone).
-    /// </summary>
+    // room_id của zone player đang đứng. Server write, tất cả client đọc được.
+    // Mặc định "" = chưa assign (giống lobby/default zone).
     public NetworkVariable<FixedString64Bytes> CurrentRoomId = new NetworkVariable<FixedString64Bytes>(
         new FixedString64Bytes(""),
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server);
 
-    // ──────────────────────────────────────────────────────────────────
     //  Public helpers
-    // ──────────────────────────────────────────────────────────────────
 
-    /// <summary>Lấy room_id dạng string (tiện hơn FixedString64Bytes).</summary>
+    // Lấy room_id dạng string (tiện hơn FixedString64Bytes).
     public string RoomId => CurrentRoomId.Value.ToString();
 
-    /// <summary>Kiểm tra player có đang ở cùng zone với player khác không.</summary>
+    // Kiểm tra player có đang ở cùng zone với player khác không.
     public bool IsSameRoom(PlayerZoneHandler other) => RoomId == other.RoomId;
 
-    // ──────────────────────────────────────────────────────────────────
     //  ServerRpc — gọi từ ZoneTrigger.cs phía client
-    // ──────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Client gọi khi player bước qua ZoneTrigger.
-    /// Server xác nhận, cập nhật room assignment và teleport player đến spawn point.
-    /// </summary>
-    /// <param name="newRoomId">room_id của zone đích (lấy từ API map/zone)</param>
-    /// <param name="spawnX">Tọa độ X spawn trong zone mới</param>
-    /// <param name="spawnY">Tọa độ Y spawn trong zone mới</param>
+    // Client gọi khi player bước qua ZoneTrigger.
+    // Server xác nhận, cập nhật room assignment và teleport player đến spawn point.
+    // Tham số newRoomId: room_id của zone đích (lấy từ API map/zone)
+    // Tham số spawnX: Tọa độ X spawn trong zone mới
+    // Tham số spawnY: Tọa độ Y spawn trong zone mới
     [ServerRpc(RequireOwnership = true)]
     public void RequestZoneChangeServerRpc(FixedString64Bytes newRoomId, float spawnX, float spawnY)
     {
@@ -74,9 +60,7 @@ public class PlayerZoneHandler : NetworkBehaviour
         Debug.Log($"[PlayerZoneHandler] Player {OwnerClientId} → zone '{roomIdStr}' @ ({spawnX},{spawnY})");
     }
 
-    // ──────────────────────────────────────────────────────────────────
     //  ClientRpc — callback về client sau khi đổi zone thành công
-    // ──────────────────────────────────────────────────────────────────
 
     [ClientRpc]
     private void OnZoneChangedClientRpc(FixedString64Bytes newRoomId, float spawnX, float spawnY,

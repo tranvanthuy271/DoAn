@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Host-side script: Start host khi vào HostScene và đợi client connect
-/// Chỉ xử lý logic cho HOST
-/// </summary>
+// Host-side script: Start host khi vào HostScene và đợi client connect
+// Chỉ xử lý logic cho HOST
 public class HostSceneInitializer : MonoBehaviour
 {
     [Header("Server Config")]
@@ -82,9 +80,7 @@ public class HostSceneInitializer : MonoBehaviour
         StartCoroutine(StartHostAfterDelay());
     }
 
-    /// <summary>
-    /// Đăng ký tất cả NetworkPrefab trước khi start host
-    /// </summary>
+    // Đăng ký tất cả NetworkPrefab trước khi start host
     private void RegisterNetworkPrefabs()
     {
         // Tìm NetworkPrefabRegistrar trong scene
@@ -116,9 +112,7 @@ public class HostSceneInitializer : MonoBehaviour
         // Debug.Log("[HostSceneInitializer] NetworkPrefabs registered.");
     }
 
-    /// <summary>
-    /// Đăng ký AuthSender prefab vào NetworkManager
-    /// </summary>
+    // Đăng ký AuthSender prefab vào NetworkManager
     private void RegisterAuthSenderPrefab(GameObject prefab)
     {
         if (prefab == null)
@@ -169,9 +163,7 @@ public class HostSceneInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đợi một frame để đảm bảo ServerConnectionApproval đã register callback trước khi start host
-    /// </summary>
+    // Đợi một frame để đảm bảo ServerConnectionApproval đã register callback trước khi start host
     private System.Collections.IEnumerator StartHostAfterDelay()
     {
         // Đợi một frame để ServerConnectionApproval có thời gian register callback
@@ -200,9 +192,7 @@ public class HostSceneInitializer : MonoBehaviour
         StartHost();
     }
 
-    /// <summary>
-    /// Start host
-    /// </summary>
+    // Start host
     private void StartHost()
     {
         // Debug.Log($"[HostSceneInitializer] Starting host on port {serverPort}...");
@@ -226,9 +216,7 @@ public class HostSceneInitializer : MonoBehaviour
         // Debug.Log("[HostSceneInitializer] Host started. Waiting for clients to connect...");
     }
 
-    /// <summary>
-    /// Callback khi server đã start - spawn NetworkObject để làm auth sender
-    /// </summary>
+    // Callback khi server đã start - spawn NetworkObject để làm auth sender
     private void OnServerStarted()
     {
         Debug.Log("[HostSceneInitializer] Server started. Registering auth Named Message handler...");

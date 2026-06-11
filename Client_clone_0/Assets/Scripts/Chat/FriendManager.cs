@@ -4,27 +4,25 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Quản lý danh sách bạn bè: tải, gửi lời mời, chấp nhận, xóa bạn, tìm kiếm.
-/// </summary>
+// Quản lý danh sách bạn bè: tải, gửi lời mời, chấp nhận, xóa bạn, tìm kiếm.
 public class FriendManager : MonoBehaviour
 {
     public static FriendManager Instance { get; private set; }
 
     private const string ChatManagerResourcePath = "Prefabs/Chat/ChatManager";
 
-    // ── Events ────────────────────────────────────────────────────────────────
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
 
     public event Action<List<FriendEntryDto>> OnFriendListLoaded;
     public event Action<string>               OnError;
     public event Action                       OnRequestSent;
 
-    // ── Cache ─────────────────────────────────────────────────────────────────
+    // Cache
 
     public List<FriendEntryDto> Friends { get; } = new List<FriendEntryDto>();
     public bool HasLoadedFriends { get; private set; }
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Awake()
     {
@@ -116,7 +114,7 @@ public class FriendManager : MonoBehaviour
         return Instance;
     }
 
-    // ── API Calls ─────────────────────────────────────────────────────────────
+    // API Calls
 
     public void LoadFriends()
     {
@@ -302,7 +300,7 @@ public class FriendManager : MonoBehaviour
         onResult?.Invoke(list);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static string ApiUrl(string path)
     {
@@ -317,7 +315,7 @@ public class FriendManager : MonoBehaviour
         return !string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""));
     }
 
-    /// <summary>Bọc JSON array [..] thành {"key":[..]} để JsonUtility đọc được.</summary>
+    // Bọc JSON array [..] thành {"key":[..]} để JsonUtility đọc được.
     private static string WrapArray(string json, string key = "items")
         => $"{{\"{key}\":{json}}}";
 
@@ -330,7 +328,7 @@ public class FriendManager : MonoBehaviour
         return $"{operation} failed | code={req.responseCode} result={req.result} detail={detail}";
     }
 
-    // ── Inner DTOs ────────────────────────────────────────────────────────────
+    // Inner DTOs
 
     [Serializable]
     private class FriendArrayWrapper
@@ -350,12 +348,10 @@ public class FriendManager : MonoBehaviour
         public int TargetUserId;
     }
 
-    // ── Player Profile ────────────────────────────────────────────────────────
+    // Player Profile
 
-    /// <summary>
-    /// Lấy thông tin công khai của nhân vật theo userId (dùng cho Friend Profile).
-    /// Gọi GET /api/player/by-user/{userId}
-    /// </summary>
+    // Lấy thông tin công khai của nhân vật theo userId (dùng cho Friend Profile).
+    // Gọi GET /api/player/by-user/{userId}
     public void GetPlayerProfile(int userId, Action<PlayerProfileDto> onResult)
     {
         string token = PlayerPrefs.GetString("JWT_TOKEN", "");

@@ -2,10 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// EnemyHealthBar - Hiển thị HP bar trên đầu enemy
-/// Tự động follow enemy và update khi HP thay đổi
-/// </summary>
+// EnemyHealthBar - Hiển thị HP bar trên đầu enemy
+// Tự động follow enemy và update khi HP thay đổi
 public class EnemyHealthBar : MonoBehaviour
 {
     [Header("UI References")]
@@ -247,10 +245,8 @@ public class EnemyHealthBar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Update vị trí health bar để follow enemy
-    /// Với World Space Canvas, set position trực tiếp trong world space
-    /// </summary>
+    // Update vị trí health bar để follow enemy
+    // Với World Space Canvas, set position trực tiếp trong world space
     private void UpdatePosition()
     {
         if (enemyTransform == null || canvas == null) return;
@@ -284,9 +280,7 @@ public class EnemyHealthBar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Update health bar UI
-    /// </summary>
+    // Update health bar UI
     private void UpdateHealthBar(int currentHealth, int maxHealth)
     {
         float healthPercent = (float)currentHealth / maxHealth;
@@ -339,9 +333,7 @@ public class EnemyHealthBar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Callback khi enemy chết
-    /// </summary>
+    // Callback khi enemy chết
     private void OnEnemyDeath()
     {
         if (hideWhenDead)
@@ -355,9 +347,7 @@ public class EnemyHealthBar : MonoBehaviour
         UnregisterHealthEvents();
     }
 
-    /// <summary>
-    /// Setup health bar cho enemy mới với NetworkEnemyHealth (gọi từ script khác)
-    /// </summary>
+    // Setup health bar cho enemy mới với NetworkEnemyHealth (gọi từ script khác)
     public void Setup(NetworkEnemyHealth health, Transform enemyTransform)
     {
         if (_setupDone && networkEnemyHealth == health && this.enemyTransform == enemyTransform)
@@ -388,9 +378,7 @@ public class EnemyHealthBar : MonoBehaviour
         _setupDone = true;
     }
 
-    /// <summary>
-    /// Setup health bar cho enemy mới với EnemyHealth (fallback, không network)
-    /// </summary>
+    // Setup health bar cho enemy mới với EnemyHealth (fallback, không network)
     public void Setup(EnemyHealth health, Transform enemyTransform)
     {
         if (_setupDone && enemyHealth == health && this.enemyTransform == enemyTransform)

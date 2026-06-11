@@ -4,13 +4,10 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool – tự động tạo prefabs cho hệ thống kỹ năng:
-///   • SkillRowPrefab       (hàng kỹ năng: icon + tên + level / "Đã đạt cấp tối đa")
-///   • SkillDetailPanel     (panel thông tin kỹ năng: scroll view + nút Cộng)
-///
-/// Menu: GameTools → Skill → Create Skill Prefabs
-/// </summary>
+// Editor tool – tự động tạo prefabs cho hệ thống kỹ năng:
+// • SkillRowPrefab       (hàng kỹ năng: icon + tên + level / "Đã đạt cấp tối đa")
+// • SkillDetailPanel     (panel thông tin kỹ năng: scroll view + nút Cộng)
+// Menu: GameTools → Skill → Create Skill Prefabs
 public static class SkillPrefabCreator
 {
     private const string PREFAB_DIR   = "Assets/Resources/Prefabs/UI";
@@ -18,7 +15,6 @@ public static class SkillPrefabCreator
 
     private static TMP_FontAsset _font;
 
-    // ──────────────────────────────────────────────────────────────────────────
     [MenuItem("GameTools/Skill/Create Skill Prefabs")]
     public static void CreateAll()
     {
@@ -32,14 +28,10 @@ public static class SkillPrefabCreator
         Debug.Log("[SkillPrefabCreator] ✓ Tạo xong SkillRowPrefab + SkillDetailPanel tại " + PREFAB_DIR);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // SKILL ROW PREFAB
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Hàng kỹ năng gọn: [Icon] [Tên skill / Lv x/max hoặc "Đã đạt cấp tối đa"]
-    /// Toàn bộ row là Button – click → hiện SkillDetailPanel.
-    /// </summary>
+    // Hàng kỹ năng gọn: [Icon] [Tên skill / Lv x/max hoặc "Đã đạt cấp tối đa"]
+    // Toàn bộ row là Button – click → hiện SkillDetailPanel.
     private static void CreateSkillRowPrefab()
     {
         var root = new GameObject("SkillRowPrefab");
@@ -74,7 +66,7 @@ public static class SkillPrefabCreator
         le.preferredHeight = 52f;
         le.flexibleWidth   = 1f;
 
-        // ── Icon frame ────────────────────────────────────────────────────────
+        // Icon frame
         var iconFrame = MakeChild(root, "IconFrame");
         iconFrame.AddComponent<Image>().color = new Color(0.05f, 0.04f, 0.03f, 1f);
 
@@ -97,7 +89,7 @@ public static class SkillPrefabCreator
         iconImg.preserveAspect = true;
         iconImg.raycastTarget  = false;
 
-        // ── Text block ────────────────────────────────────────────────────────
+        // Text block
         var textBlock = MakeChild(root, "TextBlock");
         var textLe    = textBlock.AddComponent<LayoutElement>();
         textLe.flexibleWidth = 1f;
@@ -141,17 +133,13 @@ public static class SkillPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     // SKILL DETAIL PANEL PREFAB
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Panel thông tin kỹ năng (hiện khi chọn một row):
-    ///   Header   – icon + tên kỹ năng
-    ///   ScrollView – mô tả, cấp tối đa, level yêu cầu, MP, hồi chiêu,
-    ///                buff từng cấp
-    ///   BtnUpgrade – chỉ 1 nút "Cộng" (góc phải dưới)
-    /// </summary>
+    // Panel thông tin kỹ năng (hiện khi chọn một row):
+    // Header   – icon + tên kỹ năng
+    // ScrollView – mô tả, cấp tối đa, level yêu cầu, MP, hồi chiêu,
+    // buff từng cấp
+    // BtnUpgrade – chỉ 1 nút "Cộng" (góc phải dưới)
     private static void CreateSkillDetailPanelPrefab()
     {
         var root   = new GameObject("SkillDetailPanel");
@@ -167,7 +155,7 @@ public static class SkillPrefabCreator
         outline.effectColor    = new Color(0.93f, 0.78f, 0.48f, 0.85f);
         outline.effectDistance = new Vector2(1f, -1f);
 
-        // ── Header ────────────────────────────────────────────────────────────
+        // Header
         var header   = MakeChild(root, "Header");
         var headerRt = header.GetComponent<RectTransform>();
         headerRt.anchorMin       = new Vector2(0f, 1f);
@@ -216,7 +204,7 @@ public static class SkillPrefabCreator
         titleLe.flexibleWidth = 1f;
         titleLe.minHeight     = 38f;
 
-        // ── ScrollView ────────────────────────────────────────────────────────
+        // ScrollView
         var scrollRoot   = MakeChild(root, "SkillInfoScrollView");
         var scrollBg     = scrollRoot.AddComponent<Image>();
         scrollBg.color   = new Color(0.33f, 0.14f, 0.04f, 0.72f);
@@ -277,7 +265,7 @@ public static class SkillPrefabCreator
         scrollRect.viewport = viewport.GetComponent<RectTransform>();
         scrollRect.content  = contentRt;
 
-        // ── Vertical Scrollbar ────────────────────────────────────────────────
+        // Vertical Scrollbar
         var scrollbar   = MakeChild(root, "VerticalScrollbar");
         scrollbar.AddComponent<Image>().color = new Color(0.24f, 0.11f, 0.04f, 0.9f);
 
@@ -305,7 +293,7 @@ public static class SkillPrefabCreator
         scrollRect.verticalScrollbarVisibility  = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
         scrollRect.verticalScrollbarSpacing     = -3f;
 
-        // ── Upgrade button "Cộng" ─────────────────────────────────────────────
+        // Upgrade button "Cộng"
         var btnGo = MakeChild(root, "BtnUpgrade");
         var btnBg = btnGo.AddComponent<Image>();
         btnBg.color = new Color(0.84f, 0.41f, 0.10f, 1f);
@@ -328,7 +316,7 @@ public static class SkillPrefabCreator
         btnLabel.alignment = TextAlignmentOptions.Center;
         Fill(btnLabel.rectTransform);
 
-        // ── Wire SkillDetailPanelUI ───────────────────────────────────────────
+        // Wire SkillDetailPanelUI
         var panelUI = root.AddComponent<SkillDetailPanelUI>();
         var so      = new SerializedObject(panelUI);
         so.FindProperty("iconImage") .objectReferenceValue = hIconImg;
@@ -342,9 +330,7 @@ public static class SkillPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // HELPERS
-    // ══════════════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static GameObject MakeChild(GameObject parent, string childName)
     {

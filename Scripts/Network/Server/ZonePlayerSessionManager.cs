@@ -6,17 +6,13 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Server-side: quản lý vòng đời player trong server 1-port.
-///
-/// Trách nhiệm:
-///   - Lưu session (userId, username, zone) của từng clientId đã approved
-///   - Khi client kết nối hoàn tất → fetch PlayerData từ API → spawn NetworkObject
-///   - Khi client ngắt kết nối → save vị trí cuối → xóa khỏi session
-///   - UpdateZone() sau mỗi lần zone transfer
-///
-/// Dependencies: ZoneConnectionApprovalV2 (RegisterSession), MapWorldConfig
-/// </summary>
+// Server-side: quản lý vòng đời player trong server 1-port.
+// Trách nhiệm:
+// - Lưu session (userId, username, zone) của từng clientId đã approved
+// - Khi client kết nối hoàn tất → fetch PlayerData từ API → spawn NetworkObject
+// - Khi client ngắt kết nối → save vị trí cuối → xóa khỏi session
+// - UpdateZone() sau mỗi lần zone transfer
+// Dependencies: ZoneConnectionApprovalV2 (RegisterSession), MapWorldConfig
 [DisallowMultipleComponent]
 public class ZonePlayerSessionManager : NetworkBehaviour
 {
@@ -34,7 +30,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     private readonly Dictionary<ulong, PlayerSession> _activeSessions = new();
     private readonly object _lock = new();
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -66,11 +62,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gọi từ ZoneConnectionApprovalV2 khi client được approve.
-    /// </summary>
+    // Gọi từ ZoneConnectionApprovalV2 khi client được approve.
     public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId)
     {
         lock (_lock)
@@ -85,9 +79,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Cập nhật zone sau khi player transfer. Gọi từ ZoneTransitionController.
-    /// </summary>
+    // Cập nhật zone sau khi player transfer. Gọi từ ZoneTransitionController.
     public void UpdateZone(ulong clientId, int mapId, int zoneId)
     {
         lock (_lock)
@@ -106,16 +98,14 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             return _activeSessions.TryGetValue(clientId, out var s) ? s.UserId : null;
     }
 
-    /// <summary>
-    /// Trả về PlayerSession của client nếu đang active. Null nếu chưa spawn.
-    /// </summary>
+    // Trả về PlayerSession của client nếu đang active. Null nếu chưa spawn.
     public PlayerSession GetSession(ulong clientId)
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s : null;
     }
 
-    // ── Event Handlers ────────────────────────────────────────────────────────
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
 
     private void OnClientConnected(ulong clientId)
     {
@@ -143,7 +133,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
     }
 
-    // ── Internal: Load & Spawn ────────────────────────────────────────────────
+    // Internal: Load & Spawn
 
     private IEnumerator LoadAndSpawnPlayer(ulong clientId, ApprovedUserInfo userInfo)
     {
@@ -311,7 +301,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             Debug.Log($"[ZonePlayerSessionManager] Saved player data user={session.UserId} hp={hp}/{maxHp} mp={mp}/{maxMp} pos=({pos.x:F2},{pos.y:F2})");
     }
 
-    // ── Inner types ───────────────────────────────────────────────────────────
+    // Inner types
 
     private class ApprovedUserInfo
     {
@@ -330,10 +320,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int           ZoneId;
     }
 
-    /// <summary>
-    /// DTO map với JSON response của GET /api/player/{id}/data.
-    /// Field names dùng snake_case để khớp với JsonUtility serialization.
-    /// </summary>
+    // DTO map với JSON response của GET /api/player/{id}/data.
+    // Field names dùng snake_case để khớp với JsonUtility serialization.
     [Serializable]
     public class PlayerDataResponse
     {
@@ -359,10 +347,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     }
 }
 
-/// <summary>
-/// Interface để player prefab nhận data sau khi spawn.
-/// Implement trên PlayerController hoặc PlayerDataSync.
-/// </summary>
+// Interface để player prefab nhận data sau khi spawn.
+// Implement trên PlayerController hoặc PlayerDataSync.
 public interface IPlayerDataReceiver
 {
     void OnPlayerDataLoaded(global::PlayerDataResponse data, ulong clientId);

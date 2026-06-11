@@ -2,20 +2,16 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// NetworkItemTemplateSync - Đồng bộ item templates giữa Host và Clients
-/// 
-/// Flow:
-/// 1. Host load item templates từ API (qua ItemTemplateManager)
-/// 2. Host serialize thành JSON
-/// 3. Host gửi ClientRpc chứa JSON cho tất cả Clients
-/// 4. Clients nhận và deserialize, lưu vào ItemTemplateManager
-/// 
-/// Setup:
-/// - Gắn script này vào GameObject có NetworkObject
-/// - Hoặc gắn vào cùng GameObject với NetworkManager
-/// - Script tự động sync khi Host start
-/// </summary>
+// NetworkItemTemplateSync - Đồng bộ item templates giữa Host và Clients
+// Flow:
+// 1. Host load item templates từ API (qua ItemTemplateManager)
+// 2. Host serialize thành JSON
+// 3. Host gửi ClientRpc chứa JSON cho tất cả Clients
+// 4. Clients nhận và deserialize, lưu vào ItemTemplateManager
+// Setup:
+// - Gắn script này vào GameObject có NetworkObject
+// - Hoặc gắn vào cùng GameObject với NetworkManager
+// - Script tự động sync khi Host start
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkItemTemplateSync : NetworkBehaviour
 {
@@ -39,9 +35,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Đợi ItemTemplateManager load xong rồi sync
-    /// </summary>
+    // Đợi ItemTemplateManager load xong rồi sync
     private System.Collections.IEnumerator WaitAndSyncItemTemplates()
     {
         if (enableDebugLog)
@@ -74,9 +68,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         SyncItemTemplates();
     }
 
-    /// <summary>
-    /// Host gọi để sync item templates cho tất cả Clients
-    /// </summary>
+    // Host gọi để sync item templates cho tất cả Clients
     public void SyncItemTemplates()
     {
         if (!IsServer)
@@ -150,9 +142,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         hasSynced = true;
     }
 
-    /// <summary>
-    /// Serialize item templates thành JSON
-    /// </summary>
+    // Serialize item templates thành JSON
     private string SerializeItemTemplates(ItemTemplateDto[] templates)
     {
         try
@@ -176,9 +166,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
     private Dictionary<int, string> receivedChunks = new Dictionary<int, string>();
     private int expectedChunkCount = 0;
 
-    /// <summary>
-    /// ClientRpc: Gửi item templates (hoặc chunk của nó) từ Host xuống Clients
-    /// </summary>
+    // ClientRpc: Gửi item templates (hoặc chunk của nó) từ Host xuống Clients
     [ClientRpc]
     private void SyncItemTemplatesClientRpc(string jsonChunk, int chunkIndex, int totalChunks)
     {
@@ -224,9 +212,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Deserialize JSON và apply vào ItemTemplateManager
-    /// </summary>
+    // Deserialize JSON và apply vào ItemTemplateManager
     private void DeserializeAndApplyItemTemplates(string json)
     {
         try
@@ -268,9 +254,7 @@ public class NetworkItemTemplateSync : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Wrapper class để JsonUtility có thể serialize array
-    /// </summary>
+    // Wrapper class để JsonUtility có thể serialize array
     [System.Serializable]
     private class ItemTemplatesWrapper
     {

@@ -1,16 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Gắn lên mỗi EquipmentSlotUI prefab.
-/// Tự đổi viền + background + animation theo upgrade level.
-///
-/// Hierarchy yêu cầu bên trong slot prefab:
-///   SlotRoot
-///     ├─ BG        (Image) ← kéo vào bgImage
-///     ├─ Border    (Image) ← kéo vào borderImage
-///     └─ ... (icon, label, v.v.)
-/// </summary>
+// Gắn lên mỗi EquipmentSlotUI prefab.
+// Tự đổi viền + background + animation theo upgrade level.
+// Hierarchy yêu cầu bên trong slot prefab:
+// SlotRoot
+// ├─ BG        (Image) ← kéo vào bgImage
+// ├─ Border    (Image) ← kéo vào borderImage
+// └─ ... (icon, label, v.v.)
 public class EquipmentSlotTierEffect : MonoBehaviour
 {
     [Header("Config")]
@@ -33,10 +30,8 @@ public class EquipmentSlotTierEffect : MonoBehaviour
 
     private int currentLevel = -1;
 
-    /// <summary>
-    /// Gọi khi item thay đổi (từ EquipmentSlotUI.SetItem).
-    /// upgradeLevel = 0 → reset về default.
-    /// </summary>
+    // Gọi khi item thay đổi (từ EquipmentSlotUI.SetItem).
+    // upgradeLevel = 0 → reset về default.
     public void ApplyLevel(int upgradeLevel)
     {
         if (tierConfig == null)
@@ -52,7 +47,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
         if (tier == null) tier = tierConfig.defaultTier;
         if (tier == null) return;
 
-        // --- Border ---
+        // Border
         if (borderImage != null)
         {
             borderImage.sprite = tier.borderSprite;
@@ -61,7 +56,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
             ApplyAnimator(borderImage.gameObject, ref borderAnimator, tier.borderAnimator);
         }
 
-        // --- Background ---
+        // Background
         if (bgImage != null)
         {
             bgImage.sprite = tier.bgSprite;
@@ -71,9 +66,7 @@ public class EquipmentSlotTierEffect : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Reset hiệu ứng khi slot trống.
-    /// </summary>
+    // Reset hiệu ứng khi slot trống.
     public void ResetToDefault()
     {
         ApplyLevel(0);

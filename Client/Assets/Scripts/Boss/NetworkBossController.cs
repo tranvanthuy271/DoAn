@@ -2,7 +2,6 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  NetworkBossController  —  Network sync cho Boss
 //
 //  TRÁCH NHIỆM:
@@ -14,7 +13,6 @@ using Unity.Netcode.Components;
 //  SETUP:
 //    Attach cùng prefab với: NetworkObject, NetworkTransform, BossController,
 //    NetworkBossHealth, Rigidbody2D, Animator
-// ─────────────────────────────────────────────────────────────────────────────
 
 [RequireComponent(typeof(NetworkObject), typeof(Rigidbody2D), typeof(BossController))]
 public class NetworkBossController : NetworkBehaviour
@@ -43,7 +41,6 @@ public class NetworkBossController : NetworkBehaviour
     private Animator        _anim;
     private SpriteRenderer[] _renderers;
 
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -86,9 +83,7 @@ public class NetworkBossController : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Server Update — sync state to clients every frame
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void FixedUpdate()
     {
@@ -116,9 +111,7 @@ public class NetworkBossController : NetworkBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  NetworkVariable callbacks (remote clients)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void OnScaleXChanged(float _, float newVal)
     {

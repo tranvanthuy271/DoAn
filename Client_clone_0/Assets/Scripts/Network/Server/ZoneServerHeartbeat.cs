@@ -2,16 +2,12 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 
-/// <summary>
-/// Gửi heartbeat đến API định kỳ để API biết server còn sống.
-/// Giải quyết Issue #3: API tự đánh dấu server offline nếu không nhận heartbeat trong 2× interval.
-///
-/// API endpoint: PUT {apiBaseUrl}/zone/server/heartbeat
-/// Body: { "ip":"...", "port":..., "playerCount":..., "zoneStats":[...] }
-///
-/// Gắn vào: "ServerBootstrap" GameObject (cùng với MapWorldBootstrap).
-/// MapWorldBootstrap sẽ gọi Initialize() tự động.
-/// </summary>
+// Gửi heartbeat đến API định kỳ để API biết server còn sống.
+// Giải quyết Issue #3: API tự đánh dấu server offline nếu không nhận heartbeat trong 2× interval.
+// API endpoint: PUT {apiBaseUrl}/zone/server/heartbeat
+// Body: { "ip":"...", "port":..., "playerCount":..., "zoneStats":[...] }
+// Gắn vào: "ServerBootstrap" GameObject (cùng với MapWorldBootstrap).
+// MapWorldBootstrap sẽ gọi Initialize() tự động.
 [DisallowMultipleComponent]
 public class ZoneServerHeartbeat : MonoBehaviour
 {
@@ -21,9 +17,7 @@ public class ZoneServerHeartbeat : MonoBehaviour
 
     private Coroutine _heartbeatCoroutine;
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Init (gọi từ MapWorldBootstrap)
-    // ─────────────────────────────────────────────────────────────────────────
 
     public void Initialize(MapWorldConfig config, string apiBaseUrl, ushort serverPort)
     {
@@ -38,9 +32,7 @@ public class ZoneServerHeartbeat : MonoBehaviour
         Debug.Log($"[ZoneServerHeartbeat] Bắt đầu heartbeat mỗi {_config.heartbeatInterval}s");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Heartbeat loop
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator HeartbeatLoop()
     {
@@ -96,9 +88,7 @@ public class ZoneServerHeartbeat : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Cleanup
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void OnApplicationQuit()
     {

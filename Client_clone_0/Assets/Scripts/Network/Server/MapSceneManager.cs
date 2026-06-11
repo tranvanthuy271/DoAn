@@ -3,11 +3,9 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Server-side: each map gets its own Physics2D scene to isolate cross-map queries.
-/// Static ground colliders from loaded client scenes are mirrored into those scenes so
-/// server-authoritative enemies can use gravity and land on platforms.
-/// </summary>
+// Server-side: each map gets its own Physics2D scene to isolate cross-map queries.
+// Static ground colliders from loaded client scenes are mirrored into those scenes so
+// server-authoritative enemies can use gravity and land on platforms.
 [DisallowMultipleComponent]
 public class MapSceneManager : MonoBehaviour
 {
@@ -55,10 +53,8 @@ public class MapSceneManager : MonoBehaviour
         _mapSceneNames.Clear();
     }
 
-    /// <summary>
-    /// Must run once during server boot before any enemy/NPC/player is spawned.
-    /// Creates one local Physics2D scene for each map id.
-    /// </summary>
+    // Must run once during server boot before any enemy/NPC/player is spawned.
+    // Creates one local Physics2D scene for each map id.
     public void Initialize(MapWorldConfig config)
     {
         if (config?.maps == null)
@@ -105,9 +101,7 @@ public class MapSceneManager : MonoBehaviour
         Debug.Log($"[MapSceneManager] Ready with {_mapScenes.Count} map physics scene(s). proxiesBuilt={_groundProxyRoots.Count}");
     }
 
-    /// <summary>
-    /// Move a GameObject into the target map physics scene before NetworkObject.Spawn().
-    /// </summary>
+    // Move a GameObject into the target map physics scene before NetworkObject.Spawn().
     public void MoveToMapScene(GameObject obj, int mapId)
     {
         if (obj == null)
@@ -146,9 +140,7 @@ public class MapSceneManager : MonoBehaviour
 
     public int SceneCount => _mapScenes.Count;
 
-    /// <summary>
-    /// Local physics scenes do not exist on clients. Disable NGO scene migration sync.
-    /// </summary>
+    // Local physics scenes do not exist on clients. Disable NGO scene migration sync.
     public static void ConfigureNetworkObjectForServerOnlyScene(NetworkObject networkObject)
     {
         if (networkObject == null)

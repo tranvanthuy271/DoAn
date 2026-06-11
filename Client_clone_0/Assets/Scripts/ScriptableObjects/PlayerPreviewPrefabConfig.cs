@@ -2,23 +2,18 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject ánh xạ element_type + gender → prefab nhân vật dùng cho
-/// Equipment Preview (hiển thị idle animation trong tab Trang Bị).
-///
-/// ═══════════════════════════════════════════════════════════════
-/// CÁCH TẠO ASSET:
-///   1. Project window → chuột phải → Create → DoAn → Player Preview Prefab Config
-///   2. Đặt tên: PlayerPreviewPrefabConfig
-///   3. Lưu vào: Assets/Resources/ScriptableObjects/PlayerPreviewPrefabConfig
-///      (bắt buộc vào Resources/ để script có thể Resources.Load tự động)
-///   4. Thêm các entry cho từng hệ / giới tính:
-///      elementType = "Fire"  | gender = "Female" | prefab = FireFemale.prefab
-///      elementType = "Metal" | gender = "Male"   | prefab = MetalMale.prefab
-///      ...
-///   5. (Tuỳ chọn) Gán hybridPrefabMap để hỗ trợ nhân vật Hybrid/Fusion
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// ScriptableObject ánh xạ element_type + gender → prefab nhân vật dùng cho
+// Equipment Preview (hiển thị idle animation trong tab Trang Bị).
+// CÁCH TẠO ASSET:
+// 1. Project window → chuột phải → Create → DoAn → Player Preview Prefab Config
+// 2. Đặt tên: PlayerPreviewPrefabConfig
+// 3. Lưu vào: Assets/Resources/ScriptableObjects/PlayerPreviewPrefabConfig
+// (bắt buộc vào Resources/ để script có thể Resources.Load tự động)
+// 4. Thêm các entry cho từng hệ / giới tính:
+// elementType = "Fire"  | gender = "Female" | prefab = FireFemale.prefab
+// elementType = "Metal" | gender = "Male"   | prefab = MetalMale.prefab
+// ...
+// 5. (Tuỳ chọn) Gán hybridPrefabMap để hỗ trợ nhân vật Hybrid/Fusion
 [CreateAssetMenu(fileName = "PlayerPreviewPrefabConfig",
                  menuName = "DoAn/Player Preview Prefab Config")]
 public class PlayerPreviewPrefabConfig : ScriptableObject
@@ -26,7 +21,6 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
     public const string DefaultResourcesPath =
         "ScriptableObjects/PlayerPreviewPrefabConfig";
 
-    // ──────────────────────────────────────────────────────────
     #region Data structures
 
     [Serializable]
@@ -44,7 +38,6 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
 
     #endregion
 
-    // ──────────────────────────────────────────────────────────
     #region Inspector fields
 
     [Header("Ánh xạ element_type + gender → Prefab preview")]
@@ -60,7 +53,6 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
 
     #endregion
 
-    // ──────────────────────────────────────────────────────────
     #region Runtime cache
 
     private Dictionary<string, GameObject> _cache; // key = "ElementType|Gender" lowercase
@@ -89,14 +81,11 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
 
     #endregion
 
-    // ──────────────────────────────────────────────────────────
     #region Public API
 
-    /// <summary>
-    /// Tra cứu prefab phù hợp dựa trên PlayerDataResponse của local player.
-    /// Ưu tiên: exact match (element+gender) → element only → fallback.
-    /// Hybrid: dùng HybridPrefabMap nếu được cấu hình.
-    /// </summary>
+    // Tra cứu prefab phù hợp dựa trên PlayerDataResponse của local player.
+    // Ưu tiên: exact match (element+gender) → element only → fallback.
+    // Hybrid: dùng HybridPrefabMap nếu được cấu hình.
     public GameObject Resolve(PlayerDataResponse data)
     {
         if (data == null) return fallbackPrefab;
@@ -144,10 +133,8 @@ public class PlayerPreviewPrefabConfig : ScriptableObject
         return null;
     }
 
-    /// <summary>
-    /// Load singleton từ Resources (không cần kéo tay vào Inspector).
-    /// Trả về null nếu asset chưa được tạo.
-    /// </summary>
+    // Load singleton từ Resources (không cần kéo tay vào Inspector).
+    // Trả về null nếu asset chưa được tạo.
     public static PlayerPreviewPrefabConfig Load()
         => Resources.Load<PlayerPreviewPrefabConfig>(DefaultResourcesPath);
 

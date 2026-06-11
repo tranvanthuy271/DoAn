@@ -1,10 +1,8 @@
 using System;
 
-/// <summary>
-/// DTO mô phỏng dữ liệu nhận từ server cho item template (v3.0).
-/// Theo chuẩn LangLaServer – không có base_stat_json.
-/// Stat được tính từ option_template + upgradeLevel của từng item instance.
-/// </summary>
+// DTO mô phỏng dữ liệu nhận từ server cho item template (v3.0).
+// Theo chuẩn LangLaServer – không có base_stat_json.
+// Stat được tính từ option_template + upgradeLevel của từng item instance.
 [Serializable]
 public class ItemTemplateDto
 {
@@ -21,32 +19,30 @@ public class ItemTemplateDto
     public bool   isLock;      // loại item này bị khóa (VD: bạc khóa)
     public int    sellPrice;   // giá bán lại (đơn vị bạc)
 
-    // ---- Backward-compat aliases (v2 → v3) ----
+    // Backward-compat aliases (v2 → v3)
     // Các property này chỉ dùng cho code cũ; không ảnh hưởng JSON deserialization.
-    /// <summary>description → detail</summary>
+    // description → detail
     public string description { get => detail; set => detail = value; }
-    /// <summary>icon_id (string) → idIcon (int)</summary>
+    // icon_id (string) → idIcon (int)
     public string icon_id => idIcon > 0 ? idIcon.ToString() : null;
-    /// <summary>item_type → type</summary>
+    // item_type → type
     public int item_type { get => type; set => type = value; }
-    /// <summary>stackable (bool) → isXepChong</summary>
+    // stackable (bool) → isXepChong
     public bool stackable => isXepChong;
-    /// <summary>max_stack removed; default 99</summary>
+    // max_stack removed; default 99
     public int max_stack => 99;
-    /// <summary>category: 1=Equipment 2=Consumable 3=Material (tính từ type)</summary>
+    // category: 1=Equipment 2=Consumable 3=Material (tính từ type)
     public int category { get {
         if (type >= 0 && type <= 5) return 1;
         if (type == 22 || type == 23 || type == 24) return 2;
         return 3;
     } }
-    /// <summary>code removed from DB v3; synthesized as "ITEM_{id}"</summary>
+    // code removed from DB v3; synthesized as "ITEM_{id}"
     public string code => id > 0 ? $"ITEM_{id}" : null;
 }
 
-/// <summary>
-/// DTO mô phỏng 1 ô trong túi đồ mà server gửi cho client (v3.0).
-/// upgradeLevel và strOptions chỉ có giá trị khi item là trang bị (type 0~5).
-/// </summary>
+// DTO mô phỏng 1 ô trong túi đồ mà server gửi cho client (v3.0).
+// upgradeLevel và strOptions chỉ có giá trị khi item là trang bị (type 0~5).
 [Serializable]
 public class InventorySlotDto
 {
@@ -58,14 +54,14 @@ public class InventorySlotDto
     public int    upgradeLevel; // bậc nâng cấp (+0~+20); 0 nếu không phải trang bị
     public string strOptions;   // "optId,value;..." ; "" nếu không phải trang bị
 
-    // ---- Backward-compat aliases (v2 → v3) ----
-    /// <summary>itemTemplateId → id</summary>
+    // Backward-compat aliases (v2 → v3)
+    // itemTemplateId → id
     public int itemTemplateId { get => id; set => id = value; }
-    /// <summary>quantity → amount</summary>
+    // quantity → amount
     public int quantity { get => amount; set => amount = value; }
-    /// <summary>itemCode: không còn trong server response; set bởi bridge layer để hiển thị</summary>
+    // itemCode: không còn trong server response; set bởi bridge layer để hiển thị
     public string itemCode;
-    /// <summary>iconId: không còn trong server response; set bởi bridge layer</summary>
+    // iconId: không còn trong server response; set bởi bridge layer
     public string iconId;
 }
 

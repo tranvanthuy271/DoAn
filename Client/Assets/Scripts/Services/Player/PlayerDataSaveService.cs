@@ -2,10 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Service để batch save player data changes lên API Server
-/// Lưu theo batch mỗi X giây để tránh quá tải database
-/// </summary>
+// Service để batch save player data changes lên API Server
+// Lưu theo batch mỗi X giây để tránh quá tải database
 public class PlayerDataSaveService : NetworkBehaviour
 {
     public static PlayerDataSaveService Instance { get; private set; }
@@ -44,9 +42,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Thêm change vào queue để save sau
-    /// </summary>
+    // Thêm change vào queue để save sau
     public void QueueSave(PlayerDataChange change)
     {
         if (change == null) return;
@@ -55,9 +51,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         // Debug.Log($"[PlayerDataSaveService] Queued save: {change.FieldName} = {change.Value} (Type: {change.Type})");
     }
 
-    /// <summary>
-    /// Thêm nhiều changes cùng lúc
-    /// </summary>
+    // Thêm nhiều changes cùng lúc
     public void QueueSaves(List<PlayerDataChange> changes)
     {
         if (changes == null || changes.Count == 0) return;
@@ -68,9 +62,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Batch save tất cả changes trong queue lên API
-    /// </summary>
+    // Batch save tất cả changes trong queue lên API
     private void BatchSaveToAPI()
     {
         if (saveQueue.Count == 0) return;
@@ -109,6 +101,8 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
 
         // Gửi lên API
+        combinedChanges["geneSlot"] = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1;
+
         if (true) // Hybrid: always use direct coroutine
         {
             // Tạo JSON từ combinedChanges
@@ -119,9 +113,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Lấy playerId từ GameManager hoặc ServerPlayerDataManager
-    /// </summary>
+    // Lấy playerId từ GameManager hoặc ServerPlayerDataManager
     private int GetPlayerId()
     {
         // Ưu tiên: Lấy từ GameManager (local player)
@@ -153,9 +145,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         return 0;
     }
 
-    /// <summary>
-    /// Tạo JSON string từ dictionary changes
-    /// </summary>
+    // Tạo JSON string từ dictionary changes
     private string CreateJsonFromChanges(Dictionary<string, object> changes)
     {
         // Sử dụng JsonUtility (đơn giản) hoặc Newtonsoft.Json (nếu có)
@@ -190,9 +180,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         return json.ToString();
     }
 
-    /// <summary>
-    /// Coroutine để gửi update request lên API
-    /// </summary>
+    // Coroutine để gửi update request lên API
     private System.Collections.IEnumerator UpdatePlayerDataCoroutine(int playerId, string jsonData)
     {
         string baseUrl = ServerAddressConfig.Instance != null ? ServerAddressConfig.Instance.ApiUrl : "http://localhost:3000/api";
@@ -224,9 +212,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         isSaving = false;
     }
 
-    /// <summary>
-    /// Force save ngay lập tức (không đợi interval)
-    /// </summary>
+    // Force save ngay lập tức (không đợi interval)
     public void ForceSave()
     {
         if (!IsServer) return;
@@ -235,27 +221,21 @@ public class PlayerDataSaveService : NetworkBehaviour
         saveTimer = saveInterval; // Trigger save ngay
     }
 
-    /// <summary>
-    /// Clear queue (khi cần reset)
-    /// </summary>
+    // Clear queue (khi cần reset)
     public void ClearQueue()
     {
         saveQueue.Clear();
         // Debug.Log("[PlayerDataSaveService] Save queue cleared");
     }
 
-    /// <summary>
-    /// Get queue count (để debug)
-    /// </summary>
+    // Get queue count (để debug)
     public int GetQueueCount()
     {
         return saveQueue.Count;
     }
 }
 
-/// <summary>
-/// Class để đại diện cho một thay đổi dữ liệu player
-/// </summary>
+// Class để đại diện cho một thay đổi dữ liệu player
 [System.Serializable]
 public class PlayerDataChange
 {
@@ -271,9 +251,7 @@ public class PlayerDataChange
     }
 }
 
-/// <summary>
-/// Loại thay đổi dữ liệu
-/// </summary>
+// Loại thay đổi dữ liệu
 public enum ChangeType
 {
     LevelUp,

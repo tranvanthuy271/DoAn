@@ -1,21 +1,19 @@
 using UnityEngine;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  BossData  —  ScriptableObject config cho từng con Boss
 //  Tạo asset: Assets → Create → Game/Boss/Boss Data
-// ─────────────────────────────────────────────────────────────────────────────
 
 [CreateAssetMenu(fileName = "BossData", menuName = "Game/Boss/Boss Data")]
 public class BossData : ScriptableObject
 {
-    // ── Thông tin cơ bản ────────────────────────────────────────────────────
+    // Thông tin cơ bản
     [Header("Thông Tin Cơ Bản")]
     public string bossName      = "Boss";
     public int    maxHealth     = 1000;
     public int    level         = 10;
     public int    expReward     = 500;
 
-    // ── Di chuyển ───────────────────────────────────────────────────────────
+    // Di chuyển
     [Header("Di Chuyển")]
     public float moveSpeed        = 2f;
     public float chaseSpeed       = 3.5f;
@@ -33,7 +31,7 @@ public class BossData : ScriptableObject
     public float flyHeight    = 3f;
     public float flySpeed     = 4f;
 
-    // ── Né tránh ────────────────────────────────────────────────────────────
+    // Né tránh
     [Header("Né Tránh Skill Người Chơi")]
     [Range(0f, 100f)]
     [Tooltip("Xác suất né (%). 0 = không né, 100 = luôn né")]
@@ -43,14 +41,14 @@ public class BossData : ScriptableObject
     [Tooltip("Khoảng cách dịch chuyển khi né")]
     public float dodgeDistance  = 2f;
 
-    // ── Sát thương phản lại ─────────────────────────────────────────────────
+    // Sát thương phản lại
     [Header("Sát Thương Cố Định Khi Bị Đánh")]
     [Tooltip("Kích hoạt: mỗi lần bị đánh, boss trả lại một lượng damage cố định cho kẻ tấn công")]
     public bool returnDamageEnabled = false;
     [Min(0)]
     public int  returnDamageAmount  = 10;
 
-    // ── Tự hồi HP ───────────────────────────────────────────────────────────
+    // Tự hồi HP
     [Header("Tự Hồi HP")]
     public bool  hpRegenEnabled      = false;
     [Range(0f, 100f)]
@@ -59,7 +57,7 @@ public class BossData : ScriptableObject
     [Tooltip("HP hồi mỗi giây")]
     public float regenPerSec         = 5f;
 
-    // ── Kháng nguyên tố ─────────────────────────────────────────────────────
+    // Kháng nguyên tố
     [Header("Kháng Nguyên Tố (0–100 %)")]
     [Range(0, 100)] public int khangHoa   = 0;
     [Range(0, 100)] public int khangThuy  = 0;
@@ -68,7 +66,7 @@ public class BossData : ScriptableObject
     [Range(0, 100)] public int khangKim   = 0;
     [Range(0, 100)] public int khangPhong = 0;
 
-    // ── Kỹ năng ─────────────────────────────────────────────────────────────
+    // Kỹ năng
     [Header("Kỹ Năng Đánh Thường")]
     public BossNormalAttackConfig normalAttack = new BossNormalAttackConfig();
 
@@ -82,7 +80,7 @@ public class BossData : ScriptableObject
     public BossStealthConfig stealth = new BossStealthConfig();
 }
 
-// ── Nested configs (Serializable để hiện trong Inspector) ────────────────────
+// Nested configs (Serializable để hiện trong Inspector)
 
 [System.Serializable]
 public class BossNormalAttackConfig

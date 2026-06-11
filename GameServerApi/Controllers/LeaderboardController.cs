@@ -33,7 +33,7 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        // ── GET /api/leaderboard/{id} ─────────────────────────────────────────
+        // GET /api/leaderboard/{id}
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetCategory(int id)
         {
@@ -48,7 +48,7 @@ namespace GameServerApi.Controllers
             return Ok(new { id = row.Id, name = row.Name, list = row.ListJson });
         }
 
-        // ── GET /api/leaderboard/all ──────────────────────────────────────────
+        // GET /api/leaderboard/all
         [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
@@ -66,7 +66,7 @@ namespace GameServerApi.Controllers
             return Ok(rows.Select(r => new { id = r.Id, name = r.Name, list = r.ListJson }));
         }
 
-        // ── POST /api/leaderboard/refresh (Admin only) ────────────────────────
+        // POST /api/leaderboard/refresh (Admin only)
         [HttpPost("refresh")]
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<IActionResult> Refresh()
@@ -75,7 +75,7 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Bảng xếp hạng đã được cập nhật." });
         }
 
-        // ── Core refresh: tính rankings từ player_data.info_char ─────────────
+        // Core refresh: tính rankings từ player_data.info_char
         public async Task RefreshAllAsync()
         {
             try
@@ -151,7 +151,6 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
         private static InfoChar SafeParseInfoChar(string? json)
         {
             if (string.IsNullOrWhiteSpace(json)) return new InfoChar();

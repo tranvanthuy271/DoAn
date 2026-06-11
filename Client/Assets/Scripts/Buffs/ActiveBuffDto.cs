@@ -1,36 +1,32 @@
 using System;
 
-/// <summary>
-/// DTO cho 1 buff đang active trên client.
-/// Ánh xạ JSON từ server (ActiveBuff model) – dùng Unity JsonUtility.
-/// </summary>
+// DTO cho 1 buff đang active trên client.
+// Ánh xạ JSON từ server (ActiveBuff model) – dùng Unity JsonUtility.
 [Serializable]
 public class ActiveBuffDto
 {
-    /// <summary>Loại hiệu ứng: GeneExpBuff, ExpBuff, PhucBuff, AttackBuff, DefenseBuff …</summary>
+    // Loại hiệu ứng: GeneExpBuff, ExpBuff, PhucBuff, AttackBuff, DefenseBuff …
     public string effectType;
 
-    /// <summary>Giá trị buff (đơn vị %). Ví dụ: 20 → +20%.</summary>
+    // Giá trị buff (đơn vị %). Ví dụ: 20 → +20%.
     public int value;
 
-    /// <summary>ID icon trong IconDatabase.</summary>
+    // ID icon trong IconDatabase.
     public int iconId;
 
-    /// <summary>Tên hiển thị trong tooltip.</summary>
+    // Tên hiển thị trong tooltip.
     public string name;
 
-    /// <summary>Chi tiết hiển thị trong tooltip.</summary>
+    // Chi tiết hiển thị trong tooltip.
     public string detail;
 
-    /// <summary>
-    /// Thời điểm hết hạn UTC theo định dạng ISO 8601 ("o").
-    /// Null/rỗng = buff vĩnh viễn hoặc instant (đã apply xong).
-    /// </summary>
+    // Thời điểm hết hạn UTC theo định dạng ISO 8601 ("o").
+    // Null/rỗng = buff vĩnh viễn hoặc instant (đã apply xong).
     public string expireAt;
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    /// <summary>Trả về true nếu buff đã hết hạn.</summary>
+    // Trả về true nếu buff đã hết hạn.
     public bool IsExpired()
     {
         if (string.IsNullOrEmpty(expireAt)) return false; // permanent
@@ -40,7 +36,7 @@ public class ActiveBuffDto
         return false;
     }
 
-    /// <summary>Số giây còn lại; -1 nếu permanent/instant.</summary>
+    // Số giây còn lại; -1 nếu permanent/instant.
     public float GetRemainingSeconds()
     {
         if (string.IsNullOrEmpty(expireAt)) return -1f;
@@ -51,7 +47,7 @@ public class ActiveBuffDto
     }
 }
 
-/// <summary>Wrapper dùng JsonUtility để deserialize { "active_buffs": [...] }.</summary>
+// Wrapper dùng JsonUtility để deserialize { "active_buffs": [...] }.
 [Serializable]
 public class ActiveBuffsResponse
 {

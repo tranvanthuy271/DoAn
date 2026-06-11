@@ -1,10 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Debug script để verify NetworkPlayerDataSync hoạt động
-/// Attach vào player prefab để test
-/// </summary>
+// Debug script để verify NetworkPlayerDataSync hoạt động
+// Attach vào player prefab để test
 public class NetworkPlayerDataSyncDebug : NetworkBehaviour
 {
     public override void OnNetworkSpawn()

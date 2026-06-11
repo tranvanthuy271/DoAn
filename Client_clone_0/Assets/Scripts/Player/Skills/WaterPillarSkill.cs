@@ -2,21 +2,17 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 2 của hệ Thủy — "Thánh Mộc Hạ" (Cây Thánh Rơi Xuống)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill2 trên SkillEffect cho tất cả client.
-///   2. Server spawn pillarPrefab ở vị trí phía trước và phía trên player.
-///   3. Pillar rơi thẳng xuống với tốc độ pillarFallSpeed.
-///   4. Gây sát thương khi chạm enemy (qua FireballDamage component trên prefab).
-///   5. Tự hủy sau pillarLifetime giây.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào GameObject chứa PlayerSkillManager (cùng Thuy.prefab).
-///   - Gán pillarPrefab: prefab projectile có Rigidbody2D + Collider2D trigger + FireballDamage.
-///   - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = WaterPillar.
-/// </summary>
+// Skill 2 của hệ Thủy — "Thánh Mộc Hạ" (Cây Thánh Rơi Xuống)
+// Cơ chế:
+// 1. Trigger animation Skill2 trên SkillEffect cho tất cả client.
+// 2. Server spawn pillarPrefab ở vị trí phía trước và phía trên player.
+// 3. Pillar rơi thẳng xuống với tốc độ pillarFallSpeed.
+// 4. Gây sát thương khi chạm enemy (qua FireballDamage component trên prefab).
+// 5. Tự hủy sau pillarLifetime giây.
+// Setup trong Unity:
+// - Gắn component này vào GameObject chứa PlayerSkillManager (cùng Thuy.prefab).
+// - Gán pillarPrefab: prefab projectile có Rigidbody2D + Collider2D trigger + FireballDamage.
+// - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = WaterPillar.
 public class WaterPillarSkill : NetworkBehaviour
 {
     [Header("Pillar Settings")]
@@ -42,7 +38,7 @@ public class WaterPillarSkill : NetworkBehaviour
     [Tooltip("Trigger name trong Animator SkillEffect để phát animation Skill2")]
     [SerializeField] private string animTriggerName = "Skill2";
 
-    // ── Internal state ──────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;
@@ -53,9 +49,7 @@ public class WaterPillarSkill : NetworkBehaviour
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - cooldownTimer / cooldown);
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     public override void OnNetworkSpawn()
     {
@@ -88,9 +82,7 @@ public class WaterPillarSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Public API — gọi từ PlayerSkillManager
-    // ════════════════════════════════════════════════════════════════════════
 
     public void UseWaterPillar()
     {
@@ -114,9 +106,7 @@ public class WaterPillarSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Network RPCs
-    // ════════════════════════════════════════════════════════════════════════
 
     [ServerRpc]
     private void StartWaterPillarServerRpc(bool facingRight)
@@ -189,10 +179,8 @@ public class WaterPillarSkill : NetworkBehaviour
         isUsing = false;
     }
 
-    /// <summary>
-    /// Đồng bộ velocity của pillar sang tất cả client.
-    /// Server đã set velocity trực tiếp — ClientRpc chỉ chạy trên các client còn lại.
-    /// </summary>
+    // Đồng bộ velocity của pillar sang tất cả client.
+    // Server đã set velocity trực tiếp — ClientRpc chỉ chạy trên các client còn lại.
     [ClientRpc]
     private void SetPillarVelocityClientRpc(ulong pillarNetId, Vector2 velocity)
     {
@@ -202,10 +190,8 @@ public class WaterPillarSkill : NetworkBehaviour
         if (rb != null) rb.velocity = velocity;
     }
 
-    /// <summary>
-    /// Trigger animation trên pillar projectile đã spawn — dùng coroutine để chờ SpawnedObjects
-    /// đăng ký đủ trước khi truy cập (tránh race condition giữa spawn-message và RPC).
-    /// </summary>
+    // Trigger animation trên pillar projectile đã spawn — dùng coroutine để chờ SpawnedObjects
+    // đăng ký đủ trước khi truy cập (tránh race condition giữa spawn-message và RPC).
     [ClientRpc]
     private void TriggerPillarProjectileAnimationClientRpc(ulong pillarNetworkObjectId)
     {
@@ -249,9 +235,7 @@ public class WaterPillarSkill : NetworkBehaviour
         Debug.LogWarning($"[WaterPillarSkill] Timeout chờ pillar {pillarNetId} trong SpawnedObjects.");
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Core sequence (server-only)
-    // ════════════════════════════════════════════════════════════════════════
 
     private IEnumerator WaterPillarSequence(bool facingRight)
     {

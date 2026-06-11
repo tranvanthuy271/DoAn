@@ -4,13 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel thông báo xin vào nhóm.
-/// Hiển thị tên, level, hệ của người xin; hai nút Đồng ý / Từ chối.
-/// Hàng đợi nếu có nhiều request liên tiếp.
-///
-/// Cách dùng: gán vào trường joinRequestPopup của PartyPanelUI.
-/// </summary>
+// Panel thông báo xin vào nhóm.
+// Hiển thị tên, level, hệ của người xin; hai nút Đồng ý / Từ chối.
+// Hàng đợi nếu có nhiều request liên tiếp.
+// Cách dùng: gán vào trường joinRequestPopup của PartyPanelUI.
 public class PartyJoinRequestPopupUI : MonoBehaviour
 {
     private const string LogPrefix = "[JoinRequestNotification]";
@@ -24,14 +21,14 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
     [Header("Assets")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Internal state ─────────────────────────────────────────────────────
+    // Internal state
     private PartyJoinRequestPayload _current;
     private readonly Queue<PartyJoinRequestPayload> _queue = new();
 
     private Action<string, string> _onAccept;   // (partyId, requesterUserId)
     private Action<string, string> _onDecline;  // (partyId, requesterUserId)
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -40,12 +37,10 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ── Public API ─────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Đưa request vào hàng chờ. Nếu panel đang ẩn, hiển thị ngay request này.
-    /// onAccept / onDecline được gọi với (partyId, requesterUserId).
-    /// </summary>
+    // Đưa request vào hàng chờ. Nếu panel đang ẩn, hiển thị ngay request này.
+    // onAccept / onDecline được gọi với (partyId, requesterUserId).
     public void ShowRequest(PartyJoinRequestPayload payload,
                             Action<string, string> onAccept,
                             Action<string, string> onDecline)
@@ -66,7 +61,7 @@ public class PartyJoinRequestPopupUI : MonoBehaviour
             ShowNextRequest();
     }
 
-    // ── Private helpers ────────────────────────────────────────────────────
+    // Private helpers
 
     private void ShowNextRequest()
     {

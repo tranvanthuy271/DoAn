@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// Tự động đăng ký tất cả player prefab vào NetworkManager
-/// Script này đảm bảo cả host và client đều có cùng prefab list
-/// </summary>
+// Tự động đăng ký tất cả player prefab vào NetworkManager
+// Script này đảm bảo cả host và client đều có cùng prefab list
 public class NetworkPrefabRegistrar : MonoBehaviour
 {
     [Header("Auto-register from NetworkPlayerSpawner")]
@@ -38,9 +36,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đăng ký tất cả prefab vào NetworkManager
-    /// </summary>
+    // Đăng ký tất cả prefab vào NetworkManager
     private void RegisterPrefabs()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -151,9 +147,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Log tất cả prefab đã đăng ký để debug (chỉ theo tên, không dùng hash nội bộ)
-    /// </summary>
+    // Log tất cả prefab đã đăng ký để debug (chỉ theo tên, không dùng hash nội bộ)
     private void LogRegisteredPrefabs(NetworkManager networkManager)
     {
         var prefabsList = networkManager.NetworkConfig.Prefabs;
@@ -180,9 +174,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đăng ký prefab từ NetworkPlayerSpawner
-    /// </summary>
+    // Đăng ký prefab từ NetworkPlayerSpawner
     private void RegisterPrefabFromSpawner(NetworkPlayerSpawner spawner, NetworkManager networkManager, ref int registeredCount, HashSet<string> missingSharedPrefabs, bool validationOnly)
     {
         // Lấy tất cả prefab từ spawner (tìm cả disabled components)
@@ -204,9 +196,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Tự động đăng ký ItemPickup prefab
-    /// </summary>
+    // Tự động đăng ký ItemPickup prefab
     private void RegisterItemPickupPrefab(NetworkManager networkManager, ref int registeredCount, HashSet<string> missingSharedPrefabs, bool validationOnly)
     {
         if (HasRegisteredPrefab(networkManager, prefab =>
@@ -297,9 +287,7 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Đăng ký một prefab vào NetworkManager (nếu chưa có)
-    /// </summary>
+    // Đăng ký một prefab vào NetworkManager (nếu chưa có)
     private void RegisterPrefab(GameObject prefab, NetworkManager networkManager, ref int registeredCount, HashSet<string> missingSharedPrefabs, bool validationOnly)
     {
         if (prefab == null)
@@ -349,18 +337,14 @@ public class NetworkPrefabRegistrar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đăng ký lại prefab (có thể gọi từ code khác nếu cần)
-    /// </summary>
+    // Đăng ký lại prefab (có thể gọi từ code khác nếu cần)
     public void ReRegisterPrefabs()
     {
         RegisterPrefabs();
     }
 
-    /// <summary>
-    /// Tự động đăng ký tất cả NPC prefab từ NpcServerManager trong scene.
-    /// Bắt buộc để client có thể instantiate NPC khi server Spawn().
-    /// </summary>
+    // Tự động đăng ký tất cả NPC prefab từ NpcServerManager trong scene.
+    // Bắt buộc để client có thể instantiate NPC khi server Spawn().
     private void RegisterNpcPrefabs(NetworkManager networkManager, ref int registeredCount, HashSet<string> missingSharedPrefabs, bool validationOnly)
     {
         var npcPrefabs = new HashSet<GameObject>();

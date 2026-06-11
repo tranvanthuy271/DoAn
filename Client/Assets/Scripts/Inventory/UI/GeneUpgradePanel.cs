@@ -5,43 +5,35 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 
-/// <summary>
-/// GeneUpgradePanel — Panel nâng cấp Gene.
-///
-/// ══════════════════════════════════════════════════════════
-/// CÁCH MỞ PANEL (gọi từ bất kỳ script nào):
-///
-///   GeneUpgradePanel.Instance.Open();
-///
-/// ══════════════════════════════════════════════════════════
-/// INSPECTOR SETUP — kéo đúng thứ tự (xem [Header] bên dưới):
-///   1. GeneTierDisplay   ← TMP_Text
-///   2. ElementIcon       ← Image
-///   3. GeneExpBar        ← Slider (readonly)
-///   4. GeneExpText       ← TMP_Text "1000 / 5000 exp"
-///   5. GoldCostText      ← TMP_Text
-///   6. ItemCostText      ← TMP_Text
-///   7. ItemIcon          ← Image (icon vật liệu)
-///   8. SuccessRateText   ← TMP_Text
-///   9. ItemCountSlider   ← Slider (người dùng kéo)
-///  10. ItemCountText     ← TMP_Text "3 item"
-///  11. StatHpText        ← TMP_Text
-///  12. StatMpText        ← TMP_Text
-///  13. StatAtkText       ← TMP_Text
-///  14. StatDefText       ← TMP_Text
-///  15. SkillsContainer   ← Transform (parent chứa skill row prefab)
-///  16. SkillRowPrefab    ← GameObject (prefab 1 dòng skill)
-///  17. UpgradeButton     ← Button
-///  18. CloseButton       ← Button
-///  19. StatusText        ← TMP_Text (kết quả)
-///  20. LoadingOverlay    ← GameObject (che UI khi đang tải)
-/// ══════════════════════════════════════════════════════════
-/// </summary>
+// GeneUpgradePanel — Panel nâng cấp Gene.
+// CÁCH MỞ PANEL (gọi từ bất kỳ script nào):
+// GeneUpgradePanel.Instance.Open();
+// INSPECTOR SETUP — kéo đúng thứ tự (xem [Header] bên dưới):
+// 1. GeneTierDisplay   ← TMP_Text
+// 2. ElementIcon       ← Image
+// 3. GeneExpBar        ← Slider (readonly)
+// 4. GeneExpText       ← TMP_Text "1000 / 5000 exp"
+// 5. GoldCostText      ← TMP_Text
+// 6. ItemCostText      ← TMP_Text
+// 7. ItemIcon          ← Image (icon vật liệu)
+// 8. SuccessRateText   ← TMP_Text
+// 9. ItemCountSlider   ← Slider (người dùng kéo)
+// 10. ItemCountText     ← TMP_Text "3 item"
+// 11. StatHpText        ← TMP_Text
+// 12. StatMpText        ← TMP_Text
+// 13. StatAtkText       ← TMP_Text
+// 14. StatDefText       ← TMP_Text
+// 15. SkillsContainer   ← Transform (parent chứa skill row prefab)
+// 16. SkillRowPrefab    ← GameObject (prefab 1 dòng skill)
+// 17. UpgradeButton     ← Button
+// 18. CloseButton       ← Button
+// 19. StatusText        ← TMP_Text (kết quả)
+// 20. LoadingOverlay    ← GameObject (che UI khi đang tải)
 public class GeneUpgradePanel : MonoBehaviour
 {
     public static GeneUpgradePanel Instance { get; private set; }
 
-    // ── Inspector ─────────────────────────────────────────────────────────
+    // Inspector
 
     [Header("Gene Tier Info")]
     [SerializeField] private TMP_Text tierDisplayText;   // "Gene Tier 1 → 2"
@@ -79,12 +71,12 @@ public class GeneUpgradePanel : MonoBehaviour
     [Header("Shared Element Visuals")]
     [SerializeField] private ElementIconConfig elementIconConfig;
 
-    // ── Runtime data ──────────────────────────────────────────────────────
+    // Runtime data
     private GeneConfigDto _config;
     private PlayerDataResponse _playerData;
     private bool _isSecondary;   // true = đang nâng tier hệ phụ
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -105,9 +97,9 @@ public class GeneUpgradePanel : MonoBehaviour
             itemCountSlider.onValueChanged.AddListener(OnItemCountChanged);
     }
 
-    // ── Mở panel ──────────────────────────────────────────────────────────
+    // Mở panel
 
-    /// <summary>Mở panel nâng cấp gene. Gọi từ bất kỳ Button/script nào.</summary>
+    // Mở panel nâng cấp gene. Gọi từ bất kỳ Button/script nào.
     public void Open()
     {
         _isSecondary = false;
@@ -120,7 +112,7 @@ public class GeneUpgradePanel : MonoBehaviour
         StartCoroutine(LoadAndRefresh());
     }
 
-    /// <summary>Mở panel nâng cấp gene HỆ PHỤ (dùng chung panel, gọi API secondary).</summary>
+    // Mở panel nâng cấp gene HỆ PHỤ (dùng chung panel, gọi API secondary).
     public void OpenForSecondary()
     {
         _isSecondary = true;
@@ -137,7 +129,7 @@ public class GeneUpgradePanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ── Load data ─────────────────────────────────────────────────────────
+    // Load data
 
     private IEnumerator LoadAndRefresh()
     {
@@ -254,7 +246,7 @@ public class GeneUpgradePanel : MonoBehaviour
         onDone?.Invoke(success);
     }
 
-    // ── UI refresh ────────────────────────────────────────────────────────
+    // UI refresh
 
     private void RefreshUI()
     {
@@ -332,10 +324,8 @@ public class GeneUpgradePanel : MonoBehaviour
             geneExpText.text = $"{currentExp:N0} / {required:N0} exp";
     }
 
-    /// <summary>
-    /// Cập nhật gene_exp hiển thị ngay từ GameManager (không cần RPC).
-    /// Gọi sau khi dùng item nâng gene exp.
-    /// </summary>
+    // Cập nhật gene_exp hiển thị ngay từ GameManager (không cần RPC).
+    // Gọi sau khi dùng item nâng gene exp.
     public void RefreshFromLocalCache()
     {
         if (!gameObject.activeSelf) return;
@@ -417,7 +407,7 @@ public class GeneUpgradePanel : MonoBehaviour
         }
     }
 
-    // ── Slider callback ───────────────────────────────────────────────────
+    // Slider callback
 
     private void OnItemCountChanged(float value)
     {
@@ -431,7 +421,7 @@ public class GeneUpgradePanel : MonoBehaviour
         itemCostText.text    = $"x{count} {_config.itemName}";
     }
 
-    // ── Upgrade ───────────────────────────────────────────────────────────
+    // Upgrade
 
     private void OnUpgradeClicked()
     {
@@ -450,6 +440,7 @@ public class GeneUpgradePanel : MonoBehaviour
         var request = new GeneUpgradeRequest
         {
             playerId  = _playerData.player_id,
+            geneSlot  = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1,
             itemCount = itemCount
         };
 
@@ -561,11 +552,9 @@ public class GeneUpgradePanel : MonoBehaviour
         SetLoading(false);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-    // ══════════════════════════════════════════════════════════════
     //  CHẾ ĐỘ HỆ PHỤ — dùng REST trực tiếp thay vì GameplayCommandService
-    // ══════════════════════════════════════════════════════════════
 
     private IEnumerator LoadAndRefreshSecondary()
     {
@@ -736,7 +725,7 @@ public class GeneUpgradePanel : MonoBehaviour
     private class SecondaryUpgradeResp { public bool success; public int newSecondaryTier; public int newSecondaryExp; public int gold; public string message; }
 
 
-    /// <summary>Tìm NetworkPlayerDataSync của local player (IsOwner=true)</summary>
+    // Tìm NetworkPlayerDataSync của local player (IsOwner=true)
     private static NetworkPlayerDataSync FindLocalDataSync()
     {
         foreach (var s in FindObjectsOfType<NetworkPlayerDataSync>())

@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models
 {
-    // ----------------------------------------------------------------
     // equipment_upgrade_config
     //   upgrade_level     : +1 ~ +20
     //   stone_id          : FK → item_template.id  (đá nâng cấp đúng bậc)
@@ -11,7 +10,6 @@ namespace GameServerApi.Models
     //   stone_min         : số đá tối thiểu được phép dùng
     //   base_success_rate : tỉ lệ khi dùng đúng stone_needed viên
     //   fail_policy       : 0=an toàn  1=-1 bậc  2=về+0
-    // ----------------------------------------------------------------
     [Table("equipment_upgrade_config")]
     public class EquipmentUpgradeConfig
     {

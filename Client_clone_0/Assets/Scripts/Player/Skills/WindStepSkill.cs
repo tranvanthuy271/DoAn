@@ -2,22 +2,18 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 3 của hệ Phong (Wind) — "Phong Thoái Bộ"
-/// 
-/// Luồng hoạt động:
-///   1. Ẩn SpriteRenderer player trên tất cả client (ClientRpc)
-///   2. Trigger animation "Skill3" trên SkillEffect_Phong (server → NetworkAnimator tự sync)
-///   3. Chờ animationDuration giây
-///   4. Hiện lại SpriteRenderer player (ClientRpc)
-///   5. Dịch chuyển player đến vị trí đích qua custom ClientRpc visual sync
-///
-/// Cách gắn vào player:
-///   - Gắn component này vào cùng GameObject với PlayerSkillManager
-///   - Gán playerSpriteRenderer (SpriteRenderer của sprite nhân vật)
-///   - Gán skillEffectObject (GameObject SkillEffect_Phong)
-///   - PlayerSkillManager sẽ tự phát hiện và uỷ quyền khi skill type = WindStep
-/// </summary>
+// Skill 3 của hệ Phong (Wind) — "Phong Thoái Bộ"
+// Luồng hoạt động:
+// 1. Ẩn SpriteRenderer player trên tất cả client (ClientRpc)
+// 2. Trigger animation "Skill3" trên SkillEffect_Phong (server → NetworkAnimator tự sync)
+// 3. Chờ animationDuration giây
+// 4. Hiện lại SpriteRenderer player (ClientRpc)
+// 5. Dịch chuyển player đến vị trí đích qua custom ClientRpc visual sync
+// Cách gắn vào player:
+// - Gắn component này vào cùng GameObject với PlayerSkillManager
+// - Gán playerSpriteRenderer (SpriteRenderer của sprite nhân vật)
+// - Gán skillEffectObject (GameObject SkillEffect_Phong)
+// - PlayerSkillManager sẽ tự phát hiện và uỷ quyền khi skill type = WindStep
 public class WindStepSkill : NetworkBehaviour
 {
     [Header("Wind Step Settings")]
@@ -47,7 +43,7 @@ public class WindStepSkill : NetworkBehaviour
     [Tooltip("SpriteRenderer của hình nhân vật. Sẽ bị ẩn trong lúc animation. Để trống → tự tìm GetComponentInChildren")]
     [SerializeField] private SpriteRenderer playerSpriteRenderer;
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private Rigidbody2D rb2D;
     private float cooldownTimer;
     private bool canUse = true;
@@ -55,18 +51,16 @@ public class WindStepSkill : NetworkBehaviour
     private PlayerAnimator playerAnimator;
     private Coroutine dashVisualCoroutine;
 
-    /// <summary>PlayerSkillManager và SkillSlotUI dùng cái này để kiểm tra trước khi trigger.</summary>
+    // PlayerSkillManager và SkillSlotUI dùng cái này để kiểm tra trước khi trigger.
     public bool CanUseNow => canUse && !isUsing;
 
-    /// <summary>Phần trăm cooldown sẵn sàng (0 = đang CD, 1 = ready). Dùng cho hotbar overlay.</summary>
+    // Phần trăm cooldown sẵn sàng (0 = đang CD, 1 = ready). Dùng cho hotbar overlay.
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - cooldownTimer / cooldown);
 
-    /// <summary>Giây CD còn lại. Dùng cho text hiển thị trên hotbar.</summary>
+    // Giây CD còn lại. Dùng cho text hiển thị trên hotbar.
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     public override void OnNetworkSpawn()
     {
@@ -108,14 +102,10 @@ public class WindStepSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Public API — gọi từ PlayerSkillManager
-    // ════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Kích hoạt Wind Step từ bên ngoài (PlayerSkillManager).
-    /// Chỉ có Owner mới được gọi hàm này.
-    /// </summary>
+    // Kích hoạt Wind Step từ bên ngoài (PlayerSkillManager).
+    // Chỉ có Owner mới được gọi hàm này.
     public void UseWindStep()
     {
         if (!CanUseNow) return;
@@ -139,9 +129,7 @@ public class WindStepSkill : NetworkBehaviour
             StartWindStepServerRpc(to);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Network RPCs
-    // ════════════════════════════════════════════════════════════════════════
 
     [ServerRpc]
     private void StartWindStepServerRpc(Vector3 targetPos)
@@ -156,7 +144,7 @@ public class WindStepSkill : NetworkBehaviour
             playerSpriteRenderer.enabled = visible;
     }
 
-    /// <summary>Reset isUsing trên tất cả client sau khi DoWindStepSequence kết thúc trên server.</summary>
+    // Reset isUsing trên tất cả client sau khi DoWindStepSequence kết thúc trên server.
     [ClientRpc]
     private void ResetIsUsingClientRpc()
     {
@@ -184,7 +172,7 @@ public class WindStepSkill : NetworkBehaviour
         if (sr != null) sr.sprite = null;
     }
 
-    /// <summary>Phát animation Skill3 trên SkillEffect cho tất cả client.</summary>
+    // Phát animation Skill3 trên SkillEffect cho tất cả client.
     [ClientRpc]
     private void TriggerSkill3AnimationClientRpc()
     {
@@ -212,9 +200,7 @@ public class WindStepSkill : NetworkBehaviour
         }
         Debug.LogWarning("[WindStepSkill] Animator không có Trigger 'Skill3'.");
     }
-    /// <summary>
-    /// Kích hoạt animation attack của nhân vật (phong.controller) trên TẤT CẢ client.
-    /// </summary>
+    // Kích hoạt animation attack của nhân vật (phong.controller) trên TẤT CẢ client.
     [ClientRpc]
     private void TriggerPlayerAttackClientRpc()
     {
@@ -222,9 +208,7 @@ public class WindStepSkill : NetworkBehaviour
             playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
         playerAnimator?.TriggerAttack();
     }
-    // ════════════════════════════════════════════════════════════════════════
     //  Core sequence (runs on server)
-    // ════════════════════════════════════════════════════════════════════════
 
     private IEnumerator DoWindStepSequence(Vector3 targetPos)
     {
@@ -268,9 +252,7 @@ public class WindStepSkill : NetworkBehaviour
         ResetIsUsingClientRpc();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void TriggerSkill3Animation()
     {

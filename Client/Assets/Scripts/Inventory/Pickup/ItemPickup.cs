@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// ItemPickup - Component để nhặt item từ ground
-/// Gắn vào GameObject item drop trên ground
-/// </summary>
+// ItemPickup - Component để nhặt item từ ground
+// Gắn vào GameObject item drop trên ground
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(Collider2D))]
 public class ItemPickup : NetworkBehaviour
@@ -174,7 +172,7 @@ public class ItemPickup : NetworkBehaviour
         DoPickupByLocalPlayer();
     }
 
-    /// <summary>Kiểm tra click chuột có trúng vào item này không (dùng sprite bounds + fallback collider).</summary>
+    // Kiểm tra click chuột có trúng vào item này không (dùng sprite bounds + fallback collider).
     private bool IsClickingOnMe()
     {
         Vector3 mw = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -196,7 +194,7 @@ public class ItemPickup : NetworkBehaviour
         return false;
     }
 
-    /// <summary>Gửi pickup request — server sẽ tự biết ai gửi qua SenderClientId.</summary>
+    // Gửi pickup request — server sẽ tự biết ai gửi qua SenderClientId.
     private void DoPickupByLocalPlayer()
     {
         if (!canPickup.Value)
@@ -235,9 +233,7 @@ public class ItemPickup : NetworkBehaviour
         ExecutePickup(netObj);
     }
 
-    /// <summary>
-    /// Player đi qua item không bị đẩy — BoxCollider2D solid với ground nhưng bỏ qua player
-    /// </summary>
+    // Player đi qua item không bị đẩy — BoxCollider2D solid với ground nhưng bỏ qua player
     private void OnCollisionEnter2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Player"))
@@ -248,10 +244,8 @@ public class ItemPickup : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Kiểm tra player có trong range không
-    /// (dùng tag \"Player\", KHÔNG phụ thuộc layer để đỡ lỗi cấu hình)
-    /// </summary>
+    // Kiểm tra player có trong range không
+    // (dùng tag \"Player\", KHÔNG phụ thuộc layer để đỡ lỗi cấu hình)
     private void CheckPlayerInRange()
     {
         // Tìm tất cả collider trong bán kính, rồi lọc theo tag \"Player\"
@@ -275,10 +269,8 @@ public class ItemPickup : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ServerRpc được gọi khi player CLICK vào item.
-    /// Server tự biết ai gửi qua rpcParams.Receive.SenderClientId — không cần truyền playerObjectId.
-    /// </summary>
+    // ServerRpc được gọi khi player CLICK vào item.
+    // Server tự biết ai gửi qua rpcParams.Receive.SenderClientId — không cần truyền playerObjectId.
     [ServerRpc(RequireOwnership = false)]
     private void PickupByClickServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -298,7 +290,7 @@ public class ItemPickup : NetworkBehaviour
         ExecutePickup(localPlayer);
     }
 
-    /// <summary>Tìm NetworkObject thuộc sự hữu của client và có NetworkInventory (chạy trên server).</summary>
+    // Tìm NetworkObject thuộc sự hữu của client và có NetworkInventory (chạy trên server).
     private NetworkObject FindPlayerObjectByOwner(ulong clientId)
     {
         foreach (var kvp in NetworkManager.Singleton.SpawnManager.SpawnedObjects)
@@ -312,9 +304,7 @@ public class ItemPickup : NetworkBehaviour
         return null;
     }
 
-    /// <summary>
-    /// ServerRpc được gọi khi AUTO-PICKUP (trigger) hoặc phím tắt, truyền rõ NetworkObjectId.
-    /// </summary>
+    // ServerRpc được gọi khi AUTO-PICKUP (trigger) hoặc phím tắt, truyền rõ NetworkObjectId.
     [ServerRpc(RequireOwnership = false)]
     private void TryPickupItemServerRpc(ulong playerNetworkObjectId)
     {
@@ -332,7 +322,7 @@ public class ItemPickup : NetworkBehaviour
         ExecutePickup(playerObject);
     }
 
-    /// <summary>Lõi xử lý pickup từ server — dùng chung cho cả click và auto-pickup.</summary>
+    // Lõi xử lý pickup từ server — dùng chung cho cả click và auto-pickup.
     private void ExecutePickup(NetworkObject playerObject)
     {
         int itemIdToPickup = networkItemId.Value > 0 ? networkItemId.Value
@@ -364,9 +354,7 @@ public class ItemPickup : NetworkBehaviour
         TracePickup(itemIdToPickup, $"PickupSuccess item={itemIdToPickup} qty={networkQuantity.Value} playerNetObj={playerObject.NetworkObjectId}");
     }
 
-    /// <summary>
-    /// ClientRpc: Despawn item và play effect
-    /// </summary>
+    // ClientRpc: Despawn item và play effect
     [ClientRpc]
     private void DespawnItemClientRpc()
     {
@@ -376,10 +364,8 @@ public class ItemPickup : NetworkBehaviour
             animator.SetTrigger("Pickup");
     }
 
-    /// <summary>
-    /// Despawn item — chỉ server mới được Despawn NetworkObject.
-    /// Client không làm gì — server Despawn sẽ tự động Destroy trên tất cả client.
-    /// </summary>
+    // Despawn item — chỉ server mới được Despawn NetworkObject.
+    // Client không làm gì — server Despawn sẽ tự động Destroy trên tất cả client.
     private void DespawnItem()
     {
         if (IsServer && NetworkObject != null && NetworkObject.IsSpawned)
@@ -389,9 +375,7 @@ public class ItemPickup : NetworkBehaviour
         // Client: KHÔNG gọi Destroy() — NGO tự xử lý khi server Despawn
     }
 
-    /// <summary>
-    /// Thử nhặt item (local method)
-    /// </summary>
+    // Thử nhặt item (local method)
     private void TryPickupItem(GameObject player)
     {
         int itemIdToPickup = networkItemId.Value > 0 ? networkItemId.Value : (itemData != null ? itemData.itemID : 0);
@@ -404,24 +388,20 @@ public class ItemPickup : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Cho phép player nhấn chuột vào item trên mặt đất để nhặt.
-    /// Yêu cầu: Collider2D trên GameObject này (non-trigger để OnMouseDown hoạt động).
-    /// </summary>
+    // Cho phép player nhấn chuột vào item trên mặt đất để nhặt.
+    // Yêu cầu: Collider2D trên GameObject này (non-trigger để OnMouseDown hoạt động).
     private void OnMouseDown()
     {
         // Handled via Update() + Physics2D.OverlapPoint để bypass EventSystem UI blocking
     }
 
-    /// <summary>
-    /// Public API để player gọi nhặt item (dùng cho phím tắt P)
-    /// </summary>
+    // Public API để player gọi nhặt item (dùng cho phím tắt P)
     public void RequestPickup(ulong playerNetworkObjectId)
     {
         TryPickupItemServerRpc(playerNetworkObjectId);
     }
 
-    /// <summary>Hiển thị mũi tên chỉ chọn item, tự ẩn sau 3 giây</summary>
+    // Hiển thị mũi tên chỉ chọn item, tự ẩn sau 3 giây
     private void ShowSelectionIndicator()
     {
         if (selectionIndicator == null) return;
@@ -436,9 +416,7 @@ public class ItemPickup : NetworkBehaviour
             selectionIndicator.SetActive(false);
     }
 
-    /// <summary>
-    /// Set item data và quantity (dùng khi spawn item drop với ItemData ScriptableObject)
-    /// </summary>
+    // Set item data và quantity (dùng khi spawn item drop với ItemData ScriptableObject)
     public void SetItemData(ItemData data, int qty)
     {
         itemData = data;
@@ -458,11 +436,9 @@ public class ItemPickup : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Set item bằng ID trực tiếp (không cần ItemData ScriptableObject).
-    /// Sử dụng cho enemy drop sử dụng item_id từ DB.
-    /// ItemPickup sẽ tự resolve ItemData qua ItemManager nếu có (cho hiển thị sprite).
-    /// </summary>
+    // Set item bằng ID trực tiếp (không cần ItemData ScriptableObject).
+    // Sử dụng cho enemy drop sử dụng item_id từ DB.
+    // ItemPickup sẽ tự resolve ItemData qua ItemManager nếu có (cho hiển thị sprite).
     public void SetItemId(int itemId, int qty)
     {
         quantity = qty;

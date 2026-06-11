@@ -8,18 +8,14 @@ using UnityEngine.Events;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
-/// <summary>
-/// WaveDungeonRuntime — Quản lý logic wave (vòng) cho phó bản.
-///
-/// MULTI-ZONE ISOLATION (mỗi người chơi trong zone riêng của họ):
-///   BeginEncounter(dungeonId, mapId, zoneId) tạo ZoneEncounterState độc lập cho mỗi zone.
-///   Các zone KHÔNG ảnh hưởng nhau — timer, quái, boss chạy song song.
-///   Người chơi khác nhau ở zone khác nhau: không nhìn thấy nhau, không chia sẻ quái.
-///
-/// SESSION RECONNECT:
-///   WaveSessionManager.UpdateSessionStateByZone được gọi mỗi giây.
-///   Khi reconnect, ZoneTransitionController phục hồi người chơi về zone cũ.
-/// </summary>
+// WaveDungeonRuntime — Quản lý logic wave (vòng) cho phó bản.
+// MULTI-ZONE ISOLATION (mỗi người chơi trong zone riêng của họ):
+// BeginEncounter(dungeonId, mapId, zoneId) tạo ZoneEncounterState độc lập cho mỗi zone.
+// Các zone KHÔNG ảnh hưởng nhau — timer, quái, boss chạy song song.
+// Người chơi khác nhau ở zone khác nhau: không nhìn thấy nhau, không chia sẻ quái.
+// SESSION RECONNECT:
+// WaveSessionManager.UpdateSessionStateByZone được gọi mỗi giây.
+// Khi reconnect, ZoneTransitionController phục hồi người chơi về zone cũ.
 public class WaveDungeonRuntime : BaseDungeonInstance
 {
     [Header("Config (fallback nếu API không có)")]
@@ -41,7 +37,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
     public int RemainingSeconds => _remainingSeconds.Value;
     public int MaxRounds        => _maxRounds.Value > 0 ? _maxRounds.Value : (config != null ? config.maxRounds : 1);
 
-    // ─── Per-zone encounter state ─────────────────────────────────────────────
+    // Per-zone encounter state
     // Mỗi zone (ZoneRoom.ZoneId) có một ZoneEncounterState độc lập.
     // BeginEncounter tạo entry mới; StopZoneEncounter dọn dẹp khi zone kết thúc.
     private readonly Dictionary<int, ZoneEncounterState> _activeZones = new();
@@ -157,14 +153,10 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         Debug.Log("[WaveDungeonRuntime] OnNetworkDespawn — tất cả zone encounter đã dừng.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Public API (gọi từ ZoneTransitionController)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Khởi động encounter cho zone chỉ định.
-    /// KHÔNG reset zone khác đang chạy — mỗi zone hoạt động hoàn toàn độc lập.
-    /// </summary>
+    // Khởi động encounter cho zone chỉ định.
+    // KHÔNG reset zone khác đang chạy — mỗi zone hoạt động hoàn toàn độc lập.
     public void BeginEncounter(int dungeonId, int mapId, int zoneId)
     {
         if (!IsServer || dungeonId <= 0 || mapId < 0)
@@ -206,7 +198,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         state.InitCoroutine = StartCoroutine(InitializeZoneConfigCoroutine(state));
     }
 
-    /// <summary>Dừng và dọn dẹp một zone encounter (KHÔNG ảnh hưởng zone khác).</summary>
+    // Dừng và dọn dẹp một zone encounter (KHÔNG ảnh hưởng zone khác).
     private void StopZoneEncounter(ZoneEncounterState state)
     {
         if (state == null) return;
@@ -232,9 +224,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         else if (networkObject.gameObject != null) Destroy(networkObject.gameObject);
     }
 
-    // -------------------------------------------------------
     //  Wave HUD — tự tạo canvas nếu thiếu ref
-    // -------------------------------------------------------
 
     private void EnsureWaveHUD()
     {
@@ -442,9 +432,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         return label.rectTransform.anchoredPosition.y;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Config initialisation (per-zone)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator InitializeZoneConfigCoroutine(ZoneEncounterState state)
     {
@@ -577,9 +565,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
             Debug.Log($"[WaveDungeonRuntime][DIAG] bossSpawn enemyId={cfg.bossSpawn.enemyId} pos={cfg.bossSpawn.spawnPosition} hp={cfg.bossSpawn.maxHp}");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Wave round logic (per-zone)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void StartRoundForZone(ZoneEncounterState state, int round)
     {
@@ -650,9 +636,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Enemy registration and death handling (per-zone, using closure)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void RegisterEnemyForZone(ZoneEncounterState state, NetworkObject networkObject, bool isBoss)
     {
@@ -767,9 +751,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         Debug.Log($"[WaveDungeonRuntime] FinalizeZone zone={state.ZoneId} — activeZones còn={_activeZones.Count}");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Enemy spawning (set zone context before calling BaseDungeonInstance)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private NetworkObject SpawnEnemyForZone(ZoneEncounterState state, DungeonEnemyUnitConfig enemyConfig, float scale, bool isBoss)
     {
@@ -781,9 +763,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         return no;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Reward (per-zone only)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator GrantRewardsToZone(ZoneEncounterState state, IReadOnlyList<DungeonRewardItemConfig> rewards)
     {
@@ -818,9 +798,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // State sync & zone-targeted notifications
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void SyncWaveStateToZone(ZoneEncounterState state, bool broadcastToZone)
     {
@@ -865,9 +843,7 @@ public class WaveDungeonRuntime : BaseDungeonInstance
         yield return new WaitForSeconds(secs);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Static helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private static DungeonEnemyUnitConfig ScaleReward(DungeonEnemyUnitConfig original, float rewardScale)
     {

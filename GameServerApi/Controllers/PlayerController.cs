@@ -33,6 +33,19 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
+        private static bool NormalizeUltimateState(InfoChar info)
+        {
+            if (info == null || !info.IsHybrid || info.IsUltimate)
+                return false;
+
+            var ultCfg = GeneUltimateService.GetConfig(info.ElementType);
+            if (info.UltimateGeneExp < ultCfg.UltimateExpRequired)
+                return false;
+
+            GeneUltimateService.Activate(info, ultCfg);
+            return true;
+        }
+
         private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
         {
             playerId = requestedPlayerId;
@@ -51,11 +64,9 @@ namespace GameServerApi.Controllers
             return null;
         }
 
-        /// <summary>
-        /// POST /api/player/create
-        /// Body: { "element_type": "Fire", "character_name": "TenNhanVat" }
-        /// Gender được tự động suy ra từ element_type.
-        /// </summary>
+        // POST /api/player/create
+        // Body: { "element_type": "Fire", "character_name": "TenNhanVat" }
+        // Gender được tự động suy ra từ element_type.
         [HttpPost("create")]
         public async Task<IActionResult> CreatePlayer([FromBody] JsonElement body)
         {
@@ -210,11 +221,9 @@ namespace GameServerApi.Controllers
             return Ok(createResponse);
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/data
-        /// Trả về dữ liệu player theo format đã dùng trong Unity.
-        /// Bước đầu trả dữ liệu đơn giản dựa trên PlayerData.
-        /// </summary>
+        // GET /api/player/{playerId}/data
+        // Trả về dữ liệu player theo format đã dùng trong Unity.
+        // Bước đầu trả dữ liệu đơn giản dựa trên PlayerData.
         [HttpGet("{playerId}/data")]
         public async Task<IActionResult> GetPlayerData(int playerId)
         {
@@ -232,7 +241,8 @@ namespace GameServerApi.Controllers
 
             // Xử lý level-up nếu có đủ EXP
             var (leveledUp, expAtCurrentLevel, expForNextLevel) = await ProcessLevelUpAsync(info);
-            if (leveledUp)
+            bool ultimateNormalized = NormalizeUltimateState(info);
+            if (leveledUp || ultimateNormalized)
             {
                 player.SetInfoChar(info);
                 player.UpdatedAt = DateTime.UtcNow;
@@ -254,12 +264,11 @@ namespace GameServerApi.Controllers
             finalStats.Hp = Math.Min(finalStats.Hp, finalStats.MaxHp);
             finalStats.Mp = Math.Min(finalStats.Mp, finalStats.MaxMp);
 
-            // ─── DEBUG LOG ────────────────────────────────────────────────────
+            // DEBUG LOG
             _logger.LogDebug("[PlayerCtrl] GetPlayerData playerId={PlayerId} level={Level} exp={Exp} expNextLv={ExpNextLv}",
                 playerId, info.Level, info.Experience, expForNextLevel);
             _logger.LogDebug("[PlayerCtrl] InfoChar attack={Attack} maxHp={MaxHp} maxMp={MaxMp} defense={Defense}",
                 info.Attack, info.MaxHp, info.MaxMp, info.Defense);
-            // ──────────────────────────────────────────────────────────────────────────
 
             var response = new
             {
@@ -308,7 +317,7 @@ namespace GameServerApi.Controllers
                 character_name = player.CharacterName,
                 bag_slots = info.BagSlots,
                 bag_equipped_items = BuildBagEquippedItemsResponse(info.BagEquippedItems),
-                // ── Hybrid Gene fields ──────────────────────────────
+                // Hybrid Gene fields
                 secondary_element      = info.SecondaryElement,
                 secondary_gene_tier    = info.SecondaryGeneTier,
                 secondary_gene_exp     = info.SecondaryGeneExp,
@@ -319,7 +328,7 @@ namespace GameServerApi.Controllers
                 hybrid_immune_elements = info.HybridImmuneElements,
                 hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
                 hybrid_prefab_path     = info.HybridPrefabPath,
-                // ── Gene Tối Thượng fields ──────────────────────────
+                // Gene Tối Thượng fields
                 is_ultimate            = info.IsUltimate,
                 ultimate_gene_exp      = info.UltimateGeneExp,
                 ultimate_aura_path     = info.UltimateAuraPath
@@ -328,11 +337,9 @@ namespace GameServerApi.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// PUT /api/player/{playerId}/position
-        /// Update position của player (khi out game hoặc disconnect).
-        /// Chấp nhận cả player JWT (Bearer) và game server X-Zone-Api-Key.
-        /// </summary>
+        // PUT /api/player/{playerId}/position
+        // Update position của player (khi out game hoặc disconnect).
+        // Chấp nhận cả player JWT (Bearer) và game server X-Zone-Api-Key.
         [HttpPut("{playerId}/position")]
         public async Task<IActionResult> UpdatePlayerPosition(int playerId, [FromBody] JsonElement body)
         {
@@ -377,7 +384,10 @@ namespace GameServerApi.Controllers
                     zoneId = body.TryGetProperty("zone_id", out var zp) ? zp.GetInt32() : StartZoneId;
                 }
 
-                var player = await _db.PlayerData.FindAsync(targetPlayerId);
+                int geneSlot = ResolveRequestedGeneSlot(body);
+                IPlayerDataRecord? player = geneSlot == 2
+                    ? await _db.Player2Data.FindAsync(targetPlayerId)
+                    : await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                 {
                     return NotFound("Player không tồn tại.");
@@ -408,10 +418,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// PUT /api/player/{playerId}/data
-        /// Update player data (batch update) - dùng cho batch save từ PlayerDataSaveService
-        /// </summary>
+        // PUT /api/player/{playerId}/data
+        // Update player data (batch update) - dùng cho batch save từ PlayerDataSaveService
         [HttpPut("{playerId}/data")]
         public async Task<IActionResult> UpdatePlayerData(int playerId, [FromBody] JsonElement body)
         {
@@ -421,7 +429,10 @@ namespace GameServerApi.Controllers
                 if (userIdClaim == null) return Unauthorized();
                 int targetPlayerId = int.Parse(userIdClaim.Value);
 
-                var player = await _db.PlayerData.FindAsync(targetPlayerId);
+                int geneSlot = ResolveRequestedGeneSlot(body);
+                IPlayerDataRecord? player = geneSlot == 2
+                    ? await _db.Player2Data.FindAsync(targetPlayerId)
+                    : await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                 {
                     return NotFound("Player không tồn tại.");
@@ -524,11 +535,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/inventory/add
-        /// Body: { "items": [{ "itemTemplateId": 1, "itemCode": "ITEM_ICON_121", "iconId": "client_icon_121", "quantity": 5 }] }
-        /// Thêm item vào inventory của player
-        /// </summary>
+        // POST /api/player/{playerId}/inventory/add
+        // Body: { "items": [{ "itemTemplateId": 1, "itemCode": "ITEM_ICON_121", "iconId": "client_icon_121", "quantity": 5 }] }
+        // Thêm item vào inventory của player
         [HttpPost("{playerId}/inventory/add")]
         public async Task<IActionResult> AddItemsToInventory(int playerId, [FromBody] JsonElement body)
         {
@@ -792,11 +801,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/inventory/remove
-        /// Body: { "slotIndex": 0, "quantity": 99 }
-        /// Removes quantity from one inventory slot. If quantity is omitted or exceeds the stack, the slot is removed.
-        /// </summary>
+        // POST /api/player/{playerId}/inventory/remove
+        // Body: { "slotIndex": 0, "quantity": 99 }
+        // Removes quantity from one inventory slot. If quantity is omitted or exceeds the stack, the slot is removed.
         [HttpPost("{playerId}/inventory/remove")]
         public async Task<IActionResult> RemoveInventoryItem(int playerId, [FromBody] JsonElement body)
         {
@@ -870,10 +877,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/inventory/clear
-        /// Xóa toàn bộ inventory và equipment của player (dùng cho debug/reset)
-        /// </summary>
+        // POST /api/player/{playerId}/inventory/clear
+        // Xóa toàn bộ inventory và equipment của player (dùng cho debug/reset)
         [HttpPost("{playerId}/inventory/clear")]
         public async Task<IActionResult> ClearInventory(int playerId)
         {
@@ -899,10 +904,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/inventory/sort
-        /// Sắp xếp lại inventory: gom các item về phía trước, loại bỏ ô trống giữa.
-        /// </summary>
+        // POST /api/player/{playerId}/inventory/sort
+        // Sắp xếp lại inventory: gom các item về phía trước, loại bỏ ô trống giữa.
         [HttpPost("{playerId}/inventory/sort")]
         public async Task<IActionResult> SortInventory(int playerId)
         {
@@ -962,13 +965,11 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/inventory/use-item
-        /// Body: { "slotIndex": 0 }
-        /// Sử dụng item trong túi đồ:
-        ///   - type 30 (túi đồ mở rộng): tăng bag_slots thêm 5, xóa 1 item.
-        ///   - type 21-29 (tiêu thụ): giảm số lượng (effects xử lý client-side hoặc extend sau).
-        /// </summary>
+        // POST /api/player/{playerId}/inventory/use-item
+        // Body: { "slotIndex": 0 }
+        // Sử dụng item trong túi đồ:
+        // - type 30 (túi đồ mở rộng): tăng bag_slots thêm 5, xóa 1 item.
+        // - type 21-29 (tiêu thụ): giảm số lượng (effects xử lý client-side hoặc extend sau).
         [HttpPost("{playerId}/inventory/use-item")]
         public async Task<IActionResult> UseInventoryItem(int playerId, [FromBody] JsonElement body)
         {
@@ -984,8 +985,11 @@ namespace GameServerApi.Controllers
                     return BadRequest("Thiếu field 'slotIndex'.");
 
                 int slotIndex = slotProp.GetInt32();
+                int geneSlot = ResolveRequestedGeneSlot(body);
 
-                var player = await _db.PlayerData.FindAsync(targetPlayerId);
+                IPlayerDataRecord? player = geneSlot == 2
+                    ? await _db.Player2Data.FindAsync(targetPlayerId)
+                    : await _db.PlayerData.FindAsync(targetPlayerId);
                 if (player == null)
                     return NotFound($"Player với ID {targetPlayerId} không tồn tại.");
 
@@ -1328,12 +1332,10 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/bag/unequip
-        /// Body: { "quickSlotIndex": 0 }
-        /// Tháo item mở rộng túi đang gắn ở quick slot, trả lại vào inventory
-        /// và giảm số ô túi tương ứng.
-        /// </summary>
+        // POST /api/player/{playerId}/bag/unequip
+        // Body: { "quickSlotIndex": 0 }
+        // Tháo item mở rộng túi đang gắn ở quick slot, trả lại vào inventory
+        // và giảm số ô túi tương ứng.
         [HttpPost("{playerId}/bag/unequip")]
         public async Task<IActionResult> UnequipBagItem(int playerId, [FromBody] JsonElement body)
         {
@@ -1396,11 +1398,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/equipment/equip
-        /// Body: { "inventorySlotIndex": 0 }
-        /// Trang bị item từ inventory vào equipment slot tương ứng
-        /// </summary>
+        // POST /api/player/{playerId}/equipment/equip
+        // Body: { "inventorySlotIndex": 0 }
+        // Trang bị item từ inventory vào equipment slot tương ứng
         [HttpPost("{playerId}/equipment/equip")]
         public async Task<IActionResult> EquipItem(int playerId, [FromBody] JsonElement body)
         {
@@ -1621,11 +1621,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/equipment/unequip
-        /// Body: { "equipmentSlot": "weapon" }
-        /// Tháo trang bị từ equipment slot và đưa lại vào inventory
-        /// </summary>
+        // POST /api/player/{playerId}/equipment/unequip
+        // Body: { "equipmentSlot": "weapon" }
+        // Tháo trang bị từ equipment slot và đưa lại vào inventory
         [HttpPost("{playerId}/equipment/unequip")]
         public async Task<IActionResult> UnequipItem(int playerId, [FromBody] JsonElement body)
         {
@@ -1784,17 +1782,17 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/active-buffs
-        /// Lấy danh sách buff đang active của player.
-        /// </summary>
+        // GET /api/player/{playerId}/active-buffs
+        // Lấy danh sách buff đang active của player.
         [HttpGet("{playerId}/active-buffs")]
-        public async Task<IActionResult> GetActiveBuffs(int playerId)
+        public async Task<IActionResult> GetActiveBuffs(int playerId, [FromQuery] int geneSlot = 1)
         {
             if (ResolveAuthorizedPlayerId(playerId, out playerId) is { } authError)
                 return authError;
 
-            var player = await _db.PlayerData.FindAsync(playerId);
+            IPlayerDataRecord? player = geneSlot == 2
+                ? await _db.Player2Data.FindAsync(playerId)
+                : await _db.PlayerData.FindAsync(playerId);
             if (player == null) return NotFound("Player không tồn tại.");
 
             var active_buffs = player.GetActiveBuffs()
@@ -1848,10 +1846,8 @@ namespace GameServerApi.Controllers
             };
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/equipment
-        /// Lấy thông tin trang bị hiện tại của player
-        /// </summary>
+        // GET /api/player/{playerId}/equipment
+        // Lấy thông tin trang bị hiện tại của player
         [HttpGet("{playerId}/equipment")]
         public async Task<IActionResult> GetEquipment(int playerId)
         {
@@ -1881,17 +1877,25 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ──────────────────────────────────────────────────────────────
-        //  HELPERS
-        // ──────────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-        /// <summary>
-        /// <summary>
-        /// Xử lý level-up: tự động tăng level khi exp đủ mốc, cộng base stats + thưởng điểm.
-        /// </summary>
-        /// <returns>(changed, expAtCurrentLevel, expForNextLevel) — 
-        ///   expAtCurrentLevel: cumulative EXP ngưỡng của level hiện tại;
-        ///   expForNextLevel:   cumulative EXP ngưỡng của level tiếp theo (0 nếu đã max).</returns>
+        // Xử lý level-up: tự động tăng level khi exp đủ mốc, cộng base stats + thưởng điểm.
+        // Trả về: (changed, expAtCurrentLevel, expForNextLevel) —
+        // expAtCurrentLevel: cumulative EXP ngưỡng của level hiện tại;
+        // expForNextLevel:   cumulative EXP ngưỡng của level tiếp theo (0 nếu đã max).
+        private static int ResolveRequestedGeneSlot(JsonElement body)
+        {
+            if (body.TryGetProperty("geneSlot", out var geneSlotProp)
+                && geneSlotProp.ValueKind == JsonValueKind.Number
+                && geneSlotProp.TryGetInt32(out int geneSlot)
+                && geneSlot == 2)
+            {
+                return 2;
+            }
+
+            return 1;
+        }
+
         private async Task<(bool changed, int expAtCurrentLevel, int expForNextLevel)> ProcessLevelUpAsync(InfoChar info)
         {
             bool changed = false;
@@ -1939,9 +1943,8 @@ namespace GameServerApi.Controllers
             return (changed, expAtCurrentLevel, expForNextLevel);
         }
 
-        /// strOptions mặc định ở bậc +0 cho item template.
-        /// Format: "optId,value;..." (value = strOption[0] của option template)
-        /// </summary>
+        // strOptions mặc định ở bậc +0 cho item template.
+        // Format: "optId,value;..." (value = strOption[0] của option template)
         private static string GetDefaultStrOptions(int itemTemplateId) =>
             UpgradeController.DefaultStrOptions.TryGetValue(itemTemplateId, out var val) ? val : "";
 
@@ -2531,10 +2534,8 @@ namespace GameServerApi.Controllers
             };
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/skills
-        /// Trả về tất cả skills từ skill_template kèm level hiện tại của player.
-        /// </summary>
+        // GET /api/player/{playerId}/skills
+        // Trả về tất cả skills từ skill_template kèm level hiện tại của player.
         [HttpGet("{playerId}/skills")]
         public async Task<IActionResult> GetPlayerSkills(int playerId)
         {
@@ -2737,11 +2738,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/skills/upgrade
-        /// Body: { "skill_id": 1 }
-        /// Nâng cấp skill lên 1 level (trừ skill_points).
-        /// </summary>
+        // POST /api/player/{playerId}/skills/upgrade
+        // Body: { "skill_id": 1 }
+        // Nâng cấp skill lên 1 level (trừ skill_points).
         [HttpPost("{playerId}/skills/upgrade")]
         public async Task<IActionResult> UpgradeSkill(int playerId, [FromBody] JsonElement body)
         {
@@ -2907,10 +2906,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/skills2/upgrade
-        /// Upgrade skill for active gene slot 2. Same rules as /skills/upgrade, but writes player2_data.
-        /// </summary>
+        // POST /api/player/{playerId}/skills2/upgrade
+        // Upgrade skill for active gene slot 2. Same rules as /skills/upgrade, but writes player2_data.
         [HttpPost("{playerId}/skills2/upgrade")]
         public async Task<IActionResult> UpgradePlayer2Skill(int playerId, [FromBody] JsonElement body)
         {
@@ -3086,10 +3083,8 @@ namespace GameServerApi.Controllers
             ["gene"]    = ("Gene",        1f)
         };
 
-        /// <summary>
-        /// GET /api/player/{playerId}/potential
-        /// Trả về toàn bộ chỉ số tiềm năng và điểm tiềm năng còn lại.
-        /// </summary>
+        // GET /api/player/{playerId}/potential
+        // Trả về toàn bộ chỉ số tiềm năng và điểm tiềm năng còn lại.
         [HttpGet("{playerId}/potential")]
         public async Task<IActionResult> GetPlayerPotential(int playerId)
         {
@@ -3135,11 +3130,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/potential/upgrade
-        /// Body: { "stat_name": "attack" }
-        /// Đầu tư 1 điểm tiềm năng vào chỉ số được chọn.
-        /// </summary>
+        // POST /api/player/{playerId}/potential/upgrade
+        // Body: { "stat_name": "attack" }
+        // Đầu tư 1 điểm tiềm năng vào chỉ số được chọn.
         [HttpPost("{playerId}/potential/upgrade")]
         public async Task<IActionResult> UpgradePotential(int playerId, [FromBody] JsonElement body)
         {
@@ -3210,11 +3203,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/potential/allocate
-        /// Body: { "allocations": [ {"stat_name":"attack","points":3}, {"stat_name":"hp","points":2} ] }
-        /// Phân bổ nhiều điểm tiềm năng cùng lúc. Server validate đủ điểm trước khi ghi DB.
-        /// </summary>
+        // POST /api/player/{playerId}/potential/allocate
+        // Body: { "allocations": [ {"stat_name":"attack","points":3}, {"stat_name":"hp","points":2} ] }
+        // Phân bổ nhiều điểm tiềm năng cùng lúc. Server validate đủ điểm trước khi ghi DB.
         [HttpPost("{playerId}/potential/allocate")]
         public async Task<IActionResult> AllocatePotential(int playerId, [FromBody] JsonElement body)
         {
@@ -3309,13 +3300,11 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/player/{playerId}/gain-exp
-        /// Body: { "amount": 50 }
-        /// Cộng thêm EXP vào player (delta, không set tuyệt đối).
-        /// Tự động xử lý level-up nếu đủ EXP.
-        /// Được gọi bởi server khi player kill quái.
-        /// </summary>
+        // POST /api/player/{playerId}/gain-exp
+        // Body: { "amount": 50 }
+        // Cộng thêm EXP vào player (delta, không set tuyệt đối).
+        // Tự động xử lý level-up nếu đủ EXP.
+        // Được gọi bởi server khi player kill quái.
         [HttpPost("{playerId}/gain-exp")]
         public async Task<IActionResult> GainExp(int playerId, [FromBody] JsonElement body)
         {
@@ -3375,11 +3364,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/player/by-user/{userId}
-        /// Trả về thông tin tóm tắt nhân vật của một người dùng khác (dùng cho Friend Profile).
-        /// Chỉ trả về thông tin công khai: tên, level, nguyên tố, trang bị, kỹ năng, tiềm năng.
-        /// </summary>
+        // GET /api/player/by-user/{userId}
+        // Trả về thông tin tóm tắt nhân vật của một người dùng khác (dùng cho Friend Profile).
+        // Chỉ trả về thông tin công khai: tên, level, nguyên tố, trang bị, kỹ năng, tiềm năng.
         [HttpGet("by-user/{userId}")]
         public async Task<IActionResult> GetPlayerByUserId(int userId)
         {
@@ -3566,15 +3553,11 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ═══════════════════════════════════════════════════════════════════
         // GENE SLOT 2 ENDPOINTS
-        // ═══════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// GET /api/player/{playerId}/gene-slots
-        /// Trả về thông tin tóm tắt của cả 2 slot gene để hiển thị trên màn SelectGene.
-        /// Slot 1 luôn tồn tại; slot 2 tồn tại khi secondary_element đã được mở khoá.
-        /// </summary>
+        // GET /api/player/{playerId}/gene-slots
+        // Trả về thông tin tóm tắt của cả 2 slot gene để hiển thị trên màn SelectGene.
+        // Slot 1 luôn tồn tại; slot 2 tồn tại khi secondary_element đã được mở khoá.
         [HttpGet("{playerId}/gene-slots")]
         public async Task<IActionResult> GetGeneSlots(int playerId)
         {
@@ -3656,11 +3639,9 @@ namespace GameServerApi.Controllers
             return Ok(new { slot1, slot2, gene2_unlocked = gene2Unlocked });
         }
 
-        /// <summary>
-        /// POST /api/player/create2
-        /// Tạo nhân vật hệ gene thứ 2. Chỉ được phép khi secondary_element đã mở.
-        /// Body: { "character_name": "...", "element_type": "..." }
-        /// </summary>
+        // POST /api/player/create2
+        // Tạo nhân vật hệ gene thứ 2. Chỉ được phép khi secondary_element đã mở.
+        // Body: { "character_name": "...", "element_type": "..." }
         [HttpPost("create2")]
         public async Task<IActionResult> CreatePlayer2([FromBody] JsonElement body)
         {
@@ -3750,10 +3731,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/data2
-        /// Trả về full dữ liệu nhân vật hệ gene 2 (cùng format với /data).
-        /// </summary>
+        // GET /api/player/{playerId}/data2
+        // Trả về full dữ liệu nhân vật hệ gene 2 (cùng format với /data).
         [HttpGet("{playerId}/data2")]
         public async Task<IActionResult> GetPlayer2Data(int playerId)
         {
@@ -3826,7 +3805,7 @@ namespace GameServerApi.Controllers
                 hybrid_immune_elements = info.HybridImmuneElements,
                 hybrid_atk_bonus_pct   = info.HybridAtkBonusPct,
                 hybrid_prefab_path     = info.HybridPrefabPath,
-                // ── Gene Tối Thượng fields ──────────────────────────
+                // Gene Tối Thượng fields
                 is_ultimate            = info.IsUltimate,
                 ultimate_gene_exp      = info.UltimateGeneExp,
                 ultimate_aura_path     = info.UltimateAuraPath,
@@ -3837,10 +3816,8 @@ namespace GameServerApi.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// GET /api/player/{playerId}/skills2
-        /// Trả về skills của nhân vật hệ gene 2 (cùng format với /skills nhưng đọc từ player2_data).
-        /// </summary>
+        // GET /api/player/{playerId}/skills2
+        // Trả về skills của nhân vật hệ gene 2 (cùng format với /skills nhưng đọc từ player2_data).
         [HttpGet("{playerId}/skills2")]
         public async Task<IActionResult> GetPlayer2Skills(int playerId)
         {
@@ -4016,10 +3993,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// PUT /api/player/{playerId}/data2
-        /// Batch save dữ liệu nhân vật hệ gene 2 (cùng format với PUT /data).
-        /// </summary>
+        // PUT /api/player/{playerId}/data2
+        // Batch save dữ liệu nhân vật hệ gene 2 (cùng format với PUT /data).
         [HttpPut("{playerId}/data2")]
         public async Task<IActionResult> UpdatePlayer2Data(int playerId, [FromBody] JsonElement body)
         {

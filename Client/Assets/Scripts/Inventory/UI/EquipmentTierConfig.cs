@@ -1,9 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject config cho các mức viền + background trang bị.
-/// Tạo: Right-click > Create > Equipment > Tier Config
-/// </summary>
+// ScriptableObject config cho các mức viền + background trang bị.
+// Tạo: Right-click > Create > Equipment > Tier Config
 [CreateAssetMenu(fileName = "EquipmentTierConfig", menuName = "Equipment/Tier Config")]
 public class EquipmentTierConfig : ScriptableObject
 {
@@ -39,10 +37,8 @@ public class EquipmentTierConfig : ScriptableObject
     [Tooltip("VD: 4, 8, 12, 14")]
     public TierEntry[] tiers;
 
-    /// <summary>
-    /// Tìm TierEntry phù hợp cho upgradeLevel.
-    /// Duyệt ngược mảng, trả tier có minLevel <= level.
-    /// </summary>
+    // Tìm TierEntry phù hợp cho upgradeLevel.
+    // Duyệt ngược mảng, trả tier có minLevel <= level.
     public TierEntry GetTier(int upgradeLevel)
     {
         if (tiers == null || tiers.Length == 0) return defaultTier;

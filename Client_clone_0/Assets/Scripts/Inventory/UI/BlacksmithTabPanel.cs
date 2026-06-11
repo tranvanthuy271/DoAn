@@ -3,39 +3,32 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
 
-/// <summary>
-/// BlacksmithTabPanel – Cửa sổ Thợ Rèn với 3 tab:
-///   Tab 0 — Cường Hóa   (UpgradePanel)
-///   Tab 1 — Trang Bị    (EquipmentPanelUI)
-///   Tab 2 — Túi         (InventoryUI)
-///
-/// ══════════════════════════════════════════════════════════
-/// Gọi mở từ NpcMenuUI:
-///   BlacksmithTabPanel.Instance.Open();          // tab Cường Hóa
-///   BlacksmithTabPanel.Instance.Open(1);         // tab Trang Bị
-///
-/// Chuyển tab kèm filter túi (từ UpgradePanel):
-///   SwitchTabToInventoryWithFilter(filterItemType: 21)  // chọn đá
-///   SwitchTabToInventoryWithFilter(filterItemId:   8)   // chọn bùa
-/// ══════════════════════════════════════════════════════════
-/// HIERARCHY GỢI Ý:
-///   Canvas
-///   └─ BlacksmithPanel         [BlacksmithTabPanel.cs + Image bg]
-///      ├─ TabBar               [HorizontalLayoutGroup]
-///      │  ├─ BtnCuongHoa       [Button]  "Cường Hóa"
-///      │  ├─ BtnTrangBi        [Button]  "Trang Bị"
-///      │  └─ BtnTui            [Button]  "Túi"
-///      ├─ BtnClose             [Button]  "X"
-///      ├─ PanelCuongHoa        [UpgradePanel.cs]
-///      ├─ PanelTrangBi         [EquipmentPanelUI.cs + EquipmentSelectionForUpgrade.cs]
-///      └─ PanelTui             [InventoryUI.cs]
-/// ══════════════════════════════════════════════════════════
-/// </summary>
+// BlacksmithTabPanel – Cửa sổ Thợ Rèn với 3 tab:
+// Tab 0 — Cường Hóa   (UpgradePanel)
+// Tab 1 — Trang Bị    (EquipmentPanelUI)
+// Tab 2 — Túi         (InventoryUI)
+// Gọi mở từ NpcMenuUI:
+// BlacksmithTabPanel.Instance.Open();          // tab Cường Hóa
+// BlacksmithTabPanel.Instance.Open(1);         // tab Trang Bị
+// Chuyển tab kèm filter túi (từ UpgradePanel):
+// SwitchTabToInventoryWithFilter(filterItemType: 21)  // chọn đá
+// SwitchTabToInventoryWithFilter(filterItemId:   8)   // chọn bùa
+// HIERARCHY GỢI Ý:
+// Canvas
+// └─ BlacksmithPanel         [BlacksmithTabPanel.cs + Image bg]
+// ├─ TabBar               [HorizontalLayoutGroup]
+// ├─ BtnCuongHoa       [Button]  "Cường Hóa"
+// ├─ BtnTrangBi        [Button]  "Trang Bị"
+// └─ BtnTui            [Button]  "Túi"
+// ├─ BtnClose             [Button]  "X"
+// ├─ PanelCuongHoa        [UpgradePanel.cs]
+// ├─ PanelTrangBi         [EquipmentPanelUI.cs + EquipmentSelectionForUpgrade.cs]
+// └─ PanelTui             [InventoryUI.cs]
 public class BlacksmithTabPanel : MonoBehaviour
 {
     public static BlacksmithTabPanel Instance { get; private set; }
 
-    // ── Tab Buttons ───────────────────────────────────────────────
+    // Tab Buttons
     [Header("Tab Buttons")]
     [SerializeField] private Button    btnCuongHoa;
     [SerializeField] private Button    btnTrangBi;
@@ -48,13 +41,13 @@ public class BlacksmithTabPanel : MonoBehaviour
     [SerializeField] private Color bgTabActive      = new Color(0.25f,0.22f,0.08f,1f);
     [SerializeField] private Color bgTabInactive    = new Color(0.12f,0.12f,0.18f,1f);
 
-    // ── Content Panels ────────────────────────────────────────────
+    // Content Panels
     [Header("Content Panels")]
     [SerializeField] private GameObject panelCuongHoa;   // UpgradePanel root
     [SerializeField] private GameObject panelTrangBi;    // EquipmentSelectionForUpgrade root
     [SerializeField] private GameObject panelTui;        // InventoryUI root
 
-    // ── Navigation (Trang Bị tab mở CharacterPanel) ──────────────
+    // Navigation (Trang Bị tab mở CharacterPanel)
     [Header("Navigation — Trang Bi tab")]
     [Tooltip("Gan InformationPanelController cua scene. De trong se tu tim bang FindObjectOfType.")]
     [SerializeField] private InformationPanelController informationPanel;
@@ -64,14 +57,14 @@ public class BlacksmithTabPanel : MonoBehaviour
     [Tooltip("InventoryUI nằm ngoài BlacksmithPanel (ngang hàng). Sẽ được bật khi tab Túi active và tắt khi chuyển tab hoặc đóng.")]
     [SerializeField] private InventoryUI externalInventoryPanel;
 
-    // ── Runtime ───────────────────────────────────────────────────
+    // Runtime
     private int _activeTab = -1;
 
     // filter mode khi chuyển sang tab Túi
     private int _filterItemId   = 0;   // 0 = không filter
     private int _filterItemType = 0;   // 0 = không filter
 
-    // ── Lifecycle ─────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -100,9 +93,9 @@ public class BlacksmithTabPanel : MonoBehaviour
 
     private void Start() { /* Initialization handled in Awake() */ }
 
-    // ── Public API ────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Mở panel, mặc định tab Cường Hóa (0).</summary>
+    // Mở panel, mặc định tab Cường Hóa (0).
     public void Open(int defaultTab = 0)
     {
         UIPanelManager.CloseOthers(gameObject);
@@ -138,7 +131,7 @@ public class BlacksmithTabPanel : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    /// <summary>Chuyển sang tab Túi với filter đặc biệt (gọi từ UpgradePanel).</summary>
+    // Chuyển sang tab Túi với filter đặc biệt (gọi từ UpgradePanel).
     public void SwitchTabToInventoryWithFilter(int filterItemId = 0, int filterItemType = 0)
     {
         _filterItemId   = filterItemId;
@@ -146,7 +139,7 @@ public class BlacksmithTabPanel : MonoBehaviour
         SwitchTab(2);
     }
 
-    // ── Tab Switching ─────────────────────────────────────────────
+    // Tab Switching
 
     public void SwitchTab(int tabIndex)
     {
@@ -286,12 +279,10 @@ public class BlacksmithTabPanel : MonoBehaviour
         }
     }
 
-    // ── Callback từ InventoryUI ───────────────────────────────────
+    // Callback từ InventoryUI
 
-    /// <summary>
-    /// Gọi khi người chơi nhấn "Nâng cấp" trên item trang bị trong tab Túi (external panel).
-    /// Chuyển item sang UpgradePanel và về tab Cường Hóa.
-    /// </summary>
+    // Gọi khi người chơi nhấn "Nâng cấp" trên item trang bị trong tab Túi (external panel).
+    // Chuyển item sang UpgradePanel và về tab Cường Hóa.
     private void OnBagEquipSelectedForUpgrade(InventorySlotDto slot)
     {
         if (slot == null) return;
@@ -328,7 +319,7 @@ public class BlacksmithTabPanel : MonoBehaviour
         invUI?.ExitItemSelectMode();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void ResolveReferences()
     {

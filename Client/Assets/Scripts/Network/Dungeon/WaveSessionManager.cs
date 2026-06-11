@@ -2,24 +2,19 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// WaveSessionManager — Quản lý session phó bản wave per-player, hoàn toàn in-memory (không DB).
-///
-/// Trách nhiệm:
-///   1. Theo dõi số lượt phó bản wave theo ngày.
-///      - Mỗi user có 1 lượt free/ngày.
-///      - Dùng item 409/410 sẽ cộng thêm lượt cho CHÍNH ngày đó.
-///      - Reset lúc 00:00 theo múi giờ server/VN.
-///
-///   2. Lưu session hoạt động của từng người chơi (keyed by userId):
-///      - Khi người chơi ngắt kết nối (disconnect), session được GIỮ NGUYÊN.
-///      - Timer vẫn chạy trong WaveDungeonRuntime trên server.
-///      - Khi reconnect và gọi lại RequestDungeonEntryServerRpc, server phục hồi họ
-///        về đúng zone cũ (thời gian tiếp tục, không reset).
-///
-/// Gắn vào: ServerBootstrap (cùng GameObject với ZoneTransitionController,
-///           ZonePlayerSessionManager, WaveDungeonRuntime…)
-/// </summary>
+// WaveSessionManager — Quản lý session phó bản wave per-player, hoàn toàn in-memory (không DB).
+// Trách nhiệm:
+// 1. Theo dõi số lượt phó bản wave theo ngày.
+// - Mỗi user có 1 lượt free/ngày.
+// - Dùng item 409/410 sẽ cộng thêm lượt cho CHÍNH ngày đó.
+// - Reset lúc 00:00 theo múi giờ server/VN.
+// 2. Lưu session hoạt động của từng người chơi (keyed by userId):
+// - Khi người chơi ngắt kết nối (disconnect), session được GIỮ NGUYÊN.
+// - Timer vẫn chạy trong WaveDungeonRuntime trên server.
+// - Khi reconnect và gọi lại RequestDungeonEntryServerRpc, server phục hồi họ
+// về đúng zone cũ (thời gian tiếp tục, không reset).
+// Gắn vào: ServerBootstrap (cùng GameObject với ZoneTransitionController,
+// ZonePlayerSessionManager, WaveDungeonRuntime…)
 [DisallowMultipleComponent]
 public class WaveSessionManager : MonoBehaviour
 {
@@ -65,7 +60,7 @@ public class WaveSessionManager : MonoBehaviour
 
     private static readonly TimeZoneInfo DailyResetTimeZone = ResolveDailyResetTimeZone();
 
-    // ─── Internal models ──────────────────────────────────────────────────────
+    // Internal models
 
     private sealed class DailyEntry
     {
@@ -84,10 +79,8 @@ public class WaveSessionManager : MonoBehaviour
         public int      MaxRounds;
         public int      RemainingSeconds;
         public bool     IsActive;
-        /// <summary>
-        /// Reference đến ZoneRoom để server có thể ExecuteTransferToRoom khi reconnect.
-        /// Null = zone đã bị giải phóng → session không còn hợp lệ.
-        /// </summary>
+        // Reference đến ZoneRoom để server có thể ExecuteTransferToRoom khi reconnect.
+        // Null = zone đã bị giải phóng → session không còn hợp lệ.
         public ZoneRoom ZoneRoom;
         public DateTime SessionStartTime;
     }
@@ -97,7 +90,7 @@ public class WaveSessionManager : MonoBehaviour
     // key: userId
     private readonly Dictionary<string, PlayerWaveSession> _activeSessions = new();
 
-    // ─── Unity lifecycle ──────────────────────────────────────────────────────
+    // Unity lifecycle
 
     private void Awake()
     {
@@ -116,9 +109,9 @@ public class WaveSessionManager : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // ─── Daily Limit API ─────────────────────────────────────────────────────
+    // Daily Limit API
 
-    /// <summary>Kiểm tra người chơi còn lượt phó bản wave hôm nay không.</summary>
+    // Kiểm tra người chơi còn lượt phó bản wave hôm nay không.
     public bool CheckDailyLimit(string userId, int dungeonId, int? configuredLimit = null)
     {
         if (string.IsNullOrWhiteSpace(userId))
@@ -139,7 +132,7 @@ public class WaveSessionManager : MonoBehaviour
         return ok;
     }
 
-    /// <summary>Số lượt đã dùng hôm nay.</summary>
+    // Số lượt đã dùng hôm nay.
     public int GetDailyUsedCount(string userId, int dungeonId)
     {
         return string.IsNullOrWhiteSpace(userId) ? 0 : GetOrCreateDailyEntry(userId).UsedCount;
@@ -183,10 +176,8 @@ public class WaveSessionManager : MonoBehaviour
         Debug.Log($"[WaveSessionManager] AddBonusEntries userId={userId} add={amount} bonusToday={entry.BonusCount} usedToday={entry.UsedCount} remaining={GetDailyRemainingCount(userId, 0)}");
     }
 
-    /// <summary>
-    /// Tăng bộ đếm lượt đã dùng lên 1.
-    /// Phải gọi SAU khi xác nhận cho phép vào dungeon và ZoneRoom đã được tạo.
-    /// </summary>
+    // Tăng bộ đếm lượt đã dùng lên 1.
+    // Phải gọi SAU khi xác nhận cho phép vào dungeon và ZoneRoom đã được tạo.
     public void ConsumeEntry(string userId, int dungeonId)
     {
         if (string.IsNullOrEmpty(userId)) return;
@@ -197,16 +188,16 @@ public class WaveSessionManager : MonoBehaviour
         Debug.Log($"[WaveSessionManager] ConsumeEntry userId={userId} dungeonId={dungeonId} usedToday={entry.UsedCount} bonusToday={entry.BonusCount} remaining={GetDailyRemainingCount(userId, dungeonId)}");
     }
 
-    // ─── Session API ─────────────────────────────────────────────────────────
+    // Session API
 
-    /// <summary>Người chơi có session wave đang hoạt động không?</summary>
+    // Người chơi có session wave đang hoạt động không?
     public bool HasActiveSession(string userId)
         => !string.IsNullOrEmpty(userId)
            && _activeSessions.TryGetValue(userId, out var s)
            && s != null
            && s.IsActive;
 
-    /// <summary>Lấy session hiện tại của người chơi. Null nếu không có.</summary>
+    // Lấy session hiện tại của người chơi. Null nếu không có.
     public PlayerWaveSession GetSession(string userId)
     {
         if (string.IsNullOrEmpty(userId)) return null;
@@ -252,10 +243,8 @@ public class WaveSessionManager : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Đăng ký session mới cho người chơi vừa vào dungeon wave.
-    /// Gọi sau khi ZoneRoom đã được tạo thành công.
-    /// </summary>
+    // Đăng ký session mới cho người chơi vừa vào dungeon wave.
+    // Gọi sau khi ZoneRoom đã được tạo thành công.
     public void BeginSession(string userId, int dungeonId, int mapId, int zoneId, ZoneRoom zoneRoom)
     {
         if (string.IsNullOrEmpty(userId))
@@ -281,10 +270,8 @@ public class WaveSessionManager : MonoBehaviour
         Debug.Log($"[WaveSessionManager] BeginSession userId={userId} dungeonId={dungeonId} mapId={mapId} zoneId={zoneId} room={(zoneRoom != null ? zoneRoom.ZoneId.ToString() : "null")}");
     }
 
-    /// <summary>
-    /// Cập nhật trạng thái wave (round, timer) cho tất cả session thuộc zoneId.
-    /// Gọi từ WaveDungeonRuntime mỗi giây / mỗi khi round thay đổi.
-    /// </summary>
+    // Cập nhật trạng thái wave (round, timer) cho tất cả session thuộc zoneId.
+    // Gọi từ WaveDungeonRuntime mỗi giây / mỗi khi round thay đổi.
     public void UpdateSessionStateByZone(int zoneId, int currentRound, int maxRounds, int remainingSeconds)
     {
         foreach (var kv in _activeSessions)
@@ -299,14 +286,12 @@ public class WaveSessionManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Khi người chơi ngắt kết nối — session được GIỮ NGUYÊN.
-    /// Timer vẫn chạy ở WaveDungeonRuntime trên server.
-    /// Khi reconnect, client gọi RequestDungeonEntryServerRpc → server phục hồi họ về zone cũ.
-    /// </summary>
+    // Khi người chơi ngắt kết nối — session được GIỮ NGUYÊN.
+    // Timer vẫn chạy ở WaveDungeonRuntime trên server.
+    // Khi reconnect, client gọi RequestDungeonEntryServerRpc → server phục hồi họ về zone cũ.
     public void OnPlayerDisconnect(string userId)
     {
-        // ── [RECONNECT-DEBUG] Bước 2: log chi tiết trước khi preserve ────────
+        // [RECONNECT-DEBUG] Bước 2: log chi tiết trước khi preserve
         PlayerWaveSession dbgSession = null;
         bool found   = !string.IsNullOrEmpty(userId) && _activeSessions.TryGetValue(userId, out dbgSession);
         bool active  = found && dbgSession != null && dbgSession.IsActive;
@@ -316,7 +301,6 @@ public class WaveSessionManager : MonoBehaviour
                   $"ZoneRoom.IsCustom={(found && dbgSession?.ZoneRoom != null ? dbgSession.ZoneRoom.IsCustom.ToString() : "n/a")} " +
                   $"mapId={(found ? dbgSession?.MapId.ToString() : "n/a")} zoneId={(found ? dbgSession?.ZoneId.ToString() : "n/a")} " +
                   $"ZoneRoomRegistry.Instance={(ZoneRoomRegistry.Instance != null ? "OK" : "NULL!")}");
-        // ──────────────────────────────────────────────────────────────────────
 
         if (HasActiveSession(userId))
         {
@@ -351,9 +335,7 @@ public class WaveSessionManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Kết thúc session của người chơi (exit bình thường hoặc encounter kết thúc).
-    /// </summary>
+    // Kết thúc session của người chơi (exit bình thường hoặc encounter kết thúc).
     public void EndSession(string userId)
     {
         if (string.IsNullOrEmpty(userId)) return;
@@ -365,9 +347,7 @@ public class WaveSessionManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Kết thúc tất cả session thuộc zone (gọi khi encounter kết thúc — boss đã diệt hoặc hết giờ).
-    /// </summary>
+    // Kết thúc tất cả session thuộc zone (gọi khi encounter kết thúc — boss đã diệt hoặc hết giờ).
     public void EndSessionsByZone(int zoneId)
     {
         bool releasedRoom = false;
@@ -387,7 +367,7 @@ public class WaveSessionManager : MonoBehaviour
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private DailyEntry GetOrCreateDailyEntry(string userId)
     {

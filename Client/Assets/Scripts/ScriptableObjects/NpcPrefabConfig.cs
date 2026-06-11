@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject ánh xạ npc_type / npc_id → prefab dùng cho NpcServerManager.
-///
-/// Đặt asset mặc định tại Resources/ScriptableObjects/NpcPrefabConfig
-/// để scene chỉ cần đúng prefab list, không phải kéo nhiều nơi.
-/// </summary>
+// ScriptableObject ánh xạ npc_type / npc_id → prefab dùng cho NpcServerManager.
+// Đặt asset mặc định tại Resources/ScriptableObjects/NpcPrefabConfig
+// để scene chỉ cần đúng prefab list, không phải kéo nhiều nơi.
 [CreateAssetMenu(fileName = "NpcPrefabConfig", menuName = "DoAn/Npc Prefab Config")]
 public class NpcPrefabConfig : ScriptableObject
 {

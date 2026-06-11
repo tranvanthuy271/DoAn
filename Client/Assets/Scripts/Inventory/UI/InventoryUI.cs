@@ -3,12 +3,10 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
-/// <summary>
-/// InventoryUI - Quản lý panel túi đồ và các ô item UI
-/// - Gắn lên GameObject Panel Inventory trong Canvas
-/// - Dùng dữ liệu InventorySlotDto (nhận từ server, qua network code riêng)
-/// - Không phụ thuộc trực tiếp vào NetworkInventory / ItemData
-/// </summary>
+// InventoryUI - Quản lý panel túi đồ và các ô item UI
+// - Gắn lên GameObject Panel Inventory trong Canvas
+// - Dùng dữ liệu InventorySlotDto (nhận từ server, qua network code riêng)
+// - Không phụ thuộc trực tiếp vào NetworkInventory / ItemData
 public class InventoryUI : MonoBehaviour
 {
     [Header("References")]
@@ -25,7 +23,7 @@ public class InventoryUI : MonoBehaviour
     [Tooltip("Nút đóng Inventory (tùy chọn). Khi nhấn sẽ gọi HideInventory() và invoke OnCloseButtonClicked.")]
     [SerializeField] private Button btnClose;
 
-    /// <summary>Callback được gọi khi người dùng nhấn nút đóng Inventory (btnClose). Dùng để đóng panel cha nếu cần.</summary>
+    // Callback được gọi khi người dùng nhấn nút đóng Inventory (btnClose). Dùng để đóng panel cha nếu cần.
     public System.Action OnCloseButtonClicked;
 
     [Header("Item Detail")]
@@ -48,7 +46,7 @@ public class InventoryUI : MonoBehaviour
     private int currentVisibleSlotCount = 20;
     private bool _openingInventoryRoot;
 
-    /// <summary>Snapshot túi đồ hiện tại (dùng cho UpgradePanel)</summary>
+    // Snapshot túi đồ hiện tại (dùng cho UpgradePanel)
     public InventorySlotDto[] CurrentSlots => currentSlots;
     public int GetConfiguredMaxSlotCount() => maxSlotCount > 0 ? maxSlotCount : 20;
 
@@ -66,10 +64,8 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đọc bag_slots từ GameManager và gọi SetVisibleSlotCount.
-    /// Gọi mỗi khi mở túi đồ để đồng bộ với dữ liệu player hiện tại.
-    /// </summary>
+    // Đọc bag_slots từ GameManager và gọi SetVisibleSlotCount.
+    // Gọi mỗi khi mở túi đồ để đồng bộ với dữ liệu player hiện tại.
     public void SyncVisibleSlotCountFromPlayerData()
     {
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
@@ -116,9 +112,7 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Khởi tạo các ô slot UI
-    /// </summary>
+    // Khởi tạo các ô slot UI
     private void InitSlots()
     {
         if (slotContainer == null || slotPrefab == null)
@@ -164,7 +158,7 @@ public class InventoryUI : MonoBehaviour
         SetVisibleSlotCount(currentVisibleSlotCount);
     }
 
-    /// <summary>Mở inventory và refresh data từ server.</summary>
+    // Mở inventory và refresh data từ server.
     public void ShowInventory()
     {
         ResolveInventoryRoot();
@@ -187,7 +181,7 @@ public class InventoryUI : MonoBehaviour
         RefreshAllSlots();
     }
 
-    /// <summary>Đóng inventory và ẩn panel chi tiết.</summary>
+    // Đóng inventory và ẩn panel chi tiết.
     public void HideInventory()
     {
         ResolveInventoryRoot();
@@ -196,9 +190,7 @@ public class InventoryUI : MonoBehaviour
         HideItemDetail();
     }
 
-    /// <summary>
-    /// Gọi để bật/tắt panel inventory (dùng cho Button OnClick)
-    /// </summary>
+    // Gọi để bật/tắt panel inventory (dùng cho Button OnClick)
     public void ToggleInventory()
     {
         ResolveInventoryRoot();
@@ -250,10 +242,8 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Gán dữ liệu inventory mới (parse từ JSON server gửi về)
-    /// Network layer nên gọi hàm này mỗi khi nhận snapshot/update.
-    /// </summary>
+    // Gán dữ liệu inventory mới (parse từ JSON server gửi về)
+    // Network layer nên gọi hàm này mỗi khi nhận snapshot/update.
     public void SetInventoryData(InventorySlotDto[] slots)
     {
         currentSlots = slots;
@@ -278,9 +268,7 @@ public class InventoryUI : MonoBehaviour
         RefreshAllSlots();
     }
 
-    /// <summary>
-    /// Refresh toàn bộ ô slot dựa trên dữ liệu trong NetworkInventory
-    /// </summary>
+    // Refresh toàn bộ ô slot dựa trên dữ liệu trong NetworkInventory
     public void RefreshAllSlots()
     {
         if (slotUIs == null || slotUIs.Length == 0)
@@ -406,9 +394,7 @@ public class InventoryUI : MonoBehaviour
         };
     }
 
-    /// <summary>
-    /// Lấy instance hiện tại hoặc instantiate mới từ prefab.
-    /// </summary>
+    // Lấy instance hiện tại hoặc instantiate mới từ prefab.
     private ItemDetailPanel GetOrCreateDetailPanel()
     {
         if (_itemDetailPanelInstance != null) return _itemDetailPanelInstance;
@@ -481,9 +467,7 @@ public class InventoryUI : MonoBehaviour
             Debug.LogWarning("[InventoryUI] itemDetailPanel chưa được gán trong Inspector!");
     }
 
-    /// <summary>
-    /// Callback khi người chơi nhấn vào 1 slot có item — mở ItemDetailPanel.
-    /// </summary>
+    // Callback khi người chơi nhấn vào 1 slot có item — mở ItemDetailPanel.
     private void OnSlotItemClicked(InventorySlotDto slotData)
     {
         // Chế độ nâng cấp Thợ Rèn: item trang bị (category 1 / type 0–5) → hiện nút "Nâng cấp"
@@ -503,33 +487,25 @@ public class InventoryUI : MonoBehaviour
         ShowItemDetail(slotData);
     }
 
-    /// <summary>
-    /// Ẩn panel chi tiết item (gọi khi đóng inventory hoặc click vùng trống)
-    /// </summary>
+    // Ẩn panel chi tiết item (gọi khi đóng inventory hoặc click vùng trống)
     public void HideItemDetail()
     {
         _itemDetailPanelInstance?.Hide();
     }
 
-    // ═══════════════════════════════════════════════════════
     // STONE / ITEM SELECT MODE  (dùng cho cửa sổ Thợ Rèn)
-    // ═══════════════════════════════════════════════════════
 
     private bool _inSelectMode    = false;
     private int  _selectFilterId  = 0;    // lọc theo item_template.id (0 = không filter)
     private int  _selectFilterType= 0;    // lọc theo item type (0 = không filter)
 
-    // ═══════════════════════════════════════════════════════
     // BLACKSMITH UPGRADE MODE  (nâng cấp trang bị từ túi)
-    // ═══════════════════════════════════════════════════════
 
     private bool _blacksmithUpgradeMode = false;
     private System.Action<InventorySlotDto> _blacksmithUpgradeCallback;
 
-    /// <summary>
-    /// Bật / tắt chế độ Thợ Rèn: khi bật, nhấn vào item trang bị (type 0–5)
-    /// sẽ hiện nút "Nâng cấp" thay vì "Sử dụng" / "Trang bị".
-    /// </summary>
+    // Bật / tắt chế độ Thợ Rèn: khi bật, nhấn vào item trang bị (type 0–5)
+    // sẽ hiện nút "Nâng cấp" thay vì "Sử dụng" / "Trang bị".
     public void SetBlacksmithUpgradeMode(bool active, System.Action<InventorySlotDto> upgradeCallback = null)
     {
         _blacksmithUpgradeMode    = active;
@@ -537,10 +513,8 @@ public class InventoryUI : MonoBehaviour
     }
     private System.Action<InventorySlotDto> _selectCallback;
 
-    /// <summary>
-    /// Vào chế độ chọn item: các ô khớp filter sẽ hiện nút "Chọn",
-    /// các ô khác bị mờ.
-    /// </summary>
+    // Vào chế độ chọn item: các ô khớp filter sẽ hiện nút "Chọn",
+    // các ô khác bị mờ.
     public void EnterItemSelectMode(int filterById = 0, int filterByType = 0,
                                     System.Action<InventorySlotDto> callback = null)
     {
@@ -551,7 +525,7 @@ public class InventoryUI : MonoBehaviour
         ApplySelectModeToSlots();
     }
 
-    /// <summary>Thoát khỏi chế độ chọn, khôi phục UI bình thường.</summary>
+    // Thoát khỏi chế độ chọn, khôi phục UI bình thường.
     public void ExitItemSelectMode()
     {
         _inSelectMode     = false;

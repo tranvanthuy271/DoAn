@@ -1,17 +1,13 @@
-/// <summary>
-/// BenchmarkLogger – ghi FPS và RTT ra file CSV để dùng trong báo cáo.
-///
-/// Cách dùng:
-///   1. Gắn script này lên một GameObject rỗng trong Scene chính (vd: "BenchmarkLogger").
-///   2. Vào Inspector: bật enableLogging, chỉnh sampleIntervalSeconds (mặc định 0.5s).
-///   3. Chạy game, script tự ghi vào Application.persistentDataPath/benchmark_YYYYMMDD_HHMMSS.csv
-///   4. Tìm file tại:
-///      Windows: %APPDATA%\..\LocalLow\<CompanyName>\<ProductName>\
-///      Android:  /data/data/<package>/files/
-///      macOS:    ~/Library/Application Support/<CompanyName>/<ProductName>/
-///
-/// Cột CSV: timestamp_s, fps, rtt_ms, connected_clients, is_host, is_server
-/// </summary>
+// BenchmarkLogger – ghi FPS và RTT ra file CSV để dùng trong báo cáo.
+// Cách dùng:
+// 1. Gắn script này lên một GameObject rỗng trong Scene chính (vd: "BenchmarkLogger").
+// 2. Vào Inspector: bật enableLogging, chỉnh sampleIntervalSeconds (mặc định 0.5s).
+// 3. Chạy game, script tự ghi vào Application.persistentDataPath/benchmark_YYYYMMDD_HHMMSS.csv
+// 4. Tìm file tại:
+// Windows: %APPDATA%\..\LocalLow\<CompanyName>\<ProductName>\
+// Android:  /data/data/<package>/files/
+// macOS:    ~/Library/Application Support/<CompanyName>/<ProductName>/
+// Cột CSV: timestamp_s, fps, rtt_ms, connected_clients, is_host, is_server
 
 using System;
 using System.Collections;
@@ -34,7 +30,7 @@ public class BenchmarkLogger : MonoBehaviour
     [Tooltip("Số mẫu tối đa rồi tự flush ra disk (0 = flush khi dừng)")]
     public int autoFlushEvery = 100;
 
-    // ─── Private state ────────────────────────────────────────────────────────
+    // Private state
 
     private string _csvPath;
     private StreamWriter _writer;
@@ -52,7 +48,7 @@ public class BenchmarkLogger : MonoBehaviour
     private bool  _logging;
     private int   _sampleCount;
 
-    // ─── Unity callbacks ───────────────────────────────────────────────────────
+    // Unity callbacks
 
     private void Start()
     {
@@ -79,7 +75,7 @@ public class BenchmarkLogger : MonoBehaviour
         StopLogging();
     }
 
-    // ─── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void StartLogging()
     {
@@ -117,7 +113,7 @@ public class BenchmarkLogger : MonoBehaviour
         Debug.Log($"[BenchmarkLogger] Tóm tắt: xem file CSV tại {_csvPath}");
     }
 
-    // ─── Sample coroutine ──────────────────────────────────────────────────────
+    // Sample coroutine
 
     private IEnumerator SampleLoop()
     {
@@ -171,7 +167,7 @@ public class BenchmarkLogger : MonoBehaviour
             _writer?.Flush();
     }
 
-    // ─── RTT measurement ───────────────────────────────────────────────────────
+    // RTT measurement
 
     private float MeasureRtt()
     {
@@ -214,7 +210,7 @@ public class BenchmarkLogger : MonoBehaviour
         return _lastRttMs; // giữ giá trị cuối nếu không đo được
     }
 
-    // ─── Editor helper ─────────────────────────────────────────────────────────
+    // Editor helper
 
 #if UNITY_EDITOR
     [UnityEditor.MenuItem("Tools/Benchmark/Open Log Folder")]
