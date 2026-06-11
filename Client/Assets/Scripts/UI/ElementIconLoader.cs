@@ -3,28 +3,24 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// Tải icon + màu sắc cho tất cả hệ nguyên tố từ API,
-/// cache lại và cung cấp GetIcon / GetColor cho các UI khác.
-///
-/// Dùng JsonUtility (không phụ thuộc Newtonsoft.Json).
-///
-/// Setup:
-///   1. Gắn script này lên GameObject persistent (ví dụ: GameManager).
-///   2. Đặt apiBaseUrl trỏ đúng server.
-///   3. Đặt file ảnh vào Assets/Resources/Elements/icon_hoa.png, v.v.
-///   4. Gọi ElementIconLoader.Instance.GetIcon("Hoa") từ HUD enemy.
-/// </summary>
+// Tải icon + màu sắc cho tất cả hệ nguyên tố từ API,
+// cache lại và cung cấp GetIcon / GetColor cho các UI khác.
+// Dùng JsonUtility (không phụ thuộc Newtonsoft.Json).
+// Setup:
+// 1. Gắn script này lên GameObject persistent (ví dụ: GameManager).
+// 2. Đặt apiBaseUrl trỏ đúng server.
+// 3. Đặt file ảnh vào Assets/Resources/Elements/icon_hoa.png, v.v.
+// 4. Gọi ElementIconLoader.Instance.GetIcon("Hoa") từ HUD enemy.
 public class ElementIconLoader : MonoBehaviour
 {
     public static ElementIconLoader Instance { get; private set; }
 
     [SerializeField] private string apiBaseUrl = "";
 
-    /// <summary>Cache sprite — element_key → Sprite (từ Resources)</summary>
+    // Cache sprite — element_key → Sprite (từ Resources)
     public Dictionary<string, Sprite> Icons  { get; private set; } = new Dictionary<string, Sprite>();
 
-    /// <summary>Cache màu — element_key → Color (parse từ hex trong DB)</summary>
+    // Cache màu — element_key → Color (parse từ hex trong DB)
     public Dictionary<string, Color>  Colors { get; private set; } = new Dictionary<string, Color>();
 
     public bool IsLoaded { get; private set; } = false;
@@ -42,7 +38,6 @@ public class ElementIconLoader : MonoBehaviour
         StartCoroutine(LoadAllElements());
     }
 
-    // ──────────────────────────────────────────────────────────────────
 
     private IEnumerator LoadAllElements()
     {
@@ -96,22 +91,18 @@ public class ElementIconLoader : MonoBehaviour
         Debug.Log($"[ElementIconLoader] Tải xong {Icons.Count} icon hệ nguyên tố.");
     }
 
-    // ──────────────────────────────────────────────────────────────────
-    //  Public API
-    // ──────────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Lấy Sprite của hệ. Trả null nếu chưa load hoặc không tìm thấy.</summary>
+    // Lấy Sprite của hệ. Trả null nếu chưa load hoặc không tìm thấy.
     public Sprite GetIcon(string elementKey)
         => Icons.TryGetValue(elementKey, out var s) ? s : null;
 
-    /// <summary>Lấy Color của hệ. Trả Color.white nếu không tìm thấy.</summary>
+    // Lấy Color của hệ. Trả Color.white nếu không tìm thấy.
     public Color GetColor(string elementKey)
         => Colors.TryGetValue(elementKey, out var c) ? c : Color.white;
 
-    // ──────────────────────────────────────────────────────────────────
     //  DTOs — phải dùng [System.Serializable] + field public/snake_case
     //         để JsonUtility hoạt động đúng
-    // ──────────────────────────────────────────────────────────────────
 
     [System.Serializable]
     private class ElementListWrapper

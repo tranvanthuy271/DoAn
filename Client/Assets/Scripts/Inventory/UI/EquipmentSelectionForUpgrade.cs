@@ -3,33 +3,25 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// EquipmentSelectionForUpgrade – Tab "Trang Bị" trong cửa sổ Thợ Rèn.
-///
-/// Hiển thị 2 phần:
-///   [1] Trang bị đang mặc   → mỗi ô: icon + tên + "+X" + [Nâng Cấp]
-///   [2] Trang bị trong túi  → tương tự (type 0~5)
-///
-/// Khi nhấn [Nâng Cấp]:
-///   → UpgradePanel.Instance.SetChosenEquipItem(item, slotKey, fromInventory, inventory)
-///   → BlacksmithTabPanel.SwitchTab(0) được gọi bên trong SetChosenEquipItem
-///
-/// ══════════════════════════════════════════════════════════════════
-/// HIERARCHY GỢI Ý:
-///   PanelTrangBi                            [EquipmentSelectionForUpgrade.cs]
-///   ├─ HeaderEquipped    TMP_Text
-///   ├─ ContainerEquipped ScrollRect → Content (VerticalLayoutGroup)
-///   ├─ HeaderInventory   TMP_Text
-///   └─ ContainerInventory ScrollRect → Content (VerticalLayoutGroup)
-///
-///   Prefab EquipUpgradeRow:
-///     EquipUpgradeRow            [HorizontalLayoutGroup]
-///     ├─ IconImage               [Image]
-///     ├─ NameText                [TMP_Text]
-///     ├─ LevelText               [TMP_Text]  "+3"
-///     └─ UpgradeButton           [Button]    "Nâng Cấp"
-/// ══════════════════════════════════════════════════════════════════
-/// </summary>
+// EquipmentSelectionForUpgrade – Tab "Trang Bị" trong cửa sổ Thợ Rèn.
+// Hiển thị 2 phần:
+// [1] Trang bị đang mặc   → mỗi ô: icon + tên + "+X" + [Nâng Cấp]
+// [2] Trang bị trong túi  → tương tự (type 0~5)
+// Khi nhấn [Nâng Cấp]:
+// → UpgradePanel.Instance.SetChosenEquipItem(item, slotKey, fromInventory, inventory)
+// → BlacksmithTabPanel.SwitchTab(0) được gọi bên trong SetChosenEquipItem
+// HIERARCHY GỢI Ý:
+// PanelTrangBi                            [EquipmentSelectionForUpgrade.cs]
+// ├─ HeaderEquipped    TMP_Text
+// ├─ ContainerEquipped ScrollRect → Content (VerticalLayoutGroup)
+// ├─ HeaderInventory   TMP_Text
+// └─ ContainerInventory ScrollRect → Content (VerticalLayoutGroup)
+// Prefab EquipUpgradeRow:
+// EquipUpgradeRow            [HorizontalLayoutGroup]
+// ├─ IconImage               [Image]
+// ├─ NameText                [TMP_Text]
+// ├─ LevelText               [TMP_Text]  "+3"
+// └─ UpgradeButton           [Button]    "Nâng Cấp"
 public class EquipmentSelectionForUpgrade : MonoBehaviour
 {
     [Header("Trang bị đang mặc")]
@@ -44,14 +36,14 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
     [Tooltip("Prefab 1 hàng hiển thị trang bị. Cần: Image icon, TMP_Text name, TMP_Text level, Button upgrade.")]
     [SerializeField] private GameObject equipUpgradeRowPrefab;
 
-    // ── Lifecycle ─────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void OnEnable()
     {
         Refresh();
     }
 
-    // ── Public API ────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Show()
     {
@@ -64,14 +56,14 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ── Core ──────────────────────────────────────────────────────
+    // Core
 
     private void Refresh()
     {
         ClearContainer(containerEquipped);
         ClearContainer(containerInventory);
 
-        // --- Phần 1: Trang bị đang mặc (load async từ API để có đủ strOptions + upgradeLevel) ---
+        // Phần 1: Trang bị đang mặc (load async từ API để có đủ strOptions + upgradeLevel)
         int playerId = GameManager.Instance?.currentPlayerData?.player_id ?? 0;
         if (headerEquipped) headerEquipped.SetActive(false);
         if (GameplayCommandService.Instance != null)
@@ -91,7 +83,7 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
             }
         }
 
-        // --- Phần 2: Trang bị trong túi ---
+        // Phần 2: Trang bị trong túi
         var invUI = FindObjectOfType<InventoryUI>(true);
         var inventory = invUI?.CurrentSlots;
         bool hasInvEquip = false;
@@ -135,7 +127,7 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
         if (headerEquipped) headerEquipped.SetActive(hasEquipped);
     }
 
-    // ── Row builders ──────────────────────────────────────────────
+    // Row builders
 
     private void SpawnEquippedRow(EquipmentItemDto item, string slotKey)
     {
@@ -196,7 +188,7 @@ public class EquipmentSelectionForUpgrade : MonoBehaviour
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static void ClearContainer(Transform container)
     {

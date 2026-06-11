@@ -9,11 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GameServerApi.Hubs
 {
-    /// <summary>
-    /// SignalR Hub cho hệ thống chat game.
-    /// Hỗ trợ: Thế giới, Lân cận, Gia tộc, Lớp, Nhóm, Tin riêng.
-    /// JWT Bearer được truyền qua query param ?access_token= cho WebSocket.
-    /// </summary>
+    // SignalR Hub cho hệ thống chat game.
+    // Hỗ trợ: Thế giới, Lân cận, Gia tộc, Lớp, Nhóm, Tin riêng.
+    // JWT Bearer được truyền qua query param ?access_token= cho WebSocket.
     [Authorize]
     public class ChatHub : Hub
     {
@@ -30,7 +28,7 @@ namespace GameServerApi.Hubs
         // connectionId → user info (cho private msg routing)
         private static readonly ConcurrentDictionary<string, ChatUserSession> _sessions = new();
 
-        // ── Lifecycle ───────────────────────────────────────────────────────
+        // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
         public override async Task OnConnectedAsync()
         {
@@ -60,9 +58,9 @@ namespace GameServerApi.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        // ── World (Thế giới) ────────────────────────────────────────────────
+        // World (Thế giới)
 
-        /// <summary>Gửi tin nhắn đến toàn bộ người chơi trên server.</summary>
+        // Gửi tin nhắn đến toàn bộ người chơi trên server.
         public async Task SendWorldMessage(string message)
         {
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
@@ -77,9 +75,9 @@ namespace GameServerApi.Hubs
             await Clients.All.SendAsync("ReceiveWorldMessage", msg);
         }
 
-        // ── Proximity (Lân cận) ──────────────────────────────────────────────
+        // Proximity (Lân cận)
 
-        /// <summary>Gửi tin nhắn lân cận đến cùng map/zone. Hỗ trợ lệnh đặc biệt: "item &lt;id&gt; &lt;sốLượng&gt;".</summary>
+        // Gửi tin nhắn lân cận đến cùng map/zone. Hỗ trợ lệnh đặc biệt: "item &lt;id&gt; &lt;sốLượng&gt;".
         public async Task SendProximityMessage(string mapId, string message)
         {
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
@@ -92,19 +90,19 @@ namespace GameServerApi.Hubs
             await Clients.Group($"map_{mapId}").SendAsync("ReceiveProximityMessage", msg);
         }
 
-        /// <summary>Tham gia group map khi vào map.</summary>
+        // Tham gia group map khi vào map.
         public async Task JoinMap(string mapId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"map_{mapId}");
         }
 
-        /// <summary>Rời group map khi chuyển map.</summary>
+        // Rời group map khi chuyển map.
         public async Task LeaveMap(string mapId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"map_{mapId}");
         }
 
-        // ── Clan (Gia tộc) ──────────────────────────────────────────────────
+        // Clan (Gia tộc)
 
         public async Task SendClanMessage(string clanId, string message)
         {
@@ -124,7 +122,7 @@ namespace GameServerApi.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"clan_{clanId}");
         }
 
-        // ── Class (Lớp) ─────────────────────────────────────────────────────
+        // Class (Lớp)
 
         public async Task SendClassMessage(string classType, string message)
         {
@@ -139,7 +137,7 @@ namespace GameServerApi.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, $"class_{classType}");
         }
 
-        // ── Group / Party (Nhóm) ────────────────────────────────────────────
+        // Group / Party (Nhóm)
 
         public async Task SendGroupMessage(string groupId, string message)
         {
@@ -159,10 +157,8 @@ namespace GameServerApi.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"group_{groupId}");
         }
 
-        /// <summary>
-        /// Đồng bộ tên hiển thị runtime của nhân vật hiện tại.
-        /// Chat dùng tên này thay cho username tài khoản trong JWT.
-        /// </summary>
+        // Đồng bộ tên hiển thị runtime của nhân vật hiện tại.
+        // Chat dùng tên này thay cho username tài khoản trong JWT.
         public Task UpdateDisplayName(string displayName)
         {
             var userId = GetUserId();
@@ -194,12 +190,10 @@ namespace GameServerApi.Hubs
             return Task.CompletedTask;
         }
 
-        // ── Private (Tin riêng) ─────────────────────────────────────────────
+        // Private (Tin riêng)
 
-        /// <summary>
-        /// Gửi tin nhắn riêng đến người chơi khác theo userId.
-        /// Cả người gửi và người nhận đều nhận được message.
-        /// </summary>
+        // Gửi tin nhắn riêng đến người chơi khác theo userId.
+        // Cả người gửi và người nhận đều nhận được message.
         public async Task SendPrivateMessage(string targetUserId, string message)
         {
             if (string.IsNullOrWhiteSpace(message) || message.Length > 300) return;
@@ -214,7 +208,7 @@ namespace GameServerApi.Hubs
             await Clients.Caller.SendAsync("ReceivePrivateMessage", msg);
         }
 
-        // ── Helpers ─────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
         private ChatUserSession GetSession()
         {
@@ -280,13 +274,11 @@ namespace GameServerApi.Hubs
             timestamp  = DateTime.UtcNow.ToString("HH:mm")
         };
 
-        // ── Chat Commands ────────────────────────────────────────────────────
+        // Chat Commands
 
-        /// <summary>
-        /// Xử lý lệnh chat đặc biệt. Hiện hỗ trợ:
-        ///   item &lt;itemId&gt; &lt;sốLượng&gt;  — thêm item vào túi người gõ lệnh.
-        /// Trả về true nếu là lệnh (dù lỗi), false nếu là tin thường.
-        /// </summary>
+        // Xử lý lệnh chat đặc biệt. Hiện hỗ trợ:
+        // item &lt;itemId&gt; &lt;sốLượng&gt;  — thêm item vào túi người gõ lệnh.
+        // Trả về true nếu là lệnh (dù lỗi), false nếu là tin thường.
         private async Task<bool> TryHandleChatCommandAsync(string message)
         {
             var trimmed = message.Trim();

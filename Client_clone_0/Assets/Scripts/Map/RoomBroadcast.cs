@@ -1,25 +1,19 @@
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// Utility gửi ClientRpc chỉ đến các client trong cùng zone (room).
-///
-/// Thay vì broadcast tới TẤT CẢ client, dùng ClientRpcParams để lọc
-/// chỉ những client có cùng room_id.
-///
-/// Ví dụ dùng trong NetworkEnemyHealth:
-/// <code>
-///   string myRoom = GetComponent&lt;EnemyZoneTag&gt;().RoomId;
-///   var rpcTarget = RoomBroadcast.ToRoom(myRoom, ZoneRoomManager.Instance);
-///   SyncDamageClientRpc(damage, rpcTarget);
-/// </code>
-/// </summary>
+// Utility gửi ClientRpc chỉ đến các client trong cùng zone (room).
+// Thay vì broadcast tới TẤT CẢ client, dùng ClientRpcParams để lọc
+// chỉ những client có cùng room_id.
+// Ví dụ dùng trong NetworkEnemyHealth:
+// <code>
+// string myRoom = GetComponent&lt;EnemyZoneTag&gt;().RoomId;
+// var rpcTarget = RoomBroadcast.ToRoom(myRoom, ZoneRoomManager.Instance);
+// SyncDamageClientRpc(damage, rpcTarget);
+// </code>
 public static class RoomBroadcast
 {
-    /// <summary>
-    /// Tạo ClientRpcParams nhắm đúng các client trong room chỉ định.
-    /// Dùng cho tham số cuối của [ClientRpc] method.
-    /// </summary>
+    // Tạo ClientRpcParams nhắm đúng các client trong room chỉ định.
+    // Dùng cho tham số cuối của [ClientRpc] method.
     public static ClientRpcParams ToRoom(string roomId, ZoneRoomManager roomMgr)
     {
         if (roomMgr == null)
@@ -38,10 +32,8 @@ public static class RoomBroadcast
         };
     }
 
-    /// <summary>
-    /// Tạo ClientRpcParams nhắm đúng các client trong room của một NetworkObject cụ thể.
-    /// Tiện lợi khi gọi từ chính object đó (vd: Enemy gọi từ NetworkBehaviour của nó).
-    /// </summary>
+    // Tạo ClientRpcParams nhắm đúng các client trong room của một NetworkObject cụ thể.
+    // Tiện lợi khi gọi từ chính object đó (vd: Enemy gọi từ NetworkBehaviour của nó).
     public static ClientRpcParams ToSameRoomAs(Unity.Netcode.NetworkBehaviour sender, ZoneRoomManager roomMgr)
     {
         if (roomMgr == null) return default;

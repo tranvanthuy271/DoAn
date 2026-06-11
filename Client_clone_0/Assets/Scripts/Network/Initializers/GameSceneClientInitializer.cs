@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Client-side script: Load player data từ API khi vào GameScene và connect đến host
-/// Chỉ xử lý logic cho CLIENT
-/// </summary>
+// Client-side script: Load player data từ API khi vào GameScene và connect đến host
+// Chỉ xử lý logic cho CLIENT
 public class GameSceneClientInitializer : MonoBehaviour
 {
     private const ushort ModernZoneServerPort = 7777;
@@ -54,9 +52,7 @@ public class GameSceneClientInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đăng ký tất cả NetworkPrefab trước khi connect
-    /// </summary>
+    // Đăng ký tất cả NetworkPrefab trước khi connect
     private void RegisterNetworkPrefabs()
     {
         // Tìm NetworkPrefabRegistrar trong scene
@@ -74,9 +70,7 @@ public class GameSceneClientInitializer : MonoBehaviour
         // Debug.Log("[GameSceneClientInitializer] NetworkPrefabs registered.");
     }
 
-    /// <summary>
-    /// Load player data từ API
-    /// </summary>
+    // Load player data từ API
     private void LoadPlayerDataFromAPI()
     {
         if (isInitializing)
@@ -192,9 +186,7 @@ public class GameSceneClientInitializer : MonoBehaviour
         isConnectQueued = false;
     }
 
-    /// <summary>
-    /// Connect đến host
-    /// </summary>
+    // Connect đến host
     private void ConnectToHost()
     {
         // Debug.Log($"[GameSceneClientInitializer] Connecting to host at {serverIP}:{serverPort}...");
@@ -229,17 +221,13 @@ public class GameSceneClientInitializer : MonoBehaviour
         networkManager.ConnectToServer();
     }
 
-    /// <summary>
-    /// Kiểm tra xem player data đã được load chưa (để các script khác có thể check)
-    /// </summary>
+    // Kiểm tra xem player data đã được load chưa (để các script khác có thể check)
     public bool IsPlayerDataLoaded()
     {
         return playerDataLoaded && GameManager.Instance != null && GameManager.Instance.HasPlayerData();
     }
 
-    /// <summary>
-    /// Get player data (nếu đã load)
-    /// </summary>
+    // Get player data (nếu đã load)
     public PlayerDataResponse GetPlayerData()
     {
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())

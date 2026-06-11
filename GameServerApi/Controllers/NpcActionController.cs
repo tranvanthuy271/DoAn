@@ -9,16 +9,12 @@ using System.Text.Json;
 
 namespace GameServerApi.Controllers
 {
-    /// <summary>
-    /// NPC Action API — xử lý các chức năng NPC đặc biệt (tẩy tiềm năng, tẩy kỹ năng, v.v.)
-    ///
-    /// Tất cả endpoint đều yêu cầu JWT [Authorize].
-    /// Chỉ có Unity Server mới gọi các endpoint này (không phải client trực tiếp).
-    ///
-    /// Route: POST /api/npc/action/{action}
-    /// Body:  { "playerId": 1, "npcId": 3 }
-    /// Response: { "success": bool, "message": string, "playerData": { gold, silver, skillPoints, potentialPoints, level } }
-    /// </summary>
+    // NPC Action API — xử lý các chức năng NPC đặc biệt (tẩy tiềm năng, tẩy kỹ năng, v.v.)
+    // Tất cả endpoint đều yêu cầu JWT [Authorize].
+    // Chỉ có Unity Server mới gọi các endpoint này (không phải client trực tiếp).
+    // Route: POST /api/npc/action/{action}
+    // Body:  { "playerId": 1, "npcId": 3 }
+    // Response: { "success": bool, "message": string, "playerData": { gold, silver, skillPoints, potentialPoints, level } }
     [ApiController]
     [Route("api/npc/action")]
     [Authorize]
@@ -26,7 +22,7 @@ namespace GameServerApi.Controllers
     {
         private readonly GameDbContext _db;
 
-        // ── Chi phí cho từng chức năng (bạc hoặc item) ─────────────────────
+        // Chi phí cho từng chức năng (bạc hoặc item)
         // Điều chỉnh ở đây nếu muốn thay đổi cost, KHÔNG cần sửa Unity client.
         private const int CostResetPotential = 250_000;  // bạc
         private const int CostResetSkill     = 250_000;  // bạc
@@ -37,10 +33,8 @@ namespace GameServerApi.Controllers
 
         public NpcActionController(GameDbContext db) => _db = db;
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/reset-potential
         //  Tẩy toàn bộ điểm tiềm năng của nhân vật → trả lại potentialPoints
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("reset-potential")]
         public async Task<IActionResult> ResetPotential([FromBody] NpcActionRequest req)
         {
@@ -68,10 +62,8 @@ namespace GameServerApi.Controllers
             return Ok(Success("Đã tẩy tiềm năng thành công! Bạn nhận lại tất cả điểm tiềm năng.", info));
         }
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/reset-skill
         //  Tẩy toàn bộ bí kíp kỹ năng đã học → trả lại skillPoints
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("reset-skill")]
         public async Task<IActionResult> ResetSkill([FromBody] NpcActionRequest req)
         {
@@ -100,11 +92,9 @@ namespace GameServerApi.Controllers
             return Ok(Success($"Đã tẩy bí kíp thành công! Bạn nhận lại {maxPoints} điểm kỹ năng.", info));
         }
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/learn-skill
         //  Học bí kíp — dùng 1 skillPoint, phải có cấp phù hợp
         //  Body mở rộng: { "playerId": 1, "npcId": 8, "skillId": 101 }
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("learn-skill")]
         public async Task<IActionResult> LearnSkill([FromBody] JsonElement bodyRaw)
         {
@@ -148,11 +138,9 @@ namespace GameServerApi.Controllers
             return Ok(Success($"Đã học bí kíp thành công!", info));
         }
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/exchange-skill
         //  Đổi bí kíp — đổi 1 kỹ năng lấy 1 kỹ năng khác + trả bạc
         //  Body: { "playerId": 1, "npcId": 8, "oldSkillId": 101, "newSkillId": 102 }
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("exchange-skill")]
         public async Task<IActionResult> ExchangeSkill([FromBody] JsonElement bodyRaw)
         {
@@ -195,10 +183,8 @@ namespace GameServerApi.Controllers
             return Ok(Success("Đã đổi bí kíp thành công!", info));
         }
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/exchange-charm
         //  Đổi bùa nổ — trả bạc
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("exchange-charm")]
         public async Task<IActionResult> ExchangeCharm([FromBody] NpcActionRequest req)
         {
@@ -220,10 +206,8 @@ namespace GameServerApi.Controllers
             return Ok(Success("Đã đổi bùa nổ thành công!", info));
         }
 
-        // ══════════════════════════════════════════════════════════════════════
         //  POST /api/npc/action/lock-level
         //  Khoá / mở cấp nhân vật — trả bạc
-        // ══════════════════════════════════════════════════════════════════════
         [HttpPost("lock-level")]
         public async Task<IActionResult> LockLevel([FromBody] NpcActionRequest req)
         {
@@ -249,7 +233,7 @@ namespace GameServerApi.Controllers
             return Ok(Success(msg, info));
         }
 
-        // ── Helpers ────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
         private async Task<(PlayerData? player, IActionResult? error)> ResolvePlayer(NpcActionRequest req)
         {
@@ -312,7 +296,7 @@ namespace GameServerApi.Controllers
         }
     }
 
-    // ── Request DTO ────────────────────────────────────────────────────────────
+    // Request DTO
     public class NpcActionRequest
     {
         public int PlayerId { get; set; }

@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Normalized player skill record — replaces skills JSON blob in player_data.
-    /// One row per unlocked skill per player.
-    /// </summary>
+    // Normalized player skill record — replaces skills JSON blob in player_data.
+    // One row per unlocked skill per player.
     [Table("player_skill_record")]
     public class PlayerSkillRecord
     {
@@ -26,7 +24,7 @@ namespace GameServerApi.Models.Entities
         [Column("is_equipped")]
         public bool IsEquipped { get; set; } = false;
 
-        /// <summary>Hotbar slot index (0-5), -1 if not on hotbar.</summary>
+        // Hotbar slot index (0-5), -1 if not on hotbar.
         [Column("hotbar_slot")]
         public int HotbarSlot { get; set; } = -1;
 

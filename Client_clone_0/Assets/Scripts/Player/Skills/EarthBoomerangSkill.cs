@@ -2,20 +2,16 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 2 của hệ Thổ — "Địa Phong Đao" (Boomerang)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill2 trên SkillEffect.
-///   2. Server spawn boomerang prefab bay về phía trước player.
-///   3. EarthBoomerangProjectile component điều khiển quay về.
-///   4. Damage xử lý qua FireballDamage component trên prefab.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào Tho.prefab.
-///   - boomerangPrefab cần có: NetworkObject, Rigidbody2D, Collider2D trigger,
-///     FireballDamage, EarthBoomerangProjectile.
-/// </summary>
+// Skill 2 của hệ Thổ — "Địa Phong Đao" (Boomerang)
+// Cơ chế:
+// 1. Trigger animation Skill2 trên SkillEffect.
+// 2. Server spawn boomerang prefab bay về phía trước player.
+// 3. EarthBoomerangProjectile component điều khiển quay về.
+// 4. Damage xử lý qua FireballDamage component trên prefab.
+// Setup trong Unity:
+// - Gắn component này vào Tho.prefab.
+// - boomerangPrefab cần có: NetworkObject, Rigidbody2D, Collider2D trigger,
+// FireballDamage, EarthBoomerangProjectile.
 public class EarthBoomerangSkill : NetworkBehaviour
 {
     [Header("Boomerang Settings")]
@@ -29,7 +25,7 @@ public class EarthBoomerangSkill : NetworkBehaviour
     [SerializeField] private GameObject boomerangPrefab;
     [SerializeField] private string animTriggerName = "Skill2";
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;

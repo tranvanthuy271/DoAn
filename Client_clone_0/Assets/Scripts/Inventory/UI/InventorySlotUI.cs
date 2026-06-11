@@ -3,11 +3,9 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 
-/// <summary>
-/// InventorySlotUI - Hiển thị 1 ô item trong UI túi đồ (client-side)
-/// - Nhận dữ liệu từ InventorySlotDto (JSON từ server đã parse).
-/// - Gắn script này lên prefab Slot (Image icon + Text số lượng + optional highlight equip).
-/// </summary>
+// InventorySlotUI - Hiển thị 1 ô item trong UI túi đồ (client-side)
+// - Nhận dữ liệu từ InventorySlotDto (JSON từ server đã parse).
+// - Gắn script này lên prefab Slot (Image icon + Text số lượng + optional highlight equip).
 public class InventorySlotUI : MonoBehaviour
 {
     private const string RuntimeIconObjectName = "RuntimeItemIcon";
@@ -46,14 +44,10 @@ public class InventorySlotUI : MonoBehaviour
         ApplyTheme();
     }
 
-    /// <summary>
-    /// Event khi người chơi click vào slot có item
-    /// </summary>
+    // Event khi người chơi click vào slot có item
     public event Action<InventorySlotDto> OnSlotClicked;
 
-    /// <summary>
-    /// Khởi tạo ô với index. Gọi 1 lần khi tạo grid.
-    /// </summary>
+    // Khởi tạo ô với index. Gọi 1 lần khi tạo grid.
     public void Init(int index)
     {
         slotIndex = index;
@@ -69,9 +63,7 @@ public class InventorySlotUI : MonoBehaviour
         Clear();
     }
 
-    /// <summary>
-    /// Xóa dữ liệu hiển thị
-    /// </summary>
+    // Xóa dữ liệu hiển thị
     public void Clear()
     {
         EnsureRuntimeReferences();
@@ -105,9 +97,7 @@ public class InventorySlotUI : MonoBehaviour
         SetSelectMode(false, false, null);
     }
 
-    /// <summary>
-    /// Cập nhật hiển thị theo dữ liệu inventory slot từ server
-    /// </summary>
+    // Cập nhật hiển thị theo dữ liệu inventory slot từ server
     public void SetSlot(InventorySlotDto slot)
     {
         EnsureRuntimeReferences();
@@ -194,20 +184,16 @@ public class InventorySlotUI : MonoBehaviour
             itemBgImage.enabled = true;
     }
 
-    /// <summary>
-    /// Lấy dữ liệu slot hiện tại
-    /// </summary>
+    // Lấy dữ liệu slot hiện tại
     public InventorySlotDto GetCurrentData()
     {
         return currentData;
     }
 
-    /// <summary>
-    /// Bật/tắt chế độ chọn item (dùng khi cần chọn đá / bùa cho cường hóa).
-    /// - inSelectMode = true  → ô khớp filter hiện btn "Chọn"; ô không khớp bị mờ
-    /// - canSelect = true     → ô này khớp filter, hiện btn "Chọn"
-    /// - onSelect             → callback khi nhấn "Chọn"
-    /// </summary>
+    // Bật/tắt chế độ chọn item (dùng khi cần chọn đá / bùa cho cường hóa).
+    // - inSelectMode = true  → ô khớp filter hiện btn "Chọn"; ô không khớp bị mờ
+    // - canSelect = true     → ô này khớp filter, hiện btn "Chọn"
+    // - onSelect             → callback khi nhấn "Chọn"
     public void SetSelectMode(bool inSelectMode, bool canSelect, System.Action onSelect)
     {
         _inSelectMode = inSelectMode;
@@ -231,10 +217,8 @@ public class InventorySlotUI : MonoBehaviour
             mainBtn.interactable = !inSelectMode || canSelect;
     }
 
-    /// <summary>
-    /// Gọi từ Button OnClick trên prefab Slot.
-    /// Hiển thị panel chi tiết item khi nhấn vào.
-    /// </summary>
+    // Gọi từ Button OnClick trên prefab Slot.
+    // Hiển thị panel chi tiết item khi nhấn vào.
     public void OnClick()
     {
         if (currentData == null || currentData.quantity <= 0)

@@ -1,14 +1,14 @@
 namespace GameServerApi.Models.DTOs
 {
-    /// <summary>Body gửi khi tạo session phó bản mới (gọi bởi host Unity)</summary>
+    // Body gửi khi tạo session phó bản mới (gọi bởi host Unity)
     public class CreateDungeonSessionDto
     {
         public int DungeonConfigId { get; set; }
 
-        /// <summary>IP public hoặc LAN của host Unity</summary>
+        // IP public hoặc LAN của host Unity
         public string HostIp { get; set; } = "";
 
-        /// <summary>Port Unity NetworkManager đang listen (thường 7777)</summary>
+        // Port Unity NetworkManager đang listen (thường 7777)
         public int HostPort { get; set; } = 7777;
     }
 }

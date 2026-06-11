@@ -4,13 +4,10 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Đăng ký / hủy đăng ký zone server với GameServerApi.
-///
-/// API endpoints cần có (thêm vào GameServerApi):
-///   POST /api/zone/register    { mapId, zoneId, ip, port }  → 200 OK
-///   DELETE /api/zone/deregister?mapId=X&zoneId=Y            → 200 OK
-/// </summary>
+// Đăng ký / hủy đăng ký zone server với GameServerApi.
+// API endpoints cần có (thêm vào GameServerApi):
+// POST /api/zone/register    { mapId, zoneId, ip, port }  → 200 OK
+// DELETE /api/zone/deregister?mapId=X&zoneId=Y            → 200 OK
 public class ZoneServerRegistrar : MonoBehaviour
 {
     private string _apiBaseUrl;
@@ -20,9 +17,7 @@ public class ZoneServerRegistrar : MonoBehaviour
         _apiBaseUrl = apiBaseUrl.TrimEnd('/');
     }
 
-    /// <summary>
-    /// Đăng ký zone server với API. Gọi sau khi StartServer() thành công.
-    /// </summary>
+    // Đăng ký zone server với API. Gọi sau khi StartServer() thành công.
     public IEnumerator Register(int mapId, int zoneId, string publicIp, ushort port,
                                  Action<bool> callback)
     {
@@ -51,9 +46,7 @@ public class ZoneServerRegistrar : MonoBehaviour
         callback?.Invoke(ok);
     }
 
-    /// <summary>
-    /// Hủy đăng ký zone server khỏi API. Gọi khi server tắt.
-    /// </summary>
+    // Hủy đăng ký zone server khỏi API. Gọi khi server tắt.
     public IEnumerator Deregister(int mapId, int zoneId)
     {
         string url = $"{_apiBaseUrl}/zone/deregister?mapId={mapId}&zoneId={zoneId}";

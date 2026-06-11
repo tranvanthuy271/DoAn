@@ -2,15 +2,12 @@ using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Hiệu ứng khi player bị trúng skill:
-///   1. Sprite đổi màu xám trong grayOverlayDuration giây (tất cả client thấy)
-///   2. Bất động (stun) trong stunDuration giây — chỉ ảnh hưởng owner
-///
-/// Cách dùng:
-///   - Gắn component này lên Player Prefab (cùng object với NetworkPlayerHealth)
-///   - Không cần config thêm - tự động lắng nghe OnTakeDamage event
-/// </summary>
+// Hiệu ứng khi player bị trúng skill:
+// 1. Sprite đổi màu xám trong grayOverlayDuration giây (tất cả client thấy)
+// 2. Bất động (stun) trong stunDuration giây — chỉ ảnh hưởng owner
+// Cách dùng:
+// - Gắn component này lên Player Prefab (cùng object với NetworkPlayerHealth)
+// - Không cần config thêm - tự động lắng nghe OnTakeDamage event
 public class PlayerHitEffect : MonoBehaviour
 {
     [Header("Gray Overlay Settings")]
@@ -24,12 +21,12 @@ public class PlayerHitEffect : MonoBehaviour
     [Tooltip("Thời gian bất động khi bị trúng skill - chỉ áp dụng cho owner (giây)")]
     [SerializeField] private float stunDuration = 0.5f;
 
-    // ── Components ────────────────────────────────────────────────────────────
+    // Components
     private NetworkObject networkObject;
     private SpriteRenderer[] spriteRenderers;
     private PlayerMovement playerMovement;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
     private Coroutine grayCoroutine;
 
     private void Awake()
@@ -63,7 +60,7 @@ public class PlayerHitEffect : MonoBehaviour
             health.OnTakeDamage.RemoveListener(OnHit);
     }
 
-    // ── Event Handler ─────────────────────────────────────────────────────────
+    // Event Handler
 
     private void OnHit()
     {
@@ -76,9 +73,9 @@ public class PlayerHitEffect : MonoBehaviour
             ApplyStun();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Flash màu xám lên tất cả SpriteRenderer của player.</summary>
+    // Flash màu xám lên tất cả SpriteRenderer của player.
     public void ApplyGrayOverlay()
     {
         if (grayCoroutine != null)
@@ -86,14 +83,14 @@ public class PlayerHitEffect : MonoBehaviour
         grayCoroutine = StartCoroutine(GrayOverlayCoroutine());
     }
 
-    /// <summary>Bất động player (chặn input) trong stunDuration giây.</summary>
+    // Bất động player (chặn input) trong stunDuration giây.
     public void ApplyStun()
     {
         if (playerMovement != null)
             playerMovement.SetStunned(stunDuration);
     }
 
-    // ── Private ───────────────────────────────────────────────────────────────
+    // Private
 
     private IEnumerator GrayOverlayCoroutine()
     {

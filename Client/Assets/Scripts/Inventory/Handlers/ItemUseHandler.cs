@@ -7,36 +7,32 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine.Networking;
 
-/// <summary>
-/// ItemUseHandler — Xử lý toàn bộ logic sử dụng item trong túi đồ.
-///
-/// Trách nhiệm:
-///   1. Nhận sự kiện "Sử dụng" từ ItemDetailPanel.
-///   2. Phân loại item (equipment / consumable / bag expansion) và gọi API tương ứng.
-///   3. Quản lý 3 Quick-Slot hiển thị icon item mở rộng túi đồ.
-///   4. Xử lý nút Sắp xếp (compact inventory qua API).
-///   5. Hiển thị số túi đang có, vàng, bạc.
-///
-/// Gắn script này vào GameObject duy nhất trong scene (ví dụ: "InventoryManager").
-/// </summary>
+// ItemUseHandler — Xử lý toàn bộ logic sử dụng item trong túi đồ.
+// Trách nhiệm:
+// 1. Nhận sự kiện "Sử dụng" từ ItemDetailPanel.
+// 2. Phân loại item (equipment / consumable / bag expansion) và gọi API tương ứng.
+// 3. Quản lý 3 Quick-Slot hiển thị icon item mở rộng túi đồ.
+// 4. Xử lý nút Sắp xếp (compact inventory qua API).
+// 5. Hiển thị số túi đang có, vàng, bạc.
+// Gắn script này vào GameObject duy nhất trong scene (ví dụ: "InventoryManager").
 public class ItemUseHandler : MonoBehaviour
 {
-    // ── Singleton ──────────────────────────────────────────────────────────
+    // Singleton
     public static ItemUseHandler Instance { get; private set; }
 
-    // ── Loại item ──────────────────────────────────────────────────────────
-    /// <summary>type = 32 trong item_template → item mở rộng túi đồ (+5 ô). KHÔNG phải type 30 (vật liệu).</summary>
+    // Loại item
+    // type = 32 trong item_template → item mở rộng túi đồ (+5 ô). KHÔNG phải type 30 (vật liệu).
     public const int ItemTypeBag        = 32;
-    /// <summary>Số ô mở rộng mỗi lần dùng item túi.</summary>
+    // Số ô mở rộng mỗi lần dùng item túi.
     public const int BagExpandAmount    = 5;
-    /// <summary>type 21-29 → item tiêu thụ (phục hồi HP/MP, v.v.).</summary>
+    // type 21-29 → item tiêu thụ (phục hồi HP/MP, v.v.).
     public const int ItemTypeConsumableMin = 21;
     public const int ItemTypeConsumableMax = 29;
     public const int ItemTypeWaveTicket = 31;
-    /// <summary>type 0-5 → trang bị.</summary>
+    // type 0-5 → trang bị.
     public const int ItemTypeEquipMax   = 5;
 
-    // ── Inspector References ────────────────────────────────────────────────
+    // Inspector References
     [Header("References")]
     [Tooltip("InventoryNetworkBridge để gọi APIs (equip/unequip/refresh)")]
     [SerializeField] private InventoryNetworkBridge inventoryBridge;
@@ -80,17 +76,17 @@ public class ItemUseHandler : MonoBehaviour
     [Tooltip("Nút sắp xếp túi đồ")]
     [SerializeField] private Button sortButton;
 
-    // ── Private state ──────────────────────────────────────────────────────
+    // Private state
     private int currentBagSlots = 20;
     private int currentGold;
     private int currentSilver;
 
-    /// <summary>Slot data của các item túi tìm thấy trong inventory (tối đa 3).</summary>
+    // Slot data của các item túi tìm thấy trong inventory (tối đa 3).
     private readonly Dictionary<int, BagEquippedItemData> _equippedBagItemsByQuickSlot = new Dictionary<int, BagEquippedItemData>(3);
     private readonly List<Button> _bagQuickSlotButtons = new List<Button>(3);
     private BagQuickActionPanel _bagQuickActionPanel;
 
-    // ── Unity Lifecycle ────────────────────────────────────────────────────
+    // Unity Lifecycle
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -240,12 +236,10 @@ public class ItemUseHandler : MonoBehaviour
         return panelParent != null ? panelParent : transform.root;
     }
 
-    // ── Public API: gọi từ ItemDetailPanel ────────────────────────────────
+    // Public API: gọi từ ItemDetailPanel
 
-    /// <summary>
-    /// Entry point khi người chơi nhấn nút "Sử dụng" trên ItemDetailPanel.
-    /// Tự động phân loại item và gọi handler tương ứng.
-    /// </summary>
+    // Entry point khi người chơi nhấn nút "Sử dụng" trên ItemDetailPanel.
+    // Tự động phân loại item và gọi handler tương ứng.
     public void RequestUseItem(InventorySlotDto slot)
     {
         if (slot == null || slot.quantity <= 0)
@@ -297,16 +291,16 @@ public class ItemUseHandler : MonoBehaviour
         }
     }
 
-    // ── Item Use Handlers ─────────────────────────────────────────────────
+    // Item Use Handlers
 
-    /// <summary>Trang bị item (equipment type 0-5) qua bridge.</summary>
+    // Trang bị item (equipment type 0-5) qua bridge.
     private void DoEquipItem(InventorySlotDto slot, ItemTemplateDto template)
     {
         Debug.Log($"[ItemUseHandler] ⚔️ Trang bị item: slot={slot.slotIndex}, code={slot.itemCode}");
         inventoryBridge?.RequestEquipItem(slot.slotIndex, slot.itemCode);
     }
 
-    /// <summary>Sử dụng item tiêu thụ (type 21-29): gọi GameplayCommandService → áp dụng HP/MP qua NGO → cập nhật buff HUD.</summary>
+    // Sử dụng item tiêu thụ (type 21-29): gọi GameplayCommandService → áp dụng HP/MP qua NGO → cập nhật buff HUD.
     private void DoUseConsumableItem(InventorySlotDto slot)
     {
         Debug.Log($"[ItemUseHandler] 🍶 Sử dụng consumable: slot={slot.slotIndex}");
@@ -333,7 +327,7 @@ public class ItemUseHandler : MonoBehaviour
         GameplayCommandService.Instance.UseInventoryItemServerRpc(slot.slotIndex);
     }
 
-    /// <summary>Sử dụng item mở rộng túi (type 30): gọi GameplayCommandService use-item + cập nhật bag count.</summary>
+    // Sử dụng item mở rộng túi (type 30): gọi GameplayCommandService use-item + cập nhật bag count.
     private void DoUseBagItem(InventorySlotDto slot)
     {
         Debug.Log($"[ItemUseHandler] 🎒 Mở rộng túi đồ: slot={slot.slotIndex}");
@@ -493,7 +487,8 @@ public class ItemUseHandler : MonoBehaviour
     private IEnumerator UseItemDirectFromApiCoroutine(int playerId, int slotIndex, bool isBagItem)
     {
         string url = $"{APIClient.BASE_URL}/api/player/{playerId}/inventory/use-item";
-        string body = $"{{\"slotIndex\":{slotIndex}}}";
+        int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1;
+        string body = $"{{\"slotIndex\":{slotIndex},\"geneSlot\":{geneSlot}}}";
         byte[] bytes = Encoding.UTF8.GetBytes(body);
 
         using var req = new UnityWebRequest(url, "POST");
@@ -583,12 +578,10 @@ public class ItemUseHandler : MonoBehaviour
         return false;
     }
 
-    // ── Sort ──────────────────────────────────────────────────────────────
+    // Sort
 
-    /// <summary>
-    /// Gọi API sắp xếp inventory (gom item về phía trước, không để ô trống ở giữa).
-    /// Gắn vào OnClick của nút Sắp xếp.
-    /// </summary>
+    // Gọi API sắp xếp inventory (gom item về phía trước, không để ô trống ở giữa).
+    // Gắn vào OnClick của nút Sắp xếp.
     public void RequestSortInventory()
     {
         if (inventoryBridge == null)
@@ -615,12 +608,10 @@ public class ItemUseHandler : MonoBehaviour
         if (sortButton != null) sortButton.interactable = true;
     }
 
-    // ── UI Update ─────────────────────────────────────────────────────────
+    // UI Update
 
-    /// <summary>
-    /// Gọi khi inventory được refresh để cập nhật Quick Slots và stat bar.
-    /// InventoryNetworkBridge gọi hàm này sau mỗi lần fetch từ DB thành công.
-    /// </summary>
+    // Gọi khi inventory được refresh để cập nhật Quick Slots và stat bar.
+    // InventoryNetworkBridge gọi hàm này sau mỗi lần fetch từ DB thành công.
     public void OnInventoryRefreshed(InventorySlotDto[] slots, int bagSlots, int gold, int silver, BagEquippedItemData[] bagEquippedItems = null)
     {
         currentBagSlots = bagSlots;
@@ -632,7 +623,7 @@ public class ItemUseHandler : MonoBehaviour
         UpdateBagQuickSlots(bagEquippedItems);
     }
 
-    /// <summary>Cập nhật thanh vàng/bạc/ô túi từ GameManager (có thể gọi riêng lẻ).</summary>
+    // Cập nhật thanh vàng/bạc/ô túi từ GameManager (có thể gọi riêng lẻ).
     public void RefreshStatBar()
     {
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
@@ -663,10 +654,8 @@ public class ItemUseHandler : MonoBehaviour
         bagSlotCountText.text = $"{usedSlots}/{currentBagSlots}";
     }
 
-    /// <summary>
-    /// Duyệt qua inventory, tìm tối đa 3 item túi đồ (type=30)
-    /// và hiển thị icon + số lượng vào 3 quick-slot.
-    /// </summary>
+    // Duyệt qua inventory, tìm tối đa 3 item túi đồ (type=30)
+    // và hiển thị icon + số lượng vào 3 quick-slot.
     private void UpdateBagQuickSlots(BagEquippedItemData[] bagItems)
     {
         if (bagItems == null && GameManager.Instance != null && GameManager.Instance.HasPlayerData())
@@ -724,7 +713,7 @@ public class ItemUseHandler : MonoBehaviour
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void RequestUnequipBagQuickSlot(int quickSlotIndex)
     {
@@ -919,7 +908,7 @@ public class ItemUseHandler : MonoBehaviour
         inventoryBridge?.RefreshInventoryFromDB();
     }
 
-    /// <summary>Reload toàn bộ player data qua GameplayCommandService bao gồm final_stats (có HpBuff/MpBuff).</summary>
+    // Reload toàn bộ player data qua GameplayCommandService bao gồm final_stats (có HpBuff/MpBuff).
     private void ReloadPlayerStats()
     {
         if (!CanUseGameplayCommandService()) return;
@@ -938,7 +927,7 @@ public class ItemUseHandler : MonoBehaviour
         GameplayCommandService.Instance.RequestPlayerDataServerRpc();
     }
 
-    /// <summary>Gọi từ bên ngoài (ví dụ NpcMenuUI sau khi mua item) để refresh túi đồ.</summary>
+    // Gọi từ bên ngoài (ví dụ NpcMenuUI sau khi mua item) để refresh túi đồ.
     public void RequestRefreshInventory()
     {
         // Invalidate cache trước để đảm bảo fetch lại dữ liệu mới nhất

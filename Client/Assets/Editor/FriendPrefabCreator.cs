@@ -4,10 +4,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool: tự động tạo prefabs cho hệ thống bạn bè.
-/// Menu: GameTools → Friends → Create Friend Prefabs
-/// </summary>
+// Editor tool: tự động tạo prefabs cho hệ thống bạn bè.
+// Menu: GameTools → Friends → Create Friend Prefabs
 public static class FriendPrefabCreator
 {
     private const string PREFAB_DIR = "Assets/Resources/Prefabs/Chat";
@@ -23,7 +21,7 @@ public static class FriendPrefabCreator
         Debug.Log("[FriendPrefabCreator] ✓ Đã tạo prefabs bạn bè trong " + PREFAB_DIR);
     }
 
-    // ── 1. FriendListPanel ────────────────────────────────────────────────────
+    // 1. FriendListPanel
 
     private static void CreateFriendListPanelPrefab()
     {
@@ -34,7 +32,7 @@ public static class FriendPrefabCreator
         var bg = root.AddComponent<Image>();
         bg.color = new Color(0.15f, 0.10f, 0.04f, 0.97f);
 
-        // ── Header ──────────────────────────────────────────────
+        // Header
         var header = MakeChild(root, "Header");
         var hRt    = header.GetComponent<RectTransform>();
         SetAnchors(hRt, 0, 1, 1, 1, 0, -40, 0, 0);
@@ -54,7 +52,7 @@ public static class FriendPrefabCreator
         SetAnchors(cTxt.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, 0);
         cTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Tab Bar ──────────────────────────────────────────────
+        // Tab Bar
         var tabBar = MakeChild(root, "TabBar");
         var tbRt   = tabBar.GetComponent<RectTransform>();
         SetAnchors(tbRt, 0, 1, 1, 1, 0, -76, 0, -40);
@@ -85,7 +83,7 @@ public static class FriendPrefabCreator
 
         float contentTop = -76f;
 
-        // ── Panel Bạn Bè ─────────────────────────────────────────
+        // Panel Bạn Bè
         var panelFriends = MakeChild(root, "PanelFriends");
         SetAnchors(panelFriends.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, contentTop);
 
@@ -96,7 +94,7 @@ public static class FriendPrefabCreator
         var (friendScroll, friendContent) = MakeScrollView(panelFriends, "FriendScrollView");
         SetAnchors(friendScroll.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, 0);
 
-        // ── Panel Kết Bạn Mới ────────────────────────────────────
+        // Panel Kết Bạn Mới
         var panelAdd = MakeChild(root, "PanelAdd");
         SetAnchors(panelAdd.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, contentTop);
         panelAdd.SetActive(false);
@@ -130,7 +128,7 @@ public static class FriendPrefabCreator
         var (searchScroll, searchResultContent) = MakeScrollView(panelAdd, "SearchResultScrollView");
         SetAnchors(searchScroll.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, -44);
 
-        // ── Panel Lời Mời ────────────────────────────────────────
+        // Panel Lời Mời
         var panelPending = MakeChild(root, "PanelPending");
         SetAnchors(panelPending.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, contentTop);
         panelPending.SetActive(false);
@@ -142,7 +140,7 @@ public static class FriendPrefabCreator
         var (pendingScroll, pendingContent) = MakeScrollView(panelPending, "PendingScrollView");
         SetAnchors(pendingScroll.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, 0);
 
-        // ── FriendListUI component ───────────────────────────────
+        // FriendListUI component
         var friendListUI = root.AddComponent<FriendListUI>();
         var so = new SerializedObject(friendListUI);
 
@@ -170,7 +168,7 @@ public static class FriendPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 2. FriendRowEntry ─────────────────────────────────────────────────────
+    // 2. FriendRowEntry
 
     private static void CreateFriendRowEntryPrefab()
     {
@@ -212,7 +210,7 @@ public static class FriendPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 3. PlayerProfilePanel ─────────────────────────────────────────────────
+    // 3. PlayerProfilePanel
 
     private static void CreatePlayerProfilePanelPrefab()
     {
@@ -308,7 +306,7 @@ public static class FriendPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static (GameObject scroll, Transform content) MakeScrollView(GameObject parent, string name)
     {
@@ -424,7 +422,7 @@ public static class FriendPrefabCreator
         return go;
     }
 
-    /// <summary>offsetMin/Max correspond to: left, bottom, right, top offsets from anchors.</summary>
+    // offsetMin/Max correspond to: left, bottom, right, top offsets from anchors.
     private static void SetAnchors(RectTransform rt,
         float anchorMinX, float anchorMaxX, float anchorMinY, float anchorMaxY,
         float left, float bottom, float right, float top)

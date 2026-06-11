@@ -3,35 +3,30 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool – tự động thêm component DebuffSpriteTint và OverheadStatusDisplay
-/// vào tất cả 12 player prefabs (He + Fusion).
-///
-/// Menu: GameTools → Skill Effects → Setup All Player Prefabs
-///
-/// Điều kiện:
-///   • StatusIconEntry.prefab phải tồn tại tại Assets/Resources/Prefabs/UI/
-///     (tạo bằng GameTools → Skill Effects → Create Status Icon Prefab).
-///   • Các prefab phải có child tên "PlayerHpBarCanvas".
-///
-/// Kết quả:
-///   • DebuffSpriteTint thêm vào root của mỗi prefab (cùng chỗ với SpriteRenderer).
-///   • OverheadStatusDisplay thêm vào child "PlayerHpBarCanvas".
-///     - Gán statusIconPrefab = StatusIconEntry.prefab
-///     - Tạo child "StatusIconContainer" (HorizontalLayoutGroup) làm iconContainer
-/// </summary>
+// Editor tool – tự động thêm component DebuffSpriteTint và OverheadStatusDisplay
+// vào tất cả 12 player prefabs (He + Fusion).
+// Menu: GameTools → Skill Effects → Setup All Player Prefabs
+// Điều kiện:
+// • StatusIconEntry.prefab phải tồn tại tại Assets/Resources/Prefabs/UI/
+// (tạo bằng GameTools → Skill Effects → Create Status Icon Prefab).
+// • Các prefab phải có child tên "PlayerHpBarCanvas".
+// Kết quả:
+// • DebuffSpriteTint thêm vào root của mỗi prefab (cùng chỗ với SpriteRenderer).
+// • OverheadStatusDisplay thêm vào child "PlayerHpBarCanvas".
+// - Gán statusIconPrefab = StatusIconEntry.prefab
+// - Tạo child "StatusIconContainer" (HorizontalLayoutGroup) làm iconContainer
 public static class PlayerPrefabSetup
 {
     private static readonly string[] PLAYER_PREFAB_PATHS = new[]
     {
-        // ── Hệ (He) ────────────────────────────────────────────────────────
+        // Hệ (He)
         "Assets/Prefabs/Player/He/Hoa.prefab",
         "Assets/Prefabs/Player/He/Kim.prefab",
         "Assets/Prefabs/Player/He/Moc.prefab",
         "Assets/Prefabs/Player/He/Phong.prefab",
         "Assets/Prefabs/Player/He/Tho.prefab",
         "Assets/Prefabs/Player/He/Thuy.prefab",
-        // ── Fusion ─────────────────────────────────────────────────────────
+        // Fusion
         "Assets/Prefabs/Player/Fusion/F_Hoa.prefab",
         "Assets/Prefabs/Player/Fusion/F_Kim.prefab",
         "Assets/Prefabs/Player/Fusion/F_Moc.prefab",
@@ -42,7 +37,6 @@ public static class PlayerPrefabSetup
 
     private const string STATUS_ICON_PREFAB_PATH = "Assets/Resources/Prefabs/UI/StatusIconEntry.prefab";
 
-    // ────────────────────────────────────────────────────────────────────────
     [MenuItem("GameTools/Skill Effects/Setup All Player Prefabs")]
     public static void SetupAllPlayerPrefabs()
     {
@@ -82,7 +76,7 @@ public static class PlayerPrefabSetup
 
             bool changed = false;
 
-            // ── 1. DebuffSpriteTint trên root (cùng chỗ SpriteRenderer) ──────
+            // 1. DebuffSpriteTint trên root (cùng chỗ SpriteRenderer)
             var sr = prefabRoot.GetComponent<SpriteRenderer>();
             if (sr != null)
             {
@@ -109,7 +103,7 @@ public static class PlayerPrefabSetup
                 }
             }
 
-            // ── 2. OverheadStatusDisplay trong PlayerHpBarCanvas ─────────────
+            // 2. OverheadStatusDisplay trong PlayerHpBarCanvas
             var hpBarCanvas = FindChildByName(prefabRoot.transform, "PlayerHpBarCanvas");
             if (hpBarCanvas == null)
             {
@@ -162,7 +156,7 @@ public static class PlayerPrefabSetup
         EditorUtility.DisplayDialog("Setup Player Prefabs", msg, "OK");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static Transform FindChildByName(Transform parent, string name)
     {

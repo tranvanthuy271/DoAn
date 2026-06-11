@@ -4,9 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-/// <summary>
-/// Network Enemy Spawner - Load enemy spawns từ API và spawn enemy trong map
-/// </summary>
+// Network Enemy Spawner - Load enemy spawns từ API và spawn enemy trong map
 public class NetworkEnemySpawner : NetworkBehaviour
 {
     [Header("Configuration")]
@@ -58,11 +56,9 @@ public class NetworkEnemySpawner : NetworkBehaviour
         TryStartLoading();
     }
 
-    /// <summary>
-    /// Gọi bởi NGO sau khi NetworkObject được spawn.
-    /// Trên dedicated server, Start() chạy trước StartServer() nên IsServer = false.
-    /// OnNetworkSpawn() chạy SAU StartServer() → IsServer = true → spawn enemy.
-    /// </summary>
+    // Gọi bởi NGO sau khi NetworkObject được spawn.
+    // Trên dedicated server, Start() chạy trước StartServer() nên IsServer = false.
+    // OnNetworkSpawn() chạy SAU StartServer() → IsServer = true → spawn enemy.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -105,9 +101,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         StartCoroutine(CheckRespawnLoop());
     }
 
-    /// <summary>
-    /// Load enemy spawns từ API và spawn
-    /// </summary>
+    // Load enemy spawns từ API và spawn
     private IEnumerator LoadAndSpawnEnemies()
     {
         foreach (int targetMapId in ResolveTargetMapIds())
@@ -271,9 +265,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Spawn enemy tại một spawn point
-    /// </summary>
+    // Spawn enemy tại một spawn point
     private void SpawnEnemyAtPoint(EnemySpawnData spawnData, int targetMapId)
     {
         if (enemyPrefabManager == null)
@@ -412,9 +404,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         _spawnMapIdCache[spawnData.spawn_id] = targetMapId;
     }
 
-    /// <summary>
-    /// Coroutine chạy liên tục trên server — poll mỗi 5s, phát hiện spawn point trống và respawn.
-    /// </summary>
+    // Coroutine chạy liên tục trên server — poll mỗi 5s, phát hiện spawn point trống và respawn.
     private IEnumerator CheckRespawnLoop()
     {
         yield return new WaitForSeconds(10f); // chờ initial spawn xong
@@ -472,9 +462,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
             obj.GetComponent<NetworkVisibilityZoneFilter>()?.RefreshVisibility();
     }
 
-    /// <summary>
-    /// Respawn enemy sau khi bị kill
-    /// </summary>
+    // Respawn enemy sau khi bị kill
     public void RespawnEnemy(int spawnId, EnemySpawnData spawnData)
     {
         if (!IsServer) return;
@@ -582,9 +570,7 @@ public class NetworkEnemySpawner : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Gắn map-based visibility: enemy visible cho TẤT CẢ player cùng map.
-    /// </summary>
+    // Gắn map-based visibility: enemy visible cho TẤT CẢ player cùng map.
     private static void ApplyMapVisibility(GameObject enemyObj, int targetMapId)
     {
         var zoneTag = enemyObj.GetComponent<ZoneOwnerTag>() ?? enemyObj.AddComponent<ZoneOwnerTag>();

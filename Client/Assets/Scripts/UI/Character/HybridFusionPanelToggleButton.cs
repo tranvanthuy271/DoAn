@@ -1,16 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// HybridFusionPanelToggleButton — Nút mở HybridFusionPanel.
-///
-/// ═══════════════════════════════════════════════════════════════
-/// INSPECTOR SETUP:
-///   1. Gắn script này lên Button "HybridFusion" trong UI
-///      (ví dụ: nút ⚡ trên CharacterPanel / Gene sub-menu).
-///   2. Kéo HybridFusionPanel (GameObject) vào slot hybridPanel.
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// HybridFusionPanelToggleButton — Nút mở HybridFusionPanel.
+// INSPECTOR SETUP:
+// 1. Gắn script này lên Button "HybridFusion" trong UI
+// (ví dụ: nút ⚡ trên CharacterPanel / Gene sub-menu).
+// 2. Kéo HybridFusionPanel (GameObject) vào slot hybridPanel.
 [RequireComponent(typeof(Button))]
 public class HybridFusionPanelToggleButton : MonoBehaviour
 {

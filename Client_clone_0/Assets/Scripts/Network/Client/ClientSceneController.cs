@@ -5,13 +5,10 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using Unity.Netcode;
 
-/// <summary>
-/// Client-side: nhận lệnh teleport từ server và chuyển scene mà KHÔNG reconnect.
-/// Giống LangLa: server gọi zone.removeChar() + addChar() — client chỉ cần reload scene.
-///
-/// Gắn vào: "ClientBootstrap" GameObject, DontDestroyOnLoad.
-/// KHÔNG cần NetworkBehaviour — là MonoBehaviour thuần.
-/// </summary>
+// Client-side: nhận lệnh teleport từ server và chuyển scene mà KHÔNG reconnect.
+// Giống LangLa: server gọi zone.removeChar() + addChar() — client chỉ cần reload scene.
+// Gắn vào: "ClientBootstrap" GameObject, DontDestroyOnLoad.
+// KHÔNG cần NetworkBehaviour — là MonoBehaviour thuần.
 [DisallowMultipleComponent]
 public class ClientSceneController : MonoBehaviour
 {
@@ -30,9 +27,7 @@ public class ClientSceneController : MonoBehaviour
     public int CurrentMapId  { get; private set; } = -1;
     public int CurrentZoneId { get; private set; } = -1;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -56,15 +51,11 @@ public class ClientSceneController : MonoBehaviour
         GameManager.OnPlayerDataSet -= HandlePlayerDataSet;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gọi từ ZoneTransitionController.TeleportToZoneClientRpc().
-    /// Thực hiện: show loading → load scene (nếu khác) → reposition player → hide loading.
-    /// KHÔNG shutdown NetworkManager, KHÔNG reconnect.
-    /// </summary>
+    // Gọi từ ZoneTransitionController.TeleportToZoneClientRpc().
+    // Thực hiện: show loading → load scene (nếu khác) → reposition player → hide loading.
+    // KHÔNG shutdown NetworkManager, KHÔNG reconnect.
     public void HandleZoneTeleport(string sceneName, float x, float y, int mapId, int zoneId)
     {
         if (_isTransitioning)
@@ -199,9 +190,7 @@ public class ClientSceneController : MonoBehaviour
         return savedZoneId >= 0 ? savedZoneId : -1;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Core coroutine
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator LoadSceneAndReposition(string sceneName, Vector3 targetPos, int mapId, int zoneId)
     {
@@ -385,9 +374,7 @@ public class ClientSceneController : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Loading Screen
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void ShowLoadingScreen(string status = null)
     {

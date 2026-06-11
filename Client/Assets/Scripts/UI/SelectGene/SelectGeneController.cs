@@ -4,11 +4,9 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 
-/// <summary>
-/// SelectGeneController: Scene controller cho màn chọn hệ gene (SelectGene).
-/// Xuất hiện sau login khi gene 2 đã được mở khoá.
-/// Người chơi chọn chơi với nhân vật Hệ Gene 1 hoặc Hệ Gene 2.
-/// </summary>
+// SelectGeneController: Scene controller cho màn chọn hệ gene (SelectGene).
+// Xuất hiện sau login khi gene 2 đã được mở khoá.
+// Người chơi chọn chơi với nhân vật Hệ Gene 1 hoặc Hệ Gene 2.
 public class SelectGeneController : MonoBehaviour
 {
     [Header("Slot UI")]
@@ -29,7 +27,7 @@ public class SelectGeneController : MonoBehaviour
     public Button       cancelCreateButton;
     public TMP_Text     createErrorText;
 
-    // ── Runtime state ────────────────────────────────────────────────────
+    // Trạng thái runtime được cập nhật khi game đang chạy.
     private int          _userId;
     private APIClient    _api;
     private GeneSlotsResponse _slotsData;
@@ -39,7 +37,7 @@ public class SelectGeneController : MonoBehaviour
     private const string KeyActiveGeneSlot      = "ACTIVE_GENE_SLOT";
     private const string KeyPostGeneSelectScene = "POST_GENE_SELECT_SCENE";
 
-    // ── Unity Lifecycle ──────────────────────────────────────────────────
+    // Unity Lifecycle
     private void Start()
     {
         _userId = PlayerPrefs.GetInt("USER_ID", 0);
@@ -94,7 +92,7 @@ public class SelectGeneController : MonoBehaviour
         LoadGeneSlots();
     }
 
-    // ── Data Loading ─────────────────────────────────────────────────────
+    // Data Loading
     private void LoadGeneSlots()
     {
         SetLoading(true, "Đang tải dữ liệu nhân vật...");
@@ -149,7 +147,7 @@ public class SelectGeneController : MonoBehaviour
         }
     }
 
-    // ── Slot Events ──────────────────────────────────────────────────────
+    // Slot Events
     private void OnSlotPlayClicked(int slot)
     {
         PlayerPrefs.SetInt(KeyActiveGeneSlot, slot);
@@ -195,7 +193,7 @@ public class SelectGeneController : MonoBehaviour
         SetCreatePanelVisible(true);
     }
 
-    // ── Create Gene 2 Character ───────────────────────────────────────────
+    // Create Gene 2 Character
     private void OnConfirmCreate()
     {
         string name = createNameInput != null ? createNameInput.text.Trim() : "";
@@ -229,7 +227,7 @@ public class SelectGeneController : MonoBehaviour
             });
     }
 
-    // ── Navigation ───────────────────────────────────────────────────────
+    // Navigation
     private void OnExitClicked()
     {
         // Quay lại Login và xoá token
@@ -245,7 +243,7 @@ public class SelectGeneController : MonoBehaviour
         SceneManager.LoadScene(targetScene);
     }
 
-    // ── UI Helpers ───────────────────────────────────────────────────────
+    // UI Helpers
     private void SetLoading(bool show, string message = "")
     {
         if (loadingOverlay != null) loadingOverlay.SetActive(show);

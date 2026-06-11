@@ -3,23 +3,18 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// OverheadStatusDisplay – Hiển thị icon buff/debuff trên đầu player/enemy trong World Space Canvas.
-///
-/// Setup:
-///   • Thêm component này vào PlayerHpBarCanvas (World Space canvas con của Player prefab).
-///   • Thêm vào enemy health bar canvas của Enemy prefab.
-///   • Gán statusIconPrefab (StatusIconEntry prefab).
-///   • Script tự subscribe DebuffManager.OnDebuffsChanged và PlayerBuffSync.OnBuffStateChanged.
-///
-/// Layout:
-///   • Icon xếp ngang (HorizontalLayoutGroup).
-///   • Icon debuff (bất lợi) hiện bình thường.
-///   • Icon buff (có lợi) hiện với viền vàng nhạt.
-///   • Mỗi icon update countdown riêng (kể cả giây đối với buff lẫn debuff).
-///
-/// Countdown được thể hiện qua CountdownRing (Radial360 fill) bên trong mỗi StatusIconEntry.
-/// </summary>
+// OverheadStatusDisplay – Hiển thị icon buff/debuff trên đầu player/enemy trong World Space Canvas.
+// Setup:
+// • Thêm component này vào PlayerHpBarCanvas (World Space canvas con của Player prefab).
+// • Thêm vào enemy health bar canvas của Enemy prefab.
+// • Gán statusIconPrefab (StatusIconEntry prefab).
+// • Script tự subscribe DebuffManager.OnDebuffsChanged và PlayerBuffSync.OnBuffStateChanged.
+// Layout:
+// • Icon xếp ngang (HorizontalLayoutGroup).
+// • Icon debuff (bất lợi) hiện bình thường.
+// • Icon buff (có lợi) hiện với viền vàng nhạt.
+// • Mỗi icon update countdown riêng (kể cả giây đối với buff lẫn debuff).
+// Countdown được thể hiện qua CountdownRing (Radial360 fill) bên trong mỗi StatusIconEntry.
 public class OverheadStatusDisplay : MonoBehaviour
 {
     [Header("Prefab")]
@@ -34,17 +29,17 @@ public class OverheadStatusDisplay : MonoBehaviour
     [SerializeField] private Color buffRingColor   = new Color(1f, 0.9f, 0.2f, 1f);   // vàng
     [SerializeField] private Color debuffRingColor = new Color(1f, 0.2f, 0.2f, 1f);   // đỏ
 
-    // ── Pool ──────────────────────────────────────────────────────────────────
+    // Pool
     private readonly List<StatusIconEntry> _pool = new List<StatusIconEntry>();
 
-    // ── Refs ─────────────────────────────────────────────────────────────────
+    // Refs
     private DebuffManager   _debuffManager;
     private PlayerBuffSync  _buffSync;      // null nếu là enemy
 
     // Dùng để tính remaining seconds từ DebuffEntry
     private float _serverTimeOffset; // client correction — ít dùng vì chỉ hiển thị
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -111,7 +106,7 @@ public class OverheadStatusDisplay : MonoBehaviour
         }
     }
 
-    // ── Refresh ───────────────────────────────────────────────────────────────
+    // Refresh
 
     private void RefreshAll()
     {
@@ -120,7 +115,7 @@ public class OverheadStatusDisplay : MonoBehaviour
 
         float now = GetServerTime();
 
-        // ── Debuffs ───────────────────────────────────────────────────────
+        // Debuffs
         if (_debuffManager != null)
         {
             var debuffs = _debuffManager.ActiveDebuffs;
@@ -140,7 +135,7 @@ public class OverheadStatusDisplay : MonoBehaviour
 
         }
 
-        // ── Buffs (PlayerBuffSync, chỉ trên player) ───────────────────────
+        // Buffs (PlayerBuffSync, chỉ trên player)
         if (_buffSync != null)
         {
             float armorRemain = _buffSync.GetArmorBuffRemaining();
@@ -163,7 +158,7 @@ public class OverheadStatusDisplay : MonoBehaviour
         }
     }
 
-    // ── Pool ──────────────────────────────────────────────────────────────────
+    // Pool
 
     private StatusIconEntry GetFromPool()
     {

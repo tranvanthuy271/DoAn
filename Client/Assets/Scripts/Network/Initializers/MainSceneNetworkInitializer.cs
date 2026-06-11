@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Script để load player data từ API khi vào Main scene và connect đến server
-/// Main scene là scene game chính với network sync
-/// </summary>
+// Script để load player data từ API khi vào Main scene và connect đến server
+// Main scene là scene game chính với network sync
 public class MainSceneNetworkInitializer : MonoBehaviour
 {
     [Header("References")]
@@ -52,9 +50,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Load player data từ API
-    /// </summary>
+    // Load player data từ API
     private void LoadPlayerDataFromAPI()
     {
         if (isInitializing)
@@ -133,17 +129,13 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// Kiểm tra xem player data đã được load chưa (để các script khác có thể check)
-    /// </summary>
+    // Kiểm tra xem player data đã được load chưa (để các script khác có thể check)
     public bool IsPlayerDataLoaded()
     {
         return playerDataLoaded && GameManager.Instance != null && GameManager.Instance.HasPlayerData();
     }
 
-    /// <summary>
-    /// Get player data (nếu đã load)
-    /// </summary>
+    // Get player data (nếu đã load)
     public PlayerDataResponse GetPlayerData()
     {
         if (GameManager.Instance != null && GameManager.Instance.HasPlayerData())
@@ -153,9 +145,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Thử connect đến server nếu cần
-    /// </summary>
+    // Thử connect đến server nếu cần
     private void TryConnectToServer()
     {
         // Kiểm tra xem có cần connect không
@@ -213,9 +203,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
         networkManager.ConnectToServer();
     }
 
-    /// <summary>
-    /// Callback khi client connect thành công
-    /// </summary>
+    // Callback khi client connect thành công
     private void OnClientConnectedSuccess(ulong clientId)
     {
         // Debug.Log($"[MainSceneNetworkInitializer] ✓✓✓ Client {clientId} connected successfully! ✓✓✓");
@@ -245,9 +233,7 @@ public class MainSceneNetworkInitializer : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Callback khi client disconnect
-    /// </summary>
+    // Callback khi client disconnect
     private void OnClientDisconnected(ulong clientId)
     {
         // Debug.LogWarning($"[MainSceneNetworkInitializer] Client {clientId} disconnected from server");

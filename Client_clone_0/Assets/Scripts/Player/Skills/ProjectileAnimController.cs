@@ -1,17 +1,13 @@
 using UnityEngine;
 
-/// <summary>
-/// Gắn vào projectile prefab cùng với Animator.
-///
-/// Hoạt động với Cách 2 "Animation Event":
-///   - Clip chứa toàn bộ frames: [bay/fly] rồi đến [phát nổ/explode].
-///   - Tại frame đầu tiên của phần explode, đặt Animation Event gọi OnAnimationCheckpoint().
-///   - Nếu chưa có hit: tua về frame 0 → tiếp tục lặp phần fly.
-///   - Nếu đã có hit: không làm gì → animation tự chạy tiếp phần explode.
-///
-/// Cách kích hoạt:
-///   Script damage (DotDamage, FireballDamage...) gọi MarkHit() khi va chạm.
-/// </summary>
+// Gắn vào projectile prefab cùng với Animator.
+// Hoạt động với Cách 2 "Animation Event":
+// - Clip chứa toàn bộ frames: [bay/fly] rồi đến [phát nổ/explode].
+// - Tại frame đầu tiên của phần explode, đặt Animation Event gọi OnAnimationCheckpoint().
+// - Nếu chưa có hit: tua về frame 0 → tiếp tục lặp phần fly.
+// - Nếu đã có hit: không làm gì → animation tự chạy tiếp phần explode.
+// Cách kích hoạt:
+// Script damage (DotDamage, FireballDamage...) gọi MarkHit() khi va chạm.
 [RequireComponent(typeof(Animator))]
 public class ProjectileAnimController : MonoBehaviour
 {
@@ -37,18 +33,14 @@ public class ProjectileAnimController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Gọi từ script damage khi projectile trúng mục tiêu.
-    /// </summary>
+    // Gọi từ script damage khi projectile trúng mục tiêu.
     public void MarkHit()
     {
         hasHit = true;
     }
 
-    /// <summary>
-    /// Được gọi bởi Animation Event tại frame checkpoint trong clip.
-    /// Đặt event này tại frame đầu tiên của phần explosion.
-    /// </summary>
+    // Được gọi bởi Animation Event tại frame checkpoint trong clip.
+    // Đặt event này tại frame đầu tiên của phần explosion.
     public void OnAnimationCheckpoint()
     {
         if (!hasHit)

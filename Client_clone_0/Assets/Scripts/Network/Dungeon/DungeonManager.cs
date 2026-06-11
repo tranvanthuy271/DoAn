@@ -2,23 +2,17 @@ using System;
 using UnityEngine;
 
 
-/// <summary>
-/// DungeonManager - Singleton quản lý TRẠNG THÁI phó bản phía CLIENT.
-///
-/// KIẾN TRÚC MỚI (Zone-based):
-///   Client KHÔNG BAO GIỜ gọi Shutdown/StartHost/StartClient.
-///   Mọi chuyển cảnh phó bản đều thông qua ZoneTransitionController ServerRpc
-///   (giống chuyển map thường — in-process, instant, không disconnect).
-///
-/// SOLO:  Client → RequestDungeonEntryServerRpc(mapId, configId)
-///        Server tạo custom room → transfer client vào dungeon scene
-///
-/// PARTY: Leader → RequestPartyDungeonEntryServerRpc(mapId, configId, memberIds)
-///        Server tạo 1 custom room → transfer tất cả party members
-///
-/// EXIT:  Client → RequestDungeonExitServerRpc(returnMapId)
-///        Server transfer client về overworld map
-/// </summary>
+// DungeonManager - Singleton quản lý TRẠNG THÁI phó bản phía CLIENT.
+// KIẾN TRÚC MỚI (Zone-based):
+// Client KHÔNG BAO GIỜ gọi Shutdown/StartHost/StartClient.
+// Mọi chuyển cảnh phó bản đều thông qua ZoneTransitionController ServerRpc
+// (giống chuyển map thường — in-process, instant, không disconnect).
+// SOLO:  Client → RequestDungeonEntryServerRpc(mapId, configId)
+// Server tạo custom room → transfer client vào dungeon scene
+// PARTY: Leader → RequestPartyDungeonEntryServerRpc(mapId, configId, memberIds)
+// Server tạo 1 custom room → transfer tất cả party members
+// EXIT:  Client → RequestDungeonExitServerRpc(returnMapId)
+// Server transfer client về overworld map
 public class DungeonManager : MonoBehaviour
 {
     private static DungeonManager _instance;
@@ -95,9 +89,7 @@ public class DungeonManager : MonoBehaviour
     //  ENTRY — Gửi yêu cầu vào phó bản qua ZoneTransitionController
     // ========================================================================
 
-    /// <summary>
-    /// Yêu cầu vào phó bản solo. Gọi từ UI (DungeonNpcMenuUI).
-    /// </summary>
+    // Yêu cầu vào phó bản solo. Gọi từ UI (DungeonNpcMenuUI).
     public void EnterDungeon(DungeonConfigData config)
     {
         if (config == null) return;
@@ -115,10 +107,8 @@ public class DungeonManager : MonoBehaviour
         ztc.RequestDungeonEntryServerRpc(config.map_id, config.dungeon_id);
     }
 
-    /// <summary>
-    /// Yêu cầu cả tổ đội vào phó bản. Gọi từ DungeonNpcMenuUI (leader only).
-    /// partyMemberUserIds: danh sách userId của thành viên party (bao gồm cả leader).
-    /// </summary>
+    // Yêu cầu cả tổ đội vào phó bản. Gọi từ DungeonNpcMenuUI (leader only).
+    // partyMemberUserIds: danh sách userId của thành viên party (bao gồm cả leader).
     public void EnterPartyDungeon(DungeonConfigData config, string[] partyMemberUserIds)
     {
         if (config == null) return;
@@ -141,7 +131,7 @@ public class DungeonManager : MonoBehaviour
     //  EXIT — Rời phó bản qua ZoneTransitionController
     // ========================================================================
 
-    /// <summary>Rời phó bản và quay về overworld.</summary>
+    // Rời phó bản và quay về overworld.
     public void ExitDungeon(int returnMapId = 0)
     {
         Debug.Log($"[DungeonManager] ExitDungeon | returnMapId={returnMapId}", this);
@@ -161,7 +151,7 @@ public class DungeonManager : MonoBehaviour
     //  CALLBACKS TỪ ZoneTransitionController (ClientRpc)
     // ========================================================================
 
-    /// <summary>Gọi bởi NotifyDungeonEnteredClientRpc — cập nhật trạng thái đã vào dungeon.</summary>
+    // Gọi bởi NotifyDungeonEnteredClientRpc — cập nhật trạng thái đã vào dungeon.
     public void OnZoneDungeonEntered(int dungeonConfigId, int mapId, int zoneId)
     {
         _isInDungeon        = true;
@@ -180,7 +170,7 @@ public class DungeonManager : MonoBehaviour
         Notify("Đã vào phó bản!");
     }
 
-    /// <summary>Gọi bởi NotifyDungeonExitedClientRpc — cập nhật trạng thái đã rời dungeon.</summary>
+    // Gọi bởi NotifyDungeonExitedClientRpc — cập nhật trạng thái đã rời dungeon.
     public void OnZoneDungeonExited()
     {
         _isInDungeon        = false;
@@ -225,10 +215,8 @@ public class DungeonManager : MonoBehaviour
         OnWaveStateChanged?.Invoke(_currentWaveRound, _currentWaveMaxRounds, _currentWaveRemainingSeconds);
     }
 
-    /// <summary>
-    /// Auto-creates a persistent WaveHUD canvas if no WaveHUD exists in the scene.
-    /// Called when the server sends the first wave state with round > 0.
-    /// </summary>
+    // Auto-creates a persistent WaveHUD canvas if no WaveHUD exists in the scene.
+    // Called when the server sends the first wave state with round > 0.
     private void EnsureWaveHUD()
     {
         if (_waveHUD != null) return;

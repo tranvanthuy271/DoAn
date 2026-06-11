@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Nút HUD mở / đóng CharacterMenuPanel.
-/// Panel sẽ được neo ở cạnh trái màn hình.
-/// Gắn script này lên một Button trong Canvas HUD.
-/// </summary>
+// Nút HUD mở / đóng CharacterMenuPanel.
+// Panel sẽ được neo ở cạnh trái màn hình.
+// Gắn script này lên một Button trong Canvas HUD.
 [RequireComponent(typeof(Button))]
 public class CharacterMenuToggleButton : MonoBehaviour
 {
@@ -14,7 +12,6 @@ public class CharacterMenuToggleButton : MonoBehaviour
 
     private Button _btn;
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -39,7 +36,6 @@ public class CharacterMenuToggleButton : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Click
 
     private void OnClicked()

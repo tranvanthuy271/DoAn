@@ -3,17 +3,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// BagQuickActionPanel — Panel nhanh khi click vào BagQuickSlot trên HUD.
-/// Có thể dùng theo 2 cách:
-///   1. Runtime (ItemUseHandler): gọi BagQuickActionPanel.Create(parent) → tự xây UI.
-///   2. Prefab: Instantiate prefab → gán các reference trong Inspector → gọi Show(..., slotRect).
-/// </summary>
+// BagQuickActionPanel — Panel nhanh khi click vào BagQuickSlot trên HUD.
+// Có thể dùng theo 2 cách:
+// 1. Runtime (ItemUseHandler): gọi BagQuickActionPanel.Create(parent) → tự xây UI.
+// 2. Prefab: Instantiate prefab → gán các reference trong Inspector → gọi Show(..., slotRect).
 public class BagQuickActionPanel : MonoBehaviour
 {
     private const string OverlayCanvasName = "[BagQuickActionOverlayCanvas]";
     private const int OverlaySortingOrder = 500;
-    // ── Prefab-mode references (gán trong Inspector trên prefab) ──────────────
+    // Prefab-mode references (gán trong Inspector trên prefab)
     [Header("Prefab References (leave null if using Create())")]
     [SerializeField] private Button overlayButton;
     [SerializeField] private RectTransform dialogRect;
@@ -21,7 +19,7 @@ public class BagQuickActionPanel : MonoBehaviour
     [SerializeField] private Button detachButton;
     [SerializeField] private Button viewButton;
 
-    // ── Runtime-build references (dùng khi Create() ────────────────────────
+    // Runtime-build references (dùng khi Create()
     private Image _overlayImage;
     private Button _overlayButtonRuntime;
     private RectTransform _dialogRectRuntime;
@@ -36,13 +34,13 @@ public class BagQuickActionPanel : MonoBehaviour
     private Action _onDetach;
     private Action _onView;
 
-    // ── Properties that resolve whichever mode is active ────────────────────
+    // Properties that resolve whichever mode is active
     private RectTransform DialogRect      => dialogRect != null ? dialogRect      : _dialogRectRuntime;
     private TMP_Text      TitleText       => titleText  != null ? titleText       : _titleTextRuntime;
     private Button        DetachBtn       => detachButton != null ? detachButton  : _detachButtonRuntime;
     private Button        ViewBtn         => viewButton   != null ? viewButton    : _viewButtonRuntime;
 
-    // ── Unity lifecycle ──────────────────────────────────────────────────────
+    // Unity lifecycle
 
     private void Awake()
     {
@@ -56,13 +54,10 @@ public class BagQuickActionPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// <summary>
-    /// Hiển thị panel tại vị trí screenPos (vị trí chuột khi click).
-    /// Nếu không truyền screenPos, hiển thị giữa màn hình.
-    /// </summary>
+    // Hiển thị panel tại vị trí screenPos (vị trí chuột khi click).
+    // Nếu không truyền screenPos, hiển thị giữa màn hình.
     public void Show(string itemName, Action detachAction, Action viewAction, Vector2? screenPos = null)
     {
         // Đảm bảo panel nằm dưới root Canvas (không bị ẩn theo cha)
@@ -104,10 +99,8 @@ public class BagQuickActionPanel : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Nếu panel đang nằm trong 1 parent bị inactive (hoặc trong InventoryPanel đang ẩn),
-    /// tự động chuyển nó ra root Canvas để SetActive(true) hoạt động được.
-    /// </summary>
+    // Nếu panel đang nằm trong 1 parent bị inactive (hoặc trong InventoryPanel đang ẩn),
+    // tự động chuyển nó ra root Canvas để SetActive(true) hoạt động được.
     private void EnsureUnderRootCanvas()
     {
         Canvas bestCanvas = ResolveBestRootCanvas();
@@ -189,11 +182,9 @@ public class BagQuickActionPanel : MonoBehaviour
         Hide();
     }
 
-    // ── Positioning ─────────────────────────────────────────────────────────
+    // Positioning
 
-    /// <summary>
-    /// Đặt dialogRect tại vị trí screenPos (tọa độ màn hình từ Input.mousePosition), clamp trong Canvas.
-    /// </summary>
+    // Đặt dialogRect tại vị trí screenPos (tọa độ màn hình từ Input.mousePosition), clamp trong Canvas.
     private void PositionAtScreenPoint(Vector2 screenPos)
     {
         Canvas canvas = GetComponentInParent<Canvas>();
@@ -232,11 +223,9 @@ public class BagQuickActionPanel : MonoBehaviour
         DialogRect.anchoredPosition = pos;
     }
 
-    // ── Runtime build (Create() path) ───────────────────────────────────────
+    // Runtime build (Create() path)
 
-    /// <summary>
-    /// Factory dùng cho ItemUseHandler (runtime-only, không cần prefab).
-    /// </summary>
+    // Factory dùng cho ItemUseHandler (runtime-only, không cần prefab).
     public static BagQuickActionPanel Create(Transform parent)
     {
         GameObject root = new GameObject("BagQuickActionPanel",

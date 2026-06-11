@@ -2,25 +2,19 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Xử lý Connection Approval của NGO — validate JWT token từ client.
-///
-/// Flow:
-///   Client kết nối → NGO gọi callback này → validate JWT → approve / deny.
-///   Client phải gửi JWT trong NetworkConfig.ConnectionData (byte[] UTF-8).
-///
-/// Gắn vào: cùng GameObject với NetworkManager trong ServerScene.
-/// Gọi Initialize() trước khi NetworkManager.StartServer().
-/// </summary>
+// Xử lý Connection Approval của NGO — validate JWT token từ client.
+// Flow:
+// Client kết nối → NGO gọi callback này → validate JWT → approve / deny.
+// Client phải gửi JWT trong NetworkConfig.ConnectionData (byte[] UTF-8).
+// Gắn vào: cùng GameObject với NetworkManager trong ServerScene.
+// Gọi Initialize() trước khi NetworkManager.StartServer().
 [DisallowMultipleComponent]
 public class ZoneConnectionApproval : MonoBehaviour
 {
     private ZoneServerConfig _config;
     private string _jwtSecret;
 
-    /// <summary>
-    /// Khởi tạo với config — phải gọi trước StartServer().
-    /// </summary>
+    // Khởi tạo với config — phải gọi trước StartServer().
     public void Initialize(ZoneServerConfig config)
     {
         _config = config;
@@ -55,7 +49,7 @@ public class ZoneConnectionApproval : MonoBehaviour
             NetworkManager.Singleton.ConnectionApprovalCallback = null;
     }
 
-    // ── Approval Logic ────────────────────────────────────────────────────────
+    // Approval Logic
 
     private void HandleApprovalRequest(
         NetworkManager.ConnectionApprovalRequest request,
@@ -119,9 +113,7 @@ public class ZoneConnectionApproval : MonoBehaviour
         response.Rotation = Quaternion.identity;
     }
 
-    /// <summary>
-    /// Hỗ trợ cả raw JWT và JSON payload: {"token":"...","entryPointId":0}
-    /// </summary>
+    // Hỗ trợ cả raw JWT và JSON payload: {"token":"...","entryPointId":0}
     private static string ExtractTokenFromPayload(string raw)
     {
         raw = raw.Trim();

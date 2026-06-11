@@ -5,36 +5,32 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-/// NPC shop UI panel -- pure UI layer, no direct API calls.
-///
-/// Data flow:
-///   Server pushes NpcData via NpcInteraction.OpenMenuClientRpc -> Open()
-///   Tab "Cua hang" -> LoadShopServerRpc -> ShowShopClientRpc -> ShowShop()
-///   Click item cell -> BuyItemServerRpc -> BuyResultClientRpc -> OnBuyResult()
-///   Tab "Tui" -> shows player bag panel (connects to inventory system)
-///
-/// Inspector setup: see HUONG_DAN_NPC_SHOP_UNITY.md section 5.
-/// </summary>
+// NPC shop UI panel -- pure UI layer, no direct API calls.
+// Data flow:
+// Server pushes NpcData via NpcInteraction.OpenMenuClientRpc -> Open()
+// Tab "Cua hang" -> LoadShopServerRpc -> ShowShopClientRpc -> ShowShop()
+// Click item cell -> BuyItemServerRpc -> BuyResultClientRpc -> OnBuyResult()
+// Tab "Tui" -> shows player bag panel (connects to inventory system)
+// Inspector setup: see HUONG_DAN_NPC_SHOP_UNITY.md section 5.
 public class NpcMenuUI : MonoBehaviour
 {
     private const string LogPrefix = "[NpcMenuUI]";
 
     public static NpcMenuUI Instance { get; private set; }
 
-    // ── Main panel ──────────────────────────────────────────────────────
+    // Main panel
     [Header("Panel chinh")]
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private TMP_Text   npcNameText;
     [SerializeField] private TMP_Text   dialogueText;
     [SerializeField] private Button     btnClose;
 
-    // ── Tab buttons ──────────────────────────────────────────────────────
+    // Tab buttons
     [Header("Tabs (Cua hang | Tui)")]
     [SerializeField] private Button     btnTabShop;
     [SerializeField] private Button     btnTabBag;
 
-    // ── Shop panel ──────────────────────────────────────────────────────
+    // Shop panel
     [Header("Shop Panel")]
     [SerializeField] private GameObject shopPanel;
     [SerializeField] private Transform  shopItemContainer; // Content with GridLayoutGroup
@@ -45,30 +41,30 @@ public class NpcMenuUI : MonoBehaviour
     private bool HasFilterBar => filterBarScene != null && filterBarScene;
     private void HideFilterBar() { if (HasFilterBar) filterBarScene.SetActive(false); }
 
-    // ── Bag panel ──────────────────────────────────────────────────────
+    // Bag panel
     [Header("Tui Panel")]
     [SerializeField] private GameObject bagPanel;
 
-    // ── Icons ──────────────────────────────────────────────────────────
+    // Icons
     [Header("Icons")]
     [SerializeField] private Sprite     defaultItemIcon;
-    // ── Item Detail Panel (dùng chung với túĩ đồ) ──────────────────────
+    // Item Detail Panel (dùng chung với túĩ đồ)
     [Header("Item Detail (dùng chung với túĩ đồ)")]
     [Tooltip("Kéo ItemDetailPanel prefab/instance vào đây. Khi nhấn vào icon item trong shop sẽ hiện panel này.")]
     [SerializeField] private ItemDetailPanel itemDetailPanel;
-    // ── Feedback ──────────────────────────────────────────────────────
+    // Feedback
     [Header("Thong bao (tuy chon)")]
     [SerializeField] private TMP_Text   feedbackText;
     [SerializeField] private float      feedbackDuration = 2f;
 
-    /// <summary>True khi panel NPC đang hiển thị — dùng để ngăn NpcInteraction nhận click xuyên.</summary>
+    // True khi panel NPC đang hiển thị — dùng để ngăn NpcInteraction nhận click xuyên.
     public bool IsOpen => mainPanel != null && mainPanel.activeSelf;
 
     private NpcInteraction _currentInteraction;
     private bool           _isUtilityMode = false;
     private Coroutine      _feedbackCoroutine;
 
-    // ── Filter bar state (dùng filterBarScene cho cả 2 chế độ) ───────────────────────
+    // Filter bar state (dùng filterBarScene cho cả 2 chế độ)
     private readonly List<(GameObject go, int elemClass)>  _shopCellsWithClass     = new List<(GameObject, int)>();
     private readonly List<(GameObject go, int equipType)>  _shopCellsWithEquipType = new List<(GameObject, int)>();
     private readonly List<(Button btn, int value)>         _filterButtons          = new List<(Button, int)>();
@@ -76,7 +72,6 @@ public class NpcMenuUI : MonoBehaviour
     private int   _activeEquipTypeFilter = -1;
     private float _originalScrollOffsetTop = 0f;
     private bool  _scrollOffsetModified    = false;
-    // ──────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -96,10 +91,8 @@ public class NpcMenuUI : MonoBehaviour
         if (Instance == null) Instance = this;
     }
 
-    /// <summary>
-    /// Lazy singleton fallback — Awake() never fires on inactive GameObjects.
-    /// NpcInteraction uses this instead of Instance directly.
-    /// </summary>
+    // Lazy singleton fallback — Awake() never fires on inactive GameObjects.
+    // NpcInteraction uses this instead of Instance directly.
     public static NpcMenuUI GetOrFind()
     {
         if (Instance != null) return Instance;
@@ -142,9 +135,9 @@ public class NpcMenuUI : MonoBehaviour
         // mainPanel is hidden inside EnsureInitialized() so Start() has nothing extra to do.
     }
 
-    // ── Open / Close ──────────────────────────────────────────────────
+    // Open / Close
 
-    /// <summary>Called by NpcInteraction.OpenMenuClientRpc.</summary>
+    // Called by NpcInteraction.OpenMenuClientRpc.
     public void Open(NpcData npc, NpcInteraction interaction)
     {
         if (npc == null)
@@ -254,10 +247,8 @@ public class NpcMenuUI : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    /// <summary>
-    /// Mở trực tiếp shop panel (không qua tab selection) — gọi từ NpcInteraction.ShowShopClientRpc
-    /// sau khi dynamic menu đã đóng và shop data đã sẵn sàng.
-    /// </summary>
+    // Mở trực tiếp shop panel (không qua tab selection) — gọi từ NpcInteraction.ShowShopClientRpc
+    // sau khi dynamic menu đã đóng và shop data đã sẵn sàng.
     public void OpenShopDirect(NpcInteraction interaction)
     {
         EnsureInitialized();
@@ -272,9 +263,7 @@ public class NpcMenuUI : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
         Debug.Log($"{LogPrefix} OpenShopDirect called.", this);
     }
-    /// <summary>
-    /// Mở shop tiện ích (không cần NPC) từ HUD. Gọi từ UtilityDrawerAutoInstaller khi nhấn nút "Shop".
-    /// </summary>
+    // Mở shop tiện ích (không cần NPC) từ HUD. Gọi từ UtilityDrawerAutoInstaller khi nhấn nút "Shop".
     public void OpenUtilityMode()
     {
         EnsureInitialized();
@@ -296,7 +285,7 @@ public class NpcMenuUI : MonoBehaviour
         Debug.Log($"{LogPrefix} OpenUtilityMode called.", this);
     }
 
-    /// <summary>Called via GameplayCommandService.OnUtilityShopBuyResult when server responds to a utility buy.</summary>
+    // Called via GameplayCommandService.OnUtilityShopBuyResult when server responds to a utility buy.
     private void OnUtilityBuyResult(string json)
     {
         BuyResultDto result = null;
@@ -310,7 +299,7 @@ public class NpcMenuUI : MonoBehaviour
             ItemUseHandler.Instance?.RequestRefreshInventory();
         }
     }
-    // ── Tabs ──────────────────────────────────────────────────────────
+    // Tabs
 
     private void ShowShopTab()
     {
@@ -332,7 +321,7 @@ public class NpcMenuUI : MonoBehaviour
             UnityEngine.Object.FindObjectOfType<InventoryUI>(true)?.ShowInventory();
     }
 
-    // ── Shop ──────────────────────────────────────────────────────────
+    // Shop
 
     private void ClearShopItems()
     {
@@ -347,7 +336,7 @@ public class NpcMenuUI : MonoBehaviour
         RestoreShopScrollOffset();
     }
 
-    /// <summary>Called by NpcInteraction.ShowShopClientRpc with a JSON array of shop items.</summary>
+    // Called by NpcInteraction.ShowShopClientRpc with a JSON array of shop items.
     public void ShowShop(string shopItemsJson)
     {
         Debug.Log($"[NpcMenuUI] ShowShop called. JSON length={shopItemsJson?.Length}. shopItemContainer={(shopItemContainer==null?"NULL":shopItemContainer.name)}. shopItemRowPrefab={(shopItemRowPrefab==null?"NULL":shopItemRowPrefab.name)}. filterBarScene={(HasFilterBar?filterBarScene.name:"NULL")}");
@@ -557,7 +546,7 @@ public class NpcMenuUI : MonoBehaviour
             existingPanel.Hide();
     }
 
-    // ── Element filter bar ───────────────────────────────────────────
+    // Element filter bar
 
     private void CreateElementFilterBar(bool enabled, System.Collections.Generic.HashSet<int> presentClasses = null)
     {
@@ -664,9 +653,9 @@ public class NpcMenuUI : MonoBehaviour
         }
     }
 
-    // ── Buy result ────────────────────────────────────────────────────
+    // Buy result
 
-    // ── Equip type filter bar ─────────────────────────────────────────
+    // Equip type filter bar
 
     private void CreateEquipTypeFilterBar(bool enabled, System.Collections.Generic.HashSet<int> presentTypes = null)
     {
@@ -739,7 +728,7 @@ public class NpcMenuUI : MonoBehaviour
         HighlightFilterButton(equipType);
     }
 
-    /// <summary>Called by NpcInteraction.BuyResultClientRpc after server processes purchase.</summary>
+    // Called by NpcInteraction.BuyResultClientRpc after server processes purchase.
     public void OnBuyResult(bool success, string message, int newGold)
     {
         if (success)
@@ -755,7 +744,7 @@ public class NpcMenuUI : MonoBehaviour
         }
     }
 
-    // ── Feedback ──────────────────────────────────────────────────────
+    // Feedback
 
     private void ShowFeedback(string message, Color color)
     {
@@ -773,7 +762,7 @@ public class NpcMenuUI : MonoBehaviour
         feedbackText.gameObject.SetActive(false);
     }
 
-    // ── Serializable DTOs ─────────────────────────────────────────────
+    // Serializable DTOs
 
     [System.Serializable] private class ShopListWrapper { public ShopItem[] items; }
 

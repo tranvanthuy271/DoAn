@@ -5,9 +5,7 @@ using System.Collections.Generic;
 // DTOs cho hệ thống nâng cấp trang bị (equipment upgrade)
 // ============================================================
 
-/// <summary>
-/// Config 1 bậc nâng cấp – nhận từ GET /api/upgrade/config
-/// </summary>
+// Config 1 bậc nâng cấp – nhận từ GET /api/upgrade/config
 [Serializable]
 public class UpgradeConfigDto
 {
@@ -21,9 +19,7 @@ public class UpgradeConfigDto
     public int   failPolicy;        // 0=an toàn  1=giảm 1 bậc  2=về +0
 }
 
-/// <summary>
-/// Request nâng cấp – gửi lên POST /api/upgrade/equipment
-/// </summary>
+// Request nâng cấp – gửi lên POST /api/upgrade/equipment
 [Serializable]
 public class UpgradeMaterialUsageDto
 {
@@ -44,9 +40,7 @@ public class UpgradeRequestDto
     public int                          clientRatePercent;  // tỉ lệ client tính (server so sánh để chống cheat)
 }
 
-/// <summary>
-/// Response sau khi nâng cấp – nhận từ POST /api/upgrade/equipment
-/// </summary>
+// Response sau khi nâng cấp – nhận từ POST /api/upgrade/equipment
 [Serializable]
 public class UpgradeResponseDto
 {
@@ -59,13 +53,11 @@ public class UpgradeResponseDto
     public string message;             // thông báo từ server
     public FinalStats final_stats;      // base + equipment + potential — dùng update UI
 
-    /// <summary>Inventory đã cập nhật sau khi trừ đá</summary>
+    // Inventory đã cập nhật sau khi trừ đá
     public InventorySlotDto[] updatedInventory;
 }
 
-/// <summary>
-/// Wrapper parse response từ GET /api/upgrade/options (option templates)
-/// </summary>
+// Wrapper parse response từ GET /api/upgrade/options (option templates)
 [Serializable]
 public class OptionTemplatesResponse
 {

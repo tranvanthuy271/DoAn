@@ -67,7 +67,7 @@ public class NetworkPlayerController : NetworkBehaviour
             controller.enabled = true;
         }
 
-        // ── SERVER: tắt physics hoàn toàn — ServerScene không có ground collider ──
+        // SERVER: tắt physics hoàn toàn — ServerScene không có ground collider
         // Server chỉ relay position từ Owner client, không simulate physics.
         if (IsServer && !IsOwner && rb != null)
         {
@@ -274,11 +274,9 @@ public class NetworkPlayerController : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ServerRpc để gửi input + position từ client lên server.
-    /// Server KHÔNG simulate physics (ServerScene không có ground collider).
-    /// Thay vào đó, server relay position từ Owner → syncPosition → non-owner clients.
-    /// </summary>
+    // ServerRpc để gửi input + position từ client lên server.
+    // Server KHÔNG simulate physics (ServerScene không có ground collider).
+    // Thay vào đó, server relay position từ Owner → syncPosition → non-owner clients.
     [ServerRpc]
     private void MoveServerRpc(float horizontalInput, bool up, bool down,
         Vector2 clientPosition, float clientVelocityY, bool clientIsGrounded)
@@ -288,10 +286,10 @@ public class NetworkPlayerController : NetworkBehaviour
 
         PlayerStats stats = controller.stats;
 
-        // ── 1. Server nhận input + position từ client owner ──
+        // 1. Server nhận input + position từ client owner
         transform.position = new Vector3(clientPosition.x, clientPosition.y, 0f);
 
-        // ── 3. Flip sprite (server → sync cho tất cả clients qua NetworkVariable) ──
+        // 3. Flip sprite (server → sync cho tất cả clients qua NetworkVariable)
         if (horizontalInput > 0.01f)
         {
             if (Mathf.Abs(networkScaleX.Value - 1f) > 0.01f)
@@ -303,15 +301,13 @@ public class NetworkPlayerController : NetworkBehaviour
                 networkScaleX.Value = -1f;
         }
 
-        // ── 4. Sync animation cho non-owner clients ──
+        // 4. Sync animation cho non-owner clients
         float velocityX = horizontalInput * stats.moveSpeed;
         bool isFlying = controller.godMode;
         UpdateAnimationClientRpc(velocityX, clientVelocityY, clientIsGrounded, isFlying);
     }
 
-    /// <summary>
-    /// ClientRpc để sync animation parameters cho tất cả clients
-    /// </summary>
+    // ClientRpc để sync animation parameters cho tất cả clients
     [ClientRpc]
     private void UpdateAnimationClientRpc(float velocityX, float velocityY, bool isGrounded, bool isFlying)
     {

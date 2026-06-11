@@ -2,15 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Thanh MP (Mana) dùng Slider — tương tự HealthBar.cs nhưng đọc từ NetworkPlayerDataSync.
-///
-/// Cấu trúc Hierarchy gợi ý:
-///   MpBar (gắn script này)
-///   ├── Slider          — component Slider, Min=0, Max=1, Interactable = false
-///   │   └── Fill Area / Fill   — Image, đây là fillImage
-///   └── MpText (TMP)    — hiển thị "50 / 100" (tuỳ chọn)
-/// </summary>
+// Thanh MP (Mana) dùng Slider — tương tự HealthBar.cs nhưng đọc từ NetworkPlayerDataSync.
+// Cấu trúc Hierarchy gợi ý:
+// MpBar (gắn script này)
+// ├── Slider          — component Slider, Min=0, Max=1, Interactable = false
+// └── Fill Area / Fill   — Image, đây là fillImage
+// └── MpText (TMP)    — hiển thị "50 / 100" (tuỳ chọn)
 public class MpBar : MonoBehaviour
 {
     [Header("UI References")]
@@ -23,15 +20,13 @@ public class MpBar : MonoBehaviour
     [SerializeField] private Color lowMpColor  = new Color(0.6f, 0.2f, 0.8f);  // tím khi cạn
     [SerializeField] [Range(0f, 1f)] private float lowMpThreshold = 0.25f;
 
-    // ── Internal ────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private NetworkPlayerDataSync dataSync;
     private float retryTimer = 0f;
     private const float RetryInterval = 0.3f;
     private int _retryCount = 0;
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     private void Start()
     {
@@ -104,13 +99,9 @@ public class MpBar : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Public API
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gán thủ công NetworkPlayerDataSync (nếu không dùng auto-find)
-    /// </summary>
+    // Gán thủ công NetworkPlayerDataSync (nếu không dùng auto-find)
     public void SetDataSync(NetworkPlayerDataSync sync)
     {
         if (dataSync != null)
@@ -129,9 +120,7 @@ public class MpBar : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Private helpers
-    // ════════════════════════════════════════════════════════════════════════
 
     private void OnMpChanged(int prev, int current)
     {

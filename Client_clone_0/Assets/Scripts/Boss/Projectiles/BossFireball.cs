@@ -1,7 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  BossFireball  —  Hỏa cầu rơi từ trên trời xuống
 //
 //  QUY TẮC HỦY:
@@ -13,7 +12,6 @@ using Unity.Netcode;
 //    • Tag tầng cuối = "GroundFinal"  (đặt trong Unity cho Tilemap/Collider cuối)
 //    • Tag tầng trung gian = "Ground" hoặc bất kỳ — fireball tự xuyên qua
 //    • Prefab cần: Collider2D (isTrigger), Rigidbody2D (gravity on)
-// ─────────────────────────────────────────────────────────────────────────────
 
 [RequireComponent(typeof(Collider2D), typeof(Rigidbody2D))]
 public class BossFireball : MonoBehaviour
@@ -27,7 +25,6 @@ public class BossFireball : MonoBehaviour
     private Rigidbody2D _rb;
     private bool        _hasHit = false;
 
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -37,7 +34,7 @@ public class BossFireball : MonoBehaviour
         if (col != null) col.isTrigger = true;
     }
 
-    /// <summary>Khởi tạo do BossController gọi ngay sau Instantiate.</summary>
+    // Khởi tạo do BossController gọi ngay sau Instantiate.
     public void Init(int dmg, float speed)
     {
         damage    = dmg;

@@ -2,32 +2,29 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Damage component gắn vào đầu đạn của HYBRID_WATER_WOOD_VENOM.
-/// Va chạm 1 lần rồi tự hủy. Khi trúng kẻ địch:
-///   • Gây damage
-///   • Áp slow (giảm tốc độ di chuyển)
-///   • Chặn hồi HP
-///
-/// Yêu cầu:
-///   - Collider2D với Is Trigger = true
-///   - NetworkObject trên cùng GameObject
-/// </summary>
+// Damage component gắn vào đầu đạn của HYBRID_WATER_WOOD_VENOM.
+// Va chạm 1 lần rồi tự hủy. Khi trúng kẻ địch:
+// • Gây damage
+// • Áp slow (giảm tốc độ di chuyển)
+// • Chặn hồi HP
+// Yêu cầu:
+// - Collider2D với Is Trigger = true
+// - NetworkObject trên cùng GameObject
 public class VenomBulletDamage : NetworkBehaviour
 {
-    /// <summary>Sát thương gây ra — được set bởi HybridWaterWoodVenomSkill khi spawn.</summary>
+    // Sát thương gây ra — được set bởi HybridWaterWoodVenomSkill khi spawn.
     [HideInInspector] public int damage = 250;
 
-    /// <summary>Thời gian sống tối đa (giây) — được set bởi HybridWaterWoodVenomSkill khi spawn.</summary>
+    // Thời gian sống tối đa (giây) — được set bởi HybridWaterWoodVenomSkill khi spawn.
     [HideInInspector] public float lifetime = 3f;
 
-    /// <summary>Thời gian áp slow lên kẻ địch (giây).</summary>
+    // Thời gian áp slow lên kẻ địch (giây).
     [HideInInspector] public float slowDuration = 3f;
 
-    /// <summary>Thời gian chặn hồi HP (giây).</summary>
+    // Thời gian chặn hồi HP (giây).
     [HideInInspector] public float healBlockDuration = 3f;
 
-    /// <summary>NetworkObjectId của caster để tránh tự gây damage cho mình.</summary>
+    // NetworkObjectId của caster để tránh tự gây damage cho mình.
     [HideInInspector] public ulong ownerNetworkObjectId = 0;
 
     private bool _hasHit;
@@ -138,10 +135,8 @@ public class VenomBulletDamage : NetworkBehaviour
             Destroy(gameObject);
     }
 
-    /// <summary>
-    /// Gọi sau khi Spawn() để set velocity trên tất cả client.
-    /// Server tự set velocity trực tiếp; ClientRpc chỉ chạy trên các client còn lại.
-    /// </summary>
+    // Gọi sau khi Spawn() để set velocity trên tất cả client.
+    // Server tự set velocity trực tiếp; ClientRpc chỉ chạy trên các client còn lại.
     [ClientRpc]
     public void SetVelocityClientRpc(Vector2 velocity)
     {

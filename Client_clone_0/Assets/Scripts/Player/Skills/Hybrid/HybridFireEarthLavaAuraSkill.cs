@@ -2,32 +2,26 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// HYBRID_FIRE_EARTH_LAVA_AURA — "Hỏa Thổ Dung Nham"
-/// Tạo vùng dung nham bao quanh người chơi trong <auraDuration> giây.
-/// Bất kỳ ai đi vào bán kính <auraRadius> sẽ:
-///   • Mất HP liên tục mỗi <tickInterval> giây (<effectValue> sát thương/tick)
-///   • Không thể hồi HP trong vòng <healBlockDuration> giây
-///
-/// ═══════════════════════════════════════════════════════════════════════════╗
-/// SETUP TRONG UNITY — thực hiện trên F_Hoa.prefab VÀ F_Tho.prefab          ║
-/// ───────────────────────────────────────────────────────────────────────── ║
-///  1. Chọn root GameObject → Add Component → HybridFireEarthLavaAuraSkill   ║
-///  2. skillCode         = "HYBRID_FIRE_EARTH_LAVA_AURA"                     ║
-///  3. cooldown          = 14                                                 ║
-///  4. mpCost            = 60                                                 ║
-///  5. effectValue       = 25   (sát thương mỗi tick)                        ║
-///  6. auraRadius        = 3    (bán kính dung nham, units)                  ║
-///  7. auraDuration      = 8    (thời gian duy trì, giây)                    ║
-///  8. tickInterval      = 0.5  (khoảng cách giữa các tick damage, giây)     ║
-///  9. healBlockDuration = 2    (thời gian chặn hồi HP mỗi tick, giây)       ║
-/// 10. Trong PlayerSkillManager trên cùng prefab:                            ║
-///       → Thêm vào danh sách skills:                                        ║
-///           skillType = HybridLavaAura                                      ║
-///           activationKey = <phím 4 hoặc tùy cấu hình>                     ║
-///           animationTriggerName = "HybridSkill"                            ║
-/// ═══════════════════════════════════════════════════════════════════════════╝
-/// </summary>
+// HYBRID_FIRE_EARTH_LAVA_AURA — "Hỏa Thổ Dung Nham"
+// Tạo vùng dung nham bao quanh người chơi trong <auraDuration> giây.
+// Bất kỳ ai đi vào bán kính <auraRadius> sẽ:
+// • Mất HP liên tục mỗi <tickInterval> giây (<effectValue> sát thương/tick)
+// • Không thể hồi HP trong vòng <healBlockDuration> giây
+// SETUP TRONG UNITY — thực hiện trên F_Hoa.prefab VÀ F_Tho.prefab
+// 1. Chọn root GameObject → Add Component → HybridFireEarthLavaAuraSkill
+// 2. skillCode         = "HYBRID_FIRE_EARTH_LAVA_AURA"
+// 3. cooldown          = 14
+// 4. mpCost            = 60
+// 5. effectValue       = 25   (sát thương mỗi tick)
+// 6. auraRadius        = 3    (bán kính dung nham, units)
+// 7. auraDuration      = 8    (thời gian duy trì, giây)
+// 8. tickInterval      = 0.5  (khoảng cách giữa các tick damage, giây)
+// 9. healBlockDuration = 2    (thời gian chặn hồi HP mỗi tick, giây)
+// 10. Trong PlayerSkillManager trên cùng prefab:
+// → Thêm vào danh sách skills:
+// skillType = HybridLavaAura
+// activationKey = <phím 4 hoặc tùy cấu hình>
+// animationTriggerName = "HybridSkill"
 public class HybridFireEarthLavaAuraSkill : HybridSkillBase
 {
     [Header("Lava Aura – Range")]
@@ -65,18 +59,14 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
             playerLayer = 1 << 8; // layer 8 = Player (khớp với WaterArmorBuffSkill)
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  ExecuteSkill — chạy trên Server (gọi từ HybridSkillBase.UseSkillServerRpc)
-    // ─────────────────────────────────────────────────────────────────────────
 
     protected override void ExecuteSkill(Vector2 direction)
     {
         StartCoroutine(LavaAuraSequence());
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Coroutine chính: tick damage + heal block
-    // ─────────────────────────────────────────────────────────────────────────
 
     private IEnumerator LavaAuraSequence()
     {
@@ -131,9 +121,7 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
         ShowAuraClientRpc(false);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  ClientRpc: bật / tắt hiệu ứng aura (visual)
-    // ─────────────────────────────────────────────────────────────────────────
 
     [ClientRpc]
     private void ShowAuraClientRpc(bool show)
@@ -178,9 +166,7 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
         }
     }
 
-    /// <summary>
-    /// Tìm SkillEffect trong toàn bộ cây con của root — hỗ trợ nhiều kiểu hierarchy.
-    /// </summary>
+    // Tìm SkillEffect trong toàn bộ cây con của root — hỗ trợ nhiều kiểu hierarchy.
     private Transform FindSkillEffectInHierarchy()
     {
         // 1. Direct child của component này
@@ -214,9 +200,7 @@ public class HybridFireEarthLavaAuraSkill : HybridSkillBase
         return null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Gizmos (hỗ trợ debug trong Scene view)
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void OnDrawGizmosSelected()
     {

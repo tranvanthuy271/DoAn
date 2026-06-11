@@ -4,11 +4,9 @@ using System.Collections;
 using System;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Map Manager - Quản lý thông tin map hiện tại.
-/// Khi scene load, tự động gọi GET /api/map/by-scene?scene=... để lấy mapId + mapName.
-/// Nếu API thất bại, fallback về giá trị mapId được set trong Inspector.
-/// </summary>
+// Map Manager - Quản lý thông tin map hiện tại.
+// Khi scene load, tự động gọi GET /api/map/by-scene?scene=... để lấy mapId + mapName.
+// Nếu API thất bại, fallback về giá trị mapId được set trong Inspector.
 public class MapManager : MonoBehaviour
 {
     private const int UnknownMapId = -1;

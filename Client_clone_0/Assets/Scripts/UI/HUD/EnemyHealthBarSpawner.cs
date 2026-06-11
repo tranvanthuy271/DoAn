@@ -2,10 +2,8 @@ using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// EnemyHealthBarSpawner - Tự động bind health bar local sau khi enemy root được spawn.
-/// Health bar là UI local, không phải NetworkObject.
-/// </summary>
+// EnemyHealthBarSpawner - Tự động bind health bar local sau khi enemy root được spawn.
+// Health bar là UI local, không phải NetworkObject.
 public class EnemyHealthBarSpawner : MonoBehaviour
 {
     [Header("Health Bar Prefab")]
@@ -91,9 +89,7 @@ public class EnemyHealthBarSpawner : MonoBehaviour
         spawnRoutine = null;
     }
 
-    /// <summary>
-    /// Spawn health bar local trên client này
-    /// </summary>
+    // Spawn health bar local trên client này
     private void SpawnHealthBar()
     {
         // Kiểm tra đã spawn chưa
@@ -164,9 +160,7 @@ public class EnemyHealthBarSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Public method để spawn health bar từ script khác (nếu cần)
-    /// </summary>
+    // Public method để spawn health bar từ script khác (nếu cần)
     public void SpawnHealthBarManually()
     {
         if (!hasSpawned && healthBarInstance == null)

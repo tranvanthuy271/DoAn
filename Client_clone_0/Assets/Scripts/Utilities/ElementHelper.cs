@@ -1,15 +1,12 @@
-/// <summary>
-/// Ánh xạ trung tâm giữa element ID (số) ↔ English key (lưu DB/API) ↔ Tên Tiếng Việt (hiển thị)
-/// Mỗi hệ có một giới tính cố định (không do người dùng chọn).
-///
-/// Thứ tự:
-///   0 = Kim   (Metal) → Nam
-///   1 = Mộc   (Wood)  → Nữ
-///   2 = Thủy  (Water) → Nữ
-///   3 = Hỏa   (Fire)  → Nam
-///   4 = Thổ   (Earth) → Nam
-///   5 = Phong (Wind)  → Nữ
-/// </summary>
+// Ánh xạ trung tâm giữa element ID (số) ↔ English key (lưu DB/API) ↔ Tên Tiếng Việt (hiển thị)
+// Mỗi hệ có một giới tính cố định (không do người dùng chọn).
+// Thứ tự:
+// 0 = Kim   (Metal) → Nam
+// 1 = Mộc   (Wood)  → Nữ
+// 2 = Thủy  (Water) → Nữ
+// 3 = Hỏa   (Fire)  → Nam
+// 4 = Thổ   (Earth) → Nam
+// 5 = Phong (Wind)  → Nữ
 public static class ElementHelper
 {
     public static readonly string[] VietnameseNames =
@@ -32,7 +29,7 @@ public static class ElementHelper
         "Wind"    // 5
     };
 
-    /// <summary>Giới tính cố định của từng hệ (Male/Female) – dùng khi tạo nhân vật và spawn prefab</summary>
+    // Giới tính cố định của từng hệ (Male/Female) – dùng khi tạo nhân vật và spawn prefab
     public static readonly string[] Genders =
     {
         "Male",    // 0 Kim
@@ -45,7 +42,7 @@ public static class ElementHelper
 
     public const int Count = 6;
 
-    /// <summary>Chuyển elementId → Tên Tiếng Việt để hiển thị UI</summary>
+    // Chuyển elementId → Tên Tiếng Việt để hiển thị UI
     public static string ToVietnamese(int elementId)
     {
         if (elementId < 0 || elementId >= VietnameseNames.Length)
@@ -53,7 +50,7 @@ public static class ElementHelper
         return VietnameseNames[elementId];
     }
 
-    /// <summary>Chuyển English key (từ server/DB) → Tên Tiếng Việt</summary>
+    // Chuyển English key (từ server/DB) → Tên Tiếng Việt
     public static string ToVietnamese(string englishKey)
     {
         if (string.IsNullOrEmpty(englishKey)) return "Không rõ";
@@ -65,7 +62,7 @@ public static class ElementHelper
         return englishKey;
     }
 
-    /// <summary>Chuyển elementId → English key để gửi lên API / lưu DB</summary>
+    // Chuyển elementId → English key để gửi lên API / lưu DB
     public static string ToEnglishKey(int elementId)
     {
         if (elementId < 0 || elementId >= EnglishKeys.Length)
@@ -73,7 +70,7 @@ public static class ElementHelper
         return EnglishKeys[elementId];
     }
 
-    /// <summary>Chuyển English key → elementId (trả về -1 nếu không tìm thấy)</summary>
+    // Chuyển English key → elementId (trả về -1 nếu không tìm thấy)
     public static int ToId(string englishKey)
     {
         if (string.IsNullOrEmpty(englishKey)) return -1;
@@ -107,30 +104,27 @@ public static class ElementHelper
         return -1;
     }
 
-    /// <summary>Lấy giới tính cố định (Male/Female) theo elementId</summary>
+    // Lấy giới tính cố định (Male/Female) theo elementId
     public static string GetGender(int elementId)
     {
         if (elementId < 0 || elementId >= Genders.Length) return "Male";
         return Genders[elementId];
     }
 
-    /// <summary>Lấy giới tính cố định theo English key</summary>
+    // Lấy giới tính cố định theo English key
     public static string GetGender(string englishKey) => GetGender(ToId(englishKey));
 
-    /// <summary>Id có hợp lệ không (0–5)?</summary>
+    // Id có hợp lệ không (0–5)?
     public static bool IsValid(int elementId) => elementId >= 0 && elementId < Count;
 
-    // ─── Counter / Immunity ────────────────────────────────────────────────
+    // Counter / Immunity
 
-    /// <summary>
-    /// Trả về true nếu player Hybrid miễn nhiễm với element tấn công.
-    /// Gọi trong DamageCalculator TRƯỚC khi áp -25% ATK penalty counter.
-    ///
-    /// Sử dụng:
-    ///   if (ElementHelper.IsImmuneToCounter(attackerElement, targetPlayer)) skip penalty;
-    /// </summary>
-    /// <param name="attackerElement">English key của hệ người tấn công (ví dụ: "Water").</param>
-    /// <param name="target">PlayerDataResponse của người bị tấn công.</param>
+    // Trả về true nếu player Hybrid miễn nhiễm với element tấn công.
+    // Gọi trong DamageCalculator TRƯỚC khi áp -25% ATK penalty counter.
+    // Sử dụng:
+    // if (ElementHelper.IsImmuneToCounter(attackerElement, targetPlayer)) skip penalty;
+    // Tham số attackerElement: English key của hệ người tấn công (ví dụ: "Water").
+    // Tham số target: PlayerDataResponse của người bị tấn công.
     public static bool IsImmuneToCounter(string attackerElement, PlayerDataResponse target)
     {
         if (target == null || !target.is_hybrid) return false;
@@ -146,11 +140,9 @@ public static class ElementHelper
         return false;
     }
 
-    /// <summary>
-    /// Trả về hệ sẽ bị hệ này khắc (theo Ngũ Hành Tương Khắc).
-    /// English key → English key bị khắc.
-    /// Wind không tham gia vòng khắc chuẩn (trả về null).
-    /// </summary>
+    // Trả về hệ sẽ bị hệ này khắc (theo Ngũ Hành Tương Khắc).
+    // English key → English key bị khắc.
+    // Wind không tham gia vòng khắc chuẩn (trả về null).
     public static string GetCounteredElement(string englishKey) => englishKey switch
     {
         "Metal" => "Wood",
@@ -161,11 +153,9 @@ public static class ElementHelper
         _       => null
     };
 
-    /// <summary>
-    /// Trả về hệ phụ CỐ ĐỊNH theo cặp hybrid của game:
-    ///   Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
-    /// Trả về null nếu englishKey không hợp lệ.
-    /// </summary>
+    // Trả về hệ phụ CỐ ĐỊNH theo cặp hybrid của game:
+    // Hỏa ↔ Thổ  |  Thủy ↔ Mộc  |  Kim ↔ Phong
+    // Trả về null nếu englishKey không hợp lệ.
     public static string GetFixedSecondary(string englishKey) => englishKey switch
     {
         "Fire"  => "Earth",
@@ -177,16 +167,14 @@ public static class ElementHelper
         _       => null
     };
 
-    /// <summary>
-    /// Nghịch đảo của GetCounteredElement:
-    /// trả về hệ KHẮC element đầu vào (tức là "ai khắc được element này").
-    ///   Wood  → Metal  (Kim khắc Mộc)
-    ///   Water → Wood   (Mộc khắc Thủy)
-    ///   Fire  → Water  (Thủy khắc Hỏa)
-    ///   Earth → Fire   (Hỏa khắc Thổ)
-    ///   Metal → Earth  (Thổ khắc Kim)
-    ///   Wind  → null   (Phong không có hệ khắc trong vòng chuẩn)
-    /// </summary>
+    // Nghịch đảo của GetCounteredElement:
+    // trả về hệ KHẮC element đầu vào (tức là "ai khắc được element này").
+    // Wood  → Metal  (Kim khắc Mộc)
+    // Water → Wood   (Mộc khắc Thủy)
+    // Fire  → Water  (Thủy khắc Hỏa)
+    // Earth → Fire   (Hỏa khắc Thổ)
+    // Metal → Earth  (Thổ khắc Kim)
+    // Wind  → null   (Phong không có hệ khắc trong vòng chuẩn)
     public static string GetElementThatCounters(string englishKey) => englishKey switch
     {
         "Wood"  => "Metal",
@@ -197,10 +185,8 @@ public static class ElementHelper
         _       => null
     };
 
-    /// <summary>
-    /// Kiểm tra xem một element string có nằm trong CSV list hay không.
-    /// Dùng để tra HybridBonusTargets hoặc HybridImmuneElements.
-    /// </summary>
+    // Kiểm tra xem một element string có nằm trong CSV list hay không.
+    // Dùng để tra HybridBonusTargets hoặc HybridImmuneElements.
     public static bool IsInCsvList(string element, string csvList)
     {
         if (string.IsNullOrEmpty(element) || string.IsNullOrEmpty(csvList)) return false;

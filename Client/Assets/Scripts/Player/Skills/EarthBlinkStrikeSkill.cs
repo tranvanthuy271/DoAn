@@ -2,19 +2,15 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 3 của hệ Thổ — "Địa Độn Thuật" (Dịch Chuyển + DoT Projectile)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill3 trên SkillEffect.
-///   2. Dịch chuyển player về phía trước một khoảng blinkDistance.
-///   3. Ngay sau đó spawn dotProjectilePrefab tại vị trí cũ, bay về phía trước.
-///   4. DotDamage component trên prefab xử lý sát thương theo thời gian khi chạm.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào Tho.prefab.
-///   - dotProjectilePrefab cần có: Rigidbody2D, Collider2D trigger, DotDamage.
-/// </summary>
+// Skill 3 của hệ Thổ — "Địa Độn Thuật" (Dịch Chuyển + DoT Projectile)
+// Cơ chế:
+// 1. Trigger animation Skill3 trên SkillEffect.
+// 2. Dịch chuyển player về phía trước một khoảng blinkDistance.
+// 3. Ngay sau đó spawn dotProjectilePrefab tại vị trí cũ, bay về phía trước.
+// 4. DotDamage component trên prefab xử lý sát thương theo thời gian khi chạm.
+// Setup trong Unity:
+// - Gắn component này vào Tho.prefab.
+// - dotProjectilePrefab cần có: Rigidbody2D, Collider2D trigger, DotDamage.
 public class EarthBlinkStrikeSkill : NetworkBehaviour
 {
     [Header("Blink Settings")]
@@ -34,7 +30,7 @@ public class EarthBlinkStrikeSkill : NetworkBehaviour
     [Header("Visual")]
     [SerializeField] private string animTriggerName = "Skill3";
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;

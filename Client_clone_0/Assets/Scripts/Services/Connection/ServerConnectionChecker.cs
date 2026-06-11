@@ -3,9 +3,7 @@ using UnityEngine.Networking;
 using System.Collections;
 using Unity.Netcode;
 
-/// <summary>
-/// Check xem API Server và Netcode Server đã start chưa
-/// </summary>
+// Check xem API Server và Netcode Server đã start chưa
 public class ServerConnectionChecker : MonoBehaviour
 {
     [Header("Server Config")]
@@ -34,9 +32,7 @@ public class ServerConnectionChecker : MonoBehaviour
         networkManager = NetworkManager.Singleton;
     }
 
-    /// <summary>
-    /// Check cả API Server và Netcode Server
-    /// </summary>
+    // Check cả API Server và Netcode Server
     public void CheckServers(System.Action<bool> onComplete)
     {
         if (isChecking)
@@ -89,9 +85,7 @@ public class ServerConnectionChecker : MonoBehaviour
         onComplete?.Invoke(allReady);
     }
 
-    /// <summary>
-    /// Check API Server bằng cách gọi health check endpoint
-    /// </summary>
+    // Check API Server bằng cách gọi health check endpoint
     private IEnumerator CheckAPIServer(System.Action<bool> onComplete)
     {
         // Thử gọi một endpoint đơn giản (ví dụ: GET /api/player/1/data)
@@ -115,10 +109,8 @@ public class ServerConnectionChecker : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Check Netcode Server bằng cách thử UDP ping (không cần NetworkManager)
-    /// Hoặc đơn giản chỉ check xem có thể connect được không
-    /// </summary>
+    // Check Netcode Server bằng cách thử UDP ping (không cần NetworkManager)
+    // Hoặc đơn giản chỉ check xem có thể connect được không
     private IEnumerator CheckNetcodeServer(System.Action<bool> onComplete)
     {
         // Đơn giản: Thử connect thực sự, nếu được thì OK

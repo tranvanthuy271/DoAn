@@ -1,17 +1,14 @@
 using UnityEngine;
 
-/// <summary>
-/// Test animator của player thủ công bằng phím tắt.
-/// Gắn script này vào cùng GameObject với PlayerAnimator để test local.
-///
-/// Phím tắt (chỉ hoạt động khi KHÔNG có NetworkObject, hoặc là Owner):
-///   ← → Arrow / A D  : test Run / idle (Speed)
-///   W / ↑             : test Jump (IsGrounded = false, VelocityY > 0)
-///   N                 : test Attack trigger
-///   K                 : test Die (IsDead = true)
-///   R                 : Reset về idle (IsDead = false, IsGrounded = true)
-///   [Space]           : in ra trạng thái hiện tại vào Console
-/// </summary>
+// Test animator của player thủ công bằng phím tắt.
+// Gắn script này vào cùng GameObject với PlayerAnimator để test local.
+// Phím tắt (chỉ hoạt động khi KHÔNG có NetworkObject, hoặc là Owner):
+// ← → Arrow / A D  : test Run / idle (Speed)
+// W / ↑             : test Jump (IsGrounded = false, VelocityY > 0)
+// N                 : test Attack trigger
+// K                 : test Die (IsDead = true)
+// R                 : Reset về idle (IsDead = false, IsGrounded = true)
+// [Space]           : in ra trạng thái hiện tại vào Console
 public class PlayerAnimatorTester : MonoBehaviour
 {
     [Header("Test Settings")]
@@ -61,7 +58,7 @@ public class PlayerAnimatorTester : MonoBehaviour
         playerAnimator.UpdateAnimation(simulatedSpeed, simulatedVelocityY, simulatedIsGrounded, simulatedIsFlying);
     }
 
-    // ─── Giả lập vòng bay lên rồi rơi xuống ───────────────────────────────
+    // Giả lập vòng bay lên rồi rơi xuống
     private void HandleJumpSimulation()
     {
         if (!isJumping) return;
@@ -89,7 +86,7 @@ public class PlayerAnimatorTester : MonoBehaviour
         }
     }
 
-    // ─── Xử lý phím bấm ───────────────────────────────────────────────────
+    // Xử lý phím bấm
     private void HandleKeyInput()
     {
         // Chạy

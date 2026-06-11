@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// EnemyItemDrop - Component để drop item khi enemy chết
-/// Gắn vào enemy GameObject
-/// </summary>
+// EnemyItemDrop - Component để drop item khi enemy chết
+// Gắn vào enemy GameObject
 public class EnemyItemDrop : MonoBehaviour
 {
     [Header("Drop Settings")]
@@ -57,18 +55,14 @@ public class EnemyItemDrop : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Callback khi enemy chết
-    /// </summary>
+    // Callback khi enemy chết
     private void OnEnemyDeath()
     {
         HandleDeathDrop();
     }
 
-    /// <summary>
-    /// Dedicated server không nhận ClientRpc như host/client, nên NetworkEnemyHealth
-    /// gọi trực tiếp method này để đảm bảo nhánh drop luôn chạy trên server.
-    /// </summary>
+    // Dedicated server không nhận ClientRpc như host/client, nên NetworkEnemyHealth
+    // gọi trực tiếp method này để đảm bảo nhánh drop luôn chạy trên server.
     public void HandleDeathDrop()
     {
         if (hasDropped) return;
@@ -83,9 +77,7 @@ public class EnemyItemDrop : MonoBehaviour
         DropItems();
     }
 
-    /// <summary>
-    /// Drop các item theo tỷ lệ
-    /// </summary>
+    // Drop các item theo tỷ lệ
     private void DropItems()
     {
         if (dropItems == null || dropItems.Count == 0)
@@ -124,9 +116,7 @@ public class EnemyItemDrop : MonoBehaviour
         Debug.Log($"[EnemyItemDrop] {gameObject.name}: Dropped {droppedCount}/{dropItems.Count} entries (0 = tất cả miss rate check, bình thường).");
     }
 
-    /// <summary>
-    /// Spawn ItemPickup tại vị trí, dùng item_id trực tiếp (không cần ItemData ScriptableObject).
-    /// </summary>
+    // Spawn ItemPickup tại vị trí, dùng item_id trực tiếp (không cần ItemData ScriptableObject).
     private void SpawnItemPickup(int itemId, int quantity, Vector3 position)
     {
         // Random offset để item không spawn chồng lên nhau
@@ -179,9 +169,7 @@ public class EnemyItemDrop : MonoBehaviour
         Debug.Log($"[EnemyItemDrop] Dropped {quantity}x item_id={itemId} at {spawnPosition}");
     }
 
-    /// <summary>
-    /// Thêm item vào drop list (dùng trong Inspector hoặc code)
-    /// </summary>
+    // Thêm item vào drop list (dùng trong Inspector hoặc code)
     public void AddDropItem(int itemId, float dropRate, int minQuantity, int maxQuantity)
     {
         if (dropItems == null)
@@ -196,11 +184,9 @@ public class EnemyItemDrop : MonoBehaviour
         });
     }
 
-    /// <summary>
-    /// Ghi đè toàn bộ drop list bằng dữ liệu từ DB config (gọi bởi HostSpawnConfigLoader).
-    /// Không cần ItemData ScriptableObject — lưu item_id trực tiếp.
-    /// </summary>
-    /// <param name="configItems">Danh sách DropItemEntry đã được validate bởi HostSpawnConfigLoader.</param>
+    // Ghi đè toàn bộ drop list bằng dữ liệu từ DB config (gọi bởi HostSpawnConfigLoader).
+    // Không cần ItemData ScriptableObject — lưu item_id trực tiếp.
+    // Tham số configItems: Danh sách DropItemEntry đã được validate bởi HostSpawnConfigLoader.
     public void SetDropsFromConfig(System.Collections.Generic.List<DropItemEntry> configItems)
     {
         if (configItems == null || configItems.Count == 0)
@@ -239,10 +225,8 @@ public class EnemyItemDrop : MonoBehaviour
     }
 }
 
-/// <summary>
-/// Struct để định nghĩa item drop — dùng itemId thay vì ItemData ScriptableObject
-/// để hoạt động với mọi item trong DB mà không cần tạo asset thủ công.
-/// </summary>
+// Struct để định nghĩa item drop — dùng itemId thay vì ItemData ScriptableObject
+// để hoạt động với mọi item trong DB mà không cần tạo asset thủ công.
 [System.Serializable]
 public class DropItem
 {

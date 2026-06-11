@@ -2,10 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
-/// <summary>
-/// Shared script: Spawn player với đúng prefab dựa trên element_type + gender
-/// Chỉ chạy trên server/host
-/// </summary>
+// Shared script: Spawn player với đúng prefab dựa trên element_type + gender
+// Chỉ chạy trên server/host
 public class NetworkPlayerSpawner : MonoBehaviour
 {
     // Singleton pattern để đảm bảo chỉ có 1 instance
@@ -136,11 +134,9 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Được gọi bởi SceneManager.sceneLoaded sau mỗi lần load scene.
-    /// Khi object này là DDOL, NetworkManager.Singleton sau scene change là object MỚI.
-    /// Cần re-grab và re-subscribe OnServerStarted để SpawnPlayer hoạt động.
-    /// </summary>
+    // Được gọi bởi SceneManager.sceneLoaded sau mỗi lần load scene.
+    // Khi object này là DDOL, NetworkManager.Singleton sau scene change là object MỚI.
+    // Cần re-grab và re-subscribe OnServerStarted để SpawnPlayer hoạt động.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         var newNm = NetworkManager.Singleton;
@@ -256,9 +252,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         StartCoroutine(SpawnPlayerWhenDataReady(clientId));
     }
 
-    /// <summary>
-    /// Coroutine: Đợi player data được load, sau đó spawn player
-    /// </summary>
+    // Coroutine: Đợi player data được load, sau đó spawn player
     private System.Collections.IEnumerator SpawnPlayerWhenDataReady(ulong clientId)
     {
         // Đợi auth được gửi và ServerAPI response (120 attempts = 12 giây)
@@ -325,9 +319,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         spawningClients.Remove(clientId); // Remove khỏi danh sách đang spawn
     }
 
-    /// <summary>
-    /// Spawn player ngay lập tức (đã có data hoặc dùng default)
-    /// </summary>
+    // Spawn player ngay lập tức (đã có data hoặc dùng default)
     private void SpawnPlayerNow(ulong clientId, PlayerDataResponse playerData)
     {
         if (networkPlayerPrefab == null)
@@ -384,7 +376,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
             }
         }
 
-        // --- Chọn prefab TRỰC TIẾP từ playerData được truyền vào ---
+        // Chọn prefab TRỰC TIẾP từ playerData được truyền vào
         // (tránh query lại ServerPlayerDataManager — có thể bị race condition)
         GameObject prefabToSpawn = GetPrefabForPlayerData(playerData) ?? GetPlayerPrefabForClient(clientId);
         if (prefabToSpawn == null)
@@ -488,10 +480,8 @@ public class NetworkPlayerSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Chuyển element_type → prefab trực tiếp từ playerData (không query lại DB/cache).
-    /// Dùng khi đã có playerData sẵn để tránh race condition.
-    /// </summary>
+    // Chuyển element_type → prefab trực tiếp từ playerData (không query lại DB/cache).
+    // Dùng khi đã có playerData sẵn để tránh race condition.
     private GameObject GetPrefabForPlayerData(PlayerDataResponse playerData)
     {
         if (playerData == null) return null;
@@ -522,9 +512,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         };
     }
 
-    /// <summary>
-    /// Chọn prefab dựa trên element_type + gender từ ServerPlayerDataManager
-    /// </summary>
+    // Chọn prefab dựa trên element_type + gender từ ServerPlayerDataManager
     private GameObject GetPlayerPrefabForClient(ulong clientId)
     {
         // Lấy player data từ ServerPlayerDataManager (server-side)
@@ -616,9 +604,7 @@ public class NetworkPlayerSpawner : MonoBehaviour
         return selectedPrefab;
     }
 
-    /// <summary>
-    /// Lấy tất cả player prefab (để đăng ký vào NetworkManager)
-    /// </summary>
+    // Lấy tất cả player prefab (để đăng ký vào NetworkManager)
     public System.Collections.Generic.List<GameObject> GetAllPlayerPrefabs()
     {
         var prefabs = new System.Collections.Generic.List<GameObject>();

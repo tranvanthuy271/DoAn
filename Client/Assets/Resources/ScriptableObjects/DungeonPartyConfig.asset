@@ -33,4 +33,48 @@ MonoBehaviour:
     canFly: 0
     elementType: None
     drops: []
-  completionRewards: []
+  completionRewards:
+  - itemTemplateId: 17
+    quantity: 5
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 18
+    quantity: 5
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 19
+    quantity: 5
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 20
+    quantity: 5
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 31
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 47
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 48
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 49
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 50
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 51
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 52
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 

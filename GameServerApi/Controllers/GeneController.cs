@@ -23,13 +23,10 @@ namespace GameServerApi.Controllers
             _db = db;
         }
 
-        // ──────────────────────────────────────────────────────────────
         //  Stat boost per tier đọc từ bảng gene_tier_stat_config (DB)
         //  Không còn hardcode — config qua DB/SQL migration.
-        // ──────────────────────────────────────────────────────────────
         //  GET /api/gene/config?elementType=Fire&tier=1
         //  Trả về config nâng cấp gene cho (tier, elementType) hiện tại
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("config")]
         public async System.Threading.Tasks.Task<IActionResult> GetConfig(
             [FromQuery] string elementType,
@@ -87,11 +84,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ──────────────────────────────────────────────────────────────
         //  POST /api/gene/upgrade
         //  Body: { "playerId": 1, "itemCount": 3 }
         //  itemCount: số item muốn dùng (>= itemsMin, <= itemsNeeded)
-        // ──────────────────────────────────────────────────────────────
         [HttpPost("upgrade")]
         public async System.Threading.Tasks.Task<IActionResult> UpgradeGene([FromBody] JsonElement body)
         {
@@ -103,8 +98,11 @@ namespace GameServerApi.Controllers
                 if (ResolveAuthorizedPlayerId(pidProp.GetInt32(), out int playerId) is { } authError)
                     return authError;
                 int itemCount = body.TryGetProperty("itemCount", out var icProp) ? icProp.GetInt32() : 1;
+                int geneSlot = ResolveRequestedGeneSlot(body);
 
-                var player = await _db.PlayerData.FindAsync(playerId);
+                IPlayerDataRecord? player = geneSlot == 2
+                    ? await _db.Player2Data.FindAsync(playerId)
+                    : await _db.PlayerData.FindAsync(playerId);
                 if (player == null)
                     return NotFound("Player không tồn tại.");
 
@@ -283,10 +281,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/gene/list
         //  Trả về tất cả gene của player: primary, secondary, hybrid status
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("list")]
         public async System.Threading.Tasks.Task<IActionResult> GetGeneList([FromQuery] int playerId)
         {
@@ -320,11 +316,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/gene/secondary/select
         //  Body: { "playerId": 1, "secondaryElement": "Water" }
         //  Chọn hệ gene thứ 2 lần đầu (chỉ được chọn 1 lần)
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("secondary/select")]
         public async System.Threading.Tasks.Task<IActionResult> SelectSecondaryGene([FromBody] System.Text.Json.JsonElement body)
         {
@@ -377,10 +371,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/gene/multi/config
         //  Lấy config nâng cấp hệ phụ
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("multi/config")]
         public async System.Threading.Tasks.Task<IActionResult> GetMultiConfig(
             [FromQuery] string elementType,
@@ -427,11 +419,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/gene/secondary/upgrade
         //  Body: { "playerId": 1, "itemCount": 3 }
         //  Nâng cấp hệ gene thứ 2 (secondary)
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("secondary/upgrade")]
         public async System.Threading.Tasks.Task<IActionResult> UpgradeSecondaryGene([FromBody] System.Text.Json.JsonElement body)
         {
@@ -574,10 +564,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/gene/hybrid/config?playerId=1
         //  Lấy config hybrid + kiểm tra điều kiện fusion
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("hybrid/config")]
         public async System.Threading.Tasks.Task<IActionResult> GetHybridConfig([FromQuery] int playerId)
         {
@@ -652,11 +640,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/gene/hybrid/fuse
         //  Body: { "playerId": 1, "itemCount": 5 }
         //  Fusion 2 hệ gene Tier 5 thành Hybrid Gene
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("hybrid/fuse")]
         public async System.Threading.Tasks.Task<IActionResult> FuseHybridGene([FromBody] System.Text.Json.JsonElement body)
         {
@@ -833,10 +819,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  GET /api/gene/ultimate/config?elementType=Fire&playerId=1
         //  Trả về config Gene Tối Thượng + tiến trình hiện tại của player (nếu có playerId).
-        // ══════════════════════════════════════════════════════════════
         [HttpGet("ultimate/config")]
         public async System.Threading.Tasks.Task<IActionResult> GetUltimateConfig(
             [FromQuery] string? elementType,
@@ -874,14 +858,23 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ──────────────────────────────────────────────────────────────
-        //  HELPERS
-        // ──────────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
-        /// <summary>
-        /// Bảng cặp kết hợp hợp lệ (bidirectional): chỉ 3 cặp được phép Hybrid Fusion.
-        /// Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong
-        /// </summary>
+        // Bảng cặp kết hợp hợp lệ (bidirectional): chỉ 3 cặp được phép Hybrid Fusion.
+        // Hỏa↔Thổ | Thủy↔Mộc | Kim↔Phong
+        private static int ResolveRequestedGeneSlot(JsonElement body)
+        {
+            if (body.TryGetProperty("geneSlot", out var geneSlotProp)
+                && geneSlotProp.ValueKind == JsonValueKind.Number
+                && geneSlotProp.TryGetInt32(out int geneSlot)
+                && geneSlot == 2)
+            {
+                return 2;
+            }
+
+            return 1;
+        }
+
         private IActionResult? ResolveAuthorizedPlayerId(int requestedPlayerId, out int playerId)
         {
             playerId = requestedPlayerId;
@@ -908,15 +901,13 @@ namespace GameServerApi.Controllers
             ["Metal"] = "Wind",  ["Wind"]  = "Metal",
         };
 
-        /// <summary>Kiểm tra cặp (primary, secondary) có hợp lệ không.</summary>
+        // Kiểm tra cặp (primary, secondary) có hợp lệ không.
         private static bool IsValidPair(string primary, string secondary)
             => PartnerMap.TryGetValue(primary, out var expected)
                && expected.Equals(secondary, StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// Map: tên hệ (secondary element) → item_id lõi đột biến tương ứng.
-        /// Item 31 (generic) chỉ là fallback kế thừa cũ.
-        /// </summary>
+        // Map: tên hệ (secondary element) → item_id lõi đột biến tương ứng.
+        // Item 31 (generic) chỉ là fallback kế thừa cũ.
         private static readonly Dictionary<string, int> ElementFusionItemMap
             = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -928,7 +919,7 @@ namespace GameServerApi.Controllers
             ["Wind"]  = 52,
         };
 
-        /// <summary>Trả về item_id lõi đột biến của hệ secondaryElement.</summary>
+        // Trả về item_id lõi đột biến của hệ secondaryElement.
         private static int GetFusionItemId(string secondaryElement)
             => ElementFusionItemMap.TryGetValue(secondaryElement, out var id) ? id : 31;
 
@@ -991,7 +982,7 @@ namespace GameServerApi.Controllers
             return result;
         }
 
-        /// <summary>Parse skills_json (list of {skillCode, currentLevel, isEquipped, slotIndex}) gốc.</summary>
+        // Parse skills_json (list of {skillCode, currentLevel, isEquipped, slotIndex}) gốc.
         private static List<Dictionary<string, object>> ParseSkillsJsonRaw(string json)
             => ParseJsonList(json);
 

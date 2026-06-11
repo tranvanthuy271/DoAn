@@ -2,17 +2,13 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
-/// <summary>
-/// UI banner hiện tên zone khi player bước vào khu vực mới.
-///
-/// Setup:
-///   1. Tạo Panel trong Canvas tên "ZoneNameBanner" — đặt ở góc trên giữa màn hình.
-///   2. Trong Panel: thêm TMP_Text "ZoneNameText".
-///   3. Gắn ZoneNameBanner.cs lên Panel, kéo zoneNameText.
-///   4. Panel này mặc định để Inactive — script tự Show/Hide.
-///
-/// Dùng: ZoneNameBanner.Instance?.Show("Khu Rừng Băng");
-/// </summary>
+// UI banner hiện tên zone khi player bước vào khu vực mới.
+// Setup:
+// 1. Tạo Panel trong Canvas tên "ZoneNameBanner" — đặt ở góc trên giữa màn hình.
+// 2. Trong Panel: thêm TMP_Text "ZoneNameText".
+// 3. Gắn ZoneNameBanner.cs lên Panel, kéo zoneNameText.
+// 4. Panel này mặc định để Inactive — script tự Show/Hide.
+// Dùng: ZoneNameBanner.Instance?.Show("Khu Rừng Băng");
 public class ZoneNameBanner : MonoBehaviour
 {
     public static ZoneNameBanner Instance { get; private set; }
@@ -35,7 +31,7 @@ public class ZoneNameBanner : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    /// <summary>Hiện banner với tên zone. Gọi từ ZoneTrigger (client-side).</summary>
+    // Hiện banner với tên zone. Gọi từ ZoneTrigger (client-side).
     public void Show(string name)
     {
         if (zoneNameText != null)

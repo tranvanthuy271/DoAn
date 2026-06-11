@@ -1,10 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Gắn vào bất kỳ Button nào trong scene để mở Cửa Hàng Tiện Ích (NPC 999).
-/// Không cần UtilityDrawerAutoInstaller.
-/// </summary>
+// Gắn vào bất kỳ Button nào trong scene để mở Cửa Hàng Tiện Ích (NPC 999).
+// Không cần UtilityDrawerAutoInstaller.
 [RequireComponent(typeof(Button))]
 public class UtilityShopButton : MonoBehaviour
 {

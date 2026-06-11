@@ -3,21 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// StatusIconEntry – Một ô icon hiệu ứng (buff hoặc debuff) hiển thị TRÊN ĐẦU player/enemy.
-///
-/// Khác với BuffIconEntry (dùng trong BuffHudPanel HUD):
-///   • Không có tooltip khi click (world-space, khó tương tác).
-///   • Nhỏ hơn: 32×32 px.
-///   • Luôn hiện cả countdown ring lẫn text giây.
-///
-/// Cấu trúc Prefab (tạo qua GameTools → Skill Effects → Create Status Icon Prefab):
-///   StatusIconEntry (RectTransform 32×32) ← gắn script này
-///   ├── Background   (Image – màu tối bán trong suốt)
-///   ├── Icon         (Image – sprite hiệu ứng)
-///   ├── CountdownRing(Image – Type=Filled, FillMethod=Radial360, FillOrigin=Top)
-///   └── TimeLabel    (TMP_Text – FontSize=8, Anchor BottomCenter)
-/// </summary>
+// StatusIconEntry – Một ô icon hiệu ứng (buff hoặc debuff) hiển thị TRÊN ĐẦU player/enemy.
+// Khác với BuffIconEntry (dùng trong BuffHudPanel HUD):
+// • Không có tooltip khi click (world-space, khó tương tác).
+// • Nhỏ hơn: 32×32 px.
+// • Luôn hiện cả countdown ring lẫn text giây.
+// Cấu trúc Prefab (tạo qua GameTools → Skill Effects → Create Status Icon Prefab):
+// StatusIconEntry (RectTransform 32×32) ← gắn script này
+// ├── Background   (Image – màu tối bán trong suốt)
+// ├── Icon         (Image – sprite hiệu ứng)
+// ├── CountdownRing(Image – Type=Filled, FillMethod=Radial360, FillOrigin=Top)
+// └── TimeLabel    (TMP_Text – FontSize=8, Anchor BottomCenter)
 public class StatusIconEntry : MonoBehaviour
 {
     [Header("UI References")]
@@ -28,20 +24,18 @@ public class StatusIconEntry : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private string iconsFolder = "ItemIcons";
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private float _totalDuration;
     private float _startTime;
     private bool  _isActive;
 
     private Coroutine _updateCoroutine;
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Bind dữ liệu và bắt đầu countdown.
-    /// </summary>
-    /// <param name="iconId">ID icon trong Resources/ItemIcons/.</param>
-    /// <param name="duration">Tổng thời gian hiệu ứng (giây).</param>
+    // Bind dữ liệu và bắt đầu countdown.
+    // Tham số iconId: ID icon trong Resources/ItemIcons/.
+    // Tham số duration: Tổng thời gian hiệu ứng (giây).
     public void Bind(int iconId, float duration)
     {
         _totalDuration = Mathf.Max(0.1f, duration);
@@ -54,10 +48,8 @@ public class StatusIconEntry : MonoBehaviour
         _updateCoroutine = StartCoroutine(UpdateLoop());
     }
 
-    /// <summary>
-    /// Update countdown từ bên ngoài (dùng khi parent poll mỗi frame).
-    /// Gọi thay cho coroutine nếu parent đã có Update loop.
-    /// </summary>
+    // Update countdown từ bên ngoài (dùng khi parent poll mỗi frame).
+    // Gọi thay cho coroutine nếu parent đã có Update loop.
     public void UpdateCountdown(float remainingSeconds)
     {
         if (!_isActive) return;
@@ -77,7 +69,7 @@ public class StatusIconEntry : MonoBehaviour
         }
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private IEnumerator UpdateLoop()
     {

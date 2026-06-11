@@ -13,6 +13,9 @@ public class PartyDungeonRuntime : BaseDungeonInstance
     private NetworkObject _bossObject;
     private bool _bossSpawned;
     private bool _completed;
+    private int _activeDungeonId;
+    private int _activeMapId;
+    private int _activeZoneId;
 
     public override void OnNetworkSpawn()
     {
@@ -20,6 +23,19 @@ public class PartyDungeonRuntime : BaseDungeonInstance
         if (!IsServer || config == null)
             return;
 
+        BeginEncounter(config.dungeonId, config.mapId, 0);
+    }
+
+    public void BeginEncounter(int dungeonConfigId, int mapId, int zoneId)
+    {
+        if (!IsServer || config == null)
+            return;
+
+        _activeDungeonId = dungeonConfigId > 0 ? dungeonConfigId : config.dungeonId;
+        _activeMapId = mapId >= 0 ? mapId : config.mapId;
+        _activeZoneId = Mathf.Max(0, zoneId);
+
+        DespawnTrackedEnemies();
         SpawnEnemies();
     }
 
@@ -30,8 +46,8 @@ public class PartyDungeonRuntime : BaseDungeonInstance
         _bossSpawned = false;
         _completed = false;
 
-        SetEncounterLocation(config.mapId, 0);
-        Debug.Log($"[PartyDungeonRuntime] SpawnEnemies: dungeonId={config.dungeonId} mapId={config.mapId} enemyCount={config.enemySpawns?.Count ?? 0}");
+        SetEncounterLocation(_activeMapId, _activeZoneId);
+        Debug.Log($"[PartyDungeonRuntime] SpawnEnemies: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} enemyCount={config.enemySpawns?.Count ?? 0}");
 
         foreach (var enemyConfig in config.enemySpawns)
         {
@@ -106,11 +122,36 @@ public class PartyDungeonRuntime : BaseDungeonInstance
     private void SpawnBoss()
     {
         _bossSpawned = true;
-        SetEncounterLocation(config.mapId, 0);
-        Debug.Log($"[PartyDungeonRuntime] SpawnBoss: dungeonId={config.dungeonId} mapId={config.mapId} bossEnemyId={config.bossSpawn?.enemyId}");
+        SetEncounterLocation(_activeMapId, _activeZoneId);
+        Debug.Log($"[PartyDungeonRuntime] SpawnBoss: dungeonId={_activeDungeonId} mapId={_activeMapId} zoneId={_activeZoneId} bossEnemyId={config.bossSpawn?.enemyId}");
         NetworkObject boss = SpawnConfiguredEnemy(config.bossSpawn, 1f, true);
         RegisterEnemy(boss, true);
         BroadcastStatus("Boss đã xuất hiện.");
+    }
+
+    private void DespawnTrackedEnemies()
+    {
+        foreach (NetworkObject enemy in _aliveEnemies)
+            DespawnTrackedObject(enemy);
+
+        DespawnTrackedObject(_bossObject);
+        _aliveEnemies.Clear();
+        _bossObject = null;
+    }
+
+    private static void DespawnTrackedObject(NetworkObject networkObject)
+    {
+        if (networkObject == null)
+            return;
+
+        if (networkObject.IsSpawned)
+        {
+            networkObject.Despawn(true);
+            return;
+        }
+
+        if (networkObject.gameObject != null)
+            UnityEngine.Object.Destroy(networkObject.gameObject);
     }
 
     private IEnumerator CompleteDungeonCoroutine()

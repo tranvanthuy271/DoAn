@@ -1,28 +1,26 @@
 using System.Collections.Generic;
 
-/// <summary>
-/// Data class mang thông tin hiển thị của một enemy instance.
-/// Xây dựng bởi EnemyClickHandler và truyền sang EnemyInfoPanel.Show().
-/// </summary>
+// Data class mang thông tin hiển thị của một enemy instance.
+// Xây dựng bởi EnemyClickHandler và truyền sang EnemyInfoPanel.Show().
 [System.Serializable]
 public class EnemyStats
 {
-    /// <summary>Tên hiển thị của enemy.</summary>
+    // Tên hiển thị của enemy.
     public string enemyName;
 
-    /// <summary>HP hiện tại (sync cho tất cả clients qua NetworkEnemyHealth).</summary>
+    // HP hiện tại (sync cho tất cả clients qua NetworkEnemyHealth).
     public int currentHp;
 
-    /// <summary>HP tối đa.</summary>
+    // HP tối đa.
     public int maxHp;
 
-    /// <summary>Hệ nguyên tố: Fire / Water / Earth / Metal / Wood / Wind / None.</summary>
+    // Hệ nguyên tố: Fire / Water / Earth / Metal / Wood / Wind / None.
     public string elementType;
 
-    /// <summary>Level của enemy (từ spawn_json.level).</summary>
+    // Level của enemy (từ spawn_json.level).
     public int level;
 
-    /// <summary>EXP thưởng khi giết enemy này.</summary>
+    // EXP thưởng khi giết enemy này.
     public int expReward;
 }
 

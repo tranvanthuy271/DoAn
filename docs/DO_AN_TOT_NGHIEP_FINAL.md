@@ -1938,6 +1938,98 @@ Hệ thống chiến đấu của trò chơi phân chia nhân vật thành 6 l�
     *   *Kỹ năng E - Phong Linh Tốc:* Tăng 45% tốc độ di chuyển và cộng 20% tỉ lệ né tránh (Evasion) của bản thân trong 6 giây.
     *   *Kỹ năng R (Ultimate) - Bão Phong Loạn Vũ:* Tạo cơn bão gió xoáy cuộn quét liên tục tại vị trí chọn, gây sát thương diện rộng liên tục và hút nhẹ kẻ địch vào tâm bão.
 
+3.1.6.2 Hệ thống trí tuệ nhân tạo (AI) quái vật và Boss đa giai đoạn
+
+Hệ thống trí tuệ nhân tạo (AI) quái vật và đặc biệt là Boss trong dự án được xây dựng dựa trên mô hình Máy trạng thái hữu hạn (Finite State Machine - FSM) hoạt động độc lập và chịu sự kiểm soát hoàn toàn bởi máy chủ (Dedicated Server-Authoritative) nhằm đảm bảo tính bảo mật và nhất quán dữ liệu mạng.
+
+Kiến trúc FSM trên Server-Side: Máy trạng thái hữu hạn của quái và Boss chuyển đổi tuần hoàn dựa vào khoảng cách đến người chơi gần nhất. Trạng thái hoạt động bao gồm:
+- Idle (Đứng yên): Trạng thái nghỉ ban đầu hoặc khi người chơi nằm ngoài tầm phát hiện.
+- Patrol (Tuần tra): Quái thường di chuyển qua lại giữa các điểm cắm chốt (patrol points).
+- Chase (Đuổi theo): Khi phát hiện người chơi trong tầm kiểm soát (detectionRange), AI sẽ chuyển sang bám đuổi theo trục X hoặc trục Y.
+- Attack (Tấn công): Khi mục tiêu nằm trong tầm tấn công cận chiến (meleeAttackRange) hoặc tầm cast kỹ năng đặc biệt, AI sẽ dừng di chuyển để thực hiện chuỗi hoạt động tấn công.
+- Dodging (Né tránh): Khi nhận sát thương từ người chơi, server tính toán tỉ lệ né tránh (dodgeChance). Nếu né thành công, AI sẽ chuyển sang trạng thái né lùi (back-dash) và triệt tiêu toàn bộ sát thương nhận vào.
+- Stealthed (Ẩn thân): Boss làm mờ đi bằng cách giảm độ mờ đục (alpha) của SpriteRenderer nhằm gây khó khăn cho người chơi trong việc định vị.
+- Dead (Bị tiêu diệt): Khi lượng máu về 0, AI dừng toàn bộ tác vụ, chuyển sang animation chết và chuẩn bị kích hoạt cơ chế spawn vật phẩm thưởng.
+
+Cơ chế nhảy và di chuyển platformer nâng cao: Để thích ứng với bản đồ dạng platformer 2D nhiều tầng, AI được trang bị các thuật toán di chuyển thông minh hơn:
+- Nhảy vượt địa hình (Platformer Jumping): Nếu người chơi ở vị trí cao hơn và Boss được cấu hình nhảy (canJump = true), hệ thống sẽ tính toán độ chênh lệch độ cao và kích hoạt nhảy (jumpForce, maxJumps) để tiếp cận mục tiêu.
+- Trạng thái bay lượn (Fly Mode): Với các Boss có khả năng bay (canFly = true), hệ thống sẽ tắt trọng lực (gravityScale = 0) và di chuyển Boss lượn trên không trung theo vị trí người chơi cộng thêm một offset độ cao nhất định (flyHeight).
+
+Hệ thống Boss chuyển giai đoạn đa mức HP (Multi-phase System): Hệ thống quản lý các ngưỡng HP còn lại của Boss để thay đổi hình thái tấn công động (ví dụ: Giai đoạn 1 ở mức 100% HP, Giai đoạn 2 dưới 60% HP, Giai đoạn 3 dưới 30% HP). Các phase này được nạp động từ cơ sở dữ liệu qua cột phases_json dưới dạng JSON hoặc thông qua ScriptableObject BossData. Khi chuyển pha, Boss sẽ phát trigger animation tương ứng (enrage, berserk), tăng hệ số sát thương (damage_multiplier), tăng tốc độ (speed_multiplier), giảm thời gian hồi kỹ năng (skill_cooldown_multiplier), đồng thời có thể tự động triệu hồi thêm quái đệ tử hỗ trợ (summon action). Đặc biệt, đối với phó bản tổ đội (Party Dungeon), để gia tăng thử thách và tính chiến thuật, Boss sẽ triệu hồi các bản sao (prefabs) của chính nó nhưng được thu nhỏ kích thước đi 2 lần (scale giảm 2 lần). Các đệ tử này hoạt động hoàn toàn độc lập, tự động bám đuổi và tấn công người chơi nhưng chỉ số máu (HP) và sát thương đã được giảm bớt (giảm 80% HP và 50% sát thương) để cân bằng độ khó.
+
+Các kỹ năng đặc biệt của Boss:
+- Hỏa Cầu Mưa (Fireball Rain): Spawn liên tiếp các hỏa cầu từ trên không trung rơi tự do xuống đầu người chơi. Để tránh việc hỏa cầu bị cản bởi các tầng platform trung gian, hệ thống cấu hình hỏa cầu chỉ bị phá hủy khi chạm đất tầng cuối (GroundFinal) hoặc chạm trực tiếp vào người chơi.
+- Sét Liên Tiếp (Lightning Strike): Triệu hồi một chuỗi tia sét theo hàng ngang xung quanh vị trí người chơi. Kẻ địch trúng sét ngoài nhận sát thương lớn còn bị choáng (Stun) trong vài giây nhờ việc gọi hàm làm choáng trên component PlayerMovement.
+- Phản sát thương (Return Damage): Khi được cấu hình, mỗi khi nhận sát thương từ người chơi, Boss sẽ phản lại một lượng sát thương cố định trực tiếp vào người chơi đó.
+
+Dưới đây là đoạn mã nguồn xử lý việc kiểm tra né tránh và giảm sát thương theo kháng nguyên tố của Boss trước khi bị trừ HP thực sự trên server, kết hợp phương thức kiểm tra môi trường phó bản tổ đội và triệu hồi bản sao thu nhỏ:
+
+```csharp
+// Kiểm tra môi trường phó bản tổ đội (Party Dungeon) dựa vào sự tồn tại của PartyDungeonRuntime trong scene
+private bool IsInPartyDungeon()
+{
+    int myMapId = GetMyMapId();
+    if (myMapId == -999) return false;
+
+    var runtimes = FindObjectsByType<PartyDungeonRuntime>(FindObjectsSortMode.None);
+    foreach (var runtime in runtimes)
+    {
+        if (runtime.gameObject.scene == gameObject.scene)
+            return true;
+    }
+    return false;
+}
+
+// Triệu hồi đệ tử con: trong phó bản tổ đội sẽ triệu hồi bản sao của chính mình giảm 2 lần scale
+private IEnumerator SummonAdds(int count)
+{
+    bool isPartyDungeon = IsInPartyDungeon();
+    GameObject prefabToSpawn = addSpawnPrefab;
+
+    if (isPartyDungeon && EnemyPrefabManager.Instance != null)
+    {
+        GameObject bossPrefab = EnemyPrefabManager.Instance.GetEnemyPrefab(bossId);
+        if (bossPrefab != null)
+            prefabToSpawn = bossPrefab;
+    }
+
+    if (prefabToSpawn == null) yield break;
+
+    for (int i = 0; i < count; i++)
+    {
+        Vector2 offset = UnityEngine.Random.insideUnitCircle * 3f;
+        GameObject add = Instantiate(prefabToSpawn, (Vector2)transform.position + offset, Quaternion.identity);
+
+        if (isPartyDungeon && prefabToSpawn != addSpawnPrefab)
+        {
+            // Scale giảm đi 2 lần
+            add.transform.localScale = prefabToSpawn.transform.localScale * 0.5f;
+
+            // Vô hiệu hóa phase đệ quy và giảm sát thương nhận vào của đệ tử con
+            BossAI minionAI = add.GetComponent<BossAI>();
+            if (minionAI != null)
+            {
+                minionAI.useDefaultHpPhasesWhenMissing = false;
+                minionAI._damageMultiplier = 0.5f;
+            }
+
+            // Thiết lập HP của đệ tử con bằng 20% máu Boss chính
+            NetworkEnemyHealth netHealth = add.GetComponent<NetworkEnemyHealth>();
+            if (netHealth != null)
+            {
+                int bossMaxHp = _health != null ? _health.GetMaxHealth() : 1000;
+                netHealth.PreInitMaxHp(Mathf.Max(100, Mathf.RoundToInt(bossMaxHp * 0.2f)));
+            }
+        }
+
+        MoveSpawnedObjectToCurrentMap(add);
+        ApplyMapVisibility(add, GetMyMapId());
+        SpawnNetworkObjectIfNeeded(add);
+        yield return new WaitForSeconds(0.3f);
+    }
+}
+```
+
 ----- [KẾT THÚC PHẦN THÊM MỚI] -----
 
 3.1.7 Hệ thống chat, bạn bè và tổ đội trên client

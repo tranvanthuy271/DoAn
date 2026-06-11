@@ -2,23 +2,20 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Damage component gắn vào đầu đạn của HYBRID_METAL_WIND_BARRAGE.
-/// Va chạm 1 lần rồi tự hủy.
-///
-/// Yêu cầu:
-///   - Collider2D với Is Trigger = true
-///   - NetworkObject trên cùng GameObject
-/// </summary>
+// Damage component gắn vào đầu đạn của HYBRID_METAL_WIND_BARRAGE.
+// Va chạm 1 lần rồi tự hủy.
+// Yêu cầu:
+// - Collider2D với Is Trigger = true
+// - NetworkObject trên cùng GameObject
 public class BarrageBulletDamage : NetworkBehaviour
 {
-    /// <summary>Sát thương gây ra — được set bởi HybridMetalWindBarrageSkill khi spawn.</summary>
+    // Sát thương gây ra — được set bởi HybridMetalWindBarrageSkill khi spawn.
     [HideInInspector] public int damage = 120;
 
-    /// <summary>Thời gian sống tối đa (giây) — được set bởi HybridMetalWindBarrageSkill khi spawn.</summary>
+    // Thời gian sống tối đa (giây) — được set bởi HybridMetalWindBarrageSkill khi spawn.
     [HideInInspector] public float lifetime = 2.5f;
 
-    /// <summary>NetworkObjectId của caster để tránh tự gây damage cho mình.</summary>
+    // NetworkObjectId của caster để tránh tự gây damage cho mình.
     [HideInInspector] public ulong ownerNetworkObjectId = 0;
 
     private bool _hasHit;
@@ -102,10 +99,8 @@ public class BarrageBulletDamage : NetworkBehaviour
             Destroy(gameObject);
     }
 
-    /// <summary>
-    /// Gọi sau khi Spawn() để set velocity trên tất cả client.
-    /// Server tự set velocity trực tiếp; ClientRpc chỉ chạy trên các client còn lại.
-    /// </summary>
+    // Gọi sau khi Spawn() để set velocity trên tất cả client.
+    // Server tự set velocity trực tiếp; ClientRpc chỉ chạy trên các client còn lại.
     [ClientRpc]
     public void SetVelocityClientRpc(Vector2 velocity)
     {

@@ -1,15 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject chứa tất cả địa chỉ server: API URL, Game Server IP, Port.
-/// Dùng làm "1 nơi duy nhất" để config khi chuyển từ localhost sang VPS.
-///
-/// Tạo asset: Assets → Create → DoAn → ServerAddressConfig
-/// Gán vào Inspector của các script, hoặc dùng ServerAddressConfig.Instance (auto-load từ Resources).
-///
-/// Runtime override: đặt file server_config.json trong StreamingAssets (hoặc cùng thư mục build)
-/// để ghi đè mà không cần rebuild.
-/// </summary>
+// ScriptableObject chứa tất cả địa chỉ server: API URL, Game Server IP, Port.
+// Dùng làm "1 nơi duy nhất" để config khi chuyển từ localhost sang VPS.
+// Tạo asset: Assets → Create → DoAn → ServerAddressConfig
+// Gán vào Inspector của các script, hoặc dùng ServerAddressConfig.Instance (auto-load từ Resources).
+// Runtime override: đặt file server_config.json trong StreamingAssets (hoặc cùng thư mục build)
+// để ghi đè mà không cần rebuild.
 [CreateAssetMenu(fileName = "ServerAddressConfig", menuName = "DoAn/ServerAddressConfig")]
 public class ServerAddressConfig : ScriptableObject
 {
@@ -17,7 +13,7 @@ public class ServerAddressConfig : ScriptableObject
     private const string DefaultApiScheme = "http";
     private const int DefaultApiPort = 5000;
 
-    // ── Singleton (auto-load từ Resources/ServerAddressConfig) ─────────────────
+    // Singleton (auto-load từ Resources/ServerAddressConfig)
     private static ServerAddressConfig _instance;
     public static ServerAddressConfig Instance
     {
@@ -43,12 +39,12 @@ public class ServerAddressConfig : ScriptableObject
         _instance = null;
     }
 
-    // ── API Server ────────────────────────────────────────────────────────────
+    // API Server
     [Header("API Server (GameServerApi / REST)")]
     [Tooltip("URL gốc của GameServerApi, KHÔNG có /api ở cuối.\nVí dụ: http://localhost:5000 hoặc http://123.45.67.89:5000")]
     public string apiBaseUrl = "http://localhost:5000";
 
-    // ── Game Server (Unity Netcode / UDP) ─────────────────────────────────────
+    // Game Server (Unity Netcode / UDP)
     [Header("Game Server (Unity Netcode for GameObjects)")]
     [Tooltip("IP mà CLIENT dùng để kết nối tới Game Server.\nLocalhost: 127.0.0.1 | VPS: IP public của VPS")]
     public string gameServerIp = "127.0.0.1";
@@ -56,12 +52,12 @@ public class ServerAddressConfig : ScriptableObject
     [Tooltip("Port UDP của Game Server. Mặc định 7777")]
     public ushort gameServerPort = 7777;
 
-    // ── Derived helpers (read-only) ───────────────────────────────────────────
+    // Derived helpers (read-only)
 
-    /// <summary>API base kèm /api. Ví dụ: http://localhost:5000/api</summary>
+    // API base kèm /api. Ví dụ: http://localhost:5000/api
     public string ApiUrl => NormalizeApiUrl(apiBaseUrl);
 
-    /// <summary>API base KHÔNG có /api. Ví dụ: http://localhost:5000</summary>
+    // API base KHÔNG có /api. Ví dụ: http://localhost:5000
     public string ApiRoot => NormalizeApiRoot(apiBaseUrl);
 
     public string ResolveApiRoot(string configuredValue)
@@ -78,15 +74,13 @@ public class ServerAddressConfig : ScriptableObject
             : NormalizeUrl(configuredValue);
     }
 
-    // ── Runtime JSON override ─────────────────────────────────────────────────
+    // Runtime JSON override
     private bool _overridesApplied;
     private string _lastRuntimeConfigPath;
     private long _lastRuntimeConfigTicks = -1;
 
-    /// <summary>
-    /// Đọc server_config.json từ StreamingAssets (hoặc cùng thư mục exe) và ghi đè giá trị.
-    /// Tự reload khi file đổi để Editor không giữ IP cũ khi tắt domain reload.
-    /// </summary>
+    // Đọc server_config.json từ StreamingAssets (hoặc cùng thư mục exe) và ghi đè giá trị.
+    // Tự reload khi file đổi để Editor không giữ IP cũ khi tắt domain reload.
     public void ApplyRuntimeOverrides()
     {
         if (!ServerConfigFileReader.TryReadConfig(out string json, out string path, out long ticks))

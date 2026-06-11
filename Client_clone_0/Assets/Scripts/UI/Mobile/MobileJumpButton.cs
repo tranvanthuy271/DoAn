@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// Mobile Jump button.
-/// Attach to the Jump Button RectTransform.
-/// Press → jump triggered; release → jump held cleared.
-/// </summary>
+// Mobile Jump button.
+// Attach to the Jump Button RectTransform.
+// Press → jump triggered; release → jump held cleared.
 public class MobileJumpButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     private void Awake()

@@ -4,22 +4,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Editor tool — tạo prefab UtilityDrawerBox (box tiện ích có nút mũi tên thu gọn/mở rộng).
-///
-/// Chạy từ menu Unity:
-///   Tools ▸ Create Utility Drawer Prefab
-///
-/// Sau khi tạo:
-///   1. Kéo prefab vào Canvas trong GameScene.
-///   2. Gán các icon tiện ích vào bên trong UtilityContent.
-///   3. Điều chỉnh vị trí AnchorExpanded / AnchorCollapsed cho vừa layout.
-/// </summary>
+// Editor tool — tạo prefab UtilityDrawerBox (box tiện ích có nút mũi tên thu gọn/mở rộng).
+// Chạy từ menu Unity:
+// Tools ▸ Create Utility Drawer Prefab
+// Sau khi tạo:
+// 1. Kéo prefab vào Canvas trong GameScene.
+// 2. Gán các icon tiện ích vào bên trong UtilityContent.
+// 3. Điều chỉnh vị trí AnchorExpanded / AnchorCollapsed cho vừa layout.
 public static class CreateUtilityDrawerPrefab
 {
     private const string PrefabPath = "Assets/Resources/Prefabs/UI/UtilityDrawerBox.prefab";
 
-    // ── Màu sắc ──────────────────────────────────────────────────────
+    // Màu sắc
     private static readonly Color BoxBg          = new Color(0.10f, 0.08f, 0.05f, 0.92f); // nền hộp tối
     private static readonly Color BoxBorder       = new Color(0.60f, 0.45f, 0.10f, 1.00f); // viền vàng nâu
     private static readonly Color ArrowBtnBg      = new Color(0.20f, 0.14f, 0.04f, 1.00f); // nền nút mũi tên
@@ -38,7 +34,6 @@ public static class CreateUtilityDrawerPrefab
     private const float IconSpacing     = 4f;    // khoảng cách giữa icon
     private const float ArrowBtnSize    = 28f;   // kích thước nút mũi tên
 
-    // ═══════════════════════════════════════════════════════════════════
     [MenuItem("Tools/Create Utility Drawer Prefab")]
     public static void CreatePrefab()
     {
@@ -70,24 +65,22 @@ public static class CreateUtilityDrawerPrefab
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // Xây dựng hierarchy
-    // ═══════════════════════════════════════════════════════════════════
     private static GameObject BuildHierarchy()
     {
-        // ── UtilityRoot ────────────────────────────────────────────────
+        // UtilityRoot
         var root = new GameObject("UtilityRoot");
         var rootRect = root.AddComponent<RectTransform>();
         rootRect.sizeDelta = new Vector2(BoxWidth + 8f, BoxHeight + ArrowBtnSize + 8f);
 
         var controller = root.AddComponent<UtilityDrawerController>();
 
-        // ── ShowUtilityButton (ẩn khi expanded) ───────────────────────
+        // ShowUtilityButton (ẩn khi expanded)
         var showBtn = MakeButton(root.transform, "ShowUtilityButton",
             "▶", 14f, ShowBtnBg, ShowBtnHover, ArrowBtnSize, ArrowBtnSize);
         PinToCorner(showBtn, 0f, 0f); // góc dưới-trái root, sẽ di chuyển trong scene
 
-        // ── UtilityBox ─────────────────────────────────────────────────
+        // UtilityBox
         var box = new GameObject("UtilityBox");
         box.transform.SetParent(root.transform, false);
         var boxRect = box.AddComponent<RectTransform>();
@@ -103,7 +96,7 @@ public static class CreateUtilityDrawerPrefab
         boxOutline.effectColor    = BoxBorder;
         boxOutline.effectDistance = new Vector2(2, -2);
 
-        // ── UtilityContent (danh sách icon) ────────────────────────────
+        // UtilityContent (danh sách icon)
         var content = new GameObject("UtilityContent");
         content.transform.SetParent(box.transform, false);
         var contentRect = content.AddComponent<RectTransform>();
@@ -130,7 +123,7 @@ public static class CreateUtilityDrawerPrefab
         foreach (var label in iconLabels)
             AddIconButton(content.transform, label);
 
-        // ── AnchorExpanded (empty — bên dưới content, trên nút mũi tên) ──
+        // AnchorExpanded (empty — bên dưới content, trên nút mũi tên)
         var anchorExp = new GameObject("AnchorExpanded");
         anchorExp.transform.SetParent(box.transform, false);
         var ancExpRect = anchorExp.AddComponent<RectTransform>();
@@ -140,7 +133,7 @@ public static class CreateUtilityDrawerPrefab
         ancExpRect.sizeDelta        = new Vector2(ArrowBtnSize, 0f);
         ancExpRect.anchoredPosition = new Vector2(0f, ArrowBtnSize + 2f);
 
-        // ── AnchorCollapsed (empty — mép trên box) ────────────────────
+        // AnchorCollapsed (empty — mép trên box)
         var anchorCol = new GameObject("AnchorCollapsed");
         anchorCol.transform.SetParent(box.transform, false);
         var ancColRect = anchorCol.AddComponent<RectTransform>();
@@ -150,7 +143,7 @@ public static class CreateUtilityDrawerPrefab
         ancColRect.sizeDelta        = new Vector2(ArrowBtnSize, 0f);
         ancColRect.anchoredPosition = new Vector2(0f, 0f);
 
-        // ── ToggleArrowButton ──────────────────────────────────────────
+        // ToggleArrowButton
         var arrowBtnGO = MakeButton(box.transform, "ToggleArrowButton",
             "▼", 14f, ArrowBtnBg, ArrowBtnHover, ArrowBtnSize, ArrowBtnSize);
         var arrowRect = arrowBtnGO.GetComponent<RectTransform>();
@@ -160,12 +153,12 @@ public static class CreateUtilityDrawerPrefab
         arrowRect.sizeDelta        = new Vector2(ArrowBtnSize, ArrowBtnSize);
         arrowRect.anchoredPosition = new Vector2(0f, 2f);
 
-        // ── Viền mũi tên bo góc nhỏ ──────────────────────────────────
+        // Viền mũi tên bo góc nhỏ
         var arrowOutline = arrowBtnGO.AddComponent<Outline>();
         arrowOutline.effectColor    = BoxBorder;
         arrowOutline.effectDistance = new Vector2(1, -1);
 
-        // ── Gán SerializedObject references vào controller ─────────────
+        // Gán SerializedObject references vào controller
         var so = new SerializedObject(controller);
         SetObjectRef(so, "boxRoot",                box);
         SetObjectRef(so, "contentRoot",            content);
@@ -189,9 +182,7 @@ public static class CreateUtilityDrawerPrefab
         return root;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Helpers
-    // ═══════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static void AddIconButton(Transform parent, string label)
     {
@@ -231,7 +222,7 @@ public static class CreateUtilityDrawerPrefab
         tmp.enableWordWrapping = false;
     }
 
-    /// Tạo Button với chữ ký hiệu (mũi tên / show)
+    // Tạo Button với chữ ký hiệu (mũi tên / show)
     private static GameObject MakeButton(Transform parent, string name,
         string symbol, float fontSize,
         Color normalColor, Color hoverColor,

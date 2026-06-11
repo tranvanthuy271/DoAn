@@ -40,5 +40,85 @@ MonoBehaviour:
     moveSpeed: 2
     canFly: 0
     drops: []
-  milestoneRewards: []
-  completionRewards: []
+  milestoneRewards:
+  - atWave: 5
+    bonusExp: 5000
+    bonusGold: 500
+    items:
+    - itemTemplateId: 17
+      quantity: 5
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 18
+      quantity: 2
+      upgradeLevel: 0
+      strOptions: 
+  - atWave: 10
+    bonusExp: 15000
+    bonusGold: 1500
+    items:
+    - itemTemplateId: 18
+      quantity: 5
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 19
+      quantity: 2
+      upgradeLevel: 0
+      strOptions: 
+  - atWave: 15
+    bonusExp: 30000
+    bonusGold: 3000
+    items:
+    - itemTemplateId: 19
+      quantity: 5
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 20
+      quantity: 2
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 47
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 48
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 49
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+  - atWave: 20
+    bonusExp: 50000
+    bonusGold: 5000
+    items:
+    - itemTemplateId: 20
+      quantity: 5
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 31
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 50
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 51
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+    - itemTemplateId: 52
+      quantity: 1
+      upgradeLevel: 0
+      strOptions: 
+  completionRewards:
+  - itemTemplateId: 20
+    quantity: 3
+    upgradeLevel: 0
+    strOptions: 
+  - itemTemplateId: 31
+    quantity: 1
+    upgradeLevel: 0
+    strOptions: 

@@ -4,10 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Quản lý thanh tab phía dưới Chat Panel.
-/// Tự tạo các tab button từ danh sách kênh cấu hình.
-/// </summary>
+// Quản lý thanh tab phía dưới Chat Panel.
+// Tự tạo các tab button từ danh sách kênh cấu hình.
 public class ChatTabUI : MonoBehaviour
 {
     [Header("Tab Config")]
@@ -21,14 +19,14 @@ public class ChatTabUI : MonoBehaviour
     [SerializeField] private Color       activeColor   = new Color(0.9f, 0.7f, 0.2f);
     [SerializeField] private Color       inactiveColor = new Color(0.4f, 0.3f, 0.1f);
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
 
     private readonly List<Button>          _buttons  = new List<Button>();
     private readonly List<TextMeshProUGUI> _labels   = new List<TextMeshProUGUI>();
     private Action<ChatChannel>            _onSelect;
     private ChatChannel                    _active;
 
-    // ── Setup ─────────────────────────────────────────────────────────────────
+    // Setup
 
     public void SetupTabs(Action<ChatChannel> onSelect)
     {
@@ -96,7 +94,7 @@ public class ChatTabUI : MonoBehaviour
         }
     }
 
-    // ── Private ───────────────────────────────────────────────────────────────
+    // Private
 
     private void OnTabClicked(ChatChannel ch)
     {

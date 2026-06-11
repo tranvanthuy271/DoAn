@@ -18,15 +18,15 @@ namespace GameServerApi.Services
             _config = config;
         }
 
-        /// <inheritdoc/>
+        // <inheritdoc/>
         public string HashPassword(string plainText) =>
             BCrypt.Net.BCrypt.HashPassword(plainText, workFactor: 12);
 
-        /// <inheritdoc/>
+        // <inheritdoc/>
         public bool VerifyPassword(string plainText, string hash) =>
             BCrypt.Net.BCrypt.Verify(plainText, hash);
 
-        /// <inheritdoc/>
+        // <inheritdoc/>
         public string GenerateJwtToken(User user)
         {
             var jwtSection = _config.GetSection("Jwt");

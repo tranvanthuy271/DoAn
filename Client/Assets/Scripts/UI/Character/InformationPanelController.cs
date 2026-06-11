@@ -2,17 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// InformationPanelController – Điều khiển 2 tab cấp cao nhất:
-///   • BtnThongTin → ẩn InventoryUI, hiện CharacterPanel (4 tab con)
-///   • BtnTuiDo    → ẩn CharacterPanel, hiện InventoryUI và refresh dữ liệu
-///   • BtnCloseAll → ẩn toàn bộ (CharacterPanel + InventoryUI)
-///
-/// Setup trong Inspector:
-///   1. Gắn script này lên GameObject gốc chứa toàn bộ UI nhân vật.
-///   2. Kéo BtnThongTin, BtnTuiDo, BtnCloseAll vào đây.
-///   3. Kéo CharacterPanelController và InventoryUI vào đây.
-/// </summary>
+// InformationPanelController – Điều khiển 2 tab cấp cao nhất:
+// • BtnThongTin → ẩn InventoryUI, hiện CharacterPanel (4 tab con)
+// • BtnTuiDo    → ẩn CharacterPanel, hiện InventoryUI và refresh dữ liệu
+// • BtnCloseAll → ẩn toàn bộ (CharacterPanel + InventoryUI)
+// Setup trong Inspector:
+// 1. Gắn script này lên GameObject gốc chứa toàn bộ UI nhân vật.
+// 2. Kéo BtnThongTin, BtnTuiDo, BtnCloseAll vào đây.
+// 3. Kéo CharacterPanelController và InventoryUI vào đây.
 public class InformationPanelController : MonoBehaviour
 {
     [Header("Top-level Tab Buttons")]
@@ -58,7 +55,6 @@ public class InformationPanelController : MonoBehaviour
         return controller;
     }
 
-    // ─────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -82,7 +78,6 @@ public class InformationPanelController : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────
     #region Button handlers
 
     private void OnClickThongTin() => SwitchTo(TopTab.ThongTin);
@@ -90,10 +85,9 @@ public class InformationPanelController : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────
     #region Public API
 
-    /// <summary>Mở panel nhân vật (tab Thông Tin). Cũng ẩn túi đồ nếu đang mở.</summary>
+    // Mở panel nhân vật (tab Thông Tin). Cũng ẩn túi đồ nếu đang mở.
     public void ShowThongTin()
     {
         UIPanelManager.CloseOthers(gameObject);
@@ -101,7 +95,7 @@ public class InformationPanelController : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
     }
 
-    /// <summary>Mở túi đồ (tab Túi Đồ). Cũng ẩn thông tin nếu đang mở.</summary>
+    // Mở túi đồ (tab Túi Đồ). Cũng ẩn thông tin nếu đang mở.
     public void ShowTuiDo() => SwitchTo(TopTab.TuiDo);
 
     public void SetRuntimeReferences(
@@ -118,10 +112,8 @@ public class InformationPanelController : MonoBehaviour
         RegisterButtonListeners();
     }
 
-    /// <summary>
-    /// Mở toàn bộ panel và về tab Thông Tin.
-    /// Dùng cho CharacterPanelToggleButton khi cần mở panel.
-    /// </summary>
+    // Mở toàn bộ panel và về tab Thông Tin.
+    // Dùng cho CharacterPanelToggleButton khi cần mở panel.
     public void ShowPanel()
     {
         UIPanelManager.CloseOthers(gameObject);
@@ -133,10 +125,8 @@ public class InformationPanelController : MonoBehaviour
         UIPanelManager.NotifyOpened(gameObject);
     }
 
-    /// <summary>
-    /// Ẩn toàn bộ: CharacterPanel + InventoryUI.
-    /// Dùng cho nút "đóng" hoặc CharacterPanelToggleButton khi cần đóng panel.
-    /// </summary>
+    // Ẩn toàn bộ: CharacterPanel + InventoryUI.
+    // Dùng cho nút "đóng" hoặc CharacterPanelToggleButton khi cần đóng panel.
     public void HideAll()
     {
         ResolveReferences();
@@ -149,7 +139,7 @@ public class InformationPanelController : MonoBehaviour
         UIPanelManager.NotifyClosed(gameObject);
     }
 
-    /// <summary>Trả về true nếu bất kỳ panel nào đang hiện.</summary>
+    // Trả về true nếu bất kỳ panel nào đang hiện.
     public bool IsAnyPanelVisible
     {
         get
@@ -160,12 +150,11 @@ public class InformationPanelController : MonoBehaviour
         }
     }
 
-    /// <summary>Tab nào đang hiển thị?</summary>
+    // Tab nào đang hiển thị?
     public bool IsShowingInventory => _activeTab == TopTab.TuiDo;
 
     #endregion
 
-    // ─────────────────────────────────────────────
     #region Private
 
     private void SwitchTo(TopTab tab)

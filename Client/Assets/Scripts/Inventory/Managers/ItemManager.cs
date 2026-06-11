@@ -1,10 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// ItemManager - Singleton để quản lý ItemData database
-/// Load tất cả ItemData từ Resources và cung cấp API để truy cập
-/// </summary>
+// ItemManager - Singleton để quản lý ItemData database
+// Load tất cả ItemData từ Resources và cung cấp API để truy cập
 public class ItemManager : MonoBehaviour
 {
     private static ItemManager instance;
@@ -30,9 +28,7 @@ public class ItemManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Load tất cả ItemData từ Resources
-    /// </summary>
+    // Load tất cả ItemData từ Resources
     private void LoadItemDatabase()
     {
         itemDatabase.Clear();
@@ -56,9 +52,7 @@ public class ItemManager : MonoBehaviour
         Debug.Log($"[ItemManager] Loaded {itemDatabase.Count} items from Resources/{itemsResourcePath}");
     }
 
-    /// <summary>
-    /// Lấy ItemData theo ItemID
-    /// </summary>
+    // Lấy ItemData theo ItemID
     public ItemData GetItemData(int itemID)
     {
         if (itemDatabase.TryGetValue(itemID, out ItemData item))
@@ -70,25 +64,19 @@ public class ItemManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Kiểm tra ItemID có tồn tại không
-    /// </summary>
+    // Kiểm tra ItemID có tồn tại không
     public bool HasItem(int itemID)
     {
         return itemDatabase.ContainsKey(itemID);
     }
 
-    /// <summary>
-    /// Lấy tất cả ItemData
-    /// </summary>
+    // Lấy tất cả ItemData
     public Dictionary<int, ItemData> GetAllItems()
     {
         return new Dictionary<int, ItemData>(itemDatabase);
     }
 
-    /// <summary>
-    /// Reload database (dùng khi thêm item mới trong runtime)
-    /// </summary>
+    // Reload database (dùng khi thêm item mới trong runtime)
     public void ReloadDatabase()
     {
         LoadItemDatabase();

@@ -3,10 +3,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Force refresh GameScene to clear cached NetworkObject hashes
-/// Menu: Tools > Fix NetworkObject Hash Issues
-/// </summary>
+// Force refresh GameScene to clear cached NetworkObject hashes
+// Menu: Tools > Fix NetworkObject Hash Issues
 public class ForceRefreshScene : Editor
 {
     [MenuItem("Tools/Fix NetworkObject Hash Issues")]

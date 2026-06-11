@@ -4,20 +4,16 @@ using TMPro;
 using UnityEditor;
 using System.IO;
 
-/// <summary>
-/// Creates ShopItemCell prefab (110x110 square) for use in a GridLayoutGroup shop.
-///
-/// Cell layout:
-///   Root (Button + Image background, 110x110, VerticalLayoutGroup)
-///     IconRow  (HLG centered, h=60)
-///       ItemIcon  (Image 52x52, Preserve Aspect)
-///     PriceRow (HLG centered, h=18)
-///       CoinIcon  (Image 14x14, gold placeholder)
-///       Price     (TMP_Text, gold color)
-///     ItemName    (TMP_Text, h=22, Ellipsis)
-///
-/// Menu: Tools -> NPC Shop -> Create ShopItemRow Prefab
-/// </summary>
+// Creates ShopItemCell prefab (110x110 square) for use in a GridLayoutGroup shop.
+// Cell layout:
+// Root (Button + Image background, 110x110, VerticalLayoutGroup)
+// IconRow  (HLG centered, h=60)
+// ItemIcon  (Image 52x52, Preserve Aspect)
+// PriceRow (HLG centered, h=18)
+// CoinIcon  (Image 14x14, gold placeholder)
+// Price     (TMP_Text, gold color)
+// ItemName    (TMP_Text, h=22, Ellipsis)
+// Menu: Tools -> NPC Shop -> Create ShopItemRow Prefab
 public static class CreateShopItemRowPrefab
 {
     private const string PREFAB_PATH = "Assets/Prefabs/UI/ShopItemRow.prefab";
@@ -29,7 +25,7 @@ public static class CreateShopItemRowPrefab
         Directory.CreateDirectory(Application.dataPath + "/Prefabs/UI");
         AssetDatabase.Refresh();
 
-        // ── Root ────────────────────────────────────────────────────────
+        // Root
         var root   = new GameObject("ShopItemRow");
         var rootRT = root.AddComponent<RectTransform>();
         rootRT.sizeDelta = new Vector2(110, 110);
@@ -54,7 +50,7 @@ public static class CreateShopItemRowPrefab
         vlg.spacing = 2f;
         vlg.padding = new RectOffset(4, 4, 4, 2);
 
-        // ── IconRow ─────────────────────────────────────────────────────
+        // IconRow
         var iconRowGO  = new GameObject("IconRow");
         iconRowGO.transform.SetParent(root.transform, false);
         iconRowGO.AddComponent<RectTransform>().sizeDelta = new Vector2(0, 60);
@@ -81,7 +77,7 @@ public static class CreateShopItemRowPrefab
         iconLE.preferredWidth  = 52;
         iconLE.preferredHeight = 52;
 
-        // ── PriceRow ────────────────────────────────────────────────────
+        // PriceRow
         var priceRowGO = new GameObject("PriceRow");
         priceRowGO.transform.SetParent(root.transform, false);
         priceRowGO.AddComponent<RectTransform>().sizeDelta = new Vector2(0, 18);
@@ -125,7 +121,7 @@ public static class CreateShopItemRowPrefab
         priceLE.preferredWidth  = 64;
         priceLE.preferredHeight = 18;
 
-        // ── ItemName ────────────────────────────────────────────────────
+        // ItemName
         var nameGO = new GameObject("ItemName");
         nameGO.transform.SetParent(root.transform, false);
         nameGO.AddComponent<RectTransform>().sizeDelta = new Vector2(0, 22);
@@ -152,7 +148,7 @@ public static class CreateShopItemRowPrefab
             nameTmp.fontSharedMaterial = notoSans.material;
         }
 
-        // ── ShopItemRowUI -- wire all references ────────────────────────
+        // ShopItemRowUI -- wire all references
         var rowUI = root.AddComponent<ShopItemRowUI>();
         var so    = new SerializedObject(rowUI);
         so.FindProperty("itemIcon").objectReferenceValue = iconImg;
@@ -162,7 +158,7 @@ public static class CreateShopItemRowPrefab
         so.FindProperty("btnBuy").objectReferenceValue   = rootBtn;  // whole cell = button
         so.ApplyModifiedPropertiesWithoutUndo();
 
-        // ── Save prefab ─────────────────────────────────────────────────
+        // Save prefab
         bool overwrite = true;
         if (File.Exists(Application.dataPath + "/../" + PREFAB_PATH))
         {

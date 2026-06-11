@@ -3,19 +3,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// FusionCoreDebugAdder — Nút debug thêm x10 Lõi Đột Biến theo hệ phụ.
-///
-/// ═══════════════════════════════════════════════════════════════
-/// INSPECTOR SETUP:
-///   1. addButton  → Button "➕ x10 Lõi" (có thể ẩn trong build thật)
-///   2. statusText → TMP_Text hiển thị kết quả (optional)
-///
-/// PHÍM TẮT: Nhấn Q trong runtime để kích hoạt (chỉ khi panel debug mở).
-///
-/// Gọi: POST /api/item/debug/add-fusion-cores?playerId=X
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// FusionCoreDebugAdder — Nút debug thêm x10 Lõi Đột Biến theo hệ phụ.
+// INSPECTOR SETUP:
+// 1. addButton  → Button "➕ x10 Lõi" (có thể ẩn trong build thật)
+// 2. statusText → TMP_Text hiển thị kết quả (optional)
+// PHÍM TẮT: Nhấn Q trong runtime để kích hoạt (chỉ khi panel debug mở).
+// Gọi: POST /api/item/debug/add-fusion-cores?playerId=X
 public class FusionCoreDebugAdder : MonoBehaviour
 {
     [Header("Button & Feedback")]

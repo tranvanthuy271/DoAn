@@ -3,9 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// BXH voi 4 tab chinh + 5 sub-tab.
-/// </summary>
+// BXH voi 4 tab chinh + 5 sub-tab.
 public class LeaderboardPanelUI : MonoBehaviour
 {
     private static readonly int[] SubCatId = { 1, 5, 2, 3, 4 };

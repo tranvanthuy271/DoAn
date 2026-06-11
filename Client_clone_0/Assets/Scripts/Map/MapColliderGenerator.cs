@@ -1,20 +1,16 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Tự động tạo EdgeCollider2D từ pixel alpha của 1 sprite PNG.
-/// Dùng khi terrain là 1 ảnh PNG lớn (không phải nhiều sprite nhỏ).
-///
-/// YÊU CẦU BẮT BUỘC:
-/// → Chọn PNG trong Project → Inspector → Advanced → Read/Write Enabled ✅ → Apply
-///    Nếu không bật, sẽ báo lỗi "Texture ... is not readable"
-///
-/// CÁCH DÙNG:
-/// 1. Tạo GameObject → gắn SpriteRenderer + script này
-/// 2. Kéo sprite vào SpriteRenderer
-/// 3. Chuột phải Inspector → Generate Collider From Sprite
-/// 4. EdgeCollider2D sẽ tự trace đường viền địa hình
-/// </summary>
+// Tự động tạo EdgeCollider2D từ pixel alpha của 1 sprite PNG.
+// Dùng khi terrain là 1 ảnh PNG lớn (không phải nhiều sprite nhỏ).
+// YÊU CẦU BẮT BUỘC:
+// → Chọn PNG trong Project → Inspector → Advanced → Read/Write Enabled ✅ → Apply
+// Nếu không bật, sẽ báo lỗi "Texture ... is not readable"
+// CÁCH DÙNG:
+// 1. Tạo GameObject → gắn SpriteRenderer + script này
+// 2. Kéo sprite vào SpriteRenderer
+// 3. Chuột phải Inspector → Generate Collider From Sprite
+// 4. EdgeCollider2D sẽ tự trace đường viền địa hình
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(EdgeCollider2D))]
 public class MapColliderGenerator : MonoBehaviour
@@ -40,7 +36,6 @@ public class MapColliderGenerator : MonoBehaviour
     [Header("Info (readonly)")]
     [SerializeField] private int generatedPointCount = 0;
 
-    // -------------------------------------------------------------------
 
     [ContextMenu("Generate Collider From Sprite")]
     public void GenerateCollider()
@@ -94,9 +89,7 @@ public class MapColliderGenerator : MonoBehaviour
         generatedPointCount = 0;
     }
 
-    // -------------------------------------------------------------------
     // Core: duyệt từng cột pixel, tìm pixel solid cao nhất → lấy top surface
-    // -------------------------------------------------------------------
 
     private List<Vector2> BuildTopSurfacePoints(Sprite sprite, Texture2D tex)
     {
@@ -129,7 +122,7 @@ public class MapColliderGenerator : MonoBehaviour
         return points;
     }
 
-    /// <returns>Y tương đối (0 = đáy rect) của pixel solid cao nhất, hoặc -1 nếu không có.</returns>
+    // Trả về: Y tương đối (0 = đáy rect) của pixel solid cao nhất, hoặc -1 nếu không có.
     private int FindTopSolidPixel(Texture2D tex, int texX, int startY, int height)
     {
         // Quét từ trên xuống (Unity: Y tăng lên trên)
@@ -142,9 +135,7 @@ public class MapColliderGenerator : MonoBehaviour
         return -1;
     }
 
-    // -------------------------------------------------------------------
     // Simplification: xóa điểm gần thẳng hàng (Ramer–Douglas–Peucker lite)
-    // -------------------------------------------------------------------
 
     private static List<Vector2> Simplify(List<Vector2> points, float tolerance)
     {

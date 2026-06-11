@@ -7,15 +7,12 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tools → DoAn → Rebuild SelectElement Scene UI
-///
-/// Dựng lại layout UI cho scene chọn nhân vật theo bố cục:
-///   - Trái  : Grid 2×3 gồm 6 nút chân dung nhân vật (6 hệ)
-///   - Giữa  : Ảnh preview nhân vật đã chọn
-///   - Phải  : Panel gỗ hiển thị thông tin nhân vật được chọn
-///   - Dưới  : "Trở về" | Input tên nhân vật | "Tạo mới / Xác nhận"
-/// </summary>
+// Tools → DoAn → Rebuild SelectElement Scene UI
+// Dựng lại layout UI cho scene chọn nhân vật theo bố cục:
+// - Trái  : Grid 2×3 gồm 6 nút chân dung nhân vật (6 hệ)
+// - Giữa  : Ảnh preview nhân vật đã chọn
+// - Phải  : Panel gỗ hiển thị thông tin nhân vật được chọn
+// - Dưới  : "Trở về" | Input tên nhân vật | "Tạo mới / Xác nhận"
 public static class SelectElementSceneUiBuilder
 {
     private const string ScenePath          = "Assets/Scenes/SelectElement.unity";
@@ -42,7 +39,6 @@ public static class SelectElementSceneUiBuilder
     private static readonly Color ButtonColor   = new Color(0.77f, 0.33f, 0.08f, 1f);
     private static readonly Color ButtonHL      = new Color(1f, 0.60f, 0.14f, 1f);
 
-    // ─────────────────────────────────────────────────────────────────────────
     [MenuItem("Tools/DoAn/Rebuild SelectElement Scene UI")]
     public static void RebuildSelectElementSceneUi()
     {
@@ -64,42 +60,42 @@ public static class SelectElementSceneUiBuilder
 
         SE_EnsureEventSystem();
 
-        // ── Canvas ────────────────────────────────────────────────
+        // Canvas
         var canvasGo = SE_CreateCanvas();
 
-        // ── Background ────────────────────────────────────────────
+        // Background
         SE_BuildBackground(canvasGo.transform, bgSprite);
 
-        // ── Header (title + version, NO big logo) ─────────────────
+        // Header (title + version, NO big logo)
         SE_BuildHeader(canvasGo.transform);
 
-        // ── Controller ────────────────────────────────────────────
+        // Controller
         var ctrlGo     = new GameObject("SelectElementController");
         var controller = ctrlGo.AddComponent<SelectElementController>();
 
-        // ── Left grid: 6 portrait buttons ────────────────────────
+        // Left grid: 6 portrait buttons
         var buttons = SE_BuildCharacterGrid(canvasGo.transform);
 
-        // ── Center: character preview image ───────────────────────
+        // Center: character preview image
         var previewImage = SE_BuildPreview(canvasGo.transform);
 
-        // ── Right: info panel  ────────────────────────────────────
+        // Right: info panel
         SE_BuildInfoPanel(canvasGo.transform, woodPanel,
             out TMP_Text instructionText);
 
-        // ── Bottom bar ────────────────────────────────────────────
+        // Bottom bar
         SE_BuildBottomBar(canvasGo.transform, woodButton,
             out TMP_InputField nameInput,
             out Button confirmButton,
             out Button backButton,
             out TMP_Text errorText);
 
-        // ── Wire controller ───────────────────────────────────────
+        // Wire controller
         SE_WireController(controller, buttons, nameInput,
             errorText, instructionText, confirmButton, backButton,
             previewImage, iconConfig);
 
-        // ── Utilities ─────────────────────────────────────────────
+        // Utilities
         SE_EnsureApiClient();
         SE_EnsureLoadingManager();
 
@@ -118,9 +114,7 @@ public static class SelectElementSceneUiBuilder
             "OK");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Canvas
-    // ─────────────────────────────────────────────────────────────────────────
     private static GameObject SE_CreateCanvas()
     {
         var go = new GameObject("SelectElementCanvas",
@@ -142,9 +136,7 @@ public static class SelectElementSceneUiBuilder
         return go;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Background
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_BuildBackground(Transform parent, Sprite bg)
     {
         var bgGo = SE_MakeImage(parent, "Background", new Color(0.33f,0.63f,0.93f,1f), bg);
@@ -158,9 +150,7 @@ public static class SelectElementSceneUiBuilder
         dim.GetComponent<Image>().raycastTarget = false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Header
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_BuildHeader(Transform parent)
     {
         var title = SE_MakeText(parent, "TopLeftTitle", "Làng Lá Base", 18f, Color.white, FontStyles.Bold);
@@ -179,9 +169,7 @@ public static class SelectElementSceneUiBuilder
         SE_AddOutline(sceneTitle.gameObject, new Color(0.5f,0.25f,0.05f,1f), new Vector2(2f,-2f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Left – 6 portrait buttons in 2×3 GridLayoutGroup
-    // ─────────────────────────────────────────────────────────────────────────
     private static Button[] SE_BuildCharacterGrid(Transform parent)
     {
         // Container anchored to the left of the canvas
@@ -246,9 +234,7 @@ public static class SelectElementSceneUiBuilder
         return buttons;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Center – character preview image
-    // ─────────────────────────────────────────────────────────────────────────
     private static Image SE_BuildPreview(Transform parent)
     {
         // Platform / base (decorative circle)
@@ -272,9 +258,7 @@ public static class SelectElementSceneUiBuilder
         return previewImg;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Right – info panel
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_BuildInfoPanel(Transform parent, Sprite woodSprite,
         out TMP_Text instructionText)
     {
@@ -328,16 +312,14 @@ public static class SelectElementSceneUiBuilder
         instructionText.overflowMode   = TextOverflowModes.Overflow;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Bottom bar
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_BuildBottomBar(Transform parent, Sprite woodButton,
         out TMP_InputField nameInput,
         out Button confirmButton,
         out Button backButton,
         out TMP_Text errorText)
     {
-        // ── Error / status text (just above the bar) ──────────────
+        // Error / status text (just above the bar)
         errorText = SE_MakeText(parent, "ErrorText", string.Empty, 15f, Color.red, FontStyles.Bold);
         SE_Anchor(errorText.rectTransform,
             new Vector2(0.5f,0f), new Vector2(0.5f,0f),
@@ -345,7 +327,7 @@ public static class SelectElementSceneUiBuilder
         errorText.alignment = TextAlignmentOptions.Center;
         errorText.enableWordWrapping = false;
 
-        // ── "Trở về" button ───────────────────────────────────────
+        // "Trở về" button
         var backGo = SE_MakeButton(parent, "BackButton", "Trở về",
             ButtonColor, Color.white, 20f, woodButton);
         SE_Anchor(backGo.GetComponent<RectTransform>(),
@@ -353,7 +335,7 @@ public static class SelectElementSceneUiBuilder
             new Vector2(130f, 52f), new Vector2(-390f, 32f));
         backButton = backGo.GetComponent<Button>();
 
-        // ── Character name input (hidden by default; controller shows it) ──
+        // Character name input (hidden by default; controller shows it)
         var inputContainer = SE_MakeImage(parent, "CharacterNameInput", InputColor, null);
         SE_Anchor(inputContainer.GetComponent<RectTransform>(),
             new Vector2(0.5f,0f), new Vector2(0.5f,0f),
@@ -387,7 +369,7 @@ public static class SelectElementSceneUiBuilder
         nameInput.textComponent = inputText;
         nameInput.placeholder   = ph;
 
-        // ── "Tạo mới / Xác nhận" button ─────────────────────────
+        // "Tạo mới / Xác nhận" button
         var confirmGo = SE_MakeButton(parent, "ConfirmButton", "Tạo mới",
             ButtonColor, Color.white, 20f, woodButton);
         SE_Anchor(confirmGo.GetComponent<RectTransform>(),
@@ -396,9 +378,7 @@ public static class SelectElementSceneUiBuilder
         confirmButton = confirmGo.GetComponent<Button>();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Wire SelectElementController
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_WireController(
         SelectElementController controller,
         Button[] buttons,
@@ -440,9 +420,7 @@ public static class SelectElementSceneUiBuilder
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Utilities
-    // ─────────────────────────────────────────────────────────────────────────
     private static void SE_EnsureApiClient()
     {
         if (Object.FindObjectOfType<APIClient>() == null)
@@ -470,9 +448,7 @@ public static class SelectElementSceneUiBuilder
         SE_SetUiLayer(go);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  UI helpers
-    // ─────────────────────────────────────────────────────────────────────────
     private static GameObject SE_MakeButton(Transform parent, string name, string label,
         Color color, Color textColor, float fontSize, Sprite sprite)
     {

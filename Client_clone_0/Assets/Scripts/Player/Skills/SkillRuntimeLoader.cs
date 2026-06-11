@@ -3,21 +3,17 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// Load thống kê skill (cooldown, effectValue, mpCost) từ API ngay sau khi
-/// NetworkObject spawn (Owner chạy — Host hoặc Client owner).
-///
-/// Cách hoạt động:
-///   1. Sau khi IsOwner và IsSpawned, lấy player_id từ GameManager / PlayerPrefs.
-///   2. Gọi APIClient.GetPlayerSkills(playerId, ...).
-///   3. Duyệt từng PlayerSkillInfo trả về, tìm SkillData trong PlayerSkillManager
-///      khớp skill_code → ghi đè cooldown / currentEffectValue / currentMpCost.
-///   4. Nếu skill là WindStep, đồng thời ghi đè WindStepSkill.cooldown và dashDistance.
-///   5. Nếu skill là Teleport (DASH), ghi đè TeleportSkill.cooldown.
-///
-/// Gắn phải: Cùng GameObject với PlayerSkillManager.
-/// Yêu cầu:  APIClient singleton phải tồn tại và có token (được set sau login).
-/// </summary>
+// Load thống kê skill (cooldown, effectValue, mpCost) từ API ngay sau khi
+// NetworkObject spawn (Owner chạy — Host hoặc Client owner).
+// Cách hoạt động:
+// 1. Sau khi IsOwner và IsSpawned, lấy player_id từ GameManager / PlayerPrefs.
+// 2. Gọi APIClient.GetPlayerSkills(playerId, ...).
+// 3. Duyệt từng PlayerSkillInfo trả về, tìm SkillData trong PlayerSkillManager
+// khớp skill_code → ghi đè cooldown / currentEffectValue / currentMpCost.
+// 4. Nếu skill là WindStep, đồng thời ghi đè WindStepSkill.cooldown và dashDistance.
+// 5. Nếu skill là Teleport (DASH), ghi đè TeleportSkill.cooldown.
+// Gắn phải: Cùng GameObject với PlayerSkillManager.
+// Yêu cầu:  APIClient singleton phải tồn tại và có token (được set sau login).
 [RequireComponent(typeof(PlayerSkillManager))]
 public class SkillRuntimeLoader : NetworkBehaviour
 {
@@ -28,15 +24,13 @@ public class SkillRuntimeLoader : NetworkBehaviour
     [Tooltip("Số lần retry tối đa")]
     [SerializeField] private int maxRetries = 3;
 
-    // ── Internal ─────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private PlayerSkillManager skillManager;
     private WindStepSkill windStepSkill;
     private TeleportSkill teleportSkill;
     private bool loaded = false;
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Network lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     public override void OnNetworkSpawn()
     {
@@ -54,9 +48,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         StartCoroutine(WaitAndLoad());
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Load logic
-    // ════════════════════════════════════════════════════════════════════════
 
     public void ReloadNow()
     {
@@ -169,9 +161,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
             Debug.LogWarning("[SkillRuntimeLoader] Không load được skill stats từ DB. Dùng giá trị Inspector.");
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Apply
-    // ════════════════════════════════════════════════════════════════════════
 
     private void ApplySkillStats(PlayerSkillsResponse response)
     {
@@ -217,7 +207,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
             sd.cooldown      = info.current_cooldown_sec > 0 ? info.current_cooldown_sec : sd.cooldown;
             sd.currentMpCost = info.current_mp_cost;
 
-            // ── Tính tổng sát thương: skill base + player final attack ──────────────
+            // Tính tổng sát thương: skill base + player final attack
             // Chỉ áp dụng cho các skill gây sát thương trực tiếp, không áp dụng cho
             // buff/utility skill nơi effect_value là khoảng cách / lượng buff.
             float effectValue = info.current_effect_value;
@@ -272,10 +262,8 @@ public class SkillRuntimeLoader : NetworkBehaviour
         Debug.Log($"[SkillRuntimeLoader] Load xong: {matched}/{skillManager.GetSkillCount()} skill, player_final_attack={playerFinalAtk}");
     }
 
-    /// <summary>
-    /// Trả về true nếu skill này gây sát thương trực tiếp và cần cộng player attack vào effectValue.
-    /// Các skill buff/utility (dash distance, shield, armor buff, aura buff) trả về false.
-    /// </summary>
+    // Trả về true nếu skill này gây sát thương trực tiếp và cần cộng player attack vào effectValue.
+    // Các skill buff/utility (dash distance, shield, armor buff, aura buff) trả về false.
     private static bool IsDamageSkill(SkillType type)
     {
         switch (type)
@@ -344,9 +332,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         return false;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private int GetPlayerId()
     {

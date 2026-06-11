@@ -3,18 +3,14 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// Skill 1 của hệ Thổ — "Địa Uy Khí" (Aura Buff Tấn Công)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill1 trên SkillEffect.
-///   2. Quét bán kính buffRadius tìm tất cả player (kể cả bản thân).
-///   3. Gọi ApplyAttackBuff() trên PlayerHealth của mỗi player tìm thấy.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào Tho.prefab.
-///   - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = EarthAura.
-/// </summary>
+// Skill 1 của hệ Thổ — "Địa Uy Khí" (Aura Buff Tấn Công)
+// Cơ chế:
+// 1. Trigger animation Skill1 trên SkillEffect.
+// 2. Quét bán kính buffRadius tìm tất cả player (kể cả bản thân).
+// 3. Gọi ApplyAttackBuff() trên PlayerHealth của mỗi player tìm thấy.
+// Setup trong Unity:
+// - Gắn component này vào Tho.prefab.
+// - PlayerSkillManager tự phát hiện qua GetComponent khi skillType = EarthAura.
 public class EarthAttackBuffSkill : NetworkBehaviour
 {
     [Header("Attack Buff Settings")]
@@ -33,7 +29,7 @@ public class EarthAttackBuffSkill : NetworkBehaviour
     [Header("Visual")]
     [SerializeField] private string animTriggerName = "Skill1";
 
-    // ── Internal state ────────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;
@@ -139,7 +135,7 @@ public class EarthAttackBuffSkill : NetworkBehaviour
             if (netObj != null && selfNetObj != null && netObj.NetworkObjectId == selfNetObj.NetworkObjectId)
                 continue;
 
-            // ── Kiểm tra party: chỉ buff player cùng nhóm ──────────────────
+            // Kiểm tra party: chỉ buff player cùng nhóm
             bool sameParty = netObj != null && mySelf != null && mySelf.IsInSameParty(netObj);
             if (!sameParty) continue;
 

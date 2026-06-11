@@ -1,21 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// ScriptableObject lưu ánh xạ từ hybrid key → Prefab GameObject.
-/// Key format: "{ElementA}_{ElementB}" (alphabetically sorted, English).
-/// Ví dụ: "Earth_Fire", "Metal_Wind", "Wind_Wood".
-///
-/// ═══════════════════════════════════════════════════════════
-/// CÁCH TẠO ASSET:
-///   1. Project window → chuột phải → Create → Game → HybridPrefabMap
-///   2. Đặt tên: HybridPrefabMap (trong Assets/ScriptableObjects/)
-///   3. Trong Inspector, bấm "+" để thêm từng entry:
-///      Key     = "Earth_Fire"     (phải khớp NormalizeKey từ DB)
-///      Prefab  = Hybrid_Earth_Fire.prefab
-///   4. Kéo HybridPrefabMap asset vào field [HybridPrefabMap] của CharacterLoader/PlayerSpawner
-/// ═══════════════════════════════════════════════════════════
-/// </summary>
+// ScriptableObject lưu ánh xạ từ hybrid key → Prefab GameObject.
+// Key format: "{ElementA}_{ElementB}" (alphabetically sorted, English).
+// Ví dụ: "Earth_Fire", "Metal_Wind", "Wind_Wood".
+// CÁCH TẠO ASSET:
+// 1. Project window → chuột phải → Create → Game → HybridPrefabMap
+// 2. Đặt tên: HybridPrefabMap (trong Assets/ScriptableObjects/)
+// 3. Trong Inspector, bấm "+" để thêm từng entry:
+// Key     = "Earth_Fire"     (phải khớp NormalizeKey từ DB)
+// Prefab  = Hybrid_Earth_Fire.prefab
+// 4. Kéo HybridPrefabMap asset vào field [HybridPrefabMap] của CharacterLoader/PlayerSpawner
 [CreateAssetMenu(fileName = "HybridPrefabMap", menuName = "Game/HybridPrefabMap")]
 public class HybridPrefabMap : ScriptableObject
 {
@@ -44,10 +39,8 @@ public class HybridPrefabMap : ScriptableObject
                 _cache[e.key] = e.prefab;
     }
 
-    /// <summary>
-    /// Lấy hybrid prefab theo 2 element (thứ tự không quan trọng).
-    /// Trả về null nếu không tìm thấy.
-    /// </summary>
+    // Lấy hybrid prefab theo 2 element (thứ tự không quan trọng).
+    // Trả về null nếu không tìm thấy.
     public GameObject Get(string elementA, string elementB)
     {
         if (_cache == null) RebuildCache();
@@ -56,7 +49,7 @@ public class HybridPrefabMap : ScriptableObject
         return go;
     }
 
-    /// <summary>Lấy hybrid prefab theo key đã chuẩn hoá từ server (prefab_path cuối cùng).</summary>
+    // Lấy hybrid prefab theo key đã chuẩn hoá từ server (prefab_path cuối cùng).
     public GameObject GetByPath(string prefabPath)
     {
         if (_cache == null) RebuildCache();

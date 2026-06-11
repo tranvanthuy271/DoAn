@@ -1,9 +1,7 @@
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-/// <summary>
-/// Bridge mở CharacterPanel có sẵn để hiển thị hồ sơ bạn bè ở chế độ read-only.
-/// </summary>
+// Bridge mở CharacterPanel có sẵn để hiển thị hồ sơ bạn bè ở chế độ read-only.
 public class PlayerProfilePanelUI : MonoBehaviour
 {
     [SerializeField] private CharacterPanelController characterPanel;
@@ -17,7 +15,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
         ResolveReferences();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void LoadProfile(int userId, string username)
     {
@@ -90,7 +88,7 @@ public class PlayerProfilePanelUI : MonoBehaviour
     }
 }
 
-// ── DTOs ──────────────────────────────────────────────────────────────────────
+// DTOs
 
 [System.Serializable]
 public class PlayerProfileDto

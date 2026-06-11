@@ -1,18 +1,14 @@
 using UnityEngine;
 
-/// <summary>
-/// SkillEffectOutline – Outline màu trên player/enemy khi bị debuff (hoặc có buff).
-///
-/// Khác với BuffOutlineVisual (outline tĩnh màu buff):
-///   • Outline này có alpha mờ dần từ 100% → 0% theo thời gian còn lại của hiệu ứng.
-///   • Hỗ trợ nhiều effect cùng lúc: chỉ hiển thị outline mạnh nhất (debuff ưu tiên hơn buff).
-///
-/// Setup trong Unity:
-///   1. Tạo child object tên "SkillEffectOutline" trong Player/Enemy prefab.
-///   2. Thêm SpriteRenderer vào child object đó.
-///   3. Gắn script này vào cùng object với SpriteRenderer.
-///   4. DebuffManager / PlayerBuffSync sẽ gọi Activate() / Deactivate() tự động.
-/// </summary>
+// SkillEffectOutline – Outline màu trên player/enemy khi bị debuff (hoặc có buff).
+// Khác với BuffOutlineVisual (outline tĩnh màu buff):
+// • Outline này có alpha mờ dần từ 100% → 0% theo thời gian còn lại của hiệu ứng.
+// • Hỗ trợ nhiều effect cùng lúc: chỉ hiển thị outline mạnh nhất (debuff ưu tiên hơn buff).
+// Setup trong Unity:
+// 1. Tạo child object tên "SkillEffectOutline" trong Player/Enemy prefab.
+// 2. Thêm SpriteRenderer vào child object đó.
+// 3. Gắn script này vào cùng object với SpriteRenderer.
+// 4. DebuffManager / PlayerBuffSync sẽ gọi Activate() / Deactivate() tự động.
 [DisallowMultipleComponent]
 public class SkillEffectOutline : MonoBehaviour
 {
@@ -23,7 +19,7 @@ public class SkillEffectOutline : MonoBehaviour
     [Tooltip("Sorting order offset so với main sprite (âm = phía sau)")]
     [SerializeField] private int sortingOrderOffset = -1;
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private SpriteRenderer _sourceRenderer;
     private SpriteRenderer _outlineRenderer;
 
@@ -39,7 +35,7 @@ public class SkillEffectOutline : MonoBehaviour
     private float   _buffStartTime;
     private bool    _buffActive;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -59,9 +55,9 @@ public class SkillEffectOutline : MonoBehaviour
         UpdateOutlineAlpha();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Bật outline debuff (bất lợi) màu đỏ/tím, alpha mờ dần theo duration.</summary>
+    // Bật outline debuff (bất lợi) màu đỏ/tím, alpha mờ dần theo duration.
     public void ActivateDebuff(Color color, float duration)
     {
         _debuffColor         = color;
@@ -70,7 +66,7 @@ public class SkillEffectOutline : MonoBehaviour
         _debuffActive        = true;
     }
 
-    /// <summary>Tắt outline debuff (gọi khi debuff hết hạn).</summary>
+    // Tắt outline debuff (gọi khi debuff hết hạn).
     public void DeactivateDebuff()
     {
         _debuffActive = false;
@@ -78,7 +74,7 @@ public class SkillEffectOutline : MonoBehaviour
             _outlineRenderer.enabled = false;
     }
 
-    /// <summary>Bật outline buff (có lợi) màu xanh/vàng, alpha mờ dần theo duration.</summary>
+    // Bật outline buff (có lợi) màu xanh/vàng, alpha mờ dần theo duration.
     public void ActivateBuff(Color color, float duration)
     {
         _buffColor         = color;
@@ -87,7 +83,7 @@ public class SkillEffectOutline : MonoBehaviour
         _buffActive        = true;
     }
 
-    /// <summary>Tắt outline buff.</summary>
+    // Tắt outline buff.
     public void DeactivateBuff()
     {
         _buffActive = false;
@@ -95,7 +91,7 @@ public class SkillEffectOutline : MonoBehaviour
             _outlineRenderer.enabled = false;
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void UpdateOutlineAlpha()
     {

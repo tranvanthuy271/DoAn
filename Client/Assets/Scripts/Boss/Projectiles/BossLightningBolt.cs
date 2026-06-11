@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  BossLightningBolt  —  Tia sét tạo ra bởi skill sét liên tiếp
 //
 //  HIỆU ỨNG KHI TRÚNG NGƯỜI CHƠI:
@@ -13,7 +12,6 @@ using Unity.Netcode;
 //  SETUP:
 //    • Prefab cần: Collider2D (isTrigger), Animator (tùy chọn)
 //    • Không cần Rigidbody2D (tia sét không di chuyển)
-// ─────────────────────────────────────────────────────────────────────────────
 
 [RequireComponent(typeof(Collider2D))]
 public class BossLightningBolt : MonoBehaviour
@@ -26,7 +24,6 @@ public class BossLightningBolt : MonoBehaviour
     // Theo dõi player đã bị hit để không spam damage
     private readonly System.Collections.Generic.HashSet<uint> _hitPlayers = new();
 
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -34,7 +31,7 @@ public class BossLightningBolt : MonoBehaviour
         if (col != null) col.isTrigger = true;
     }
 
-    /// <summary>Khởi tạo do BossController gọi ngay sau Instantiate.</summary>
+    // Khởi tạo do BossController gọi ngay sau Instantiate.
     public void Init(int dmg, float duration, float stun)
     {
         damage       = dmg;
@@ -90,11 +87,9 @@ public class BossLightningBolt : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Stun helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Server → Owner client: áp dụng stun movement.</summary>
+    // Server → Owner client: áp dụng stun movement.
     [ClientRpc]
     private void ApplyStunClientRpc(float duration, ClientRpcParams rpcParams = default)
     {

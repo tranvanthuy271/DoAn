@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -32,11 +32,9 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  GET /api/quest/list?npcId=2
         //  Trả về danh sách quest của NPC, kèm trạng thái của player hiện tại.
         //  Status: available | active | completed | locked
-        // ═════════════════════════════════════════════════════════════════════
         [HttpGet("list")]
         public async Task<IActionResult> GetQuestList([FromQuery] int npcId)
         {
@@ -112,10 +110,8 @@ namespace GameServerApi.Controllers
             return Ok(result);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  POST /api/quest/accept
         //  Body: { "questId": 1 }
-        // ═════════════════════════════════════════════════════════════════════
         [HttpPost("accept")]
         public async Task<IActionResult> Accept([FromBody] JsonElement body)
         {
@@ -158,10 +154,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  POST /api/quest/abandon
         //  Body: {} (dùng JWT để xác định player)
-        // ═════════════════════════════════════════════════════════════════════
         [HttpPost("abandon")]
         public async Task<IActionResult> Abandon()
         {
@@ -184,11 +178,9 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã bỏ nhiệm vụ." });
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  POST /api/quest/progress-by-event
         //  Body: { "playerId": 1, "type": "kill"|"collect"|"talk"|"reach", "targetId": 5, "delta": 1 }
         //  Gọi từ Unity game server sau sự kiện: kill mob / nhặt item / nói chuyện / đến map.
-        // ═════════════════════════════════════════════════════════════════════
         [HttpPost("progress-by-event")]
         [Authorize(AuthenticationSchemes = ZoneApiKeyAuthenticationHandler.SchemeName)]
         public async Task<IActionResult> ProgressByEvent([FromBody] JsonElement body)
@@ -256,10 +248,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  POST /api/quest/complete
         //  Body: { "questId": 1 }
-        // ═════════════════════════════════════════════════════════════════════
         [HttpPost("complete")]
         public async Task<IActionResult> Complete([FromBody] JsonElement body)
         {
@@ -560,10 +550,8 @@ namespace GameServerApi.Controllers
             public bool IsStackable { get; set; }
         }
 
-        // ═════════════════════════════════════════════════════════════════════
         //  GET /api/quest/player-overview
         //  Trả về quest đang active (hoặc quest available đầu tiên) để HUD hiện gợi ý.
-        // ═════════════════════════════════════════════════════════════════════
         [HttpGet("player-overview")]
         public async Task<IActionResult> PlayerOverview()
         {
@@ -659,9 +647,7 @@ namespace GameServerApi.Controllers
             };
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        //  Helpers
-        // ═════════════════════════════════════════════════════════════════════
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
         private int GetPlayerId()
         {
             var claim = User.FindFirstValue(ClaimTypes.NameIdentifier)

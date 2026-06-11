@@ -3,9 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models.Entities
 {
-    /// <summary>
-    /// Master data cho NPC trong game.
-    /// </summary>
+    // Master data cho NPC trong game.
     [Table("npc_config")]
     public class NpcConfig
     {
@@ -17,7 +15,7 @@ namespace GameServerApi.Models.Entities
         [MaxLength(100)]
         public string NpcName { get; set; } = "";
 
-        /// <summary>shop | quest | blacksmith | exchange | event</summary>
+        // shop | quest | blacksmith | exchange | event
         [Column("npc_type")]
         [MaxLength(20)]
         public string NpcType { get; set; } = "shop";
@@ -31,7 +29,7 @@ namespace GameServerApi.Models.Entities
         [Column("pos_y")]
         public float PosY { get; set; }
 
-        /// <summary>Key khởi đầu trong bảng npc_dialogue.</summary>
+        // Key khởi đầu trong bảng npc_dialogue.
         [Column("dialogue_key")]
         [MaxLength(50)]
         public string? DialogueKey { get; set; }
@@ -43,12 +41,10 @@ namespace GameServerApi.Models.Entities
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
-        /// <summary>
-        /// JSON config shop per NPC (LangLa-style).
-        /// Format: {"shop_name":"Binh Khí","items":[{"item_template_id":200,"price_silver":1000,"price_gold":0,"stock":-1,"level_need":1}]}
-        /// null = NPC không có shop.
-        /// idClass: 0=Tất Cả 1=Hỏa 2=Thủy 3=Thổ 4=Lôi(Kim) 5=Mộc 6=Phong
-        /// </summary>
+        // JSON config shop per NPC (LangLa-style).
+        // Format: {"shop_name":"Binh Khí","items":[{"item_template_id":200,"price_silver":1000,"price_gold":0,"stock":-1,"level_need":1}]}
+        // null = NPC không có shop.
+        // idClass: 0=Tất Cả 1=Hỏa 2=Thủy 3=Thổ 4=Lôi(Kim) 5=Mộc 6=Phong
         [Column("shop_items_json")]
         public string? ShopItemsJson { get; set; }
     }

@@ -1,9 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// ItemData - ScriptableObject để định nghĩa các loại item trong game
-/// Tạo asset trong Unity Editor: Right-click > Create > Item > ItemData
-/// </summary>
+// ItemData - ScriptableObject để định nghĩa các loại item trong game
+// Tạo asset trong Unity Editor: Right-click > Create > Item > ItemData
 [CreateAssetMenu(fileName = "New Item", menuName = "Item/ItemData")]
 public class ItemData : ScriptableObject
 {
@@ -46,9 +44,7 @@ public class ItemData : ScriptableObject
     public bool usable = false;
 }
 
-/// <summary>
-/// Enum định nghĩa các loại item
-/// </summary>
+// Enum định nghĩa các loại item
 public enum ItemType
 {
     Weapon,      // Vũ khí

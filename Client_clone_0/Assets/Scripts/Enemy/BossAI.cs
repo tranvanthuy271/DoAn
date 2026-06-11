@@ -5,10 +5,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Boss AI with local Inspector-configured skills, retreat behavior, and optional ground physics.
-/// Legacy server boss config is still supported when useInspectorSkillsOnly = false.
-/// </summary>
+// Boss AI with local Inspector-configured skills, retreat behavior, and optional ground physics.
+// Legacy server boss config is still supported when useInspectorSkillsOnly = false.
 [RequireComponent(typeof(EnemyHealth), typeof(Rigidbody2D), typeof(NetworkObject))]
 public class BossAI : NetworkBehaviour
 {
@@ -154,6 +152,10 @@ public class BossAI : NetworkBehaviour
 
     [Header("Phase Text (optional)")]
     public TMPro.TextMeshProUGUI phaseAnnounceText;
+
+    [Header("Default HP Phases")]
+    [Tooltip("If boss config has no phases_json, use an implicit Phase 1 at 100%, Phase 2 below 60%, and Phase 3 below 30%.")]
+    public bool useDefaultHpPhasesWhenMissing = true;
 
     private EnemyHealth _health;
     private NetworkEnemyHealth _networkHealth;
@@ -309,6 +311,7 @@ public class BossAI : NetworkBehaviour
     {
         if (useInspectorSkillsOnly)
         {
+            EnsureBossPhasesConfigured();
             _configLoaded = true;
         }
         else
@@ -346,6 +349,12 @@ public class BossAI : NetworkBehaviour
 
         if (runtimeChaseSpeed > 0f)
             chaseSpeed = runtimeChaseSpeed;
+    }
+
+    public void SetRuntimeBossId(int runtimeBossId)
+    {
+        if (runtimeBossId > 0)
+            bossId = runtimeBossId;
     }
 
     private void ApplyMovementPhysics()
@@ -398,11 +407,13 @@ public class BossAI : NetworkBehaviour
             if (!string.IsNullOrEmpty(_config.phases_json))
                 _config.phases = ParseJsonArray<PhaseData>(_config.phases_json);
 
+            EnsureBossPhasesConfigured();
             _configLoaded = true;
         }
         catch (Exception ex)
         {
             Debug.LogError($"[BossAI] Parse config loi: {ex.Message}");
+            EnsureBossPhasesConfigured();
             _configLoaded = true;
         }
     }
@@ -2556,6 +2567,8 @@ public class BossAI : NetworkBehaviour
 
     private void CheckPhases()
     {
+        EnsureBossPhasesConfigured();
+
         if (_config?.phases == null || _health == null)
             return;
 
@@ -2612,20 +2625,123 @@ public class BossAI : NetworkBehaviour
         }
     }
 
+    private bool IsInPartyDungeon()
+    {
+        int myMapId = GetMyMapId();
+        if (myMapId == -999) return false;
+
+        var runtimes = FindObjectsByType<PartyDungeonRuntime>(FindObjectsSortMode.None);
+        foreach (var runtime in runtimes)
+        {
+            if (runtime.gameObject.scene == gameObject.scene)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private IEnumerator SummonAdds(int count)
     {
-        if (addSpawnPrefab == null)
+        bool isPartyDungeon = IsInPartyDungeon();
+        GameObject prefabToSpawn = addSpawnPrefab;
+
+        if (isPartyDungeon && EnemyPrefabManager.Instance != null)
+        {
+            GameObject bossPrefab = EnemyPrefabManager.Instance.GetEnemyPrefab(bossId);
+            if (bossPrefab != null)
+            {
+                prefabToSpawn = bossPrefab;
+            }
+        }
+
+        if (prefabToSpawn == null)
             yield break;
 
         for (int i = 0; i < count; i++)
         {
             Vector2 offset = UnityEngine.Random.insideUnitCircle * 3f;
-            GameObject add = Instantiate(addSpawnPrefab, (Vector2)transform.position + offset, Quaternion.identity);
+            GameObject add = Instantiate(prefabToSpawn, (Vector2)transform.position + offset, Quaternion.identity);
+
+            if (isPartyDungeon && prefabToSpawn != addSpawnPrefab)
+            {
+                // scale giảm đi 2 lần
+                add.transform.localScale = prefabToSpawn.transform.localScale * 0.5f;
+
+                // Cấu hình BossAI của đệ tử con để tránh triệu hồi đệ quy hoặc nộ liên tục
+                BossAI minionAI = add.GetComponent<BossAI>();
+                if (minionAI != null)
+                {
+                    minionAI.useDefaultHpPhasesWhenMissing = false;
+                    if (minionAI._config != null)
+                    {
+                        minionAI._config.phases = null;
+                    }
+                    minionAI._damageMultiplier = 0.5f; // Giảm 50% sát thương của đệ tử con
+                }
+
+                // Giảm 80% HP của đệ tử con so với Boss gốc
+                NetworkEnemyHealth netHealth = add.GetComponent<NetworkEnemyHealth>();
+                if (netHealth != null)
+                {
+                    int bossMaxHp = _health != null ? _health.GetMaxHealth() : 1000;
+                    int minionMaxHp = Mathf.Max(100, Mathf.RoundToInt(bossMaxHp * 0.2f));
+                    netHealth.PreInitMaxHp(minionMaxHp);
+                }
+                else
+                {
+                    EnemyHealth normalHealth = add.GetComponent<EnemyHealth>();
+                    if (normalHealth != null)
+                    {
+                        int bossMaxHp = _health != null ? _health.GetMaxHealth() : 1000;
+                        int minionMaxHp = Mathf.Max(100, Mathf.RoundToInt(bossMaxHp * 0.2f));
+                        normalHealth.maxHealth = minionMaxHp;
+                    }
+                }
+            }
+
             MoveSpawnedObjectToCurrentMap(add);
             ApplyMapVisibility(add, GetMyMapId());
             SpawnNetworkObjectIfNeeded(add);
             yield return new WaitForSeconds(0.3f);
         }
+    }
+
+    private void EnsureBossPhasesConfigured()
+    {
+        if (!useDefaultHpPhasesWhenMissing)
+            return;
+
+        _config ??= new BossConfigData
+        {
+            boss_id = bossId,
+            boss_name = gameObject.name
+        };
+
+        if (_config.phases != null && _config.phases.Count > 0)
+            return;
+
+        _config.phases = new List<PhaseData>
+        {
+            // Phase 1 is the initial state from 100% HP to above 60%.
+            new()
+            {
+                hp_pct_threshold = 60,
+                action = "enrage",
+                damage_multiplier = 1.25f,
+                speed_multiplier = 1.1f,
+                message = "Boss enters Phase 2."
+            },
+            new()
+            {
+                hp_pct_threshold = 30,
+                action = "berserk",
+                damage_multiplier = 1.6f,
+                speed_multiplier = 1.2f,
+                skill_cooldown_multiplier = 0.65f,
+                message = "Boss enters Phase 3."
+            }
+        };
     }
 
     private void FindNearestPlayer()

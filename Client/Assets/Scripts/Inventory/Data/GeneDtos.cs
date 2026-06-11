@@ -6,9 +6,7 @@ using System.Collections.Generic;
 // Endpoint: GET /api/gene/config   POST /api/gene/upgrade
 // ============================================================
 
-/// <summary>
-/// Config 1 bậc nâng cấp gene – nhận từ GET /api/gene/config
-/// </summary>
+// Config 1 bậc nâng cấp gene – nhận từ GET /api/gene/config
 [Serializable]
 public class GeneConfigDto
 {
@@ -46,19 +44,16 @@ public class GeneSkillUnlock
     public string iconId;
 }
 
-/// <summary>
-/// Request nâng cấp gene – gửi lên POST /api/gene/upgrade
-/// </summary>
+// Request nâng cấp gene – gửi lên POST /api/gene/upgrade
 [Serializable]
 public class GeneUpgradeRequest
 {
     public int playerId;
+    public int geneSlot;
     public int itemCount;    // số item muốn dùng (>= itemsMin)
 }
 
-/// <summary>
-/// Response sau khi nâng cấp gene – nhận từ POST /api/gene/upgrade
-/// </summary>
+// Response sau khi nâng cấp gene – nhận từ POST /api/gene/upgrade
 [Serializable]
 public class GeneUpgradeResponse
 {

@@ -4,13 +4,10 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool – tự động tạo prefab UI cho hệ thống skill effects:
-///   • StatusIconEntry prefab (32×32)
-///   • Tự động điền giá trị cho 7 file .asset SkillEffectConfig
-///
-/// Menu: GameTools → Skill Effects → ...
-/// </summary>
+// Editor tool – tự động tạo prefab UI cho hệ thống skill effects:
+// • StatusIconEntry prefab (32×32)
+// • Tự động điền giá trị cho 7 file .asset SkillEffectConfig
+// Menu: GameTools → Skill Effects → ...
 public static class SkillEffectUiBuilder
 {
     private const string PREFAB_DIR   = "Assets/Resources/Prefabs/UI";
@@ -19,7 +16,6 @@ public static class SkillEffectUiBuilder
 
     private static TMP_FontAsset _font;
 
-    // ────────────────────────────────────────────────────────────────────────
     [MenuItem("GameTools/Skill Effects/Create Status Icon Prefab")]
     public static void CreateStatusIconPrefab()
     {
@@ -32,25 +28,20 @@ public static class SkillEffectUiBuilder
         Debug.Log("[SkillEffectUiBuilder] ✓ Tạo xong StatusIconEntry prefab tại " + PREFAB_DIR);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
     // CẤU HÌNH TỰ ĐỘNG 7 FILE .ASSET SkillEffectConfig
-    // ────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Tự động điền giá trị cho 7 file SkillEffectConfig .asset.
-    /// Tìm file theo tên trong Assets/Resources/ScriptableObjects/skill effect/.
-    ///
-    /// Các file cần tồn tại trước (tạo qua Assets → Create → DoAn → Skill Effect Config):
-    ///   Burn_Config, DefenseDown_Config, Freeze_Config, Slow_Config, Weaken_Config,
-    ///   Buff_WaterArmor_Config, Buff_EarthAura_Config
-    /// </summary>
+    // Tự động điền giá trị cho 7 file SkillEffectConfig .asset.
+    // Tìm file theo tên trong Assets/Resources/ScriptableObjects/skill effect/.
+    // Các file cần tồn tại trước (tạo qua Assets → Create → DoAn → Skill Effect Config):
+    // Burn_Config, DefenseDown_Config, Freeze_Config, Slow_Config, Weaken_Config,
+    // Buff_WaterArmor_Config, Buff_EarthAura_Config
     [MenuItem("GameTools/Skill Effects/Configure All Effect Configs")]
     public static void ConfigureAllEffectConfigs()
     {
-        // ── Định nghĩa 7 preset ──────────────────────────────────────────
+        // Định nghĩa 7 preset
         var presets = new[]
         {
-            // DEBUFFS ─────────────────────────────────────────────────────
+            // DEBUFFS
             new EffectPreset
             {
                 assetName     = "Slow_Config",
@@ -111,7 +102,7 @@ public static class SkillEffectUiBuilder
                 debuffTint    = new Color(0.5f, 0f, 0f, 0.5f),        // đỏ tối
                 ringColor     = new Color(0.8f, 0.1f, 0.1f, 1f),
             },
-            // BUFFS ───────────────────────────────────────────────────────
+            // BUFFS
             new EffectPreset
             {
                 assetName     = "Buff_WaterArmor_Config",
@@ -197,9 +188,7 @@ public static class SkillEffectUiBuilder
         EditorUtility.DisplayDialog("Configure Effect Configs", summary, "OK");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
     // STATUS ICON ENTRY  (32×32 – dùng cho OverheadStatusDisplay)
-    // ────────────────────────────────────────────────────────────────────────
 
     private static void CreateStatusIconEntry()
     {
@@ -212,7 +201,7 @@ public static class SkillEffectUiBuilder
         bg.color = new Color(0f, 0f, 0f, 0.65f);
         bg.raycastTarget = false;
 
-        // ── Icon ──────────────────────────────────────────────────────────
+        // Icon
         var iconGo   = new GameObject("Icon");
         iconGo.transform.SetParent(root.transform, false);
         var iconRect = iconGo.AddComponent<RectTransform>();
@@ -224,7 +213,7 @@ public static class SkillEffectUiBuilder
         iconImg.preserveAspect  = true;
         iconImg.raycastTarget   = false;
 
-        // ── CountdownRing (Radial360 fill) ────────────────────────────────
+        // CountdownRing (Radial360 fill)
         var ringGo   = new GameObject("CountdownRing");
         ringGo.transform.SetParent(root.transform, false);
         var ringRect = ringGo.AddComponent<RectTransform>();
@@ -241,7 +230,7 @@ public static class SkillEffectUiBuilder
         ringImg.fillAmount      = 1f;
         ringImg.raycastTarget   = false;
 
-        // ── TimeLabel ─────────────────────────────────────────────────────
+        // TimeLabel
         var labelGo   = new GameObject("TimeLabel");
         labelGo.transform.SetParent(root.transform, false);
         var labelRect = labelGo.AddComponent<RectTransform>();
@@ -259,7 +248,7 @@ public static class SkillEffectUiBuilder
         labelText.raycastTarget        = false;
         if (_font != null) labelText.font = _font;
 
-        // ── Gắn Script ────────────────────────────────────────────────────
+        // Gắn Script
         var script = root.AddComponent<StatusIconEntry>();
 
         // Dùng SerializedObject để set private serialized fields
@@ -277,7 +266,6 @@ public static class SkillEffectUiBuilder
         Debug.Log($"[SkillEffectUiBuilder] Đã tạo StatusIconEntry tại {path}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
 
     private static void EnsureDir(string path)
     {
@@ -295,7 +283,7 @@ public static class SkillEffectUiBuilder
         }
     }
 
-    // ── Helper struct cho preset config ──────────────────────────────────────
+    // Helper struct cho preset config
     private struct EffectPreset
     {
         public string           assetName;
@@ -314,23 +302,18 @@ public static class SkillEffectUiBuilder
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
 // Tool: Gắn effectConfig vào từng SkillData trong 12 player prefabs
 // Menu: GameTools → Skill Effects → Assign Effect Configs to Prefabs
-// ════════════════════════════════════════════════════════════════════════════
 
-/// <summary>
-/// Tự động gán SkillEffectConfig vào trường effectConfig của từng SkillData
-/// trong PlayerSkillManager trên tất cả 12 player prefabs.
-///
-/// Mapping theo skillCode (đáng tin cậy, không phụ thuộc tên Unicode):
-///   FIRE_BOLT / FIRE_BURST / FIRE_RAIN / HYBRID_FIRE_EARTH_LAVA_AURA → Burn_Config
-///   WATER_BOLT / WATER_PILLAR / EARTH_BLINK                          → Slow_Config
-///   WATER_ARMOR                                                       → Buff_WaterArmor_Config
-///   EARTH_AURA                                                        → Buff_EarthAura_Config
-///   EARTH_BOOMERANG / HYBRID_METAL_WIND_BARRAGE                       → DefenseDown_Config
-///   HYBRID_WATER_WOOD_VENOM                                           → Weaken_Config
-/// </summary>
+// Tự động gán SkillEffectConfig vào trường effectConfig của từng SkillData
+// trong PlayerSkillManager trên tất cả 12 player prefabs.
+// Mapping theo skillCode (đáng tin cậy, không phụ thuộc tên Unicode):
+// FIRE_BOLT / FIRE_BURST / FIRE_RAIN / HYBRID_FIRE_EARTH_LAVA_AURA → Burn_Config
+// WATER_BOLT / WATER_PILLAR / EARTH_BLINK                          → Slow_Config
+// WATER_ARMOR                                                       → Buff_WaterArmor_Config
+// EARTH_AURA                                                        → Buff_EarthAura_Config
+// EARTH_BOOMERANG / HYBRID_METAL_WIND_BARRAGE                       → DefenseDown_Config
+// HYBRID_WATER_WOOD_VENOM                                           → Weaken_Config
 public static class SkillEffectConfigAssigner
 {
     private static readonly string[] PLAYER_PREFAB_PATHS = new[]
@@ -372,7 +355,7 @@ public static class SkillEffectConfigAssigner
     [MenuItem("GameTools/Skill Effects/Assign Effect Configs to Prefabs")]
     public static void AssignAllEffectConfigs()
     {
-        // ── 1. Nạp tất cả SkillEffectConfig assets ──────────────────────────
+        // 1. Nạp tất cả SkillEffectConfig assets
         var configCache = new System.Collections.Generic.Dictionary<string, SkillEffectConfig>();
         foreach (var assetName in new System.Collections.Generic.HashSet<string>(CODE_TO_ASSET.Values))
         {
@@ -396,7 +379,7 @@ public static class SkillEffectConfigAssigner
         int totalAssigned = 0;
         int totalPrefabs  = 0;
 
-        // ── 2. Duyệt từng prefab ─────────────────────────────────────────────
+        // 2. Duyệt từng prefab
         foreach (string prefabPath in PLAYER_PREFAB_PATHS)
         {
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);

@@ -2,23 +2,19 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// Quản lý Hotbar kỹ năng — tự động tìm PlayerSkillManager của owner và
-/// gắn từng SkillData vào các SkillSlotUI tương ứng.
-///
-/// Cấu trúc gợi ý trong Canvas:
-///   SkillHotbar (GameObject — gắn script này)
-///   ├── Slot0  (SkillSlotUI)
-///   ├── Slot1  (SkillSlotUI)
-///   ├── Slot2  (SkillSlotUI)
-///   └── ...
-///
-/// Cách dùng:
-///   1. Tạo các GameObject con theo cấu trúc trên.
-///   2. Gán từng Slot vào mảng `slots`.
-///   3. (Tuỳ chọn) Thêm icon sprites vào mảng `skillIcons` cùng thứ tự với skill trong PlayerSkillManager.
-///   4. Script tự động bind khi tìm thấy PlayerSkillManager của owner.
-/// </summary>
+// Quản lý Hotbar kỹ năng — tự động tìm PlayerSkillManager của owner và
+// gắn từng SkillData vào các SkillSlotUI tương ứng.
+// Cấu trúc gợi ý trong Canvas:
+// SkillHotbar (GameObject — gắn script này)
+// ├── Slot0  (SkillSlotUI)
+// ├── Slot1  (SkillSlotUI)
+// ├── Slot2  (SkillSlotUI)
+// └── ...
+// Cách dùng:
+// 1. Tạo các GameObject con theo cấu trúc trên.
+// 2. Gán từng Slot vào mảng `slots`.
+// 3. (Tuỳ chọn) Thêm icon sprites vào mảng `skillIcons` cùng thứ tự với skill trong PlayerSkillManager.
+// 4. Script tự động bind khi tìm thấy PlayerSkillManager của owner.
 public class SkillHotbarUI : MonoBehaviour
 {
     [Header("Slots")]
@@ -38,7 +34,7 @@ public class SkillHotbarUI : MonoBehaviour
     [Range(0.1f, 2f)]
     public float retryInterval = 0.3f;
 
-    // ── Internal ─────────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private PlayerSkillManager boundManager;
     private float retryTimer;
     private bool isBound;
@@ -46,13 +42,9 @@ public class SkillHotbarUI : MonoBehaviour
     private bool _loggedNoManagerWarning;
     private bool _loggedNoOwnerWarning;
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Public API
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Buộc rebind ngay lập tức — gọi từ PlayerSkillManager.OnNetworkSpawn() khi IsOwner
-    /// </summary>
+    // Buộc rebind ngay lập tức — gọi từ PlayerSkillManager.OnNetworkSpawn() khi IsOwner
     public void ForceRebind()
     {
         isBound = false;
@@ -61,18 +53,14 @@ public class SkillHotbarUI : MonoBehaviour
         Debug.Log("[SkillHotbarUI] ForceRebind() được gọi — reset và tìm lại PlayerSkillManager.");
     }
 
-    /// <summary>
-    /// Gán thủ công PlayerSkillManager (nếu autoFind = false)
-    /// </summary>
+    // Gán thủ công PlayerSkillManager (nếu autoFind = false)
     public void SetSkillManager(PlayerSkillManager manager)
     {
         if (manager == null) return;
         BindToManager(manager);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     private void Update()
     {
@@ -94,9 +82,7 @@ public class SkillHotbarUI : MonoBehaviour
         TryFindAndBind();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Private helpers
-    // ════════════════════════════════════════════════════════════════════════
 
     private void TryFindAndBind()
     {

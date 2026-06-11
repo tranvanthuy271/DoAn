@@ -1,55 +1,45 @@
 using UnityEngine;
 
-/// <summary>
-/// EnemyStatOverride — Lưu thông số ghi đè (HP, EXP, is_boss, respawn_time)
-/// cho một enemy instance được spawn từ HostSpawnConfigLoader.
-///
-/// HostSpawnConfigLoader gọi Apply() ngay sau NetworkObject.Spawn().
-/// Component này KHÔNG sync qua mạng — chỉ server cần các giá trị này.
-///
-/// Không cần thêm vào prefab thủ công; HostSpawnConfigLoader tự AddComponent nếu thiếu.
-/// </summary>
+// EnemyStatOverride — Lưu thông số ghi đè (HP, EXP, is_boss, respawn_time)
+// cho một enemy instance được spawn từ HostSpawnConfigLoader.
+// HostSpawnConfigLoader gọi Apply() ngay sau NetworkObject.Spawn().
+// Component này KHÔNG sync qua mạng — chỉ server cần các giá trị này.
+// Không cần thêm vào prefab thủ công; HostSpawnConfigLoader tự AddComponent nếu thiếu.
 public class EnemyStatOverride : MonoBehaviour
 {
-    // ─────────────────────────────────────────────────────────────────────
     //  Overridden stats (read-only sau khi Apply() được gọi)
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>HP tối đa ghi đè. 0 = dùng giá trị mặc định trong prefab.</summary>
+    // HP tối đa ghi đè. 0 = dùng giá trị mặc định trong prefab.
     public int OverrideHp      { get; private set; }
 
-    /// <summary>EXP thưởng khi giết. 0 = dùng giá trị mặc định.</summary>
+    // EXP thưởng khi giết. 0 = dùng giá trị mặc định.
     public int OverrideExp     { get; private set; }
 
-    /// <summary>True = enemy này hoạt động ở chế độ boss.</summary>
+    // True = enemy này hoạt động ở chế độ boss.
     public bool IsBoss         { get; private set; }
 
-    /// <summary>Giây chờ hồi sinh. Dùng bởi respawn logic trên host.</summary>
+    // Giây chờ hồi sinh. Dùng bởi respawn logic trên host.
     public int RespawnTime     { get; private set; }
 
-    /// <summary>Level của enemy (dùng để hiển thị trong UI).</summary>
+    // Level của enemy (dùng để hiển thị trong UI).
     public int Level           { get; private set; } = 1;
 
-    /// <summary>Tên quái lấy từ DB (dùng để hiển thị trong EnemyInfoPanel).</summary>
+    // Tên quái lấy từ DB (dùng để hiển thị trong EnemyInfoPanel).
     public string EnemyName    { get; private set; } = "";
 
-    /// <summary>True sau khi Apply() đã được gọi ít nhất một lần.</summary>
+    // True sau khi Apply() đã được gọi ít nhất một lần.
     public bool IsApplied      { get; private set; }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Apply — gọi ngay sau NetworkObject.Spawn()
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Áp dụng thông số ghi đè cho enemy này.
-    /// Gọi ngay sau NetworkObject.Spawn() trên host.
-    /// </summary>
-    /// <param name="hp">HP tối đa. 0 → fallback về prefab mặc định.</param>
-    /// <param name="exp">EXP thưởng khi kill. 0 → fallback về mặc định.</param>
-    /// <param name="isBoss">Kích hoạt chế độ boss nếu true.</param>
-    /// <param name="respawnTime">Giây hồi sinh. ≤0 → dùng 30 giây mặc định.</param>
-    /// <param name="level">Level của enemy. ≤0 → mặc định 1.</param>
-    /// <param name="enemyName">Tên quái từ DB. Rỗng → giữ tên prefab.</param>
+    // Áp dụng thông số ghi đè cho enemy này.
+    // Gọi ngay sau NetworkObject.Spawn() trên host.
+    // Tham số hp: HP tối đa. 0 → fallback về prefab mặc định.
+    // Tham số exp: EXP thưởng khi kill. 0 → fallback về mặc định.
+    // Tham số isBoss: Kích hoạt chế độ boss nếu true.
+    // Tham số respawnTime: Giây hồi sinh. ≤0 → dùng 30 giây mặc định.
+    // Tham số level: Level của enemy. ≤0 → mặc định 1.
+    // Tham số enemyName: Tên quái từ DB. Rỗng → giữ tên prefab.
     public void Apply(int hp, int exp, bool isBoss, int respawnTime, int level = 1, string enemyName = "")
     {
         OverrideHp   = hp;
@@ -74,11 +64,9 @@ public class EnemyStatOverride : MonoBehaviour
         ApplyExpOverride(exp);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     //  Private apply helpers
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>Đặt HP tối đa và HP hiện tại qua NetworkEnemyHealth.InitHealth().</summary>
+    // Đặt HP tối đa và HP hiện tại qua NetworkEnemyHealth.InitHealth().
     private void ApplyHealth(int hp)
     {
         if (hp <= 0) return; // hp=0 → giữ nguyên default trong prefab
@@ -98,10 +86,8 @@ public class EnemyStatOverride : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Kích hoạt / tắt Boss mode trên EnemyAI hoặc BossAI.
-    /// Nếu isBoss = true và không có BossAI → log warning (thiếu component).
-    /// </summary>
+    // Kích hoạt / tắt Boss mode trên EnemyAI hoặc BossAI.
+    // Nếu isBoss = true và không có BossAI → log warning (thiếu component).
     private void ApplyBossMode(bool isBoss)
     {
         // Tắt/bật EnemyAI bình thường
@@ -152,10 +138,8 @@ public class EnemyStatOverride : MonoBehaviour
             || gameObject.name.Contains("Enemy 25");
     }
 
-    /// <summary>
-    /// Lưu EXP override vào NetworkEnemyHealth để HandleDeath() trả đúng EXP.
-    /// Nếu exp = 0 thì không ghi đè (giữ giá trị default).
-    /// </summary>
+    // Lưu EXP override vào NetworkEnemyHealth để HandleDeath() trả đúng EXP.
+    // Nếu exp = 0 thì không ghi đè (giữ giá trị default).
     private void ApplyExpOverride(int exp)
     {
         if (exp <= 0) return;

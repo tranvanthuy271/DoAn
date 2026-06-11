@@ -3,10 +3,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Service xử lý lỗi kết nối game.
-/// Luồng mới không còn dùng error panel cũ mà hiển thị loader spinner rồi tự quay về scene fallback.
-/// </summary>
+// Service xử lý lỗi kết nối game.
+// Luồng mới không còn dùng error panel cũ mà hiển thị loader spinner rồi tự quay về scene fallback.
 public class GameErrorNotifier : MonoBehaviour
 {
     public static GameErrorNotifier Instance { get; private set; }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,11 +12,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace GameServerApi.Controllers
 {
-    // ═══════════════════════════════════════════════════════════════════════
     //  In-memory registry: track which player is hosting each world map.
     //  Mỗi map chỉ có 1 host tại một thời điểm.
     //  Entry tự hết hạn sau HostTimeoutSeconds giây (phòng host crash không unregister).
-    // ═══════════════════════════════════════════════════════════════════════
     internal static class MapHostRegistry
     {
         private record HostEntry(string Ip, ushort Port, int PlayerId, DateTime RegisteredAt);
@@ -24,7 +22,7 @@ namespace GameServerApi.Controllers
         private static readonly ConcurrentDictionary<int, HostEntry> _registry = new();
         private const int HostTimeoutSeconds = 120; // host có 120s không heartbeat → bị xoá
 
-        /// <summary>Lấy thông tin host hiện tại của map (null nếu không có hoặc đã hết hạn).</summary>
+        // Lấy thông tin host hiện tại của map (null nếu không có hoặc đã hết hạn).
         public static (bool hasHost, string ip, ushort port, int playerId) Check(int mapId)
         {
             if (_registry.TryGetValue(mapId, out var entry))
@@ -37,11 +35,9 @@ namespace GameServerApi.Controllers
             return (false, "", 0, 0);
         }
 
-        /// <summary>
-        /// Thử đăng ký làm host cho map.
-        /// - Nếu chưa có host (hoặc entry đã hết hạn): đăng ký thành công → youAreHost=true.
-        /// - Nếu đã có host: trả về thông tin host hiện tại → youAreHost=false.
-        /// </summary>
+        // Thử đăng ký làm host cho map.
+        // - Nếu chưa có host (hoặc entry đã hết hạn): đăng ký thành công → youAreHost=true.
+        // - Nếu đã có host: trả về thông tin host hiện tại → youAreHost=false.
         public static (bool youAreHost, string hostIp, ushort hostPort) Register(
             int mapId, string ip, ushort port, int playerId)
         {
@@ -65,7 +61,7 @@ namespace GameServerApi.Controllers
             return (false, ip, port);
         }
 
-        /// <summary>Huỷ đăng ký host. Chỉ thành công nếu player_id khớp với host hiện tại.</summary>
+        // Huỷ đăng ký host. Chỉ thành công nếu player_id khớp với host hiện tại.
         public static bool Unregister(int mapId, int playerId)
         {
             if (_registry.TryGetValue(mapId, out var entry) && entry.PlayerId == playerId)
@@ -73,7 +69,7 @@ namespace GameServerApi.Controllers
             return false;
         }
 
-        /// <summary>Heartbeat: reset timer để tránh hết hạn. Gọi mỗi ~30s từ client.</summary>
+        // Heartbeat: reset timer để tránh hết hạn. Gọi mỗi ~30s từ client.
         public static void Heartbeat(int mapId, int playerId)
         {
             if (_registry.TryGetValue(mapId, out var entry) && entry.PlayerId == playerId)
@@ -105,10 +101,8 @@ namespace GameServerApi.Controllers
             public float y { get; set; }
         }
 
-        /// <summary>
-        /// GET /api/map/{mapId}/config
-        /// Lấy thông tin cấu hình map: spawn points, scene name, level range và yêu cầu nhiệm vụ.
-        /// </summary>
+        // GET /api/map/{mapId}/config
+        // Lấy thông tin cấu hình map: spawn points, scene name, level range và yêu cầu nhiệm vụ.
         [HttpGet("{mapId}/config")]
         public async Task<IActionResult> GetMapConfig(int mapId)
         {
@@ -140,17 +134,13 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// GET /api/map/runtime-bootstrap
-        /// Dedicated ServerScene dùng endpoint này để nạp runtime map definitions từ DB
-        /// thay vì phụ thuộc hoàn toàn vào MapWorldConfig.asset tĩnh.
-        ///
-        /// Quy ước hiện tại:
-        /// - map open world     -> zone_topology = 0 (SharedPublic)
-        /// - map dungeon/room   -> zone_topology = 1 (InstanceOnly)
-        ///
-        /// Việc phân loại dungeon map được suy ra từ dungeon_config + map_portal.
-        /// </summary>
+        // GET /api/map/runtime-bootstrap
+        // Dedicated ServerScene dùng endpoint này để nạp runtime map definitions từ DB
+        // thay vì phụ thuộc hoàn toàn vào MapWorldConfig.asset tĩnh.
+        // Quy ước hiện tại:
+        // - map open world     -> zone_topology = 0 (SharedPublic)
+        // - map dungeon/room   -> zone_topology = 1 (InstanceOnly)
+        // Việc phân loại dungeon map được suy ra từ dungeon_config + map_portal.
         [HttpGet("runtime-bootstrap")]
         public async Task<IActionResult> GetRuntimeBootstrap()
         {
@@ -246,11 +236,9 @@ namespace GameServerApi.Controllers
             return new[] { new RuntimeEntryPointDto { x = 0f, y = 0f } };
         }
 
-        /// <summary>
-        /// GET /api/map/{mapId}/portals
-        /// Lấy danh sách cổng dịch chuyển đang hoạt động trên map.
-        /// Client dùng dữ liệu này để spawn MapPortalTrigger đúng vị trí.
-        /// </summary>
+        // GET /api/map/{mapId}/portals
+        // Lấy danh sách cổng dịch chuyển đang hoạt động trên map.
+        // Client dùng dữ liệu này để spawn MapPortalTrigger đúng vị trí.
         [HttpGet("{mapId}/portals")]
         public async Task<IActionResult> GetMapPortals(int mapId)
         {
@@ -281,12 +269,10 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/map/travel
-        /// Server validate và cấp phép dịch chuyển.
-        /// Client gọi khi player chạm trigger zone của portal.
-        /// Body: { portal_id, player_id, current_map_id, player_x, player_y }
-        /// </summary>
+        // POST /api/map/travel
+        // Server validate và cấp phép dịch chuyển.
+        // Client gọi khi player chạm trigger zone của portal.
+        // Body: { portal_id, player_id, current_map_id, player_x, player_y }
         [HttpPost("travel")]
         public async Task<IActionResult> TravelPortal([FromBody] TravelRequest req)
         {
@@ -401,10 +387,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/map/by-scene?scene=GameScene
-        /// Tìm map_config theo scene_name (dùng cho MapManager.cs trên client).
-        /// </summary>
+        // GET /api/map/by-scene?scene=GameScene
+        // Tìm map_config theo scene_name (dùng cho MapManager.cs trên client).
         [HttpGet("by-scene")]
         public async Task<IActionResult> GetMapByScene([FromQuery] string scene)
         {
@@ -425,11 +409,9 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// GET /api/map/portal/direction?mapId=1&amp;direction=right
-        /// Lấy portal trái hoặc phải của map (dùng cho MapTransitionButton.cs).
-        /// portal_direction trong DB được set trước khi INSERT (left | right | none).
-        /// </summary>
+        // GET /api/map/portal/direction?mapId=1&amp;direction=right
+        // Lấy portal trái hoặc phải của map (dùng cho MapTransitionButton.cs).
+        // portal_direction trong DB được set trước khi INSERT (left | right | none).
         [HttpGet("portal/direction")]
         public async Task<IActionResult> GetPortalByDirection(
             [FromQuery] int mapId,
@@ -461,13 +443,11 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ── Host Registry endpoints ──────────────────────────────────────────
+        // Host Registry endpoints
 
-        /// <summary>
-        /// GET /api/map/host/check?mapId=1
-        /// Kiểm tra có host nào đang chạy cho map này không.
-        /// Response: { has_host, host_ip, host_port, player_id }
-        /// </summary>
+        // GET /api/map/host/check?mapId=1
+        // Kiểm tra có host nào đang chạy cho map này không.
+        // Response: { has_host, host_ip, host_port, player_id }
         [HttpGet("host/check")]
         public IActionResult CheckHost([FromQuery] int mapId)
         {
@@ -475,13 +455,11 @@ namespace GameServerApi.Controllers
             return Ok(new { has_host = hasHost, host_ip = ip, host_port = (int)port, player_id = playerId });
         }
 
-        /// <summary>
-        /// POST /api/map/host/register
-        /// Đăng ký làm host cho map (atomic: race-safe).
-        /// - Nếu chưa có host: đăng ký thành công → { you_are_host: true, host_ip, host_port }
-        /// - Nếu đã có host: → { you_are_host: false, host_ip: &lt;existing>, host_port: &lt;existing> }
-        /// Body: { map_id, host_ip, host_port, player_id }
-        /// </summary>
+        // POST /api/map/host/register
+        // Đăng ký làm host cho map (atomic: race-safe).
+        // - Nếu chưa có host: đăng ký thành công → { you_are_host: true, host_ip, host_port }
+        // - Nếu đã có host: → { you_are_host: false, host_ip: &lt;existing>, host_port: &lt;existing> }
+        // Body: { map_id, host_ip, host_port, player_id }
         [HttpPost("host/register")]
         public IActionResult RegisterHost([FromBody] MapHostRegisterRequest req)
         {
@@ -500,12 +478,10 @@ namespace GameServerApi.Controllers
             });
         }
 
-        /// <summary>
-        /// POST /api/map/host/unregister
-        /// Huỷ đăng ký host khi player rời map.
-        /// Chỉ thành công nếu player_id khớp với host hiện tại.
-        /// Body: { map_id, player_id }
-        /// </summary>
+        // POST /api/map/host/unregister
+        // Huỷ đăng ký host khi player rời map.
+        // Chỉ thành công nếu player_id khớp với host hiện tại.
+        // Body: { map_id, player_id }
         [HttpPost("host/unregister")]
         public IActionResult UnregisterHost([FromBody] MapHostUnregisterRequest req)
         {
@@ -513,12 +489,10 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true, removed });
         }
 
-        /// <summary>
-        /// POST /api/map/host/heartbeat
-        /// Reset timer của host entry để tránh hết hạn (120s timeout).
-        /// Gọi mỗi ~30s từ host client.
-        /// Body: { map_id, player_id }
-        /// </summary>
+        // POST /api/map/host/heartbeat
+        // Reset timer của host entry để tránh hết hạn (120s timeout).
+        // Gọi mỗi ~30s từ host client.
+        // Body: { map_id, player_id }
         [HttpPost("host/heartbeat")]
         public IActionResult HostHeartbeat([FromBody] MapHostUnregisterRequest req)
         {
@@ -526,27 +500,22 @@ namespace GameServerApi.Controllers
             return Ok(new { success = true });
         }
 
-        // ──────────────────────────────────────────────────────────────────
         //  Spawn Config — JSON-based enemy spawn + drop configuration
-        // ──────────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET /api/map/{mapId}/spawn-config
-        /// Lấy cấu hình spawn enemy cho map.
-        /// Unity host gọi endpoint này khi scene load để fetch toàn bộ spawn data.
-        ///
-        /// Response:
-        /// {
-        ///   "map_id": 0,
-        ///   "spawns": [{enemy_id, cx, cy, is_boss, count, respawn_time, level}, ...],
-        ///   "enemy_skills": [{enemy_id, enemy_name, base_hp, base_damage, element_type,
-        ///                      exp_reward, gold_reward, silver_reward,
-        ///                      drops:[{item_id, rate, qty_min, qty_max}],
-        ///                      skills:[...]}]
-        /// }
-        /// HP, EXP, drop → lấy từ enemy_skills (nguồn là bảng enemy cột trực tiếp).
-        /// Nếu chưa có config → trả về spawns:[] (không lỗi).
-        /// </summary>
+        // GET /api/map/{mapId}/spawn-config
+        // Lấy cấu hình spawn enemy cho map.
+        // Unity host gọi endpoint này khi scene load để fetch toàn bộ spawn data.
+        // Response:
+        // {
+        // "map_id": 0,
+        // "spawns": [{enemy_id, cx, cy, is_boss, count, respawn_time, level}, ...],
+        // "enemy_skills": [{enemy_id, enemy_name, base_hp, base_damage, element_type,
+        // exp_reward, gold_reward, silver_reward,
+        // drops:[{item_id, rate, qty_min, qty_max}],
+        // skills:[...]}]
+        // }
+        // HP, EXP, drop → lấy từ enemy_skills (nguồn là bảng enemy cột trực tiếp).
+        // Nếu chưa có config → trả về spawns:[] (không lỗi).
         [HttpGet("{mapId}/spawn-config")]
         public async Task<IActionResult> GetSpawnConfig(int mapId)
         {
@@ -604,11 +573,9 @@ namespace GameServerApi.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Lấy unique enemy_id từ enemy_spawns, sau đó query bảng enemy lấy
-        /// base_hp, base_damage, element_type, skills_json, reward_json cho từng loại quái.
-        /// reward_json được parse và flatten (drop_chance → rate) để client dùng trực tiếp.
-        /// </summary>
+        // Lấy unique enemy_id từ enemy_spawns, sau đó query bảng enemy lấy
+        // base_hp, base_damage, element_type, skills_json, reward_json cho từng loại quái.
+        // reward_json được parse và flatten (drop_chance → rate) để client dùng trực tiếp.
         private async Task<object[]> BuildEnemySkillsResponseAsync(IEnumerable<int> enemyIds)
         {
             int[] ids = enemyIds.Where(id => id > 0).Distinct().ToArray();
@@ -718,12 +685,10 @@ namespace GameServerApi.Controllers
             };
         }
 
-        /// <summary>
-        /// PUT /api/map/{mapId}/spawn-config
-        /// Cập nhật cấu hình spawn JSON cho map (admin/tool use).
-        /// Body: { spawn_json: "[{enemy_id, cx, cy, is_boss, count, respawn_time, level}...]" }
-        /// Drop config chỉnh trong enemy.reward_json, không cần gửi kèm đây.
-        /// </summary>
+        // PUT /api/map/{mapId}/spawn-config
+        // Cập nhật cấu hình spawn JSON cho map (admin/tool use).
+        // Body: { spawn_json: "[{enemy_id, cx, cy, is_boss, count, respawn_time, level}...]" }
+        // Drop config chỉnh trong enemy.reward_json, không cần gửi kèm đây.
         [HttpPut("{mapId}/spawn-config")]
         public async Task<IActionResult> UpsertSpawnConfig(int mapId,
             [FromBody] SpawnConfigUpsertRequest req)

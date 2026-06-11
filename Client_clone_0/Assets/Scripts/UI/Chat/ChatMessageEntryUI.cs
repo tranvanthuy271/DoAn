@@ -2,10 +2,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Hiển thị một dòng tin nhắn trong ScrollView.
-/// Prefab: HorizontalLayoutGroup → [TimestampText] [SenderText] [MessageText]
-/// </summary>
+// Hiển thị một dòng tin nhắn trong ScrollView.
+// Prefab: HorizontalLayoutGroup → [TimestampText] [SenderText] [MessageText]
 public class ChatMessageEntryUI : MonoBehaviour
 {
     private static readonly Color TimestampColor = new Color32(0x7C, 0x67, 0x55, 0xFF);

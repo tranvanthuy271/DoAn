@@ -1,12 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// InventoryToggleButton
-/// - Gắn lên UI Button (nút túi đồ).
-/// - Hiển thị CharacterPanel + InventoryUI khi nhấn nút (giống như nút BtnTuiDo).
-/// - Ưu tiên dùng InformationPanelController để đồng bộ state.
-/// </summary>
+// InventoryToggleButton
+// - Gắn lên UI Button (nút túi đồ).
+// - Hiển thị CharacterPanel + InventoryUI khi nhấn nút (giống như nút BtnTuiDo).
+// - Ưu tiên dùng InformationPanelController để đồng bộ state.
 [RequireComponent(typeof(Button))]
 public class InventoryToggleButton : MonoBehaviour
 {

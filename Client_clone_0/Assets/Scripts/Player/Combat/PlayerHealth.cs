@@ -195,43 +195,43 @@ public class PlayerHealth : MonoBehaviour
     public float GetHealthPercent() => (float)currentHealth / maxHealth;
     public bool IsInvincible() => isInvincible;
 
-    /// <summary>Kích hoạt Khiên Kim — bất tử cho đến khi DeactivateShield() được gọi.</summary>
+    // Kích hoạt Khiên Kim — bất tử cho đến khi DeactivateShield() được gọi.
     public void ActivateShield() => isShieldActive = true;
 
-    /// <summary>Tắt Khiên Kim sau khi hết thời gian.</summary>
+    // Tắt Khiên Kim sau khi hết thời gian.
     public void DeactivateShield() => isShieldActive = false;
 
-    /// <summary>Khiên Kim đang bật không?  Dùng để MetalShieldSkill kiểm tra.</summary>
+    // Khiên Kim đang bật không?  Dùng để MetalShieldSkill kiểm tra.
     public bool IsShieldActive() => isShieldActive;
 
-    /// <summary>Áp dụng buff giáp tạm thời (Thủy skill 3). Server gọi trực tiếp.</summary>
+    // Áp dụng buff giáp tạm thời (Thủy skill 3). Server gọi trực tiếp.
     public void ApplyArmorBuff(int armorValue, float duration)
     {
         temporaryArmor += armorValue;   // cộng dồn nếu buff nhiều lần
         armorBuffTimer = Mathf.Max(armorBuffTimer, duration);
     }
 
-    /// <summary>Lấy giáp buff hiện tại (để hiển thị UI nếu cần).</summary>
+    // Lấy giáp buff hiện tại (để hiển thị UI nếu cần).
     public int GetTemporaryArmor() => temporaryArmor;
 
-    /// <summary>Áp dụng debuff chặn hồi HP (Hỏa Thổ Dung Nham skill). Server gọi trực tiếp.</summary>
+    // Áp dụng debuff chặn hồi HP (Hỏa Thổ Dung Nham skill). Server gọi trực tiếp.
     public void BlockHeal(float duration)
     {
         isHealBlocked = true;
         healBlockTimer = Mathf.Max(healBlockTimer, duration);
     }
 
-    /// <summary>Debuff chặn heal đang active không?</summary>
+    // Debuff chặn heal đang active không?
     public bool IsHealBlocked() => isHealBlocked;
 
-    /// <summary>Áp dụng buff tấn công tạm thời (Thổ skill 1). Server gọi trực tiếp.</summary>
+    // Áp dụng buff tấn công tạm thời (Thổ skill 1). Server gọi trực tiếp.
     public void ApplyAttackBuff(int bonusPercent, float duration)
     {
         attackBonusPercent = Mathf.Max(attackBonusPercent, bonusPercent); // lấy giá trị cao nhất
         attackBuffTimer = Mathf.Max(attackBuffTimer, duration);
     }
 
-    /// <summary>Lấy % buff tấn công hiện tại (để FireballDamage áp dụng).</summary>
+    // Lấy % buff tấn công hiện tại (để FireballDamage áp dụng).
     public int GetAttackBonusPercent() => attackBonusPercent;
 }
 

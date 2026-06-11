@@ -2,15 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// UI cho một slot skill trong Hotbar.
-/// 
-/// Cấu trúc Hierarchy của Prefab "SkillSlot":
-///   SkillSlot (Image + Button)
-///   ├── IconImage        (Image)        — icon của skill
-///   ├── CooldownOverlay  (Image)        — fillAmount overlay khi đang cooldown, đặt Image Type = Filled, Fill Method = Radial360
-///   └── CooldownText     (TMP_Text)     — hiển thị số giây còn lại ("2.4s"), ẩn khi sẵn sàng
-/// </summary>
+// UI cho một slot skill trong Hotbar.
+// Cấu trúc Hierarchy của Prefab "SkillSlot":
+// SkillSlot (Image + Button)
+// ├── IconImage        (Image)        — icon của skill
+// ├── CooldownOverlay  (Image)        — fillAmount overlay khi đang cooldown, đặt Image Type = Filled, Fill Method = Radial360
+// └── CooldownText     (TMP_Text)     — hiển thị số giây còn lại ("2.4s"), ẩn khi sẵn sàng
 public class SkillSlotUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -36,19 +33,15 @@ public class SkillSlotUI : MonoBehaviour
     [Tooltip("Mau icon khi skill chua mo khoa")]
     public Color lockedColor = new Color(0.18f, 0.18f, 0.18f, 0.9f);
 
-    // ── Internal state ───────────────────────────────────────────────────────
+    // Internal state
     private SkillData boundSkill;
     private PlayerSkillManager skillManager;
     private int slotIndex = -1;
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Public API
-    // ════════════════════════════════════════════════════════════════════════
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gắn slot này vào một SkillData cụ thể và PlayerSkillManager tương ứng.
-    /// Gọi từ SkillHotbarUI sau khi tìm thấy PlayerSkillManager của owner.
-    /// </summary>
+    // Gắn slot này vào một SkillData cụ thể và PlayerSkillManager tương ứng.
+    // Gọi từ SkillHotbarUI sau khi tìm thấy PlayerSkillManager của owner.
     public void Bind(SkillData skill, PlayerSkillManager manager, int index, Sprite icon = null)
     {
         gameObject.SetActive(skill == null || skill.isUnlocked);
@@ -90,9 +83,7 @@ public class SkillSlotUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Xóa binding (slot trống / chưa có skill)
-    /// </summary>
+    // Xóa binding (slot trống / chưa có skill)
     public void Unbind()
     {
         boundSkill = null;
@@ -105,9 +96,7 @@ public class SkillSlotUI : MonoBehaviour
         if (skillButton != null) skillButton.interactable = false;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     private void Update()
     {
@@ -127,7 +116,7 @@ public class SkillSlotUI : MonoBehaviour
         bool onCooldown = !boundSkill.CanUse();
         float remaining = boundSkill.GetCooldownRemaining();
 
-        // ── Overlay fill (đếm ngược hình tròn) ─────────────────────────────
+        // Overlay fill (đếm ngược hình tròn)
         if (cooldownOverlay != null)
         {
             cooldownOverlay.gameObject.SetActive(onCooldown);
@@ -137,7 +126,7 @@ public class SkillSlotUI : MonoBehaviour
                 : 0f;
         }
 
-        // ── Countdown text ──────────────────────────────────────────────────
+        // Countdown text
         if (cooldownText != null)
         {
             cooldownText.gameObject.SetActive(onCooldown);
@@ -147,18 +136,16 @@ public class SkillSlotUI : MonoBehaviour
                     : remaining.ToString("F1") + "s";
         }
 
-        // ── Icon tint ───────────────────────────────────────────────────────
+        // Icon tint
         if (iconImage != null)
             iconImage.color = onCooldown ? cooldownColor : readyColor;
 
-        // ── Button interactable ─────────────────────────────────────────────
+        // Button interactable
         if (skillButton != null)
             skillButton.interactable = !onCooldown;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Private helpers
-    // ════════════════════════════════════════════════════════════════════════
 
     private void OnButtonClicked()
     {

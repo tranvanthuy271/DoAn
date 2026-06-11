@@ -4,14 +4,10 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-/// <summary>
-/// UpgradeStoneSlot – 1 ô trong ma trận đá nâng cấp (max 16 ô).
-/// 
-/// Gắn vào: mỗi StoneSlot_XX trong UpgradePanel.
-/// 
-/// Click ô trống  → báo lên UpgradePanel.OnStoneSlotClicked(this)   → mở stone picker
-/// Click ô có đá → báo lên UpgradePanel.OnStoneSlotRemoved(this)   → tháo đá ra
-/// </summary>
+// UpgradeStoneSlot – 1 ô trong ma trận đá nâng cấp (max 16 ô).
+// Gắn vào: mỗi StoneSlot_XX trong UpgradePanel.
+// Click ô trống  → báo lên UpgradePanel.OnStoneSlotClicked(this)   → mở stone picker
+// Click ô có đá → báo lên UpgradePanel.OnStoneSlotRemoved(this)   → tháo đá ra
 public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
 {
     [Header("UI")]
@@ -20,7 +16,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
     [SerializeField] private GameObject emptyIndicator;   // placeholder/background khi trống
     [SerializeField] private Image     highlightBorder;   // border khi hover (tuỳ chọn)
 
-    // ── Trạng thái ───────────────────────────────────────────────
+    // Trạng thái
     public bool             IsEmpty          { get; private set; } = true;
     public InventorySlotDto ItemData         { get; private set; }
     public int              InventorySlotIndex => ItemData != null ? ItemData.slotIndex : -1;
@@ -33,9 +29,9 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
         panel = GetComponentInParent<UpgradePanel>();
     }
 
-    // ── Public API ────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Đặt đá vào ô này (gọi từ UpgradePanel khi chọn từ picker)</summary>
+    // Đặt đá vào ô này (gọi từ UpgradePanel khi chọn từ picker)
     public void SetItem(InventorySlotDto slot)
     {
         ResolveReferences();
@@ -73,7 +69,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
         if (highlightBorder) highlightBorder.enabled = false;
     }
 
-    /// <summary>Xoá đá khỏi ô này</summary>
+    // Xoá đá khỏi ô này
     public void Clear()
     {
         ResolveReferences();
@@ -152,7 +148,7 @@ public class UpgradeStoneSlot : MonoBehaviour, IPointerClickHandler
         emptyIndicator.SetActive(visible);
     }
 
-    // ── Click handling ────────────────────────────────────────────
+    // Click handling
 
     public void OnPointerClick(PointerEventData eventData)
     {

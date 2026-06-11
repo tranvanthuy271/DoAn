@@ -157,7 +157,7 @@ public class PlayerController : MonoBehaviour
     public PlayerAnimator GetPlayerAnimator() => playerAnimator;
     public Rigidbody2D GetRigidbody() => rb;
 
-    // ── Debug: Thêm x10 Lõi Đột Biến (fusion cores) mỗi hệ ──────────────
+    // Debug: Thêm x10 Lõi Đột Biến (fusion cores) mỗi hệ
     private IEnumerator AddGeneItemsCoroutine()
     {
         _geneItemsBusy = true;

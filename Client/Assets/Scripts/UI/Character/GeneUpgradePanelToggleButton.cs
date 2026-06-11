@@ -1,13 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// GeneUpgradePanelToggleButton — Nút mở/đóng GeneUpgradePanel.
-///
-/// Setup:
-/// 1. Gắn script này lên Button trong UI (ví dụ: nút "Gene" trên CharacterPanel).
-/// 2. Kéo GeneUpgradePanel (GameObject) vào slot genePanel.
-/// </summary>
+// GeneUpgradePanelToggleButton — Nút mở/đóng GeneUpgradePanel.
+// Setup:
+// 1. Gắn script này lên Button trong UI (ví dụ: nút "Gene" trên CharacterPanel).
+// 2. Kéo GeneUpgradePanel (GameObject) vào slot genePanel.
 [RequireComponent(typeof(Button))]
 public class GeneUpgradePanelToggleButton : MonoBehaviour
 {

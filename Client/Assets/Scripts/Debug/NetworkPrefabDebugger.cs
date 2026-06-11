@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// Debug tool: Kiểm tra tình trạng đăng ký prefab và log chi tiết
-/// Attach vào NetworkManager GameObject để debug
-/// </summary>
+// Debug tool: Kiểm tra tình trạng đăng ký prefab và log chi tiết
+// Attach vào NetworkManager GameObject để debug
 public class NetworkPrefabDebugger : MonoBehaviour
 {
     [Header("Debug Settings")]

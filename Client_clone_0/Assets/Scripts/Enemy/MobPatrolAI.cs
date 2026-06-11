@@ -3,29 +3,25 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 
-/// <summary>
-/// MobPatrolAI — AI quái nâng cao với tuần tra, phát hiện, phản công và kháng nguyên tố.
-///
-/// TÍNH NĂNG (dựa trên LangLa Mob.java):
-///   • Tuần tra giữa leftPoint/rightPoint (giống EnemyAI gốc)
-///   • Aggro range: khi thấy player → đuổi
-///   • Flip sprite khi đổi hướng
-///   • Resistances: khangHoa/Thuy/Tho/Moc/Kim/Phong (% giảm sát thương theo nguyên tố)
-///   • Evasion: xác suất né tránh đòn (neTranh)
-///   • Counter: khi bị đánh, xác suất phản đòn (phanDon)
-///   • HP Regen: hồi HP mỗi giây nếu hoiHp > 0
-///   • Stun, Freeze, Weaken: trạng thái đặc biệt
-///   • Support: load config từ element-based asset hoặc hardcode từ Inspector
-///
-/// SETUP:
-///   1. Attach vào quái prefab cùng EnemyHealth, Rigidbody2D (Kinematic), Collider2D, Animator
-///   2. Assign leftPoint, rightPoint cho phạm vi tuần tra
-///   3. Tuỳ chỉnh stats trong Inspector
-/// </summary>
+// MobPatrolAI — AI quái nâng cao với tuần tra, phát hiện, phản công và kháng nguyên tố.
+// TÍNH NĂNG (dựa trên LangLa Mob.java):
+// • Tuần tra giữa leftPoint/rightPoint (giống EnemyAI gốc)
+// • Aggro range: khi thấy player → đuổi
+// • Flip sprite khi đổi hướng
+// • Resistances: khangHoa/Thuy/Tho/Moc/Kim/Phong (% giảm sát thương theo nguyên tố)
+// • Evasion: xác suất né tránh đòn (neTranh)
+// • Counter: khi bị đánh, xác suất phản đòn (phanDon)
+// • HP Regen: hồi HP mỗi giây nếu hoiHp > 0
+// • Stun, Freeze, Weaken: trạng thái đặc biệt
+// • Support: load config từ element-based asset hoặc hardcode từ Inspector
+// SETUP:
+// 1. Attach vào quái prefab cùng EnemyHealth, Rigidbody2D (Kinematic), Collider2D, Animator
+// 2. Assign leftPoint, rightPoint cho phạm vi tuần tra
+// 3. Tuỳ chỉnh stats trong Inspector
 [RequireComponent(typeof(Rigidbody2D), typeof(Animator), typeof(EnemyHealth))]
 public class MobPatrolAI : MonoBehaviour
 {
-    // ── Patrol ──
+    // Patrol
     [Header("Patrol Points")]
     public Transform leftPoint;
     public Transform rightPoint;
@@ -46,7 +42,7 @@ public class MobPatrolAI : MonoBehaviour
     [Tooltip("Hệ nguyên tố của quai này (English key: Fire/Water/Earth/Wood/Metal/Wind). Dùng khi phản đòn.")]
     public string elementType = "None";
 
-    // ── Mob stats (từ LangLa Mob.java) ──
+    // Mob stats (từ LangLa Mob.java)
     [Header("Element Resistances (% giảm sát thương, 0–100)")]
     [Range(0, 100)] public int khangHoa   = 0;  // Kháng Hỏa
     [Range(0, 100)] public int khangThuy  = 0;  // Kháng Thủy
@@ -60,12 +56,12 @@ public class MobPatrolAI : MonoBehaviour
     [Range(0f, 100f)] public float evasionRate  = 0f;   // % né tránh (NeTranh)
     [Range(0f, 50f)]  public float counterRate  = 0f;   // % phản đòn (PhanDon)
 
-    // ── Status effects (bị áp đặt bởi player skill) ──
+    // Status effects (bị áp đặt bởi player skill)
     [HideInInspector] public bool isStunned;   // IsChoang
     [HideInInspector] public bool isFrozen;    // IsBong
     [HideInInspector] public bool isWeakened;  // IsSuyYeu — tăng damage nhận 30%
 
-    // ── Private ──
+    // Private
     private EnemyHealth   _health;
     private Rigidbody2D   _rb;
     private Animator      _anim;
@@ -83,9 +79,7 @@ public class MobPatrolAI : MonoBehaviour
     private enum State { Patrol, Chase, Attack, Stunned, Dead }
     private State _state = State.Patrol;
 
-    // ══════════════════════════════════════════════
     // Init
-    // ══════════════════════════════════════════════
 
     private void Awake()
     {
@@ -111,9 +105,7 @@ public class MobPatrolAI : MonoBehaviour
         FindNearestPlayer();
     }
 
-    // ══════════════════════════════════════════════
     // Update
-    // ══════════════════════════════════════════════
 
     private void Update()
     {
@@ -169,9 +161,7 @@ public class MobPatrolAI : MonoBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════
     // Patrol
-    // ══════════════════════════════════════════════
 
     private void DoPatrol()
     {
@@ -191,9 +181,7 @@ public class MobPatrolAI : MonoBehaviour
             _facingRight = !_facingRight;
     }
 
-    // ══════════════════════════════════════════════
     // Chase
-    // ══════════════════════════════════════════════
 
     private void DoChase()
     {
@@ -206,9 +194,7 @@ public class MobPatrolAI : MonoBehaviour
         if (_anim) _anim.SetBool("isMoving", true);
     }
 
-    // ══════════════════════════════════════════════
     // Attack
-    // ══════════════════════════════════════════════
 
     private void DoAttack()
     {
@@ -232,14 +218,10 @@ public class MobPatrolAI : MonoBehaviour
         if (hitbox) hitbox.enabled = false;
     }
 
-    // ══════════════════════════════════════════════
     // Damage calculation with resistances
-    // ══════════════════════════════════════════════
 
-    /// <summary>
-    /// Gọi từ bên ngoài (e.g. PlayerCombat) để gây damage có tính kháng nguyên tố.
-    /// element: 0=none, 1=Hoa, 2=Thuy, 3=Tho, 4=Moc, 5=Kim, 6=Phong
-    /// </summary>
+    // Gọi từ bên ngoài (e.g. PlayerCombat) để gây damage có tính kháng nguyên tố.
+    // element: 0=none, 1=Hoa, 2=Thuy, 3=Tho, 4=Moc, 5=Kim, 6=Phong
     public void TakeDamageWithElement(int rawDamage, int element = 0)
     {
         // Evasion check
@@ -312,9 +294,7 @@ public class MobPatrolAI : MonoBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════
     // Status effects API
-    // ══════════════════════════════════════════════
 
     public void ApplyStun(float duration)    => StartCoroutine(StunTimer(duration));
     public void ApplyFreeze(float duration)  => StartCoroutine(FreezeTimer(duration));
@@ -341,9 +321,7 @@ public class MobPatrolAI : MonoBehaviour
         isWeakened = false;
     }
 
-    // ══════════════════════════════════════════════
-    // Events
-    // ══════════════════════════════════════════════
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
 
     private void OnTakeDamage()
     {
@@ -358,9 +336,7 @@ public class MobPatrolAI : MonoBehaviour
         if (hitbox) hitbox.enabled = false;
     }
 
-    // ══════════════════════════════════════════════
-    // Helpers
-    // ══════════════════════════════════════════════
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private void FindNearestPlayer()
     {

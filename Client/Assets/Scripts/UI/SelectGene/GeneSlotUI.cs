@@ -3,10 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// GeneSlotUI: Component cho mỗi ô nhân vật trên màn SelectGene.
-/// Hiển thị thông tin nhân vật đã tạo HOẶC nút "Tạo nhân vật" nếu chưa có.
-/// </summary>
+// GeneSlotUI: Component cho mỗi ô nhân vật trên màn SelectGene.
+// Hiển thị thông tin nhân vật đã tạo HOẶC nút "Tạo nhân vật" nếu chưa có.
 public class GeneSlotUI : MonoBehaviour
 {
     [Header("Slot Info")]
@@ -32,7 +30,7 @@ public class GeneSlotUI : MonoBehaviour
     [Header("Shared")]
     public TMP_Text slotTitleText;
 
-    // ── Events ──────────────────────────────────────────────────────────
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
     public event Action<int> OnPlayClicked;
     public event Action<int> OnCreateClicked;
 
@@ -45,9 +43,9 @@ public class GeneSlotUI : MonoBehaviour
             createCharacterButton.onClick.AddListener(() => OnCreateClicked?.Invoke(slotIndex));
     }
 
-    // ── Public Setup Methods ─────────────────────────────────────────────
+    // Public Setup Methods
 
-    /// <summary>Thiết lập slot với dữ liệu nhân vật đã tồn tại.</summary>
+    // Thiết lập slot với dữ liệu nhân vật đã tồn tại.
     public void SetupExistingCharacter(GeneSlotInfo data)
     {
         SetAllPanels(showExisting: true, showEmpty: false, showLocked: false);
@@ -68,7 +66,7 @@ public class GeneSlotUI : MonoBehaviour
             genderIcon.gameObject.SetActive(!string.IsNullOrEmpty(data.gender));
     }
 
-    /// <summary>Thiết lập slot trống — hoặc có thể tạo, hoặc bị khoá.</summary>
+    // Thiết lập slot trống — hoặc có thể tạo, hoặc bị khoá.
     public void SetupEmpty(bool isUnlocked, int slot, string defaultElement = null)
     {
         SetAllPanels(showExisting: false, showEmpty: isUnlocked, showLocked: !isUnlocked);
@@ -87,7 +85,7 @@ public class GeneSlotUI : MonoBehaviour
             createCharacterButton.gameObject.SetActive(isUnlocked);
     }
 
-    // ── Private Helpers ──────────────────────────────────────────────────
+    // Private Helpers
 
     private void SetAllPanels(bool showExisting, bool showEmpty, bool showLocked)
     {

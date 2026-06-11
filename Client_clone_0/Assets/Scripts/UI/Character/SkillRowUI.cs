@@ -3,10 +3,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Compact skill row used by the character skill tab.
-/// Runtime rebuild keeps old prefabs usable even when their hierarchy is stale.
-/// </summary>
+// Compact skill row used by the character skill tab.
+// Runtime rebuild keeps old prefabs usable even when their hierarchy is stale.
 public class SkillRowUI : MonoBehaviour
 {
     private const float RowHeight = 104f;

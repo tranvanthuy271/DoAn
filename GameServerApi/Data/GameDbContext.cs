@@ -35,23 +35,23 @@ namespace GameServerApi.Data
         public DbSet<OptionTemplate>           OptionTemplates          => Set<OptionTemplate>();
         public DbSet<MapEnemyDrop>             MapEnemyDrops            => Set<MapEnemyDrop>();
 
-        // ── Normalized player data tables (Phase 2) ──────────────────
+        // Normalized player data tables (Phase 2)
         public DbSet<PlayerEquipment>   PlayerEquipments   => Set<PlayerEquipment>();
         public DbSet<PlayerInventory>   PlayerInventories  => Set<PlayerInventory>();
         public DbSet<PlayerSkillRecord> PlayerSkillRecords => Set<PlayerSkillRecord>();
         public DbSet<PlayerActionLog>   PlayerActionLogs   => Set<PlayerActionLog>();
 
-        // ── Chat & Social ─────────────────────────────────────────────────────
+        // Chat & Social
         public DbSet<GameServerApi.Models.Entities.FriendRelation> FriendRelations => Set<GameServerApi.Models.Entities.FriendRelation>();
 
-        // ── Dungeon Wave (entry limit + session reconnect) ────────────────────
+        // Dungeon Wave (entry limit + session reconnect)
         public DbSet<GameServerApi.Models.Entities.DungeonWaveEntry>   DungeonWaveEntries   => Set<GameServerApi.Models.Entities.DungeonWaveEntry>();
         public DbSet<GameServerApi.Models.Entities.DungeonWaveSession> DungeonWaveSessions  => Set<GameServerApi.Models.Entities.DungeonWaveSession>();
 
-        // ── Quest system (1 bảng config; tiến trình lưu trong player_data.info_char) ──
+        // Quest system (1 bảng config; tiến trình lưu trong player_data.info_char)
         public DbSet<GameServerApi.Models.Entities.QuestConfig>  QuestConfigs  => Set<GameServerApi.Models.Entities.QuestConfig>();
 
-        // ── Leaderboard tables ────────────────────────────────────────────────
+        // Leaderboard tables
         public DbSet<GameServerApi.Models.Entities.LeaderboardCache>    LeaderboardCaches    => Set<GameServerApi.Models.Entities.LeaderboardCache>();
         public DbSet<GameServerApi.Models.Entities.PlayerQuestLog>      PlayerQuestLogs      => Set<GameServerApi.Models.Entities.PlayerQuestLog>();
         public DbSet<GameServerApi.Models.Entities.PlayerAttendance>    PlayerAttendances    => Set<GameServerApi.Models.Entities.PlayerAttendance>();
@@ -79,7 +79,7 @@ namespace GameServerApi.Data
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
-            // ── FriendRelation ──────────────────────────────────────────────
+            // FriendRelation
             modelBuilder.Entity<GameServerApi.Models.Entities.FriendRelation>(entity =>
             {
                 entity.HasIndex(r => new { r.UserId, r.FriendId }).IsUnique();
@@ -478,7 +478,7 @@ namespace GameServerApi.Data
             // Zone thường được Unity server tự sinh theo MapWorldConfig,
             // còn zone riêng/phó bản tồn tại runtime trong memory.
 
-            // ── Normalized player data tables ──────────────────────────────
+            // Normalized player data tables
             modelBuilder.Entity<PlayerEquipment>(entity =>
             {
                 entity.ToTable("player_equipment");
@@ -559,7 +559,7 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.ItemTemplateId);
             });
 
-            // ── Dungeon Wave Entry (giới hạn lượt vào hàng ngày) ──────────────
+            // Dungeon Wave Entry (giới hạn lượt vào hàng ngày)
             modelBuilder.Entity<GameServerApi.Models.Entities.DungeonWaveEntry>(entity =>
             {
                 entity.ToTable("dungeon_wave_entry");
@@ -575,7 +575,7 @@ namespace GameServerApi.Data
                       .HasDatabaseName("uq_player_dungeon_date");
             });
 
-            // ── Dungeon Wave Session (reconnect / timeout state) ──────────────
+            // Dungeon Wave Session (reconnect / timeout state)
             modelBuilder.Entity<GameServerApi.Models.Entities.DungeonWaveSession>(entity =>
             {
                 entity.ToTable("dungeon_wave_session");
@@ -593,7 +593,7 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.PlayerId);
             });
 
-            // ── Leaderboard: leaderboard_cache ───────────────────────────────
+            // Leaderboard: leaderboard_cache
             modelBuilder.Entity<GameServerApi.Models.Entities.LeaderboardCache>(entity =>
             {
                 entity.ToTable("leaderboard_caches");
@@ -604,7 +604,7 @@ namespace GameServerApi.Data
                 entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
             });
 
-            // ── Leaderboard: player_quest_log ─────────────────────────────────
+            // Leaderboard: player_quest_log
             modelBuilder.Entity<GameServerApi.Models.Entities.PlayerQuestLog>(entity =>
             {
                 entity.ToTable("player_quest_log");
@@ -617,7 +617,7 @@ namespace GameServerApi.Data
                 entity.HasIndex(e => e.CharacterId).HasDatabaseName("idx_pql_character");
             });
 
-            // ── Leaderboard: player_attendance ────────────────────────────────
+            // Leaderboard: player_attendance
             modelBuilder.Entity<GameServerApi.Models.Entities.PlayerAttendance>(entity =>
             {
                 entity.ToTable("player_attendance");
@@ -630,7 +630,7 @@ namespace GameServerApi.Data
                       .HasDatabaseName("uq_attendance");
             });
 
-            // ── Leaderboard: player_dungeon_record ────────────────────────────
+            // Leaderboard: player_dungeon_record
             modelBuilder.Entity<GameServerApi.Models.Entities.PlayerDungeonRecord>(entity =>
             {
                 entity.ToTable("player_dungeon_record");

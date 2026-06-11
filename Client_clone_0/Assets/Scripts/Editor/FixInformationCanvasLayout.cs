@@ -3,17 +3,13 @@ using UnityEngine.UI;
 using UnityEditor;
 using TMPro;
 
-/// <summary>
-/// Editor tool: sửa layout InformationCanvas + prefabs cho chuẩn.
-/// Chạy từ menu:
-///   Tools ▸ Fix InformationCanvas Layout   — sửa scene hierarchy
-///   Tools ▸ Fix Prefabs Layout             — sửa SkillRow + PotentialStatRow prefab
-/// </summary>
+// Editor tool: sửa layout InformationCanvas + prefabs cho chuẩn.
+// Chạy từ menu:
+// Tools ▸ Fix InformationCanvas Layout   — sửa scene hierarchy
+// Tools ▸ Fix Prefabs Layout             — sửa SkillRow + PotentialStatRow prefab
 public class FixInformationCanvasLayout
 {
-    // ════════════════════════════════════════════════════════════════
     // 1. FIX SCENE LAYOUT
-    // ════════════════════════════════════════════════════════════════
     [MenuItem("Tools/Fix InformationCanvas Layout")]
     public static void Fix()
     {
@@ -26,7 +22,7 @@ public class FixInformationCanvasLayout
 
         Undo.RegisterFullObjectHierarchyUndo(canvas, "Fix InformationCanvas Layout");
 
-        // ── CanvasScaler → Scale With Screen Size ──────────────────
+        // CanvasScaler → Scale With Screen Size
         var scaler = canvas.GetComponent<CanvasScaler>();
         if (scaler != null)
         {
@@ -37,21 +33,21 @@ public class FixInformationCanvasLayout
             Debug.Log("[FixLayout] CanvasScaler -> ScaleWithScreenSize 1920x1080");
         }
 
-        // ── CharacterPanel → stretch fill canvas ───────────────────
+        // CharacterPanel → stretch fill canvas
         var charPanel = canvas.transform.Find("CharacterPanel");
         if (charPanel == null) { Debug.LogError("[FixLayout] CharacterPanel not found!"); return; }
 
         SetStretch(charPanel, Vector2.zero, new Vector2(-100, -60));
         Debug.Log("[FixLayout] CharacterPanel → stretch with padding");
 
-        // ── Window → stretch fill CharacterPanel ───────────────────
+        // Window → stretch fill CharacterPanel
         var window = charPanel.Find("Window");
         if (window == null) { Debug.LogError("[FixLayout] Window not found!"); return; }
 
         SetStretch(window, Vector2.zero, Vector2.zero);
         Debug.Log("[FixLayout] Window → stretch fill parent");
 
-        // ── Header (top bar, height 50) ────────────────────────────
+        // Header (top bar, height 50)
         var header = window.Find("Header");
         if (header != null)
         {
@@ -60,7 +56,7 @@ public class FixInformationCanvasLayout
             Debug.Log("[FixLayout] Header → top strip h=50");
         }
 
-        // ── TabBar (left sidebar) ──────────────────────────────────
+        // TabBar (left sidebar)
         var tabBar = window.Find("TabBar");
         if (tabBar != null)
         {
@@ -79,13 +75,13 @@ public class FixInformationCanvasLayout
             FixTabButton(tabBar, "BtnStats",     "Nhân vật",   45);
             FixTabButton(tabBar, "BtnSkill",     "Chiêu thức", 45);
             FixTabButton(tabBar, "BtnPotential", "Tiềm năng",  45);
-            // ── Hide/Remove BtnEquipment if it exists ──────────────
+            // Hide/Remove BtnEquipment if it exists
             var btnEq = tabBar.Find("BtnEquipment");
             if (btnEq != null) btnEq.gameObject.SetActive(false);
             Debug.Log("[FixLayout] TabBar → left sidebar VLG – 3 tabs");
         }
 
-        // ── TabContents (fills remaining space) ────────────────────
+        // TabContents (fills remaining space)
         var tabContents = window.Find("TabContents");
         if (tabContents != null)
         {
@@ -115,9 +111,7 @@ public class FixInformationCanvasLayout
         Debug.Log("[FixLayout] ══════════ SCENE FIX DONE ══════════");
     }
 
-    // ════════════════════════════════════════════════════════════════
     // 2. FIX PREFABS
-    // ════════════════════════════════════════════════════════════════
     [MenuItem("Tools/Fix Prefabs Layout")]
     public static void FixPrefabs()
     {
@@ -127,11 +121,9 @@ public class FixInformationCanvasLayout
         Debug.Log("[FixPrefabs] ══════════ PREFAB FIX DONE ══════════");
     }
 
-    // ────────────────────────────────────────────────────────────────
     // SkillRowPrefab – keep VerticalLayoutGroup, fix padding
     // Layout: VLG stacks [TxtSkillName][TxtLevel][TxtRequire][TxtDesc]
     //         BtnUpgrade floats at right (IgnoreLayout)
-    // ────────────────────────────────────────────────────────────────
     private static void FixSkillRowPrefab()
     {
         string path = "Assets/Prefabs/UI/Thông tin/SkillRowPrefab.prefab";
@@ -208,10 +200,8 @@ public class FixInformationCanvasLayout
         Debug.Log("[FixPrefabs] SkillRowPrefab → VLG padding fixed");
     }
 
-    // ────────────────────────────────────────────────────────────────
     // PotentialStatRowPrefab – HorizontalLayoutGroup
     // Layout: HLG [TxtStatName | TxtPoints | BtnMinus | BtnPlus | BtnMax]
-    // ────────────────────────────────────────────────────────────────
     private static void FixPotentialStatRowPrefab()
     {
         string path = "Assets/Prefabs/UI/Thông tin/PotentialStatRowPrefab.prefab";
@@ -221,13 +211,13 @@ public class FixInformationCanvasLayout
         string assetPath = AssetDatabase.GetAssetPath(prefabAsset);
         var root = PrefabUtility.LoadPrefabContents(assetPath);
 
-        // ── Root RectTransform ─────────────────────────────────────
+        // Root RectTransform
         var rootRT = root.GetComponent<RectTransform>();
         rootRT.anchoredPosition = Vector2.zero;
         rootRT.sizeDelta = new Vector2(0, 50);
         rootRT.localScale = Vector3.one;
 
-        // ── Ensure HorizontalLayoutGroup ───────────────────────────
+        // Ensure HorizontalLayoutGroup
         var hlg = root.GetComponent<HorizontalLayoutGroup>();
         if (hlg == null) hlg = root.AddComponent<HorizontalLayoutGroup>();
         hlg.spacing = 6;
@@ -238,29 +228,29 @@ public class FixInformationCanvasLayout
         hlg.childControlWidth = true;
         hlg.childControlHeight = true;
 
-        // ── Ensure LayoutElement ───────────────────────────────────
+        // Ensure LayoutElement
         var rootLE = root.GetComponent<LayoutElement>();
         if (rootLE == null) rootLE = root.AddComponent<LayoutElement>();
         rootLE.minHeight = 40;
         rootLE.preferredHeight = 50;
         rootLE.flexibleWidth = 1;
 
-        // ── Remove legacy TxtValue / BtnUpgrade if present ─────────
+        // Remove legacy TxtValue / BtnUpgrade if present
         DestroyChildIfExists(root.transform, "TxtValue");
         DestroyChildIfExists(root.transform, "BtnUpgrade");
 
-        // ── Text children ──────────────────────────────────────────
+        // Text children
         // TxtStatName – stretches to fill available space
         FixHLGChild(root.transform, "TxtStatName", minW: 100, prefW: 140, flex: 1f);
         // TxtPoints – fixed width box showing current + pending value
         FixHLGChild(root.transform, "TxtPoints", minW: 50, prefW: 65, flex: 0f);
 
-        // ── 3 action buttons ───────────────────────────────────────
+        // 3 action buttons
         EnsureRowButton(root.transform, "BtnMinus", "−", 38);
         EnsureRowButton(root.transform, "BtnPlus",  "+", 38);
         EnsureRowButton(root.transform, "BtnMax",   "▲", 38);
 
-        // ── Wire to PotentialStatRowUI ─────────────────────────────
+        // Wire to PotentialStatRowUI
         var rowUI = root.GetComponent<PotentialStatRowUI>();
         if (rowUI != null)
         {
@@ -314,11 +304,9 @@ public class FixInformationCanvasLayout
         if (child != null) Object.DestroyImmediate(child.gameObject);
     }
 
-    // ════════════════════════════════════════════════════════════════
     // UTILITIES
-    // ════════════════════════════════════════════════════════════════
 
-    /// <summary>Stretch fill parent (anchor 0,0→1,1), optional padding via sizeDelta.</summary>
+    // Stretch fill parent (anchor 0,0→1,1), optional padding via sizeDelta.
     private static void SetStretch(Transform t, Vector2 pad, Vector2 sizeDelta)
     {
         var rt = t.GetComponent<RectTransform>();
@@ -330,7 +318,7 @@ public class FixInformationCanvasLayout
         rt.localScale = Vector3.one;
     }
 
-    /// <summary>Anchor to top, full width, fixed height.</summary>
+    // Anchor to top, full width, fixed height.
     private static void SetTopStrip(Transform t, float height)
     {
         var rt = t.GetComponent<RectTransform>();
@@ -342,7 +330,7 @@ public class FixInformationCanvasLayout
         rt.localScale = Vector3.one;
     }
 
-    /// <summary>Make a child stretch-fill its parent.</summary>
+    // Make a child stretch-fill its parent.
     private static void FixChildStretchFill(Transform parent, string childName)
     {
         var child = parent.Find(childName);
@@ -355,7 +343,7 @@ public class FixInformationCanvasLayout
         rt.localScale = Vector3.one;
     }
 
-    /// <summary>Content panel stretch fill TabContents with small inset.</summary>
+    // Content panel stretch fill TabContents with small inset.
     private static void FixContentPanelStretch(Transform parent, string name)
     {
         var panel = parent?.Find(name);
@@ -369,7 +357,7 @@ public class FixInformationCanvasLayout
         rt.localScale = Vector3.one;
     }
 
-    /// <summary>Fix internal layout of ContentStats (character info + equipment list).</summary>
+    // Fix internal layout of ContentStats (character info + equipment list).
     private static void FixContentStatsInternals(Transform tabContents)
     {
         var cs = tabContents?.Find("ContentStats");
@@ -392,7 +380,7 @@ public class FixInformationCanvasLayout
         }
     }
 
-    /// <summary>Fix internal layout of ContentSkill.</summary>
+    // Fix internal layout of ContentSkill.
     private static void FixContentSkillInternals(Transform tabContents)
     {
         var cs = tabContents?.Find("ContentSkill");
@@ -420,13 +408,13 @@ public class FixInformationCanvasLayout
         FixBottomLabel(cs, "TxtStatus", 30);
     }
 
-    /// <summary>Fix internal layout of ContentPotential.</summary>
+    // Fix internal layout of ContentPotential.
     private static void FixContentPotentialInternals(Transform tabContents)
     {
         var cp = tabContents?.Find("ContentPotential");
         if (cp == null) return;
 
-        // ── Remove SubTabBar if it exists (no longer used) ────────
+        // Remove SubTabBar if it exists (no longer used)
         var oldSubTabBar = cp.Find("SubTabBar");
         if (oldSubTabBar != null)
         {
@@ -465,7 +453,7 @@ public class FixInformationCanvasLayout
         abRT.anchoredPosition = Vector2.zero;
         abRT.sizeDelta = new Vector2(0, 40);
 
-        // ── Wire action buttons to PotentialTabUI ─────────────────
+        // Wire action buttons to PotentialTabUI
         var potentialTabUI = cp.GetComponent<PotentialTabUI>();
         if (potentialTabUI != null)
         {
@@ -545,7 +533,7 @@ public class FixInformationCanvasLayout
             prop.objectReferenceValue = obj;
     }
 
-    // ─── Scroll Content helpers ───────────────────────────────
+    // Scroll Content helpers
     private static void EnsureScrollContent(Transform scrollViewTr)
     {
         var viewport = scrollViewTr.Find("Viewport");
@@ -567,7 +555,7 @@ public class FixInformationCanvasLayout
         csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
     }
 
-    // ─── Label position helpers ───────────────────────────────
+    // Label position helpers
     private static void FixTopLabel(Transform parent, string name, float height)
     {
         foreach (Transform child in parent)
@@ -602,7 +590,7 @@ public class FixInformationCanvasLayout
         }
     }
 
-    // ─── Tab button helper ────────────────────────────────────
+    // Tab button helper
     private static void FixTabButton(Transform tabBar, string name, string label, float height)
     {
         var btn = tabBar.Find(name);
@@ -638,7 +626,7 @@ public class FixInformationCanvasLayout
         }
     }
 
-    // ─── VLG helper ───────────────────────────────────────────
+    // VLG helper
     private static VerticalLayoutGroup EnsureVerticalLayoutGroup(
         Transform t, float spacing, RectOffset padding,
         TextAnchor align, bool expandW, bool expandH,
@@ -656,7 +644,7 @@ public class FixInformationCanvasLayout
         return vlg;
     }
 
-    // ─── Prefab text child fix ────────────────────────────────
+    // Prefab text child fix
     private static void FixTextChild(Transform parent, string name, int fontSize,
         FontStyles style, TextAlignmentOptions align)
     {
@@ -687,7 +675,7 @@ public class FixInformationCanvasLayout
         }
     }
 
-    // ─── HLG child fix (for PotentialStatRowPrefab) ───────────
+    // HLG child fix (for PotentialStatRowPrefab)
     private static void FixHLGChild(Transform parent, string name, float minW, float prefW, float flex)
     {
         var child = parent.Find(name);
@@ -717,7 +705,7 @@ public class FixInformationCanvasLayout
         }
     }
 
-    // ─── Utility: remove duplicate LayoutElements ─────────────
+    // Utility: remove duplicate LayoutElements
     private static void CleanLayoutElements(GameObject go)
     {
         var all = go.GetComponents<LayoutElement>();

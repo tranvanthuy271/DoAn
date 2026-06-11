@@ -2,11 +2,9 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 
-/// <summary>
-/// Script để khởi động dedicated server
-/// Đặt trong scene DedicatedServerScene
-/// Tự động start server khi scene load
-/// </summary>
+// Script để khởi động dedicated server
+// Đặt trong scene DedicatedServerScene
+// Tự động start server khi scene load
 public class ServerBootstrap : MonoBehaviour
 {
     [Header("Server Config")]
@@ -49,9 +47,7 @@ public class ServerBootstrap : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Khởi động dedicated server
-    /// </summary>
+    // Khởi động dedicated server
     public void StartDedicatedServer()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -95,9 +91,7 @@ public class ServerBootstrap : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Dừng server
-    /// </summary>
+    // Dừng server
     public void StopServer()
     {
         NetworkManager networkManager = NetworkManager.Singleton;

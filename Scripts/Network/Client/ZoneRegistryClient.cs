@@ -3,15 +3,11 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Client-side: fetch địa chỉ (IP:port) của một zone server từ API registry.
-///
-/// Dùng khi client cần tự tìm địa chỉ zone server (ví dụ: lần đầu login vào game).
-/// Khi đã trong game, địa chỉ zone đích sẽ được server gửi qua ClientRpc
-/// (ZoneTransitionManager.BeginZoneTransferClientRpc) — KHÔNG cần gọi class này.
-///
-/// Không cần gắn vào scene — tạo Instance singleton hoặc gọi trực tiếp static method.
-/// </summary>
+// Client-side: fetch địa chỉ (IP:port) của một zone server từ API registry.
+// Dùng khi client cần tự tìm địa chỉ zone server (ví dụ: lần đầu login vào game).
+// Khi đã trong game, địa chỉ zone đích sẽ được server gửi qua ClientRpc
+// (ZoneTransitionManager.BeginZoneTransferClientRpc) — KHÔNG cần gọi class này.
+// Không cần gắn vào scene — tạo Instance singleton hoặc gọi trực tiếp static method.
 public class ZoneRegistryClient : MonoBehaviour
 {
     public static ZoneRegistryClient Instance { get; private set; }
@@ -26,13 +22,11 @@ public class ZoneRegistryClient : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    /// <summary>
-    /// Fetch địa chỉ của spawn zone mặc định sau khi login.
-    /// Gọi từ MainSceneNetworkInitializer sau khi có JWT và playerData.
-    /// </summary>
-    /// <param name="mapId">Map ID của player's current map</param>
-    /// <param name="zoneId">Zone ID của player's current zone</param>
-    /// <param name="callback">Kết quả: ZoneAddress hoặc null nếu thất bại</param>
+    // Fetch địa chỉ của spawn zone mặc định sau khi login.
+    // Gọi từ MainSceneNetworkInitializer sau khi có JWT và playerData.
+    // Tham số mapId: Map ID của player's current map
+    // Tham số zoneId: Zone ID của player's current zone
+    // Tham số callback: Kết quả: ZoneAddress hoặc null nếu thất bại
     public IEnumerator FetchZoneAddress(int mapId, int zoneId, Action<ZoneAddress> callback)
     {
         string url = $"{_apiBaseUrl.TrimEnd('/')}/zone/address?mapId={mapId}&zoneId={zoneId}";
@@ -74,7 +68,7 @@ public class ZoneRegistryClient : MonoBehaviour
         callback?.Invoke(addr);
     }
 
-    // ── DTO ───────────────────────────────────────────────────────────────────
+    // DTO
 
     [Serializable]
     public class ZoneAddress

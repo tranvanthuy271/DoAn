@@ -8,10 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Controllers
 {
-    /// <summary>
-    /// Admin management API — yêu cầu JWT với role "Admin".
-    /// Tất cả endpoint ở đây đều được bảo vệ bằng [Authorize(Roles = "Admin")].
-    /// </summary>
+    // Admin management API — yêu cầu JWT với role "Admin".
+    // Tất cả endpoint ở đây đều được bảo vệ bằng [Authorize(Roles = "Admin")].
     [ApiController]
     [Route("api/admin")]
     [Authorize(Roles = "Admin")]
@@ -26,8 +24,8 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        // ── GET /api/admin/overview ───────────────────────────────────────────
-        /// <summary>Thống kê tổng quan hệ thống cho dashboard.</summary>
+        // GET /api/admin/overview
+        // Thống kê tổng quan hệ thống cho dashboard.
         [HttpGet("overview")]
         public async Task<IActionResult> Overview()
         {
@@ -47,8 +45,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ── GET /api/admin/zone-servers ───────────────────────────────────────
-        /// <summary>Danh sách zone server đang hoạt động (in-memory registry).</summary>
+        // GET /api/admin/zone-servers
+        // Danh sách zone server đang hoạt động (in-memory registry).
         [HttpGet("zone-servers")]
         public IActionResult GetZoneServers()
         {
@@ -65,8 +63,8 @@ namespace GameServerApi.Controllers
             return Ok(servers);
         }
 
-        // ── GET /api/admin/maps ───────────────────────────────────────────────
-        /// <summary>Danh sách tất cả map config.</summary>
+        // GET /api/admin/maps
+        // Danh sách tất cả map config.
         [HttpGet("maps")]
         public async Task<IActionResult> GetMaps()
         {
@@ -86,8 +84,8 @@ namespace GameServerApi.Controllers
             return Ok(maps);
         }
 
-        // ── GET /api/admin/maps/{mapId} ───────────────────────────────────────
-        /// <summary>Chi tiết một map (bao gồm spawnPointsJson).</summary>
+        // GET /api/admin/maps/{mapId}
+        // Chi tiết một map (bao gồm spawnPointsJson).
         [HttpGet("maps/{mapId:int}")]
         public async Task<IActionResult> GetMap(int mapId)
         {
@@ -105,8 +103,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ── PUT /api/admin/maps/{mapId} ───────────────────────────────────────
-        /// <summary>Cập nhật cấu hình map (level range, required quest, spawn points).</summary>
+        // PUT /api/admin/maps/{mapId}
+        // Cập nhật cấu hình map (level range, required quest, spawn points).
         [HttpPut("maps/{mapId:int}")]
         public async Task<IActionResult> UpdateMap(int mapId, [FromBody] AdminMapUpdateRequest req)
         {
@@ -130,8 +128,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã cập nhật map.", mapId });
         }
 
-        // ── GET /api/admin/dungeons ───────────────────────────────────────────
-        /// <summary>Danh sách tất cả phó bản (active và inactive).</summary>
+        // GET /api/admin/dungeons
+        // Danh sách tất cả phó bản (active và inactive).
         [HttpGet("dungeons")]
         public async Task<IActionResult> GetDungeons()
         {
@@ -156,8 +154,8 @@ namespace GameServerApi.Controllers
             return Ok(dungeons);
         }
 
-        // ── GET /api/admin/dungeons/{id} ──────────────────────────────────────
-        /// <summary>Chi tiết một phó bản.</summary>
+        // GET /api/admin/dungeons/{id}
+        // Chi tiết một phó bản.
         [HttpGet("dungeons/{id:int}")]
         public async Task<IActionResult> GetDungeon(int id)
         {
@@ -179,8 +177,8 @@ namespace GameServerApi.Controllers
             });
         }
 
-        // ── PUT /api/admin/dungeons/{id} ──────────────────────────────────────
-        /// <summary>Cập nhật cấu hình phó bản.</summary>
+        // PUT /api/admin/dungeons/{id}
+        // Cập nhật cấu hình phó bản.
         [HttpPut("dungeons/{id:int}")]
         public async Task<IActionResult> UpdateDungeon(int id, [FromBody] AdminDungeonUpdateRequest req)
         {
@@ -204,8 +202,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã cập nhật phó bản.", dungeonId = id });
         }
 
-        // ── PUT /api/admin/dungeons/{id}/active ───────────────────────────────
-        /// <summary>Bật/tắt phó bản.</summary>
+        // PUT /api/admin/dungeons/{id}/active
+        // Bật/tắt phó bản.
         [HttpPut("dungeons/{id:int}/active")]
         public async Task<IActionResult> SetDungeonActive(int id, [FromBody] AdminActiveRequest req)
         {
@@ -218,8 +216,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = req.IsActive ? "Phó bản đã bật." : "Phó bản đã tắt.", dungeonId = id, isActive = req.IsActive });
         }
 
-        // ── GET /api/admin/players ────────────────────────────────────────────
-        /// <summary>Danh sách người chơi (phân trang, tìm kiếm theo username).</summary>
+        // GET /api/admin/players
+        // Danh sách người chơi (phân trang, tìm kiếm theo username).
         [HttpGet("players")]
         public async Task<IActionResult> GetPlayers(
             [FromQuery] int    page     = 1,
@@ -281,7 +279,7 @@ namespace GameServerApi.Controllers
 
     }
 
-    // ── Request DTOs ──────────────────────────────────────────────────────────
+    // Request DTOs
 
     public sealed class AdminMapUpdateRequest
     {

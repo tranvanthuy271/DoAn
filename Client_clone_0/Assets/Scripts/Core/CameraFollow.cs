@@ -106,7 +106,6 @@ public class CameraFollow : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------------------------
     // Phát hiện giới hạn map từ các collider
     // Ưu tiên layer "MaxMap", fallback sang layer "Ground"
     //
@@ -115,7 +114,6 @@ public class CameraFollow : MonoBehaviour
     //   – Tường dọc: trái → bounds.max.x, phải → bounds.min.x
     //   – Tường ngang: trên → bounds.min.y
     //   – Nếu KHÔNG có tường dưới → dùng đáy của tường dọc làm minBounds.y
-    // ---------------------------------------------------------------------------
     private void DetectMaxMapBounds()
     {
         // Reset trước — tránh bounds cũ của map trước còn hiệu lực khi map mới không có layer
@@ -218,9 +216,7 @@ public class CameraFollow : MonoBehaviour
             && sceneName != "SelectElement";
     }
 
-    // ---------------------------------------------------------------------------
     // Tìm player cục bộ (hỗ trợ cả NetworkPlayerController và PlayerController)
-    // ---------------------------------------------------------------------------
     private void FindLocalPlayer()
     {
         // Refresh network manager nếu chưa có (có thể NetworkManager khởi động muộn hơn Camera)
@@ -251,14 +247,10 @@ public class CameraFollow : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------------------------
     // API công khai để player/fusion gán camera target khi spawn
-    // ---------------------------------------------------------------------------
 
-    /// <summary>
-    /// Gán target mới cho camera. Gọi từ NetworkPlayerController.OnNetworkSpawn()
-    /// hoặc từ bất kỳ PlayerController nào (kể cả Fusion F_Phong, F_Kim, ...).
-    /// </summary>
+    // Gán target mới cho camera. Gọi từ NetworkPlayerController.OnNetworkSpawn()
+    // hoặc từ bất kỳ PlayerController nào (kể cả Fusion F_Phong, F_Kim, ...).
     public void SetTarget(Transform newTarget, bool snapImmediately = false)
     {
         bool wasNull = (target == null);
@@ -274,18 +266,14 @@ public class CameraFollow : MonoBehaviour
         Debug.Log($"[CameraFollow] Target đã được gán: {newTarget?.name}");
     }
 
-    /// <summary>
-    /// Yêu cầu camera quét lại layer MaxMap và cập nhật bounds.
-    /// Gọi khi chuyển map hoặc tải scene mới.
-    /// </summary>
+    // Yêu cầu camera quét lại layer MaxMap và cập nhật bounds.
+    // Gọi khi chuyển map hoặc tải scene mới.
     public void RefreshMaxMapBounds()
     {
         if (autoDetectMaxMap) DetectMaxMapBounds();
     }
 
-    // ---------------------------------------------------------------------------
     // Update camera mỗi frame
-    // ---------------------------------------------------------------------------
     private void LateUpdate()
     {
         // Nếu target bị destroy/null, thử tìm lại
@@ -371,9 +359,7 @@ public class CameraFollow : MonoBehaviour
         return desiredPosition;
     }
 
-    // ---------------------------------------------------------------------------
     // Gizmos hiển thị bounds trong Editor
-    // ---------------------------------------------------------------------------
     private void OnDrawGizmosSelected()
     {
         if (!useBounds) return;

@@ -3,24 +3,20 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// PotentialTabUI – Tab "Tiềm Năng" trong CharacterPanel.
-///
-/// Luồng hoạt động:
-///   1. Load() gọi server lấy dữ liệu, tạo tất cả các dòng stat.
-///   2. Người chơi nhấn +/-/▲ trên từng dòng → pending delta thay đổi, txtPotentialPoints cập nhật.
-///   3. Nhấn "Hủy"  → reset toàn bộ pending về 0, khôi phục điểm gốc.
-///   4. Nhấn "Cộng" → gom tất cả delta gửi lên server, server validate → DB → gửi lại → Load().
-///
-/// Cấu trúc GameObject gợi ý:
-/// ┌─ ContentPotential
-/// │   ├─ SubTabBar  (optional)
-/// │   ├─ ScrollView → Viewport/Content  ← statListContainer
-/// │   ├─ TxtPotentialPoints  [TMP_Text]
-/// │   ├─ TxtStatus           [TMP_Text]
-/// │   ├─ BtnHuy              [Button]   "Hủy"
-/// │   └─ BtnCong             [Button]   "Cộng"
-/// </summary>
+// PotentialTabUI – Tab "Tiềm Năng" trong CharacterPanel.
+// Luồng hoạt động:
+// 1. Load() gọi server lấy dữ liệu, tạo tất cả các dòng stat.
+// 2. Người chơi nhấn +/-/▲ trên từng dòng → pending delta thay đổi, txtPotentialPoints cập nhật.
+// 3. Nhấn "Hủy"  → reset toàn bộ pending về 0, khôi phục điểm gốc.
+// 4. Nhấn "Cộng" → gom tất cả delta gửi lên server, server validate → DB → gửi lại → Load().
+// Cấu trúc GameObject gợi ý:
+// ┌─ ContentPotential
+// ├─ SubTabBar  (optional)
+// ├─ ScrollView → Viewport/Content  ← statListContainer
+// ├─ TxtPotentialPoints  [TMP_Text]
+// ├─ TxtStatus           [TMP_Text]
+// ├─ BtnHuy              [Button]   "Hủy"
+// └─ BtnCong             [Button]   "Cộng"
 public class PotentialTabUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -43,7 +39,7 @@ public class PotentialTabUI : MonoBehaviour
     [SerializeField] private Button btnCong;
 
 
-    // ── Internal ───────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
     private int _playerId                = -1;
     private int _originalAvailablePoints;
     private int _pendingAvailablePoints;
@@ -55,7 +51,6 @@ public class PotentialTabUI : MonoBehaviour
 
     private readonly List<PotentialStatRowUI> _allRows = new List<PotentialStatRowUI>();
 
-    // ───────────────────────────────────────────────────────
     private void Awake()
     {
         btnHuy?.onClick.AddListener(OnClickHuy);
@@ -69,7 +64,6 @@ public class PotentialTabUI : MonoBehaviour
         btnCong?.onClick.RemoveAllListeners();
     }
 
-    // ───────────────────────────────────────────────────────
     #region Public API
 
     public void SetPlayerId(int id) => _playerId = id;
@@ -95,7 +89,7 @@ public class PotentialTabUI : MonoBehaviour
         SetActionButtonsVisible(true);
     }
 
-    /// <summary>Load dữ liệu tiềm năng từ server và render toàn bộ các dòng.</summary>
+    // Load dữ liệu tiềm năng từ server và render toàn bộ các dòng.
     public void Load()
     {
         EnsureScrollLayout();
@@ -150,10 +144,9 @@ public class PotentialTabUI : MonoBehaviour
 
     #endregion
 
-    // ───────────────────────────────────────────────────────
     #region Button handlers
 
-    /// <summary>Hủy: hoàn tác toàn bộ pending, khôi phục điểm gốc.</summary>
+    // Hủy: hoàn tác toàn bộ pending, khôi phục điểm gốc.
     private void OnClickHuy()
     {
         foreach (var row in _allRows)
@@ -164,7 +157,7 @@ public class PotentialTabUI : MonoBehaviour
         RefreshAllRowButtonStates();
     }
 
-    /// <summary>Cộng: gom tất cả delta, gửi server validate → DB → reload UI.</summary>
+    // Cộng: gom tất cả delta, gửi server validate → DB → reload UI.
     private void OnClickCong()
     {
         if (GameplayCommandService.Instance == null) return;
@@ -205,13 +198,10 @@ public class PotentialTabUI : MonoBehaviour
 
     #endregion
 
-    // ───────────────────────────────────────────────────────
     #region Row callbacks
 
-    /// <summary>
-    /// Callback từ hàng khi người chơi nhấn nút:
-    ///   delta âm = dùng điểm, delta dương = trả điểm.
-    /// </summary>
+    // Callback từ hàng khi người chơi nhấn nút:
+    // delta âm = dùng điểm, delta dương = trả điểm.
     private void OnRowPointsChanged(int delta)
     {
         _pendingAvailablePoints += delta;
@@ -221,7 +211,6 @@ public class PotentialTabUI : MonoBehaviour
 
     #endregion
 
-    // ───────────────────────────────────────────────────────
     #region Private helpers
 
     private void BuildAllRows(PlayerPotentialResponse response)

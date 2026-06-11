@@ -6,19 +6,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameServerApi.Models
 {
-    /// <summary>
-    /// Player2Data: ORM model cho bảng player2_data.
-    /// Lưu toàn bộ dữ liệu hệ gene thứ 2: skill, tiềm năng, kinh nghiệm, trang bị, inventory.
-    /// Chỉ được tạo khi player_data.info_char.secondary_element != null.
-    /// </summary>
+    // Player2Data: ORM model cho bảng player2_data.
+    // Lưu toàn bộ dữ liệu hệ gene thứ 2: skill, tiềm năng, kinh nghiệm, trang bị, inventory.
+    // Chỉ được tạo khi player_data.info_char.secondary_element != null.
     [Table("player2_data")]
-    public class Player2Data
+    public class Player2Data : IPlayerDataRecord
     {
         public int    PlayerId      { get; set; }   // PK + FK → player_data.player_id
         public string CharacterName { get; set; } = "";
         public string Gender        { get; set; } = "Male";
 
-        // ---- JSON columns ----
+        // JSON columns
         public string InfoCharJson       { get; set; } = "{}";
         public string EquipmentJson      { get; set; } = "{}";
         public string InventoryJson      { get; set; } = "[]";
@@ -28,7 +26,7 @@ namespace GameServerApi.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // ---- Helpers ----
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
         private static readonly JsonSerializerOptions _opts = new()
         {
             PropertyNameCaseInsensitive = true
@@ -61,7 +59,7 @@ namespace GameServerApi.Models
             ActiveBuffsJson = JsonSerializer.Serialize(buffs);
         }
 
-        /// <summary>Build InfoChar mặc định cho nhân vật hệ gene 2 mới tạo.</summary>
+        // Build InfoChar mặc định cho nhân vật hệ gene 2 mới tạo.
         public static InfoChar DefaultInfoChar(string elementType, string primaryElement) => new InfoChar
         {
             Level = 1, Experience = 0, Gold = 0, Silver = 0,

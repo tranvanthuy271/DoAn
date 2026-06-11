@@ -2,22 +2,18 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Skill 3 của hệ Thủy — "Thủy Giáp Hộ Thể" (Buff Giáp Cho Đồng Đội)
-///
-/// Cơ chế:
-///   1. Trigger animation Skill3 trên SkillEffect cho tất cả client.
-///   2. Server quét bán kính buffRadius xung quanh người dùng (kể cả bản thân).
-///   3. Mỗi PlayerHealth tìm thấy nhận armorValue điểm giáp tạm thời trong buffDuration giây.
-///      Giáp hấp thụ sát thương trước khi trừ HP (xem PlayerHealth.ApplyArmorBuff).
-///   4. Visual: tô màu xanh nước (cyan) cho TẤT CẢ người được buff (qua ClientRpc).
-///   5. Sau buffDuration, tô màu trắng trở lại.
-///
-/// Setup trong Unity:
-///   - Gắn component này vào cùng GameObject với PlayerSkillManager (Thuy.prefab).
-///   - Không cần gán gì thêm — tự detect PlayerHealth trong bán kính.
-///   - Điều chỉnh buffRadius, buffDuration, armorValue trong Inspector.
-/// </summary>
+// Skill 3 của hệ Thủy — "Thủy Giáp Hộ Thể" (Buff Giáp Cho Đồng Đội)
+// Cơ chế:
+// 1. Trigger animation Skill3 trên SkillEffect cho tất cả client.
+// 2. Server quét bán kính buffRadius xung quanh người dùng (kể cả bản thân).
+// 3. Mỗi PlayerHealth tìm thấy nhận armorValue điểm giáp tạm thời trong buffDuration giây.
+// Giáp hấp thụ sát thương trước khi trừ HP (xem PlayerHealth.ApplyArmorBuff).
+// 4. Visual: tô màu xanh nước (cyan) cho TẤT CẢ người được buff (qua ClientRpc).
+// 5. Sau buffDuration, tô màu trắng trở lại.
+// Setup trong Unity:
+// - Gắn component này vào cùng GameObject với PlayerSkillManager (Thuy.prefab).
+// - Không cần gán gì thêm — tự detect PlayerHealth trong bán kính.
+// - Điều chỉnh buffRadius, buffDuration, armorValue trong Inspector.
 public class WaterArmorBuffSkill : NetworkBehaviour
 {
     private const float SkillEffectClearDelay = 1.05f;
@@ -40,7 +36,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
     [Tooltip("Trigger name trong Animator SkillEffect để phát animation Skill3")]
     [SerializeField] private string animTriggerName = "Skill3";
 
-    // ── Internal state ──────────────────────────────────────────────────────
+    // Internal state
     private float cooldownTimer;
     private bool canUse = true;
     private bool isUsing;
@@ -51,9 +47,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
     public float GetCooldownPercent() => canUse ? 1f : Mathf.Clamp01(1f - cooldownTimer / cooldown);
     public float GetCooldownRemaining() => canUse ? 0f : Mathf.Max(0f, cooldownTimer);
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Unity lifecycle
-    // ════════════════════════════════════════════════════════════════════════
 
     public override void OnNetworkSpawn()
     {
@@ -86,9 +80,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Public API — gọi từ PlayerSkillManager
-    // ════════════════════════════════════════════════════════════════════════
 
     public void UseWaterArmorBuff()
     {
@@ -112,9 +104,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Network RPCs
-    // ════════════════════════════════════════════════════════════════════════
 
     [ServerRpc]
     private void StartWaterArmorBuffServerRpc(bool facingRight)
@@ -165,7 +155,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         Debug.LogWarning($"[WaterArmorBuffSkill] Animator không có trigger '{animTriggerName}'.");
     }
 
-    /// <summary>Tô màu xanh / khôi phục màu trắng cho tất cả người chơi được buff.</summary>
+    // Tô màu xanh / khôi phục màu trắng cho tất cả người chơi được buff.
     [ClientRpc]
     private void UpdateBuffedPlayersVisualClientRpc(ulong[] networkObjectIds, bool active)
     {
@@ -201,9 +191,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
         isUsing = false;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
     //  Core sequence (server-only)
-    // ════════════════════════════════════════════════════════════════════════
 
     private IEnumerator WaterArmorBuffSequence(bool facingRight)
     {
@@ -241,7 +229,7 @@ public class WaterArmorBuffSkill : NetworkBehaviour
             if (netObj != null && selfNetObj != null && netObj.NetworkObjectId == selfNetObj.NetworkObjectId)
                 continue;
 
-            // ── Kiểm tra party: chỉ buff player cùng nhóm ──────────────────
+            // Kiểm tra party: chỉ buff player cùng nhóm
             // Nếu cả hai đều có partyId khớp nhau → cùng nhóm → được buff.
             // Nếu một trong hai không có partyId (solo) → không buff người lạ.
             bool sameParty = false;

@@ -2,10 +2,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Mỗi row trong panel danh sách phó bản của NPC (DungeonNpcMenuUI).
-/// Prefab: DungeonNpcMenuEntryPrefab  →  Assets/Prefabs/UI/DungeonNpcMenuEntryPrefab.prefab
-/// </summary>
+// Mỗi row trong panel danh sách phó bản của NPC (DungeonNpcMenuUI).
+// Prefab: DungeonNpcMenuEntryPrefab  →  Assets/Prefabs/UI/DungeonNpcMenuEntryPrefab.prefab
 public class DungeonNpcMenuEntryUI : MonoBehaviour
 {
     private const string LogPrefix = "[DungeonNpcMenuEntryUI]";
@@ -27,7 +25,7 @@ public class DungeonNpcMenuEntryUI : MonoBehaviour
         }
     }
 
-    /// <summary>Khởi tạo dữ liệu row — gọi bởi DungeonNpcMenuUI.</summary>
+    // Khởi tạo dữ liệu row — gọi bởi DungeonNpcMenuUI.
     public void Setup(DungeonConfigData config, DungeonNpcMenuUI owner)
     {
         EnsureReferences();

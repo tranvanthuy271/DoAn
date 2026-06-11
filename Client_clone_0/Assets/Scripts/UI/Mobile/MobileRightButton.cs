@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// Nút di chuyển sang PHẢI cho mobile.
-/// Attach vào Button "BtnRight" trên Canvas.
-/// Giữ ngón tay → nhân vật đi phải. Thả ra → dừng.
-/// </summary>
+// Nút di chuyển sang PHẢI cho mobile.
+// Attach vào Button "BtnRight" trên Canvas.
+// Giữ ngón tay → nhân vật đi phải. Thả ra → dừng.
 public class MobileRightButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     private void Awake()

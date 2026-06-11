@@ -7,10 +7,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// Tools → DoAn → Rebuild Register Scene UI
-/// Dựng lại toàn bộ UI cho scene Register với phong cách giống Login.
-/// </summary>
+// Tools → DoAn → Rebuild Register Scene UI
+// Dựng lại toàn bộ UI cho scene Register với phong cách giống Login.
 public static class RegisterSceneUiBuilder
 {
     private const string RegisterScenePath = "Assets/Scenes/Register.unity";
@@ -24,7 +22,6 @@ public static class RegisterSceneUiBuilder
     private static readonly Color ButtonHighlight   = new Color(1f,   0.60f, 0.14f, 1f);
     private static readonly Color BrownDark         = new Color(0.36f, 0.15f, 0.05f, 1f);
 
-    // ─────────────────────────────────────────────────────────────────────────
     [MenuItem("Tools/DoAn/Rebuild Register Scene UI")]
     public static void RebuildRegisterSceneUi()
     {
@@ -86,9 +83,7 @@ public static class RegisterSceneUiBuilder
             "OK");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Canvas
-    // ─────────────────────────────────────────────────────────────────────────
     private static GameObject REG_CreateCanvas()
     {
         var go = new GameObject("RegisterCanvas",
@@ -110,9 +105,7 @@ public static class RegisterSceneUiBuilder
         return go;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Background + clouds
-    // ─────────────────────────────────────────────────────────────────────────
     private static void REG_BuildBackground(Transform parent, Sprite bg)
     {
         var background = REG_MakeImage(parent, "Background", new Color(0.33f, 0.63f, 0.93f, 1f), bg);
@@ -126,9 +119,7 @@ public static class RegisterSceneUiBuilder
         REG_AddCloud(parent, "CloudsBottomB", new Vector2(  90f, -285f), new Vector2(580f, 180f), new Color(1f,1f,1f,0.56f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Header – identical to Login
-    // ─────────────────────────────────────────────────────────────────────────
     private static void REG_BuildHeader(Transform parent)
     {
         var title = REG_MakeText(parent, "TopLeftTitle", "Làng Lá Base", 18f, Color.white, FontStyles.Bold);
@@ -160,9 +151,7 @@ public static class RegisterSceneUiBuilder
         REG_AddOutline(logo.gameObject, new Color(0.46f,0.19f,0.03f,1f), new Vector2(3f,-3f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Register form (4 inputs + 2 buttons + error/success)
-    // ─────────────────────────────────────────────────────────────────────────
     private static void REG_BuildForm(
         Transform parent,
         Sprite btnSprite,
@@ -183,21 +172,21 @@ public static class RegisterSceneUiBuilder
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
             new Vector2(580f, 380f), new Vector2(0f, -70f));
 
-        // ── Username ──────────────────────────────────────────────
+        // Username
         REG_MakeLabel(formRoot.transform, "UsernameLabel", "Tài khoản:", new Vector2(-192f, 148f));
         usernameInput = REG_CreateInput(formRoot.transform, "UsernameInput", "Nhập tên tài khoản", false, 12f);
         REG_Anchor(usernameInput.GetComponent<RectTransform>(),
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
             new Vector2(295f,42f), new Vector2(70f,148f));
 
-        // ── Email ─────────────────────────────────────────────────
+        // Email
         REG_MakeLabel(formRoot.transform, "EmailLabel", "Email:", new Vector2(-192f, 92f));
         emailInput = REG_CreateInput(formRoot.transform, "EmailInput", "Nhập địa chỉ email", false, 12f);
         REG_Anchor(emailInput.GetComponent<RectTransform>(),
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
             new Vector2(295f,42f), new Vector2(70f,92f));
 
-        // ── Password ──────────────────────────────────────────────
+        // Password
         REG_MakeLabel(formRoot.transform, "PasswordLabel", "Mật khẩu:", new Vector2(-192f, 36f));
         passwordInput = REG_CreateInput(formRoot.transform, "PasswordInput", "Nhập mật khẩu (≥ 6 ký tự)", true, 50f);
         REG_Anchor(passwordInput.GetComponent<RectTransform>(),
@@ -211,14 +200,14 @@ public static class RegisterSceneUiBuilder
             new Vector2(1f,0.5f), new Vector2(1f,0.5f),
             new Vector2(45f,34f), new Vector2(-25f,0f));
 
-        // ── Confirm password ──────────────────────────────────────
+        // Confirm password
         REG_MakeLabel(formRoot.transform, "ConfirmLabel", "Xác nhận:", new Vector2(-192f, -20f));
         confirmPasswordInput = REG_CreateInput(formRoot.transform, "ConfirmPasswordInput", "Nhập lại mật khẩu", true, 12f);
         REG_Anchor(confirmPasswordInput.GetComponent<RectTransform>(),
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
             new Vector2(295f,42f), new Vector2(70f,-20f));
 
-        // ── Back button (text-link style, left) ───────────────────
+        // Back button (text-link style, left)
         var backGo = REG_MakeButton(formRoot.transform, "BackButton",
             "← Đăng nhập", new Color(0f,0f,0f,0f), Color.white, 18f, null);
         REG_Anchor(backGo.GetComponent<RectTransform>(),
@@ -227,7 +216,7 @@ public static class RegisterSceneUiBuilder
         REG_AddUnderline(backGo.transform);
         backButton = backGo.GetComponent<Button>();
 
-        // ── Register button (primary) ─────────────────────────────
+        // Register button (primary)
         var regGo = REG_MakeButton(formRoot.transform, "RegisterButton",
             "Đăng ký", ButtonColor, Color.white, 24f, btnSprite);
         REG_Anchor(regGo.GetComponent<RectTransform>(),
@@ -235,7 +224,7 @@ public static class RegisterSceneUiBuilder
             new Vector2(240f,58f), new Vector2(80f,-82f));
         registerButton = regGo.GetComponent<Button>();
 
-        // ── Error text ────────────────────────────────────────────
+        // Error text
         errorText = REG_MakeText(formRoot.transform, "ErrorText", string.Empty, 16f, Color.red, FontStyles.Bold);
         REG_Anchor(errorText.rectTransform,
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
@@ -243,7 +232,7 @@ public static class RegisterSceneUiBuilder
         errorText.enableWordWrapping = true;
         errorText.alignment = TextAlignmentOptions.Center;
 
-        // ── Success text ──────────────────────────────────────────
+        // Success text
         successText = REG_MakeText(formRoot.transform, "SuccessText", string.Empty, 16f, new Color(0.2f,0.9f,0.3f,1f), FontStyles.Bold);
         REG_Anchor(successText.rectTransform,
             new Vector2(0.5f,0.5f), new Vector2(0.5f,0.5f),
@@ -252,9 +241,7 @@ public static class RegisterSceneUiBuilder
         successText.alignment = TextAlignmentOptions.Center;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Shared helpers (prefix REG_ to avoid name clash in same assembly)
-    // ─────────────────────────────────────────────────────────────────────────
     private static TMP_InputField REG_CreateInput(Transform parent, string name, string placeholder, bool password, float rightPad)
     {
         var go = REG_MakeImage(parent, name, InputColor, null);

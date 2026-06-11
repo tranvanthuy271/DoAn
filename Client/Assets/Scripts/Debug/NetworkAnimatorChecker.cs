@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 
-/// <summary>
-/// Script helper để kiểm tra và cảnh báo về NetworkAnimator setup
-/// Gán script này vào NetworkPlayer prefab để tự động check
-/// </summary>
+// Script helper để kiểm tra và cảnh báo về NetworkAnimator setup
+// Gán script này vào NetworkPlayer prefab để tự động check
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkAnimatorChecker : MonoBehaviour
 {

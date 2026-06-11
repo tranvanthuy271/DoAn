@@ -5,21 +5,16 @@ using TMPro;
 using System.Collections;
 using UnityEngine.Networking;
 
-/// <summary>
-/// [SUPERSEDED — Kiến trúc nhiều port]
-///
-/// Class này quản lý việc shutdown NGO cũ và reconnect sang host mới khi đổi zone
-/// trong kiến trúc mỗi zone = 1 port/process riêng.
-///
-/// PHIÊN BẢN MỚI dùng kiến trúc 1 port + room_id:
-///   - Xem ZoneTrigger.cs  — gọi PlayerZoneHandler.RequestZoneChangeServerRpc
-///   - Xem PlayerZoneHandler.cs — ServerRpc, cập nhật room assignment
-///   - Xem ZoneRoomManager.cs — server-side, theo dõi client trong từng zone
-///   - Xem RoomBroadcast.cs  — lọc ClientRpc theo zone
-///
-/// Class này giữ lại để tham khảo nếu muốn quay lại kiến trúc nhiều port.
-/// Trong kiến trúc 1 port, class này KHÔNG được dùng.
-/// </summary>
+// [SUPERSEDED — Kiến trúc nhiều port]
+// Class này quản lý việc shutdown NGO cũ và reconnect sang host mới khi đổi zone
+// trong kiến trúc mỗi zone = 1 port/process riêng.
+// PHIÊN BẢN MỚI dùng kiến trúc 1 port + room_id:
+// - Xem ZoneTrigger.cs  — gọi PlayerZoneHandler.RequestZoneChangeServerRpc
+// - Xem PlayerZoneHandler.cs — ServerRpc, cập nhật room assignment
+// - Xem ZoneRoomManager.cs — server-side, theo dõi client trong từng zone
+// - Xem RoomBroadcast.cs  — lọc ClientRpc theo zone
+// Class này giữ lại để tham khảo nếu muốn quay lại kiến trúc nhiều port.
+// Trong kiến trúc 1 port, class này KHÔNG được dùng.
 public class ZoneConnectionManager : MonoBehaviour
 {
     public static ZoneConnectionManager Instance { get; private set; }
@@ -52,19 +47,15 @@ public class ZoneConnectionManager : MonoBehaviour
         if (loadingPanel)   loadingPanel.SetActive(false);
     }
 
-    // ──────────────────────────────────────────────────────────────────
     //  Public API — gọi từ ZoneTrigger
-    // ──────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Tự động lấy zone config từ API, shutdown NGO hiện tại (đợi thật sự),
-    /// sau đó connect sang host mới.
-    /// </summary>
-    /// <param name="apiBase">Base URL của API, ví dụ "http://localhost:5000"</param>
-    /// <param name="mapId">Map ID hiện tại</param>
-    /// <param name="targetZoneIndex">Zone index muốn chuyển đến</param>
-    /// <param name="spawnX">Tọa độ X player sau khi vào zone mới</param>
-    /// <param name="spawnY">Tọa độ Y player sau khi vào zone mới</param>
+    // Tự động lấy zone config từ API, shutdown NGO hiện tại (đợi thật sự),
+    // sau đó connect sang host mới.
+    // Tham số apiBase: Base URL của API, ví dụ "http://localhost:5000"
+    // Tham số mapId: Map ID hiện tại
+    // Tham số targetZoneIndex: Zone index muốn chuyển đến
+    // Tham số spawnX: Tọa độ X player sau khi vào zone mới
+    // Tham số spawnY: Tọa độ Y player sau khi vào zone mới
     public void SwitchToZone(string apiBase, int mapId, int targetZoneIndex, float spawnX, float spawnY)
     {
         if (isSwitching) return;
@@ -72,9 +63,7 @@ public class ZoneConnectionManager : MonoBehaviour
         StartCoroutine(DoSwitchZone(apiBase, mapId, targetZoneIndex, spawnX, spawnY));
     }
 
-    // ──────────────────────────────────────────────────────────────────
     //  Internal coroutine
-    // ──────────────────────────────────────────────────────────────────
 
     private IEnumerator DoSwitchZone(string apiBase, int mapId, int targetZoneIndex, float spawnX, float spawnY)
     {
@@ -82,7 +71,7 @@ public class ZoneConnectionManager : MonoBehaviour
         if (loadingPanel) loadingPanel.SetActive(false);
         HideError();
 
-        // ── 1. Lấy zone config từ API ────────────────────────────────
+        // 1. Lấy zone config từ API
         string url = $"{apiBase}/api/map/zone?mapId={mapId}&zoneIndex={targetZoneIndex}";
         string authToken = PlayerPrefs.GetString("JWT_TOKEN", "");
 
@@ -117,7 +106,7 @@ public class ZoneConnectionManager : MonoBehaviour
             yield break;
         }
 
-        // ── 2. Lưu spawn dest ────────────────────────────────────────
+        // 2. Lưu spawn dest
         PortalArrivalHandler.PendingDestX = spawnX;
         PortalArrivalHandler.PendingDestY = spawnY;
         PortalArrivalHandler.PendingMapId = mapId;
@@ -139,7 +128,7 @@ public class ZoneConnectionManager : MonoBehaviour
                 Debug.LogWarning("[ZoneConnectionManager] NGO chưa shutdown sau timeout, tiếp tục...");
         }
 
-        // ── 4. Connect sang host mới ─────────────────────────────────
+        // 4. Connect sang host mới
         if (nm != null)
         {
             var transport = nm.GetComponent<UnityTransport>();
@@ -155,9 +144,7 @@ public class ZoneConnectionManager : MonoBehaviour
         isSwitching = false;
     }
 
-    // ──────────────────────────────────────────────────────────────────
     //  UI helpers
-    // ──────────────────────────────────────────────────────────────────
 
     public void ShowError(string message)
     {
@@ -185,9 +172,7 @@ public class ZoneConnectionManager : MonoBehaviour
         isSwitching = false;
     }
 
-    // ──────────────────────────────────────────────────────────────────
     //  DTO
-    // ──────────────────────────────────────────────────────────────────
 
     [System.Serializable]
     private class ZoneConfigData

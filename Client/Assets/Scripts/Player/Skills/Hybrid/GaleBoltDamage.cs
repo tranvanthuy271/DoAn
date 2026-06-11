@@ -2,10 +2,8 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// Damage component gắn vào đầu đạn mũi tên của HYBRID_METAL_WIND_GALE.
-/// Xuyên qua tối đa <pierceCount> kẻ địch, sau đó tự hủy.
-/// </summary>
+// Damage component gắn vào đầu đạn mũi tên của HYBRID_METAL_WIND_GALE.
+// Xuyên qua tối đa <pierceCount> kẻ địch, sau đó tự hủy.
 public class GaleBoltDamage : MonoBehaviour
 {
     [HideInInspector] public int   damage      = 295;

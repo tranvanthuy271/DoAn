@@ -4,10 +4,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Editor tool: tự động tạo Chat Panel prefab + Friend List Panel prefab + Message Entry prefab.
-/// Menu: GameTools → Chat → Create Chat Prefabs
-/// </summary>
+// Editor tool: tự động tạo Chat Panel prefab + Friend List Panel prefab + Message Entry prefab.
+// Menu: GameTools → Chat → Create Chat Prefabs
 public static class ChatPrefabCreator
 {
     private const string PREFAB_DIR = "Assets/Resources/Prefabs/Chat";
@@ -29,7 +27,7 @@ public static class ChatPrefabCreator
         Debug.Log("[ChatPrefabCreator] ✓ Đã tạo tất cả prefab trong " + PREFAB_DIR);
     }
 
-    // ── 1. ChatMessageEntry prefab ────────────────────────────────────────────
+    // 1. ChatMessageEntry prefab
 
     private static void CreateMessageEntryPrefab()
     {
@@ -79,7 +77,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 2. ChatPanel prefab ───────────────────────────────────────────────────
+    // 2. ChatPanel prefab
 
     private static void CreateChatPanelPrefab()
     {
@@ -91,7 +89,7 @@ public static class ChatPrefabCreator
         var bg = root.AddComponent<Image>();
         bg.color = new Color(0.18f, 0.12f, 0.06f, 0.95f);
 
-        // ── Header ───────────────────────────────────────────────────
+        // Header
         var header   = MakeChild<RectTransform>(root, "Header");
         var headerRt = header.GetComponent<RectTransform>();
         SetAnchors(headerRt, 0, 1, 0, 1, 0, -30, 0, 0);
@@ -121,7 +119,7 @@ public static class ChatPrefabCreator
         SetAnchors(closeTxtRt, 0, 1, 0, 1, 0, 0, 0, 0);
         closeTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Tab Bar ──────────────────────────────────────────────────
+        // Tab Bar
         var tabBar   = MakeChild<RectTransform>(root, "TabBar");
         var tabBarRt = tabBar.GetComponent<RectTransform>();
         SetAnchors(tabBarRt, 0, 1, 0, 0, 0, 30, 0, 60);
@@ -154,7 +152,7 @@ public static class ChatPrefabCreator
 
         tabBar.AddComponent<ChatTabUI>();
 
-        // ── Input Bar ────────────────────────────────────────────────
+        // Input Bar
         var inputBar   = MakeChild<RectTransform>(root, "InputBar");
         var inputBarRt = inputBar.GetComponent<RectTransform>();
         SetAnchors(inputBarRt, 0, 1, 0, 0, 0, 0, 0, 30);
@@ -208,7 +206,7 @@ public static class ChatPrefabCreator
         SetAnchors(sendTxt.GetComponent<RectTransform>(), 0, 1, 0, 1, 0, 0, 0, 0);
         sendTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
 
-        // ── Channel Dropdown Panel ───────────────────────────────────
+        // Channel Dropdown Panel
         var dropdown   = MakeChild<RectTransform>(root, "ChannelDropdown");
         var dropdownRt = dropdown.GetComponent<RectTransform>();
         dropdownRt.anchorMin  = new Vector2(0, 0);
@@ -226,7 +224,7 @@ public static class ChatPrefabCreator
         dropCsf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         dropdown.AddComponent<ChatChannelDropdownUI>();
 
-        // ── Message ScrollView ───────────────────────────────────────
+        // Message ScrollView
         var scrollGo = MakeChild<RectTransform>(root, "MessageScrollView");
         var scrollRt = scrollGo.GetComponent<RectTransform>();
         SetAnchors(scrollRt, 0, 1, 0, 1, 0, 60, 0, -30);  // between header and tabbar+inputbar
@@ -263,7 +261,7 @@ public static class ChatPrefabCreator
         scrollRect.scrollSensitivity = 30;
         scrollRect.movementType    = ScrollRect.MovementType.Clamped;
 
-        // ── ChatPanelUI script ───────────────────────────────────────
+        // ChatPanelUI script
         var panelScript = root.AddComponent<ChatPanelUI>();
         var so = new SerializedObject(panelScript);
         var messageEntryPrefab = LoadMessageEntryPrefabAsset();
@@ -285,7 +283,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 3. FriendListPanel prefab ─────────────────────────────────────────────
+    // 3. FriendListPanel prefab
 
     private static void CreateFriendListPanelPrefab()
     {
@@ -353,7 +351,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 4. ProximityChatBubble / ChatManager prefabs ──────────────────────────
+    // 4. ProximityChatBubble / ChatManager prefabs
 
     private static void CreateProximityChatManagerPrefab()
     {
@@ -372,7 +370,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(go);
     }
 
-    // ── 5. ChatHudButton prefab ───────────────────────────────────────────────
+    // 5. ChatHudButton prefab
 
     private static void CreateChatHudButtonPrefab()
     {
@@ -423,7 +421,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── 6. FriendHudButton prefab ─────────────────────────────────────────────
+    // 6. FriendHudButton prefab
 
     private static void CreateFriendHudButtonPrefab()
     {
@@ -471,7 +469,7 @@ public static class ChatPrefabCreator
         Object.DestroyImmediate(root);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
     private static void EnsureDirectory(string path)
     {

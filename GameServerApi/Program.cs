@@ -16,7 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Kestrel: lắng nghe trên tất cả interface (0.0.0.0) ───────────────────────
+// Kestrel: lắng nghe trên tất cả interface (0.0.0.0)
 // Cho phép client từ bất kỳ đâu kết nối tới API, không chỉ localhost.
 // Có thể override bằng --urls="http://0.0.0.0:5000" hoặc biến môi trường ASPNETCORE_URLS.
 var urls = builder.Configuration["Urls"] ?? "http://0.0.0.0:5000";
@@ -27,7 +27,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// ── SignalR: real-time chat ───────────────────────────────────────────────────
+// SignalR: real-time chat
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, GameUserIdProvider>();
 
@@ -37,7 +37,7 @@ var allowedOrigins = builder.Configuration
     .Where(origin => !string.IsNullOrWhiteSpace(origin))
     .ToArray() ?? Array.Empty<string>();
 
-// ── CORS: cho phép Unity client gọi API từ bất kỳ origin ─────────────────────
+// CORS: cho phép Unity client gọi API từ bất kỳ origin
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -62,7 +62,7 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddAuthorization();
 
-// ── Rate Limiting: chống brute-force login ────────────────────────────────────
+// Rate Limiting: chống brute-force login
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy("login", context =>
@@ -78,7 +78,7 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
-// ── Application services ──────────────────────────────────────────────────────
+// Application services
 builder.Services.AddScoped<IAuthService,   AuthService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 
@@ -220,7 +220,7 @@ using (var scope = app.Services.CreateScope())
                 "ALTER TABLE users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'Player'");
         }
 
-        // ── Seed admin user từ config / env vars ──────────────────────────────
+        // Seed admin user từ config / env vars
         var adminUsername = config["Admin:Username"];
         var adminPassword = config["Admin:Password"];
         var adminEmail    = config["Admin:Email"];
@@ -346,7 +346,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// ── SignalR Chat Hub ──────────────────────────────────────────────────────────
+// SignalR Chat Hub
 app.MapHub<GameServerApi.Hubs.ChatHub>("/chathub");
 app.MapHub<GameServerApi.Hubs.PartyHub>("/partyhub");
 

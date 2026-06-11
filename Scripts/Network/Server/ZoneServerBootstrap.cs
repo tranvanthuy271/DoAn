@@ -5,19 +5,14 @@ using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Entry point của một Zone Server headless process.
-///
-/// Cách chạy (command line):
-///   GameServer.exe -batchmode -nographics --mapId=1 --zoneId=0 --port=7770 --publicIp=192.168.1.100
-///
-/// Trong Unity Editor (testing):
-///   Đặt UNITY_SERVER define symbol HOẶC tick "Server Build" trong Build Settings.
-///   Gắn script này vào GameObject "ZoneServerBootstrap" trong ServerScene.
-///   Assign ZoneServerConfig ScriptableObject.
-///
-/// Dependencies: ZoneServerConfig, ZoneServerRegistrar, ZoneConnectionApproval, ZonePlayerSessionManager
-/// </summary>
+// Entry point của một Zone Server headless process.
+// Cách chạy (command line):
+// GameServer.exe -batchmode -nographics --mapId=1 --zoneId=0 --port=7770 --publicIp=192.168.1.100
+// Trong Unity Editor (testing):
+// Đặt UNITY_SERVER define symbol HOẶC tick "Server Build" trong Build Settings.
+// Gắn script này vào GameObject "ZoneServerBootstrap" trong ServerScene.
+// Assign ZoneServerConfig ScriptableObject.
+// Dependencies: ZoneServerConfig, ZoneServerRegistrar, ZoneConnectionApproval, ZonePlayerSessionManager
 [DisallowMultipleComponent]
 public class ZoneServerBootstrap : MonoBehaviour
 {

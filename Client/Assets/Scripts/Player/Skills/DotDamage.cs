@@ -2,17 +2,13 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Netcode;
 
-/// <summary>
-/// Component gắn vào DoT projectile prefab (dùng cho EarthBlinkStrikeSkill).
-///
-/// Khi chạm vào enemy hoặc player, áp dụng DoT (Damage Over Time):
-///   - Mỗi tickInterval giây gây dotDamagePerTick sát thương.
-///   - Tổng cộng dotTicks lần.
-///   - Sau đó tự hủy projectile.
-///
-/// Là NetworkBehaviour để đồng bộ hit animation (ProjectileAnimController) sang client.
-/// Yêu cầu: NetworkObject trên cùng GameObject.
-/// </summary>
+// Component gắn vào DoT projectile prefab (dùng cho EarthBlinkStrikeSkill).
+// Khi chạm vào enemy hoặc player, áp dụng DoT (Damage Over Time):
+// - Mỗi tickInterval giây gây dotDamagePerTick sát thương.
+// - Tổng cộng dotTicks lần.
+// - Sau đó tự hủy projectile.
+// Là NetworkBehaviour để đồng bộ hit animation (ProjectileAnimController) sang client.
+// Yêu cầu: NetworkObject trên cùng GameObject.
 [RequireComponent(typeof(Collider2D))]
 public class DotDamage : NetworkBehaviour
 {
@@ -33,16 +29,14 @@ public class DotDamage : NetworkBehaviour
     private ProjectileAnimController animCtrl;
     private ulong ownerNetworkObjectId = 0;
 
-    /// <summary>Set owner để tránh tự gây damage cho chính mình.</summary>
+    // Set owner để tránh tự gây damage cho chính mình.
     public void SetOwner(ulong networkObjectId) => ownerNetworkObjectId = networkObjectId;
 
-    // ── Debuff Config ─────────────────────────────────────────────────────────
+    // Debuff Config
     private SkillEffectConfig _debuffConfig;
 
-    /// <summary>
-    /// Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
-    /// Gọi từ skill script ngay sau khi Instantiate projectile.
-    /// </summary>
+    // Gán SkillEffectConfig để áp dụng debuff khi projectile trúng target.
+    // Gọi từ skill script ngay sau khi Instantiate projectile.
     public void SetDebuffConfig(SkillEffectConfig cfg) => _debuffConfig = cfg;
 
     private void Awake()
@@ -121,10 +115,8 @@ public class DotDamage : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Đồng bộ trạng thái "đã trúng" sang tất cả client để ProjectileAnimController
-    /// chuyển từ fly-loop sang explosion animation đúng lúc.
-    /// </summary>
+    // Đồng bộ trạng thái "đã trúng" sang tất cả client để ProjectileAnimController
+    // chuyển từ fly-loop sang explosion animation đúng lúc.
     [ClientRpc]
     private void MarkHitClientRpc()
     {
@@ -177,7 +169,7 @@ public class DotDamage : NetworkBehaviour
         }
     }
 
-    /// <summary>Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.</summary>
+    // Áp dụng debuff từ _debuffConfig lên target vừa bị hit. Chỉ chạy trên server.
     private void ApplyDebuffToTarget(UnityEngine.GameObject target)
     {
         if (_debuffConfig == null) return;

@@ -22,8 +22,8 @@ namespace GameServerApi.Controllers
             _logger = logger;
         }
 
-        // ── GET /api/friends  ─────────────────────────────────────────────────
-        /// <summary>Lấy danh sách bạn bè (accepted) và lời mời đang chờ.</summary>
+        // GET /api/friends
+        // Lấy danh sách bạn bè (accepted) và lời mời đang chờ.
         [HttpGet]
         public async Task<IActionResult> GetFriends()
         {
@@ -75,8 +75,8 @@ namespace GameServerApi.Controllers
             return Ok(result);
         }
 
-        // ── POST /api/friends/request  ────────────────────────────────────────
-        /// <summary>Gửi lời mời kết bạn đến TargetUserId.</summary>
+        // POST /api/friends/request
+        // Gửi lời mời kết bạn đến TargetUserId.
         [HttpPost("request")]
         public async Task<IActionResult> SendRequest([FromBody] SendFriendRequestDto dto)
         {
@@ -119,8 +119,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã gửi lời mời kết bạn.", relationId = relation.Id });
         }
 
-        // ── PUT /api/friends/{id}/accept  ─────────────────────────────────────
-        /// <summary>Chấp nhận lời mời kết bạn.</summary>
+        // PUT /api/friends/{id}/accept
+        // Chấp nhận lời mời kết bạn.
         [HttpPut("{id}/accept")]
         public async Task<IActionResult> AcceptRequest(int id)
         {
@@ -144,8 +144,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã chấp nhận lời mời kết bạn." });
         }
 
-        // ── DELETE /api/friends/{id}  ─────────────────────────────────────────
-        /// <summary>Xóa bạn hoặc từ chối lời mời.</summary>
+        // DELETE /api/friends/{id}
+        // Xóa bạn hoặc từ chối lời mời.
         [HttpDelete("{id}")]
         public async Task<IActionResult> RemoveFriend(int id)
         {
@@ -169,8 +169,8 @@ namespace GameServerApi.Controllers
             return Ok(new { message = "Đã xóa." });
         }
 
-        // ── GET /api/friends/search?q=name  ──────────────────────────────────
-        /// <summary>Tìm người chơi theo tên nhân vật để gửi lời mời.</summary>
+        // GET /api/friends/search?q=name
+        // Tìm người chơi theo tên nhân vật để gửi lời mời.
         [HttpGet("search")]
         public async Task<IActionResult> SearchUsers([FromQuery] string q)
         {
@@ -202,7 +202,7 @@ namespace GameServerApi.Controllers
             return Ok(users);
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // Hàm hỗ trợ dùng nội bộ để tách nhỏ xử lý chính.
 
         private int GetMyId()
         {

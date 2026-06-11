@@ -64,9 +64,7 @@ public class EnemyHealth : MonoBehaviour
     public int GetMaxHealth() => maxHealth;
     public float GetHealthPercent() => (float)currentHealth / maxHealth;
 
-    /// <summary>
-    /// Ghi đè HP tối đa (gọi bởi EnemyStatOverride sau khi spawn).
-    /// </summary>
+    // Ghi đè HP tối đa (gọi bởi EnemyStatOverride sau khi spawn).
     public void InitHealth(int maxHp)
     {
         if (maxHp <= 0) return;
@@ -75,10 +73,10 @@ public class EnemyHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
-    /// <summary>EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.</summary>
+    // EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.
     public int ExpReward { get; private set; } = 0;
 
-    /// <summary>Lưu EXP override để death handler dùng (gọi bởi EnemyStatOverride).</summary>
+    // Lưu EXP override để death handler dùng (gọi bởi EnemyStatOverride).
     public void SetExpReward(int exp) => ExpReward = exp;
 }
 

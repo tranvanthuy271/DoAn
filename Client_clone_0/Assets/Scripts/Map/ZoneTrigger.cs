@@ -2,21 +2,17 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Collections;
 
-/// <summary>
-/// Đặt BoxCollider2D (isTrigger) tại ranh giới giữa hai zone trong cùng map.
-///
-/// Kiến trúc 1 port — toàn bộ cấu hình được set trong Inspector, KHÔNG cần DB:
-///   - roomId:  định danh zone đích (VD: "map1_zone1") — set trong Inspector
-///   - spawnX/spawnY: vị trí player khi vào zone mới
-///   - Player bước qua → PlayerZoneHandler.RequestZoneChangeServerRpc(roomId, spawnX, spawnY)
-///   - Server route client vào room đúng, KHÔNG reconnect/shutdown NGO
-///
-/// Setup:
-///   1. Thêm Empty GameObject tại ranh giới zone, đặt tên "ZoneTrigger_A_to_B".
-///   2. Add Component: BoxCollider2D (Is Trigger = true) + ZoneTrigger.
-///   3. Điền roomId (VD: "map0_zone1"), spawnX / spawnY trong Inspector.
-///   4. Player Prefab phải có PlayerZoneHandler.cs gắn kèm.
-/// </summary>
+// Đặt BoxCollider2D (isTrigger) tại ranh giới giữa hai zone trong cùng map.
+// Kiến trúc 1 port — toàn bộ cấu hình được set trong Inspector, KHÔNG cần DB:
+// - roomId:  định danh zone đích (VD: "map1_zone1") — set trong Inspector
+// - spawnX/spawnY: vị trí player khi vào zone mới
+// - Player bước qua → PlayerZoneHandler.RequestZoneChangeServerRpc(roomId, spawnX, spawnY)
+// - Server route client vào room đúng, KHÔNG reconnect/shutdown NGO
+// Setup:
+// 1. Thêm Empty GameObject tại ranh giới zone, đặt tên "ZoneTrigger_A_to_B".
+// 2. Add Component: BoxCollider2D (Is Trigger = true) + ZoneTrigger.
+// 3. Điền roomId (VD: "map0_zone1"), spawnX / spawnY trong Inspector.
+// 4. Player Prefab phải có PlayerZoneHandler.cs gắn kèm.
 [RequireComponent(typeof(BoxCollider2D))]
 public class ZoneTrigger : MonoBehaviour
 {

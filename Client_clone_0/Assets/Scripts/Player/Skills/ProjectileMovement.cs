@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Script điều khiển di chuyển của projectile cho Skill2
-/// Đảm bảo projectile di chuyển với tốc độ cố định theo hướng đã set
-/// </summary>
+// Script điều khiển di chuyển của projectile cho Skill2
+// Đảm bảo projectile di chuyển với tốc độ cố định theo hướng đã set
 public class ProjectileMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -124,9 +122,7 @@ public class ProjectileMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set tốc độ di chuyển của projectile
-    /// </summary>
+    // Set tốc độ di chuyển của projectile
     public void SetSpeed(float speed)
     {
         moveSpeed = speed;
@@ -136,9 +132,7 @@ public class ProjectileMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set hướng di chuyển (1 = phải, -1 = trái)
-    /// </summary>
+    // Set hướng di chuyển (1 = phải, -1 = trái)
     public void SetDirection(float dir)
     {
         direction = Mathf.Sign(dir);
@@ -148,9 +142,7 @@ public class ProjectileMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set cả tốc độ và hướng
-    /// </summary>
+    // Set cả tốc độ và hướng
     public void SetMovement(float speed, float dir)
     {
         moveSpeed = speed;
@@ -175,9 +167,7 @@ public class ProjectileMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Set thời gian sống của projectile
-    /// </summary>
+    // Set thời gian sống của projectile
     public void SetLifetime(float time)
     {
         lifetime = time;

@@ -115,9 +115,7 @@ public class PlayerSkill2 : NetworkBehaviour
 
     #region Update Methods
 
-    /// <summary>
-    /// Đảm bảo NetworkAnimator được enable/disable đúng với trạng thái của SkillEffect
-    /// </summary>
+    // Đảm bảo NetworkAnimator được enable/disable đúng với trạng thái của SkillEffect
     private void EnsureNetworkAnimatorState()
     {
         if (skillEffectNetworkAnimator != null && skillEffectObject != null)
@@ -525,10 +523,8 @@ public class PlayerSkill2 : NetworkBehaviour
         // Animation sẽ tự động quay về Empty state, sau đó có thể ẩn SkillEffect nếu cần
     }
 
-    /// <summary>
-    /// Gọi khi muốn ẩn SkillEffect (sau khi animation kết thúc)
-    /// Disable NetworkAnimator trước khi SetActive(false) để tránh lỗi
-    /// </summary>
+    // Gọi khi muốn ẩn SkillEffect (sau khi animation kết thúc)
+    // Disable NetworkAnimator trước khi SetActive(false) để tránh lỗi
     private void HideSkillEffect()
     {
         if (skillEffectObject == null) return;
@@ -569,9 +565,7 @@ public class PlayerSkill2 : NetworkBehaviour
 
     #region Coroutines
 
-    /// <summary>
-    /// Trigger animation trên projectile sau một frame delay để đảm bảo Animator đã sẵn sàng
-    /// </summary>
+    // Trigger animation trên projectile sau một frame delay để đảm bảo Animator đã sẵn sàng
     private IEnumerator TriggerProjectileAnimationDelayed(Animator animator, string triggerName)
     {
         // Đợi một frame để đảm bảo Animator đã được khởi tạo đầy đủ

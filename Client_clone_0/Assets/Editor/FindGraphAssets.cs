@@ -2,11 +2,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>
-/// EditorWindow utility to find candidate "Graph" assets (Visual Scripting, Animator state machines, etc.)
-/// Use: Window -> Tools -> Debug -> Find Graph Assets. Click "Scan for Graph assets in project".
-/// It lists assets whose type name or path contains common Graph keywords.
-/// </summary>
+// EditorWindow utility to find candidate "Graph" assets (Visual Scripting, Animator state machines, etc.)
+// Use: Window -> Tools -> Debug -> Find Graph Assets. Click "Scan for Graph assets in project".
+// It lists assets whose type name or path contains common Graph keywords.
 public class FindGraphAssets : EditorWindow
 {
     private Vector2 _scroll;

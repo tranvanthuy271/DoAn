@@ -1,19 +1,15 @@
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Gắn vào bất kỳ NetworkObject nào cần lọc visibility theo zone.
-/// Ví dụ: Player prefab, Enemy prefab, NPCShop, ChestItem.
-///
-/// Nguyên lý: NGO gọi CheckObjectVisibility(clientId) khi cần quyết định
-/// có gửi object này đến client đó không. Ta override bằng logic:
-///   "client được thấy object NẾU cùng zone với owner của object".
-///
-/// QUAN TRỌNG:
-/// - Đây là component server-side thuần, có thể add runtime TRƯỚC khi Spawn().
-/// - Không dùng NetworkBehaviour vì NPC/enemy đang được tạo từ prefab instance runtime.
-/// - Gọi InitializeForServer() trước Spawn(), rồi RefreshVisibility() sau khi client đổi zone.
-/// </summary>
+// Gắn vào bất kỳ NetworkObject nào cần lọc visibility theo zone.
+// Ví dụ: Player prefab, Enemy prefab, NPCShop, ChestItem.
+// Nguyên lý: NGO gọi CheckObjectVisibility(clientId) khi cần quyết định
+// có gửi object này đến client đó không. Ta override bằng logic:
+// "client được thấy object NẾU cùng zone với owner của object".
+// QUAN TRỌNG:
+// - Đây là component server-side thuần, có thể add runtime TRƯỚC khi Spawn().
+// - Không dùng NetworkBehaviour vì NPC/enemy đang được tạo từ prefab instance runtime.
+// - Gọi InitializeForServer() trước Spawn(), rồi RefreshVisibility() sau khi client đổi zone.
 [RequireComponent(typeof(NetworkObject))]
 [DisallowMultipleComponent]
 public class NetworkVisibilityZoneFilter : MonoBehaviour
@@ -51,14 +47,10 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
                   $"(netId={_netObj.NetworkObjectId}, zoneTag={zoneTag?.MapId}_{zoneTag?.ZoneId})");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // Core visibility logic
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Trả về true nếu clientId được phép thấy object này.
-    /// Logic: cùng zone với owner của object.
-    /// </summary>
+    // Trả về true nếu clientId được phép thấy object này.
+    // Logic: cùng zone với owner của object.
     private bool IsVisibleTo(ulong clientId)
     {
         _netObj ??= GetComponent<NetworkObject>();
@@ -104,10 +96,8 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
         return registry.AreInSameZone(ownerClientId, clientId);
     }
 
-    /// <summary>
-    /// Gọi sau zone transfer để NGO cập nhật visibility ngay lập tức.
-    /// NGO sẽ NetworkHide/NetworkShow tự động dựa theo CheckObjectVisibility.
-    /// </summary>
+    // Gọi sau zone transfer để NGO cập nhật visibility ngay lập tức.
+    // NGO sẽ NetworkHide/NetworkShow tự động dựa theo CheckObjectVisibility.
     public void RefreshVisibility()
     {
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -137,21 +127,17 @@ public class NetworkVisibilityZoneFilter : MonoBehaviour
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ZoneOwnerTag — gắn Vào server-owned objects (NPC, Enemy, Chest, v.v.)
 // để khai báo chúng thuộc zone nào.
-// ─────────────────────────────────────────────────────────────────────────────
 
-/// <summary>
-/// Metadata component: khai báo NPC/Enemy/Item này thuộc zone (mapId, zoneId).
-/// Được NetworkVisibilityZoneFilter dùng để lọc visibility.
-/// </summary>
+// Metadata component: khai báo NPC/Enemy/Item này thuộc zone (mapId, zoneId).
+// Được NetworkVisibilityZoneFilter dùng để lọc visibility.
 public class ZoneOwnerTag : MonoBehaviour
 {
     [SerializeField] public int MapId;
     [SerializeField] public int ZoneId;
 
-    /// <summary>Gọi khi spawn enemy/NPC vào zone cụ thể.</summary>
+    // Gọi khi spawn enemy/NPC vào zone cụ thể.
     public void SetZone(int mapId, int zoneId)
     {
         MapId  = mapId;

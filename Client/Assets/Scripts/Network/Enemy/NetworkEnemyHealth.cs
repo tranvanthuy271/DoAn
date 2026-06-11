@@ -3,10 +3,8 @@ using UnityEngine.Events;
 using Unity.Netcode;
 using Unity.Collections;
 
-/// <summary>
-/// NetworkEnemyHealth - Server-Authoritative Health System cho Enemy
-/// HP được quản lý bởi server, sync cho tất cả clients qua NetworkVariable
-/// </summary>
+// NetworkEnemyHealth - Server-Authoritative Health System cho Enemy
+// HP được quản lý bởi server, sync cho tất cả clients qua NetworkVariable
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkEnemyHealth : NetworkBehaviour
 {
@@ -37,7 +35,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         private bool _healBlocked = false;
         private ulong _lastAttackerClientId = ulong.MaxValue;
 
-        // ── Enemy info synced via NetworkVariable (replicated to late joiners too) ──
+        // Enemy info synced via NetworkVariable (replicated to late joiners too)
         private NetworkVariable<FixedString128Bytes> _networkEnemyName =
             new NetworkVariable<FixedString128Bytes>(default,
                 NetworkVariableReadPermission.Everyone,
@@ -53,7 +51,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
                 NetworkVariableReadPermission.Everyone,
                 NetworkVariableWritePermission.Server);
 
-        /// <summary>DB enemy_id (từ bảng enemy) — dùng cho quest kill tracking.</summary>
+        // DB enemy_id (từ bảng enemy) — dùng cho quest kill tracking.
         private NetworkVariable<int> _networkEnemyDbId =
             new NetworkVariable<int>(0,
                 NetworkVariableReadPermission.Everyone,
@@ -64,7 +62,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         public int    EnemyLevel   => _networkEnemyLevel.Value > 0 ? _networkEnemyLevel.Value : 1;
         public int    EnemyDbId    => _networkEnemyDbId.Value;
 
-        /// <summary>Máu tối đa của quái (dùng để tính EXP Gene Tối Thượng khi giết).</summary>
+        // Máu tối đa của quái (dùng để tính EXP Gene Tối Thượng khi giết).
         public int    MaxHealthValue => networkMaxHealth.Value > 0 ? networkMaxHealth.Value : maxHealth;
 
         public bool IsHealBlocked => _healBlocked;
@@ -120,10 +118,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
         OnHealthChanged?.Invoke(networkCurrentHealth.Value, newValue);
     }
 
-    /// <summary>
-    /// Callback khi NetworkVariable health thay đổi
-    /// Tự động sync cho tất cả clients
-    /// </summary>
+    // Callback khi NetworkVariable health thay đổi
+    // Tự động sync cho tất cả clients
     private void OnHealthValueChanged(int oldValue, int newValue)
     {
         // Invoke event để update UI — dùng networkMaxHealth.Value để đảm bảo đúng trên mọi client
@@ -136,13 +132,9 @@ public class NetworkEnemyHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ServerRpc: Client yêu cầu server gây damage
-    /// Chỉ server mới có thể thực sự trừ HP
-    /// </summary>
-    /// <summary>
-    /// Internal: Xử lý damage trên server (không qua RPC).
-    /// </summary>
+    // ServerRpc: Client yêu cầu server gây damage
+    // Chỉ server mới có thể thực sự trừ HP
+    // Internal: Xử lý damage trên server (không qua RPC).
     private void TakeDamageInternal(int damage, ulong attackerClientId)
     {
         if (networkCurrentHealth.Value <= 0 || isDead) return;
@@ -179,20 +171,16 @@ public class NetworkEnemyHealth : NetworkBehaviour
         TakeDamageInternal(damage, rpcParams.Receive.SenderClientId);
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về damage (để play sound/effect)
-    /// </summary>
+    // ClientRpc: Notify clients về damage (để play sound/effect)
         [ClientRpc]
     private void OnTakeDamageClientRpc(int damage)
     {
         OnTakeDamage?.Invoke();
     }
 
-    // ── Enemy Info Sync (tên, hệ, level) ───────────────────────────────────
+    // Enemy Info Sync (tên, hệ, level)
 
-    /// <summary>
-    /// Server gọi để set NetworkVariables — được replicate tự động đến mọi client kể cả late-joiner.
-    /// </summary>
+    // Server gọi để set NetworkVariables — được replicate tự động đến mọi client kể cả late-joiner.
     public void SetEnemyInfo(string enemyName, string elementType, int level, int enemyDbId = 0)
     {
         if (!IsServer) return;
@@ -202,9 +190,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         if (enemyDbId > 0) _networkEnemyDbId.Value = enemyDbId;
     }
 
-    /// <summary>
-    /// Xử lý death trên server
-    /// </summary>
+    // Xử lý death trên server
     private void HandleDeath()
     {
         if (isDead) return;
@@ -292,9 +278,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ClientRpc: Notify clients về death
-    /// </summary>
+    // ClientRpc: Notify clients về death
     [ClientRpc]
     private void OnDeathClientRpc()
     {
@@ -315,9 +299,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Server xóa enemy
-    /// </summary>
+    // Server xóa enemy
     private void DestroyEnemyServer()
     {
         if (!IsServer) return;
@@ -339,19 +321,17 @@ public class NetworkEnemyHealth : NetworkBehaviour
         }
     }
 
-    // ── Public API ─────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public int GetCurrentHealth() => networkCurrentHealth.Value;
-    /// <summary>Trả về max HP — dùng networkMaxHealth.Value để đúng trên cả client.</summary>
+    // Trả về max HP — dùng networkMaxHealth.Value để đúng trên cả client.
     public int GetMaxHealth() => networkMaxHealth.Value > 0 ? networkMaxHealth.Value : maxHealth;
     public float GetHealthPercent() => maxHealth > 0
         ? (float)networkCurrentHealth.Value / maxHealth
         : 0f;
 
-    /// <summary>
-    /// Đặt maxHealth TRƯỚC khi gọi NetworkObject.Spawn() để OnNetworkSpawn dùng giá trị đúng.
-    /// Không có IsServer guard — được gọi trên server trước khi NetworkObject được register với NGO.
-    /// </summary>
+    // Đặt maxHealth TRƯỚC khi gọi NetworkObject.Spawn() để OnNetworkSpawn dùng giá trị đúng.
+    // Không có IsServer guard — được gọi trên server trước khi NetworkObject được register với NGO.
     public void PreInitMaxHp(int hp)
     {
         if (hp <= 0) return;
@@ -359,10 +339,8 @@ public class NetworkEnemyHealth : NetworkBehaviour
         Debug.Log($"[NetworkEnemyHealth] PreInitMaxHp({hp}) trên {gameObject.name}");
     }
 
-    /// <summary>
-    /// Khởi tạo HP từ database (gọi bởi NetworkEnemySpawner sau networkObj.Spawn()).
-    /// Ghi đè giá trị maxHealth=10 cứng trong Inspector.
-    /// </summary>
+    // Khởi tạo HP từ database (gọi bởi NetworkEnemySpawner sau networkObj.Spawn()).
+    // Ghi đè giá trị maxHealth=10 cứng trong Inspector.
     public void InitHealth(int maxHp)
     {
         if (!IsServer) return;
@@ -373,16 +351,14 @@ public class NetworkEnemyHealth : NetworkBehaviour
         Debug.Log($"[NetworkEnemyHealth] InitHealth: {maxHp} HP (object {NetworkObjectId})");
     }
 
-    /// <summary>EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.</summary>
+    // EXP reward khi enemy chết. Được set bởi EnemyStatOverride từ DB config.
     public int ExpReward { get; private set; } = 0;
 
-    /// <summary>Lưu EXP override để death handler dùng (gọi bởi EnemyStatOverride).</summary>
+    // Lưu EXP override để death handler dùng (gọi bởi EnemyStatOverride).
     public void SetExpReward(int exp) => ExpReward = exp;
 
-    /// <summary>
-    /// Public method để các script khác gọi (tự động chuyển thành ServerRpc).
-    /// Server-side callers (projectiles, skills) nên truyền attackerClientId để quest kill được ghi nhận.
-    /// </summary>
+    // Public method để các script khác gọi (tự động chuyển thành ServerRpc).
+    // Server-side callers (projectiles, skills) nên truyền attackerClientId để quest kill được ghi nhận.
     public void TakeDamage(int damage, ulong attackerClientId = ulong.MaxValue)
     {
         if (IsServer)
@@ -391,9 +367,7 @@ public class NetworkEnemyHealth : NetworkBehaviour
             TakeDamageServerRpc(damage);
     }
 
-    /// <summary>
-    /// Chặn hồi HP trong khoảng thời gian nhất định.
-    /// </summary>
+    // Chặn hồi HP trong khoảng thời gian nhất định.
     public void BlockHeal(float duration)
     {
         StartCoroutine(BlockHealCoroutine(duration));

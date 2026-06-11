@@ -5,20 +5,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Overlay panel hiển thị chi tiết kỹ năng được chọn.
-///
-/// Cấu trúc tự build trong RebuildLayout():
-///   Root (transparent, full-stretch)
-///   ├── Backdrop (dark semi-transparent, full-stretch, click → Hide)
-///   └── ContentBox (centered ~96% width/height)
-///       ├── Header  (HLG: IconFrame + TitleArea)
-///       ├── BtnClose (top-right, "✕")
-///       ├── SkillInfoScrollView
-///       └── BtnUpgrade (bottom-right)
-///
-/// Gọi Show() khi chọn skill, Hide() khi đóng hoặc tab bị tắt.
-/// </summary>
+// Overlay panel hiển thị chi tiết kỹ năng được chọn.
+// Cấu trúc tự build trong RebuildLayout():
+// Root (transparent, full-stretch)
+// ├── Backdrop (dark semi-transparent, full-stretch, click → Hide)
+// └── ContentBox (centered ~96% width/height)
+// ├── Header  (HLG: IconFrame + TitleArea)
+// ├── BtnClose (top-right, "✕")
+// ├── SkillInfoScrollView
+// └── BtnUpgrade (bottom-right)
+// Gọi Show() khi chọn skill, Hide() khi đóng hoặc tab bị tắt.
 public class SkillDetailPanelUI : MonoBehaviour
 {
     private const float HeaderHeight      = 100f;
@@ -58,7 +54,7 @@ public class SkillDetailPanelUI : MonoBehaviour
         UnbindButtons();
     }
 
-    // ── Public API ──────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Show()
     {
@@ -738,9 +734,9 @@ public class SkillDetailPanelUI : MonoBehaviour
         return icon;
     }
 
-    // ── UI factory helpers ──────────────────────────────────────────────────
+    // UI factory helpers
 
-    /// <summary>Creates a button GO with centered text label. Returns the GO (not the button).</summary>
+    // Creates a button GO with centered text label. Returns the GO (not the button).
     private static GameObject CreateButtonGo(Transform parent, string name, string label, Color bgColor)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));

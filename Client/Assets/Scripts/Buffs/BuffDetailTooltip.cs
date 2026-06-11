@@ -3,21 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// BuffDetailTooltip — popup hiển thị khi người chơi click vào buff icon trong HUD.
-/// Hiển thị: tên buff, mô tả chi tiết, thời gian còn lại (live countdown).
-/// Tự động đóng sau autoCloseSeconds giây.
-///
-/// Cấu trúc Prefab cần tạo trong Unity Editor:
-///   BuffDetailTooltip (Panel, Canvas overrideSorting=250, RectTransform 220×110)
-///   ├── Background   (Image – dark semi-transparent, optional rounded sprite)
-///   ├── NameText     (TMP_Text – FontSize=14, Bold, Anchor=TopLeft + padding 8)
-///   ├── DetailText   (TMP_Text – FontSize=11, WordWrap=On)
-///   ├── TimeText     (TMP_Text – FontSize=11, Color=yellow, Anchor=BottomLeft + padding 8)
-///   └── CloseBtn     (Button – optional, nhỏ, góc phải trên)
-///
-/// Tham khảo: BuffTooltip.java trong LangLa Client_base
-/// </summary>
+// BuffDetailTooltip — popup hiển thị khi người chơi click vào buff icon trong HUD.
+// Hiển thị: tên buff, mô tả chi tiết, thời gian còn lại (live countdown).
+// Tự động đóng sau autoCloseSeconds giây.
+// Cấu trúc Prefab cần tạo trong Unity Editor:
+// BuffDetailTooltip (Panel, Canvas overrideSorting=250, RectTransform 220×110)
+// ├── Background   (Image – dark semi-transparent, optional rounded sprite)
+// ├── NameText     (TMP_Text – FontSize=14, Bold, Anchor=TopLeft + padding 8)
+// ├── DetailText   (TMP_Text – FontSize=11, WordWrap=On)
+// ├── TimeText     (TMP_Text – FontSize=11, Color=yellow, Anchor=BottomLeft + padding 8)
+// └── CloseBtn     (Button – optional, nhỏ, góc phải trên)
+// Tham khảo: BuffTooltip.java trong LangLa Client_base
 public class BuffDetailTooltip : MonoBehaviour
 {
     [Header("UI References")]
@@ -46,7 +42,7 @@ public class BuffDetailTooltip : MonoBehaviour
     // Buff đang hiển thị
     private ActiveBuffDto _buff;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -70,12 +66,10 @@ public class BuffDetailTooltip : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ── Public API ────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Hiển thị tooltip tại vị trí cố định (GO đã được parent vào đúng chỗ từ Inspector).
-    /// Reset về giữa parent — không cần tính vị trí theo icon.
-    /// </summary>
+    // Hiển thị tooltip tại vị trí cố định (GO đã được parent vào đúng chỗ từ Inspector).
+    // Reset về giữa parent — không cần tính vị trí theo icon.
     public void Show(ActiveBuffDto buff)
     {
         gameObject.SetActive(true);
@@ -97,10 +91,8 @@ public class BuffDetailTooltip : MonoBehaviour
         StartCoroutine(AutoCloseAfter(autoCloseSeconds));
     }
 
-    /// <summary>
-    /// Hiển thị tooltip sang phải của iconRt, top của panel = top của icon.
-    /// Gọi từ BuffHudPanel khi icon được click.
-    /// </summary>
+    // Hiển thị tooltip sang phải của iconRt, top của panel = top của icon.
+    // Gọi từ BuffHudPanel khi icon được click.
     public void Show(ActiveBuffDto buff, RectTransform iconRt, Canvas parentCanvas = null)
     {
         // Phải SetActive(true) TRƯỚC khi gọi StartCoroutine
@@ -123,12 +115,10 @@ public class BuffDetailTooltip : MonoBehaviour
         StartCoroutine(AutoCloseAfter(autoCloseSeconds));
     }
 
-    /// <summary>
-    /// Tính vị trí trong canvas-space từ RectTransform của icon.
-    /// - X: cạnh phải của icon + xOffset
-    /// - Y: cạnh trên của icon + yOffset (pivot=(0,1) → top-left của panel khớp)
-    /// Tương thích cả Screen Space Overlay lẫn Camera mode.
-    /// </summary>
+    // Tính vị trí trong canvas-space từ RectTransform của icon.
+    // - X: cạnh phải của icon + xOffset
+    // - Y: cạnh trên của icon + yOffset (pivot=(0,1) → top-left của panel khớp)
+    // Tương thích cả Screen Space Overlay lẫn Camera mode.
     private void PositionNearIcon(RectTransform iconRt, Canvas parentCanvas)
     {
         var rt = GetComponent<RectTransform>();
@@ -169,7 +159,7 @@ public class BuffDetailTooltip : MonoBehaviour
         }
     }
 
-    /// <summary>Clamp anchoredPosition để tooltip không bị cắt ra ngoài màn hình.</summary>
+    // Clamp anchoredPosition để tooltip không bị cắt ra ngoài màn hình.
     private void ClampToCanvas(RectTransform rt, RectTransform canvasRt)
     {
         if (canvasRt == null) return;
@@ -189,7 +179,7 @@ public class BuffDetailTooltip : MonoBehaviour
         rt.anchoredPosition = pos;
     }
 
-    /// <summary>Đóng tooltip. Gọi khi click nút đóng hoặc hết thời gian auto-close.</summary>
+    // Đóng tooltip. Gọi khi click nút đóng hoặc hết thời gian auto-close.
     public void Close()
     {
         StopAllCoroutines();
@@ -197,9 +187,9 @@ public class BuffDetailTooltip : MonoBehaviour
         _buff = null;
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
-    /// <summary>Cập nhật timeText mỗi giây — giống LangLa BuffTooltip live countdown.</summary>
+    // Cập nhật timeText mỗi giây — giống LangLa BuffTooltip live countdown.
     private IEnumerator UpdateTimeLoop()
     {
         while (_buff != null)

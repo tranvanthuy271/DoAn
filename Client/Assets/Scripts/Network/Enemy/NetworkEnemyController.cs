@@ -148,9 +148,7 @@ public class NetworkEnemyController : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Server RPC để trigger attack animation (melee attack)
-    /// </summary>
+    // Server RPC để trigger attack animation (melee attack)
     [ServerRpc]
     public void TriggerAttackServerRpc()
     {
@@ -180,9 +178,7 @@ public class NetworkEnemyController : NetworkBehaviour
         ApplyAttackAnimationState(isAttacking);
     }
     
-    /// <summary>
-    /// Reset attack animation state (local)
-    /// </summary>
+    // Reset attack animation state (local)
     private void ResetAttackAnimation()
     {
         ApplyAttackAnimationState(false);
@@ -225,9 +221,7 @@ public class NetworkEnemyController : NetworkBehaviour
         return false;
     }
     
-    /// <summary>
-    /// ClientRpc để reset attack animation trên tất cả clients
-    /// </summary>
+    // ClientRpc để reset attack animation trên tất cả clients
     [ClientRpc]
     public void ResetAttackAnimationClientRpc()
     {

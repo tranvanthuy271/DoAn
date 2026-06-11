@@ -3,20 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// PotentialStatRowUI – Một dòng hiển thị 1 chỉ số tiềm năng.
-///
-/// Cấu trúc GameObject (HorizontalLayoutGroup trên root):
-/// ┌─ PotentialStatRow   [Image bg + HLG]
-/// │   ├─ TxtStatName    [TMP_Text] – "Tấn Công:"
-/// │   ├─ TxtPoints      [TMP_Text] – "10"  (hiển thị giá trị pending)
-/// │   ├─ BtnMinus       [Button]   – "-"
-/// │   ├─ BtnPlus        [Button]   – "+"
-/// │   └─ BtnMax         [Button]   – "▲"  (tăng max bằng điểm còn lại)
-///
-/// Không gọi API trực tiếp – mọi thay đổi là pending cho đến khi
-/// PotentialTabUI gửi lên server qua nút "Cộng".
-/// </summary>
+// PotentialStatRowUI – Một dòng hiển thị 1 chỉ số tiềm năng.
+// Cấu trúc GameObject (HorizontalLayoutGroup trên root):
+// ┌─ PotentialStatRow   [Image bg + HLG]
+// ├─ TxtStatName    [TMP_Text] – "Tấn Công:"
+// ├─ TxtPoints      [TMP_Text] – "10"  (hiển thị giá trị pending)
+// ├─ BtnMinus       [Button]   – "-"
+// ├─ BtnPlus        [Button]   – "+"
+// └─ BtnMax         [Button]   – "▲"  (tăng max bằng điểm còn lại)
+// Không gọi API trực tiếp – mọi thay đổi là pending cho đến khi
+// PotentialTabUI gửi lên server qua nút "Cộng".
 public class PotentialStatRowUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -26,18 +22,18 @@ public class PotentialStatRowUI : MonoBehaviour
     [SerializeField] private Button   btnPlus;
     [SerializeField] private Button   btnMax;
 
-    // ── Internal state ─────────────────────────────────────
+    // Internal state
     private PotentialStatInfo _info;
     private int               _pendingDelta;          // điểm đã cộng/trừ (chưa gửi server)
     private Func<int>         _getAvailablePoints;    // hỏi parent số điểm còn
     private Action<int>       _onPointsChanged;       // báo parent: âm = dùng, dương = trả
     private bool              _isReadOnlyView;
 
-    // ── Public API ─────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
     public string StatName    => _info?.stat_name;
     public int    PendingDelta => _pendingDelta;
 
-    /// <summary>Khởi tạo dữ liệu dòng. Không gọi API; thay đổi chỉ là pending.</summary>
+    // Khởi tạo dữ liệu dòng. Không gọi API; thay đổi chỉ là pending.
     public void SetData(PotentialStatInfo info,
                         Func<int>   getAvailablePoints,
                         Action<int> onPointsChanged)
@@ -74,17 +70,17 @@ public class PotentialStatRowUI : MonoBehaviour
         RefreshUI();
     }
 
-    /// <summary>Hủy mọi thay đổi pending về 0, cập nhật UI.</summary>
+    // Hủy mọi thay đổi pending về 0, cập nhật UI.
     public void ResetPending()
     {
         _pendingDelta = 0;
         RefreshUI();
     }
 
-    /// <summary>Gọi khi parent thay đổi điểm còn để cập nhật trạng thái nút.</summary>
+    // Gọi khi parent thay đổi điểm còn để cập nhật trạng thái nút.
     public void RefreshButtonStates() => UpdateButtonStates();
 
-    // ── Private helpers ────────────────────────────────────
+    // Private helpers
 
     private void RefreshUI()
     {
@@ -150,10 +146,8 @@ public class PotentialStatRowUI : MonoBehaviour
         RefreshUI();
     }
 
-    /// <summary>
-    /// Bỏ phần trong ngoặc đơn khỏi tên hiển thị và thêm ":".
-    /// Ví dụ: "Máu (HP)" → "Máu:", "Tấn Công" → "Tấn Công:"
-    /// </summary>
+    // Bỏ phần trong ngoặc đơn khỏi tên hiển thị và thêm ":".
+    // Ví dụ: "Máu (HP)" → "Máu:", "Tấn Công" → "Tấn Công:"
     private static string CleanDisplayName(string name)
     {
         if (string.IsNullOrEmpty(name)) return ":";

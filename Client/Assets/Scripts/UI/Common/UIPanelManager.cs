@@ -2,24 +2,19 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Mutual-exclusion manager cho các panel lớn trong game.
-///
-/// Quy tắc:
-///   - Khi 1 panel mở → tất cả panel khác đã đăng ký bị đóng tự động.
-///   - QuestHudWidget.rootPanel được đăng ký qua RegisterHud() →
-///     tự ẩn khi có panel mở, hiện lại khi hết panel.
-///
-/// Pattern dùng trong mỗi panel:
-///   Awake()   → Register(gameObject, Close)
-///   Open()    → CloseOthers(gameObject)  ...show...  NotifyOpened(gameObject)
-///   Close()   → ...hide...               NotifyClosed(gameObject)
-///   OnDestroy → Unregister(gameObject)
-///
-/// QuestHudWidget:
-///   Awake() → RegisterHud(rootWidget)
-///   OnDestroy → UnregisterHud(rootWidget)
-/// </summary>
+// Mutual-exclusion manager cho các panel lớn trong game.
+// Quy tắc:
+// - Khi 1 panel mở → tất cả panel khác đã đăng ký bị đóng tự động.
+// - QuestHudWidget.rootPanel được đăng ký qua RegisterHud() →
+// tự ẩn khi có panel mở, hiện lại khi hết panel.
+// Pattern dùng trong mỗi panel:
+// Awake()   → Register(gameObject, Close)
+// Open()    → CloseOthers(gameObject)  ...show...  NotifyOpened(gameObject)
+// Close()   → ...hide...               NotifyClosed(gameObject)
+// OnDestroy → Unregister(gameObject)
+// QuestHudWidget:
+// Awake() → RegisterHud(rootWidget)
+// OnDestroy → UnregisterHud(rootWidget)
 public static class UIPanelManager
 {
     private struct PanelEntry
@@ -36,9 +31,9 @@ public static class UIPanelManager
     private static bool _isBatchClosing;
     private static bool _hudsHiddenByPanel;
 
-    // ── Panel registration ────────────────────────────────────────────────
+    // Panel registration
 
-    /// <summary>Đăng ký panel. Gọi trong Awake(). An toàn khi gọi nhiều lần.</summary>
+    // Đăng ký panel. Gọi trong Awake(). An toàn khi gọi nhiều lần.
     public static void Register(GameObject go, Action closeAction)
     {
         if (go == null) return;
@@ -47,7 +42,7 @@ public static class UIPanelManager
         _panels.Add(new PanelEntry { Go = go, CloseAction = closeAction });
     }
 
-    /// <summary>Huỷ đăng ký. Gọi trong OnDestroy().</summary>
+    // Huỷ đăng ký. Gọi trong OnDestroy().
     public static void Unregister(GameObject go)
     {
         if (go == null) return;
@@ -57,9 +52,9 @@ public static class UIPanelManager
             RefreshHudVisibilityFromOpenPanels();
     }
 
-    // ── HUD registration ─────────────────────────────────────────────────
+    // HUD registration
 
-    /// <summary>Đăng ký HUD element (ẩn khi có panel, hiện khi hết panel).</summary>
+    // Đăng ký HUD element (ẩn khi có panel, hiện khi hết panel).
     public static void RegisterHud(GameObject go)
     {
         if (go == null || _huds.Contains(go)) return;
@@ -89,12 +84,10 @@ public static class UIPanelManager
         RefreshHudVisibility();
     }
 
-    // ── Panel lifecycle ───────────────────────────────────────────────────
+    // Panel lifecycle
 
-    /// <summary>
-    /// Gọi ở ĐẦU mỗi Open(), TRƯỚC khi show panel.
-    /// Đóng tất cả panel đang mở + ẩn HUD.
-    /// </summary>
+    // Gọi ở ĐẦU mỗi Open(), TRƯỚC khi show panel.
+    // Đóng tất cả panel đang mở + ẩn HUD.
     public static void CloseOthers(GameObject exceptGo)
     {
         _isBatchClosing = true;
@@ -117,10 +110,8 @@ public static class UIPanelManager
         RefreshHudVisibility();
     }
 
-    /// <summary>
-    /// Gọi SAU KHI panel đã hiển thị (sau SetActive(true) / Show).
-    /// Đánh dấu panel là đang mở.
-    /// </summary>
+    // Gọi SAU KHI panel đã hiển thị (sau SetActive(true) / Show).
+    // Đánh dấu panel là đang mở.
     public static void NotifyOpened(GameObject go)
     {
         if (go != null) _open.Add(go);
@@ -128,10 +119,8 @@ public static class UIPanelManager
         RefreshHudVisibility();
     }
 
-    /// <summary>
-    /// Gọi SAU KHI panel đã ẩn (sau SetActive(false) / Hide).
-    /// Hiện lại HUD nếu không còn panel nào đang mở.
-    /// </summary>
+    // Gọi SAU KHI panel đã ẩn (sau SetActive(false) / Hide).
+    // Hiện lại HUD nếu không còn panel nào đang mở.
     public static void NotifyClosed(GameObject go)
     {
         _open.Remove(go);

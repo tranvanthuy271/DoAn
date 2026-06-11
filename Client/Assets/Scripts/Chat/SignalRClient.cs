@@ -9,28 +9,26 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Client SignalR JSON Hub Protocol cho Unity.
-/// Sử dụng System.Net.WebSockets.ClientWebSocket (không cần thư viện ngoài).
-/// JWT được truyền qua query param ?access_token= (chuẩn ASP.NET Core SignalR).
-/// </summary>
+// Client SignalR JSON Hub Protocol cho Unity.
+// Sử dụng System.Net.WebSockets.ClientWebSocket (không cần thư viện ngoài).
+// JWT được truyền qua query param ?access_token= (chuẩn ASP.NET Core SignalR).
 public class SignalRClient : MonoBehaviour
 {
-    // ── Constants ─────────────────────────────────────────────────────────────
+    // Hằng số dùng chung trong file.
     private const char   RECORD_SEP = '\x1e';
     private const string HANDSHAKE  = "{\"protocol\":\"json\",\"version\":1}\x1e";
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
     private ClientWebSocket            _socket;
     private CancellationTokenSource    _cts;
     private string                     _hubUrl;
     private string                     _token;
 
-    /// <summary>true khi WebSocket đang mở VÀ SignalR handshake đã hoàn tất thành công.</summary>
+    // true khi WebSocket đang mở VÀ SignalR handshake đã hoàn tất thành công.
     private bool _handshakeDone = false;
     public bool IsConnected => _handshakeDone && _socket?.State == WebSocketState.Open;
 
-    // ── Events (dispatch về main thread) ─────────────────────────────────────
+    // Events (dispatch về main thread)
     public event Action          OnConnected;
     public event Action<string>  OnDisconnected;   // reason
     public event Action<string>  OnError;
@@ -42,7 +40,7 @@ public class SignalRClient : MonoBehaviour
     // Main-thread dispatch queue
     private readonly ConcurrentQueue<Action> _mainQueue = new ConcurrentQueue<Action>();
 
-    // ── MonoBehaviour ─────────────────────────────────────────────────────────
+    // MonoBehaviour
 
     private void Update()
     {
@@ -56,13 +54,13 @@ public class SignalRClient : MonoBehaviour
         _socket?.Dispose();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Đăng ký callback cho hub method được gọi từ server.</summary>
+    // Đăng ký callback cho hub method được gọi từ server.
     public void On(string target, Action<string> handler)
         => _handlers[target] = handler;
 
-    /// <summary>Kết nối đến SignalR Hub. Gọi từ coroutine / Start.</summary>
+    // Kết nối đến SignalR Hub. Gọi từ coroutine / Start.
     public void Connect(string hubUrl, string jwtToken)
     {
         _hubUrl = hubUrl;
@@ -71,7 +69,7 @@ public class SignalRClient : MonoBehaviour
         StartCoroutine(ConnectRoutine());
     }
 
-    /// <summary>Ngắt kết nối chủ động.</summary>
+    // Ngắt kết nối chủ động.
     public void Disconnect()
     {
         _cts?.Cancel();
@@ -79,7 +77,7 @@ public class SignalRClient : MonoBehaviour
             _ = _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
     }
 
-    /// <summary>Invoke hub method (fire-and-forget, không cần kết quả).</summary>
+    // Invoke hub method (fire-and-forget, không cần kết quả).
     public void Invoke(string method, params string[] args)
     {
         if (!IsConnected) return;
@@ -87,11 +85,11 @@ public class SignalRClient : MonoBehaviour
         _ = SendRawTask(payload);
     }
 
-    // ── Connection Coroutine ──────────────────────────────────────────────────
+    // Connection Coroutine
 
     private IEnumerator ConnectRoutine()
     {
-        // 1. Negotiate ─────────────────────────────────────────────────────────
+        // 1. Negotiate
         string connToken = null;
         yield return StartCoroutine(NegotiateRoutine(result => connToken = result));
 
@@ -101,7 +99,7 @@ public class SignalRClient : MonoBehaviour
             yield break;
         }
 
-        // 2. Mở WebSocket ──────────────────────────────────────────────────────
+        // 2. Mở WebSocket
         _cts    = new CancellationTokenSource();
         _socket = new ClientWebSocket();
 
@@ -120,7 +118,7 @@ public class SignalRClient : MonoBehaviour
             yield break;
         }
 
-        // 3. Handshake JSON protocol ────────────────────────────────────────────
+        // 3. Handshake JSON protocol
         var handshakeTask = SendRawTask(HANDSHAKE);
         yield return new WaitUntil(() => handshakeTask.IsCompleted);
 
@@ -155,7 +153,7 @@ public class SignalRClient : MonoBehaviour
             yield break;
         }
 
-        // 4. Kết nối thành công ─────────────────────────────────────────────────
+        // 4. Kết nối thành công
         _handshakeDone = true;
         _mainQueue.Enqueue(() => OnConnected?.Invoke());
 
@@ -164,7 +162,7 @@ public class SignalRClient : MonoBehaviour
         _ = PingLoopAsync();
     }
 
-    // ── Negotiate ─────────────────────────────────────────────────────────────
+    // Negotiate
 
     private IEnumerator NegotiateRoutine(Action<string> onResult)
     {
@@ -212,7 +210,7 @@ public class SignalRClient : MonoBehaviour
         onResult(token);
     }
 
-    // ── Receive Loop (background task) ────────────────────────────────────────
+    // Receive Loop (background task)
 
     private async Task ReceiveLoopAsync()
     {
@@ -259,7 +257,7 @@ public class SignalRClient : MonoBehaviour
         }
     }
 
-    // ── Ping Loop (background task) ───────────────────────────────────────────
+    // Ping Loop (background task)
 
     private async Task PingLoopAsync()
     {
@@ -275,7 +273,7 @@ public class SignalRClient : MonoBehaviour
         catch (OperationCanceledException) { }
     }
 
-    // ── Message Dispatch ──────────────────────────────────────────────────────
+    // Message Dispatch
 
     private void DispatchMessage(string json)
     {
@@ -305,7 +303,7 @@ public class SignalRClient : MonoBehaviour
         }
     }
 
-    // ── Send ──────────────────────────────────────────────────────────────────
+    // Send
 
     private async Task SendRawTask(string text)
     {
@@ -322,7 +320,7 @@ public class SignalRClient : MonoBehaviour
         catch (Exception ex) { Debug.LogWarning($"[Chat] Send error: {ex.Message}"); }
     }
 
-    // ── JSON Helpers ──────────────────────────────────────────────────────────
+    // JSON Helpers
 
     private static int ExtractInt(string json, string key)
     {
@@ -352,7 +350,7 @@ public class SignalRClient : MonoBehaviour
         return sb.ToString();
     }
 
-    /// <summary>Trích xuất phần tử đầu tiên của mảng "arguments".</summary>
+    // Trích xuất phần tử đầu tiên của mảng "arguments".
     private static string ExtractFirstArgument(string json)
     {
         int i = json.IndexOf("\"arguments\"", StringComparison.Ordinal);
@@ -382,7 +380,7 @@ public class SignalRClient : MonoBehaviour
         return "{}";
     }
 
-    // ── Invocation Builder ────────────────────────────────────────────────────
+    // Invocation Builder
 
     private static string BuildInvoke(string method, string[] args)
     {

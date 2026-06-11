@@ -6,17 +6,13 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// <summary>
-/// Server-side: quản lý vòng đời player trong server 1-port.
-///
-/// Trách nhiệm:
-///   - Lưu session (userId, username, zone) của từng clientId đã approved
-///   - Khi client kết nối hoàn tất → fetch PlayerData từ API → spawn NetworkObject
-///   - Khi client ngắt kết nối → save vị trí cuối → xóa khỏi session
-///   - UpdateZone() sau mỗi lần zone transfer
-///
-/// Dependencies: ZoneConnectionApproval (RegisterSession), MapWorldConfig
-/// </summary>
+// Server-side: quản lý vòng đời player trong server 1-port.
+// Trách nhiệm:
+// - Lưu session (userId, username, zone) của từng clientId đã approved
+// - Khi client kết nối hoàn tất → fetch PlayerData từ API → spawn NetworkObject
+// - Khi client ngắt kết nối → save vị trí cuối → xóa khỏi session
+// - UpdateZone() sau mỗi lần zone transfer
+// Dependencies: ZoneConnectionApproval (RegisterSession), MapWorldConfig
 [DisallowMultipleComponent]
 public class ZonePlayerSessionManager : NetworkBehaviour
 {
@@ -44,7 +40,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     private bool _prefabConfigLogged;
     private readonly object _lock = new();
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -94,11 +90,9 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>
-    /// Gọi từ ZoneConnectionApproval khi client được approve.
-    /// </summary>
+    // Gọi từ ZoneConnectionApproval khi client được approve.
     public void RegisterSession(ulong clientId, string userId, string username, int mapId, int zoneId, string jwtToken = null, int geneSlot = 1)
     {
         lock (_lock)
@@ -142,9 +136,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         Debug.LogWarning($"[ZonePlayerSessionManager] Instance chưa sẵn sàng tại approval. Queue session cho clientId={clientId}, userId={userId}, room=map{mapId}_zone{zoneId}, geneSlot={geneSlot}.");
     }
 
-    /// <summary>
-    /// Cập nhật zone sau khi player transfer. Gọi từ ZoneTransitionController.
-    /// </summary>
+    // Cập nhật zone sau khi player transfer. Gọi từ ZoneTransitionController.
     public void UpdateZone(ulong clientId, int mapId, int zoneId)
     {
         lock (_lock)
@@ -163,34 +155,28 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             return _activeSessions.TryGetValue(clientId, out var s) ? s.UserId : null;
     }
 
-    /// <summary>
-    /// Trả về JWT token của client (để game server gọi REST API thay mặt client).
-    /// </summary>
+    // Trả về JWT token của client (để game server gọi REST API thay mặt client).
     public string GetClientJwt(ulong clientId)
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s.JwtToken : null;
     }
 
-    /// <summary>
-    /// Trả về gene slot (1 hoặc 2) của client đang active.
-    /// </summary>
+    // Trả về gene slot (1 hoặc 2) của client đang active.
     public int GetClientGeneSlot(ulong clientId)
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s.GeneSlot : 1;
     }
 
-    /// <summary>
-    /// Trả về PlayerSession của client nếu đang active. Null nếu chưa spawn.
-    /// </summary>
+    // Trả về PlayerSession của client nếu đang active. Null nếu chưa spawn.
     public PlayerSession GetSession(ulong clientId)
     {
         lock (_lock)
             return _activeSessions.TryGetValue(clientId, out var s) ? s : null;
     }
 
-    // ── Event Handlers ────────────────────────────────────────────────────────
+    // Đăng ký và xử lý sự kiện phát sinh trong runtime.
 
     private void OnClientConnected(ulong clientId)
     {
@@ -237,7 +223,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         lock (_lock)
             _activeSessions.TryGetValue(clientId, out session);
 
-        // ── [RECONNECT-DEBUG] Bước 1: log trạng thái đầu vào ─────────────────
+        // [RECONNECT-DEBUG] Bước 1: log trạng thái đầu vào
         var waveMgrDbg    = WaveSessionManager.GetOrCreateInstance(gameObject);
         var registryDbg   = ZoneRoomRegistry.Instance;
         string userIdDbg  = session?.UserId ?? "(null session)";
@@ -252,7 +238,6 @@ public class ZonePlayerSessionManager : NetworkBehaviour
                   $"clientRoom={clientRoomDbg?.ZoneKey ?? "null"} " +
                   $"clientRoomIsCustom={clientRoomDbg?.IsCustom} " +
                   $"clientRoomPlayerCount={clientRoomDbg?.PlayerCount}");
-        // ──────────────────────────────────────────────────────────────────────
 
         // Bước 2: preserve wave session TRƯỚC khi unregister client khỏi registry
         if (session != null)
@@ -288,7 +273,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         }
     }
 
-    // ── Internal: Load & Spawn ────────────────────────────────────────────────
+    // Internal: Load & Spawn
 
     private IEnumerator LoadAndSpawnPlayerTracked(ulong clientId, ApprovedUserInfo userInfo)
     {
@@ -524,10 +509,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             Debug.LogWarning("[ZonePlayerSessionManager] Prefab config hiện không có mapping gender=Nu. Nếu DB trả gender=Nu thì resolver sẽ fallback bỏ qua gender hoặc dùng prefab mặc định.");
     }
 
-    /// <summary>
-    /// Safety-net: drain PendingApprovedUsers every 0.5 s for the first 30 s after spawn.
-    /// Catches sessions that arrive after OnNetworkSpawn in edge-case timing.
-    /// </summary>
+    // Safety-net: drain PendingApprovedUsers every 0.5 s for the first 30 s after spawn.
+    // Catches sessions that arrive after OnNetworkSpawn in edge-case timing.
     private IEnumerator DrainPendingLoop()
     {
         float elapsed = 0f;
@@ -636,14 +619,12 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             filter.RefreshVisibility();
     }
 
-    /// <summary>
-    /// Chọn prefab phù hợp dựa vào element_type, gender, is_hybrid của player.
-    /// Thứ tự ưu tiên:
-    ///   1. Hybrid: Resources.Load(hybrid_prefab_path) nếu field đó có giá trị
-    ///   2. Khớp chính xác element + gender + isHybrid trong _playerPrefabs
-    ///   3. Khớp element + isHybrid (bỏ qua gender)
-    ///   4. Fallback: prefab đầu tiên trong mảng không null
-    /// </summary>
+    // Chọn prefab phù hợp dựa vào element_type, gender, is_hybrid của player.
+    // Thứ tự ưu tiên:
+    // 1. Hybrid: Resources.Load(hybrid_prefab_path) nếu field đó có giá trị
+    // 2. Khớp chính xác element + gender + isHybrid trong _playerPrefabs
+    // 3. Khớp element + isHybrid (bỏ qua gender)
+    // 4. Fallback: prefab đầu tiên trong mảng không null
     private GameObject ResolvePlayerPrefab(global::PlayerDataResponse data)
     {
         Debug.Log($"[ZonePlayerSessionManager] ResolvePlayerPrefab begin: {DescribePlayerData(data)}");
@@ -822,7 +803,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
             Debug.LogWarning($"[ZonePlayerSessionManager] Reset start map thất bại user={session.UserId}: {req.error}");
     }
 
-    // ── Inner types ───────────────────────────────────────────────────────────
+    // Inner types
 
     private class ApprovedUserInfo
     {
@@ -845,10 +826,8 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int           GeneSlot;
     }
 
-    /// <summary>
-    /// DTO map với JSON response của GET /api/player/{id}/data.
-    /// Field names dùng snake_case để khớp với JsonUtility serialization.
-    /// </summary>
+    // DTO map với JSON response của GET /api/player/{id}/data.
+    // Field names dùng snake_case để khớp với JsonUtility serialization.
     [Serializable]
     public class PlayerDataResponse
     {
@@ -879,7 +858,7 @@ public class ZonePlayerSessionManager : NetworkBehaviour
         public int    mp;
         public int    max_mp;
 
-        /// <summary>Lấy max_hp đúng: ưu tiên final_stats, fallback flat field.</summary>
+        // Lấy max_hp đúng: ưu tiên final_stats, fallback flat field.
         public int GetMaxHp() => final_stats != null && final_stats.max_hp > 0 ? final_stats.max_hp : max_hp;
         public int GetMaxMp() => final_stats != null && final_stats.max_mp > 0 ? final_stats.max_mp : max_mp;
         public int GetHp()    => final_stats != null && final_stats.hp > 0 ? final_stats.hp : hp;
@@ -913,19 +892,15 @@ public class ZonePlayerSessionManager : NetworkBehaviour
     }
 }
 
-/// <summary>
-/// Interface để player prefab nhận data sau khi spawn.
-/// Implement trên PlayerController hoặc PlayerDataSync.
-/// </summary>
+// Interface để player prefab nhận data sau khi spawn.
+// Implement trên PlayerController hoặc PlayerDataSync.
 public interface IPlayerDataReceiver
 {
     void OnPlayerDataLoaded(global::PlayerDataResponse data, ulong clientId);
 }
 
-/// <summary>
-/// Map 1 element_type + gender → prefab player tương ứng.
-/// Dùng trong Inspector của ZonePlayerSessionManager.
-/// </summary>
+// Map 1 element_type + gender → prefab player tương ứng.
+// Dùng trong Inspector của ZonePlayerSessionManager.
 [Serializable]
 public class PlayerPrefabEntry
 {

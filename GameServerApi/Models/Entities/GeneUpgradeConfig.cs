@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameServerApi.Models
 {
-    // ----------------------------------------------------------------
     // gene_upgrade_config
     //   tier_from        : gene tier hiện tại (PK, 1~4)
     //   element_type     : 'Fire'|'Water'|'Earth'|'Metal'|'Wood' (PK)
@@ -14,7 +13,6 @@ namespace GameServerApi.Models
     //   items_needed     : số item để đạt base_success_rate tối đa
     //   items_min        : số item tối thiểu để thực hiện nâng cấp
     //   base_success_rate: tỉ lệ thành công khi dùng đủ items_needed item
-    // ----------------------------------------------------------------
     [Table("gene_upgrade_config")]
     [PrimaryKey(nameof(TierFrom), nameof(ElementType))]
     public class GeneUpgradeConfig
@@ -29,19 +27,19 @@ namespace GameServerApi.Models
         [Column("gene_exp_required")]
         public int GeneExpRequired { get; set; }
 
-        /// <summary>Cột DB: silver_cost – dùng làm gold_cost</summary>
+        // Cột DB: silver_cost – dùng làm gold_cost
         [Column("silver_cost")]
         public int GoldCost { get; set; }
 
-        /// <summary>Cột DB: stone_id – id của item_template cần dùng</summary>
+        // Cột DB: stone_id – id của item_template cần dùng
         [Column("stone_id")]
         public int ItemId { get; set; }
 
-        /// <summary>Cột DB: stone_needed – số item để đạt tỉ lệ thành công tối đa</summary>
+        // Cột DB: stone_needed – số item để đạt tỉ lệ thành công tối đa
         [Column("stone_needed")]
         public int ItemsNeeded { get; set; }
 
-        /// <summary>Cột DB: stone_min – số item tối thiểu</summary>
+        // Cột DB: stone_min – số item tối thiểu
         [Column("stone_min")]
         public int ItemsMin { get; set; }
 

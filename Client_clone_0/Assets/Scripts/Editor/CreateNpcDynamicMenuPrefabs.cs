@@ -4,25 +4,20 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Editor tool — tạo tự động prefab NpcDynamicMenuPanel + NpcMenuItemRow.
-///
-/// Chạy từ menu Unity:
-///   Tools ▸ DoAn ▸ Create NPC Dynamic Menu Prefabs
-///
-/// Tạo 2 file:
-///   Assets/Resources/Prefabs/UI/NPC/NpcDynamicMenuPanel.prefab
-///   Assets/Resources/Prefabs/UI/NPC/NpcMenuItemRow.prefab
-///
-/// Prefab được wire sẵn tất cả SerializeField — kéo vào Canvas là dùng được.
-/// </summary>
+// Editor tool — tạo tự động prefab NpcDynamicMenuPanel + NpcMenuItemRow.
+// Chạy từ menu Unity:
+// Tools ▸ DoAn ▸ Create NPC Dynamic Menu Prefabs
+// Tạo 2 file:
+// Assets/Resources/Prefabs/UI/NPC/NpcDynamicMenuPanel.prefab
+// Assets/Resources/Prefabs/UI/NPC/NpcMenuItemRow.prefab
+// Prefab được wire sẵn tất cả SerializeField — kéo vào Canvas là dùng được.
 public static class CreateNpcDynamicMenuPrefabs
 {
     private const string NpcPrefabFolder  = "Assets/Resources/Prefabs/UI/NPC";
     private const string PanelPrefabPath  = NpcPrefabFolder + "/NpcDynamicMenuPanel.prefab";
     private const string RowPrefabPath    = NpcPrefabFolder + "/NpcMenuItemRow.prefab";
 
-    // ── Bảng màu gỗ (khớp DungeonUI & ảnh mẫu LangLa) ────────────────────
+    // Bảng màu gỗ (khớp DungeonUI & ảnh mẫu LangLa)
     private static readonly Color WoodOuter   = new Color(0.25f, 0.13f, 0.04f, 1.00f); // viền ngoài tối
     private static readonly Color WoodFrame   = new Color(0.36f, 0.20f, 0.07f, 1.00f); // frame chính
     private static readonly Color WoodInner   = new Color(0.56f, 0.33f, 0.11f, 1.00f); // nền gỗ sáng
@@ -37,7 +32,6 @@ public static class CreateNpcDynamicMenuPrefabs
     private static readonly Color RowSep      = new Color(0.42f, 0.24f, 0.07f, 1.00f); // gạch kẻ phân cách
     private static readonly Color ScrollBar   = new Color(0.38f, 0.22f, 0.07f, 0.80f);
 
-    // ═══════════════════════════════════════════════════════════════════
     [MenuItem("Tools/DoAn/Create NPC Dynamic Menu Prefabs")]
     public static void CreateAll()
     {
@@ -66,15 +60,13 @@ public static class CreateNpcDynamicMenuPrefabs
         if (panel != null) Selection.activeObject = panel;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     //  NpcMenuItemRow — một hàng menu (icon bubble + text + Button)
-    // ═══════════════════════════════════════════════════════════════════
     private static bool CreateRowPrefab()
     {
         if (AssetDatabase.LoadAssetAtPath<GameObject>(RowPrefabPath) != null)
         { Debug.Log("[CreateNpcMenu] NpcMenuItemRow đã tồn tại → bỏ qua."); return false; }
 
-        // ── Root (HorizontalLayoutGroup + Button + NpcMenuItemRow) ────
+        // Root (HorizontalLayoutGroup + Button + NpcMenuItemRow)
         var root = NewGO("NpcMenuItemRow");
         var rootRt = root.AddComponent<RectTransform>();
         rootRt.sizeDelta = new Vector2(300f, 44f);
@@ -104,7 +96,7 @@ public static class CreateNpcDynamicMenuPrefabs
         hlg.childForceExpandWidth  = false;
         hlg.childForceExpandHeight = true;
 
-        // ── Chat bubble icon ──────────────────────────────────────────
+        // Chat bubble icon
         var iconGo = NewUIGO("BubbleIcon", root.transform);
         var iconRt = iconGo.GetComponent<RectTransform>();
         iconRt.sizeDelta = new Vector2(28f, 28f);
@@ -150,7 +142,7 @@ public static class CreateNpcDynamicMenuPrefabs
         sepImg.color = RowSep;
         sepImg.raycastTarget = false;
 
-        // ── Label text ────────────────────────────────────────────────
+        // Label text
         var txtGo = NewUIGO("LabelText", root.transform);
         var txtRt = txtGo.GetComponent<RectTransform>();
         txtRt.sizeDelta = new Vector2(220f, 32f);
@@ -166,7 +158,7 @@ public static class CreateNpcDynamicMenuPrefabs
         tmp.alignment = TextAlignmentOptions.MidlineLeft;
         tmp.raycastTarget = false;
 
-        // ── Wire NpcMenuItemRow fields ────────────────────────────────
+        // Wire NpcMenuItemRow fields
         var so = new SerializedObject(row);
         so.FindProperty("labelText").objectReferenceValue = tmp;
         so.FindProperty("iconImage").objectReferenceValue = iconImg;
@@ -178,9 +170,7 @@ public static class CreateNpcDynamicMenuPrefabs
         return ok;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     //  NpcDynamicMenuPanel — panel chính (nền gỗ, tiêu đề, scroll list)
-    // ═══════════════════════════════════════════════════════════════════
     private static bool CreatePanelPrefab()
     {
         bool overwrite = false;
@@ -193,7 +183,7 @@ public static class CreateNpcDynamicMenuPrefabs
             if (!overwrite) { Debug.Log("[CreateNpcMenu] NpcDynamicMenuPanel đã tồn tại → bỏ qua."); return false; }
         }
 
-        // ── Root: NpcDynamicMenuPanel ─────────────────────────────────
+        // Root: NpcDynamicMenuPanel
         var root = NewGO("NpcDynamicMenuPanel");
         var rootRt = root.AddComponent<RectTransform>();
         rootRt.anchorMin = new Vector2(0.5f, 0.5f);
@@ -204,7 +194,7 @@ public static class CreateNpcDynamicMenuPrefabs
         // Canvas Group (cho fade-in nếu cần)
         root.AddComponent<CanvasGroup>();
 
-        // ── Nền ngoài (viền tối nhất) ─────────────────────────────────
+        // Nền ngoài (viền tối nhất)
         var outerImg = root.AddComponent<Image>();
         outerImg.color = WoodOuter;
 
@@ -213,19 +203,19 @@ public static class CreateNpcDynamicMenuPrefabs
         outerOutline.effectColor    = GoldTrim;
         outerOutline.effectDistance = new Vector2(3f, -3f);
 
-        // ── Frame gỗ (nền chính) ──────────────────────────────────────
+        // Frame gỗ (nền chính)
         var frame = NewUIGO("WoodFrame", root.transform);
         AnchorRect(frame, 0.025f, 0.015f, 0.975f, 0.985f);
         var frameImg = frame.AddComponent<Image>();
         frameImg.color = WoodFrame;
 
-        // ── Inner gỗ sáng ──────────────────────────────────────────────
+        // Inner gỗ sáng
         var inner = NewUIGO("WoodInner", root.transform);
         AnchorRect(inner, 0.04f, 0.025f, 0.96f, 0.97f);
         var innerImg = inner.AddComponent<Image>();
         innerImg.color = WoodInner;
 
-        // ── Header bar (tối, tiêu đề NPC) ────────────────────────────
+        // Header bar (tối, tiêu đề NPC)
         var header = NewUIGO("HeaderBar", root.transform);
         AnchorRect(header, 0.04f, 0.88f, 0.96f, 0.97f);
         var headerImg = header.AddComponent<Image>();
@@ -266,14 +256,14 @@ public static class CreateNpcDynamicMenuPrefabs
         titleTmp.alignment = TextAlignmentOptions.MidlineLeft;
         titleTmp.raycastTarget = false;
 
-        // ── Đường kẻ phân cách ────────────────────────────────────────
+        // Đường kẻ phân cách
         var sepLine = NewUIGO("SeparatorLine", root.transform);
         AnchorRect(sepLine, 0.04f, 0.875f, 0.96f, 0.88f);
         var sepImg = sepLine.AddComponent<Image>();
         sepImg.color = GoldTrim;
         sepImg.raycastTarget = false;
 
-        // ── ScrollView (danh sách menu) ────────────────────────────────
+        // ScrollView (danh sách menu)
         var sv = NewUIGO("ScrollView", root.transform);
         AnchorRect(sv, 0.04f, 0.10f, 0.96f, 0.875f);
         sv.AddComponent<Image>().color = new Color(0, 0, 0, 0);
@@ -338,7 +328,7 @@ public static class CreateNpcDynamicMenuPrefabs
         scrollRect.verticalScrollbar = sb;
         scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
 
-        // ── Nút "Cáo từ" ──────────────────────────────────────────────
+        // Nút "Cáo từ"
         var btnClose = NewUIGO("BtnClose", root.transform);
         AnchorRect(btnClose, 0.20f, 0.018f, 0.80f, 0.090f);
         var btnImg = btnClose.AddComponent<Image>();
@@ -380,7 +370,7 @@ public static class CreateNpcDynamicMenuPrefabs
             decTmp.raycastTarget = false;
         }
 
-        // ── NpcDynamicMenuUI component + wire fields ──────────────────
+        // NpcDynamicMenuUI component + wire fields
         var comp = root.AddComponent<NpcDynamicMenuUI>();
         var so = new SerializedObject(comp);
         so.FindProperty("mainPanel").objectReferenceValue       = root;
@@ -399,9 +389,7 @@ public static class CreateNpcDynamicMenuPrefabs
         return ok;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // Helpers — layout
-    // ═══════════════════════════════════════════════════════════════════
 
     private static void AnchorRect(GameObject go,
         float xMin, float yMin, float xMax, float yMax,
@@ -428,10 +416,8 @@ public static class CreateNpcDynamicMenuPrefabs
 
     private static GameObject NewGO(string name) => new GameObject(name);
 
-    /// <summary>
-    /// Tạo child UI GameObject với RectTransform được add TRƯỚC khi SetParent.
-    /// Tránh lỗi MissingComponentException do Unity partial-init RT khi SetParent.
-    /// </summary>
+    // Tạo child UI GameObject với RectTransform được add TRƯỚC khi SetParent.
+    // Tránh lỗi MissingComponentException do Unity partial-init RT khi SetParent.
     private static GameObject NewUIGO(string name, Transform parent)
     {
         var go = new GameObject(name);
@@ -441,7 +427,7 @@ public static class CreateNpcDynamicMenuPrefabs
         return go;
     }
 
-    // ── Asset helpers ─────────────────────────────────────────────────
+    // Asset helpers
 
     private static void EnsureFolder(string path)
     {

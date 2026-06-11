@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Nút HUD mở / đóng LeaderboardPanel (Bảng Xếp Hạng).
-/// Gắn script này lên một Button trong Canvas HUD.
-/// Panel sẽ tự tìm trong scene; nếu không có sẽ load từ Resources.
-/// </summary>
+// Nút HUD mở / đóng LeaderboardPanel (Bảng Xếp Hạng).
+// Gắn script này lên một Button trong Canvas HUD.
+// Panel sẽ tự tìm trong scene; nếu không có sẽ load từ Resources.
 [RequireComponent(typeof(Button))]
 public class LeaderboardToggleButton : MonoBehaviour
 {
@@ -15,7 +13,6 @@ public class LeaderboardToggleButton : MonoBehaviour
 
     private Button _btn;
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Unity lifecycle
 
     private void Awake()
@@ -38,7 +35,6 @@ public class LeaderboardToggleButton : MonoBehaviour
 
     #endregion
 
-    // ─────────────────────────────────────────────────────────────────────────
     #region Click
 
     private void OnClicked()

@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Script xử lý projectile của enemy
-/// Tự động damage player khi va chạm
-/// </summary>
+// Script xử lý projectile của enemy
+// Tự động damage player khi va chạm
 [RequireComponent(typeof(Collider2D))]
 public class EnemyProjectile : MonoBehaviour
 {
@@ -26,11 +24,9 @@ public class EnemyProjectile : MonoBehaviour
     [Tooltip("Thời gian tối đa projectile tồn tại trước khi tự hủy. Đặt 0 để không tự hủy")]
     public float lifetime = 3f;
 
-    /// <summary>
-    /// MapId của enemy sinh ra projectile này.
-    /// Được set bởi EnemyAI.PrepareProjectileInstance() để chặn cross-map damage.
-    /// -999 = không biết (bỏ qua kiểm tra map).
-    /// </summary>
+    // MapId của enemy sinh ra projectile này.
+    // Được set bởi EnemyAI.PrepareProjectileInstance() để chặn cross-map damage.
+    // -999 = không biết (bỏ qua kiểm tra map).
     [HideInInspector]
     public int EnemyMapId = -999;
 

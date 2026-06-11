@@ -2,17 +2,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// SelectSecondaryGeneButton — Nút mở khoá hệ gene phụ.
-///
-/// Click → mở SecondaryGeneSelectPanel để xem thông tin cặp gene và xác nhận.
-/// Sau khi xác nhận trong panel → hệ phụ được thêm vào DB.
-/// Button sẽ disabled khi đã có hệ phụ.
-///
-/// INSPECTOR SETUP:
-///   1. Gắn script lên Button "Mở Hệ Phụ"
-///   2. (Tuỳ chọn) infoText → TMP_Text hiển thị trạng thái
-/// </summary>
+// SelectSecondaryGeneButton — Nút mở khoá hệ gene phụ.
+// Click → mở SecondaryGeneSelectPanel để xem thông tin cặp gene và xác nhận.
+// Sau khi xác nhận trong panel → hệ phụ được thêm vào DB.
+// Button sẽ disabled khi đã có hệ phụ.
+// INSPECTOR SETUP:
+// 1. Gắn script lên Button "Mở Hệ Phụ"
+// 2. (Tuỳ chọn) infoText → TMP_Text hiển thị trạng thái
 [RequireComponent(typeof(Button))]
 public class SelectSecondaryGeneButton : MonoBehaviour
 {

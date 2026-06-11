@@ -1,10 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// PlayerPickup - Nhấn phím P để nhặt tất cả item xung quanh player trong một bán kính.
-/// Gắn script này lên cùng GameObject có NetworkObject (thường là Player prefab).
-/// </summary>
+// PlayerPickup - Nhấn phím P để nhặt tất cả item xung quanh player trong một bán kính.
+// Gắn script này lên cùng GameObject có NetworkObject (thường là Player prefab).
 public class PlayerPickup : MonoBehaviour
 {
     [Header("Pickup Settings")]
@@ -36,9 +34,7 @@ public class PlayerPickup : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Tìm tất cả ItemPickup quanh player và yêu cầu nhặt
-    /// </summary>
+    // Tìm tất cả ItemPickup quanh player và yêu cầu nhặt
     private void TryPickupAround()
     {
         if (networkObject == null || NetworkManager.Singleton == null) return;

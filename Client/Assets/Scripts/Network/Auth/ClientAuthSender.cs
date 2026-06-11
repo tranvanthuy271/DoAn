@@ -2,10 +2,8 @@ using System;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Client-side: Gửi JWT token và user_id lên server sau khi connect thành công
-/// Script này chạy trên NetworkObject do server spawn (AuthSenderNetworkObjectPrefab)
-/// </summary>
+// Client-side: Gửi JWT token và user_id lên server sau khi connect thành công
+// Script này chạy trên NetworkObject do server spawn (AuthSenderNetworkObjectPrefab)
 public class ClientAuthSender : NetworkBehaviour
 {
     private static bool hasSentAuth = false;
@@ -22,10 +20,8 @@ public class ClientAuthSender : NetworkBehaviour
     // Debug: Frame counter to track Update() calls (no longer actively used)
     private static int updateFrameCount = 0;
 
-    /// <summary>
-    /// Gửi auth sau khi client connect thành công
-    /// Tạo một NetworkObject tạm thời để gửi ServerRpc ngay lập tức
-    /// </summary>
+    // Gửi auth sau khi client connect thành công
+    // Tạo một NetworkObject tạm thời để gửi ServerRpc ngay lập tức
     public static void SendAuthAfterConnection(ulong clientId)
     {
         if (hasSentAuth)
@@ -89,9 +85,7 @@ public class ClientAuthSender : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Tìm ClientAuthSender (NetworkBehaviour) trên một NetworkObject đã spawn sẵn
-    /// </summary>
+    // Tìm ClientAuthSender (NetworkBehaviour) trên một NetworkObject đã spawn sẵn
     public static ClientAuthSender FindAuthSenderInstance()
     {
         // Tìm tất cả ClientAuthSender trong scene, ưu tiên cái nào NetworkObject đã spawn
@@ -144,18 +138,14 @@ public class ClientAuthSender : NetworkBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Reset flag (để test lại)
-    /// </summary>
+    // Reset flag (để test lại)
     public static void Reset()
     {
         hasSentAuth = false;
     }
 
-    /// <summary>
-    /// Update() loop - checks for pending auth and sends when time is reached
-    /// This works where Coroutines/Invoke fail because Update() runs normally during network init
-    /// </summary>
+    // Update() loop - checks for pending auth and sends when time is reached
+    // This works where Coroutines/Invoke fail because Update() runs normally during network init
     // NOTE: This Update() method is NO LONGER USED as of the latest fix.
     // Reason: Update() only executed ONCE during Netcode connection handshake, then stopped completely.
     // Solution: SendAuthNow() is now called IMMEDIATELY without delay in SendAuthAfterConnection().
@@ -227,9 +217,7 @@ public class ClientAuthSender : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Actually send the ServerRpc - now called IMMEDIATELY (no delay)
-    /// </summary>
+    // Actually send the ServerRpc - now called IMMEDIATELY (no delay)
     public void SendAuthNow(string token, int userId, int geneSlot = 1)
     {
         Debug.Log("[ClientAuthSender] ===== SENDING SERVERRPC NOW =====");
@@ -276,7 +264,7 @@ public class ClientAuthSender : NetworkBehaviour
 
     // EVOLUTION OF SOLUTIONS:
     // 1. REMOVED: SendAuthWithDelay coroutine - failed to resume after yield during Netcode callbacks
-    // 2. REMOVED: Update() loop polling - only executed ONCE then stopped during connection phase  
+    // 2. REMOVED: Update() loop polling - only executed ONCE then stopped during connection phase
     // 3. CURRENT: SendAuthNow() called IMMEDIATELY without any delay - works reliably!
 
     // RequireOwnership = false để client có thể gọi ServerRpc trên object do server spawn (server-owned).
@@ -363,9 +351,7 @@ public class ClientAuthSender : NetworkBehaviour
     }
 }
 
-/// <summary>
-/// Helper class để retry tìm NetworkObject và gửi auth
-/// </summary>
+// Helper class để retry tìm NetworkObject và gửi auth
 public class ClientAuthRetryHelper : MonoBehaviour
 {
     private string token;

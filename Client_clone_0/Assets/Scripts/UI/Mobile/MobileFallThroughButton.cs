@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// Nút rơi xuống platform (mobile) — biểu tượng mũi tên xuống ↓.
-/// Attach vào Button RectTransform trong HUD mobile.
-/// Nhấn 1 lần → kích hoạt fall-through nếu đang đứng trên one-way platform.
-/// </summary>
+// Nút rơi xuống platform (mobile) — biểu tượng mũi tên xuống ↓.
+// Attach vào Button RectTransform trong HUD mobile.
+// Nhấn 1 lần → kích hoạt fall-through nếu đang đứng trên one-way platform.
 public class MobileFallThroughButton : MonoBehaviour, IPointerDownHandler
 {
     private void Awake()

@@ -2,21 +2,16 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
 
-/// <summary>
-/// HYBRID_METAL_WIND_GALE — "Kim Phong Thoán Thế"
-/// Phóng 12 mũi tên gió kim loại theo hình nan quạt.
-/// Mỗi mũi tên xuyên qua tối đa 3 kẻ địch.
-///
-/// ═══════════════════════════════════════════════════════════
-/// SETUP TRONG UNITY (Hybrid_Metal_Wind.prefab):
-///   1. Add component HybridMetalWindGaleSkill
-///   2. Gán arrowPrefab: prefab mũi tên (NetworkObject + Rigidbody2D + Collider2D trigger)
-///   3. skillCode  = "HYBRID_METAL_WIND_GALE"
-///   4. cooldown   = 13
-///   5. mpCost     = 55
-///   6. effectValue = 295
-/// ═══════════════════════════════════════════════════════════
-/// </summary>
+// HYBRID_METAL_WIND_GALE — "Kim Phong Thoán Thế"
+// Phóng 12 mũi tên gió kim loại theo hình nan quạt.
+// Mỗi mũi tên xuyên qua tối đa 3 kẻ địch.
+// SETUP TRONG UNITY (Hybrid_Metal_Wind.prefab):
+// 1. Add component HybridMetalWindGaleSkill
+// 2. Gán arrowPrefab: prefab mũi tên (NetworkObject + Rigidbody2D + Collider2D trigger)
+// 3. skillCode  = "HYBRID_METAL_WIND_GALE"
+// 4. cooldown   = 13
+// 5. mpCost     = 55
+// 6. effectValue = 295
 public class HybridMetalWindGaleSkill : HybridSkillBase
 {
     [Header("Gale Settings")]

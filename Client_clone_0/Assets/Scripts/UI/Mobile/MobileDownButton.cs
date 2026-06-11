@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-/// <summary>
-/// Nút di chuyển XUỐNG cho mobile (crouch / nhìn xuống).
-/// Attach vào Button "BtnDown" trên Canvas.
-/// Giữ ngón tay → vertical = -1. Thả ra → dừng.
-/// </summary>
+// Nút di chuyển XUỐNG cho mobile (crouch / nhìn xuống).
+// Attach vào Button "BtnDown" trên Canvas.
+// Giữ ngón tay → vertical = -1. Thả ra → dừng.
 public class MobileDownButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     private void Awake()

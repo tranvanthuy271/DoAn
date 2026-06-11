@@ -6,14 +6,11 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// Panel phó bản của NPC (npc_type == "dungeon").
-/// Màn hình 1 (listPanel): hiển thị dialogue + danh sách phó bản.
-/// Màn hình 2 (confirmPanel): xác nhận tham gia, hỗ trợ cả tổ đội.
-///
-/// Prefab: Assets/Prefabs/UI/DungeonNpcMenuPanel.prefab
-/// Gắn vào cùng Canvas với NpcMenuUI. Gọi DungeonNpcMenuUI.GetOrCreate() để mở.
-/// </summary>
+// Panel phó bản của NPC (npc_type == "dungeon").
+// Màn hình 1 (listPanel): hiển thị dialogue + danh sách phó bản.
+// Màn hình 2 (confirmPanel): xác nhận tham gia, hỗ trợ cả tổ đội.
+// Prefab: Assets/Prefabs/UI/DungeonNpcMenuPanel.prefab
+// Gắn vào cùng Canvas với NpcMenuUI. Gọi DungeonNpcMenuUI.GetOrCreate() để mở.
 public class DungeonNpcMenuUI : MonoBehaviour
 {
     private const string InputBlockSource = "DungeonNpcMenuUI";
@@ -22,7 +19,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
 
     public static DungeonNpcMenuUI Instance { get; private set; }
 
-    // ── List panel (màn hình 1) ───────────────────────────────
+    // List panel (màn hình 1)
     [Header("List Panel")]
     [SerializeField] private GameObject listPanel;
     [SerializeField] private TMP_Text   greetingText;       // "Xin chào {tên nhân vật}"
@@ -30,7 +27,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
     [SerializeField] private GameObject dungeonEntryPrefab; // DungeonNpcMenuEntryPrefab
     [SerializeField] private Button     btnCloseList;       // "Cáo từ"
 
-    // ── Confirm panel (màn hình 2) ────────────────────────────
+    // Confirm panel (màn hình 2)
     [Header("Confirm Panel")]
     [SerializeField] private GameObject confirmPanel;
     [SerializeField] private TMP_Text   confirmInfoText;    // "Hãy tập hợp tất cả đồng đội..."
@@ -47,7 +44,6 @@ public class DungeonNpcMenuUI : MonoBehaviour
     private bool _initialized;
     private bool _loggedRuntimeEntryFallback;
 
-    // ─────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -99,9 +95,9 @@ public class DungeonNpcMenuUI : MonoBehaviour
         }
     }
 
-    // ── Public API ────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
-    /// <summary>Mở danh sách phó bản từ NPC. Gọi từ NpcMenuUI khi npc_type=="dungeon".</summary>
+    // Mở danh sách phó bản từ NPC. Gọi từ NpcMenuUI khi npc_type=="dungeon".
     public void Open(NpcData npc)
     {
         EnsureInit();
@@ -136,7 +132,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         _loadCoroutine = StartCoroutine(LoadAndRenderDungeons());
     }
 
-    /// <summary>Hiển thị màn hình xác nhận cho dungeon đã chọn.</summary>
+    // Hiển thị màn hình xác nhận cho dungeon đã chọn.
     public void ShowConfirm(DungeonConfigData config)
     {
         EnsureInit();
@@ -186,7 +182,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         InputManager.Instance?.SetGameplayInputBlocked(InputBlockSource, false);
     }
 
-    // ── Internal ──────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
     private void BackToList()
     {
@@ -264,10 +260,8 @@ public class DungeonNpcMenuUI : MonoBehaviour
         Close();
     }
 
-    /// <summary>
-    /// Kiểm tra tất cả thành viên online trong tổ đội có cùng mapId và zoneId với local player.
-    /// Trả về tên thành viên đầu tiên không cùng zone, hoặc null nếu tất cả OK.
-    /// </summary>
+    // Kiểm tra tất cả thành viên online trong tổ đội có cùng mapId và zoneId với local player.
+    // Trả về tên thành viên đầu tiên không cùng zone, hoặc null nếu tất cả OK.
     private static string FindMemberNotInSameZone(PartyManager partyManager)
     {
         var partyMembers  = partyManager.CurrentParty?.members;
@@ -360,7 +354,7 @@ public class DungeonNpcMenuUI : MonoBehaviour
         }
     }
 
-    // ── Static factory (fallback tìm trong scene) ─────────────
+    // Static factory (fallback tìm trong scene)
 
     public static DungeonNpcMenuUI GetOrCreate()
     {

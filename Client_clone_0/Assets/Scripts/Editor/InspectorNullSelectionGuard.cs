@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using UnityEditor;
 
-/// <summary>
-/// Prevents Unity's built-in Inspector from trying to create editors for destroyed selection targets.
-/// This avoids SerializedObjectNotCreatableException when a selected runtime UI object is destroyed
-/// during play mode transitions or singleton cleanup.
-/// </summary>
+// Prevents Unity's built-in Inspector from trying to create editors for destroyed selection targets.
+// This avoids SerializedObjectNotCreatableException when a selected runtime UI object is destroyed
+// during play mode transitions or singleton cleanup.
 [InitializeOnLoad]
 internal static class InspectorNullSelectionGuard
 {

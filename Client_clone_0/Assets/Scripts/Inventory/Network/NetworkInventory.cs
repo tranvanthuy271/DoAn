@@ -4,10 +4,8 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.Events;
 
-/// <summary>
-/// NetworkInventory - Hệ thống túi đồ với network synchronization
-/// Sử dụng NetworkVariable để sync inventory giữa các clients
-/// </summary>
+// NetworkInventory - Hệ thống túi đồ với network synchronization
+// Sử dụng NetworkVariable để sync inventory giữa các clients
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkInventory : NetworkBehaviour
 {
@@ -111,7 +109,7 @@ public class NetworkInventory : NetworkBehaviour
         OnInventoryChanged?.Invoke();
     }
 
-    /// <summary>Wrapper cho JSON serialization mảng InventoryItem qua RPC.</summary>
+    // Wrapper cho JSON serialization mảng InventoryItem qua RPC.
     [System.Serializable]
     public class InventoryJsonWrapper
     {
@@ -122,10 +120,8 @@ public class NetworkInventory : NetworkBehaviour
         public BagEquippedItemData[] bag_equipped_items;
     }
 
-    /// <summary>
-    /// Client gọi lên host để yêu cầu dữ liệu inventory.
-    /// Host fetch DB rồi gửi JSON về đúng client đó qua SendInventoryDataClientRpc.
-    /// </summary>
+    // Client gọi lên host để yêu cầu dữ liệu inventory.
+    // Host fetch DB rồi gửi JSON về đúng client đó qua SendInventoryDataClientRpc.
     [ServerRpc(RequireOwnership = false)]
     public void RequestInventoryDataServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -147,10 +143,8 @@ public class NetworkInventory : NetworkBehaviour
         StartCoroutine(PushInventoryDataToClientDirect(playerId, capturedClientId));
     }
 
-    /// <summary>
-    /// Client gọi lên host để yêu cầu sắp xếp inventory (gom item về phía trước).
-    /// Host sort DB → fetch lại dữ liệu mới → gửi về đúng client đó qua SendInventoryDataClientRpc.
-    /// </summary>
+    // Client gọi lên host để yêu cầu sắp xếp inventory (gom item về phía trước).
+    // Host sort DB → fetch lại dữ liệu mới → gửi về đúng client đó qua SendInventoryDataClientRpc.
     [ServerRpc(RequireOwnership = false)]
     public void RequestSortInventoryServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -171,10 +165,8 @@ public class NetworkInventory : NetworkBehaviour
         StartCoroutine(SortInventoryDirect(playerId, capturedClientId));
     }
 
-    /// <summary>
-    /// Host gửi JSON inventory về đúng client đã yêu cầu.
-    /// InventoryNetworkBridge phía client nhận và cập nhật cache + UI.
-    /// </summary>
+    // Host gửi JSON inventory về đúng client đã yêu cầu.
+    // InventoryNetworkBridge phía client nhận và cập nhật cache + UI.
     [ClientRpc]
     public void SendInventoryDataClientRpc(string inventoryJson, ClientRpcParams rpcParams = default)
     {
@@ -192,9 +184,7 @@ public class NetworkInventory : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    /// <summary>
-    /// Callback khi NetworkVariable thay đổi
-    /// </summary>
+    // Callback khi NetworkVariable thay đổi
     private void OnInventoryDataChanged(NetworkInventoryData oldData, NetworkInventoryData newData)
     {
         VerboseLog($"[NetworkInventory] OnInventoryDataChanged IsServer={IsServer}, IsClient={IsClient}, IsOwner={IsOwner}");
@@ -215,9 +205,7 @@ public class NetworkInventory : NetworkBehaviour
         VerboseLog("[NetworkInventory] OnInventoryChanged invoked.");
     }
 
-    /// <summary>
-    /// Deserialize NetworkInventoryData thành local dictionary
-    /// </summary>
+    // Deserialize NetworkInventoryData thành local dictionary
     private void DeserializeInventory(NetworkInventoryData data)
     {
         localInventory.Clear();
@@ -241,9 +229,7 @@ public class NetworkInventory : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ServerRpc: Thêm item vào inventory
-    /// </summary>
+    // ServerRpc: Thêm item vào inventory
     [ServerRpc(RequireOwnership = false)]
     public void AddItemServerRpc(int itemID, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -366,9 +352,7 @@ public class NetworkInventory : NetworkBehaviour
         return false;
     }
 
-    /// <summary>
-    /// ServerRpc: Xóa item khỏi inventory
-    /// </summary>
+    // ServerRpc: Xóa item khỏi inventory
     [ServerRpc(RequireOwnership = false)]
     public void RemoveItemServerRpc(int slotIndex, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -409,10 +393,8 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] Removed {quantity}x from slot {slotIndex}");
     }
 
-    /// <summary>
-    /// ServerRpc: Sử dụng item (consumable) — NGO-only path, giảm NGO cache inventory.
-    /// Dùng khi KHÔNG có REST API (testing/offline). Production dùng ApplyConsumableStatServerRpc.
-    /// </summary>
+    // ServerRpc: Sử dụng item (consumable) — NGO-only path, giảm NGO cache inventory.
+    // Dùng khi KHÔNG có REST API (testing/offline). Production dùng ApplyConsumableStatServerRpc.
     [ServerRpc(RequireOwnership = false)]
     public void UseItemServerRpc(int slotIndex, ServerRpcParams rpcParams = default)
     {
@@ -458,10 +440,8 @@ public class NetworkInventory : NetworkBehaviour
         OnItemRemovedClientRpc(slotIndex, oldQuantity, slot.quantity);
     }
 
-    /// <summary>
-    /// ServerRpc: Áp dụng heal tick mỗi giây từ HpRestoreOverTime / MpRestoreOverTime buff.
-    /// Gọi từ InventoryNetworkBridge khi ActiveBuffManager.OnHealTick fire.
-    /// </summary>
+    // ServerRpc: Áp dụng heal tick mỗi giây từ HpRestoreOverTime / MpRestoreOverTime buff.
+    // Gọi từ InventoryNetworkBridge khi ActiveBuffManager.OnHealTick fire.
     [ServerRpc(RequireOwnership = false)]
     public void ApplyHealTickServerRpc(int hpHeal, int mpHeal, ServerRpcParams rpcParams = default)
     {
@@ -482,10 +462,8 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] 💉 Heal tick: +{hpHeal} HP / +{mpHeal} MP");
     }
 
-    /// <summary>
-    /// ServerRpc: Đặt HP/MP về giá trị chính xác từ REST API (server-authoritative).
-    /// Gọi từ ItemUseHandler sau khi sử dụng item hồi phục HP/MP tức thì.
-    /// </summary>
+    // ServerRpc: Đặt HP/MP về giá trị chính xác từ REST API (server-authoritative).
+    // Gọi từ ItemUseHandler sau khi sử dụng item hồi phục HP/MP tức thì.
     [ServerRpc(RequireOwnership = false)]
     public void ApplySyncHpMpServerRpc(int syncHp, int syncMp, ServerRpcParams rpcParams = default)
     {
@@ -502,10 +480,8 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] ✅ Sync HP={syncHp} MP={syncMp} từ REST API");
     }
 
-    /// <summary>
-    /// ServerRpc: CHỈ áp dụng stat effect (HP/MP) của consumable — KHÔNG giảm inventory.
-    /// Gọi sau khi REST API đã persist việc tiêu thụ item lên DB.
-    /// </summary>
+    // ServerRpc: CHỈ áp dụng stat effect (HP/MP) của consumable — KHÔNG giảm inventory.
+    // Gọi sau khi REST API đã persist việc tiêu thụ item lên DB.
     [ServerRpc(RequireOwnership = false)]
     public void ApplyConsumableStatServerRpc(int templateId, ServerRpcParams rpcParams = default)
     {
@@ -530,11 +506,9 @@ public class NetworkInventory : NetworkBehaviour
         ApplyItemEffect(templateId, itemType, rpcParams.Receive.SenderClientId);
     }
 
-    /// <summary>
-    /// Áp dụng HP/MP heal lên player. Chạy trên server.
-    /// Với consumable type 22 (HP) / 23 (MP) – dùng giá trị từ ItemData ScriptableObject.
-    /// Với type 24 (timed buff) – chỉ notify client; timed buff quản lý bởi ActiveBuffManager.
-    /// </summary>
+    // Áp dụng HP/MP heal lên player. Chạy trên server.
+    // Với consumable type 22 (HP) / 23 (MP) – dùng giá trị từ ItemData ScriptableObject.
+    // Với type 24 (timed buff) – chỉ notify client; timed buff quản lý bởi ActiveBuffManager.
     private void ApplyItemEffect(int itemID, int itemType, ulong senderClientId)
     {
         var itemData     = ItemManager.Instance != null ? ItemManager.Instance.GetItemData(itemID) : null;
@@ -582,11 +556,9 @@ public class NetworkInventory : NetworkBehaviour
         OnItemUsedClientRpc(itemID, clientParams);
     }
 
-    /// <summary>
-    /// ServerRpc: Cập nhật % bonus buff vào NetworkPlayerDataSync.
-    /// Gọi sau khi client nhận active_buffs từ REST API và muốn sync lên NGO.
-    /// geneExpBonusPct, expBonusPct, phucBonusPct, attackBonusPct, defenseBonusPct = tổng % (sum của tất cả buff đang active cùng loại).
-    /// </summary>
+    // ServerRpc: Cập nhật % bonus buff vào NetworkPlayerDataSync.
+    // Gọi sau khi client nhận active_buffs từ REST API và muốn sync lên NGO.
+    // geneExpBonusPct, expBonusPct, phucBonusPct, attackBonusPct, defenseBonusPct = tổng % (sum của tất cả buff đang active cùng loại).
     [ServerRpc(RequireOwnership = false)]
     public void SyncBuffBonusesServerRpc(int geneExpBonusPct, int expBonusPct, int phucBonusPct,
                                           int attackBonusPct, int defenseBonusPct,
@@ -603,9 +575,7 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] 🎯 Sync buff bonuses: GeneEXP+{geneExpBonusPct}% EXP+{expBonusPct}% Phuc+{phucBonusPct}% ATK+{attackBonusPct}% DEF+{defenseBonusPct}%");
     }
 
-    /// <summary>
-    /// ClientRpc: Notify về item được thêm
-    /// </summary>
+    // ClientRpc: Notify về item được thêm
     [ClientRpc]
     private void OnItemAddedClientRpc(int itemID, int quantity)
     {
@@ -618,9 +588,7 @@ public class NetworkInventory : NetworkBehaviour
         OnInventoryChanged?.Invoke();
     }
 
-    /// <summary>
-    /// ClientRpc: Notify về item bị xóa
-    /// </summary>
+    // ClientRpc: Notify về item bị xóa
     [ClientRpc]
     private void OnItemRemovedClientRpc(int slotIndex, int oldQuantity, int newQuantity)
     {
@@ -631,9 +599,7 @@ public class NetworkInventory : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// ClientRpc: Notify về item được sử dụng
-    /// </summary>
+    // ClientRpc: Notify về item được sử dụng
     [ClientRpc]
     private void OnItemUsedClientRpc(int itemID, ClientRpcParams clientRpcParams = default)
     {
@@ -641,9 +607,7 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] Item {itemID} được sử dụng");
     }
 
-    /// <summary>
-    /// Lấy ItemTemplateDto từ ItemID (dùng ItemTemplateManager mới)
-    /// </summary>
+    // Lấy ItemTemplateDto từ ItemID (dùng ItemTemplateManager mới)
     private ItemTemplateDto GetItemTemplate(int itemID)
     {
         if (ItemTemplateManager.Instance == null)
@@ -675,7 +639,7 @@ public class NetworkInventory : NetworkBehaviour
         return template;
     }
 
-    // Public API
+    // Hàm public để script hoặc hệ thống khác gọi vào.
     public void AddItem(int itemID, int quantity)
     {
         if (IsServer)
@@ -784,10 +748,8 @@ public class NetworkInventory : NetworkBehaviour
         return expanded;
     }
 
-    /// <summary>
-    /// Lấy raw slot data từ NetworkVariable (không cần ItemData ScriptableObject)
-    /// Dùng khi ItemData chưa được load hoặc không tồn tại
-    /// </summary>
+    // Lấy raw slot data từ NetworkVariable (không cần ItemData ScriptableObject)
+    // Dùng khi ItemData chưa được load hoặc không tồn tại
     public InventorySlotData GetRawSlotData(int slotIndex)
     {
         var data = networkInventoryData.Value;
@@ -798,11 +760,9 @@ public class NetworkInventory : NetworkBehaviour
         return data.slotData[slotIndex];
     }
 
-    /// <summary>
-    /// ServerRpc: Thêm item vào inventory VÀ sync với DB (1 item riêng lẻ)
-    /// ⚠️ KHÔNG dùng khi thêm nhiều items cùng lúc → sẽ bị race condition!
-    /// Dùng AddItemWithoutDBSyncServerRpc + SyncBatchToDB thay thế.
-    /// </summary>
+    // ServerRpc: Thêm item vào inventory VÀ sync với DB (1 item riêng lẻ)
+    // ⚠️ KHÔNG dùng khi thêm nhiều items cùng lúc → sẽ bị race condition!
+    // Dùng AddItemWithoutDBSyncServerRpc + SyncBatchToDB thay thế.
     [ServerRpc(RequireOwnership = false)]
     public void AddItemWithDBSyncServerRpc(int itemTemplateId, string itemCode, string iconId, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -819,10 +779,8 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] ✅ AddItemWithDBSyncServerRpc hoàn thành!");
     }
 
-    /// <summary>
-    /// ServerRpc: Thêm item vào NetworkVariable KHÔNG sync DB.
-    /// Dùng khi cần thêm nhiều items rồi batch sync 1 lần sau.
-    /// </summary>
+    // ServerRpc: Thêm item vào NetworkVariable KHÔNG sync DB.
+    // Dùng khi cần thêm nhiều items rồi batch sync 1 lần sau.
     [ServerRpc(RequireOwnership = false)]
     public void AddItemWithoutDBSyncServerRpc(int itemTemplateId, string itemCode, string iconId, int quantity, ServerRpcParams rpcParams = default)
     {
@@ -833,9 +791,7 @@ public class NetworkInventory : NetworkBehaviour
         Debug.Log($"[NetworkInventory] ✅ AddItemWithoutDBSyncServerRpc hoàn thành!");
     }
 
-    /// <summary>
-    /// Helper: Thêm item vào NetworkVariable (không sync DB)
-    /// </summary>
+    // Helper: Thêm item vào NetworkVariable (không sync DB)
     private void AddItemToNetworkVariable(int itemTemplateId, string itemCode, string iconId, int quantity)
     {
         var currentData = networkInventoryData.Value;
@@ -882,9 +838,7 @@ public class NetworkInventory : NetworkBehaviour
         OnItemAddedClientRpc(itemID, quantity);
     }
 
-    /// <summary>
-    /// Sync inventory với DB qua HTTP API
-    /// </summary>
+    // Sync inventory với DB qua HTTP API
     private void SyncInventoryToDB(int itemTemplateId, string itemCode, string iconId, int quantity)
     {
         int playerId = ResolveInventoryApiPlayerId(OwnerClientId);
@@ -918,9 +872,7 @@ public class NetworkInventory : NetworkBehaviour
         StartCoroutine(SyncInventoryToApiDirect(playerId, items, clientJwt, OwnerClientId));
     }
 
-    /// <summary>
-    /// Load inventory từ DB khi player spawn
-    /// </summary>
+    // Load inventory từ DB khi player spawn
     private void LoadInventoryFromDB()
     {
         if (!IsServer)
@@ -976,6 +928,17 @@ public class NetworkInventory : NetworkBehaviour
         }
 
         return 0;
+    }
+
+    private int ResolveInventoryGeneSlot(ulong clientId)
+    {
+        if (ZonePlayerSessionManager.Instance != null)
+        {
+            int slot = ZonePlayerSessionManager.Instance.GetClientGeneSlot(clientId);
+            if (slot == 2) return 2;
+        }
+
+        return PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1) == 2 ? 2 : 1;
     }
 
     private string ResolveClientJwt(ulong clientId)
@@ -1063,6 +1026,7 @@ public class NetworkInventory : NetworkBehaviour
     {
         yield return FetchPlayerDataFromApiDirect(
             playerId,
+            ResolveInventoryGeneSlot(targetClientId),
             freshItems =>
             {
                 string json = JsonUtility.ToJson(new InventoryJsonWrapper
@@ -1084,11 +1048,12 @@ public class NetworkInventory : NetworkBehaviour
         );
     }
 
-    private IEnumerator FetchPlayerDataFromApiDirect(int playerId, System.Action<PlayerDataResponse> onSuccess, System.Action<string> onError = null)
+    private IEnumerator FetchPlayerDataFromApiDirect(int playerId, int geneSlot, System.Action<PlayerDataResponse> onSuccess, System.Action<string> onError = null)
     {
         string apiBase = ZoneRoomRegistry.Instance?.Config?.apiBaseUrl ?? ServerAddressConfig.Instance.ApiUrl;
         string apiKey  = ZoneRoomRegistry.Instance?.Config?.GetZoneApiKey() ?? "dev-zone-key";
-        string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/data";
+        string endpoint = geneSlot == 2 ? "data2" : "data";
+        string url = $"{apiBase.TrimEnd('/')}/player/{playerId}/{endpoint}";
 
         using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
         req.SetRequestHeader("X-Zone-Api-Key", apiKey);
@@ -1118,17 +1083,17 @@ public class NetworkInventory : NetworkBehaviour
     {
         yield return FetchPlayerDataFromApiDirect(
             playerId,
+            ResolveInventoryGeneSlot(OwnerClientId),
             response => onSuccess?.Invoke(response?.inventory ?? System.Array.Empty<InventoryItem>()),
             onError);
     }
 
-    /// <summary>
-    /// Fallback cho dedicated server: gọi API trực tiếp khi APIClient.Instance null.
-    /// </summary>
+    // Fallback cho dedicated server: gọi API trực tiếp khi APIClient.Instance null.
     private IEnumerator LoadInventoryFromApiDirect(int playerId)
     {
         yield return FetchPlayerDataFromApiDirect(
             playerId,
+            ResolveInventoryGeneSlot(OwnerClientId),
             response =>
             {
                 InventoryItem[] items = response?.inventory ?? System.Array.Empty<InventoryItem>();
@@ -1139,9 +1104,7 @@ public class NetworkInventory : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// Rebuild Netcode inventory from DB data using the player's current bag slot limit.
-    /// </summary>
+    // Rebuild Netcode inventory from DB data using the player's current bag slot limit.
     private void PopulateInventoryFromDB(InventoryItem[] dbItems, int bagSlots)
     {
         if (!IsServer) return;
@@ -1182,9 +1145,7 @@ public class NetworkInventory : NetworkBehaviour
     }
 }
 
-/// <summary>
-/// Struct để lưu trữ dữ liệu inventory trên network
-/// </summary>
+// Struct để lưu trữ dữ liệu inventory trên network
 [System.Serializable]
 public struct NetworkInventoryData : INetworkSerializable
 {
@@ -1199,9 +1160,7 @@ public struct NetworkInventoryData : INetworkSerializable
     }
 }
 
-/// <summary>
-/// Struct để lưu trữ thông tin slot trên network
-/// </summary>
+// Struct để lưu trữ thông tin slot trên network
 [System.Serializable]
 public struct InventorySlotData : INetworkSerializable
 {
@@ -1215,9 +1174,7 @@ public struct InventorySlotData : INetworkSerializable
     }
 }
 
-/// <summary>
-/// Class để lưu trữ thông tin slot local
-/// </summary>
+// Class để lưu trữ thông tin slot local
 [System.Serializable]
 public class InventorySlot
 {

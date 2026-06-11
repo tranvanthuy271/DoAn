@@ -1,14 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// Singleton client-side cache cho skill data của player.
-///
-/// Flow:
-///   1. Server gọi PushSkillsToClient() ngay sau khi spawn player.
-///   2. Client nhận qua OnInitialSkillsReceived → cache ở đây.
-///   3. SkillTabUI đọc từ cache thay vì gọi GetPlayerSkillsServerRpc() mỗi lần mở tab.
-///   4. Sau khi nâng skill, SkillTabUI invalidate cache → gọi RPC → OnSkillsReceived cập nhật lại.
-/// </summary>
+// Singleton client-side cache cho skill data của player.
+// Flow:
+// 1. Server gọi PushSkillsToClient() ngay sau khi spawn player.
+// 2. Client nhận qua OnInitialSkillsReceived → cache ở đây.
+// 3. SkillTabUI đọc từ cache thay vì gọi GetPlayerSkillsServerRpc() mỗi lần mở tab.
+// 4. Sau khi nâng skill, SkillTabUI invalidate cache → gọi RPC → OnSkillsReceived cập nhật lại.
 public class PlayerSkillCache : UnityEngine.MonoBehaviour
 {
     public static PlayerSkillCache Instance { get; private set; }
@@ -87,7 +84,7 @@ public class PlayerSkillCache : UnityEngine.MonoBehaviour
         }
     }
 
-    /// <summary>Xóa cache — gọi khi logout hoặc cần force-reload.</summary>
+    // Xóa cache — gọi khi logout hoặc cần force-reload.
     public void Invalidate()
     {
         CachedData = null;

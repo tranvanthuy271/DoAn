@@ -2,24 +2,20 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// EnemyInfoPanel — Panel hiển thị thông số enemy khi player click chọn.
-/// Singleton — gắn vào một Panel trong Scene Canvas (Screen Space - Overlay).
-///
-/// Layout (theo ảnh tham khảo):
-///   ┌─────────────────────────────┐
-///   │  Linh dương Topi            │  ← nameText
-///   ├─────────────────────────────┤
-///   │ [Thổ]  [═══HP BAR═══]       │  ← elementText  +  hpSlider
-///   │         48140 / 48140       │  ← hpText
-///   │   Lv: 52 + 28045 Exp        │  ← levelExpText
-///   └─────────────────────────────┘
-///
-/// Setup trong Unity Editor:
-///   1. Tạo Panel trong Canvas chính (Screen Space - Overlay).
-///   2. Gắn script này lên Panel root.
-///   3. Kéo các Text/Slider vào fields.
-/// </summary>
+// EnemyInfoPanel — Panel hiển thị thông số enemy khi player click chọn.
+// Singleton — gắn vào một Panel trong Scene Canvas (Screen Space - Overlay).
+// Layout (theo ảnh tham khảo):
+// ┌─────────────────────────────┐
+// Linh dương Topi            │  ← nameText
+// ├─────────────────────────────┤
+// [Thổ]  [═══HP BAR═══]       │  ← elementText  +  hpSlider
+// 48140 / 48140       │  ← hpText
+// Lv: 52 + 28045 Exp        │  ← levelExpText
+// └─────────────────────────────┘
+// Setup trong Unity Editor:
+// 1. Tạo Panel trong Canvas chính (Screen Space - Overlay).
+// 2. Gắn script này lên Panel root.
+// 3. Kéo các Text/Slider vào fields.
 public class EnemyInfoPanel : MonoBehaviour
 {
     public static EnemyInfoPanel Instance { get; private set; }
@@ -43,7 +39,6 @@ public class EnemyInfoPanel : MonoBehaviour
     [Header("Stacking")]
     [SerializeField] private int sortingOrder = 1;
 
-    // ─────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
@@ -53,9 +48,7 @@ public class EnemyInfoPanel : MonoBehaviour
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Public API
-    // ─────────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public void Show(EnemyStats stats)
     {
@@ -80,7 +73,7 @@ public class EnemyInfoPanel : MonoBehaviour
         }
     }
 
-    /// <summary>Cập nhật HP realtime khi enemy bị đánh (gọi từ EnemyClickHandler.RefreshPanelIfSelected).</summary>
+    // Cập nhật HP realtime khi enemy bị đánh (gọi từ EnemyClickHandler.RefreshPanelIfSelected).
     public void UpdateHP(int current, int max)
     {
         if (hpText != null)
@@ -112,7 +105,6 @@ public class EnemyInfoPanel : MonoBehaviour
         group.interactable = false;
     }
 
-    // ─────────────────────────────────────────────────────────────────
 
     private static string TranslateElement(string element)
     {

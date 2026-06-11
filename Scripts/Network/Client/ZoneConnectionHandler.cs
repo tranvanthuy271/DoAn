@@ -6,16 +6,12 @@ using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Client-side: quản lý toàn bộ vòng đời kết nối đến zone server.
-///
-/// Trách nhiệm:
-///   - Kết nối lần đầu (sau Login)
-///   - Nhận lệnh zone transfer từ ZoneTransitionManager (qua ClientRpc)
-///   - Ngắt kết nối zone cũ → kết nối zone mới (Shutdown → StartClient)
-///
-/// Gắn vào: persistent GameObject "NetworkClient" (DontDestroyOnLoad từ LoginScene).
-/// </summary>
+// Client-side: quản lý toàn bộ vòng đời kết nối đến zone server.
+// Trách nhiệm:
+// - Kết nối lần đầu (sau Login)
+// - Nhận lệnh zone transfer từ ZoneTransitionManager (qua ClientRpc)
+// - Ngắt kết nối zone cũ → kết nối zone mới (Shutdown → StartClient)
+// Gắn vào: persistent GameObject "NetworkClient" (DontDestroyOnLoad từ LoginScene).
 [DisallowMultipleComponent]
 public class ZoneConnectionHandler : MonoBehaviour
 {
@@ -31,7 +27,7 @@ public class ZoneConnectionHandler : MonoBehaviour
     // Thông tin zone kế tiếp (dùng sau khi scene load xong)
     private PendingZoneTransfer _pendingTransfer;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -49,15 +45,13 @@ public class ZoneConnectionHandler : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // ── Public: Initial Connect ───────────────────────────────────────────────
+    // Public: Initial Connect
 
-    /// <summary>
-    /// Kết nối ban đầu sau Login. Gọi từ MainSceneNetworkInitializer.
-    /// </summary>
-    /// <param name="ip">IP của zone server đầu tiên (spawn zone)</param>
-    /// <param name="port">Port của zone server đầu tiên</param>
-    /// <param name="jwt">JWT token từ PlayerPrefs</param>
-    /// <param name="entryPointId">Entry point index (0 = default)</param>
+    // Kết nối ban đầu sau Login. Gọi từ MainSceneNetworkInitializer.
+    // Tham số ip: IP của zone server đầu tiên (spawn zone)
+    // Tham số port: Port của zone server đầu tiên
+    // Tham số jwt: JWT token từ PlayerPrefs
+    // Tham số entryPointId: Entry point index (0 = default)
     public void ConnectToZone(string ip, ushort port, string jwt, int entryPointId = 0)
     {
         if (_isTransferring)
@@ -68,11 +62,9 @@ public class ZoneConnectionHandler : MonoBehaviour
         StartCoroutine(ConnectRoutine(ip, port, jwt, entryPointId, sceneName: null));
     }
 
-    // ── Called by ZoneTransitionManager via ClientRpc ─────────────────────────
+    // Called by ZoneTransitionManager via ClientRpc
 
-    /// <summary>
-    /// Gọi bởi ZoneTransitionManager.BeginZoneTransferClientRpc().
-    /// </summary>
+    // Gọi bởi ZoneTransitionManager.BeginZoneTransferClientRpc().
     public void HandleZoneTransfer(string newIp, ushort newPort, int entryPointId, string targetSceneName)
     {
         if (_isTransferring)
@@ -85,7 +77,7 @@ public class ZoneConnectionHandler : MonoBehaviour
         StartCoroutine(TransferRoutine(newIp, newPort, entryPointId, targetSceneName));
     }
 
-    // ── Internal Routines ─────────────────────────────────────────────────────
+    // Internal Routines
 
     private IEnumerator TransferRoutine(string newIp, ushort newPort, int entryPointId, string targetSceneName)
     {
@@ -204,7 +196,7 @@ public class ZoneConnectionHandler : MonoBehaviour
     private static string EscapeJson(string s) =>
         s?.Replace("\\", "\\\\").Replace("\"", "\\\"") ?? "";
 
-    // ── Inner type ────────────────────────────────────────────────────────────
+    // Inner type
 
     private struct PendingZoneTransfer
     {
@@ -215,9 +207,7 @@ public class ZoneConnectionHandler : MonoBehaviour
     }
 }
 
-/// <summary>
-/// Stub cho Loading UI — tạo MonoBehaviour thật trong dự án và implement interface này.
-/// </summary>
+// Stub cho Loading UI — tạo MonoBehaviour thật trong dự án và implement interface này.
 public class ZoneTransitionUI : MonoBehaviour
 {
     public static ZoneTransitionUI Instance { get; private set; }

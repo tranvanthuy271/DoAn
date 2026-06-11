@@ -2,19 +2,15 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
 
-/// <summary>
-/// InventoryTestManager - Quản lý test thêm item vào inventory bằng phím Q
-/// 
-/// Chức năng:
-/// - Khi nhấn phím Q, tự động thêm các item có sẵn trong data vào túi
-/// - Gửi request lên host để host update lên DB
-/// - Hỗ trợ cả Host và Client
-/// 
-/// Setup:
-/// 1. Gắn script này vào GameObject trong scene (có thể cùng với NetworkManager)
-/// 2. Gán các item template trong Inspector (các item mẫu để test)
-/// 3. Ấn Q trong game để test
-/// </summary>
+// InventoryTestManager - Quản lý test thêm item vào inventory bằng phím Q
+// Chức năng:
+// - Khi nhấn phím Q, tự động thêm các item có sẵn trong data vào túi
+// - Gửi request lên host để host update lên DB
+// - Hỗ trợ cả Host và Client
+// Setup:
+// 1. Gắn script này vào GameObject trong scene (có thể cùng với NetworkManager)
+// 2. Gán các item template trong Inspector (các item mẫu để test)
+// 3. Ấn Q trong game để test
 public class InventoryTestManager : MonoBehaviour
 {
     [Header("Test Items Configuration")]
@@ -68,9 +64,7 @@ public class InventoryTestManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Xử lý khi phím test được nhấn
-    /// </summary>
+    // Xử lý khi phím test được nhấn
     private void OnTestKeyPressed()
     {
         if (enableDebugLog)
@@ -97,9 +91,7 @@ public class InventoryTestManager : MonoBehaviour
         AddTestItemsToInventory(networkInventory);
     }
 
-    /// <summary>
-    /// Thêm các test items vào inventory
-    /// </summary>
+    // Thêm các test items vào inventory
     private void AddTestItemsToInventory(NetworkInventory inventory)
     {
         if (testItems == null || testItems.Count == 0)
@@ -140,9 +132,7 @@ public class InventoryTestManager : MonoBehaviour
         StartCoroutine(SyncInventoryToDBAfterDelay(testItems));
     }
 
-    /// <summary>
-    /// Lấy GameObject của local player
-    /// </summary>
+    // Lấy GameObject của local player
     private GameObject GetLocalPlayerObject()
     {
         if (NetworkManager.Singleton == null)
@@ -201,9 +191,7 @@ public class InventoryTestManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Coroutine để sync inventory với DB sau một khoảng delay (tránh race condition)
-    /// </summary>
+    // Coroutine để sync inventory với DB sau một khoảng delay (tránh race condition)
     private System.Collections.IEnumerator SyncInventoryToDBAfterDelay(List<TestItemData> items)
     {
         // Đợi 1 giây để đảm bảo tất cả items đã được add vào NetworkInventory
@@ -256,9 +244,7 @@ public class InventoryTestManager : MonoBehaviour
             Debug.LogError($"[InventoryTestManager] \u274c L\u1ed7i khi sync DB: {req.error}");
     }
 
-    /// <summary>
-    /// Thêm test item thủ công (gọi từ Button UI nếu cần)
-    /// </summary>
+    // Thêm test item thủ công (gọi từ Button UI nếu cần)
     public void AddSingleTestItem(int index)
     {
         if (testItems == null || index < 0 || index >= testItems.Count)
@@ -293,9 +279,7 @@ public class InventoryTestManager : MonoBehaviour
     }
 }
 
-/// <summary>
-/// Data class cho test item
-/// </summary>
+// Data class cho test item
 [System.Serializable]
 public class TestItemData
 {

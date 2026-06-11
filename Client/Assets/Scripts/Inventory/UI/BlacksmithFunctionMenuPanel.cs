@@ -3,32 +3,28 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-/// <summary>
-/// BlacksmithFunctionMenuPanel
-///
-/// CÁCH CHUYỂN SANG PREFAB (làm một lần trong Unity Editor):
-///   1. Tạo một GameObject rỗng trong scene, đặt tên "BlacksmithFunctionMenuCanvas".
-///   2. Gắn component này lên GameObject đó.
-///   3. Trong Inspector → chuột phải vào tên component → "Tạo UI Trong Editor".
-///   4. Hierarchy con tự động tạo ra; kiểm tra + chỉnh sửa trực tiếp trong Scene view.
-///   5. Kéo "BlacksmithFunctionMenuCanvas" vào thư mục Assets/Prefabs/UI để lưu thành prefab.
-///   6. Xoá GameObject tạm trong scene; dùng prefab từ đây trở đi.
-///
-/// Các SerializeField bên dưới tự động được gán khi chạy "Tạo UI Trong Editor".
-/// Sau khi có prefab, có thể đổi màu / thêm ảnh / đổi font thoải mái mà không cần sửa code.
-/// </summary>
+// BlacksmithFunctionMenuPanel
+// CÁCH CHUYỂN SANG PREFAB (làm một lần trong Unity Editor):
+// 1. Tạo một GameObject rỗng trong scene, đặt tên "BlacksmithFunctionMenuCanvas".
+// 2. Gắn component này lên GameObject đó.
+// 3. Trong Inspector → chuột phải vào tên component → "Tạo UI Trong Editor".
+// 4. Hierarchy con tự động tạo ra; kiểm tra + chỉnh sửa trực tiếp trong Scene view.
+// 5. Kéo "BlacksmithFunctionMenuCanvas" vào thư mục Assets/Prefabs/UI để lưu thành prefab.
+// 6. Xoá GameObject tạm trong scene; dùng prefab từ đây trở đi.
+// Các SerializeField bên dưới tự động được gán khi chạy "Tạo UI Trong Editor".
+// Sau khi có prefab, có thể đổi màu / thêm ảnh / đổi font thoải mái mà không cần sửa code.
 public class BlacksmithFunctionMenuPanel : MonoBehaviour
 {
     public static BlacksmithFunctionMenuPanel Instance { get; private set; }
 
-    // ── Màu mặc định (chỉ dùng khi tự xây UI lần đầu) ────────────────────
+    // Màu mặc định (chỉ dùng khi tự xây UI lần đầu)
     private readonly Color backdropColor = new(0.03f, 0.04f, 0.07f, 0.78f);
     private readonly Color cardColor     = new(0.08f, 0.09f, 0.12f, 0.96f);
     private readonly Color titleColor    = new(1f, 0.92f, 0.72f, 1f);
     private readonly Color bodyColor     = new(0.92f, 0.95f, 1f, 1f);
     private readonly Color statusColor   = new(0.76f, 0.83f, 0.95f, 1f);
 
-    // ── SerializeField references ─────────────────────────────────────────
+    // SerializeField references
     // Các field này được điền tự động khi chạy Context Menu "Tạo UI Trong Editor".
     // Nếu prefab đã được thiết lập, Awake() sẽ dùng trực tiếp các references này.
     [Header("Card")]
@@ -137,10 +133,8 @@ public class BlacksmithFunctionMenuPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    /// <summary>
-    /// Gắn lại tất cả onClick listener cho các button.
-    /// Gọi trong Awake và Open vì UnityAction không được serialize trong prefab.
-    /// </summary>
+    // Gắn lại tất cả onClick listener cho các button.
+    // Gọi trong Awake và Open vì UnityAction không được serialize trong prefab.
     private void WireListeners()
     {
         if (equipmentUpgradeButton  != null) { equipmentUpgradeButton.onClick.RemoveAllListeners();  equipmentUpgradeButton.onClick.AddListener(OpenEquipmentUpgrade); }
@@ -186,15 +180,11 @@ public class BlacksmithFunctionMenuPanel : MonoBehaviour
         rootTransform.localScale = Vector3.one;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  UI Setup — gọi tự động khi chưa có prefab, hoặc thủ công qua Context Menu
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Xây dựng toàn bộ cây UI con dưới GameObject này (Canvas root).
-    /// Sau khi chạy, tất cả SerializeField được điền sẵn.
-    /// Kéo GameObject vào Prefabs để lưu và chỉnh sửa trực quan.
-    /// </summary>
+    // Xây dựng toàn bộ cây UI con dưới GameObject này (Canvas root).
+    // Sau khi chạy, tất cả SerializeField được điền sẵn.
+    // Kéo GameObject vào Prefabs để lưu và chỉnh sửa trực quan.
     [ContextMenu("Tạo UI Trong Editor")]
     private void BuildUiIfNeeded()
     {

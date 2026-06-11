@@ -1,23 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Gắn component này lên bất kỳ GameObject nào có Image component.
-/// Khi scene load xong, tự tra ElementIconConfig theo hệ của player hiện tại
-/// rồi set sprite + màu cho Image đó.
-///
-/// ── CÁCH DÙNG ──────────────────────────────────────────────────────────
-/// 1. Chọn GameObject chứa Image (ví dụ: icon hệ trong HUD, avatar, HP bar)
-/// 2. Add Component → ElementImage
-/// 3. Kéo asset ElementIconConfig vào field "Element Icon Config"
-/// 4. Chọn chế độ:
-///    • ApplySprite  — đổi sprite của Image
-///    • ApplyColor   — đổi màu của Image (dùng cho HP bar, glow)
-///    • ApplyBoth    — đổi cả 2
-/// 5. Nếu muốn theo dõi hệ của một enemy/player khác (không phải local player),
-///    set elementOverride = true rồi điền elementId thủ công hoặc gọi SetElement().
-/// ───────────────────────────────────────────────────────────────────────
-/// </summary>
+// Gắn component này lên bất kỳ GameObject nào có Image component.
+// Khi scene load xong, tự tra ElementIconConfig theo hệ của player hiện tại
+// rồi set sprite + màu cho Image đó.
+// CÁCH DÙNG
+// 1. Chọn GameObject chứa Image (ví dụ: icon hệ trong HUD, avatar, HP bar)
+// 2. Add Component → ElementImage
+// 3. Kéo asset ElementIconConfig vào field "Element Icon Config"
+// 4. Chọn chế độ:
+// • ApplySprite  — đổi sprite của Image
+// • ApplyColor   — đổi màu của Image (dùng cho HP bar, glow)
+// • ApplyBoth    — đổi cả 2
+// 5. Nếu muốn theo dõi hệ của một enemy/player khác (không phải local player),
+// set elementOverride = true rồi điền elementId thủ công hoặc gọi SetElement().
 [RequireComponent(typeof(Image))]
 public class ElementImage : MonoBehaviour
 {
@@ -46,10 +42,8 @@ public class ElementImage : MonoBehaviour
             Apply(overrideElementId);
     }
 
-    /// <summary>
-    /// Đọc element_type của local player từ GameManager rồi apply.
-    /// Gọi lại sau khi login xong nếu Start() chạy trước khi data về.
-    /// </summary>
+    // Đọc element_type của local player từ GameManager rồi apply.
+    // Gọi lại sau khi login xong nếu Start() chạy trước khi data về.
     public void RefreshFromLocalPlayer()
     {
         var data = GameManager.Instance?.currentPlayerData;
@@ -64,7 +58,7 @@ public class ElementImage : MonoBehaviour
         Apply(elementId);
     }
 
-    /// <summary>Set hệ thủ công (dùng cho icon enemy/player khác).</summary>
+    // Set hệ thủ công (dùng cho icon enemy/player khác).
     public void SetElement(int elementId)
     {
         elementOverride = true;
@@ -72,7 +66,7 @@ public class ElementImage : MonoBehaviour
         Apply(elementId);
     }
 
-    /// <summary>Set hệ bằng English key (vd: "Fire", "Water").</summary>
+    // Set hệ bằng English key (vd: "Fire", "Water").
     public void SetElement(string englishKey) => SetElement(ElementHelper.ToId(englishKey));
 
     private void Apply(int elementId)

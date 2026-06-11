@@ -1,24 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// BuffHudPanel — thanh HUD hiển thị tất cả buff icon đang active trên người chơi.
-/// Subscribe vào ActiveBuffManager.OnBuffListChanged, tạo/cập nhật/ẩn BuffIconEntry.
-///
-/// Setup trong Unity Editor:
-///   1. Tạo GameObject "BuffHudPanel" trong HUD Canvas (con của Canvas)
-///   2. Add Component: HorizontalLayoutGroup (spacing=4, childAlignment=MiddleLeft)
-///      - Control Child Size: Width=false, Height=false
-///      - Child Force Expand: Width=false, Height=false
-///   3. RectTransform: Anchor=BottomLeft, Pos=(10, 60, 0), Width=300, Height=52
-///   4. Gắn script này vào GameObject
-///   5. Kéo prefabs vào Inspector:
-///      - buffIconEntryPrefab ← Assets/Prefabs/UI/BuffIconEntry.prefab
-///      - tooltipPrefab       ← Assets/Prefabs/UI/BuffDetailTooltip.prefab
-///      - tooltipParent       ← Transform/Panel cố định trong Canvas — tooltip sẽ spawn tại đây
-///
-/// Tham khảo: GameHUD.c(Graphics) trong LangLa Client_base
-/// </summary>
+// BuffHudPanel — thanh HUD hiển thị tất cả buff icon đang active trên người chơi.
+// Subscribe vào ActiveBuffManager.OnBuffListChanged, tạo/cập nhật/ẩn BuffIconEntry.
+// Setup trong Unity Editor:
+// 1. Tạo GameObject "BuffHudPanel" trong HUD Canvas (con của Canvas)
+// 2. Add Component: HorizontalLayoutGroup (spacing=4, childAlignment=MiddleLeft)
+// - Control Child Size: Width=false, Height=false
+// - Child Force Expand: Width=false, Height=false
+// 3. RectTransform: Anchor=BottomLeft, Pos=(10, 60, 0), Width=300, Height=52
+// 4. Gắn script này vào GameObject
+// 5. Kéo prefabs vào Inspector:
+// - buffIconEntryPrefab ← Assets/Prefabs/UI/BuffIconEntry.prefab
+// - tooltipPrefab       ← Assets/Prefabs/UI/BuffDetailTooltip.prefab
+// - tooltipParent       ← Transform/Panel cố định trong Canvas — tooltip sẽ spawn tại đây
+// Tham khảo: GameHUD.c(Graphics) trong LangLa Client_base
 public class BuffHudPanel : MonoBehaviour
 {
     [Header("Prefabs")]
@@ -33,18 +29,18 @@ public class BuffHudPanel : MonoBehaviour
            + "Tooltip hiện ngay tại vị trí của object này.")]
     [SerializeField] private Transform tooltipParent;
 
-    // ── Private state ─────────────────────────────────────────────────────
+    // Private state
 
-    /// <summary>Pool các entry đã tạo (reuse thay vì Instantiate liên tục).</summary>
+    // Pool các entry đã tạo (reuse thay vì Instantiate liên tục).
     private readonly List<BuffIconEntry> _entries = new List<BuffIconEntry>();
 
-    /// <summary>Tooltip đang hiển thị hiện tại (null nếu không có).</summary>
+    // Tooltip đang hiển thị hiện tại (null nếu không có).
     private BuffDetailTooltip _activeTooltip;
 
     // Đánh dấu đã subscribe ActiveBuffManager (Instance có thể null lúc OnEnable)
     private bool _buffManagerSubscribed;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void OnEnable()
     {
@@ -95,12 +91,10 @@ public class BuffHudPanel : MonoBehaviour
         ActiveBuffManager.Instance?.LoadFromServer();
     }
 
-    // ── Internal ──────────────────────────────────────────────────────────
+    // Xử lý nội bộ phục vụ các hàm public.
 
-    /// <summary>
-    /// Được gọi khi danh sách buff thay đổi (item buff thêm/hết hạn/bị xóa).
-    /// Cập nhật tất cả entry — tương đương vòng for trong GameHUD.c() của LangLa.
-    /// </summary>
+    // Được gọi khi danh sách buff thay đổi (item buff thêm/hết hạn/bị xóa).
+    // Cập nhật tất cả entry — tương đương vòng for trong GameHUD.c() của LangLa.
     private void OnBuffListChanged(List<ActiveBuffDto> buffs)
     {
         // Ẩn các entry dư (pool reuse)
@@ -130,10 +124,8 @@ public class BuffHudPanel : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Tạo/cập nhật BuffDetailTooltip đặt sang phải của icon được click.
-    /// Tương đương GameSrc.onUIEvent() → new BuffTooltip(...) trong LangLa.
-    /// </summary>
+    // Tạo/cập nhật BuffDetailTooltip đặt sang phải của icon được click.
+    // Tương đương GameSrc.onUIEvent() → new BuffTooltip(...) trong LangLa.
     private void ShowTooltip(ActiveBuffDto buff)
     {
         // Đóng tooltip cũ nếu đang mở

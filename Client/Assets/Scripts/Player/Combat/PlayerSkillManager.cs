@@ -4,10 +4,8 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// Quản lý tất cả skill projectile của player
-/// Chỉ cần thêm SkillData vào list và skill sẽ tự động hoạt động
-/// </summary>
+// Quản lý tất cả skill projectile của player
+// Chỉ cần thêm SkillData vào list và skill sẽ tự động hoạt động
 public class PlayerSkillManager : NetworkBehaviour
 {
     [Header("Components")]
@@ -26,59 +24,59 @@ public class PlayerSkillManager : NetworkBehaviour
     private Dictionary<string, Animator> skillEffectAnimators = new Dictionary<string, Animator>();
     private Dictionary<string, Unity.Netcode.Components.NetworkAnimator> skillEffectNetworkAnimators = new Dictionary<string, Unity.Netcode.Components.NetworkAnimator>();
 
-    // ── Teleport skill (auto-detected) ────────────────────────────────────────
+    // Teleport skill (auto-detected)
     private TeleportSkill teleportSkillComponent;
     private SkillData teleportSkillData;
 
-    // ── Wind Step skill (auto-detected) ──────────────────────────────────────
+    // Wind Step skill (auto-detected)
     private WindStepSkill windStepComponent;
     private SkillData windStepSkillData;
 
-    // ── Metal Shield skill (auto-detected) ───────────────────────────────────
+    // Metal Shield skill (auto-detected)
     private MetalShieldSkill metalShieldComponent;
     private SkillData metalShieldSkillData;
-    // ── Water Pillar skill (auto-detected) ─────────────────────────────────────────
+    // Water Pillar skill (auto-detected)
     private WaterPillarSkill waterPillarComponent;
     private SkillData waterPillarSkillData;
 
-    // ── Water Armor Buff skill (auto-detected) ──────────────────────────────────────
+    // Water Armor Buff skill (auto-detected)
     private WaterArmorBuffSkill waterArmorBuffComponent;
     private SkillData waterArmorBuffSkillData;
-    // ── Fire Rain skill (auto-detected) ─────────────────────────────────────────────
+    // Fire Rain skill (auto-detected)
     private FireRainSkill fireRainComponent;
     private SkillData fireRainSkillData;
-    // ── Earth Attack Buff skill (auto-detected) ──────────────────────────────────────
+    // Earth Attack Buff skill (auto-detected)
     private EarthAttackBuffSkill earthAuraComponent;
     private SkillData earthAuraSkillData;
-    // ── Earth Boomerang skill (auto-detected) ────────────────────────────────────────
+    // Earth Boomerang skill (auto-detected)
     private EarthBoomerangSkill earthBoomerangComponent;
     private SkillData earthBoomerangSkillData;
-    // ── Earth Blink Strike skill (auto-detected) ─────────────────────────────────────
+    // Earth Blink Strike skill (auto-detected)
     private EarthBlinkStrikeSkill earthBlinkStrikeComponent;
     private SkillData earthBlinkStrikeSkillData;
     private HybridMetalWindBarrageSkill hybridMetalWindBarrageComponent;
     private SkillData hybridMetalWindBarrageSkillData;
-    // ── Hybrid Fire Earth Lava Aura skill (auto-detected) ───────────────────────────
+    // Hybrid Fire Earth Lava Aura skill (auto-detected)
     private HybridFireEarthLavaAuraSkill hybridLavaAuraComponent;
     private SkillData hybridLavaAuraSkillData;
-    // ── Hybrid Water Wood Venom skill (auto-detected) ───────────────────────
+    // Hybrid Water Wood Venom skill (auto-detected)
     private HybridWaterWoodVenomSkill hybridVenomComponent;
     private SkillData hybridVenomSkillData;
-    // ── Dash skill (auto-detected) ──────────────────────────────────────────
+    // Dash skill (auto-detected)
     private PlayerDash playerDashComponent;
     private SkillData dashSkillData;
-    // ── Auto-move toward selected target ─────────────────────────────────────
+    // Auto-move toward selected target
     private Transform _autoMoveTarget;
     private bool _autoMoving;
     private const float AUTO_MOVE_ATTACK_RANGE = 1.5f; // dừng và đánh khi cách target ≤ khoảng này
 
-    // ── Normal Attack skill (auto-detected via PlayerCombat) ─────────────────
+    // Normal Attack skill (auto-detected via PlayerCombat)
     private PlayerCombat playerCombatComponent;
     private SkillData normalAttackSkillData;
-    // ── Player animator (main character sprite) ──────────────────────────────
+    // Player animator (main character sprite)
     private PlayerAnimator playerAnimator;
 
-    // ── MP System ──────────────────────────────────────────────────────────
+    // MP System
     private NetworkPlayerDataSync dataSync;
     
     public override void OnNetworkSpawn()
@@ -405,10 +403,8 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Nếu có mục tiêu được chọn và còn xa → bắt đầu auto-move.
-    /// Nếu trong tầm → đánh ngay.
-    /// </summary>
+    // Nếu có mục tiêu được chọn và còn xa → bắt đầu auto-move.
+    // Nếu trong tầm → đánh ngay.
     private void TryAttackOrAutoMove()
     {
         if (TargetSelector.HasTarget)
@@ -424,7 +420,7 @@ public class PlayerSkillManager : NetworkBehaviour
         UseSkill(normalAttackSkillData);
     }
 
-    /// <summary>Xử lý auto-move mỗi frame: inject hướng di chuyển vào InputManager cho đến khi đến nơi.</summary>
+    // Xử lý auto-move mỗi frame: inject hướng di chuyển vào InputManager cho đến khi đến nơi.
     private void HandleAutoMove()
     {
         if (!_autoMoving) return;
@@ -476,7 +472,7 @@ public class PlayerSkillManager : NetworkBehaviour
 
         Debug.Log("[PlayerSkillManager] UseSkill: " + skill.skillName + " | IsOwner=" + IsOwner + " | IsServer=" + IsServer + " | MP=" + dataSync?.networkMp.Value + "/" + dataSync?.networkMaxMp.Value + " | Cost=" + skill.currentMpCost);
 
-        // ── Kiểm tra và trừ MP ─────────────────────────────────────────────
+        // Kiểm tra và trừ MP
         if (!TryConsumeMP(skill.currentMpCost)) return;
         EnemyClickHandler.NotifySkillUsedOnCurrentTarget();
 
@@ -717,9 +713,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
     
-    /// <summary>
-    /// Server RPC để client owner yêu cầu server spawn projectile
-    /// </summary>
+    // Server RPC để client owner yêu cầu server spawn projectile
     [ServerRpc]
     private void UseSkillServerRpc(string skillName, bool facingRight, float effectValue = 0f)
     {
@@ -734,9 +728,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Server RPC để client owner yêu cầu server kích hoạt NormalAttack (hitbox + animation sync)
-    /// </summary>
+    // Server RPC để client owner yêu cầu server kích hoạt NormalAttack (hitbox + animation sync)
     [ServerRpc]
     private void UseNormalAttackServerRpc(string skillName, bool facingRight, float effectValue = 0f)
     {
@@ -748,9 +740,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Kích hoạt NormalAttack trên server: hitbox qua PlayerCombat + animation sync tới tất cả client
-    /// </summary>
+    // Kích hoạt NormalAttack trên server: hitbox qua PlayerCombat + animation sync tới tất cả client
     private void UseNormalAttackLocal(SkillData skill)
     {
         skill.StartUsing();
@@ -772,9 +762,7 @@ public class PlayerSkillManager : NetworkBehaviour
         Invoke(nameof(ResetSkillState), 0.1f);
     }
 
-    /// <summary>
-    /// Server RPC để client owner yêu cầu server kích hoạt skill Melee (animation, không projectile)
-    /// </summary>
+    // Server RPC để client owner yêu cầu server kích hoạt skill Melee (animation, không projectile)
     [ServerRpc]
     private void UseMeleeServerRpc(string skillName, bool facingRight, float effectValue = 0f)
     {
@@ -787,9 +775,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Kích hoạt Melee skill: chỉ trigger animation, không spawn projectile
-    /// </summary>
+    // Kích hoạt Melee skill: chỉ trigger animation, không spawn projectile
     private void UseMeleeLocal(SkillData skill, bool facingRight)
     {
         skill.StartUsing();
@@ -892,10 +878,8 @@ public class PlayerSkillManager : NetworkBehaviour
         ClearSkillEffectSpriteClientRpc();
     }
 
-    /// <summary>
-    /// Kích hoạt animation attack của nhân vật (phong.controller) trên TẤT CẢ client.
-    /// Dùng khi player dùng skill để sprite nhân vật cũng thể hiện đòn chém.
-    /// </summary>
+    // Kích hoạt animation attack của nhân vật (phong.controller) trên TẤT CẢ client.
+    // Dùng khi player dùng skill để sprite nhân vật cũng thể hiện đòn chém.
     [ClientRpc]
     private void TriggerPlayerAttackClientRpc()
     {
@@ -906,10 +890,8 @@ public class PlayerSkillManager : NetworkBehaviour
         playerAnimator?.TriggerAttack();
     }
 
-    /// <summary>
-    /// Phát Animator trigger trên SkillEffect của player cho TẤT CẢ client.
-    /// Chỉ gọi từ server.
-    /// </summary>
+    // Phát Animator trigger trên SkillEffect của player cho TẤT CẢ client.
+    // Chỉ gọi từ server.
     // spriteFacesLeft=true : sprite gốc nhìn TRÁI (convention cũ — flip sang phải bằng flipX)
     // spriteFacesLeft=false: sprite gốc nhìn PHẢI (NormalAttack) — parent scale xử lý flip
     [ClientRpc]
@@ -939,10 +921,8 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Xóa sprite trên SkillEffect của player trên tất cả client.
-    /// Gọi sau khi animation kết thúc.
-    /// </summary>
+    // Xóa sprite trên SkillEffect của player trên tất cả client.
+    // Gọi sau khi animation kết thúc.
     [ClientRpc]
     public void ClearSkillEffectSpriteClientRpc()
     {
@@ -955,9 +935,7 @@ public class PlayerSkillManager : NetworkBehaviour
         if (sr != null) sr.sprite = null;
     }
     
-    /// <summary>
-    /// Spawn skill với hướng cụ thể (để sync đúng trên network)
-    /// </summary>
+    // Spawn skill với hướng cụ thể (để sync đúng trên network)
     private void UseSkillLocalWithDirection(SkillData skill, bool facingRight)
     {
         skill.StartUsing();
@@ -1328,9 +1306,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
     
-    /// <summary>
-    /// Chờ 1 frame rồi gửi ClientRpc để client trigger animation trên projectile đã spawn.
-    /// </summary>
+    // Chờ 1 frame rồi gửi ClientRpc để client trigger animation trên projectile đã spawn.
     private System.Collections.IEnumerator SyncProjectileAnimationToClientsDelayed(
         ulong netObjId, string triggerName)
     {
@@ -1424,7 +1400,7 @@ public class PlayerSkillManager : NetworkBehaviour
         ClearSkillEffectSpriteClientRpc();
     }
     
-    // Public API
+    // Hàm public để script hoặc hệ thống khác gọi vào.
     public bool IsUsingSkill(string skillName)
     {
         foreach (var skill in skills)
@@ -1461,23 +1437,17 @@ public class PlayerSkillManager : NetworkBehaviour
         return 0f;
     }
 
-    /// <summary>
-    /// Lấy SkillData theo index (dùng cho SkillHotbarUI binding)
-    /// </summary>
+    // Lấy SkillData theo index (dùng cho SkillHotbarUI binding)
     public SkillData GetSkill(int index)
     {
         if (index < 0 || index >= skills.Count) return null;
         return skills[index];
     }
 
-    /// <summary>
-    /// Lấy tổng số skill hiện tại
-    /// </summary>
+    // Lấy tổng số skill hiện tại
     public int GetSkillCount() => skills.Count;
 
-    /// <summary>
-    /// Kích hoạt skill theo index — dùng khi nhấn nút UI hotbar thay thế phím tắt
-    /// </summary>
+    // Kích hoạt skill theo index — dùng khi nhấn nút UI hotbar thay thế phím tắt
     public void TryUseSkillByIndex(int index)
     {
         if (!IsOwner) return;
@@ -1497,14 +1467,10 @@ public class PlayerSkillManager : NetworkBehaviour
         UseSkill(skill);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
     //  MP Consumption Helper
-    // ══════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Kiểm tra đủ MP và trừ MP khi dùng skill.
-    /// Trả về false nếu không đủ MP (skill bị chặn).
-    /// </summary>
+    // Kiểm tra đủ MP và trừ MP khi dùng skill.
+    // Trả về false nếu không đủ MP (skill bị chặn).
     private bool TryConsumeMP(int cost)
     {
         if (cost <= 0) return true; // Skill không tốn MP

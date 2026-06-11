@@ -4,12 +4,10 @@ using UnityEngine;
 using Unity.Netcode.Transports.UTP;
 using Unity.Collections;
 
-/// <summary>
-/// Shared NetworkManager wrapper: Tách logic Host và Client
-/// StartHost() chỉ dùng trong HostScene
-/// ConnectToServer() chỉ dùng trong GameScene (Client)
-/// Auth flow: Client gửi auth ngay khi connect qua CustomMessagingManager (Named Messages)
-/// </summary>
+// Shared NetworkManager wrapper: Tách logic Host và Client
+// StartHost() chỉ dùng trong HostScene
+// ConnectToServer() chỉ dùng trong GameScene (Client)
+// Auth flow: Client gửi auth ngay khi connect qua CustomMessagingManager (Named Messages)
 public class NetworkManagerCustom : MonoBehaviour
 {
     private const ushort ModernZoneServerPort = 7777;
@@ -40,9 +38,7 @@ public class NetworkManagerCustom : MonoBehaviour
         EnsureCallbacksSubscribed();
     }
 
-    /// <summary>
-    /// Đảm bảo callbacks đã được subscribe. Gọi trong Start() và trước ConnectToServer().
-    /// </summary>
+    // Đảm bảo callbacks đã được subscribe. Gọi trong Start() và trước ConnectToServer().
     private void EnsureCallbacksSubscribed()
     {
         if (callbacksSubscribed) return;
@@ -68,9 +64,7 @@ public class NetworkManagerCustom : MonoBehaviour
         Debug.Log("[NetworkManagerCustom] ✓ Callbacks subscribed (OnClientConnected + OnClientDisconnected)");
     }
 
-    /// <summary>
-    /// Connect to host (chỉ dùng trong GameScene - Client)
-    /// </summary>
+    // Connect to host (chỉ dùng trong GameScene - Client)
     public void ConnectToServer()
     {
         if (networkManager == null)
@@ -196,9 +190,7 @@ public class NetworkManagerCustom : MonoBehaviour
         return $"{{\"token\":\"{escapedToken}\",\"mapId\":{mapId},\"zoneId\":{zoneId},\"geneSlot\":{geneSlot}}}";
     }
 
-    /// <summary>
-    /// Start host (chỉ dùng trong HostScene)
-    /// </summary>
+    // Start host (chỉ dùng trong HostScene)
     public void StartHost()
     {
         if (networkManager == null)
@@ -224,9 +216,7 @@ public class NetworkManagerCustom : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Start server only (headless - không dùng trong plan này nhưng giữ lại để tương lai)
-    /// </summary>
+    // Start server only (headless - không dùng trong plan này nhưng giữ lại để tương lai)
     public void StartServer()
     {
         if (networkManager == null)
@@ -261,10 +251,8 @@ public class NetworkManagerCustom : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Đăng ký Named Message handler trên server để nhận auth từ client.
-    /// Gọi SAU KHI StartHost() hoặc StartServer() thành công.
-    /// </summary>
+    // Đăng ký Named Message handler trên server để nhận auth từ client.
+    // Gọi SAU KHI StartHost() hoặc StartServer() thành công.
     public void RegisterAuthMessageHandler()
     {
         if (networkManager == null) networkManager = NetworkManager.Singleton;
@@ -292,9 +280,7 @@ public class NetworkManagerCustom : MonoBehaviour
         Debug.Log("[NetworkManagerCustom] ✓ Registered Named Message handler for ClientAuth");
     }
 
-    /// <summary>
-    /// Server nhận auth message từ client qua CustomMessagingManager
-    /// </summary>
+    // Server nhận auth message từ client qua CustomMessagingManager
     private void OnAuthMessageReceived(ulong senderClientId, FastBufferReader reader)
     {
         reader.ReadValueSafe(out int userId);
@@ -330,10 +316,8 @@ public class NetworkManagerCustom : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Client gửi auth message lên server qua CustomMessagingManager.
-    /// Không cần NetworkObject - hoạt động ngay khi client connected.
-    /// </summary>
+    // Client gửi auth message lên server qua CustomMessagingManager.
+    // Không cần NetworkObject - hoạt động ngay khi client connected.
     private void SendAuthToServer()
     {
         int userId = PlayerPrefs.GetInt("USER_ID", 0);

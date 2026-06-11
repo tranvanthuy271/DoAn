@@ -1,8 +1,6 @@
 namespace GameServerApi.Models.Responses
 {
-    /// <summary>
-    /// Unified response wrapper for all API endpoints.
-    /// </summary>
+    // Unified response wrapper for all API endpoints.
     public class ApiResponse<T>
     {
         public bool    Success   { get; set; }
@@ -17,7 +15,7 @@ namespace GameServerApi.Models.Responses
             new() { Success = false, Error = error, ErrorCode = code };
     }
 
-    /// <summary>Non-generic convenience for void/empty responses.</summary>
+    // Non-generic convenience for void/empty responses.
     public class ApiResponse : ApiResponse<object?>
     {
         public static ApiResponse Ok(string? message = null) =>

@@ -4,16 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Editor tool — tạo tự động các prefab UI phó bản + thông báo toàn cục.
-///
-/// Chạy từ menu Unity:
-///   Tools ▸ Create Dungeon UI Prefabs
-///
-/// Visual style khớp 3 ảnh mẫu:
-///   Panel 1 (list) + Panel 2 (confirm): nền gỗ, chữ trắng, icon bubble, nút "Cáo từ"
-///   Panel 3 (notification): viền vàng, title bar vàng "Nhắc nhở", nút cam "Xác nhận"
-/// </summary>
+// Editor tool — tạo tự động các prefab UI phó bản + thông báo toàn cục.
+// Chạy từ menu Unity:
+// Tools ▸ Create Dungeon UI Prefabs
+// Visual style khớp 3 ảnh mẫu:
+// Panel 1 (list) + Panel 2 (confirm): nền gỗ, chữ trắng, icon bubble, nút "Cáo từ"
+// Panel 3 (notification): viền vàng, title bar vàng "Nhắc nhở", nút cam "Xác nhận"
 public static class CreateDungeonUIPrefabs
 {
     private const string PrefabFolder = "Assets/Prefabs/UI";
@@ -34,7 +30,6 @@ public static class CreateDungeonUIPrefabs
     private static readonly Color NotifBtnHov = new Color(0.95f, 0.50f, 0.08f, 1f);
     private static readonly Color Gold        = new Color(1.00f, 0.90f, 0.40f, 1f);
 
-    // ═══════════════════════════════════════════════════════════════════
     [MenuItem("Tools/Create Dungeon UI Prefabs")]
     public static void CreateAll()
     {
@@ -56,9 +51,7 @@ public static class CreateDungeonUIPrefabs
             "OK");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // 1. DungeonNpcMenuPanel (list + confirm — gỗ)
-    // ═══════════════════════════════════════════════════════════════════
     private static bool CreateDungeonNpcMenuPanel()
     {
         const string path = PrefabFolder + "/DungeonNpcMenuPanel.prefab";
@@ -69,7 +62,7 @@ public static class CreateDungeonUIPrefabs
         SizeRect(root, 340, 500);
         root.AddComponent<DungeonNpcMenuUI>();
 
-        // ── ListPanel ──────────────────────────────────────────────
+        // ListPanel
         var lp = WoodPanel(root.transform, "ListPanel", 340, 500);
 
         // X button (đóng) góc trên phải
@@ -88,7 +81,7 @@ public static class CreateDungeonUIPrefabs
         var btnClose = WoodBtn(lp.transform, "BtnCloseList", "Cáo từ",
             new Vector2(0.52f, 0.01f), new Vector2(0.96f, 0.08f));
 
-        // ── ConfirmPanel ───────────────────────────────────────────
+        // ConfirmPanel
         var cp = WoodPanel(root.transform, "ConfirmPanel", 340, 500);
         cp.SetActive(false);
 
@@ -128,9 +121,7 @@ public static class CreateDungeonUIPrefabs
         return ok;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // 2. DungeonNpcMenuEntryPrefab (row — gỗ, icon bubble + tên)
-    // ═══════════════════════════════════════════════════════════════════
     private static bool CreateDungeonNpcMenuEntryPrefab()
     {
         const string path = PrefabFolder + "/DungeonNpcMenuEntryPrefab.prefab";
@@ -198,9 +189,7 @@ public static class CreateDungeonUIPrefabs
         return ok;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // 3. GlobalNotificationPanel (nhắc nhở — viền vàng, titlebar vàng)
-    // ═══════════════════════════════════════════════════════════════════
     private static bool CreateGlobalNotificationPanel()
     {
         const string path = ResourcesUiPrefabFolder + "/GlobalNotificationPanel.prefab";
@@ -211,7 +200,7 @@ public static class CreateDungeonUIPrefabs
         root.AddComponent<RectTransform>().sizeDelta = new Vector2(360, 240);
         root.AddComponent<GlobalNotificationUI>();
 
-        // ── Outer panel (tối, viền vàng) ────────────────────────
+        // Outer panel (tối, viền vàng)
         var panel = NewGO("Panel");
         panel.transform.SetParent(root.transform, false);
         StretchFill(panel);
@@ -221,7 +210,7 @@ public static class CreateDungeonUIPrefabs
         outline.effectColor    = Gold;
         outline.effectDistance = new Vector2(3, -3);
 
-        // ── Title bar (vàng, bold) ───────────────────────────────
+        // Title bar (vàng, bold)
         var titleBar = NewGO("TitleBar");
         titleBar.transform.SetParent(panel.transform, false);
         var tbr = titleBar.AddComponent<RectTransform>();
@@ -244,7 +233,7 @@ public static class CreateDungeonUIPrefabs
         titleTMP.alignment = TextAlignmentOptions.Center;
         titleTMP.raycastTarget = false;
 
-        // ── Body background ──────────────────────────────────────
+        // Body background
         var body = NewGO("BodyArea");
         body.transform.SetParent(panel.transform, false);
         AnchorRect(body, 0.04f, 0.22f, 0.96f, 0.77f);
@@ -267,7 +256,7 @@ public static class CreateDungeonUIPrefabs
         msgTMP.margin    = new Vector4(12, 8, 12, 8);
         msgTMP.raycastTarget = false;
 
-        // ── Xác nhận button (cam) ─────────────────────────────────
+        // Xác nhận button (cam)
         var btnGO = NewGO("BtnOk");
         btnGO.transform.SetParent(panel.transform, false);
         AnchorRect(btnGO, 0.22f, 0.04f, 0.78f, 0.19f);
@@ -302,11 +291,9 @@ public static class CreateDungeonUIPrefabs
         return ok;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
     // Helpers — UI
-    // ═══════════════════════════════════════════════════════════════════
 
-    /// Tạo panel nền gỗ với viền và close-X (ảnh 1 & 2)
+    // Tạo panel nền gỗ với viền và close-X (ảnh 1 & 2)
     private static GameObject WoodPanel(Transform parent, string name, float w, float h)
     {
         var go = NewGO(name);
@@ -336,7 +323,7 @@ public static class CreateDungeonUIPrefabs
         return go;
     }
 
-    /// Nút chữ X góc trên phải (đóng panel)
+    // Nút chữ X góc trên phải (đóng panel)
     private static Button CloseXButton(Transform parent)
     {
         var go = NewGO("BtnClose_X");
@@ -363,7 +350,7 @@ public static class CreateDungeonUIPrefabs
         return btn;
     }
 
-    /// Scroll view kiểu gỗ (trong suốt, nội dung cuộn dọc)
+    // Scroll view kiểu gỗ (trong suốt, nội dung cuộn dọc)
     private static GameObject WoodScrollView(Transform parent, string name,
         Vector2 anchorMin, Vector2 anchorMax)
     {
@@ -404,7 +391,7 @@ public static class CreateDungeonUIPrefabs
         return sv;
     }
 
-    /// Nút kiểu gỗ
+    // Nút kiểu gỗ
     private static Button WoodBtn(Transform parent, string name, string label,
         Vector2 ancMin, Vector2 ancMax,
         Color? normalColor = null, Color? hoverColor = null)
@@ -435,7 +422,7 @@ public static class CreateDungeonUIPrefabs
         return btn;
     }
 
-    // ── Rect helpers ──────────────────────────────────────────
+    // Rect helpers
 
     private static GameObject TMPLabel(Transform parent, string name, string text,
         float size, bool bold = false)
@@ -486,7 +473,7 @@ public static class CreateDungeonUIPrefabs
         return go;
     }
 
-    // ── Asset helpers ─────────────────────────────────────────
+    // Asset helpers
 
     private static void EnsureFolder(string path)
     {

@@ -5,25 +5,19 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Unity.Netcode;
 
-/// <summary>
-/// NPC Action handler — chạy trên SERVER, xử lý từng action_type khi người chơi chọn menu.
-///
-/// Luồng:
-///   NpcInteraction.SelectMenuItemServerRpc → NpcAction.Execute(action_type, clientId, ...)
-///   → kiểm tra điều kiện (items, gold) → gọi API → lưu DB → gửi ActionResultClientRpc về client
-///
-/// Giống LangLa NPC_Action.java: mỗi action kiểm tra điều kiện rồi gọi API tương ứng.
-/// </summary>
+// NPC Action handler — chạy trên SERVER, xử lý từng action_type khi người chơi chọn menu.
+// Luồng:
+// NpcInteraction.SelectMenuItemServerRpc → NpcAction.Execute(action_type, clientId, ...)
+// → kiểm tra điều kiện (items, gold) → gọi API → lưu DB → gửi ActionResultClientRpc về client
+// Giống LangLa NPC_Action.java: mỗi action kiểm tra điều kiện rồi gọi API tương ứng.
 public static class NpcAction
 {
     private const string LogPrefix = "[NpcAction]";
 
-    // ── Entry point ─────────────────────────────────────────────────────
+    // Entry point
 
-    /// <summary>
-    /// Gọi từ NpcInteraction.SelectMenuItemServerRpc.
-    /// owner = MonoBehaviour dùng để StartCoroutine (NpcInteraction instance).
-    /// </summary>
+    // Gọi từ NpcInteraction.SelectMenuItemServerRpc.
+    // owner = MonoBehaviour dùng để StartCoroutine (NpcInteraction instance).
     public static void Execute(
         string actionType,
         NpcData npcData,
@@ -72,7 +66,7 @@ public static class NpcAction
         }
     }
 
-    // ── API call ─────────────────────────────────────────────────────────
+    // API call
 
     private static IEnumerator CallApiAction(
         ulong clientId,
@@ -121,7 +115,7 @@ public static class NpcAction
         owner.SendActionResultRpc(clientId, resp.success, resp.message, JsonUtility.ToJson(resp.playerData));
     }
 
-    // ── DTO ──────────────────────────────────────────────────────────────
+    // DTO
 
     [Serializable]
     public class NpcActionResponse

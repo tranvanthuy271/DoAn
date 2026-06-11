@@ -59,7 +59,7 @@ public class InputManager : MonoBehaviour
         _mobileFallThroughPressed = false;
     }
 
-    // ── Mobile setters (called by UI components) ────────────────────────────
+    // Mobile setters (called by UI components)
 
     public void SetMobileAxis(float horizontal, float vertical)
     {
@@ -78,25 +78,25 @@ public class InputManager : MonoBehaviour
         _mobileAttackPressed = true;
     }
 
-    /// <summary>Gọi từ MobileFallThroughButton khi người chơi nhấn nút rơi xuống platform.</summary>
+    // Gọi từ MobileFallThroughButton khi người chơi nhấn nút rơi xuống platform.
     public void SetMobileFallThrough()
     {
         _mobileFallThroughPressed = true;
     }
 
-    /// <summary>Inject hướng di chuyển tự động (PlayerSkillManager gọi khi auto-move đến target).</summary>
+    // Inject hướng di chuyển tự động (PlayerSkillManager gọi khi auto-move đến target).
     public void SetAutoMoveInput(float horizontal)
     {
         _autoMoveHorizontal = horizontal;
     }
 
-    /// <summary>Hủy auto-move injection.</summary>
+    // Hủy auto-move injection.
     public void CancelAutoMove()
     {
         _autoMoveHorizontal = 0f;
     }
 
-    // ── Input queries (keyboard OR mobile) ──────────────────────────────────
+    // Input queries (keyboard OR mobile)
 
     public float GetHorizontalInput()
     {
@@ -142,7 +142,7 @@ public class InputManager : MonoBehaviour
         return Input.GetKeyDown(KeyCode.Z) || Input.GetMouseButtonDown(0) || _mobileAttackPressed;
     }
 
-    /// <summary>Trả về true trong ĐÚNG 1 frame khi người chơi nhấn S/DownArrow hoặc nút ↓ mobile.</summary>
+    // Trả về true trong ĐÚNG 1 frame khi người chơi nhấn S/DownArrow hoặc nút ↓ mobile.
     public bool GetFallThroughPressed()
     {
         if (IsGameplayInputBlocked) return false;
@@ -168,9 +168,7 @@ public class InputManager : MonoBehaviour
         inputEnabled = enable;
     }
 
-    /// <summary>
-    /// Backwards-compatible wrapper for older callers named SetInputEnabled.
-    /// </summary>
+    // Backwards-compatible wrapper for older callers named SetInputEnabled.
     public void SetInputEnabled(bool enable)
     {
         EnableInput(enable);

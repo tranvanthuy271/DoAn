@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using Unity.Netcode;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  NetworkBossHealth  —  Server-Authoritative HP cho Boss
 //
 //  ĐIỂM KHÁC SO VỚI NetworkEnemyHealth:
@@ -11,7 +10,6 @@ using Unity.Netcode;
 //    • Expose event OnAfterTakeDamage  → BossController xử lý return damage
 //    • HealServer() để BossController gọi hồi HP
 //    • Truyền elementType + attackerClientId qua ServerRpc
-// ─────────────────────────────────────────────────────────────────────────────
 
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkBossHealth : NetworkBehaviour
@@ -44,7 +42,6 @@ public class NetworkBossHealth : NetworkBehaviour
     private bool _isDead;
     private ulong _lastAttackerClientId = ulong.MaxValue;
 
-    // ─────────────────────────────────────────────────────────────────────────
 
     public override void OnNetworkSpawn()
     {
@@ -82,21 +79,19 @@ public class NetworkBossHealth : NetworkBehaviour
         OnHealthChanged?.Invoke(_currentHp.Value, newVal);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Public API
-    // ─────────────────────────────────────────────────────────────────────────
+    // Hàm public để script hoặc hệ thống khác gọi vào.
 
     public int GetCurrentHealth() => _currentHp.Value;
     public int GetMaxHealth()     => _maxHp.Value > 0 ? _maxHp.Value : maxHealth;
 
-    /// <summary>ServerRpc: Client yêu cầu gây damage cho boss.</summary>
+    // ServerRpc: Client yêu cầu gây damage cho boss.
     [ServerRpc(RequireOwnership = false)]
     public void TakeDamageServerRpc(int damage, string elementType, ServerRpcParams rpc = default)
     {
         TakeDamageInternal(damage, elementType, rpc.Receive.SenderClientId);
     }
 
-    /// <summary>Gây damage trực tiếp trên server (không qua RPC).</summary>
+    // Gây damage trực tiếp trên server (không qua RPC).
     public void TakeDamageServer(int damage, string elementType = "", ulong attackerClientId = ulong.MaxValue)
     {
         if (!IsServer) return;
@@ -123,7 +118,7 @@ public class NetworkBossHealth : NetworkBehaviour
         OnAfterTakeDamage?.Invoke(finalDmg, attackerClientId);
     }
 
-    /// <summary>Hồi HP trên server (gọi từ BossController.HandleHpRegen).</summary>
+    // Hồi HP trên server (gọi từ BossController.HandleHpRegen).
     public void HealServer(int amount)
     {
         if (!IsServer || _isDead) return;
@@ -136,9 +131,7 @@ public class NetworkBossHealth : NetworkBehaviour
         OnTakeDamage?.Invoke();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     //  Death
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void HandleDeath()
     {
@@ -189,9 +182,7 @@ public class NetworkBossHealth : NetworkBehaviour
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Interface — Nhận EXP (implement trên PlayerController hoặc PlayerStats)
-// ─────────────────────────────────────────────────────────────────────────────
 public interface IExpReceiver
 {
     void ReceiveExp(int amount);

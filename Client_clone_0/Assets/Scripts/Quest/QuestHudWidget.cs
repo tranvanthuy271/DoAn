@@ -5,17 +5,13 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// HUD nhiem vu nho o goc man hinh.
-///
-/// Hien thi:
-///   - "Chinh: [ten quest]"
-///   - "- Tim [npc_name] de nhan nhiem vu" khi quest chua nhan.
-///   - "- [ten buoc]: done/require" khi quest dang lam.
-///   - "- [x] Tim [npc_name] de nop nhiem vu" khi da hoan thanh.
-///
-/// Nut dieu huong tu dong dua player toi NPC hoac muc tieu cua buoc hien tai.
-/// </summary>
+// HUD nhiem vu nho o goc man hinh.
+// Hien thi:
+// - "Chinh: [ten quest]"
+// - "- Tim [npc_name] de nhan nhiem vu" khi quest chua nhan.
+// - "- [ten buoc]: done/require" khi quest dang lam.
+// - "- [x] Tim [npc_name] de nop nhiem vu" khi da hoan thanh.
+// Nut dieu huong tu dong dua player toi NPC hoac muc tieu cua buoc hien tai.
 public class QuestHudWidget : MonoBehaviour
 {
     private static QuestHudWidget _instance;
@@ -36,7 +32,7 @@ public class QuestHudWidget : MonoBehaviour
     [SerializeField] private TMP_Text   btnNavigateLabel;
     [SerializeField] private TMP_Text   perfStatsText;
 
-    // ─── Auto-move state ──────────────────────────────────────────────────────
+    // Auto-move state
     private bool  _autoMoving;
     private float _autoMoveTargetX;
     private int   _autoMoveTargetMapId = -1;
@@ -49,7 +45,7 @@ public class QuestHudWidget : MonoBehaviour
 
     private const float ARRIVE_THRESHOLD = 0.8f;
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
+    // Hàm vòng đời của Unity hoặc ASP.NET được gọi tự động.
 
     private void Awake()
     {
@@ -154,7 +150,7 @@ public class QuestHudWidget : MonoBehaviour
         InputManager.Instance?.SetAutoMoveInput(diff > 0 ? 1f : -1f);
     }
 
-    // ─── Refresh ──────────────────────────────────────────────────────────────
+    // Refresh
 
     public void Refresh()
     {
@@ -198,7 +194,7 @@ public class QuestHudWidget : MonoBehaviour
         if (btnNavigateLabel) btnNavigateLabel.text = "->";  // mui ten
     }
 
-    // ─── Navigation ───────────────────────────────────────────────────────────
+    // Navigation
 
     private void OnNavigateClicked()
     {
@@ -299,7 +295,7 @@ public class QuestHudWidget : MonoBehaviour
             perfStatsText.gameObject.SetActive(visible);
     }
 
-    // ─── Step line builder ────────────────────────────────────────────────────
+    // Step line builder
 
     private static string BuildStepLine(QuestManager.QuestStatusDto q)
     {
@@ -407,7 +403,7 @@ public class QuestHudWidget : MonoBehaviour
         if (btnNavigate != null) btnNavigate.onClick.AddListener(OnNavigateClicked);
     }
 
-    // ─── DTOs ─────────────────────────────────────────────────────────────────
+    // DTOs
 
     private void EnsureHudLayout()
     {

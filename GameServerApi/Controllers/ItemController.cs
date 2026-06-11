@@ -21,11 +21,9 @@ namespace GameServerApi.Controllers
             _db = db;
         }
 
-        /// <summary>
-        /// GET /api/item/templates
-        /// Lấy danh sách tất cả item templates
-        /// Không cần Authorization để client có thể load trước khi login
-        /// </summary>
+        // GET /api/item/templates
+        // Lấy danh sách tất cả item templates
+        // Không cần Authorization để client có thể load trước khi login
         [HttpGet("templates")]
         [AllowAnonymous]
         public async Task<IActionResult> GetAllItemTemplates()
@@ -85,10 +83,8 @@ namespace GameServerApi.Controllers
             }
         }
 
-        /// <summary>
-        /// GET /api/item/templates/{id}
-        /// Lấy thông tin chi tiết 1 item template theo ID
-        /// </summary>
+        // GET /api/item/templates/{id}
+        // Lấy thông tin chi tiết 1 item template theo ID
         [HttpGet("templates/{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetItemTemplateById(int id)
@@ -132,11 +128,9 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
         //  POST /api/item/debug/add-fusion-cores?playerId=X
         //  DEBUG ONLY — Thêm 10 Lõi Đột Biến theo hệ phụ của player
         //  vào túi đồ. Không dùng trên production.
-        // ══════════════════════════════════════════════════════════════
         [HttpPost("debug/add-fusion-cores")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DebugAddFusionCores([FromQuery] int playerId)
@@ -221,7 +215,7 @@ namespace GameServerApi.Controllers
             }
         }
 
-        // ── Helper (local, không share với GeneController) ───────────
+        // Helper (local, không share với GeneController)
         private static List<Dictionary<string, object>> ParseInventory(string json)
         {
             var result = new List<Dictionary<string, object>>();

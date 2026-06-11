@@ -1,9 +1,7 @@
 using System;
 
-/// <summary>
-/// Enum cho các loại slot trang bị
-/// 1 Vũ khí + 5 Phụ kiện = 6 slots
-/// </summary>
+// Enum cho các loại slot trang bị
+// 1 Vũ khí + 5 Phụ kiện = 6 slots
 public enum EquipmentSlotType
 {
     Weapon = 0,     // Vũ khí
@@ -14,12 +12,10 @@ public enum EquipmentSlotType
     Accessory = 5   // Phụ kiện (nhẫn/vòng cổ)
 }
 
-/// <summary>
-/// DTO cho 1 ô trang bị đã equip
-/// Khớp với cấu trúc JSON trong DB:
-///   {"id":200,"upgradeLevel":5,"strOptions":"1,65;3,20;8,15"}
-/// strOptions = "optionId,value;..." – value = strOption[upgradeLevel] từ option_template
-/// </summary>
+// DTO cho 1 ô trang bị đã equip
+// Khớp với cấu trúc JSON trong DB:
+// {"id":200,"upgradeLevel":5,"strOptions":"1,65;3,20;8,15"}
+// strOptions = "optionId,value;..." – value = strOption[upgradeLevel] từ option_template
 [Serializable]
 public class EquipmentItemDto
 {
@@ -36,10 +32,8 @@ public class EquipmentItemDto
     public int id { get => itemTemplateId; set => itemTemplateId = value; }
 }
 
-/// <summary>
-/// DTO chứa toàn bộ trang bị của player (6 slots)
-/// Tương ứng với equipment JSON trong DB
-/// </summary>
+// DTO chứa toàn bộ trang bị của player (6 slots)
+// Tương ứng với equipment JSON trong DB
 [Serializable]
 public class PlayerEquipmentDto
 {
@@ -50,9 +44,7 @@ public class PlayerEquipmentDto
     public EquipmentItemDto boots;
     public EquipmentItemDto accessory;
 
-    /// <summary>
-    /// Lấy item theo slot type
-    /// </summary>
+    // Lấy item theo slot type
     public EquipmentItemDto GetSlot(EquipmentSlotType slotType)
     {
         switch (slotType)
@@ -67,9 +59,7 @@ public class PlayerEquipmentDto
         }
     }
 
-    /// <summary>
-    /// Gán item vào slot type
-    /// </summary>
+    // Gán item vào slot type
     public void SetSlot(EquipmentSlotType slotType, EquipmentItemDto item)
     {
         switch (slotType)
@@ -83,11 +73,9 @@ public class PlayerEquipmentDto
         }
     }
 
-    /// <summary>
-    /// Xác định slot type dựa trên item_type từ DB
-    /// Xác định slot type dựa trên item.type từ DB (v3.0)
-    /// type: 0=Helmet 1=Weapon 2=Armor 3=Pants 4=Boots 5=Ring
-    /// </summary>
+    // Xác định slot type dựa trên item_type từ DB
+    // Xác định slot type dựa trên item.type từ DB (v3.0)
+    // type: 0=Helmet 1=Weapon 2=Armor 3=Pants 4=Boots 5=Ring
     public static EquipmentSlotType? GetSlotTypeForItemType(int itemType)
     {
         switch (itemType)
@@ -102,9 +90,7 @@ public class PlayerEquipmentDto
         }
     }
 
-    /// <summary>
-    /// Lấy tên hiển thị của slot
-    /// </summary>
+    // Lấy tên hiển thị của slot
     public static string GetSlotDisplayName(EquipmentSlotType slotType)
     {
         switch (slotType)
@@ -120,27 +106,21 @@ public class PlayerEquipmentDto
     }
 }
 
-/// <summary>
-/// Request gửi lên server khi equip item
-/// </summary>
+// Request gửi lên server khi equip item
 [Serializable]
 public class EquipItemRequest
 {
     public int inventorySlotIndex;
 }
 
-/// <summary>
-/// Request gửi lên server khi unequip item
-/// </summary>
+// Request gửi lên server khi unequip item
 [Serializable]
 public class UnequipItemRequest
 {
     public string equipmentSlot; // "weapon", "helmet", "armor", "pants", "boots", "accessory"
 }
 
-/// <summary>
-/// Response từ server sau khi equip/unequip
-/// </summary>
+// Response từ server sau khi equip/unequip
 [Serializable]
 public class EquipmentResponse
 {

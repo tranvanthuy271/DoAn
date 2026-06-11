@@ -3,20 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// GeneItemDebugAdder — Nhấn M để thêm x10 item lỗi đột biến của mỗi hệ (Fire/Water/Earth/Metal/Wood)
-/// vào túi đồ của player.
-///
-/// ═══════════════════════════════════════════════════════════════
-/// CÁCH SỬ DỤNG:
-///   1. Gắn script này lên bất kỳ GameObject debug nào trong scene
-///      (hoặc cùng chỗ với InventoryTestManager).
-///   2. Nhấn M trong game → x10 item gene upgrade của cả 5 hệ được thêm vào túi.
-///
-/// PHÍM TẮT: M (có thể đổi trong Inspector)
-/// Gọi: GET /api/gene/config?elementType=X&tier=1 cho mỗi hệ → lấy itemId → add vào inventory
-/// ═══════════════════════════════════════════════════════════════
-/// </summary>
+// GeneItemDebugAdder — Nhấn M để thêm x10 item lỗi đột biến của mỗi hệ (Fire/Water/Earth/Metal/Wood)
+// vào túi đồ của player.
+// CÁCH SỬ DỤNG:
+// 1. Gắn script này lên bất kỳ GameObject debug nào trong scene
+// (hoặc cùng chỗ với InventoryTestManager).
+// 2. Nhấn M trong game → x10 item gene upgrade của cả 5 hệ được thêm vào túi.
+// PHÍM TẮT: M (có thể đổi trong Inspector)
+// Gọi: GET /api/gene/config?elementType=X&tier=1 cho mỗi hệ → lấy itemId → add vào inventory
 public class GeneItemDebugAdder : MonoBehaviour
 {
     [Header("Phím tắt")]

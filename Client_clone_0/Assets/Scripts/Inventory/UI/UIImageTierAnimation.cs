@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Animation hiệu ứng UI thuần code — gắn lên bất kỳ Image nào.
-/// Không cần Animator Controller, không cần Animation Clip.
-/// Hỗ trợ: Pulse (scale), Glow (alpha), Rotate, Color Cycle.
-/// </summary>
+// Animation hiệu ứng UI thuần code — gắn lên bất kỳ Image nào.
+// Không cần Animator Controller, không cần Animation Clip.
+// Hỗ trợ: Pulse (scale), Glow (alpha), Rotate, Color Cycle.
 public class UIImageTierAnimation : MonoBehaviour
 {
     public enum EffectType
@@ -122,9 +120,7 @@ public class UIImageTierAnimation : MonoBehaviour
         _image.color = Color.Lerp(colorA, colorB, lerp);
     }
 
-    /// <summary>
-    /// API cho code bên ngoài thay đổi effect runtime.
-    /// </summary>
+    // API cho code bên ngoài thay đổi effect runtime.
     public void SetEffect(EffectType newEffect)
     {
         // Reset trước khi đổi
