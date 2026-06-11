@@ -64,7 +64,7 @@ CREATE TABLE `dungeon_config` (
   `time_limit_seconds` int(11) NOT NULL DEFAULT 0,
   `description` text DEFAULT NULL,
   `boss_enemy_id` int(11) DEFAULT NULL,
-  `reward_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{}' CHECK (json_valid(`reward_json`)),
+  `reward_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL  CHECK (json_valid(`reward_json`)),
   `thumbnail_icon_id` varchar(50) NOT NULL DEFAULT '',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
@@ -95,7 +95,7 @@ CREATE TABLE `dungeon_wave_config` (
   `daily_entry_limit` int(11) NOT NULL DEFAULT 1 COMMENT 'Lượt vào tối đa 1 ngày',
   `entry_item_plus1_id` int(11) DEFAULT 409 COMMENT 'item_template_id cho vé +1 lần',
   `entry_item_plus2_id` int(11) DEFAULT 410 COMMENT 'item_template_id cho vé +2 lần',
-  `milestone_reward_json` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON: [{wave,exp,gold,items:[{item_template_id,qty}]}]',
+  `milestone_reward_json` longtext NOT NULL  COMMENT 'JSON: [{wave,exp,gold,items:[{item_template_id,qty}]}]',
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wave-specific config per dungeon; mirrors DungeonWaveConfig SO trong Unity';
 
@@ -732,7 +732,7 @@ INSERT INTO `item_template` (`id`, `name`, `detail`, `isXepChong`, `gioiTinh`, `
 CREATE TABLE `leaderboard_cache` (
   `id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL DEFAULT '',
-  `list` longtext NOT NULL DEFAULT '[]',
+  `list` longtext NOT NULL ,
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
@@ -756,7 +756,7 @@ INSERT INTO `leaderboard_cache` (`id`, `name`, `list`, `updated_at`) VALUES
 CREATE TABLE `leaderboard_caches` (
   `Id` int(11) NOT NULL,
   `Name` varchar(100) NOT NULL DEFAULT '',
-  `ListJson` longtext NOT NULL DEFAULT '[]',
+  `ListJson` longtext NOT NULL ,
   `UpdatedAt` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1006,8 +1006,8 @@ INSERT INTO `map_portal` (`portal_id`, `portal_name`, `source_map_id`, `src_x`, 
 CREATE TABLE `map_spawn_config` (
   `id` int(11) NOT NULL,
   `map_id` int(11) NOT NULL COMMENT 'FK → map_config.map_id',
-  `spawn_json` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON array — mỗi entry = 1 điểm spawn: {enemy_id,hp,exp,cx,cy,is_boss,count,respawn_time}',
-  `drop_json` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON array — mỗi entry = 1 loại quái: {enemy_id, items:[{item_id,rate,qty_min,qty_max}]}',
+  `spawn_json` longtext NOT NULL  COMMENT 'JSON array — mỗi entry = 1 điểm spawn: {enemy_id,hp,exp,cx,cy,is_boss,count,respawn_time}',
+  `drop_json` longtext NOT NULL  COMMENT 'JSON array — mỗi entry = 1 loại quái: {enemy_id, items:[{item_id,rate,qty_min,qty_max}]}',
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cấu hình spawn enemy và tỉ lệ drop theo mapId — Unity host đọc khi khởi động scene';
 
@@ -1298,12 +1298,12 @@ CREATE TABLE `player2_data` (
   `player_id` int(11) NOT NULL COMMENT 'FK → player_data.player_id (cùng user)',
   `character_name` varchar(50) NOT NULL DEFAULT '',
   `gender` varchar(10) NOT NULL DEFAULT 'Male',
-  `info_char` longtext NOT NULL DEFAULT '{}' COMMENT 'JSON InfoChar: level, exp, element_type, gene_tier, gene_exp, skills_points, potential_points, hp, mp, map_id, position...',
-  `equipment` longtext NOT NULL DEFAULT '{}' COMMENT 'JSON trang bị đang mặc',
-  `inventory` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON danh sách vật phẩm túi đồ',
-  `skills` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON danh sách skill đã học',
-  `potential_stats` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON tiềm năng đã phân bổ',
-  `active_buffs` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON buff đang active',
+  `info_char` longtext NOT NULL  COMMENT 'JSON InfoChar: level, exp, element_type, gene_tier, gene_exp, skills_points, potential_points, hp, mp, map_id, position...',
+  `equipment` longtext NOT NULL  COMMENT 'JSON trang bị đang mặc',
+  `inventory` longtext NOT NULL  COMMENT 'JSON danh sách vật phẩm túi đồ',
+  `skills` longtext NOT NULL  COMMENT 'JSON danh sách skill đã học',
+  `potential_stats` longtext NOT NULL  COMMENT 'JSON tiềm năng đã phân bổ',
+  `active_buffs` longtext NOT NULL  COMMENT 'JSON buff đang active',
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dữ liệu nhân vật hệ gene thứ 2 — dùng chung player_id với player_data';
 
@@ -1345,7 +1345,7 @@ CREATE TABLE `player_data` (
   `skills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `potential_stats` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `active_buffs` longtext NOT NULL DEFAULT '[]' COMMENT 'JSON array các buff đang active'
+  `active_buffs` longtext NOT NULL  COMMENT 'JSON array các buff đang active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

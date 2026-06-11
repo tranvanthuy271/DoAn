@@ -205,8 +205,20 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.EnsureCreated();
 
         // ── Thêm cột role vào bảng users nếu chưa có (upgrade existing DB) ──
-        dbContext.Database.ExecuteSqlRaw(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'Player'");
+        bool columnExists = false;
+        using (var command = dbContext.Database.GetDbConnection().CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'";
+            dbContext.Database.OpenConnection();
+            var result = command.ExecuteScalar();
+            columnExists = Convert.ToInt32(result) > 0;
+        }
+
+        if (!columnExists)
+        {
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'Player'");
+        }
 
         // ── Seed admin user từ config / env vars ──────────────────────────────
         var adminUsername = config["Admin:Username"];
