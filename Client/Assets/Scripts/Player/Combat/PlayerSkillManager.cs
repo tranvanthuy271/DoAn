@@ -716,25 +716,10 @@ public class PlayerSkillManager : NetworkBehaviour
                 }
 
                 // Spawn client-side predicted projectile visual instantly
-                if (skill.projectilePrefab != null)
-                {
-                    Vector3 spawnPos = transform.position + new Vector3(facingRight ? skill.spawnOffset : -skill.spawnOffset, 0f, 0f);
-                    Vector2 velocity = new Vector2(facingRight ? skill.projectileSpeed : -skill.projectileSpeed, 0f);
-                    
-                    // Tính localScale tương tự ApplyProjectileFacing
-                    Vector3 originalScale = skill.projectilePrefab.transform.localScale;
-                    float scaleSign = skill.projectileSpriteFacesLeft ? (facingRight ? -1f : 1f) : (facingRight ? 1f : -1f);
-                    Vector3 targetScale = new Vector3(Mathf.Abs(originalScale.x) * scaleSign, originalScale.y, originalScale.z);
-
-                    PredictedProjectileVisual.Spawn(
-                        skill.projectilePrefab,
-                        spawnPos,
-                        Quaternion.identity,
-                        velocity,
-                        skill.projectileLifetime,
-                        targetScale
-                    );
-                }
+                // ĐÃ TẮT: prediction visual + bản networked replica của server gây ra
+                // hiện tượng "thấy 2 viên đạn" trên VPS (latency cao → 2 bản lệch nhau).
+                // Chỉ dùng bản networked do server spawn để đồng nhất trên mọi client.
+                // (Đánh đổi: trễ ~RTT khi đạn xuất hiện, chấp nhận được.)
 
                 // Bắt đầu cooldown trên client ngay lập tức để UI cập nhật đúng
                 skill.StartUsing();

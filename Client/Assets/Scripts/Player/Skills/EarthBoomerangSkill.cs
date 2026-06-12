@@ -70,27 +70,8 @@ public class EarthBoomerangSkill : NetworkBehaviour
             // Trigger SkillEffect animation locally
             TriggerBoomerangSkillEffectLocally();
 
-            // Predict projectile visual
-            if (boomerangPrefab != null)
-            {
-                float dir = facingRight ? 1f : -1f;
-                Vector3 spawnPos = transform.position + new Vector3(dir * 0.6f, 0f, 0f);
-                Vector2 velocity = new Vector2(dir * launchSpeed, 0f);
-
-                Vector3 originalScale = boomerangPrefab.transform.localScale;
-                Vector3 targetScale = new Vector3(
-                    facingRight ? Mathf.Abs(originalScale.x) : -Mathf.Abs(originalScale.x),
-                    originalScale.y, originalScale.z);
-
-                PredictedProjectileVisual.Spawn(
-                    boomerangPrefab,
-                    spawnPos,
-                    Quaternion.identity,
-                    velocity,
-                    2.5f, // requestedLifetime
-                    targetScale
-                );
-            }
+            // ĐÃ TẮT prediction visual: tránh "thấy 2 boomerang" trên VPS (predicted + networked).
+            // Chỉ dùng bản networked do server spawn.
 
             StartBoomerangServerRpc(facingRight, effectValue);
         }

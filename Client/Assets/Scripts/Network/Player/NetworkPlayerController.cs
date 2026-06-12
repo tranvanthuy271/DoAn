@@ -34,17 +34,17 @@ public class NetworkPlayerController : NetworkBehaviour
     // giữa các lần nhận syncPosition, giúp di chuyển mượt mà hơn.
     private NetworkVariable<Vector2> syncVelocity = new NetworkVariable<Vector2>(Vector2.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    [Header("Remote Interpolation")]
-    // SmoothDamp velocity buffer (internal, managed by Vector2.SmoothDamp)
-    private Vector2 _smoothVelocity;
-    // Thời gian smooth (giây). Nhỏ hơn = phản hồi nhanh hơn, lớn hơn = mượt hơn.
-    private const float SmoothTime = 0.08f;
-    // Tốc độ tối đa cho SmoothDamp (không giới hạn, để SmoothDamp tự điều chỉnh)
-    private const float MaxSmoothSpeed = 50f;
+    // Snapshot interpolation: thay vì extrapolate (dự đoán tương lai → dễ overshoot rồi
+    // giật ngược khi latency VPS cao), ta render trễ một nhịp nhỏ và NỘI SUY giữa 2 mốc
+    // vị trí đã thực sự nhận được. Mượt và không bao giờ giật lùi.
+    private struct PosSnapshot { public float time; public Vector2 pos; }
 
-    // Extrapolation helper variables để tính toán thời gian trôi qua giữa các network tick
-    private float _lastPosUpdateTime;
-    private Vector3 _lastServerPos;
+    [Header("Remote Interpolation")]
+    private readonly System.Collections.Generic.List<PosSnapshot> _snapshots = new System.Collections.Generic.List<PosSnapshot>(32);
+    // Độ trễ render (giây). ~120ms đủ che giấu jitter mạng của VPS mà vẫn phản hồi nhanh.
+    private const float InterpolationDelay = 0.12f;
+    // Khoảng cách coi là teleport → snap ngay thay vì nội suy.
+    private const float SnapDistance = 5f;
 
     private void Awake()
     {
@@ -74,10 +74,11 @@ public class NetworkPlayerController : NetworkBehaviour
         // Subscribe to networkScaleX changes để sync flip direction
         networkScaleX.OnValueChanged += OnScaleXChanged;
 
-        // Đăng ký nhận sự thay đổi position để cập nhật timestamp cho extrapolation
-        _lastPosUpdateTime = Time.time;
-        _lastServerPos = syncPosition.Value;
+        // Đăng ký nhận sự thay đổi position để nạp snapshot cho nội suy
         syncPosition.OnValueChanged += OnSyncPositionChanged;
+        // Nạp mốc khởi đầu
+        _snapshots.Clear();
+        _snapshots.Add(new PosSnapshot { time = Time.time, pos = syncPosition.Value });
 
         // Khởi tạo scale theo giá trị hiện tại của NetworkVariable (giữ Y scale gốc từ prefab)
         transform.localScale = new Vector3(networkScaleX.Value, _prefabScaleY, 1);
@@ -88,12 +89,17 @@ public class NetworkPlayerController : NetworkBehaviour
             controller.enabled = true;
         }
 
-        // SERVER: tắt physics hoàn toàn — ServerScene không có ground collider
-        // Server chỉ relay position từ Owner client, không simulate physics.
+        // SERVER: player non-owner phải GIỮ collider sống trong physics scene để
+        // enemy/boss/fireball/melee dò trúng được (OverlapCircle + OnTriggerEnter2D).
+        // Dùng Kinematic để server KHÔNG tự simulate gravity/forces (vị trí do client
+        // report qua MoveServerRpc), nhưng simulated=true để collider vẫn nằm trong
+        // physics scene → skill/projectile mới trừ được HP.
+        // (Trước đây simulated=false làm collider biến mất → trên VPS không ai ăn damage.)
         if (IsServer && !IsOwner && rb != null)
         {
             rb.bodyType = RigidbodyType2D.Kinematic;
-            rb.simulated = false;
+            rb.simulated = true;
+            rb.gravityScale = 0f;
         }
 
         // Non-owner CLIENT: tắt physics hoàn toàn - transform do InterpolateRemotePlayer() drive.
@@ -135,8 +141,14 @@ public class NetworkPlayerController : NetworkBehaviour
 
     private void OnSyncPositionChanged(Vector3 oldPos, Vector3 newPos)
     {
-        _lastServerPos = oldPos;
-        _lastPosUpdateTime = Time.time;
+        // Nạp mốc vị trí mới kèm thời điểm nhận. InterpolateRemotePlayer() sẽ nội suy
+        // giữa các mốc này với độ trễ InterpolationDelay.
+        _snapshots.Add(new PosSnapshot { time = Time.time, pos = newPos });
+
+        // Giữ buffer gọn: chỉ cần lịch sử ~1s.
+        float cutoff = Time.time - 1f;
+        while (_snapshots.Count > 2 && _snapshots[0].time < cutoff)
+            _snapshots.RemoveAt(0);
     }
 
     private void DisableConflictingNetworkTransform()
@@ -267,40 +279,59 @@ public class NetworkPlayerController : NetworkBehaviour
     }
 
     /// <summary>
-    /// Non-owner: interpolation mượt mà cho remote player.
-    /// Chạy trong Update() (mỗi frame render) thay vì FixedUpdate() (50Hz physics tick)
-    /// để đảm bảo visual smoothness không bị giật giữa các physics tick.
+    /// Non-owner: nội suy mượt cho remote player bằng SNAPSHOT INTERPOLATION.
+    /// Render ở thời điểm (now - InterpolationDelay) bằng cách nội suy tuyến tính giữa 2
+    /// snapshot bao quanh thời điểm đó. Không extrapolate nên không bao giờ overshoot/giật lùi.
+    /// Chạy trong LateUpdate (mỗi frame render) để mượt theo framerate.
     /// </summary>
     private void InterpolateRemotePlayer()
     {
         if (IsOwner || IsServer) return;
-        if (syncPosition.Value == Vector3.zero) return;
+        if (_snapshots.Count == 0) return;
 
-        Vector2 serverPos = new Vector2(syncPosition.Value.x, syncPosition.Value.y);
-        Vector2 serverVel = syncVelocity.Value;
+        float renderTime = Time.time - InterpolationDelay;
         Vector2 currentPos = (Vector2)transform.position;
 
-        // Snap detection: nếu khoảng cách quá lớn (teleport / respawn / first sync)
-        // thì snap ngay thay vì SmoothDamp (tránh player "bay" chạy vào vị trí đích).
-        float dist = Vector2.Distance(currentPos, serverPos);
-        if (dist > 5f)
+        // Mốc mới nhất — dùng để snap khi teleport và làm fallback.
+        Vector2 latestPos = _snapshots[_snapshots.Count - 1].pos;
+
+        // Snap khi teleport / respawn / first sync (khoảng cách quá lớn).
+        if (Vector2.Distance(currentPos, latestPos) > SnapDistance)
         {
-            transform.position = new Vector3(serverPos.x, serverPos.y, transform.position.z);
-            _smoothVelocity = Vector2.zero;
-            _lastServerPos = serverPos;
-            _lastPosUpdateTime = Time.time;
+            transform.position = new Vector3(latestPos.x, latestPos.y, transform.position.z);
             return;
         }
 
-        // Extrapolate: dự đoán server position hiện tại dựa trên velocity và thời gian đã trôi qua kể từ gói tin cuối.
-        // Điều này đảm bảo mục tiêu (target) di chuyển liên tục, không bị nhảy bước (jitter/teleport) mỗi khi nhận network tick.
-        float timeSinceUpdate = Time.time - _lastPosUpdateTime;
-        timeSinceUpdate = Mathf.Min(timeSinceUpdate, 1.0f); // Giới hạn tối đa 1s để tránh lỗi trôi quá xa khi lag mạng
-        Vector2 extrapolatedTarget = serverPos + serverVel * timeSinceUpdate;
+        Vector2 targetPos;
 
-        // SmoothDamp: di chuyển đều đặn về target, không bị hiệu ứng "giảm tốc" của Lerp
-        Vector2 newPos = Vector2.SmoothDamp(currentPos, extrapolatedTarget, ref _smoothVelocity, SmoothTime, MaxSmoothSpeed, Time.deltaTime);
-        transform.position = new Vector3(newPos.x, newPos.y, transform.position.z);
+        if (renderTime <= _snapshots[0].time)
+        {
+            // Chưa đủ lịch sử để render quá khứ → bám mốc cũ nhất.
+            targetPos = _snapshots[0].pos;
+        }
+        else if (renderTime >= _snapshots[_snapshots.Count - 1].time)
+        {
+            // renderTime vượt mốc mới nhất (mạng đang trễ hơn cả buffer) → giữ mốc mới nhất,
+            // KHÔNG dự đoán tiếp để tránh overshoot.
+            targetPos = latestPos;
+        }
+        else
+        {
+            // Tìm cặp snapshot [i, i+1] bao quanh renderTime rồi nội suy tuyến tính.
+            targetPos = latestPos;
+            for (int i = 0; i < _snapshots.Count - 1; i++)
+            {
+                if (renderTime >= _snapshots[i].time && renderTime <= _snapshots[i + 1].time)
+                {
+                    float span = _snapshots[i + 1].time - _snapshots[i].time;
+                    float t = span > 0.0001f ? (renderTime - _snapshots[i].time) / span : 1f;
+                    targetPos = Vector2.Lerp(_snapshots[i].pos, _snapshots[i + 1].pos, t);
+                    break;
+                }
+            }
+        }
+
+        transform.position = new Vector3(targetPos.x, targetPos.y, transform.position.z);
     }
 
     private void LateUpdate()

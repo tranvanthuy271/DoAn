@@ -107,34 +107,10 @@ public class FireRainSkill : NetworkBehaviour
             // Trigger SkillEffect locally
             TriggerFireRainSkillEffectLocally();
 
-            // Predict fireballs visual
-            if (firePrefab != null)
-            {
-                StartCoroutine(PredictFireRainVisualSequence(facingRight));
-            }
+            // ĐÃ TẮT prediction visual: bản predicted + bản networked của server làm
+            // owner thấy "mưa lửa 2 lần" trên VPS. Chỉ dùng fireball networked do server spawn.
 
             StartFireRainServerRpc(facingRight);
-        }
-    }
-
-    private IEnumerator PredictFireRainVisualSequence(bool facingRight)
-    {
-        float dir = facingRight ? 1f : -1f;
-        for (int i = 0; i < fireballCount; i++)
-        {
-            float xOffset = dir * Random.Range(0.3f, spreadRadius);
-            Vector3 spawnPos = transform.position + new Vector3(xOffset, spawnHeightOffset, 0f);
-            Vector2 fallVelocity = new Vector2(0f, -fallSpeed);
-
-            PredictedProjectileVisual.Spawn(
-                firePrefab,
-                spawnPos,
-                Quaternion.identity,
-                fallVelocity,
-                fireballLifetime
-            );
-
-            yield return new WaitForSeconds(spawnInterval);
         }
     }
 

@@ -106,27 +106,8 @@ public class WaterPillarSkill : NetworkBehaviour
             // Trigger SkillEffect animation locally
             TriggerWaterPillarSkillEffectLocally();
 
-            // Predict projectile visual
-            if (pillarPrefab != null)
-            {
-                float dir = facingRight ? 1f : -1f;
-                Vector3 spawnPos = transform.position + new Vector3(dir * horizontalOffset, spawnHeightOffset, 0f);
-                Vector2 fallVelocity = new Vector2(0f, -pillarFallSpeed);
-
-                Vector3 originalScale = pillarPrefab.transform.localScale;
-                Vector3 targetScale = new Vector3(
-                    facingRight ? Mathf.Abs(originalScale.x) : -Mathf.Abs(originalScale.x),
-                    originalScale.y, originalScale.z);
-
-                PredictedProjectileVisual.Spawn(
-                    pillarPrefab,
-                    spawnPos,
-                    Quaternion.identity,
-                    fallVelocity,
-                    pillarLifetime,
-                    targetScale
-                );
-            }
+            // ĐÃ TẮT prediction visual: tránh "thấy 2 cây trụ" trên VPS (predicted + networked).
+            // Chỉ dùng bản networked do server spawn.
 
             StartWaterPillarServerRpc(facingRight);
         }
