@@ -100,3 +100,25 @@ Hệ thống được thiết kế theo mô hình **Hybrid 3-Layer (Client - Ded
   * Dù hacker có sở hữu JWT Token hợp lệ của tài khoản họ đi chăng nữa, họ cũng không có mã Zone API Key nội bộ này. Vì thế, hacker không thể tự gửi các request HTTP trực tiếp lên Web API để tự cộng vàng hay chỉnh sửa Gene.
 * **Ngăn chặn tấn công Timing Attack (Tấn công đo thời gian):**
   * Trong mã nguồn middleware của bạn (`ConstantTimeEquals`), việc so sánh khóa được thực hiện theo cơ chế **thời gian không đổi (Constant-Time Comparison)** thay vì toán tử `==` thông thường. Điều này ngăn chặn hacker sử dụng kỹ thuật đo thời gian phản hồi của Server để dò tìm từng ký tự của mã khóa.
+
+---
+
+### Câu 7: Nếu Hacker đã có JWT hợp lệ của chính họ và gửi thẳng lên Web API bằng Postman, Web API chấp nhận JWT rồi thì làm sao từ chối được yêu cầu của Hacker?
+
+Đây là một sự nhầm lẫn giữa **Xác nhận danh tính (Authentication)** và **Cấp quyền hành động (Authorization)**. Dưới đây là cách Web API của hệ thống từ chối Hacker:
+
+#### 1. Server chỉ tin Database, KHÔNG tin payload của Client (Server-Authoritative)
+Dù Hacker có JWT hợp lệ và API cho phép request đi qua, Hacker **không thể** tự gửi gói tin định đoạt kết quả (ví dụ: `{"newLevel": 99, "gold": 99999}`).
+Code API của bạn chỉ nhận tham số cơ bản (ví dụ: `geneId`). Ngay khi nhận lệnh, Web API tự động mở Database ra để kiểm tra chéo:
+* Player này có đủ vàng không? (Đọc từ DB, không đọc từ Client).
+* Player này có đủ lõi tiến hóa không? (Đọc từ DB).
+Nếu không đủ, Web API lập tức quăng lỗi `400 Bad Request`. Hacker chỉ có quyền "Bấm nút yêu cầu", còn Server mới là người "Định đoạt kết quả".
+
+#### 2. Quyền hạn theo Role (Role-Based Access Control)
+Có những đường link API (Endpoint) vô cùng nhạy cảm (ví dụ: cộng vàng sau khi đánh Boss, ghi đè toàn bộ chỉ số). Web API cài đặt bảo mật chỉ dành cho Role `GameServer` (Dedicated Server mang mã `X-Zone-Api-Key`) mới được phép gọi.
+Khi Hacker dùng JWT gửi vào đường link này, kịch bản sẽ là:
+1. API kiểm tra JWT: *"Đúng, mày là người chơi Nguyễn Văn A."* (Authentication thành công).
+2. API kiểm tra Role: *"Nhưng endpoint này chỉ dành cho máy chủ trận đấu. Mày chỉ mang Role `Player`."*
+3. API từ chối lập tức: Trả về lỗi **403 Forbidden** (Không có quyền truy cập).
+
+> **Lời thoại chốt hạ:** *"Dạ thưa Hội đồng, việc Client có JWT chỉ giúp xác định họ là ai, chứ không cấp cho họ quyền làm mọi thứ. Hệ thống của em áp dụng nguyên tắc Server-Authoritative (Server làm chủ) và Phân quyền theo Role. JWT của người chơi bị chặn hoàn toàn khỏi các endpoint dành riêng cho Dedicated Server (như thao tác lưu kết quả trận đấu), do đó hacker không thể can thiệp hệ thống."*
