@@ -122,3 +122,16 @@ Khi Hacker dùng JWT gửi vào đường link này, kịch bản sẽ là:
 3. API từ chối lập tức: Trả về lỗi **403 Forbidden** (Không có quyền truy cập).
 
 > **Lời thoại chốt hạ:** *"Dạ thưa Hội đồng, việc Client có JWT chỉ giúp xác định họ là ai, chứ không cấp cho họ quyền làm mọi thứ. Hệ thống của em áp dụng nguyên tắc Server-Authoritative (Server làm chủ) và Phân quyền theo Role. JWT của người chơi bị chặn hoàn toàn khỏi các endpoint dành riêng cho Dedicated Server (như thao tác lưu kết quả trận đấu), do đó hacker không thể can thiệp hệ thống."*
+
+---
+
+### Câu 8: Tài khoản và Mật khẩu của người chơi có được bảo vệ an toàn không? Hệ thống dùng cơ chế gì?
+
+**Có, mật khẩu được bảo vệ ở chuẩn an ninh công nghiệp bằng thuật toán BCrypt.**
+Trong mã nguồn Web API (`GameServerApi/Services/AuthService.cs`), mật khẩu được xử lý qua hàm:
+`BCrypt.Net.BCrypt.HashPassword(plainText, workFactor: 12)`
+
+Các lớp bảo vệ bao gồm:
+1. **Mã hóa một chiều (One-way Hashing):** Mật khẩu gốc không bao giờ lưu trữ trong Database. Hệ thống chỉ lưu chuỗi băm dạng `$2a$12$...`. Nếu Hacker đánh cắp toàn bộ Database thì cũng không thể dịch ngược ra mật khẩu gốc. Không sử dụng các thuật toán yếu, lỗi thời như MD5 hay SHA-1.
+2. **Cơ chế rắc "Muối" (Salting):** Thuật toán BCrypt tự động tạo ra một chuỗi ngẫu nhiên (Salt) trộn vào mật khẩu của từng người trước khi băm. Do đó, 2 người cùng đặt mật khẩu là `123456` nhưng chuỗi lưu trong cơ sở dữ liệu sẽ hoàn toàn khác nhau. Khóa chặn hoàn toàn kiểu tấn công tra bảng (Rainbow Table Attack).
+3. **Chống tấn công vét cạn (Brute-force / Dictionary Attack):** Thuộc tính `workFactor: 12` nghĩa là hệ thống lặp lại quá trình băm $2^{12}$ (4096) lần. Điều này cố tình làm chậm đi thời gian xử lý của CPU/GPU. Ngay cả khi hacker dùng siêu máy tính hay dàn VGA khủng để chạy vòng lặp dò mật khẩu, tốc độ dò cũng sẽ bị giảm đi hàng ngàn lần, khiến việc dò mật khẩu trở nên bất khả thi về mặt thời gian.
