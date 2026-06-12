@@ -36,6 +36,13 @@ public class PlayerMovement : MonoBehaviour
     private bool isFlying;       // chỉ true trong god mode
     private bool shouldJump;    // được set ở Update, consume ở FixedUpdate
 
+    [Header("Coyote & Jump Buffer")]
+    [SerializeField] private float coyoteTime = 0.2f;
+    private float coyoteTimeCounter;
+    [SerializeField] private float jumpBufferTime = 0.2f;
+    private float jumpBufferCounter;
+
+
     [Header("Fall-through Platform")]
     [Tooltip("Khoảng cách tìm kiếm ground bên dưới platform hiện tại để kiểm tra có ground nào nữa không")]
     [SerializeField] private float fallThroughSearchDistance = 15f;
@@ -161,10 +168,32 @@ public class PlayerMovement : MonoBehaviour
 
         // isGrounded đã được update ở đầu HandleInput() rồi, không cần check lại
 
-        // Cho phép nhảy nếu đang ở dưới đất và nhLetấn jump
-        if (jumpPressed && isGrounded)
+        // Cập nhật Coyote Time counter
+        if (isGrounded)
+        {
+            coyoteTimeCounter = coyoteTime;
+        }
+        else
+        {
+            coyoteTimeCounter -= Time.deltaTime;
+        }
+
+        // Cập nhật Jump Buffer counter
+        if (jumpPressed)
+        {
+            jumpBufferCounter = jumpBufferTime;
+        }
+        else if (jumpBufferCounter > 0f)
+        {
+            jumpBufferCounter -= Time.deltaTime;
+        }
+
+        // Kích hoạt nhảy nếu thỏa mãn cả hai điều kiện
+        if (jumpBufferCounter > 0f && coyoteTimeCounter > 0f)
         {
             shouldJump = true;
+            jumpBufferCounter = 0f;
+            coyoteTimeCounter = 0f;
         }
 
         // God mode: reset flight khi chạm đất

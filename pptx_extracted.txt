@@ -1,0 +1,110 @@
+--- Slide 1 ---
+ĐỒ ÁN TỐT NGHIỆP PHÁT TRIỂN TRÒ CHƠI MUTANTS ARENA VỚI HỆ THỐNG TIẾN HÓA GENE BẰNG UNITY Sinh  viên   thực   hiện : Trần Văn Thủy  – CT060439 Lớp:  CT6D Người hướng dẫn: TS. Nguyễn Đức Hiếu Khoa  công   nghệ   thông  tin – Học  viện   Kỹ   thuật   mật   mã
+
+--- Slide 2 ---
+Đặt   vấn   đề
+
+--- Slide 3 ---
+NỘI DUNG TỔNG QUAN VỀ ĐỀ TÀI 01. PHÂN TÍCH  VÀ  THIẾT KẾ HỆ THỐNG 02. TRIỂN KHAI  HỆ THỐNG 03. KẾT QUẢ VÀ THỰC NGHIỆM 04.
+
+--- Slide 4 ---
+TỔNG QUAN VỀ ĐỀ TÀI CHƯƠNG 01
+
+--- Slide 5 ---
+Game 2D Action RPG   Game  2D Action RPG ,  sự   kết   hợp   hài   hòa   giữa   cơ   chế   điều   khiển   phản   xạ   thời   gian   thực   trên   bản   đồ  di  chuyển   đa   nền   tảng  platformer  cùng   chiều   sâu   phát   triển   nhân   vật   thông  qua  hệ   thống   chỉ   số ,  trang   bị   và   kỹ   năng .
+
+--- Slide 6 ---
+Mục   Tiêu   Đề  Tài  
+
+--- Slide 7 ---
+Đối   Tượng  & Phạm Vi  Sản   Phẩm   Nghiên   Cứu  
+
+--- Slide 8 ---
+Đặc   Điểm  Gameplay &  Vòng   Lặp   Trò   Chơi  
+
+--- Slide 9 ---
+Kiến   trúc   mạng  & Công  nghệ   sử   dụng
+
+--- Slide 10 ---
+PHÂN TÍCH  VÀ  THIẾT KẾ HỆ THỐNG CHƯƠNG 02
+
+--- Slide 11 ---
+Mô   tả   hệ   thống
+
+--- Slide 12 ---
+Biểu đồ use case  tổng quát Biểu   đồ  Use Case  tổng quát
+
+--- Slide 13 ---
+Cơ   sở   dữ   liệu   vật   lý  ERD Sơ   đồ   thực   thể  ERD :  Gồm   các   bảng   liên   kết   chặt   chẽ   như   Users  ( tài   khoản ),  Player_Data  ( chỉ   số   nhân   vật ),  Inventory  ( vật   phẩm ),  Gene_Data  ( dữ   liệu  Gene). Thiết   kế  JSON Column  linh   hoạt : Lưu  trữ   trực   tiếp   các   dữ   liệu   có   cấu   trúc   động   như   danh   sách   chỉ   số   phụ   trang   bị   cường   hóa   ngẫu   nhiên ,  trạng   thái   nhiệm   vụ   đang   nhận ,  danh   sách   kỹ   năng   nhanh . Tối   ưu   hóa :  Tránh   tạo   quá   nhiều   bảng   liên   kết  1-nhiều  phức   tạp ,  giảm   thiểu   số   lượng   truy   vấn   JOIN   lớn ,  giúp   tăng   tốc   độ   đọc / ghi   dữ   liệu   nhân   vật  .
+
+--- Slide 14 ---
+Cơ   sở   dữ   liệu   vật   lý  ERD Cơ   sở   dữ   liệu   vật   lý  ERD
+
+--- Slide 15 ---
+Xây   dựng   các   cơ   chế  game CHƯƠNG 03
+
+--- Slide 16 ---
+Xây   dựng   hệ   thống   điều   khiển  & di  chuyển   Animator Controller :  Thiết   lập   đồ   thị   trạng   thái   nhân   vật   chuyển   đổi   tức   thì   theo  input  bằng   cách   đặt   Exit Time = 0   và   Transition Duration = 0.05s   giữa   các   hoạt   ảnh   chạy ,  nhảy ,  lướt . Coyote Time : Cho  phép   người   chơi   nhảy   trong   khoảng  0.1  giây   ngay   cả   khi   vừa   đi   hụt   ra   khỏi   mép   vực . Jump Buffer : Lưu  lệnh   nhảy   nhấn   trước   khi   chạm   đất   tối   đa  0.15  giây   và   tự   kích   hoạt   ngay   khi   chạm   đất ,  đảm   bảo   điều   khiển   mượt   mà   liên   tục . Dash I-Frames :  Lập   trình   trạng   thái   bất   tử   ngắn  0.2  giây   khi   lướt   nhanh   bằng   cách   tắt   tạm   thời   va   chạm   của   nhân   vật   với   các  hitbox  đòn   đánh   của   quái   vật .
+
+--- Slide 17 ---
+AI FSM	   Finite State Machine FSM  cho   quái   vật : AI  quái   vật   được   mô   hình   hóa   thành   các   trạng   thái   rời   rạc : Idle/Patrol  tuần   tra , Chase  đuổi   theo   người   chơi , Attack  tấn   công   khi   đủ   gần ,  và  Hit/Dead  nhận   sát   thương   hoặc   chết   giải   phóng   tài   nguyên .
+
+--- Slide 18 ---
+Server-Authoritative &   Phân  chia Zone  	   Server-Authoritative:  Dedicated Server  là   nguồn   sự   thật   duy   nhất   quản   lý   toàn   bộ   va   chạm , HP,  quái   vật   để   chống  hack RAM ở client. Client-prediction:  Client  chạy   trước  di  chuyển   dựa   trên  input  để   triệt   tiêu   trễ   mạng ,  lưu  input  để   đối   chiếu   với   vị   trí  server  gửi   về . Xác   thực  stateless:   Sử   dụng  JWT Token  mã   hóa  HS256  để   định   danh   người   chơi  an  toàn . Zone-based Server & Instance : Bản   đồ   thế   giới   được  chia  nhỏ   thành   các  Zone  độc   lập   quản   lý   bởi   ZoneRoomRegistry .  Người   chơi   chỉ   nhận   gói  tin  đồng   bộ   từ   đối   tượng   trong   cùng  Zone  để   tối   ưu   băng   thông . Tạo   động   các   phó   bản  Dungeon Instance  riêng   tư   cho   các   tổ   đội   và   tự   giải   phóng   tài   nguyên   sau   khi   phó   bản   hoàn   thành .
+
+--- Slide 19 ---
+  Phát   triển   nhân   vật  & Tiến  hóa  Gene Khái   niệm   tiến   hóa  Gene : Thay  thế   cơ   chế   chọn   lớp   nhân   vật   truyền   thống ,  cho   phép   nhân   vật   tự  do  phát   triển   thông  qua  việc   mở   khóa   và   nâng   cấp   các   nhánh  Gene  thuộc   tính   ngũ   hành . Dung  hợp  Hybrid Fusion : Khi  đạt   cấp   độ   tối   đa  ở  cả  Gene  chính   và  Gene  phụ   thuộc   hai   nguyên   tố   khác   nhau ,  người   chơi   có   thể   tiến   hành  dung  hợp   để   mở   khóa   lớp   nhân   vật  lai  với   sức   mạnh   vượt   trội . Gene  tối   thượng :  Cấp   độ   tiến   hóa   cao   nhất   khi  dung  hợp   thành   công   các  Gene lai  đạt   phẩm   chất   cực   hạn ,  mở   khóa   thêm   được   hình   ảnh  (aura)  và   thêm   chỉ   số   cộng   thêm .
+
+--- Slide 20 ---
+Xây   dựng   cơ   chế   chiến   đấu  &  Tương   khắc   Ngũ   hành   Hitbox &  Hurtbox :  Triển   khai   bằng  Trigger Collider 2D  trên  Dedicated Server. Khi  xảy   ra   va   chạm , server  thực   hiện   tính   toán   sát   thương   trực   tiếp , client  chỉ   chịu   trách   nhiệm  render  hiệu   ứng   hoạt   ảnh   và  text  sát   thương  damage pop-up. Vòng   tương   khắc   Ngũ   Hành : Kim ➔  Mộc  ➔ Thủy ➔  Hỏa  ➔  Thổ  ➔ Kim.  Tấn   công   khắc   hệ   được   nhân   x1.5   sát   thương ;  bị   khắc   hệ   giảm   còn   x0.75   sát   thương . Hệ   thứ  6  Phong Wind   đóng   vai   trò   là   hệ   trung   lập   đặc   biệt ,  không   khắc   và   không   bị   khắc   bởi  5  hệ   còn   lại   với   hệ   số   sát   thương   nhân  x1.0,  giúp   tăng   tính   cân   bằng   chiến   thuật . Công  thức   sát   thương   cuối :  Damage = ATK *  skill_mult  *  element_mult  - DEF *  red_factor .  Luôn   đảm   bảo   tối   thiểu   gây  1  sát   thương   để   tránh   lỗi   bất   tử .
+
+--- Slide 21 ---
+Thực   nghiệm  &  Đánh   giá   hiệu   năng CHƯƠNG 04
+
+--- Slide 22 ---
+Đánh   giá   thực   nghiệm   Thử   nghiệm   độ   trễ   mạng  Latency :  Kiểm   thử   kết   nối  client-server  trong   điều   kiện   mạng   thực   tế   với  RTT dao  động   từ  40ms  đến  90ms.  Cơ   chế   dự   đoán  di  chuyển  Client-prediction  hoạt   động   ổn   định ,  giảm   cảm   giác   khựng   trễ  di  chuyển . Thử   nghiệm   tải   và  FPS : Client  chạy   ổn   định  ở  mức   60 FPS   trên   cấu   hình   máy   tầm   trung . Dedicated Server  tối   ưu   hóa   tốt   tài   nguyên  CPU  nhờ   thuật   toán  FSM  quái   vật   đơn   giản   và   kiến   trúc  Zone-based Server  phân   khu   tải   dữ   liệu . Đánh   giá   bảo   mật :  Thực   nghiệm   sử   dụng   các   công   cụ   thay   đổi   bộ   nhớ   tại  Client Cheat Engine  để  hack  vàng   và  HP; Dedicated Server  phát   hiện   và   từ   chối   ghi   nhận ,  chứng   minh   mô   hình  Server-Authoritative  chống   gian   lận   thành   công .
+
+--- Slide 23 ---
+Đánh   giá   thực   nghiệm   Thử   nghiệm   độ   trễ   mạng  Latency :  Kiểm   thử   kết   nối  client-server  trong   điều   kiện   mạng   thực   tế   với  RTT dao  động   từ  40ms  đến  90ms.  Cơ   chế   dự   đoán  di  chuyển  Client-prediction  hoạt   động   ổn   định ,  giảm   cảm   giác   khựng   trễ  di  chuyển . Thử   nghiệm   tải   và  FPS : Client  chạy   ổn   định  ở  mức   60 FPS   trên   cấu   hình   máy   tầm   trung . Dedicated Server  tối   ưu   hóa   tốt   tài   nguyên  CPU  nhờ   thuật   toán  FSM  quái   vật   đơn   giản   và   kiến   trúc  Zone-based Server  phân   khu   tải   dữ   liệu . Đánh   giá   bảo   mật :  Thực   nghiệm   sử   dụng   các   công   cụ   thay   đổi   bộ   nhớ   tại  Client Cheat Engine  để   tránh  hack  vàng   và  HP; Dedicated Server  phát   hiện   và   từ   chối   ghi   nhận .
+
+--- Slide 24 ---
+ĐỊNH  HƯỚNG PHÁT TRIỂN  
+
+--- Slide 25 ---
+Kết quả   Giao  diện   các   nhân   vật   trong  game
+
+--- Slide 26 ---
+Kết quả   Giao  diện  skill  cho   từng   nhân   vật
+
+--- Slide 27 ---
+Kết quả   Giao  diện  skill  cho   từng   nhân   vật
+
+--- Slide 28 ---
+Kết quả   Giao  diện  skill  cho   từng   nhân   vật
+
+--- Slide 29 ---
+Kết quả   Giao  diện  skill  cho   từng   nhân   vật
+
+--- Slide 30 ---
+Kết quả   Giao  diện  skill  cho   từng   nhân   vật
+
+--- Slide 31 ---
+Kết quả   Video  minh   họa   đồng   bộ  multiplayer
+
+--- Slide 32 ---
+Kết quả   Video  minh   họa   nâng   cấp  gene
+
+--- Slide 33 ---
+Kết quả   Video  minh   họa  chat
+
+--- Slide 34 ---
+Kết quả   Video  minh   họa   luồng   nhiệm   vụ
+
+--- Slide 35 ---
+Kết quả   Video  minh   họa   luồng   đăng   nhập   đăng   ký
+
+--- Slide 36 ---
+Kết quả   Video  minh   họa   luồng   sử   dụng  item , phó   bản.hiển   thị   thông  tin  nhân   vật  
+
+--- Slide 37 ---
+CẢM ƠN THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE.

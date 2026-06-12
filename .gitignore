@@ -187,3 +187,11 @@ GameServerApi/artifacts/
 GameServerApi/bin/
 GameServerApi/obj/
 GameServerApi/build_verify*/
+
+# Clones and large files
+*_clone*/
+*.pptx
+*.docx
+*.pdf
+*.zip
+*.rar

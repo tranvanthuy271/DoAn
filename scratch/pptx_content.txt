@@ -1,0 +1,241 @@
+
+=================== SLIDE 1 ===================
+TEXT:
+  ĐỒ ÁN TỐT NGHIỆP
+TEXT:
+  PHÁT TRIỂN TRÒ CHƠI MUTANTS ARENA VỚI HỆ THỐNG TIẾN HÓA GENE BẰNG UNITY
+TEXT:
+  Sinh viên thực hiện:
+  Trần Văn Thủy – CT060439
+  Lớp: CT6D
+  Người hướng dẫn:
+  TS. Nguyễn Đức Hiếu
+  Khoa công nghệ thông tin – Học viện Kỹ thuật mật mã
+
+=================== SLIDE 2 ===================
+TEXT:
+  Đặt vấn đề
+TEXT:
+  • Đồng bộ di chuyển thời gian thực trong game multiplayer 2D RPG Platformer thường gặp hiện tượng giật lắc (jitter) do trễ mạng (latency).
+  • Nguy cơ gian lận, hack RAM (HP, sát thương, vàng) cao do dữ liệu được tính toán và xử lý hoàn toàn ở phía Client.
+  • Thiết kế lớp nhân vật (Warrior, Mage...) trong các game RPG truyền thống thường bị khóa cứng, thiếu sự linh hoạt và tính đột biến cá nhân hóa.
+TEXT:
+
+=================== SLIDE 3 ===================
+TEXT:
+  NỘI DUNG
+
+=================== SLIDE 4 ===================
+TEXT:
+  TỔNG QUAN VỀ ĐỀ TÀI
+TEXT:
+  CHƯƠNG 01
+
+=================== SLIDE 5 ===================
+TEXT:
+  Game 2D Action RPG
+TEXT:
+   Game 2D Action RPG, sự kết hợp hài hòa giữa cơ chế điều khiển phản xạ thời gian thực trên bản đồ di chuyển đa nền tảng platformer cùng chiều sâu phát triển nhân vật thông qua hệ thống chỉ số, trang bị và kỹ năng..
+
+=================== SLIDE 6 ===================
+TEXT:
+  Bài học thiết kế game	
+TEXT:
+  • Xây dựng vòng lặp gameplay (gameplay loop) rõ ràng, lôi cuốn: Chiến đấu -> Thu thập -> Nâng cấp/Dung hợp Gene -> Mở khóa thử thách nâng cao.
+  • Thiết kế hệ thống thuộc tính nhân vật sâu sắc dựa trên 5 hệ nguyên tố ngũ hành (Kim, Mộc, Thủy, Hỏa, Thổ) kết hợp khảm Multi-Gene độc đáo.
+  • Đột biến thuộc tính: Tạo ra động lực cày cuốc thông qua việc săn tìm mảnh Gene hiếm và dung hợp ra các hệ nguyên tố lai đặc biệt.
+TEXT:
+
+=================== SLIDE 7 ===================
+TEXT:
+  Lý thuyết di chuyển & AI FSM	
+TEXT:
+   
+TEXT:
+TEXT:
+  Vật lý di chuyển 2D Box2D: Sử dụng các lực gia tốc, vận tốc ngang kết hợp điều chỉnh trọng lực rơi lớn hơn trọng lực bay lên qua cơ chế Variable Gravity Jump tạo cảm giác điều khiển mượt mà, chân thực.
+  Ground Detection: Sử dụng OverlapCircle phát hiện chân chạm đất để cấp quyền nhảy.
+  Finite State Machine FSM cho quái vật:
+  AI quái vật được mô hình hóa thành các trạng thái rời rạc: Idle/Patrol tuần tra, Chase đuổi theo người chơi, Attack tấn công khi đủ gần, và Hit/Dead nhận sát thương hoặc chết giải phóng tài nguyên.
+
+=================== SLIDE 8 ===================
+TEXT:
+   Phát triển nhân vật & Tiến hóa Gene
+TEXT:
+TEXT:
+  Khái niệm tiến hóa Gene: Thay thế cơ chế chọn lớp nhân vật truyền thống, cho phép nhân vật tự do phát triển thông qua việc mở khóa và nâng cấp các nhánh Gene thuộc tính ngũ hành.
+  Dung hợp Hybrid Fusion: Khi đạt cấp độ tối đa ở cả Gene chính và Gene phụ thuộc hai nguyên tố khác nhau, người chơi có thể tiến hành dung hợp để mở khóa lớp nhân vật lai với sức mạnh vượt trội.
+  Gene tối thượng: Cấp độ tiến hóa cao nhất khi dung hợp thành công các Gene lai đạt phẩm chất cực hạn, mở khóa thêm được hình ảnh (aura) và thêm chỉ số cộng thêm.
+
+=================== SLIDE 9 ===================
+TITLE: Cơ chế Gameplay phía Server
+TEXT:
+  • Vai trò Dedicated Server (Unity Headless): Là "nguồn sự thật duy nhất" (Single Source of Truth). Server chịu trách nhiệm mô phỏng toàn bộ thế giới vật lý 2D, phát hiện va chạm đòn đánh (Hitbox/Hurtbox), tính toán sát thương và vận hành AI FSM của quái vật.
+  • Luồng điều khiển và đồng bộ: Client chỉ đóng vai trò gửi các yêu cầu di chuyển hoặc lệnh sử dụng kỹ năng (đầu vào bàn phím) lên Server thông qua ServerRpc. Dedicated Server thực hiện kiểm tra tính hợp lệ, tính toán va chạm vật lý và đồng bộ trạng thái cuối (vị trí chuẩn, lượng máu hiện tại) ngược lại cho các Client qua NetworkVariable và ClientRpc.
+  • Bảo mật và chống gian lận: Việc tách biệt logic gameplay chạy hoàn toàn trên Server giúp ngăn chặn triệt để các hành vi gian lận (cheat/hack) phổ biến. Người chơi không thể can thiệp vào RAM client để tự thay đổi lượng HP của bản thân hay tăng vô hạn sát thương đòn đánh.
+
+=================== SLIDE 10 ===================
+TEXT:
+  Kiến trúc mạng & Công nghệ sử dụng
+
+=================== SLIDE 11 ===================
+TEXT:
+  PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+TEXT:
+  CHƯƠNG 02
+
+=================== SLIDE 12 ===================
+TEXT:
+  Mô tả hệ thống
+TEXT:
+TEXT:
+  Tầng Client Unity Client: Xây dựng trên ngôn ngữ C#, chịu trách nhiệm render hình ảnh, hoạt ảnh nhân vật, xử lý các dự đoán di chuyển Client-side prediction và gửi input điều khiển mạng lên Server.
+  Tầng Server:
+  Dedicated Server Unity Headless: Chạy logic vật lý, va chạm, AI FSM quái vật, tính toán sát thương thời gian thực.
+  API & SignalR Server ASP.NET Core 8: Xác thực JWT, lưu trữ tiến trình qua EF Core, quản lý sảnh chờ, kênh chat và tổ đội.
+  Tầng Database MySQL Database: Lưu trữ thông tin tài khoản, nhân vật, túi đồ, trang bị và cấu hình hệ thống.
+
+=================== SLIDE 13 ===================
+TEXT:
+  Biểu đồ use case tổng quát
+TEXT:
+TEXT:
+  Biểu đồ Use Case tổng quát
+
+=================== SLIDE 14 ===================
+TEXT:
+  Cơ sở dữ liệu vật lý ERD
+TEXT:
+  Sơ đồ thực thể ERD: Gồm các bảng liên kết chặt chẽ như Users (tài khoản), Player_Data (chỉ số nhân vật), Inventory (vật phẩm), Gene_Data (dữ liệu Gene).
+  Thiết kế JSON Column linh hoạt:
+  Lưu trữ trực tiếp các dữ liệu có cấu trúc động như danh sách chỉ số phụ trang bị cường hóa ngẫu nhiên, trạng thái nhiệm vụ đang nhận, danh sách kỹ năng nhanh.
+  Tối ưu hóa: Tránh tạo quá nhiều bảng liên kết 1-nhiều phức tạp, giảm thiểu số lượng truy vấn JOIN lớn, giúp tăng tốc độ đọc/ghi dữ liệu nhân vật .
+
+=================== SLIDE 15 ===================
+TEXT:
+  Cơ sở dữ liệu vật lý ERD
+TEXT:
+  Cơ sở dữ liệu vật lý ERD
+
+=================== SLIDE 16 ===================
+TEXT:
+  Xây dựng các cơ chế game
+TEXT:
+  CHƯƠNG 03
+
+=================== SLIDE 17 ===================
+TEXT:
+  Xây dựng hệ thống điều khiển & di chuyển
+TEXT:
+TEXT:
+   
+TEXT:
+  Animator Controller: Thiết lập đồ thị trạng thái nhân vật chuyển đổi tức thì theo input bằng cách đặt Exit Time = 0 và Transition Duration = 0.05s giữa các hoạt ảnh chạy, nhảy, lướt.
+  Coyote Time: Cho phép người chơi nhảy trong khoảng 0.1 giây ngay cả khi vừa đi hụt ra khỏi mép vực.
+  Jump Buffer: Lưu lệnh nhảy nhấn trước khi chạm đất tối đa 0.15 giây và tự kích hoạt ngay khi chạm đất, đảm bảo điều khiển mượt mà liên tục.
+  Dash I-Frames: Lập trình trạng thái bất tử ngắn 0.2 giây khi lướt nhanh bằng cách tắt tạm thời va chạm của nhân vật với các hitbox đòn đánh của quái vật.
+
+=================== SLIDE 18 ===================
+TEXT:
+  Xây dựng cơ chế chiến đấu & Tương khắc Ngũ hành
+TEXT:
+TEXT:
+   
+TEXT:
+  Hitbox & Hurtbox: Triển khai bằng Trigger Collider 2D trên Dedicated Server. Khi xảy ra va chạm, server thực hiện tính toán sát thương trực tiếp, client chỉ chịu trách nhiệm render hiệu ứng hoạt ảnh và text sát thương damage pop-up.
+  Vòng tương khắc Ngũ Hành:
+  Kim ➔ Mộc ➔ Thủy ➔ Hỏa ➔ Thổ ➔ Kim. Tấn công khắc hệ được nhân x1.5 sát thương; bị khắc hệ giảm còn x0.75 sát thương.
+  Hệ thứ 6 Phong Wind đóng vai trò là hệ trung lập đặc biệt, không khắc và không bị khắc bởi 5 hệ còn lại với hệ số sát thương nhân x1.0, giúp tăng tính cân bằng chiến thuật.
+  Công thức sát thương cuối: Damage = ATK * skill_mult * element_mult - DEF * red_factor. Luôn đảm bảo tối thiểu gây 1 sát thương để tránh lỗi bất tử.
+
+=================== SLIDE 19 ===================
+TEXT:
+  Triển khai cơ chế đồng bộ di chuyển & Zone Server
+TEXT:
+TEXT:
+   
+TEXT:
+  Client-prediction & Server Reconciliation:
+  Client dự đoán di chuyển và render tức thì để triệt tiêu cảm giác trễ mạng.
+  Server gửi State chuẩn về; client so khớp, nếu sai lệch vượt ngưỡng, client tự động mượt mà lướt về vị trí chuẩn từ Server, loại bỏ hiện tượng giật lùi rubber banding.
+  Zone-based Server & Instance:
+  Bản đồ thế giới được chia nhỏ thành các Zone độc lập quản lý bởi ZoneRoomRegistry. Người chơi chỉ nhận gói tin đồng bộ từ đối tượng trong cùng Zone để tối ưu băng thông.
+  Tạo động các phó bản Dungeon Instance riêng tư cho các tổ đội và tự giải phóng tài nguyên sau khi phó bản hoàn thành.
+
+=================== SLIDE 20 ===================
+TEXT:
+  Thực nghiệm & Đánh giá hiệu năng
+TEXT:
+  CHƯƠNG 04
+
+=================== SLIDE 21 ===================
+TEXT:
+  Đánh giá thực nghiệm
+TEXT:
+TEXT:
+   
+TEXT:
+  Thử nghiệm độ trễ mạng Latency: Kiểm thử kết nối client-server trong điều kiện mạng thực tế với RTT dao động từ 40ms đến 90ms. Cơ chế dự đoán di chuyển Client-prediction hoạt động ổn định, giảm cảm giác khựng trễ di chuyển.
+  Thử nghiệm tải và FPS:
+  Client chạy ổn định ở mức 60 FPS trên cấu hình máy tầm trung.
+  Dedicated Server tối ưu hóa tốt tài nguyên CPU nhờ thuật toán FSM quái vật đơn giản và kiến trúc Zone-based Server phân khu tải dữ liệu.
+  Đánh giá bảo mật: Thực nghiệm sử dụng các công cụ thay đổi bộ nhớ tại Client Cheat Engine để hack vàng và HP; Dedicated Server phát hiện và từ chối ghi nhận, chứng minh mô hình Server-Authoritative chống gian lận thành công.
+
+=================== SLIDE 22 ===================
+TEXT:
+  ĐỊNH HƯỚNG PHÁT TRIỂN
+TEXT:
+TEXT:
+  • Nghiên cứu và tích hợp các công cụ chống gian lận chuyên dụng (Anti-cheat client agent) ở máy Client.
+  • Mở rộng quy mô sảnh chờ và phát triển chế độ đấu trường PvP quy mô lớn lên tới 50-100 người chơi trên cùng một phân vùng.
+  • Tối ưu hóa băng thông mạng bằng cách áp dụng nén gói tin nhị phân (Protocol Buffers) thay thế cho định dạng JSON hiện tại.
+TEXT:
+
+=================== SLIDE 23 ===================
+TEXT:
+  Kết quả
+TEXT:
+TEXT:
+   
+TEXT:
+  Giao diện Nhân vật & Trạng thái
+
+=================== SLIDE 24 ===================
+TEXT:
+  Kết quả
+TEXT:
+TEXT:
+   
+TEXT:
+  Giao diện Kỹ năng các Lớp Nguyên tố
+
+=================== SLIDE 25 ===================
+TEXT:
+  Kết quả
+TEXT:
+TEXT:
+   
+TEXT:
+  Giao diện skill cho từng nhân vật
+
+=================== SLIDE 26 ===================
+TEXT:
+  Kết quả
+TEXT:
+TEXT:
+   
+TEXT:
+  Giao diện Tiến hóa Gene & Nâng cấp
+
+=================== SLIDE 27 ===================
+TEXT:
+  Kết quả
+TEXT:
+TEXT:
+   
+TEXT:
+  Giao diện Chiến đấu & Phó bản
+
+=================== SLIDE 28 ===================
+TEXT:
+  CẢM ƠN THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE.

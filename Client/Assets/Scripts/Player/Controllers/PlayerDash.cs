@@ -347,9 +347,19 @@ public class PlayerDash : NetworkBehaviour
         }
     }
 
+    private float serverLastDashTime = -999f;
+
     [ServerRpc]
     private void DashServerRpc(Vector2 direction)
     {
+        // Kiểm tra Cooldown độc lập trên Server để chống hack spam packet
+        if (Time.time < serverLastDashTime + dashCooldown)
+        {
+            { /* Hacker hoặc lag spam packet, Server từ chối lệnh Dash này */ }
+            return;
+        }
+
+        serverLastDashTime = Time.time;
         StartDashClientRpc(direction);
     }
 

@@ -1,0 +1,214 @@
+Para 0 | Style: Mục lục | Text: Mục lục
+Para 7 | Style: toc 1 | Text: CHƯƠNG 1. TỔNG QUAN VỀ ĐỀ TÀI VÀ CƠ SỞ LÝ THUYẾT	1
+Para 30 | Style: toc 2 | Text: 1.6.	Tổng kết chương 1	25
+Para 31 | Style: toc 1 | Text: CHƯƠNG 2. PHÂN TÍCH, THIẾT KẾ HỆ THỐNG	26
+Para 32 | Style: toc 2 | Text: 2.1.	Phân tích bài toán và yêu cầu hệ thống	26
+Para 43 | Style: toc 2 | Text: 2.3.	Thiết kế cơ sở dữ liệu	68
+Para 46 | Style: toc 2 | Text: 2.4.	Tổng kết chương 2	72
+Para 47 | Style: toc 1 | Text: CHƯƠNG 3. TRIỂN KHAI HỆ THỐNG TRÒ CHƠI MUTANTS ARENA	73
+Para 84 | Style: toc 2 | Text: 3.6.	Tổng kết chương 3	128
+Para 85 | Style: toc 1 | Text: CHƯƠNG 4. KẾT QUẢ TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG.	130
+Para 87 | Style: toc 3 | Text: 4.1.1.	Tổng quan hệ thống đã xây dựng	130
+Para 98 | Style: toc 2 | Text: 4.3.	Tổng kết chương 4	136
+Para 99 | Style: toc 1 | Text: KẾT LUẬN	138
+Para 103 | Style: UH1 | Text: DANH MỤC KÍ HIỆU VÀ VIẾT TẮT
+Para 105 | Style: UH1 | Text: DANH MỤC HÌNH VẼ
+Para 165 | Style: UH1 | Text: DANH MỤC BẢNG
+Para 202 | Style: UH1 | Text: LỜI CẢM ƠN
+Para 207 | Style: UH1 | Text: LỜI CAM ĐOAN
+Para 213 | Style: UH1 | Text: LỜI NÓI ĐẦU
+Para 226 | Style: Normal | Text: Cấu trúc báo cáo gồm bốn chương chính:
+Para 236 | Style: Heading 1 | Text: TỔNG QUAN VỀ ĐỀ TÀI VÀ CƠ SỞ LÝ THUYẾT
+Para 238 | Style: Heading 2 | Text: Giới thiệu đề tài
+Para 239 | Style: Heading 3 | Text: Bối cảnh chọn đề tài
+Para 243 | Style: Heading 3 | Text: 1.1.2. Mục tiêu của đề tài
+Para 250 | Style: Heading 2 | Text: Khảo sát một số trò chơi tham khảo
+Para 255 | Style: Heading 2 | Text: Đặc điểm gameplay của trò chơi
+Para 256 | Style: Heading 3 | Text:  Hệ thống điều khiển và vật lý 2D
+Para 259 | Style: Heading 4 | Text: Ground Detection (Phát hiện tiếp đất)
+Para 261 | Style: Heading 4 | Text: Cơ chế nhảy (Jump Mechanics)
+Para 266 | Style: Heading 4 | Text: Cơ chế Dash (Lướt nhanh)
+Para 269 | Style: Heading 4 | Text: d) Hệ thống hoạt ảnh và Animator Controller
+Para 274 | Style: Heading 3 | Text:  Hệ thống chiến đấu thời gian thực
+Para 276 | Style: Heading 4 | Text: Hitbox và Hurtbox
+Para 279 | Style: Heading 4 | Text: Hệ thống chỉ số nhân vật
+Para 289 | Style: Heading 4 | Text: Hệ thống hồi chiêu 
+Para 292 | Style: Heading 3 | Text:  Hệ thống kỹ năng và tương khắc nguyên tố
+Para 293 | Style: Heading 4 | Text: Phân loại kỹ năng
+Para 300 | Style: Heading 4 | Text: Hệ thống tương khắc nguyên tố Gene (Elemental Interaction)
+Para 311 | Style: Heading 4 | Text:  Hệ thống hiệu ứng trạng thái (Status Effect)
+Para 313 | Style: Heading 3 | Text: Hệ thống phát triển và tiến hóa nhân vật
+Para 316 | Style: Heading 4 | Text: Hệ thống lên cấp
+Para 322 | Style: Heading 4 | Text: Hệ thống Equipment
+Para 330 | Style: Heading 4 | Text: Hệ thống Gene
+Para 339 | Style: Heading 3 | Text: Hệ thống Gene Evolution
+Para 343 | Style: Heading 4 | Text: Multi-Gene
+Para 349 | Style: Heading 4 | Text: Hybrid Fusion
+Para 354 | Style: Heading 4 | Text: Gene Tối Thượng
+Para 360 | Style: Heading 4 | Text: Vai trò của Gene trong gameplay
+Para 367 | Style: Heading 3 | Text: Hệ thống nhiệm vụ, quái vật và phó bản
+Para 373 | Style: Heading 2 | Text: Kiến trúc Client-Server cho game multiplayer 
+Para 374 | Style: Heading 3 | Text:  Các mô hình mạng trong game multiplayer 
+Para 377 | Style: Heading 4 | Text: Mô hình Peer-to-Peer (P2P)
+Para 379 | Style: Heading 4 | Text: Mô hình Listen Server
+Para 381 | Style: Heading 4 | Text: Mô hình Dedicated Server — Lựa chọn của đề tài
+Para 388 | Style: Heading 3 | Text:  Kiến trúc Server Authoritative
+Para 390 | Style: Heading 4 | Text: Nguyên tắc hoạt động
+Para 395 | Style: Heading 4 | Text: Lợi ích bảo mật
+Para 401 | Style: Heading 4 | Text: Client-side Prediction và Server Reconciliation
+Para 403 | Style: Heading 3 | Text: Xác thực người dùng với JWT
+Para 405 | Style: Heading 4 | Text: Cấu trúc JWT
+Para 410 | Style: Heading 4 | Text: Luồng xác thực JWT trong game
+Para 422 | Style: Heading 2 | Text: Các công nghệ và công cụ sử dụng
+Para 423 | Style: Heading 3 | Text:  Unity 2D Game Engine và Netcode for GameObjects
+Para 425 | Style: Heading 4 | Text: Kiến trúc Entity-Component
+Para 433 | Style: Heading 4 | Text: Vòng lặp game trong Unity
+Para 440 | Style: Heading 4 | Text: Unity Netcode for GameObjects (NGO)
+Para 449 | Style: Heading 4 | Text: Lý do chọn Unity NGO so với Photon / Mirror / WebSocket thuần
+Para 455 | Style: Heading 3 | Text: Ngôn ngữ lập trình C#
+Para 457 | Style: Heading 4 | Text: Đặc điểm phù hợp với phát triển game
+Para 463 | Style: Heading 4 | Text: Design Pattern phổ biến trong Unity
+Para 470 | Style: Heading 3 | Text: ASP.NET Core
+Para 472 | Style: Heading 4 | Text: Middleware Pipeline
+Para 474 | Style: Heading 4 | Text: Entity Framework Core (EF Core)
+Para 479 | Style: Heading 4 | Text: SignalR
+Para 481 | Style: Heading 3 | Text: MySQL — Hệ quản trị cơ sở dữ liệu
+Para 483 | Style: Heading 4 | Text: Mô hình dữ liệu quan hệ trong game
+Para 491 | Style: Heading 4 | Text: JSON Column trong game database
+Para 498 | Style: Heading 3 | Text: Docker và triển khai ứng dụng
+Para 500 | Style: Heading 4 | Text: Lợi ích container hóa
+Para 505 | Style: Heading 4 | Text: Docker Compose cho hệ thống game server
+Para 513 | Style: Heading 3 | Text: Tổng hợp stack công nghệ
+Para 516 | Style: Heading 2 | Text: Tổng kết chương 1
+Para 519 | Style: Heading 1 | Text: PHÂN TÍCH, THIẾT KẾ HỆ THỐNG
+Para 520 | Style: Heading 2 | Text: Phân tích bài toán và yêu cầu hệ thống
+Para 521 | Style: Heading 3 | Text: Bài toán đặt ra
+Para 526 | Style: Heading 3 | Text: Các đối tượng của hệ thống
+Para 532 | Style: Heading 3 | Text:  Yêu cầu chức năng
+Para 534 | Style: Heading 4 | Text: Chức năng đăng ký, đăng nhập và xác thực
+Para 543 | Style: Heading 4 | Text: Chức năng quản lý nhân vật
+Para 550 | Style: Heading 4 | Text: Chức năng di chuyển và bản đồ
+Para 556 | Style: Heading 4 | Text: Chức năng chiến đấu
+Para 563 | Style: Heading 4 | Text: Chức năng quái vật và boss
+Para 569 | Style: Heading 4 | Text: Chức năng inventory và trang bị
+Para 576 | Style: Heading 4 | Text: Chức năng Gene Evolution
+Para 584 | Style: Heading 4 | Text: Chức năng NPC, nhiệm vụ và cửa hàng
+Para 591 | Style: Heading 4 | Text: Chức năng bạn bè, party và chat
+Para 598 | Style: Heading 4 | Text: Chức năng phó bản và reward
+Para 605 | Style: Heading 4 | Text: Chức năng leaderboard
+Para 609 | Style: Heading 4 | Text: Chức năng vận hành gameplay server
+Para 614 | Style: Heading 3 | Text: Yêu cầu phi chức năng
+Para 622 | Style: Heading 3 | Text:  Yêu cầu bảo mật
+Para 630 | Style: Heading 2 | Text: Kiến trúc hệ thống 
+Para 631 | Style: Heading 3 | Text: Mô hình tổng thể
+Para 645 | Style: Heading 3 | Text: Biểu đồ Use Case tổng quát
+Para 662 | Style: Heading 3 | Text: Biểu đồ Use case chi tiết và đặc tả
+Para 663 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Đăng ký tài khoản
+Para 668 | Style: Heading 4 | Text: Biểu đồ Use case chức năng Đăng nhập và vào game 
+Para 673 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Di chuyển và chuyển map
+Para 680 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Chiến đấu và sử dụng kỹ năng
+Para 685 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Quản lý túi đồ và trang bị
+Para 692 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Nâng cấp trang bị
+Para 697 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Phát triển Gene 
+Para 702 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Phân bổ tiềm năng và kỹ năng 
+Para 707 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Tương tác NPC và mua vật phẩm
+Para 713 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Quản lý nhiệm vụ
+Para 718 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Quản lý bạn bè
+Para 724 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Quản lý tổ đội và chat
+Para 730 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Tham gia và hoàn tất phó bản
+Para 735 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Xem leaderboard 
+Para 740 | Style: Heading 4 | Text: Biểu đồ Use case và đặc tả chức năng Quản lý gameplay server
+Para 746 | Style: Heading 4 | Text:  Biểu đồ Use case và đặc tả chức năng Host map và phát thưởng phó bản
+Para 750 | Style: Heading 3 | Text:  Biểu đồ tuần tự chính 
+Para 751 | Style: Heading 4 | Text: Biểu đồ tuần tự Chiến đấu và sử dụng kỹ năng
+Para 759 | Style: Heading 4 | Text: Biểu đồ tuần tự Nâng cấp trang bị
+Para 766 | Style: Heading 4 | Text: Biểu đồ tuần tự Nâng Gene
+Para 773 | Style: Heading 4 | Text: Biểu đồ tuần tự Dung hợp Hybrid Gene
+Para 780 | Style: Heading 4 | Text: Biểu đồ tuần tự Tham gia và hoàn tất phó bản
+Para 787 | Style: Heading 4 | Text:   Biểu đồ tuần tự Kích hoạt Gene Tối Thượng
+Para 791 | Style: Heading 2 | Text: Thiết kế cơ sở dữ liệu
+Para 792 | Style: Heading 3 | Text: Sơ đồ kết nối các bảng
+Para 795 | Style: Heading 3 | Text: Cấu trúc các bảng chính
+Para 807 | Style: Heading 2 | Text: Tổng kết chương 2
+Para 812 | Style: Heading 1 | Text: TRIỂN KHAI HỆ THỐNG TRÒ CHƠI MUTANTS ARENA
+Para 813 | Style: Heading 2 | Text: Triển khai hệ thống phía Client
+Para 814 | Style: Heading 3 | Text:  Hệ thống khởi tạo phiên chơi và kết nối multiplayer
+Para 821 | Style: Heading 3 | Text: Hệ thống điều khiển, di chuyển và đồng bộ nhân vật
+Para 830 | Style: Heading 3 | Text: Hệ thống đồng bộ dữ liệu nhân vật và trạng thái chiến đấu
+Para 837 | Style: Heading 3 | Text: Hệ thống tương tác và chiến đấu giữa người chơi
+Para 845 | Style: Heading 3 | Text: Hệ thống Gene chính, Gene phụ, Hybrid Fusion và khắc chế nguyên tố
+Para 854 | Style: Heading 3 | Text:  Cơ chế khắc chế Gene và tính sát thương nguyên tố
+Para 857 | Style: Heading 4 | Text: Ánh xạ hệ nguyên tố và cặp Hybrid cố định
+Para 861 | Style: Heading 4 | Text: Sát thương người chơi gây ra
+Para 868 | Style: Heading 4 | Text: Quái thường nhận sát thương nguyên tố
+Para 874 | Style: Heading 4 | Text: Boss nhận sát thương nguyên tố
+Para 878 | Style: Heading 4 | Text: Người chơi nhận sát thương nguyên tố
+Para 884 | Style: Heading 3 | Text:  Hệ thống kỹ năng chi tiết theo từng lớp nguyên tố
+Para 916 | Style: Heading 3 | Text:  Hệ thống trí tuệ nhân tạo (AI) quái vật và Boss đa giai đoạn
+Para 932 | Style: Heading 3 | Text: Hệ thống kỹ năng, phó bản và Zone runtime
+Para 939 | Style: Heading 3 | Text: Hệ thống chat, bạn bè và tổ đội trên client
+Para 947 | Style: Heading 3 | Text: Tổng kết phân hệ Client
+Para 949 | Style: Heading 2 | Text: Triển khai hệ thống phía Backend
+Para 950 | Style: Heading 3 | Text: Hệ thống quản lý tài khoản và xác thực
+Para 958 | Style: Heading 3 | Text: Hệ thống dữ liệu nhân vật, inventory, trang bị và kỹ năng
+Para 966 | Style: Heading 3 | Text: Hệ thống Gene Evolution, Gene phụ và Hybrid Fusion ở backend
+Para 978 | Style: Heading 3 | Text: Hệ thống bạn bè, chat và tổ đội realtime
+Para 986 | Style: Heading 3 | Text: Hệ thống phó bản, wave session và phần thưởng
+Para 994 | Style: Heading 3 | Text: Hệ thống Zone Server và đồng bộ hạ tầng runtime
+Para 1000 | Style: Heading 3 | Text: Tổng kết phân hệ Backend
+Para 1002 | Style: Heading 2 | Text: Tăng cường kiểm soát truy cập và bảo mật hệ thống
+Para 1006 | Style: Heading 3 | Text: Kiểm soát truy cập toàn bộ endpoint API bằng thuộc tính [Authorize]
+Para 1012 | Style: Heading 3 | Text: Giới hạn tốc độ yêu cầu đăng nhập (Rate Limiting)
+Para 1019 | Style: Heading 3 | Text: Xác thực nội bộ Zone Server bằng Zone API Key và so sánh hằng thời gian
+Para 1027 | Style: Heading 3 | Text: Xác thực kết nối tại tầng transport của NGO Dedicated Server
+Para 1034 | Style: Heading 2 | Text: Hiện thực hóa triển khai và vận hành với Docker
+Para 1044 | Style: Heading 2 | Text: Bản đồ Giao diện người dùng  
+Para 1045 | Style: Heading 3 | Text: Giao diện xác thực tài khoản
+Para 1046 | Style: Heading 4 | Text: Giao diện đăng nhập
+Para 1056 | Style: Heading 4 | Text: Giao diện đăng ký
+Para 1065 | Style: Heading 3 | Text:  Giao diện khởi tạo và lựa chọn nhân vật
+Para 1066 | Style: Heading 4 | Text: Giao diện chọn hệ nguyên tố và tạo nhân vật lần đầu
+Para 1077 | Style: Heading 4 | Text: Giao diện chọn nhân vật và Gene Slot
+Para 1088 | Style: Heading 3 | Text: Giao diện trong trận đấu 
+Para 1089 | Style: Heading 4 | Text:  Thanh trạng thái nhân vật
+Para 1095 | Style: Heading 4 | Text: Thanh kỹ năng và hiệu ứng Buff
+Para 1111 | Style: Heading 4 | Text: Thông báo toàn màn hình
+Para 1115 | Style: Heading 3 | Text:  Giao diện hệ thống Gene
+Para 1128 | Style: Heading 4 | Text: Giao diện chọn Gene phụ cố định
+Para 1135 | Style: List Bullet | Text: Các cặp hệ phụ được cấu hình theo thiết kế Hybrid: Hỏa - Thổ, Thủy - Mộc và Kim - Phong.
+Para 1137 | Style: Heading 4 | Text: Giao diện nâng cấp Gene phụ
+Para 1146 | Style: Heading 4 | Text: Giao diện dung hợp Hybrid
+Para 1157 | Style: Heading 3 | Text:  Giao diện thông tin nhân vật
+Para 1158 | Style: Heading 4 | Text: Bảng tóm tắt nhân vật
+Para 1167 | Style: Heading 4 | Text: Tab chỉ số và trang bị
+Para 1175 | Style: Heading 4 | Text: Tab kỹ năng
+Para 1179 | Style: Heading 4 | Text: Tab tiềm năng
+Para 1187 | Style: Heading 3 | Text:  Giao diện xã hội
+Para 1188 | Style: Heading 4 | Text: Giao diện trò chuyện đa kênh
+Para 1197 | Style: Heading 4 | Text: Giao diện danh sách bạn bè
+Para 1202 | Style: Heading 4 | Text: Giao diện tổ đội
+Para 1210 | Style: Heading 4 | Text: Giao diện bảng xếp hạng
+Para 1219 | Style: Heading 3 | Text:  Giao diện phó bản
+Para 1220 | Style: Heading 4 | Text: Giao diện danh sách phó bản
+Para 1231 | Style: Heading 4 | Text: Giao diện HUD phó bản wave
+Para 1239 | Style: Heading 3 | Text: Giao diện nhiệm vụ và tương tác NPC thế giới
+Para 1240 | Style: Heading 4 | Text: Widget theo dõi nhiệm vụ
+Para 1248 | Style: Heading 4 | Text: Giao diện NPC nhiệm vụ
+Para 1251 | Style: Heading 4 | Text: Giao diện menu NPC động và cửa hàng
+Para 1255 | Style: Heading 3 | Text: Giao diện hệ thống bản đồ thế giới
+Para 1264 | Style: Heading 2 | Text: Tổng kết chương 3
+Para 1271 | Style: Heading 1 | Text: KẾT QUẢ TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG.
+Para 1272 | Style: Heading 2 | Text: Kết quả đạt được
+Para 1273 | Style: Heading 3 | Text: Tổng quan hệ thống đã xây dựng
+Para 1276 | Style: Heading 3 | Text: Kết quả tổ chức mã nguồn
+Para 1279 | Style: Heading 3 | Text: Kết quả triển khai phía Client
+Para 1282 | Style: Heading 3 | Text: Kết quả triển khai phía Backend
+Para 1286 | Style: Heading 3 | Text: Kết quả triển khai cơ sở dữ liệu
+Para 1290 | Style: Heading 2 | Text: Đánh giá hệ thống
+Para 1291 | Style: Heading 3 | Text: Đánh giá theo mức độ hoàn thành chức năng
+Para 1294 | Style: Heading 3 | Text: Đánh giá về bảo mật
+Para 1297 | Style: Heading 3 | Text: Đánh giá về khả năng mở rộng
+Para 1300 | Style: Heading 3 | Text: Hạn chế còn tồn tại
+Para 1303 | Style: Heading 3 | Text: Định hướng phát triển
+Para 1314 | Style: Heading 2 | Text: Tổng kết chương 4
+Para 1317 | Style: UH1 | Text: KẾT LUẬN
