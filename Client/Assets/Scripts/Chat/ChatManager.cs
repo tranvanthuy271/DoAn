@@ -98,7 +98,7 @@ public class ChatManager : MonoBehaviour
     {
         if (IsConnected || _isConnecting) return;
 
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         if (string.IsNullOrEmpty(token))
         {
             // JWT_TOKEN chưa có — im lặng, PeriodicCheck sẽ thử lại
@@ -190,7 +190,7 @@ public class ChatManager : MonoBehaviour
             yield return wait;
             if (!IsConnected && !_isConnecting)
             {
-                string t = PlayerPrefs.GetString("JWT_TOKEN", "");
+                string t = AuthHelper.GetToken();
                 if (!string.IsNullOrEmpty(t))
                 {
                     { /* PeriodicCheck: chưa kết nối, đang thử lại */ }

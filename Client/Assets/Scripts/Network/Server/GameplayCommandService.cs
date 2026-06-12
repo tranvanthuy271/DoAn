@@ -481,7 +481,7 @@ public class GameplayCommandService : NetworkBehaviour
 
     [ClientRpc] private void SendDungeonListClientRpc(string json, ClientRpcParams p = default)
     {
-        { /* SendDungeonListClientRpc | payloadLength={(json != null ? json.Length : 0)} hasError={(json != null && json.Contains( */ })}", this);
+        { /* SendDungeonListClientRpc | payloadLength={(json != null ? json.Length : 0)} hasError={(json != null && json.Contains("error") ? "True" : "False")} */ }
         OnDungeonListReceived?.Invoke(json);
     }
 
@@ -607,7 +607,7 @@ public class GameplayCommandService : NetworkBehaviour
             string jwt = ZonePlayerSessionManager.Instance.GetClientJwt(clientId);
             if (!string.IsNullOrEmpty(jwt)) return jwt;
         }
-        return PlayerPrefs.GetString("JWT_TOKEN", "");
+        return AuthHelper.GetToken();
     }
 
     private IEnumerator DoGet(string url, string jwt, Action<string> onOk, Action<string> onErr)

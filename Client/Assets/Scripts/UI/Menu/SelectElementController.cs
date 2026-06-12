@@ -71,7 +71,7 @@ public class SelectElementController : MonoBehaviour
             // Debug.LogWarning("User ID not found in PlayerPrefs! Trying to get from JWT token...");
             
             // Thử lấy user_id từ JWT token nếu có
-            string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+            string token = AuthHelper.GetToken();
             if (!string.IsNullOrEmpty(token))
             {
                 // Parse JWT để lấy user_id (tạm thời, có thể cải thiện sau)

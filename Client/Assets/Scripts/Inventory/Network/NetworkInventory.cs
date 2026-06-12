@@ -955,7 +955,7 @@ public class NetworkInventory : NetworkBehaviour
             clientJwt = APIClient.Instance.GetToken();
 
         if (string.IsNullOrEmpty(clientJwt))
-            clientJwt = PlayerPrefs.GetString("JWT_TOKEN", "");
+            clientJwt = AuthHelper.GetToken();
 
         return clientJwt;
     }

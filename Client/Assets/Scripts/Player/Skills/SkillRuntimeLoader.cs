@@ -94,7 +94,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         // Loader hiện dùng GameplayCommandService.GetPlayerSkillsServerRpc(), không còn phụ thuộc cứng vào PLAYER_ID.
         waited = 0f;
         while (GameManager.Instance?.currentPlayerData == null
-            && string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""))
+            && string.IsNullOrWhiteSpace(AuthHelper.GetToken())
             && waited < 10f)
         {
             yield return new WaitForSeconds(0.5f);
@@ -105,7 +105,7 @@ public class SkillRuntimeLoader : NetworkBehaviour
         string gmData = GameManager.Instance?.currentPlayerData != null
             ? GameManager.Instance.currentPlayerData.player_id.ToString() : "null";
         int ppId = PlayerPrefs.GetInt("PLAYER_ID", 0);
-        bool hasJwtToken = !string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""));
+        bool hasJwtToken = !string.IsNullOrWhiteSpace(AuthHelper.GetToken());
         { /* WaitAndLoad | playerId={playerId} | GameMgr.player_id={gmData} | PlayerPrefs.PLAYER_ID={ppId} | hasJwt={hasJwtToken} | APIClient={APIClient.Instance != null} */ }
         if (!hasJwtToken && GameManager.Instance?.currentPlayerData == null)
         {

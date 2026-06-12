@@ -396,8 +396,8 @@ public class APIClient : MonoBehaviour
 
         InitBaseUrl();
 
-        // Load token từ PlayerPrefs nếu có
-        jwtToken = PlayerPrefs.GetString("JWT_TOKEN", "");
+        // Load token từ SecureStorage thông qua AuthHelper nếu có
+        jwtToken = AuthHelper.GetToken();
     }
 
     public string GetToken()
@@ -408,13 +408,13 @@ public class APIClient : MonoBehaviour
     public void SetToken(string token)
     {
         jwtToken = token;
-        PlayerPrefs.SetString("JWT_TOKEN", token);
+        AuthHelper.SaveToken(token);
     }
 
     public void ClearToken()
     {
         jwtToken = "";
-        PlayerPrefs.DeleteKey("JWT_TOKEN");
+        AuthHelper.ClearToken();
     }
 
     public void ResetPlayerToStartMap(int playerId, Action onSuccess, Action<string> onError)

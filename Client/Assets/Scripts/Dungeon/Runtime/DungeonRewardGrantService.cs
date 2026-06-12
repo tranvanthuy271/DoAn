@@ -83,7 +83,7 @@ public static class DungeonRewardGrantService
             return sessionJwt;
 
         if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
-            return APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", string.Empty);
+            return APIClient.Instance != null ? APIClient.Instance.GetToken() : AuthHelper.GetToken();
 
         return string.Empty;
     }

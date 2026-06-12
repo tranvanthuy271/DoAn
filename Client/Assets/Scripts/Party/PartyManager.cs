@@ -558,7 +558,7 @@ public class PartyManager : MonoBehaviour
                 return runtimeToken;
         }
 
-        return PlayerPrefs.GetString("JWT_TOKEN", string.Empty);
+        return AuthHelper.GetToken();
     }
 
     private static int ResolveCurrentMapId()

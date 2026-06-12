@@ -513,7 +513,10 @@ public class PlayerSkillManager : NetworkBehaviour
             {
                 // Pre-trigger locally để tránh delay round-trip ServerRpc
                 if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
+                {
                     playerAnimator?.TriggerAttack();
+                    TriggerPlayerSkillEffectAnimation(skill, spriteFacesLeft: false);
+                }
                 skill.StartUsing();
                 skill.StopUsing();
                 UseNormalAttackServerRpc(skill.skillName, transform.localScale.x >= 0f, skill.currentEffectValue);
@@ -532,7 +535,10 @@ public class PlayerSkillManager : NetworkBehaviour
             {
                 // Pre-trigger locally để tránh delay round-trip ServerRpc
                 if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
+                {
                     playerAnimator?.TriggerAttack();
+                    TriggerPlayerSkillEffectAnimation(skill, spriteFacesLeft: true);
+                }
                 bool facingRightMelee = transform.localScale.x >= 0f;
                 // Bắt đầu cooldown trên client ngay lập tức để UI cập nhật đúng
                 skill.StartUsing();
@@ -702,9 +708,34 @@ public class PlayerSkillManager : NetworkBehaviour
             {
                 // Nếu là client owner, gọi server để spawn với hướng hiện tại
                 // Pre-trigger locally để tránh delay round-trip ServerRpc
-                if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
-                    playerAnimator?.TriggerAttack();
                 bool facingRight = transform.localScale.x >= 0f;
+                if (!skill.disablePlayerSkillEffectAnimation && !string.IsNullOrEmpty(skill.animationTriggerName))
+                {
+                    playerAnimator?.TriggerAttack();
+                    TriggerPlayerSkillEffectAnimation(skill, spriteFacesLeft: true);
+                }
+
+                // Spawn client-side predicted projectile visual instantly
+                if (skill.projectilePrefab != null)
+                {
+                    Vector3 spawnPos = transform.position + new Vector3(facingRight ? skill.spawnOffset : -skill.spawnOffset, 0f, 0f);
+                    Vector2 velocity = new Vector2(facingRight ? skill.projectileSpeed : -skill.projectileSpeed, 0f);
+                    
+                    // Tính localScale tương tự ApplyProjectileFacing
+                    Vector3 originalScale = skill.projectilePrefab.transform.localScale;
+                    float scaleSign = skill.projectileSpriteFacesLeft ? (facingRight ? -1f : 1f) : (facingRight ? 1f : -1f);
+                    Vector3 targetScale = new Vector3(Mathf.Abs(originalScale.x) * scaleSign, originalScale.y, originalScale.z);
+
+                    PredictedProjectileVisual.Spawn(
+                        skill.projectilePrefab,
+                        spawnPos,
+                        Quaternion.identity,
+                        velocity,
+                        skill.projectileLifetime,
+                        targetScale
+                    );
+                }
+
                 // Bắt đầu cooldown trên client ngay lập tức để UI cập nhật đúng
                 skill.StartUsing();
                 skill.StopUsing();
@@ -897,6 +928,9 @@ public class PlayerSkillManager : NetworkBehaviour
     [ClientRpc]
     private void TriggerSkillEffectAnimationClientRpc(string triggerName, bool spriteFacesLeft = true)
     {
+        // Owner đã trigger locally rồi — chỉ trigger cho các client khác
+        if (!IsServer && IsOwner) return;
+
         GameObject skillEffectObj = defaultSkillEffectObject;
         if (skillEffectObj == null)
             skillEffectObj = transform.Find("SkillEffect")?.gameObject;
@@ -1000,7 +1034,7 @@ public class PlayerSkillManager : NetworkBehaviour
         }
     }
     
-    private void TriggerPlayerSkillEffectAnimation(SkillData skill)
+    private void TriggerPlayerSkillEffectAnimation(SkillData skill, bool spriteFacesLeft = true)
     {
         if (string.IsNullOrEmpty(skill.animationTriggerName)) return;
         
@@ -1023,12 +1057,9 @@ public class PlayerSkillManager : NetworkBehaviour
             }
 
             // Flip sprite để khớp hướng nhân vật
-            // Sprite gốc hướng TRÁI. Parent scale.x điều khiển flip trái/phải.
-            // flipX=true: khi scale.x=1 (phải) → flip TRÁI→PHẢI ✓
-            //             khi scale.x=-1 (trái) → double flip = về TRÁI gốc ✓
             SpriteRenderer skillEffectSr = skillEffectObj.GetComponent<SpriteRenderer>();
             if (skillEffectSr != null)
-                skillEffectSr.flipX = true;
+                skillEffectSr.flipX = spriteFacesLeft;
             
             // Enable NetworkAnimator nếu có
             if (skillEffectNetworkAnimators.TryGetValue(key, out var networkAnimator) && networkAnimator != null)

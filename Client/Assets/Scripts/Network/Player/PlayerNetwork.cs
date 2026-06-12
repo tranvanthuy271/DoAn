@@ -39,9 +39,17 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void SetupLocalPlayer()
     {
-        // Setup camera, input, UI cho local player
-        Camera.main.transform.SetParent(transform);
-        Camera.main.transform.localPosition = new Vector3(0, 1.6f, 0);
+        // Khi co NetworkPlayerController, movement + camera da duoc no xu ly.
+        // PlayerNetwork khong can thiet lap CharacterController hay camera.
+        if (GetComponent<NetworkPlayerController>() != null)
+            return;
+
+        // Setup camera, input, UI cho local player (fallback khi khong co NetworkPlayerController)
+        if (Camera.main != null)
+        {
+            Camera.main.transform.SetParent(transform);
+            Camera.main.transform.localPosition = new Vector3(0, 1.6f, 0);
+        }
         
         characterController = GetComponent<CharacterController>();
         if (characterController == null)
@@ -63,11 +71,19 @@ public class PlayerNetwork : NetworkBehaviour
     {
         if (IsOwner)
         {
-            HandleMovement();
+            // Khi co NetworkPlayerController, no da xu ly movement trong FixedUpdate.
+            // PlayerNetwork khong can HandleMovement() de tranh double-update position.
+            if (GetComponent<NetworkPlayerController>() == null)
+                HandleMovement();
         }
         else
         {
-            // Remote players: sync position từ network
+            // Nếu NetworkPlayerController đang active trên object này,
+            // nó đã xử lý interpolation mượt mà hơn → bỏ qua ở đây để tránh 2 script fight nhau.
+            if (GetComponent<NetworkPlayerController>() != null && GetComponent<NetworkPlayerController>().enabled)
+                return;
+
+            // Remote players: sync position từ network (fallback khi không có NetworkPlayerController)
             if (Vector3.Distance(transform.position, networkPosition.Value) > 0.1f)
             {
                 transform.position = Vector3.Lerp(transform.position, networkPosition.Value, Time.deltaTime * 10f);

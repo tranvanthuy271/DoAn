@@ -54,13 +54,16 @@ public class PlayerController : MonoBehaviour
             Physics2D.IgnoreLayerCollision(playerLayer, enemyLayer, true);
 
         // Setup Rigidbody2D cho non-owner (để NetworkTransform hoạt động tốt)
-        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner)
+        // CHÚ Ý: Nếu có NetworkPlayerController, nó đã config rb cho non-owner trong OnNetworkSpawn()
+        // (gravityScale=0, simulated giữ nguyên). Không ghi đè ở đây để tránh conflict.
+        bool hasNPC = GetComponent<NetworkPlayerController>() != null;
+        if (networkObject != null && NetworkManager.Singleton != null && !networkObject.IsOwner && !hasNPC)
         {
-            // Non-owner: để NetworkTransform điều khiển, không dùng physics local
+            // Non-owner không có NetworkPlayerController: để NetworkTransform điều khiển
             if (rb != null)
             {
-                rb.interpolation = RigidbodyInterpolation2D.Interpolate; // Mượt hơn khi sync
-                rb.simulated = true; // Vẫn cần physics cho collision
+                rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+                rb.simulated = true;
             }
         }
 

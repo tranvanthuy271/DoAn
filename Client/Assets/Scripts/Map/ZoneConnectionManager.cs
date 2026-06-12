@@ -73,7 +73,7 @@ public class ZoneConnectionManager : MonoBehaviour
 
         // 1. Lấy zone config từ API
         string url = $"{apiBase}/api/map/zone?mapId={mapId}&zoneIndex={targetZoneIndex}";
-        string authToken = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string authToken = AuthHelper.GetToken();
 
         using var req = UnityWebRequest.Get(url);
         if (!string.IsNullOrEmpty(authToken))

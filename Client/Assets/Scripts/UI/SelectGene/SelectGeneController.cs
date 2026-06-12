@@ -231,7 +231,7 @@ public class SelectGeneController : MonoBehaviour
     private void OnExitClicked()
     {
         // Quay lại Login và xoá token
-        PlayerPrefs.DeleteKey("JWT_TOKEN");
+        AuthHelper.ClearToken();
         PlayerPrefs.DeleteKey("USER_ID");
         PlayerPrefs.Save();
         SceneManager.LoadScene("Login");

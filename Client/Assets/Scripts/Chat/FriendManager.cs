@@ -118,7 +118,7 @@ public class FriendManager : MonoBehaviour
 
     public void LoadFriends()
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         if (string.IsNullOrEmpty(token))
         {
             { /* Cảnh báo: LoadFriends skipped because JWT_TOKEN is empty */ }
@@ -178,7 +178,7 @@ public class FriendManager : MonoBehaviour
 
     public void SendFriendRequest(int targetUserId, Action onSuccess = null)
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         { /* SendFriendRequest targetUserId={targetUserId} */ }
         StartCoroutine(SendRequestRoutine(token, targetUserId, onSuccess));
     }
@@ -213,7 +213,7 @@ public class FriendManager : MonoBehaviour
 
     public void AcceptFriendRequest(int relationId, Action onSuccess = null)
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         { /* AcceptFriendRequest relationId={relationId} */ }
         StartCoroutine(AcceptRoutine(token, relationId, onSuccess));
     }
@@ -243,7 +243,7 @@ public class FriendManager : MonoBehaviour
 
     public void RemoveFriend(int relationId, Action onSuccess = null)
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         { /* RemoveFriend relationId={relationId} */ }
         StartCoroutine(RemoveRoutine(token, relationId, onSuccess));
     }
@@ -272,7 +272,7 @@ public class FriendManager : MonoBehaviour
 
     public void SearchUsers(string query, Action<List<UserSearchResult>> onResult)
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         { /* SearchUsers query='{query}' */ }
         StartCoroutine(SearchRoutine(token, query, onResult));
     }
@@ -312,7 +312,7 @@ public class FriendManager : MonoBehaviour
 
     private static bool HasToken()
     {
-        return !string.IsNullOrWhiteSpace(PlayerPrefs.GetString("JWT_TOKEN", ""));
+        return !string.IsNullOrWhiteSpace(AuthHelper.GetToken());
     }
 
     // Bọc JSON array [..] thành {"key":[..]} để JsonUtility đọc được.
@@ -354,7 +354,7 @@ public class FriendManager : MonoBehaviour
     // Gọi GET /api/player/by-user/{userId}
     public void GetPlayerProfile(int userId, Action<PlayerProfileDto> onResult)
     {
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         { /* GetPlayerProfile userId={userId} */ }
         StartCoroutine(GetProfileRoutine(token, userId, onResult));
     }

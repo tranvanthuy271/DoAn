@@ -91,7 +91,7 @@ public class MapTransitionButton : MonoBehaviour
         travelReq.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(travelJson));
         travelReq.downloadHandler = new DownloadHandlerBuffer();
         travelReq.SetRequestHeader("Content-Type", "application/json");
-        travelReq.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        travelReq.SetRequestHeader("Authorization", $"Bearer {AuthHelper.GetToken()}");
         yield return travelReq.SendWebRequest();
 
         if (travelReq.result != UnityWebRequest.Result.Success)
@@ -189,7 +189,7 @@ public class MapTransitionButton : MonoBehaviour
         string url = $"{apiBase}/api/map/by-scene?scene={UnityWebRequest.EscapeURL(sceneName)}";
 
         using var req = UnityWebRequest.Get(url);
-        req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+        req.SetRequestHeader("Authorization", $"Bearer {AuthHelper.GetToken()}");
         yield return req.SendWebRequest();
 
         if (req.result == UnityWebRequest.Result.Success)

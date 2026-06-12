@@ -190,7 +190,7 @@ public class PlayerDataSaveService : NetworkBehaviour
         {
             www.SetRequestHeader("Content-Type", "application/json");
             
-            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : AuthHelper.GetToken();
             if (!string.IsNullOrEmpty(token))
             {
                 www.SetRequestHeader("Authorization", $"Bearer {token}");

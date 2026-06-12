@@ -30,6 +30,22 @@ public class NetworkPlayerController : NetworkBehaviour
     // để tránh xung đột authority với luồng custom movement của controller này.
     private NetworkVariable<Vector3> syncPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // NetworkVariable sync velocity cho non-owner clients — dùng để extrapolate (dự đoán) vị trí
+    // giữa các lần nhận syncPosition, giúp di chuyển mượt mà hơn.
+    private NetworkVariable<Vector2> syncVelocity = new NetworkVariable<Vector2>(Vector2.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    [Header("Remote Interpolation")]
+    // SmoothDamp velocity buffer (internal, managed by Vector2.SmoothDamp)
+    private Vector2 _smoothVelocity;
+    // Thời gian smooth (giây). Nhỏ hơn = phản hồi nhanh hơn, lớn hơn = mượt hơn.
+    private const float SmoothTime = 0.08f;
+    // Tốc độ tối đa cho SmoothDamp (không giới hạn, để SmoothDamp tự điều chỉnh)
+    private const float MaxSmoothSpeed = 50f;
+
+    // Extrapolation helper variables để tính toán thời gian trôi qua giữa các network tick
+    private float _lastPosUpdateTime;
+    private Vector3 _lastServerPos;
+
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
@@ -58,6 +74,11 @@ public class NetworkPlayerController : NetworkBehaviour
         // Subscribe to networkScaleX changes để sync flip direction
         networkScaleX.OnValueChanged += OnScaleXChanged;
 
+        // Đăng ký nhận sự thay đổi position để cập nhật timestamp cho extrapolation
+        _lastPosUpdateTime = Time.time;
+        _lastServerPos = syncPosition.Value;
+        syncPosition.OnValueChanged += OnSyncPositionChanged;
+
         // Khởi tạo scale theo giá trị hiện tại của NetworkVariable (giữ Y scale gốc từ prefab)
         transform.localScale = new Vector3(networkScaleX.Value, _prefabScaleY, 1);
 
@@ -75,11 +96,13 @@ public class NetworkPlayerController : NetworkBehaviour
             rb.simulated = false;
         }
 
-        // Non-owner CLIENT: tắt physics cục bộ, để syncPosition drive transform
+        // Non-owner CLIENT: tắt physics hoàn toàn - transform do InterpolateRemotePlayer() drive.
+        // Giữ rb.simulated=false để physics engine không can thiệp vào vị trí (tránh
+        // micro-jitter khi 2 player overlap và collider đẩy nhau).
         if (!IsOwner && !IsServer && rb != null)
         {
-            rb.gravityScale = 0f;
-            rb.velocity = Vector2.zero;
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.simulated = false;
         }
 
         // Chỉ owner mới điều khiển input
@@ -106,7 +129,14 @@ public class NetworkPlayerController : NetworkBehaviour
     {
         { /* OnNetworkDespawn obj={gameObject.name}, scene={gameObject.scene.name}, netId={NetworkObjectId}, owner={OwnerClientId}, isServer={IsServer}, isClient={IsClient}, isOwner={IsOwner} */ }
         networkScaleX.OnValueChanged -= OnScaleXChanged;
+        syncPosition.OnValueChanged -= OnSyncPositionChanged;
         base.OnNetworkDespawn();
+    }
+
+    private void OnSyncPositionChanged(Vector3 oldPos, Vector3 newPos)
+    {
+        _lastServerPos = oldPos;
+        _lastPosUpdateTime = Time.time;
     }
 
     private void DisableConflictingNetworkTransform()
@@ -151,15 +181,10 @@ public class NetworkPlayerController : NetworkBehaviour
 
     private void FixedUpdate()
     {
-        // Non-owner: chỉ client thuần (không phải server) mới cần interpolate về server position.
-        // Server KHÔNG chạy physics cho player — chỉ relay position.
+        // Non-owner: interpolation giờ được xử lý trong Update() để chạy mỗi frame render.
+        // FixedUpdate chỉ dùng cho owner physics.
         if (!IsOwner)
         {
-            if (!IsServer && rb != null && syncPosition.Value != Vector3.zero)
-            {
-                Vector2 target = new Vector2(syncPosition.Value.x, syncPosition.Value.y);
-                rb.MovePosition(Vector2.Lerp(rb.position, target, Time.fixedDeltaTime * 20f));
-            }
             return;
         }
 
@@ -241,9 +266,49 @@ public class NetworkPlayerController : NetworkBehaviour
             isGrounded);
     }
 
+    /// <summary>
+    /// Non-owner: interpolation mượt mà cho remote player.
+    /// Chạy trong Update() (mỗi frame render) thay vì FixedUpdate() (50Hz physics tick)
+    /// để đảm bảo visual smoothness không bị giật giữa các physics tick.
+    /// </summary>
+    private void InterpolateRemotePlayer()
+    {
+        if (IsOwner || IsServer) return;
+        if (syncPosition.Value == Vector3.zero) return;
+
+        Vector2 serverPos = new Vector2(syncPosition.Value.x, syncPosition.Value.y);
+        Vector2 serverVel = syncVelocity.Value;
+        Vector2 currentPos = (Vector2)transform.position;
+
+        // Snap detection: nếu khoảng cách quá lớn (teleport / respawn / first sync)
+        // thì snap ngay thay vì SmoothDamp (tránh player "bay" chạy vào vị trí đích).
+        float dist = Vector2.Distance(currentPos, serverPos);
+        if (dist > 5f)
+        {
+            transform.position = new Vector3(serverPos.x, serverPos.y, transform.position.z);
+            _smoothVelocity = Vector2.zero;
+            _lastServerPos = serverPos;
+            _lastPosUpdateTime = Time.time;
+            return;
+        }
+
+        // Extrapolate: dự đoán server position hiện tại dựa trên velocity và thời gian đã trôi qua kể từ gói tin cuối.
+        // Điều này đảm bảo mục tiêu (target) di chuyển liên tục, không bị nhảy bước (jitter/teleport) mỗi khi nhận network tick.
+        float timeSinceUpdate = Time.time - _lastPosUpdateTime;
+        timeSinceUpdate = Mathf.Min(timeSinceUpdate, 1.0f); // Giới hạn tối đa 1s để tránh lỗi trôi quá xa khi lag mạng
+        Vector2 extrapolatedTarget = serverPos + serverVel * timeSinceUpdate;
+
+        // SmoothDamp: di chuyển đều đặn về target, không bị hiệu ứng "giảm tốc" của Lerp
+        Vector2 newPos = Vector2.SmoothDamp(currentPos, extrapolatedTarget, ref _smoothVelocity, SmoothTime, MaxSmoothSpeed, Time.deltaTime);
+        transform.position = new Vector3(newPos.x, newPos.y, transform.position.z);
+    }
+
     private void LateUpdate()
     {
-        // Server: sync position để tất cả clients có thể theo dõi vị trí player
+        // Non-owner: interpolation mượt mà — chạy mỗi frame render
+        InterpolateRemotePlayer();
+
+        // Server: sync position + velocity để tất cả clients có thể theo dõi vị trí player
         // Server KHÔNG dùng rb.position (vì rb đã bị Kinematic/disabled) mà dùng transform.position
         // (được set từ client report trong MoveServerRpc)
         if (IsServer)
@@ -288,6 +353,13 @@ public class NetworkPlayerController : NetworkBehaviour
 
         // 1. Server nhận input + position từ client owner
         transform.position = new Vector3(clientPosition.x, clientPosition.y, 0f);
+
+        // 2. Sync velocity cho remote clients (dùng để extrapolate vị trí giữa network ticks)
+        // Khi không có input ngang, force velocity.x = 0 để remote player dừng ngay
+        // thay vì trôi do stale velocity.
+        float velX = Mathf.Abs(horizontalInput) > 0.01f ? horizontalInput * stats.moveSpeed : 0f;
+        Vector2 vel = new Vector2(velX, clientVelocityY);
+        syncVelocity.Value = vel;
 
         // 3. Flip sprite (server → sync cho tất cả clients qua NetworkVariable)
         if (horizontalInput > 0.01f)

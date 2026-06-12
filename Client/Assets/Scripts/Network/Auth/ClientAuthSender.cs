@@ -30,7 +30,7 @@ public class ClientAuthSender : NetworkBehaviour
             return;
         }
 
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
         int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
 

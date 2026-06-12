@@ -126,7 +126,44 @@ public class WindStepSkill : NetworkBehaviour
         if (IsServer)
             StartCoroutine(DoWindStepSequence(to));
         else
+        {
+            // Pre-trigger locally để tránh delay round-trip ServerRpc
+            if (playerAnimator == null)
+                playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
+            playerAnimator?.TriggerAttack();
+
+            if (playerSpriteRenderer != null)
+                playerSpriteRenderer.enabled = false;
+
+            TriggerSkill3AnimationLocally();
+
             StartWindStepServerRpc(to);
+        }
+    }
+
+    private void TriggerSkill3AnimationLocally()
+    {
+        if (skillEffectObject == null)
+            skillEffectObject = transform.Find("SkillEffect")?.gameObject;
+        if (skillEffectObject == null) return;
+
+        if (!skillEffectObject.activeSelf)
+            skillEffectObject.SetActive(true);
+
+        SpriteRenderer sr = skillEffectObject.GetComponent<SpriteRenderer>();
+        if (sr != null) sr.flipX = true;
+
+        var anim = skillEffectObject.GetComponent<Animator>();
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+
+        foreach (var p in anim.parameters)
+        {
+            if (p.name == "Skill3" && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                anim.SetTrigger("Skill3");
+                return;
+            }
+        }
     }
 
     //  Network RPCs
@@ -176,6 +213,9 @@ public class WindStepSkill : NetworkBehaviour
     [ClientRpc]
     private void TriggerSkill3AnimationClientRpc()
     {
+        // Owner đã trigger Skill3 locally rồi — tránh double trigger
+        if (!IsServer && IsOwner) return;
+
         if (skillEffectObject == null)
             skillEffectObject = transform.Find("SkillEffect")?.gameObject;
         if (skillEffectObject == null) return;
@@ -204,6 +244,9 @@ public class WindStepSkill : NetworkBehaviour
     [ClientRpc]
     private void TriggerPlayerAttackClientRpc()
     {
+        // Owner đã trigger attack locally rồi — tránh double trigger
+        if (!IsServer && IsOwner) return;
+
         if (playerAnimator == null)
             playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
         playerAnimator?.TriggerAttack();

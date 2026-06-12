@@ -39,7 +39,7 @@ public class QuestManager : MonoBehaviour
         return $"{root.TrimEnd('/')}/api/{path}";
     }
 
-    private static string JwtToken => PlayerPrefs.GetString("JWT_TOKEN", "");
+    private static string JwtToken => AuthHelper.GetToken();
 
     // Hàm public để script hoặc hệ thống khác gọi vào.
 

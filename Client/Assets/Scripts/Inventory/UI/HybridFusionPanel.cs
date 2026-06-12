@@ -356,7 +356,7 @@ public class HybridFusionPanel : MonoBehaviour
     {
         string token = APIClient.Instance != null
             ? APIClient.Instance.GetToken()
-            : PlayerPrefs.GetString("JWT_TOKEN", "");
+            : AuthHelper.GetToken();
 
         if (!string.IsNullOrEmpty(token))
             req.SetRequestHeader("Authorization", $"Bearer {token}");

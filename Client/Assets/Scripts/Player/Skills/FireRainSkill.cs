@@ -103,7 +103,66 @@ public class FireRainSkill : NetworkBehaviour
             if (playerAnimator == null)
                 playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
             playerAnimator?.TriggerAttack();
+
+            // Trigger SkillEffect locally
+            TriggerFireRainSkillEffectLocally();
+
+            // Predict fireballs visual
+            if (firePrefab != null)
+            {
+                StartCoroutine(PredictFireRainVisualSequence(facingRight));
+            }
+
             StartFireRainServerRpc(facingRight);
+        }
+    }
+
+    private IEnumerator PredictFireRainVisualSequence(bool facingRight)
+    {
+        float dir = facingRight ? 1f : -1f;
+        for (int i = 0; i < fireballCount; i++)
+        {
+            float xOffset = dir * Random.Range(0.3f, spreadRadius);
+            Vector3 spawnPos = transform.position + new Vector3(xOffset, spawnHeightOffset, 0f);
+            Vector2 fallVelocity = new Vector2(0f, -fallSpeed);
+
+            PredictedProjectileVisual.Spawn(
+                firePrefab,
+                spawnPos,
+                Quaternion.identity,
+                fallVelocity,
+                fireballLifetime
+            );
+
+            yield return new WaitForSeconds(spawnInterval);
+        }
+    }
+
+    private void TriggerFireRainSkillEffectLocally()
+    {
+        if (string.IsNullOrEmpty(animTriggerName)) return;
+
+        Transform root = transform.root;
+        GameObject skillEffect = root.Find("SkillEffect")?.gameObject
+                              ?? transform.Find("SkillEffect")?.gameObject;
+        if (skillEffect == null) return;
+
+        if (!skillEffect.activeSelf)
+            skillEffect.SetActive(true);
+
+        SpriteRenderer sr = skillEffect.GetComponent<SpriteRenderer>();
+        if (sr != null) sr.flipX = true;
+
+        Animator anim = skillEffect.GetComponent<Animator>();
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+
+        foreach (var p in anim.parameters)
+        {
+            if (p.name == animTriggerName && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                anim.SetTrigger(animTriggerName);
+                return;
+            }
         }
     }
 
@@ -123,6 +182,9 @@ public class FireRainSkill : NetworkBehaviour
                 playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
             playerAnimator?.TriggerAttack();
         }
+
+        // Owner đã trigger SkillEffect locally rồi — tránh double trigger
+        if (!IsServer && IsOwner) return;
 
         if (string.IsNullOrEmpty(animTriggerName)) return;
 

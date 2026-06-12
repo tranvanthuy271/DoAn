@@ -88,7 +88,7 @@ public class NetworkManagerCustom : MonoBehaviour
         EnsureCallbacksSubscribed();
 
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
         if (string.IsNullOrWhiteSpace(token))
         {
             { /* Lỗi: JWT_TOKEN not found in PlayerPrefs! Cannot connect */ }
@@ -320,7 +320,7 @@ public class NetworkManagerCustom : MonoBehaviour
     private void SendAuthToServer()
     {
         int userId = PlayerPrefs.GetInt("USER_ID", 0);
-        string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+        string token = AuthHelper.GetToken();
 
         if (userId == 0 || string.IsNullOrEmpty(token))
         {
@@ -355,7 +355,7 @@ public class NetworkManagerCustom : MonoBehaviour
             { /* Host-side: Loading player data directly for local client {clientId} */ }
             
             int userId = PlayerPrefs.GetInt("USER_ID", 0);
-            string token = PlayerPrefs.GetString("JWT_TOKEN", "");
+            string token = AuthHelper.GetToken();
             int geneSlot = PlayerPrefs.GetInt("ACTIVE_GENE_SLOT", 1);
             { /* ==== [GENE2_DEBUG] NetworkManagerCustom HOST path: ACTIVE_GENE_SLOT = {geneSlot} ==== */ }
             

@@ -82,7 +82,7 @@ public class GeneItemDebugAdder : MonoBehaviour
             {
                 string url = $"{baseUrl}/gene/config?elementType={elementType}&tier={geneTier}";
                 using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
-                string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+                string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : AuthHelper.GetToken();
                 if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
                 yield return req.SendWebRequest();
                 if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
@@ -157,7 +157,7 @@ public class GeneItemDebugAdder : MonoBehaviour
             req.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyBytes);
             req.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
-            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : PlayerPrefs.GetString("JWT_TOKEN", "");
+            string token = APIClient.Instance != null ? APIClient.Instance.GetToken() : AuthHelper.GetToken();
             if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", $"Bearer {token}");
             yield return req.SendWebRequest();
             if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)

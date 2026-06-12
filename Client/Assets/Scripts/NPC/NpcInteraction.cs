@@ -682,7 +682,7 @@ public class NpcInteraction : NetworkBehaviour, IPointerClickHandler
         }
 
         // 3. Fallback: JWT của chính process (chỉ đúng khi là chính host/self)
-        return PlayerPrefs.GetString("JWT_TOKEN", "");
+        return AuthHelper.GetToken();
     }
 
     private static string ResolveFallbackDialogueText(NpcData data)

@@ -61,7 +61,61 @@ public class EarthBoomerangSkill : NetworkBehaviour
         if (IsServer)
             StartCoroutine(BoomerangSequence(facingRight, effectValue));
         else
+        {
+            // Pre-trigger locally để tránh delay round-trip ServerRpc
+            if (playerAnimator == null)
+                playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
+            playerAnimator?.TriggerAttack();
+
+            // Trigger SkillEffect animation locally
+            TriggerBoomerangSkillEffectLocally();
+
+            // Predict projectile visual
+            if (boomerangPrefab != null)
+            {
+                float dir = facingRight ? 1f : -1f;
+                Vector3 spawnPos = transform.position + new Vector3(dir * 0.6f, 0f, 0f);
+                Vector2 velocity = new Vector2(dir * launchSpeed, 0f);
+
+                Vector3 originalScale = boomerangPrefab.transform.localScale;
+                Vector3 targetScale = new Vector3(
+                    facingRight ? Mathf.Abs(originalScale.x) : -Mathf.Abs(originalScale.x),
+                    originalScale.y, originalScale.z);
+
+                PredictedProjectileVisual.Spawn(
+                    boomerangPrefab,
+                    spawnPos,
+                    Quaternion.identity,
+                    velocity,
+                    2.5f, // requestedLifetime
+                    targetScale
+                );
+            }
+
             StartBoomerangServerRpc(facingRight, effectValue);
+        }
+    }
+
+    private void TriggerBoomerangSkillEffectLocally()
+    {
+        if (string.IsNullOrEmpty(animTriggerName)) return;
+        Transform root = transform.root;
+        GameObject skillEffect = root.Find("SkillEffect")?.gameObject
+                              ?? transform.Find("SkillEffect")?.gameObject;
+        if (skillEffect == null) return;
+        if (!skillEffect.activeSelf) skillEffect.SetActive(true);
+        SpriteRenderer sr = skillEffect.GetComponent<SpriteRenderer>();
+        if (sr != null) sr.flipX = true;
+        Animator anim = skillEffect.GetComponent<Animator>();
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+        foreach (var p in anim.parameters)
+        {
+            if (p.name == animTriggerName && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                anim.SetTrigger(animTriggerName);
+                return;
+            }
+        }
     }
 
     [ServerRpc]
@@ -70,9 +124,16 @@ public class EarthBoomerangSkill : NetworkBehaviour
     [ClientRpc]
     private void TriggerBoomerangAnimationClientRpc()
     {
-        if (playerAnimator == null)
-            playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
-        playerAnimator?.TriggerAttack();
+        // Trigger animation nhân vật (owner đã trigger locally rồi — chỉ trigger cho các client khác)
+        if (IsServer || !IsOwner)
+        {
+            if (playerAnimator == null)
+                playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
+            playerAnimator?.TriggerAttack();
+        }
+
+        // Owner đã trigger SkillEffect locally rồi — tránh double trigger
+        if (!IsServer && IsOwner) return;
 
         if (string.IsNullOrEmpty(animTriggerName)) return;
         Transform root = transform.root;

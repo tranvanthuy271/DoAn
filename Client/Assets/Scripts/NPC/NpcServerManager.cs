@@ -149,7 +149,7 @@ public class NpcServerManager : MonoBehaviour
         }
         else
         {
-            req.SetRequestHeader("Authorization", $"Bearer {PlayerPrefs.GetString("JWT_TOKEN")}");
+            req.SetRequestHeader("Authorization", $"Bearer {AuthHelper.GetToken()}");
         }
         yield return req.SendWebRequest();
 

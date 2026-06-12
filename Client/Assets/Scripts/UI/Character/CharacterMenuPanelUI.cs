@@ -235,7 +235,7 @@ public class CharacterMenuPanelUI : MonoBehaviour
 
         // Xoá session (giữ USERNAME để autofill login)
         PlayerPrefs.DeleteKey("AUTH_TOKEN");
-        PlayerPrefs.DeleteKey("JWT_TOKEN");
+        AuthHelper.ClearToken();
         PlayerPrefs.DeleteKey("USER_ID");
         PlayerPrefs.DeleteKey("PLAYER_ID");
         PlayerPrefs.DeleteKey("PLAYER_ZONE_ID");

@@ -143,7 +143,7 @@ public class MainMenuController : MonoBehaviour
         if (apiClient != null)
             apiClient.ClearToken();
 
-        PlayerPrefs.DeleteKey("JWT_TOKEN");
+        AuthHelper.ClearToken();
         PlayerPrefs.DeleteKey("USER_ID");
         PlayerPrefs.DeleteKey("USERNAME");
         PlayerPrefs.DeleteKey("PLAYER_ZONE_ID");

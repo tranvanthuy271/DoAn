@@ -102,7 +102,64 @@ public class WaterPillarSkill : NetworkBehaviour
             if (playerAnimator == null)
                 playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
             playerAnimator?.TriggerAttack();
+
+            // Trigger SkillEffect animation locally
+            TriggerWaterPillarSkillEffectLocally();
+
+            // Predict projectile visual
+            if (pillarPrefab != null)
+            {
+                float dir = facingRight ? 1f : -1f;
+                Vector3 spawnPos = transform.position + new Vector3(dir * horizontalOffset, spawnHeightOffset, 0f);
+                Vector2 fallVelocity = new Vector2(0f, -pillarFallSpeed);
+
+                Vector3 originalScale = pillarPrefab.transform.localScale;
+                Vector3 targetScale = new Vector3(
+                    facingRight ? Mathf.Abs(originalScale.x) : -Mathf.Abs(originalScale.x),
+                    originalScale.y, originalScale.z);
+
+                PredictedProjectileVisual.Spawn(
+                    pillarPrefab,
+                    spawnPos,
+                    Quaternion.identity,
+                    fallVelocity,
+                    pillarLifetime,
+                    targetScale
+                );
+            }
+
             StartWaterPillarServerRpc(facingRight);
+        }
+    }
+
+    private void TriggerWaterPillarSkillEffectLocally()
+    {
+        if (string.IsNullOrEmpty(animTriggerName)) return;
+
+        Transform root = transform.root;
+        GameObject skillEffect = root.Find("SkillEffect")?.gameObject
+                              ?? transform.Find("SkillEffect")?.gameObject;
+        if (skillEffect == null) return;
+
+        if (!skillEffect.activeSelf)
+            skillEffect.SetActive(true);
+
+        SpriteRenderer sr = skillEffect.GetComponent<SpriteRenderer>();
+        if (sr != null) sr.flipX = true;
+
+        Animator anim = skillEffect.GetComponent<Animator>();
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+
+        foreach (var p in anim.parameters)
+        {
+            if (p.name == animTriggerName && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                anim.SetTrigger(animTriggerName);
+                if (clearSkillEffectCoroutine != null)
+                    StopCoroutine(clearSkillEffectCoroutine);
+                clearSkillEffectCoroutine = StartCoroutine(ClearSkillEffectAfterDelay());
+                return;
+            }
         }
     }
 
@@ -124,6 +181,9 @@ public class WaterPillarSkill : NetworkBehaviour
                 playerAnimator = GetComponent<PlayerAnimator>() ?? GetComponentInParent<PlayerAnimator>();
             playerAnimator?.TriggerAttack();
         }
+
+        // Owner đã trigger SkillEffect locally rồi — tránh double trigger
+        if (!IsServer && IsOwner) return;
 
         // Trigger SkillEffect animation — tìm SkillEffect từ root
         if (string.IsNullOrEmpty(animTriggerName)) return;
