@@ -84,3 +84,19 @@ Hệ thống được thiết kế theo mô hình **Hybrid 3-Layer (Client - Ded
 * **Tối ưu hóa hiệu năng (Separation of Concerns):** Dedicated Server (NGO) cần tập trung toàn bộ CPU để xử lý các phép tính vật lý và AI quái vật ở tần số quét cao (50Hz). Việc truy vấn trực tiếp xuống database MySQL là tác vụ cực kỳ nặng và gây nghẽn luồng (blocking). Vì vậy, Dedicated Server chỉ lưu dữ liệu tạm thời trên RAM, còn các tác vụ đọc/ghi cơ sở dữ liệu nặng sẽ do Web API xử lý bất đồng bộ ở một máy chủ riêng.
 * **Bảo mật tuyệt đối:** Ngăn chặn hoàn toàn việc Client kết nối trực tiếp vào database MySQL. Web API đứng sau tường lửa, đóng vai trò xác thực mã JWT. Dedicated Server đóng vai trò trung gian phê duyệt hành động (REST Proxy), đảm bảo hacker không thể bypass luật chơi để sửa DB.
 * **Khả năng mở rộng (Scalability):** Giúp hệ thống dễ dàng mở rộng theo chiều ngang (Horizontal Scaling). Khi lượng người chơi tăng, ta chỉ cần bật thêm nhiều máy chủ chạy Dedicated Server để chia tải các trận đấu, và tất cả chúng đều trỏ về một Web API trung tâm duy nhất để cất giữ dữ liệu vào database MySQL.
+
+---
+
+### Câu 6: Zone API Key (X-Zone-Api-Key) là gì và tại sao phải thiết lập cơ chế này?
+
+#### 1. Định nghĩa
+**Zone API Key** (truyền qua HTTP Header `X-Zone-Api-Key`) là một **mã khóa bí mật dùng chung (Shared Secret)** được cấu hình ở cả hai đầu: Dedicated Server và Web API. Đây là cơ chế xác thực chuyên dụng cho giao tiếp **Server-to-Server (S2S)**.
+
+#### 2. Lý do phải thiết lập Zone API Key
+* **Phân quyền vai trò đặc biệt (GameServer Role):**
+  * Trong game, có những hành động hệ thống mà Client bình thường không bao giờ được phép làm (ví dụ: thông báo phòng đấu đầy, cập nhật danh sách phòng, ghi nhận phần thưởng sau phó bản, ngắt kết nối người chơi).
+  * Web API sử dụng lớp `ZoneApiKeyMiddleware.cs` để nhận diện header `X-Zone-Api-Key`. Nếu khớp khóa bí mật, API sẽ cấp quyền hạn cấp cao `"GameServer"` cho request đó, cho phép Dedicated Server thao tác dữ liệu thay mặt bất cứ người chơi nào.
+* **Chặn đứng Client giả mạo:**
+  * Dù hacker có sở hữu JWT Token hợp lệ của tài khoản họ đi chăng nữa, họ cũng không có mã Zone API Key nội bộ này. Vì thế, hacker không thể tự gửi các request HTTP trực tiếp lên Web API để tự cộng vàng hay chỉnh sửa Gene.
+* **Ngăn chặn tấn công Timing Attack (Tấn công đo thời gian):**
+  * Trong mã nguồn middleware của bạn (`ConstantTimeEquals`), việc so sánh khóa được thực hiện theo cơ chế **thời gian không đổi (Constant-Time Comparison)** thay vì toán tử `==` thông thường. Điều này ngăn chặn hacker sử dụng kỹ thuật đo thời gian phản hồi của Server để dò tìm từng ký tự của mã khóa.
